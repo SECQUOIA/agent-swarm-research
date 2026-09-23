@@ -1,0 +1,29 @@
+# Topic 29 claim coverage
+
+All twelve frozen claims are proved and independently reviewed. The separate
+verification record records the warning-free eighteen-module
+build, 248-declaration axiom audit, and all eighteen kernel replays.
+Names are relative to `InfiniteAggregation`; modules are under
+[Formal/InfiniteAggregation](../../Formal/InfiniteAggregation).
+
+| Claim | Declaration coverage |
+|---|---|
+| I01 | `Model`: `Var`, `HomVar`, `eval`, `homEval`, `feasible`, `aggregate`, `homAggregate`, `homEval_one`, `aggregate_formula`, `homAggregate_formula`, `mem_feasible_iff`, `HHC`. `Good`: `homogeneousCoordinates`, `homogeneousMatrix_eq_homAggregate`, `Good`. Exact Euclidean expressions and actual spectral goodness are present. |
+| I02 | `Model`: `feasible_nonempty`, `coordinate_sq_le_qnorm`, `norm_le_one_of_qnorm_le_one`, `feasible_bounded`, `convexHull_bounded`, `convexHull_proper`, `convexHull_nonempty`. The witness is the valid rational alternative `u=v=(3/4)e_1`. Nonemptiness and properness already hold for `r≥1`, hence for every required `r≥2`. |
+| I03 | `GramFrame`: `exists_unit_perpendicular`, `exists_gram_frame`. `GramSupport`: `circle_linear_surjective`, `rotation_gram_surjective`, `scalar_gram_support`, `gram_support_attained`. `GramConcavity`: `GramPSD`, `gram_det_mixed`, `gramPSD_add`, `gramPSD_smul`, `gram_sqrt_det_smul`, `gram_sqrt_det_add`, `gram_det_concave`, `hhcCoordinateDomain`, `convex_hhcCoordinateDomain`. `GramBound`: `gramPSD_vectors`, `frame_trace_bound`, `gram_support_upper`. `Hyperplane`: `hom_functional_coefficients`, `gramOutput`, `homGram`, `gramOutput_homGram`. `HyperplaneConvexity`: `homGram_image_kernel`, `hhc`. The actual HHC theorem has only `2≤r` as a premise; setting `r=2` gives the four-variable case. |
+| I04 | `GoodMatrix`: `HomIndex`, `homogeneousMatrix`, `homogeneousMatrix_hermitian`, `homogeneousMatrix_quadratic`, `replicateDirection`, `replicateDirection_quadratic`. `Good`: `homogeneousCoordinates`, `homogeneousMatrix_eq_homAggregate`. `GoodBlock`: `homogeneousMatrix_block_decomposition`. The quadratic identity decomposes the actual matrix into repeated two-coordinate blocks and its scalar block. `Inertia`: `negativeProjectionLinear`, `quadratic_nonneg_of_negativeProjection_eq_zero`, `finrank_le_negativeInertia_of_negative_map`, `negativeEmbedding_quadratic_neg`, `negativeInertia_le_one_of_nonneg_on_kernel`, `one_le_negativeInertia_of_negative_vector`, `two_le_negativeInertia_of_negative_map`, using the actual eigenvalue-count definition from `QuadraticPrecision`. |
+| I05 | `GoodBlock`: `leadingBlock`, `leadingBlock_hermitian`, `leadingBlock_quadratic`, `leadingBlock_posSemidef_iff`. `GoodMatrix`: `negative_direction_of_discriminant`. `GoodSpectral`: `inertia_ge_dimension_of_bad_discriminant`, `discriminant_of_inertia_le_one`, `constant_neg_of_goodCone`. `Good`: `inertia_le_one_of_goodCone`, `inertia_eq_one_of_goodCone`. All cone boundary and zero-leading-diagonal cases are included; nonzero weights are retained for exact negative index one. |
+| I06 | `GoodConvex`: `leading_nonneg`, `leading_vector_nonneg`, `aggregate_jensen_gap`, `goodCone_convexOn`, `goodCone_hull_valid`. `Good`: `good_iff_goodCone`. The goodness definition retains strict validity on the ordinary convex hull and the actual spectral condition. |
+| I07 | `Rays`: `witness_gram_bounds`. `Model`: `gram_realization`. `Witness`: `witness_exists`, `witness_eval_formula`, `witness_aggregate_formula`. These give actual vectors, strict determinant margin throughout the closed parameter interval, and the literal residual vector `(1/10) • ![-tau⁻¹,-tau,1]`. |
+| I08 | `Rays`: `rayWeight`, `SameRay`, `ray_slack_nonpos`, `ray_slack_eq_iff`. `Witness`: `rayWeight_goodCone`, `rayWeight_ne_zero`, `witness_slack`, `witness_separates`. `Consequences`: `rayWeight_good`. Together with `good_iff_goodCone`, these establish the equality case and ordinary-hull exclusion for the actual source notion of goodness. |
+| I09 | `Witness`: `strict_description_contains_rays`. `Consequences`: `good_strict_description_contains_rays`. The final statement takes actual good multipliers and exact equality of the ordinary hull with their strict intersection; the ray-cover conclusion is proved. |
+| I10 | `Rays`: `sameRay_unique`, `exists_omitted_ray`. `Cardinality`: `exists_omitted_ray_countable`, `normalizeRay`, `normalizeRay_pos_smul`, `normalizeRay_of_sameRay`, `ray_cover_uncountable_normalized`, `ray_cover_uncountable`. `Consequences`: `good_strict_description_uncountable_rays`, `no_countable_good_strict_description`, `no_finite_good_strict_description`. The uncountable set consists of scale-invariant normalized weights, not family indices. |
+| I11 | `ClosedObstruction`: `finite_slack_perturbation`, `perturbed_gram_bounds`, `perturbed_aggregate_formula`, `finite_goodCone_closed_obstruction`. `Consequences`: `finite_good_closed_obstruction`. The proof chooses an omitted ray, derives common positive slack preservation, proves a strict Gram determinant bound, realizes the perturbed vectors, and computes the omitted aggregate as `2 eta>0`. |
+| I12 | `ClosedObstruction`: `goodCone_closedHull_valid`, `no_finite_goodCone_closed_description`. `Consequences`: `good_closedHull_valid`, `no_finite_good_closed_description`. The conclusion is about `closure(convexHull S)` and actual weak good inequalities, independently of the strict intersection obstruction. |
+
+The eighteen owned modules are listed in modules.json.
+Every scalar or abstract lemma above has a proved bridge to the actual
+system, spectral condition, witnesses, and set equalities. The full hull
+formula and existence of an exact strict representation remain outside
+the [frozen claims](CLAIMS.md). Final machine-check results must be recorded
+separately from this source map.

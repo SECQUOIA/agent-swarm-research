@@ -1,0 +1,597 @@
+\section{Certificates, relaxation comparisons, and latent separators}
+\label{sec:certification}
+
+The approximation theorems do not require an optimization run to terminate
+successfully before a useful design bound can be issued. A feasible schedule
+and a separately checked upper witness suffice. This section gives such
+witnesses, compares them with established virtual-noise relaxations, and
+constructs an alternative exact representation when a long calendar window
+is expensive. Throughout this section $\calF$ is nonempty and finite, and
+$J_0\succ0$ unless stated otherwise. This stronger prior assumption ensures
+that every logarithm and inverse used in the certificates is defined.
+
+\subsection{Prior-aware support certificates}
+\label{subsec:local-certificates}
+Suppose a graph represents exactly $\calF$, a path $P_S$ represents schedule
+$S$, and the local increments $Q_e\succeq0$ satisfy
+\[
+ J_L(S)=J_0+\sum_{e\in P_S}Q_e,\qquad
+ J(S)\preceq J_0+\frac{1}{1-\delta}\sum_{e\in P_S}Q_e,
+ \qquad 0\le\delta<1.
+\]
+The second inequality is the data-information consequence of
+Lemma~\ref{lem:residual-transfer}; it retains the prior without inflation.
+For scalar, complete-block, general-decay, and partial-packet models,
+Section~\ref{sec:locality} supplies the corresponding sufficient $\delta$.
+
+\begin{theorem}[Support certificate]\label{thm:local-certificate}
+For any $N\succ0$, let
+\begin{align}
+ c_N&=\log\det N-p+\tr(N^{-1}J_0),\nonumber\\
+ a_e&=\frac{\tr(N^{-1}Q_e)}{1-\delta},\qquad
+ U_N=c_N+\max_{S\in\calF}\sum_{e\in P_S}a_e.
+ \label{eq:local-certificate}
+\end{align}
+Then $\max_{S\in\calF}\log\det J(S)\le U_N$.
+If $S_0\in\calF$ and $\ell\le\log\det J(S_0)$, an upper enclosure
+$U\ge U_N$ certifies D-efficiency at least $\exp\{(\ell-U)/p\}$
+relative to the true optimum.
+\end{theorem}
+\begin{proof}
+For any $X\succ0$, concavity gives
+$\log\det X\le\log\det N-p+\tr(N^{-1}X)$.
+Apply monotonicity of log determinant to the prior-aware upper matrix,
+and then this tangent inequality. Maximizing its additive term proves the
+bound. Exponentiating the difference between the incumbent lower bound and
+the optimum upper bound proves the efficiency statement.
+\end{proof}
+
+For a weighted-trace objective with $W\succeq0$, the same matrix bound gives
+\[
+ \max_{S\in\calF}\tr(WJ(S))\le \tr(WJ_0)
+ +\max_{S\in\calF}\sum_{e\in P_S}\frac{\tr(WQ_e)}{1-\delta}.
+\]
+This requires no logarithm or tangent reference and applies, in particular,
+to the partial-packet trace certificates. Dividing an exact feasible lower
+value by a positive upper value certifies relative performance; a zero upper
+value proves that every feasible value is zero.
+
+Neither $N$ nor $J_0+(N-J_0)(1-\delta)$ must be the information of a feasible
+schedule. For example, optimizing log determinant over a convex mixture of
+path matrices can propose $N$, and an exchange heuristic can propose $S_0$.
+The mixture supplies no feasible-experiment lower bound. The support maximum
+in \eqref{eq:local-certificate} must range over all feasible paths; maximizing
+only over paths discovered by an optimizer does not certify it. Exact
+cardinality, mandatory/forbidden choices, and minimum gap are enforced by the
+count, mask, and cooldown graph of Section~\ref{subsec:calendar-graph}.
+In particular, a spacing constraint remains in the graph even if its required
+cooldown exceeds the information window.
+
+The theorem permits real witnesses. For the exact rational checker, choose
+a rational symmetric reference $N$ (or its rational inverse), for example by
+rounding a numerical proposal, and verify $N\succ0$ by exact positive pivots
+or leading principal minors; a failed check rejects the witness. With rational
+model data, the information of $S_0$, every $Q_e$, and $N^{-1}$ can then be
+recomputed by rational elimination. The weighted-trace checker likewise
+requires its prescribed weight $W$ to be rational and verifies $W\succeq0$.
+Use a certified rational enclosure $\delta\le\widehat\delta<1$ in every
+score in place of $\delta$: rational model data need not make the analytic
+locality bound rational. This enlargement preserves the upper matrix bound
+because the increments are PSD. Rational envelopes or outward interval
+evaluation of the locality formulas give such enclosures; square-root
+endpoints can be verified by squaring. If the enclosure is not below one,
+refine it, increase the memory window and recompute the bound, or reject
+that certificate.
+A numerical reference, solver status, or reported gradient is not used as a
+proof. Appendix~\ref{app:certificate-arithmetic} gives complete outward score
+and logarithm formulas. If $a_e$ is replaced by
+$\lceil G_s a_e\rceil/G_s$ and every path has at most $k$ nonzero selection
+arcs, the support increase is at most $k/G_s$ (and is zero when $k=0$). More general integer interval
+scores remain valid, with their actual excess explicitly charged.
+The rational certificate proves a statement about the encoded inputs.
+Uncertainty in the physical covariance or sensitivity construction requires
+additional assumptions; it is not removed by exact arithmetic.
+
+Logdet support conditions for finite information hulls are classical
+\citep{HarmanTrnovska2009}, and correlated-design simplicial decomposition is
+already developed by \citet[Section 4.4]{Hainy2025}. The role of
+Theorem~\ref{thm:local-certificate} is to attach an explicit uniform
+selected-covariance error bound to this established support machinery.
+
+\subsection{The virtual-noise comparator and exact continuous bounds}
+\label{subsec:virtual-noise}
+For clarity, index scalar candidate responses here by $i=1,\ldots,n$.
+Packet selection is obtained by tying their coordinates. Let
+\[
+ D=\diag(a_i)\succ0,\qquad B=R-D\succeq0,
+ \qquad Z(z)=\diag(z_i/a_i),\quad z\in[0,1]^n.
+\]
+The established covariance-split extension is
+\begin{equation}\label{eq:vn-resolvent}
+ V(z)=(I+BZ(z))^{-1}F,\qquad
+ J_D(z)=J_0+F^T Z(z)V(z),\qquad \varphi_D(z)=\log\det J_D(z).
+\end{equation}
+These formulas have no inverse of $Z(z)$ and apply at zero weights.
+The matrix $I+BZ$ is invertible: Sylvester's determinant identity reduces
+its determinant to that of $I+B^{1/2}ZB^{1/2}\succ0$.
+
+\begin{proposition}[Established virtual-noise identities]
+\label{prop:vn}
+For $T=\{i:z_i>0\}$,
+\begin{equation}\label{eq:vn-covariance}
+ J_D(z)=J_0+F_T^T
+ \left[R_{TT}+\diag\left(a_i\frac{1-z_i}{z_i}:i\in T\right)\right]^{-1}F_T.
+\end{equation}
+The empty-support value is $J_0$. The map $J_D$ is matrix concave on the
+cube, $\varphi_D$ is concave and differentiable there by extension to a
+neighborhood, and
+\begin{equation}\label{eq:vn-gradient}
+ \frac{\partial J_D}{\partial z_i}=a_i^{-1}V_i^TV_i,\qquad
+ g_i(z):=\frac{\partial\varphi_D}{\partial z_i}
+       =a_i^{-1}V_iJ_D(z)^{-1}V_i^T.
+\end{equation}
+For binary $z=\ind_S$, $J_D(z)=J(S)$, independently of $D$.
+\end{proposition}
+\begin{proof}
+The nonzero rows of $ZV$ solve
+$(B_{TT}+Z_{TT}^{-1})(ZV)_T=F_T$, proving
+\eqref{eq:vn-covariance}. For $B\succ0$,
+\[
+ Z(I+BZ)^{-1}=B^{-1}-B^{-1}(B^{-1}+Z)^{-1}B^{-1}
+\]
+is matrix concave because matrix inversion is convex. Approximate
+$B\succeq0$ by $B+\epsilon I$ and pass to the continuous resolvent limit;
+this proves concavity also on the split boundary. Monotone concave log
+determinant preserves concavity. Differentiating the resolvent gives
+$d\{Z(I+BZ)^{-1}\}=(I+ZB)^{-1}(dZ)(I+BZ)^{-1}$,
+which proves \eqref{eq:vn-gradient}, including the cube boundary.
+Binary substitution into \eqref{eq:vn-covariance} proves exactness.
+\end{proof}
+
+The scalar choice $D=aI$ is the Liu relaxation
+\citep[Section II.B]{Liu2016}. Its equality with the convex virtual-noise
+design of \citet{Pazman2022}, under the measure change $\xi_i=z_i/k$ for
+$k>0$, was already proved by \citet[Proposition 3]{Hainy2025}, including
+zero weights. Their modified variance uses
+$D=\widetilde\kappa\diag(R_{ii})$ with
+$\widetilde\kappa\le\lambda_{\min}(\diag(R_{ii})^{-1/2}
+R\diag(R_{ii})^{-1/2})$. This is a subfamily of the diagonal splits above;
+for constant $R_{ii}=v$, it is the scalar family $a=v\widetilde\kappa$.
+The equivalence and the concavity are prior results, not contributions of
+this paper.
+
+Let $\mathcal Z$ be a specified compact convex relaxation satisfying
+\[
+ \operatorname{conv}\{\ind_S:S\in\calF\}
+ \subseteq\mathcal Z\subseteq[0,1]^n.
+\]
+A rational query $z$ in the cube gives
+\begin{equation}\label{eq:vn-continuous-certificate}
+ \max_{x\in\mathcal Z}\varphi_D(x)
+ \le \overline{\log\det J_D(z)}-g(z)^Tz
+       +\max_{x\in\mathcal Z}g(z)^Tx.
+\end{equation}
+Here the overline is a rigorous logarithm upper enclosure, and the last
+quantity must be computed or bounded globally. For
+$\mathcal Z_k=\{x\in[0,1]^n:\sum_i x_i=k\}$ it is the sum of the $k$
+largest rational gradient coordinates. If $\mathcal Z$ is the true indicator
+hull with spacing constraints, linear optimization uses its feasible graph
+instead. At a verified feasible $z\in\mathcal Z$,
+$\underline{\log\det J_D(z)}$ is a lower bound on the continuous optimum.
+An infeasible query still supplies a tangent upper bound but no such lower
+bound. Thus continuous optimization error and the discrete relaxation gap
+can be measured separately. A strict comparison between a continuous lower
+bound and a competing integer-objective upper bound does not require knowing
+the integer optimum.
+
+Exact dense elimination suffices to check all these expressions. For scalar
+AR(1)-plus-nugget covariance, Appendix~\ref{app:dense-oracle} derives linear
+in $n$ covariance-filter and reverse-adjoint formulas and exact tridiagonal
+split checks. These are computational implementations of the same relaxation.
+Floating-point precision-space solves near unit latent correlation, and a
+first implementation based on subtracting RTS smoothed means, can produce
+invalid tangents; the appendix explains the distinct failure mechanisms.
+Only recomputed rational witnesses make \eqref{eq:vn-continuous-certificate}
+a rigorous bound.
+
+\subsection{A certificate against every diagonal split}
+\label{subsec:all-split}
+Optimizing one virtual-noise relaxation incompletely can make it appear weak.
+The following comparison excludes both incomplete continuous solution and
+tuning within the diagonal-split family. It does not compare complete integer
+branch-and-bound methods.
+
+Fix $z^0\in\mathcal Z$ and set $T=\{i:z_i^0>0\}$,
+$h_i=(1-z_i^0)/z_i^0$ for $i\in T$. For every positive vector $a$, define
+\[
+ S(a)=R_{TT}+\diag(h_i a_i:i\in T),\qquad
+ \phi(a)=\log\det\{J_0+F_T^T S(a)^{-1}F_T\}.
+\]
+This fixed-point value exists even if $R-\diag(a)$ is not PSD.
+For $T=\varnothing$, use $J=J_0$, $g=0$, and omit all empty matrix terms.
+
+\begin{proposition}[All-split lower witness]\label{prop:diagonal-barrier}
+Choose any $a^0>0$, put $V=S(a^0)^{-1}F_T$, $J=J_0+F_T^TV$,
+and let
+\[
+ g_i=-h_i V_iJ^{-1}V_i^T\quad(i\in T),\qquad g_i=0\quad(i\notin T).
+\]
+For every $Y\succeq0$ with $\diag(Y)\ge-g$, the number
+\begin{equation}\label{eq:diagonal-barrier}
+ L_{\rm split}=\phi(a^0)-g^Ta^0-\tr(RY)
+\end{equation}
+satisfies $\varphi_D(z^0)\ge L_{\rm split}$ for every admissible
+$D=\diag(a)\succ0$, $R-D\succeq0$. Consequently it lower-bounds every
+such continuous optimum and
+\begin{equation}\label{eq:pointwise-split-barrier}
+ \sup_{z\in\mathcal Z}\inf_{D}\varphi_D(z)\ge L_{\rm split}.
+\end{equation}
+Every relaxation consisting of $z\in\mathcal Z$ and any collection of
+globally valid affine upper supports $t\le l_D(z)$ from these splits also
+has optimum at least $L_{\rm split}$.
+\end{proposition}
+\begin{proof}
+Put $C=F_TJ_0^{-1}F_T^T\succeq0$. The determinant lemma gives
+$\phi(a)=\log\det J_0+\log\det(S(a)+C)-\log\det S(a)$.
+This is a classical convex function of $S$ \citep{KimKim2006,Kim2019}.
+For completeness, with $A=S^{-1}\succeq B_1=(S+C)^{-1}$, its Hessian
+in a symmetric direction $H$ is
+$\tr(AHAH)-\tr(B_1HB_1H)\ge0$:
+$A\otimes A-B_1\otimes B_1=(A-B_1)\otimes A+B_1\otimes(A-B_1)\succeq0$.
+Affine substitution proves convexity in $a$, with gradient $g$ as displayed.
+For $w=-g\ge0$, admissibility and the dual conditions imply
+\[
+ w^Ta\le\tr(DY)\le\tr(RY).
+\]
+The convex lower tangent $\phi(a)\ge\phi(a^0)+g^T(a-a^0)$ therefore
+proves \eqref{eq:diagonal-barrier}. The same point $z^0$ works for all $D$,
+which proves \eqref{eq:pointwise-split-barrier} without a minimax interchange.
+For any globally valid affine upper support,
+$l_D(z^0)\ge\varphi_D(z^0)\ge L_{\rm split}$. Hence $(z^0,L_{\rm split})$
+remains feasible in their intersection.
+\end{proof}
+
+The proof uses established logdet convexity and weak semidefinite duality.
+Its useful output is a finite checkable witness against an entire family.
+For rational $a^0$, all entries except the logarithm are rational. An arbitrary
+rational factor $B_0$ gives a valid dual matrix by construction:
+\begin{equation}\label{eq:dual-repair}
+ Y=B_0B_0^T+\diag\left(\max\{0,-g_i-\sum_j(B_0)_{ij}^2\}\right).
+\end{equation}
+A floating-point SDP solution can propose $B_0$ but is not assumed feasible.
+Use the lower logarithm enclosure in \eqref{eq:diagonal-barrier}.
+A reference $a^0$ need not itself be admissible, and neither strong duality
+nor optimality of this reference or dual factor is required.
+
+There is a simpler scalar witness. For fixed $z^0$, increasing $a$ increases
+$R_{TT}+a\diag(h)$, so $\varphi_{aI}(z^0)$ is nonincreasing. Therefore
+\begin{equation}\label{eq:scalar-barrier}
+ \bar a\ge\lambda_{\min}(R)\quad\Longrightarrow\quad
+ \max_{z\in\mathcal Z}\varphi_{aI}(z)
+ \ge\varphi_{\bar aI}(z^0)\quad
+ (0<a\le\lambda_{\min}(R)).
+\end{equation}
+The right side is evaluated using \eqref{eq:vn-covariance}, not by an
+inadmissible concavity assertion. Any nonzero rational $v$ supplies
+$\bar a=v^TRv/(v^Tv)\ge\lambda_{\min}(R)$; alternatively an exact nonpositive
+leading pivot of $R-\bar aI$ proves the same inequality. Appendix~\ref{app:dense-oracle}
+gives the smaller tridiagonal witness for a stationary latent chain.
+
+\begin{example}[A persistent gap]\label{ex:split-barrier}
+Let $R=\left(\begin{smallmatrix}2&1\\1&2\end{smallmatrix}\right)$,
+$F=(1,-1)^T$, $J_0=1$, and $k=1$. Every feasible schedule has information
+$3/2$. At $z^0=(1/2,1/2)$ and $a^0=(1,1)$, $J=2$,
+$g=(-1/8,-1/8)$, and
+$Y=\frac18\left(\begin{smallmatrix}1&-1\\-1&1\end{smallmatrix}\right)$
+has $\diag Y=-g$ and $\tr(RY)=-g^Ta^0=1/4$.
+Thus $L_{\rm split}=\log2$, leaving a gap at least $\log(4/3)$ over the
+integer optimum for every diagonal split, including strict splits and
+pointwise split optimization. All affine upper cuts in the stated family
+retain this witness. Branching, additional restrictions excluding $z^0$,
+or cuts outside this family can remove it. This elementary example is not
+a novelty claim for the relaxation or the convexity argument.
+\end{example}
+
+\subsection{One shared schedule over finite scenarios}
+\label{subsec:robust-certificate}
+Let $s=1,\ldots,q$ index a declared finite set of known covariance and
+sensitivity models, all with information dimension $p$, positive definite
+priors, and the same nonempty feasible schedule family $\calF$. Define
+\begin{align}
+ f_s(S)&=\log\det J_s(S),\qquad
+ b_s^*=\max_{S\in\calF}f_s(S),\nonumber\\
+ g_c(S)&=\min_s(f_s(S)-c_s),\qquad
+ g_*(S)=\min_s(f_s(S)-b_s^*),\qquad
+ E_*(S)=\exp(g_*(S)/p).\label{eq:robust-objectives}
+\end{align}
+Raw maximin sets $c_s=0$. Standardized D-efficiency compares each scenario
+with its own best attainable information. Under a scenario-dependent
+invertible congruence $J_s\mapsto T_sJ_sT_s^T$, both $f_s$ and $b_s^*$
+gain $2\log|\det T_s|$, so $g_*$ is invariant if priors transform too.
+Raw maximin is invariant in its maximizing schedules under a common
+transformation, but need not be so under unrelated transformations.
+Efficiency normalization and its support-based optimization are established:
+\citet[Section 3.2 of the preprint]{Burclova2016} computes individual
+criterion optima before maximizing minimum efficiency by affine supports,
+and \citet{Maus2010} studies maximin relative efficiency under uncertain
+AR(1) correlation. Robust kinetic design and scenario exchange also have
+direct precedents \citep{Duarte2018,WangYue2026}; the latter preprint uses
+independent-trial sampling information. \citet{Chowdhary2025} develops
+budget-constrained robust correlated-noise sensor design through stochastic
+policy optimization. The contribution here is the explicit certificate for
+one common discrete schedule, with uncertainty in its optimal standardizers
+propagated rigorously.
+
+Suppose the common path graph supplies $Q_{s,e}\succeq0$ and $\delta_s<1$
+with $J_s(S)\preceq J_{0,s}+\sum_{e\in P_S}Q_{s,e}/(1-\delta_s)$.
+Choose any $N_s\succ0$ and exactly nonnegative $\lambda_s$ with
+$\sum_s\lambda_s=1$. Then
+\begin{equation}\label{eq:robust-support}
+ \max_{S\in\calF}g_c(S)\le
+ \sum_s\lambda_s[\log\det N_s-p+\tr(N_s^{-1}J_{0,s})-c_s]
+ +\max_{S\in\calF}\sum_{e\in P_S}\sum_s
+ \frac{\lambda_s\tr(N_s^{-1}Q_{s,e})}{1-\delta_s}.
+\end{equation}
+Indeed, the minimum is at most a convex average and each scenario obeys
+Theorem~\ref{thm:local-certificate}. One common path prices the combined
+scores. Separate scenario support maxima also give a valid bound but may
+be strictly weaker. The rational checker uses rational SPD references $N_s$
+and certified rational enclosures $\delta_s\le\widehat\delta_s<1$ in all
+scenario scores, following the convention above. It also uses rational
+simplex weights: round a numerical proposal to rationals, clip negative
+entries, and normalize exactly if positive mass remains; otherwise use a
+specified rational simplex point or reject. Approximate normalization or
+negative weights do not satisfy the proof.
+
+\begin{proposition}[Unknown standardizers]\label{prop:robust-normalizers}
+Suppose verified bounds $\ell_s\le b_s^*\le U_s$ are available.
+For a common feasible $S_0$, let
+\begin{equation}\label{eq:robust-certified-interval}
+ L=\min_s[\underline{f_s(S_0)}-U_s].
+\end{equation}
+In \eqref{eq:robust-support}, replace $c_s$ by $\ell_s$ and round every
+term outward to obtain an upper bound $U'$. Then
+\[
+ L\le g_*(S_0)\le\max_{S\in\calF}g_*(S)\le U:=\min(U',0),
+ \quad E_*(S_0)\ge e^{L/p},\quad
+ \frac{E_*(S_0)}{\max_{S\in\calF}E_*(S)}\ge e^{(L-U)/p}.
+\]
+\end{proposition}
+\begin{proof}
+Pointwise,
+$\min_s(f_s(S)-U_s)\le g_*(S)\le\min_s(f_s(S)-\ell_s)$.
+The left inequality gives the incumbent lower bound; the right and
+\eqref{eq:robust-support} give the upper bound. Since $f_s(S)\le b_s^*$,
+$g_*(S)\le0$. Exponentiation gives both efficiency conclusions.
+\end{proof}
+The individual lower bounds can come from different schedules, but each must
+be feasible for the same family defining $b_s^*$. A reference optimum over
+a larger family gives an upper bound, not automatically a valid lower bound.
+The rational log interval is the certificate; ordinary floating exponentials
+are only display summaries. These statements certify precisely the listed
+scenarios and do not cover an intervening continuous parameter region.
+
+\begin{corollary}[Fixed-scenario approximation]\label{cor:robust-fptas}
+Under the fixed rational memory promises and feasibility conditions of
+Theorem~\ref{thm:trace-fptas}, with $q$ and $p$ fixed, standardized
+D-efficiency has an FPTAS. This is a direct consequence of the spectral
+approximation set, not a runtime guarantee for the practical mixture solver.
+\end{corollary}
+\begin{proof}
+Take one graph with the largest required memory. Apply
+Theorem~\ref{thm:dag-spectral-set} to the block-diagonal additive matrix
+$\diag(J_{L,1}(S),\ldots,J_{L,q}(S))$ of fixed order $qp$.
+If every memory error is at most $\delta$, every target schedule has a
+single returned representative satisfying, in every scenario,
+\begin{equation}\label{eq:robust-cover-factor}
+ J_s(\widehat S)\succeq aJ_s(S),\qquad
+ a=\frac{(1-\eta)(1-\delta)}{1+\delta}.
+\end{equation}
+This follows by transferring true information to local information, using
+the common spectral cover, and transferring back. For the returned set
+$\mathcal C$, compute the positive rational numbers
+$d_s=\max_{S\in\mathcal C}\det J_s(S)$ and choose $\widehat S\in\mathcal C$
+maximizing $\min_s\det J_s(S)/d_s$. If
+$D_s^*=\max_{S\in\calF}\det J_s(S)$, then
+$a^pD_s^*\le d_s\le D_s^*$. Consequently the efficiency $E_{\mathcal C}$
+normalized by $d_s$ satisfies
+$E_*(S)\le E_{\mathcal C}(S)\le E_*(S)/a$.
+A representative $S'$ of a robust optimum has
+$E_*(S')\ge a\max_S E_*(S)$, whence
+\[
+ E_*(\widehat S)\ge a E_{\mathcal C}(\widehat S)
+ \ge a E_{\mathcal C}(S')\ge a^2\max_S E_*(S).
+\]
+Choose $\eta=\epsilon/4$ and $\delta\le\epsilon/8$, or full history
+with $\delta=0$. Then $a\ge1-\eta-2\delta\ge1-\epsilon/2$ and
+$a^2\ge1-\epsilon$. The graph and output set have polynomial size under
+the stated fixed promises; exact true determinants and the displayed
+rational comparisons have polynomial bit complexity. No logarithmic or
+root comparison oracle is needed. The polynomial degree depends on $qp$.
+\end{proof}
+With known positive rational determinant normalizers, maximizing the corresponding
+rational determinant ratios over $\mathcal C$ needs only the single factor
+$a$ in determinant-root efficiency. Unknown normalizers cost a second factor
+in the simple same-set procedure above. Appendix~\ref{app:robust-witnesses}
+gives a sharp tie example and a common-mixture integrality gap.
+
+\subsection{Exact latent-separator representations}
+\label{subsec:separators}
+When a fixed physical covariance is sampled on finer grids, the per-step
+contraction can approach one and the sufficient calendar window can become
+large. An alternative retains selected latent states and conditions short
+blocks exactly, without a truncation parameter. For this construction let
+\begin{equation}\label{eq:separator-model}
+ Y=F\theta+X+v,\quad X\sim N(0,K),\quad
+ v\sim N(0,rI),\quad K\succ0,\ r>0,
+\end{equation}
+where $X$ is a scalar Gaussian Markov chain and $X,v$ are independent.
+Unlike the singular-state locality theorem, the inverse formulas here require
+$K\succ0$. Independent or zero-latent cases may instead be evaluated directly.
+For an anchor set $A$, write $U=X_A$, $K_A=K_{AA}$, and
+\begin{equation}\label{eq:separator-conditional}
+ H_A=K_{:A}K_A^{-1},\qquad
+ D_A=K-K_{:A}K_A^{-1}K_{A:}+rI\succ0.
+\end{equation}
+With $A=\varnothing$, omit the anchor terms and put $D_A=R=K+rI$.
+Conditioning on anchors separates the intervening Markov intervals.
+Each anchor-time observation is assigned to exactly one neighboring block;
+its conditional latent residual is zero and its observation noise remains
+independent. Thus $D_A$ is block diagonal over a disjoint partition
+$I_1,\ldots,I_m$. For example, partition into consecutive blocks of at most
+$b$ times and anchor every block's right endpoint except the final time.
+Each block then has at most two adjacent anchors.
+
+For any schedule define the augmented information
+\begin{equation}\label{eq:separator-augmented}
+ M_A(S)=\diag(J_0,K_A^{-1})+
+ [F_S,H_{A,S}]^T(D_A)_{SS}^{-1}[F_S,H_{A,S}].
+\end{equation}
+It is the fixed prior plus one PSD atom for each within-block pattern
+$S\cap I_j$. Both its full matrix and its nuisance principal block are SPD.
+Woodbury's identity gives exactly
+\begin{equation}\label{eq:separator-schur}
+ \mathcal S_\theta(M_A(S))=J_0+F_S^TR_{SS}^{-1}F_S=J(S),
+\end{equation}
+where $\mathcal S_\theta$ eliminates all nuisance coordinates. The anchors
+are latent nuisance variables with prior precision $K_A^{-1}$; they are
+not additional observations available at no cost.
+
+For a generic SPD matrix
+$M=\left(\begin{smallmatrix}A_0&B_0\\B_0^T&C_0\end{smallmatrix}\right)$
+with parameter block of order $p$, put
+\[
+ J=A_0-B_0C_0^{-1}B_0^T,\quad G_*=-C_0^{-1}B_0^T,
+ \quad E_*=[I_p;G_*],\quad f(M)=\log\det J.
+\]
+Completing the square gives, for every nuisance matrix $G$,
+\begin{equation}\label{eq:schur-variational}
+ [I_p;G]^TM[I_p;G]
+ =J+(G-G_*)^TC_0(G-G_*)\succeq J.
+\end{equation}
+This identity proves matrix concavity and monotonicity of the Schur map:
+its quadratic form in any parameter vector is the minimum over nuisance
+vectors of a jointly linear-in-$M$ quadratic form. Thus $f$ is concave.
+Differentiation at the minimizing $G_*$ gives
+\begin{equation}\label{eq:separator-gradient}
+ \nabla f(M)=E_*J^{-1}E_*^T\succeq0,
+ \qquad \rank\nabla f(M)=p,\quad
+ \tr(\nabla f(M)M)=p.
+\end{equation}
+The rank remains $p$ although the nuisance dimension grows.
+
+\begin{theorem}[Separator support certificate]\label{thm:separator-certificate}
+For any $W\succ0$ of order $p$ and any $|A|\times p$ matrix $G$,
+\begin{align}
+ \max_{S\in\calF}\log\det J(S)
+ &\le -\log\det W-p+\tr(WJ_0)+\tr(WG^TK_A^{-1}G)
+ \nonumber\\[-2pt]
+ &\quad+\max_{S\in\calF}\sum_{j=1}^m
+ \tr\left[W(F_{S_j}+H_{A,S_j}G)^T
+ (D_A)_{S_jS_j}^{-1}(F_{S_j}+H_{A,S_j}G)\right],
+ \label{eq:separator-certificate}
+\end{align}
+where $S_j=S\cap I_j$. Empty patterns contribute zero and empty anchor
+terms are omitted. If $\calF=\{S:|S|=k\}$, the support term can be priced
+by enumerating at most $2^b$ patterns per block and an exact count dynamic
+program, using $O(m(k+1)2^b)$ transitions after pattern scores are available.
+\end{theorem}
+\begin{proof}
+Apply \eqref{eq:schur-variational} to \eqref{eq:separator-augmented},
+then use $\log\det X\le-\log\det W-p+\tr(WX)$.
+Block diagonality of $D_A$ separates the pattern scores and the fixed
+anchor/prior term is added once. For block $j$, let $v_j(c)$ be the largest
+score among its patterns of size $c$ (or $-\infty$ if none).
+Starting with $V_0(0)=0$ and other states $-\infty$, use
+$V_j(t)=\max_c\{V_{j-1}(t-c)+v_j(c)\}$. Its final state $V_m(k)$ is the
+support maximum. Pattern enumeration plus these transitions satisfies the
+stated bound.
+\end{proof}
+Local forbidden or mandatory observations can be enforced while enumerating
+patterns. Cross-block constraints such as minimum spacing require additional
+boundary states; expected-count constraints on independent block mixtures
+are not a substitute for the hull of complete feasible schedules.
+Any rationally rounded $G$ is valid in \eqref{eq:separator-certificate};
+only $W\succ0$ needs a definiteness check. Rational conditional covariances,
+integer interval pattern scores, and the logarithm bounds of
+Appendix~\ref{app:certificate-arithmetic} make this an exact certificate.
+At a mixture matrix $M$, choosing $W=J^{-1}$ and $G=G_*$ recovers its ordinary
+upper tangent. Arbitrary witnesses need not solve these stationarity equations.
+
+\begin{theorem}[Nested-anchor hierarchy]\label{thm:separator-hierarchy}
+For the same model and feasible family, define the mathematical hull optimum
+\[
+ U_A=\max_{\alpha\in\Delta(\calF)}
+ \log\det\mathcal S_\theta\left(\sum_{S\in\calF}\alpha_SM_A(S)\right).
+\]
+For nested anchor sets $A\subseteq B$,
+\begin{equation}\label{eq:separator-order}
+ \max_{S\in\calF}\log\det J(S)\le U_A\le U_B.
+\end{equation}
+Thus removing anchors and merging conditional blocks tightens these hull
+bounds. The statement compares complete hull optima, not arbitrary unfinished
+numerical upper witnesses or nonnested partitions.
+\end{theorem}
+\begin{proof}
+Order $M_B$ by $(\theta,X_A,X_{B\setminus A})$ and let
+$\mathcal S_{\theta,A}$ eliminate only $X_{B\setminus A}$.
+The exact identity
+\begin{equation}\label{eq:separator-cross-identity}
+ M_A(S)=\mathcal S_{\theta,A}(M_B(S))
+\end{equation}
+is proved with all Gaussian prior cross terms in
+Appendix~\ref{app:separator-hierarchy}. It is not an identification of the
+smaller matrix with a principal block. Concavity gives
+\[
+ \sum_S\alpha_SM_A(S)\preceq
+ \mathcal S_{\theta,A}\left(\sum_S\alpha_SM_B(S)\right).
+\]
+Apply monotonicity of the remaining parameter Schur map and of log
+determinant. Successive Schur elimination equals joint elimination, so this
+bounds the objective for $A$ by that for $B$ at the same $\alpha$.
+Maximize over the common simplex. A point mass on any feasible schedule and
+\eqref{eq:separator-schur} prove the first inequality.
+\end{proof}
+
+The empty-anchor level is the hull of the true information matrices. It can
+still exceed the best single schedule: with $R=I_2$, $F=2I_2$,
+$J_0=I_2$, and $k=1$, the two information matrices are
+$\diag(5,1)$ and $\diag(1,5)$, whose equal mixture has determinant $9$
+whereas each feasible determinant is $5$. This gap does not arise from
+covariance truncation.
+
+When every block is a singleton, mixture matrices depend only on the
+marginal selection weights $z$. Their parameter Schur complement equals
+\eqref{eq:vn-resolvent} for the diagonal residual split $D_A$; a direct
+factor proof is in Appendix~\ref{app:separator-hierarchy}. With all times
+anchored, $D_A=rI$, recovering the physical-nugget Liu split. Under the
+right-endpoint convention and $b=1$, the final time is unanchored: for
+stationary variance $P$ and $n\ge2$ the actual split is
+$\diag(r,\ldots,r,r+P(1-\rho^2))$. For $n=1$ it is $[r+P]$.
+This distinction matters when choosing a baseline. Strengthening the physical
+split does not prove dominance over every admissible virtual-noise split.
+
+The statistical and optimization ingredients have direct predecessors.
+Focused Bayesian design already uses marginalized nuisance precision
+\citep{Alexanderian2021}; \citet[Section 7]{LevineHow2013} uses latent
+augmentation to bound focused sensor information through an augmented-target
+criterion. General PSD experiment atoms and their design hulls are established
+\citep{HarmanTrnovska2009,Filova2026}. In particular, set
+$E=[I_p,0]^T$ in the subsystem criterion of
+\citet[Theorem 4.3 and Corollaries 4.4--4.5]{Sagnol2015}:
+$(E^TM^{-1}E)^{-1}=\mathcal S_\theta(M)$.
+Treating separator patterns and the fixed prior as atoms embeds this exact
+integer design in their general conic framework. Our specialized result is
+the comparison across the changing latent representations in
+\eqref{eq:separator-cross-identity}--\eqref{eq:separator-order}, together
+with short-block support certificates for the original correlated experiment.
+Grouping discrete alternatives before convexification has a separate
+disjunctive-programming precedent \citep{Balas1985,Papageorgiou2025}. That
+principle explains a strength--enumeration tradeoff, but does not by itself
+compare statistical representations whose latent variables change; the
+cross-representation Schur identity supplies that step here.
+To the best of our knowledge, this particular nested Markov-anchor hierarchy
+is not stated in the inspected predecessors. This qualified claim does not
+assert a new Schur complement, generalized D criterion, generic conic
+formulation, or design-mixture algorithm. Its practical cost includes pattern
+construction and the growing nuisance system, in addition to pricing.

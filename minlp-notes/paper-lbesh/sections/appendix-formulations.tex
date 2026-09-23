@@ -1,0 +1,143 @@
+\section{Controlled models and reference formulations}\label{app:models}
+This appendix specifies the tested models independently of their implementation. Indices are $i=0,\ldots,n-1$, $p\in\{0,1\}$ and $j\in\{0,1,2\}$; neighbor indices are taken modulo $n$. Let $y_{ij}$ be exclusive mode indicators, $\sum_jy_{ij}=1$. Each family/size/seed has identifier \texttt{lbesh.FAMILY.SIZE.sSEED}. Sizes and seeds are specified in \cref{sec:design}.
+
+\subsection{Technology allocation}
+Let $U_i>0$, $D_i=1.1U_i$, weights $w_{ip}>0$, cross coefficient $c_i>0$, mode fixed charges $F_{ij}\ge0$, operating coefficients $a_{ij}\ge0$, capacity fractions $\kappa_{ij}$ and resource coefficients $h_{ip}>0$. For $j=1,2$, define
+\begin{equation}\label{eq:generator-cost}
+ C_{ij}(x_i)=U_i a_{ij}\left[\sum_{p=0}^1w_{ip}\phi(x_{ip}/D_i)
+ +c_i\phi\!\left((x_{i0}+x_{i1})/(2D_i)\right)\right].
+\end{equation}
+The five function laws and second derivatives are
+\begin{center}\small
+\begin{tabular}{lll}\toprule
+Family & $\phi(z)$ & $\phi''(z)$\\\midrule
+exp & $(e^{3z}-1)/(e^{1.5}-1)$ & $9e^{3z}/(e^{1.5}-1)$\\
+log & $-\log(1-z)/\log 2$ & $1/((1-z)^2\log 2)$\\
+reciprocal & $(1-z)^{-1}-1$ & $2/(1-z)^3$\\
+quadratic & $4z^2$ & $8$\\
+trig & $(1-\cos(1.5z))/(1-\cos(0.75))$ & $2.25\cos(1.5z)/(1-\cos(0.75))$\\\bottomrule
+\end{tabular}\end{center}
+Every law has $\phi(0)=0$ and $\phi(1/2)=1$; normalization does not equalize curvature. Variables satisfy $0\le x_{ip}\le U_i$ and $0\le t_i\le T_i$, where
+\[
+ T_i=1.05\max_{j=1,2} C_{ij}(U_i,U_i).
+\]
+The off mode imposes $x_{i0}+x_{i1}\le0$ and $t_i=0$; operating mode $j$ imposes $x_{i0}+x_{i1}\le U_i\kappa_{ij}$ and $C_{ij}(x_i)\le t_i$. The objective is
+\[
+ \min\ \sum_i t_i+\sum_{i,j}U_iF_{ij}y_{ij}.
+\]
+Define the explicit production witness $\bar x_{i0}=0.28U_i$, $\bar x_{i1}=0.22U_i$. The global rows are
+\begin{align*}
+ x_{i0}+x_{i1}&\le U_i &&(i=0,\ldots,n-1),\\
+ \sum_i x_{ip}&\ge\sum_i\bar x_{ip} &&(p=0,1),\\
+ \sum_{i,p}h_{ip}x_{ip}&\le1.08\sum_{i,p}h_{ip}\bar x_{ip},\\
+ \sum_i\left(\frac{x_{i0}+0.35x_{i+1,1}}{U_i}\right)^2
+ &\le1.08\sum_i\left(\frac{\bar x_{i0}+0.35\bar x_{i+1,1}}{U_i}\right)^2.
+\end{align*}
+There are $n+4$ global rows, $6n$ disjunct rows, one nonlinear global row and $2n$ nonlinear disjunct rows.
+
+For each seed a local Python \texttt{random.Random(seed)} stream generates unit data sequentially in the following order; each listed coordinate is a separate uniform draw:
+\begin{center}\small
+\begin{tabular}{ll}\toprule
+Parameter (draw order) & Interval or fixed value\\\midrule
+$U_i$ & $[0.8,1.2]$\\
+$w_{i0},w_{i1}$ & $[0.75,1.25]$\\
+$c_i$ & $[0.2,0.5]$\\
+$(F_{i0},F_{i1},F_{i2})$ & $(0,\ [0.08,0.12],\ [0.25,0.35])$\\
+$(a_{i0},a_{i1},a_{i2})$ & $(0,\ [1.05,1.25],\ [0.65,0.85])$\\
+$(\kappa_{i0},\kappa_{i1},\kappa_{i2})$ & $(0,\ [0.58,0.68],\ 1)$\\
+$h_{i0},h_{i1}$ & $[0.7,1.3]$\\\bottomrule
+\end{tabular}\end{center}
+No draw is rejected. Standard operation has a smaller fixed charge and larger operating coefficient than efficient operation for every unit. Standard is cheaper at zero production, while efficient operation admits production beyond the standard capacity. Thus neither alternative can eliminate the other by those comparisons alone.
+
+The entire individual-variable box, even before enforcing global capacity, puts all three arguments in \eqref{eq:generator-cost} in $[0,10/11]$. The log/reciprocal singularity is therefore separated by at least $1/11$. For trig, $0\le1.5z\le15/11<\pi/2$, so both the first derivative and the displayed second derivative are nonnegative, and the latter is strictly positive. All laws are nondecreasing on this interval, and convex and continuously differentiable on an open neighborhood of it. Positive affine compositions and sums preserve convexity; subtracting $t_i$ preserves it. Congestion is a sum of affine squares. Monotonicity proves that $T_i$ accommodates the minimum epigraph cost everywhere in the box. This bound restricts redundant large epigraph values but excludes no optimal production decision.
+
+Choose mode 1 everywhere, set $x=\bar x$ and $t_i=C_{i1}(\bar x_i)$. Standard capacity exceeds $0.50U_i$, product demands hold at equality, both resource budgets have 8\% slack, and the cost/box rows hold. This proves feasibility for every allowed draw independently of a solver. Finite variable bounds, continuity and the finite disjunctions imply a compact feasible set and attained finite optimum. The witness is a primal bound, not a known optimum.
+
+\subsection{Coupled exponential regions}
+Let centers $c_{ijp}$, positive scales $\alpha_{ijp}$, radii $R_{ij}$, coordinate prices $b_{ip}$ and fixed charges $F_{ij}$ be given. Each mode imposes
+\begin{equation}\label{eq:generator-region}
+ \sum_{p=0}^1\sum_{s\in\{-1,1\}}
+ e^{s\alpha_{ijp}(x_{ip}-c_{ijp})}\le R_{ij}.
+\end{equation}
+The variables obey $-2\le x_{ip}\le2$, $0\le t\le9n$; the objective is
+\[
+ \min\ \sum_{i,p}b_{ip}x_{ip}+0.1t+\sum_{i,j}F_{ij}y_{ij}.
+\]
+Global rows impose $\sum_i x_{i0}\ge0$, $\sum_i x_{i1}\ge0.1n$ and
+\[
+ \sum_i(x_{i0}-0.5x_{i+1,1})^2\le t,\qquad
+ \sum_{i,p}(x_{ip}-x_{i+1,p})^2\le0.55n.
+\]
+The generator again uses a fresh \texttt{random.Random(seed)} stream. For each unit it first draws two perturbations in $[-0.08,0.08]$ for each of the three centers $(-0.75,-0.35)$, $(0.25,0.70)$, $(0.80,-0.45)$, in that order. It then draws the six scales in $[1.7,2.3]$, three radii in $[4.8,5.6]$, prices $b_{i0}\in[0.8,1.2]$ and $b_{i1}\in[0.15,0.35]$, and three fixed charges in $[0.02,0.08]$. All draws are sequential uniform draws without rejection. There are four global rows (two nonlinear) and $3n$ nonlinear disjunct rows.
+
+Each exponential has an affine argument; hence \eqref{eq:generator-region} is globally convex and smooth. Taking the logarithm of both sides gives an equivalent log-sum-exp sublevel set, although the implementation retains the sum-of-exponentials form. The other nonlinear rows are sums of affine squares. Each congestion difference is bounded in magnitude by three, proving the sufficient epigraph bound $9n$. Select mode 1 and set each point to its corresponding center. Region left sides then equal $4<4.8$; coordinates satisfy $x_{i0}\ge0.17$, $x_{i1}\ge0.62$, giving strict demand feasibility. Neighbor differences have magnitude at most 0.16, so variation is at most $2n(0.16)^2=0.0512n<0.55n$. Setting $t$ to the congestion value completes the witness. All rows are continuous on a finite box, proving boundedness and attainment as above. These invented positions and prices are geometry controls, not fitted facility-location data.
+
+\subsection{Closed-cone representations}\label{app:cones}
+The formulations here instantiate established conic perspective constructions \citep{ceria1999,bernal2024,gusev2026}; they are not a new reformulation theorem. Let
+\[
+ K_{\exp}=\operatorname{cl}\{(a,b,c):b>0,\ b e^{a/b}\le c\}.
+\]
+Its zero-scale slice is $b=0$, $a\le0$, $c\ge0$ \citep{cvxpycones}. We also use
+\begin{equation}\label{eq:product-soc}
+ ab\ge c^2,\ a,b\ge0
+ \quad\Longleftrightarrow\quad
+ \|(2c,a-b)\|_2\le a+b.
+\end{equation}
+Squaring the latter nonnegative sides yields $4c^2+(a-b)^2\le(a+b)^2$ and hence the equivalence.
+
+For a weight $y\ge0$, copied normalized argument $z$ and auxiliary epigraph $q\ge0$, the four supported allocation laws have the following perspective epigraphs:
+\begin{center}\small
+\begin{tabular}{ll}\toprule
+Law & Constraint\\\midrule
+exp & $(3z,y,(e^{1.5}-1)q+y)\in K_{\exp}$\\
+log & $(-\log(2)q,y,y-z)\in K_{\exp}$\\
+reciprocal & $(q+y)(y-z)\ge y^2$, with both factors nonnegative\\
+quadratic & $qy\ge4z^2$, with $q,y\ge0$\\\bottomrule
+\end{tabular}\end{center}
+For $y>0$, division gives $q\ge y\phi(z/y)$ in every case; for reciprocal, for example, $(q/y+1)(1-z/y)\ge1$. Copied box bounds give $0\le z\le(10/11)y$, so $z=0$ at $y=0$ and positive-weight log/reciprocal inputs remain uniformly in their domains. Each auxiliary can be set to zero on an inactive branch. At zero weight some individual epigraph cones also allow positive $q$, but the copied aggregate cost row has zero right side and strictly positive coefficients, forcing all such auxiliaries to zero. Thus inactive branches project to the origin and impose no spurious restriction. Positive coefficients make separate epigraphs exact: they can meet a copied cost budget if and only if their minimal values do. Copies of both production coordinates and $t_i$ are made for every mode, including off; they sum to original variables and obey their original scaled boxes, capacity rows and off-mode $t$ equality.
+
+For a region-mode weight $y$ and copied point $u$, use four cones
+\[
+ (s\alpha_{ijp}(u_p-c_{ijp}y),y,r_{ps})\in K_{\exp},
+ \qquad \sum_{p,s}r_{ps}\le R_{ij}y,
+ \qquad -2y\le u_p\le2y.
+\]
+For $y>0$ these recover the perspective of \eqref{eq:generator-region}; at $y=0$, copied coordinates vanish and nonnegative $r_{ps}$ sum to at most zero, so all vanish. Global quadratic rows use \eqref{eq:product-soc} with one fixed nonnegative factor. Consequently continuous weights describe the intersection of each disjunction's exact bounded convex hull and the global rows, and integral weights recover the original model. This is not generally the full GDP hull. For fixed-assignment references, only the selected $y=1$ modes are retained; their analytic fixed-charge constant is added to primal and dual objectives. The translator reads generator coefficients, uses none of the prototype's expression extraction/cuts, and supplies no trig translation.
+
+The independent mixed-integer quadratic adapter instead reads model expression trees. For
+\[
+ q(x)=x^TQx+a^Tx+c\le0,\qquad Q\succeq0,
+\]
+it introduces copies $\nu$, weight $\lambda$ and slack $s$ with
+\begin{equation}\label{eq:quadratic-cone}
+ \nu^TQ\nu\le s\lambda,\qquad
+ s=-a^T\nu-c\lambda,\qquad s\ge0,\quad\lambda\ge0.
+\end{equation}
+Positive weights recover $\lambda q(\nu/\lambda)\le0$; zero weight forces $\nu=s=0$ through finite scaled bounds and the slack equality. Factoring $Q=A^TA$ gives a rotated second-order cone, recognized by Gurobi \citep{gurobi}. Explicit nonnegative affine-square sums are preserved: for $\sum_kw_k(A_kx+b_k)^2+a^Tx+c$, use $z_k=A_k\nu+b_k\lambda$ and $\sum_kw_kz_k^2\le s\lambda$. This avoids introducing apparent indefiniteness by expanding rank-deficient squares. Other expanded quadratic matrices undergo a conservative exact-rational PSD check on the represented binary floating-point coefficients, without eigenvalue clipping or regularization. ``Exact'' describes the formulation, not floating-point coefficients, witnesses or solver certificates.
+
+The adapter also handles global nonnegative weighted norm sums through SOC epigraphs, and $a/d(x)$ with $a>0$ and nonnegative affine denominator through $a\le td$, $t,d\ge0$. The product forces $d>0$, preserving the domain even with a zero declared lower bound. A zero numerator requires a strictly positive declared denominator bound. These epigraphs are used only in convex monotone positions. Global exponential expressions, nonconvex quadratics, nonlinear equalities lacking supported convex orientations, missing copied-variable bounds, OR/nested/reused disjuncts, disjunct objectives, SOS and nonfixed GDP indicators inside disjunct rows are rejected. Each disjunction copies all variables occurring in any of its alternatives into every alternative; global-only variables need not be copied. Logical constraints use Pyomo's logical-to-linear transform. The closed perspectives contain no epsilon parameter.
+
+\subsection{External-model scope}\label{app:legacy-scope}
+The tested inputs are the archived local builders, not a claim of bitwise identity with a published formulation. Their source files and parameter data are fingerprinted. GDPlib and Pyomo distribute the model families \citep{gdplib,pyomoexamples}; source docstrings trace batch processing to Ravemark and LOGMIP, positioning to Duran--Grossmann and Gavish--Horsky--Srikanth, small batch to Kocis--Grossmann, circles to Lee--Grossmann, layouts to Sawaya, and the basic-step example to Papageorgiou--Trespalacios. Modified circles, alternate farms and the $\ell_2$ layout objective are explicitly model variants.
+
+A structural audit of all 27 models orients every nonlinear inequality as convex on its effective domain. Quadratic rows have nonnegative diagonal quadratic terms, batch expressions are positive sums of affine exponentials, farm area constraints use positive constants divided by positive width, and the six norm objectives are positive sums of Euclidean norms. The latter are convex with bounded subgradients, but ordinary gradients are undefined at zero. They are not examples of unbounded norm gradients. All flat-XOR structure extractions succeed; this does not imply every smooth-oracle or compactness hypothesis holds.
+
+\begin{center}\small
+\begin{tabularx}{\linewidth}{lrlX}\toprule
+Source family / identifiers & Count & Class & Qualification\\\midrule
+GDPlib batch\_processing & 1 & C & Missing cycle-time upper bounds; automatic epigraph unbounded.\\
+GDPlib positioning, small\_batch & 2 & B & Smooth bounded original coordinates; automatic epigraph unbounded.\\
+Circles2D3, modified, Circles3D4 & 3 & B & Same epigraph qualification.\\
+CLay0203/0204/0205/0303/0304/0305, l1 & 6 & C & Respectively 6/12/20/6/12/20 distance auxiliaries without upper bounds.\\
+The same six CLay variants, l2 & 6 & C & Same auxiliaries, plus nonsmooth norm objective and unbounded epigraph.\\
+FLay02/03/03\_alt\_1/03\_alt\_2/04/05/06 & 7 & A & Affine propagation gives compact boxes and positive widths.\\
+basic\_step & 1 & A & Finite box, smooth quadratic rows, affine objective.\\
+ex1\_Lee & 1 & B & Smooth bounded original coordinates; unbounded epigraph.\\\bottomrule
+\end{tabularx}\end{center}
+Class A denotes the analytic compact/smooth data of the extracted lift (eight models); B has compact smooth original coordinates but an unbounded automatic objective epigraph (six); C records further missing hypotheses (13). None certifies anchors, master behavior or termination. \Cref{sec:theory} explains how one may justify bounded epigraphs mathematically; the frozen implementation does not install those bounds.
+
+Farm widths initially have declared lower bound zero, but affine rows imply positive minima (1, 1, 5, 1, 3, 1, 1 in the listed order), and affine enclosure rows imply finite bounds; extraction transfers these facts to the box. The original GAMS initialization failures concern the raw initial values, not a negative or zero width feasible under those affine rows. In batch processing, each positive term of a time-budget sum gives a finite cycle-time bound, but this tightening is absent from the frozen master box. Layout auxiliaries can be replaced by absolute coordinate differences without increasing their positive-weight objectives; coordinate-box-derived upper bounds therefore give an optimization-equivalent bounded formulation, but change the full feasible set and were not imposed here. Relaxed layouts can still place centers at coincident points, so feasible nonoverlap does not remove the nonsmooth-oracle issue.
+
+The 21-model no-norm stratum excludes all six $\ell_2$ models; it does not assert all theorem assumptions. The cone adapter supports 25 models, excluding both exponential batch models, so its intersection with the no-norm stratum has 19. These sets are fixed by expressions and adapter scope, independently of solver outcomes. The compact data list every full identifier.
+
+\input{sections/appendix-computational}

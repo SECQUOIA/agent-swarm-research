@@ -1,0 +1,151 @@
+\section{What separation guarantees}\label{sec:theory}
+The following results specify what can be inferred from successful separation and what cannot. They concern exact arithmetic and retained valid cuts unless stated otherwise. They are supporting derivations for the comparison, not a claim of a new general convergence framework. Their compactness arguments do not provide useful polynomial runtime bounds.
+
+\subsection{Uniform margins for the two policies}
+For one row $g$ on its compact convex box $C_r$, write
+\[
+ D_r=\operatorname{diam}(C_r),\quad R_r=\max_{x\in C_r}\|x\|_2,
+ \quad F_r=\max_{x\in C_r}|g(x)|,\quad
+ \|\nabla g(x)\|_2\le L_r\quad(x\in C_r).
+\]
+For a term row, $C_r=C$; for a global row, $C_r=C\times[0,1]^m$. Enlarged boxes include any bounded epigraph. Indices are suppressed when treating one row. A zero-diameter domain or a row with $L=0$ is checked directly. In the latter case the row is constant on the domain and a positive value eliminates its term, or proves global infeasibility.
+
+\begin{lemma}[Separation and normal bounds]\label{lem:margin}
+Let $g(p)=v>0$, $p\in C_r$, $L,D>0$. The ECP tangent violates its inequality at $p$ by $v$. Suppose also that a fixed anchor $\bar x\in C_r$ satisfies $g(\bar x)\le-\delta$ for $\delta>0$. Let $z=\bar x+s(p-\bar x)$, $0<s<1$, satisfy $g(z)=0$. Then the ESH tangent satisfies
+\begin{equation}\label{eq:margin}
+ \ell_z(p)\ge\frac{\delta v}{LD}.
+\end{equation}
+Every tangent normal has $\|a_z\|_2\le L$, and every perspective-cut normal has
+\begin{equation}\label{eq:normal-bound}
+ \|(a_z,b_z)\|_2\le K:=\sqrt{L^2+(F+LR)^2}.
+\end{equation}
+\end{lemma}
+\begin{proof}
+For ECP, $\ell_p(p)=g(p)=v$. Existence of $s\in(0,1)$ follows by continuity from the negative anchor value and positive exterior value. The supporting inequality at $\bar x$ yields
+\[
+ -\delta\ge g(\bar x)\ge a_z^T(\bar x-z)=-s a_z^T(p-\bar x),
+\]
+so $a_z^T(p-\bar x)\ge\delta/s$. The gradient bound, integrated along the segment, gives
+$v=g(p)-g(z)\le L\|p-z\|_2\le LD(1-s)$. Consequently
+\[
+ \ell_z(p)=a_z^T(p-z)=(1-s)a_z^T(p-\bar x)
+ \ge(1-s)\delta/s\ge\delta v/(LD).
+\]
+Finally, $|b_z|\le|g(z)|+\|a_z\|_2\|z\|_2\le F+LR$, proving \eqref{eq:normal-bound}.
+\end{proof}
+The anchor may differ by row; a shared anchor is an implementation convenience. Its actual row value, not an auxiliary NLP termination code, must establish the strict margin. ECP supplies a fallback when such an anchor is unavailable, without any Slater assumption. The proof also works for bounded chosen subgradients when the row is Lipschitz on the box: the supporting inequality at the anchor holds for every chosen subgradient, so a special directional-derivative-maximizing choice is unnecessary. This extension is not implemented.
+
+\subsection{Integral candidates and objective bounds}
+\begin{theorem}[Finite fixed-residual rejection]\label{thm:integral}
+Fix $\eps>0$. Suppose master candidates satisfy all bounds, affine constraints, indicator logic, integrality, and previously retained cuts. Whenever a global or selected-term nonlinear row exceeds $\eps$, generate an ECP cut, or an ESH cut with a row-specific fixed positive anchor margin, for at least one such row. Retain every generated cut. Only finitely many such rejection iterations are possible. Thus an iteration process that keeps producing candidates either finds one with every relevant nonlinear row at most $\eps$ or exhausts its master candidates. This applies to both hull and valid finite-big-$M$ masters.
+\end{theorem}
+\begin{proof}
+Assign each rejected candidate to a row for which a cut was generated. For a fixed nonconstant term row, restrict attention to the subsequence assigned to that row. Its term is active at all these candidates. If $p$ generated a cut and $q$ is a later candidate in this subsequence, the retained cut gives $\ell_z(q)\le0$, whereas \cref{lem:margin} gives $\ell_z(p)>\eps$ for ECP or $\ell_z(p)>\eps\delta/(LD)$ for ESH. Cauchy--Schwarz and $\|a_z\|_2\le L$ imply respectively
+\[
+ \|p-q\|_2>\eps/L\quad\hbox{or}\quad
+ \|p-q\|_2>\eps\delta/(L^2D).
+\]
+When the term is selected, its hull copy equals $x$ and its big-$M$ deactivation vanishes, so this argument is valid in either master. A global row has the same argument in $(x,y)$ coordinates without an activity condition. Each compact box can be covered by finitely many balls whose diameters are smaller than the appropriate positive distance; at most one point of the subsequence lies in each ball. There are finitely many rows. Constant positive rows eliminate their term or the global master after one cut. Summing the finite rowwise bounds proves the assertion.
+\end{proof}
+The theorem does not require optimal master candidates, a globally solved NLP, or feasibility of inactive alternatives. It bounds nonlinear rejections, not all possible iterations of an algorithm trying to close an objective gap. In exact arithmetic, a valid outer approximation has optimum at most the GDP optimum. For an inexact master solve, the solver's valid minimization bound, rather than its incumbent objective, supplies the lower bound $B$. A residual-feasible point is not necessarily exactly feasible and does not automatically supply an upper bound on the exact problem. An independently validated exactly feasible point of objective $U$ together with $U-B\le\eta$ establishes feasible $\eta$-optimality; exact optimality requires zero gap. Fixed-residual separation alone guarantees neither an exact incumbent nor closure of this gap.
+
+\subsection{Fractional residuals and small selection weights}
+For each lifted term row define
+\begin{equation}\label{eq:weighted-residual}
+ r(\nu,\lambda)=
+ \begin{cases}
+ \lambda[g(\nu/\lambda)]_+,&\lambda>0,\\
+ 0,&(\nu,\lambda)=(0,0),
+ \end{cases}\qquad [a]_+=\max\{a,0\}.
+\end{equation}
+This is continuous on the scaled bounded domain: $0\le r\le\lambda F$ controls its limit at zero weight. A small unscaled row residual and a small weighted perspective residual are different criteria.
+
+\begin{theorem}[Residual-calibrated fractional separation]\label{thm:fractional}
+Fix $\eps_p>0$ and a positive global-row tolerance. At every fractional hull candidate satisfying all previously retained cuts, separate at least one term row with $r>\eps_p$, or a global row exceeding its tolerance, using ECP or ESH as in \cref{lem:margin}. Retain all cuts. There are finitely many unsuccessful separation iterations before every residual meets its tolerance or no relaxation candidate exists.
+\end{theorem}
+\begin{proof}
+For a term row with $r>\eps_p$, its ECP transformed violation is exactly $\lambda g(p)=r>\eps_p$. Its ESH transformed violation is at least $r\delta/(LD)>\eps_p\delta/(LD)$. The coefficient norm is bounded independently of $\lambda$ by \eqref{eq:normal-bound}. Thus a later block satisfying that cut is separated from its generating block in $(\nu,\lambda)$ by more than $\eps_p/K$ or $\eps_p\delta/(LDK)$. These blocks range over a compact scaled box. Apply the finite-cover argument row by row, adding the global-row argument in \cref{thm:integral}. A positive constant term row gives $g\lambda\le0$ and needs at most one cut.
+\end{proof}
+Let $U_r\ge\max_{p\in C}[g_r(p)]_+$ be a valid finite row bound. It is safe to skip the row without computing $p$ whenever
+\begin{equation}\label{eq:safe-skip}
+ \lambda U_r\le\eps_p.
+\end{equation}
+Indeed $r\le\lambda U_r$; if $U_r=0$ the row is always satisfied, and otherwise every block requiring separation has $\lambda>\eps_p/U_r$. A conservative $U_r$ can follow from interval bounds or a gradient bound and a reference value. Tight bounds need not be cheap. This rule both justifies omission and places a positive lower bound on denominators that actually require evaluation.
+
+The frozen implementation instead skips $\lambda\le\tau$ and tests $g_r(p)\le\eps$ on the remaining blocks. If that complete test succeeds, then
+\begin{equation}\label{eq:fixed-cutoff}
+ r_r\le\max\{\eps,\tau U_r\}.
+\end{equation}
+For checked blocks use $\lambda\le1$; for skipped ones use $\lambda\le\tau$. Consequently a fixed cutoff has no prescribed small absolute residual guarantee without $U_r$. At fixed $\tau>0$, cutting checked rows with unscaled violation above $\eps$ still gives a finite retained-cut packing argument, since their transformed margins exceed $\tau\eps$ for ECP, or $\tau\eps\delta/(LD)$ for ESH. This termination fact does not improve \eqref{eq:fixed-cutoff}. Row rescaling changes all these residuals, tolerances, and $U_r$.
+
+The residual-calibrated policy \eqref{eq:safe-skip} is a theoretical alternative, not an implemented experimental setting. An intermediate LP objective remains a valid relaxation lower bound under exact valid cuts, but a stall or cap provides no completed residual test. In a fractional big-$M$ master the deactivation term may absorb a tangent's entire violation, so \cref{thm:fractional} is not a big-$M$ residual theorem.
+
+\subsection{Geometric repair and the limit of an objective inference}
+\begin{proposition}[Repair within one disjunction]\label{prop:repair}
+Suppose each retained term is nonempty and has an anchor $\bar x_{ik}$ satisfying its box and affine rows and all its nonlinear rows with common margin $\delta_{ik}>0$. If $p_{ik}$ satisfies that term's box and affine rows, let $v_{ik}=\max_{j\in J_{ik}}[g_{ikj}(p_{ik})]_+$ (zero for an empty row set). Then
+\begin{equation}\label{eq:repair}
+ q_{ik}=\frac{\delta_{ik}p_{ik}+v_{ik}\bar x_{ik}}{\delta_{ik}+v_{ik}}\in S_{ik},
+ \qquad \|q_{ik}-p_{ik}\|_2\le\frac{D v_{ik}}{\delta_{ik}+v_{ik}},
+ \quad D=\operatorname{diam}(C).
+\end{equation}
+For a hull point whose checked blocks $\lambda_{ik}>\tau$ have $v_{ik}\le\eps$,
+\begin{equation}\label{eq:hull-distance}
+ \dist\left(x,\conv\bigcup_k S_{ik}\right)
+ \le D\left(\sum_{k:\lambda_{ik}>\tau}\frac{\lambda_{ik}\eps}{\delta_{ik}+\eps}
+       +\sum_{k:\lambda_{ik}\le\tau}\lambda_{ik}\right).
+\end{equation}
+If instead every row has weighted residual at most $\eps_p$, the distance is at most $D\sum_k\eps_p/\delta_{ik}$.
+\end{proposition}
+\begin{proof}
+Convexity bounds each row at $q_{ik}$ by
+$(\delta_{ik}v_{ik}-v_{ik}\delta_{ik})/(\delta_{ik}+v_{ik})=0$.
+The box and affine rows are preserved by a convex combination. Also
+$q_{ik}-p_{ik}=v_{ik}(\bar x_{ik}-p_{ik})/(\delta_{ik}+v_{ik})$, giving \eqref{eq:repair}. For every unchecked positive-weight term choose any feasible $q_{ik}$; its displacement is at most $D$. The convex combination $\sum_k\lambda_{ik}q_{ik}$ lies in the union hull, and the triangle inequality proves \eqref{eq:hull-distance}. Zero-weight terms contribute nothing and need no $p_{ik}$. Under the weighted-residual hypothesis, $\lambda_{ik}v_{ik}=\max_jr_{ikj}\le\eps_p$, and
+$\lambda_{ik}v_{ik}/(\delta_{ik}+v_{ik})\le\eps_p/\delta_{ik}$.
+Summing gives the final bound.
+\end{proof}
+These are distances to one disjunction's hull. Repairs for different disjunctions need not agree, nor satisfy the global constraints or coupled logic. Empty terms must be removed for this proposition or assigned zero weight; the earlier cut-validity results did not need this nonemptiness condition.
+
+\begin{example}[No linear intersection error bound from term interiors]\label{ex:intersection}
+On $0\le x,y\le1$, impose a single-term constraint $x^2-y\le0$, a global row $y\le0$, and minimize $-x$. The term has anchor $(0,1)$ and nonlinear margin one. The exact feasible point is $(0,0)$ and its objective is zero. For $0<\eps\le1$, the point $(\sqrt\eps,0)$ satisfies the global row exactly and the term with residual $\eps$, but its objective underestimation is $\sqrt\eps$. For every fixed $K>0$, $\sqrt\eps>K\eps$ when $0<\eps<1/K^2$. Thus separate-term Slater margins cannot imply a uniform $O(\eps)$ objective-error bound for their intersection with global constraints. Duplicating the alternative gives the same example with a two-term disjunction. A joint metric error bound or other joint regularity would be an additional assumption.
+\end{example}
+
+\begin{proposition}[Convergence in value without a rate]\label{prop:value}
+Let a sequence of lifted candidates contained in one common compact domain satisfy the affine hull system and relaxed global logic. Suppose all global positive residuals and weighted perspective residuals tend to zero. If each candidate minimizes a valid outer relaxation of $\mathcal H$, its objective tends to the optimum $v_{\mathcal H}$. The conclusion also holds when candidate suboptimality tends to zero. If instead the candidates retain integral indicators and original integer coordinates and optimize valid outer relaxations of the GDP, the corresponding assertion holds for the GDP optimum.
+\end{proposition}
+\begin{proof}
+Continuity of all residuals, including \eqref{eq:weighted-residual} at zero weight, makes every cluster point feasible for $\mathcal H$. Compactness supplies cluster points. Every relaxation optimum is at most $v_{\mathcal H}$; therefore candidate values are at most $v_{\mathcal H}+o(1)$. Every convergent candidate subsequence has limiting objective at least $v_{\mathcal H}$. If the full objective sequence did not converge to $v_{\mathcal H}$, a subsequence bounded away from it would, by compactness, contain a convergent subsequence contradicting these two bounds. In the integral case, replace $v_{\mathcal H}$ by the GDP optimum in the upper-bound argument. The bounded integer-coordinate set is closed, so every cluster point retains integrality and the lifted constraints enforce the original selected terms; its objective is therefore at least the GDP optimum. If the target feasible set is empty, no such compact sequence with vanishing residuals can exist.
+\end{proof}
+This is a limiting statement, not finite exact convergence or a convergence rate. A fixed residual or fixed positive weight cutoff alone does not provide its hypotheses.
+
+\subsection{Single-tree execution requires an oracle contract}\label{sec:tree-contract}
+\begin{theorem}[Conditional single-tree residual conclusion]\label{thm:single-tree}
+Assume the compact-domain conditions above and the following exact-arithmetic solver contracts.
+\begin{enumerate}
+ \item The finite MILP master is solved completely in the absence of resource limits. Every old lazy cut is enforced for final feasibility. At callbacks violating an old cut, an existing cut is re-enforced without adding fresh cuts. Each such old-cut resolution episode finishes in finite time. Fresh nonlinear rejection iterations occur only at candidates satisfying all old cuts.
+ \item Every potentially accepted integer candidate is tested against the original global and selected-term rows. A row above a fixed positive residual tolerance produces a valid rejecting cut with the uniform margin in \cref{lem:margin}. Inability to obtain such a cut is a failure, not acceptance.
+ \item Any heuristic NLP point proposed as an exactly feasible incumbent is independently validated against bounds, affine and nonlinear rows, fixed values, integrality, logic, and the original objective. Failed NLP solves do not exclude an assignment without a separate valid infeasibility proof.
+ \item Fractional cutting is disabled, capped at finitely many cuts, or obeys a retained-cut uniform-margin condition such as \cref{thm:fractional} or its fixed-positive-cutoff variant. Other optional refinement also contributes only finitely many cuts.
+\end{enumerate}
+Then only finitely many distinct nonlinear integer rejection iterations and permitted fractional cut iterations occur. Under the complete-master-solver contract, the algorithm eventually establishes master infeasibility or produces an integer point meeting the nonlinear residual tolerance. An exactly feasible incumbent $U$ and a valid master bound $B$ additionally establish feasible $\eta$-optimality whenever $U-B\le\eta$.
+\end{theorem}
+\begin{proof}
+Contract~1 places fresh integer rejection candidates under \cref{thm:integral}; their number is finite. Contract~4 bounds fractional and other refinement. Old-cut repetitions finish in finite time by contract~1. After finitely many additions, the complete finite MILP solve either has no feasible candidate or processes an integer candidate that cannot be rejected above the prescribed residual tolerance. Contract~2 supplies the residual conclusion. Under exact cut validity, master infeasibility proves GDP infeasibility. Contracts~1 and~3 supply valid $B$ and $U$ for the stated objective inequality. That inequality, rather than final master status alone, establishes the objective conclusion.
+\end{proof}
+These are substantive conditions on solver behavior, not consequences of choosing a callback API. A solver may present a callback candidate violating an earlier lazy cut; generating additional cuts at that point does not by itself justify packing it as a new separated point. Unlimited repeated user cuts, especially after solver purging, are likewise outside the proof. The frozen numerical implementation is not asserted to satisfy this exact termination contract. Feasibility within numerical tolerance must retain that qualification even if the numerical master gap closes.
+
+\subsection{Approximate roots and finite arithmetic}\label{sec:arithmetic}
+An exact tangent at an approximate boundary point remains valid provided its full constant $g(z)-\nabla g(z)^Tz$ is retained. It need not pass through $z$. Deleting $g(z)$ can invalidate the cut: for $g(x)=x^2-1$ and $z=1/2$, the artificial boundary tangent becomes $x\le1/2$ and excludes feasible $x=1$. The true tangent is $x\le5/4$ and remains valid. Validity alone does not establish useful separation. A robust oracle should check the transformed cut's actual violation, fall back to ECP if needed, and report failure if neither cut reliably rejects the candidate.
+
+\begin{proposition}[A sufficient certified arithmetic scheme]\label{prop:arithmetic}
+On a compact candidate domain, let the exact valid cut be $q^Tw\le d$. Suppose computed coefficients satisfy the certified bound
+\[
+ |(\widetilde q^Tw-\widetilde d)-(q^Tw-d)|\le E
+ \quad\hbox{for every domain point }w.
+\]
+Then $\widetilde q^Tw\le\widetilde d+E$ is valid. If the exact generating violation is at least $\kappa$, its violation of this relaxed computed cut is at least $\kappa-2E$. If later candidates can violate stored cuts by at most $\rho$, uniform bounds $\kappa>2E+\rho$ and $\|\widetilde q\|_2\le\widetilde K$ with $\widetilde K>0$ give a minimum separation distance $(\kappa-2E-\rho)/\widetilde K$.
+\end{proposition}
+\begin{proof}
+At every point satisfying the exact cut, the computed left-minus-right expression is at most $E$, proving validity after relaxation. At its generating point, that expression is at least $\kappa-E$, hence at least $\kappa-2E$ after relaxation. At a later accepted point it is at most $\rho$. Subtract the two inequalities and apply Cauchy--Schwarz to obtain the distance bound. The same finite-cover arguments then apply.
+\end{proof}
+For example, certified coefficient errors $|\widetilde q_j-q_j|\le e_j$ and $|\widetilde d-d|\le e_d$, with $|w_j|\le W_j$, give $E=e_d+\sum_j e_jW_j$. Nonlinear evaluation errors also need bounds before a residual test becomes certified. Ordinary double-precision gradients, NLP statuses and MILP bounds do not supply these enclosures. The numerical study instead reports explicitly defined residual and gap tests.

@@ -1,0 +1,33 @@
+# S4a lead investigation notes
+
+These notes record the lead's source audit during authoring. They are not independent reviewer reports or stage acceptance.
+
+## Scope reconciliation
+
+Read all ten promoted weighted/region result files in full, with the fixed-dimensional quadratic stationarity subsection read separately after initial output truncation. Read the signed-path supporting refinement. The additional note audit identified the complete pairwise-pressure hull characterization and nonlinear-power region extension outside the promoted list; both were assigned to S4a and added to coverage. Cross-cycle correlation and conservation-aware certificates were assigned to later stages. Thus the promoted list alone is not being treated as exhaustive.
+
+## Mathematical checks to retain
+
+- The rational QP certificate proof uses stationarity on the minimal face, then a rational point in the stationary affine set intersected with the bounded polytope. All such stationary points on that face have the same quadratic value. The exact fixed-dimensional algorithm may enumerate independent active-normal subsets; multipliers need no sign constraint. Singular stationary systems must be handled by linear feasibility.
+- The tree direction parameter marks leaves, branches, and reversals of the nonzero objective cut flow after zero-weight contraction. It is distinct from signs of the objective coefficients. The general signed-path parameter is a supplied/verifiable structure and can have nonzero internal objective coefficients. Both require explicit handling of the zero objective.
+- Fixed global rank is different from fixed rank per block. Putting all circulations in one core makes exact algebraic weighted optimization possible; it does not give an exact common field for an unbounded number of cactus blocks. Fixed nominations permit arbitrary objective support in the global-rank companion.
+- Constant-error pressure hardness comes from resistance scaling; flow hardness needs nomination scaling. The unit-cost DAG construction increases edge count and objective support while preserving rank and small nominations; no constant gap follows from common resistance scaling.
+- The cactus flow box supplies exact rational endpoint resistance scenarios for linear goals without exact comparison of sums of independent radicals. Its scalar SRS reduction uses `(a_i-1)/(1+sqrt(a_i)) = sqrt(a_i)-1`, with one-valued radicands and trivial thresholds preprocessed explicitly.
+- Pairwise-pressure converse: a theta comparison flow has energy below six; restored-edge magnitude is at most `(18/M)^(1/3)`. The note's conservative load bound gives pressure error at most `75m^2(18/M)^(1/3)`, hence `M=18(10000m^2)^3` preserves the strict `1/24` advantage. Full-graph extra edges are restored, not deleted.
+- Weighted-potential/tree and weighted-flow/cactus converses use separate gadgets and restoration bounds. Nonconvexity of a vector image follows only after proving that its own-edge flow, or terminal drop for potentials, parametrizes it injectively. An interior linear-objective advantage alone would not prove nonconvexity without that argument.
+- For the nonlinear-power extension, the theta implicit equation is smooth near positive outer flows even when the exponent is below one. `F_a=8p`, `a'(0)=5/8`, and the second-derivative numerator is `-p(p-1)/4`, giving `a''(0)=(p-1)/32`. Use a strictly positive small cross-flow interval to avoid differentiating its law at zero. The extension is qualitative, excludes p=1, and makes no uniform polynomial encoding assertion.
+
+## Primary sources read
+
+- Levi–Perakis–Romero 2014, local pp.1–2, especially Proposition 1. Verified the displayed reduction against original-PDF text: it maximizes `sum x_i - sum x_i(u_i-x_i)` under a capacity inequality. The passive comb uses the same established endpoint-forcing idea with its own rational weights, balanced nominations, graph restrictions, and gap. It must not claim a new knapsack reduction mechanism.
+- Del Pia–Dey–Molinaro, local pp.1–3, especially Section 2.2 Theorem 3. It explicitly attributes rational continuous-QP optimal certificates to Vavasis. The local primary PDF is dated October 10, 2018 despite the package's publication-year label. Vavasis's official publisher record verifies the 1990 title, volume 36(2), pp.73–77, DOI 10.1016/0020-0190(90)90100-C; only its abstract was available in this check.
+- Labbé–Plein–Schmidt 2020, local pp.13–14 and 16–20: cut flows, path potentials, two-terminal nomination optimization, and quadratic-time booking validation are antecedents. The combined fixed-support/shifted-box/independent-resistance theorem needs its own proof and carefully scoped contribution statement.
+- Aßmann–Liers–Stingl–Vera, local Section 4.2 and Section 4.3.3, pp.17–21. Verified Proposition 4.9 and Lemma 4.10 against the original PDF: scalar cycle root bounds become coefficient-linear inequalities. Their h decreases under their convention; the paper's increasing convention reverses the signs consistently. This is a direct antecedent to cycle-region and later correlated-capacity arguments.
+- Wang–Hasler report: complete local text read, and Theorem 4 checked against original-PDF text. See `completion-literature-screen.md` for the corrected availability and model comparison. It concerns scalar transfer convexity under source variation, with other parameter dependencies proposed in the conclusion.
+- Brandenberg–Stursberg local model and cactus statements checked: the local preprint uses Definitions 1–2 and Theorem 18, unlike the published numbering quoted in older notes. It fixes elasticities and studies a linear differential-flow polytope. Any precise theorem locator must match the cited version.
+
+No manuscript edits were made by the lead during the author's pass. No new priority conclusion follows merely from failure to find a matching theorem in targeted searches.
+
+## Lead pass over the authored section
+
+Read the full authored Section 06, including both complete gadgets, all restoration estimates, the deletion lemma, nonlinear-power extension, and linear Ohmic contrast. No mathematical defect found in this pass. Sent the author small clarity/source corrections during authoring: specify absolute value-approximation error, match the Labbé preprint section locator, include the comb pseudopolynomial remark, and explain that the pressure part of the finite-secant proof applies to arbitrary terminal pairs even though the earlier arc lemma is stated for adjacent endpoints. The author incorporated these before independent review. The Wang–Hasler report year could not be verified, so its bibliography entry uses n.d.

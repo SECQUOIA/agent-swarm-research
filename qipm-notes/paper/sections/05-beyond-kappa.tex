@@ -1,0 +1,1099 @@
+\section{Beyond the Condition Number}
+\label{sec:beyond-kappa}
+
+The condition number is a worst-case spectral parameter: it charges for a
+small eigenvalue even when the right-hand side barely sees its eigenspace.
+Dalzell, Li, and Su (DLS) recently gave two quantum linear-system solvers that
+replace this worst-case dependence by right-hand-side-dependent truncation and
+filtering parameters \cite{dalzell2026-faster-quantum-linear-system-solver};
+their filtering solver improves an earlier construction of
+\citet{li2025-new-condition-number-application-multivariate-polynomial}.
+The classical idea of effective conditioning is older
+\cite{chan1988-effectively-well-conditioned-linear-systems}, but the DLS
+parameters had not been evaluated on IPM Newton systems.  We do so here.
+
+Sections~\ref{sec:conditioning}--\ref{sec:spectra} showed that a degenerate LP
+produces two increasingly separated spectral clusters.  The question in this
+section is finer: when does the Newton right-hand side allow a solver to exploit
+that separation?  Exact block identities give a complete coupling criterion.
+They also expose a truncation transition, while a basis-invariant spectral
+dimension gives more general solver-selection laws.  Finally, when the active
+range is supplied, a directly assembled equilibration removes the central-path
+divergence while preserving the Newton state exactly.
+
+Throughout the first part, $H\succ0$ is presented through a block encoding of
+$H/\alpha_H$.  For a nonzero right-hand side $f$, set $x=H^{-1}f$ and
+define
+\begin{equation}
+ \xi(H,f)=\alpha_H\frac{\norm{H^{-1}f}}{\norm f},
+ \qquad
+ \rho(H,f)=\alpha_H
+ \frac{\norm{H^{-2}f}}{\norm{H^{-1}f}}.
+ \label{eq:dls-two-parameters}
+\end{equation}
+The second quantity is the ideal DLS filtering parameter: it is
+$\norm{(H/\alpha_H)^{-1}x}/\norm x$, not the first-inverse
+quantity $\xi$.  We avoid $\nu$, which \cref{sec:prelim-conic} reserves for
+the barrier parameter.  More generally, for a nonsingular, possibly
+non-Hermitian matrix $A$ encoded as $A/\alpha_A$, filtering uses
+\begin{equation}
+ \rho(A,f)=\alpha_A\frac{\norm{A^{-\dagger}x}}{\norm x},
+ \qquad x=A^{-1}f.
+ \label{eq:dls-general-filtering-parameter}
+\end{equation}
+The DLS truncation parameter instead asks how far toward zero
+one must invert in order to retain all but the prescribed normalized solution
+mass.
+
+\subsection{Exact-center coupling law}
+\label{sec:beyond-kappa-coupling}
+
+Consider a standard-form LP with full-row-rank $A$, and suppose its exact
+central path converges to a strictly complementary solution.  Let
+\[
+ B=\{i:x_i^*>0\},\qquad N=\{i:s_i^*>0\},\qquad
+ U=\operatorname{range}(A_B),\qquad K=U^\perp,
+\]
+and assume $0<\dim U<m$.  This is the mixed, primal-degenerate case; if
+$U=\R^m$, the normalized normal matrix has no asymptotically slow cluster.
+At an exact center, complementarity gives
+\begin{equation}
+ H_\mu=H_{\rm NE}(\mu):=AXS^{-1}A^\top
+ =\mu^{-1}C_\mu+\mu D_\mu,
+ \quad
+ C_\mu=A_BX_B^2A_B^\top,
+ \quad
+ D_\mu=A_NS_N^{-2}A_N^\top.
+ \label{eq:coupling-normal-split}
+\end{equation}
+Here $C_\mu\to C_0$, $D_\mu\to D_0$, and, in $U\oplus K$ blocks,
+\[
+ D_\mu=
+ \begin{pmatrix}D_\mu^U&F_\mu^\top\\F_\mu&E_\mu\end{pmatrix}.
+\]
+The restrictions $C=C_0|_U$ and $E=E_0|_K$ are positive definite.  Indeed,
+$C$ is a positive-weight Gram matrix with range $U$, and if $z\in K$ obeys
+$A_N^\top z=0$, then also $A_B^\top z=0$; full row rank of $A$ forces
+$z=0$, proving positivity of $E$ on $K$.  At the optimal limit,
+$b=Ax^*=A_Bx_B^*$, so the exact-centering right-hand side lies in $U$.  A
+short step to
+$\sigma_\mu\mu$, $\sigma_\mu\ne1$, has
+$H_\mu\Delta y=(1-\sigma_\mu)b$.  The scalar is immaterial to normalized
+QLS parameters, so the next theorem uses $b\ne0$. This nonzero condition
+also follows in the stated LP setting. Indeed $x^*\ne0$; if $b=0$,
+optimality gives $c^Tx^*=0$, while a strictly feasible dual slack $s$
+would give $s^Tx^*=c^Tx^*>0$, a contradiction.
+
+\begin{theorem}[Exact-center coupling criterion]
+\label{thm:dls-coupling}
+Define
+\begin{align}
+ R_\mu&=D_\mu^U-F_\mu^\top E_\mu^{-1}F_\mu,\nonumber\\
+ p_\mu&=(C_\mu|_U+\mu^2R_\mu)^{-1}b,
+ &g_\mu&=E_\mu^{-1}F_\mu p_\mu,\label{eq:coupling-pg}\\
+ q_\mu&=(C_\mu|_U+\mu^2R_\mu)^{-1}
+ (p_\mu+F_\mu^\top E_\mu^{-1}g_\mu).\nonumber
+\end{align}
+Then the following identities are exact:
+\begin{align}
+ H_\mu^{-1}b
+ &=\mu\begin{pmatrix}p_\mu\\-g_\mu\end{pmatrix},
+ \label{eq:coupling-first-inverse}\\
+ H_\mu^{-2}b
+ &=\begin{pmatrix}
+       \mu^2q_\mu\\
+       -E_\mu^{-1}g_\mu-\mu^2E_\mu^{-1}F_\mu q_\mu
+    \end{pmatrix}.
+ \label{eq:coupling-second-inverse}
+\end{align}
+For a norm-tight encoding,
+$\alpha_H=\Theta(\norm{H_\mu})=\Theta(\mu^{-1})$,
+\begin{equation}
+ \xi(H_\mu,b)=\Theta(1),\qquad
+ \rho(H_\mu,b)=\Theta\!\left(1+\frac{\norm{g_\mu}}{\mu^2}\right).
+ \label{eq:coupling-filtering-law}
+\end{equation}
+In particular, with
+\begin{equation}
+ g=E^{-1}FC^{-1}b,
+ \label{eq:limiting-coupling}
+\end{equation}
+filtering improves asymptotically on the full condition-number scale if and
+only if $g=0$.  If $g\ne0$, then
+$\rho(H_\mu,b)=\Theta(\mu^{-2})=\Theta(\kappa(H_\mu))$; if $g=0$, then
+$\rho=O(\mu^{-1})=O(\sqrt{\kappa(H_\mu)})$, with bounded cost precisely when
+$g_\mu=O(\mu^2)$.
+\end{theorem}
+
+\begin{proof}
+Write a vector in $U\oplus K$ coordinates.  Multiplying
+$H_\mu(u,v)^\top=b$ by $\mu$, the lower block equation gives
+$v=-E_\mu^{-1}F_\mu u$.  Substitution in the upper equation gives
+$(C_\mu|_U+\mu^2R_\mu)u=\mu b$, proving
+\eqref{eq:coupling-first-inverse}.
+
+Apply the same elimination to
+$H_\mu(u,v)^\top=H_\mu^{-1}b$.  Its lower equation is
+$F_\mu u+E_\mu v=-g_\mu$, so
+$v=-E_\mu^{-1}g_\mu-E_\mu^{-1}F_\mu u$.  The upper equation then becomes
+\[
+ (C_\mu|_U+\mu^2R_\mu)u
+ =\mu^2(p_\mu+F_\mu^\top E_\mu^{-1}g_\mu),
+\]
+which proves \eqref{eq:coupling-second-inverse}.
+
+Continuity and positive definiteness give
+$p_\mu\to p=C^{-1}b\ne0$.  Moreover,
+$q_\mu\to C^{-1}(p+F^\top E^{-1}g)$, and the vector in parentheses is
+nonzero because its inner product with $p$ is
+$\norm p^2+\norm{E^{-1}Fp}^2>0$.  Equations
+\eqref{eq:coupling-first-inverse}--\eqref{eq:coupling-second-inverse}
+therefore imply
+\[
+ \norm{H_\mu^{-1}b}=\Theta(\mu),\qquad
+ \norm{H_\mu^{-2}b}=\Theta(\norm{g_\mu}+\mu^2).
+\]
+For the lower bound, write the second inverse as $(a_\mu,v_\mu)$,
+where $a_\mu=\mu^2q_\mu$. Its lower block equation gives
+$g_\mu=-E_\mu v_\mu-F_\mu a_\mu$. Boundedness of $E_\mu,F_\mu$
+controls $\norm{g_\mu}$ by $\norm{(a_\mu,v_\mu)}$, and
+$q_\mu\to q\ne0$ controls $\mu^2$ by the same norm. This also covers
+cancellation between the two terms in the lower block.
+Substitution in \eqref{eq:dls-two-parameters} proves
+\eqref{eq:coupling-filtering-law}.  Finally $g_\mu\to g$.  Thus $g\ne0$
+gives the full $\mu^{-2}$ scale.  Under strict complementarity the LP
+central path, and hence $C_\mu,D_\mu,F_\mu,E_\mu$ and $g_\mu$, is analytic
+at $\mu=0$.  Halick\'a proves this boundary analyticity for LP and the
+corresponding result for SDP
+\cite{halicka1999-analytical-properties-central-path-linear-programming,
+halicka2002-analyticity-of-the-central-path}. If $g=0$, differentiability
+alone gives $g_\mu=O(\mu)$, hence $\rho=O(\mu^{-1})$. More precisely,
+let $g'_0$ denote the derivative of the coupling at zero. If $g'_0\ne0$,
+then $\norm{g_\mu}=\Theta(\mu)$ and $\rho=\Theta(\mu^{-1})$.
+If $g'_0=0$, the analytic Taylor remainder gives $g_\mu=O(\mu^2)$
+and bounded $\rho$. Thus boundedness is equivalent to $g_0=g'_0=0$
+for this analytic family. The norm law itself also proves boundedness
+exactly when $g_\mu=O(\mu^2)$.
+\end{proof}
+
+Equivalently, the obstruction is
+$\Pi_KD_0(C|_U)^{-1}b\ne0$.  The exceptional limiting right-hand-side space
+is $C(\ker F)$, and the obstruction vanishes for every $b\in U$ exactly when
+$F=0$, meaning that $D_0$ reduces $U\oplus K$.  Analyticity sharpens the
+continuous-rate analysis: after $g=0$, the only divergent intermediate rate
+is a first-order term $g_\mu=\Theta(\mu)$, which gives
+$\rho=\Theta(\mu^{-1})$; every higher integer order gives bounded $\rho$.
+For a non-tight encoding, the exact scale carried by the proof is
+\begin{equation}
+ \rho(H_\mu,b)=\Theta\!\left(
+ \alpha_H\left(\mu+\frac{\norm{g_\mu}}\mu\right)\right).
+ \label{eq:coupling-nontight}
+\end{equation}
+
+\begin{proposition}[Sparse sharpness witnesses]
+\label{prop:coupling-witnesses}
+There are two row- and column-two LPs with the same
+$\kappa(H_\mu)\sim(2\mu^2)^{-1}$ and $\xi=\Theta(1)$, but respectively
+$\rho=\Theta(\mu^{-2})$ and $\rho=1$.
+\end{proposition}
+
+\begin{proof}
+For the coupled instance, take
+\begin{equation}
+ \min\ x_2+x_3
+ \quad\text{subject to}\quad
+ \begin{pmatrix}1&1&0\\0&1&-1\end{pmatrix}x
+ =\begin{pmatrix}1\\0\end{pmatrix},\qquad x\ge0.
+ \label{eq:coupled-small-lp}
+\end{equation}
+Its primal optimum and optimal partition are unique.  The optimal duals have
+$y_1=0$, $y_2\in[-1,1]$; their strictly complementary members have
+$y_2\in(-1,1)$.  The displayed slack
+$s^*=(0,1,1)$ corresponds to $y^*=0$, the dual analytic center and hence the
+central-path limit, while $x^*=e_1$.  The central point is
+$x=(1-t,t,t)$, where
+\[
+ t=\frac{2+3\mu-\sqrt{4-4\mu+9\mu^2}}4=\mu+O(\mu^2).
+\]
+With $\theta_1=(1-t)^2/\mu$ and $\theta=t^2/\mu$,
+\[
+ H_\mu=
+ \begin{pmatrix}\theta_1+\theta&\theta\\\theta&2\theta\end{pmatrix},
+ \qquad \kappa(H_\mu)\sim\frac1{2\mu^2}.
+\]
+Here $C=1$, $E=2$, $F=1$, and the centering right-hand side is
+$b=(1,0)^\top$, so $p=1$ and $g=1/2$.  Direct inversion gives
+\[
+ H_\mu^{-1}b=\frac{(2,-1)^\top}{2\theta_1+\theta},
+ \qquad H_\mu^{-2}b\longrightarrow(0,-1/4)^\top.
+\]
+For $\alpha_H=\norm{H_\mu}$,
+$\xi\to\sqrt5/2$ and $\mu^2\rho\to1/(2\sqrt5)$.  The normalized solution
+is exactly $(2,-1)/\sqrt5$. Since the slow eigenspace tends to the
+second coordinate axis, its slow-cluster amplitude tends to $1/\sqrt5$.
+
+For the decoupled instance, replace the constraint matrix by
+\[
+ \begin{pmatrix}1&0&0\\0&1&-1\end{pmatrix}
+\]
+and keep the same objective and right-hand side.  It has the same unique
+primal optimum, optimal partition, dual-optimal interval, central-path dual
+limit, and it also satisfies the proposition's row/column-two sparsity bound,
+but, for $0<\mu\le1/\sqrt2$ and $\alpha_H=\norm{H_\mu}$,
+\[
+ H_\mu=\diag(\mu^{-1},2\mu),\qquad
+ \kappa(H_\mu)=\frac1{2\mu^2},\qquad \xi=\rho=1.
+\]
+Thus neither $\kappa$ nor the first-inverse norm distinguishes the two
+instances; active-to-inactive coupling does.
+\end{proof}
+
+\paragraph{Formal verification and scope.}
+The Lean development in \path{formal/QipmFormal/Coupling/} checks the LP
+normal-matrix split and centering right-hand side, block elimination and
+the actual inverse identities, noncancellation, and the exceptional
+right-hand-side space. It derives the filtering law from continuous block
+data and checks the differentiable and analytic rate consequences.
+The sparse witnesses are checked from their primal and dual equations,
+with Euclidean norms and the displayed normalization qualifications.
+The claim map and reproduction command are in \path{formal/COUPLING.md}.
+The audit permits only \texttt{propext}, \texttt{Classical.choice}, and
+\texttt{Quot.sound}. The general existence and boundary analyticity of
+the LP central path remain mathematical inputs; the development verifies
+the block regularity consequences rather than formalizing those external
+theorems. It does not verify the quantum solver, construct its block
+encoding, or establish the later truncation and spectral-dimension claims.
+
+\subsection{Truncation at the slow-shell boundary}
+\label{sec:beyond-kappa-truncation}
+
+Let $P_s(\mu)$ project onto the eigenvalues of $H_\mu$ of order
+$\Theta(\mu)$, which become $\Theta(\mu^2)$ after norm normalization.
+For a general nonzero $f$, define its slow right-hand-side amplitude and
+slow solution mass by
+\[
+ q_s=\frac{\norm{P_sf}}{\norm f},\qquad
+ p_s=\frac{\norm{P_sH_\mu^{-1}f}^2}{\norm{H_\mu^{-1}f}^2}.
+\]
+
+\begin{proposition}[Two-cluster truncation transition]
+\label{prop:dls-truncation-transition}
+If the fast-cluster component of $f$ is bounded below, then
+\begin{equation}
+ p_s=\Theta\!\left(\frac{q_s^2}{\mu^4+q_s^2}\right).
+ \label{eq:slow-solution-mass}
+\end{equation}
+Consequently $q_s=\Theta(\mu^2)$ is the critical boundary.  There the slow
+solution mass is constant and fixed-accuracy DLS truncation must retain the
+full $\Theta(\mu^{-2})$ normalized inverse scale for every target error below
+that mass.  If $q_s=o(\mu^2)$, truncation can eventually discard the slow
+cluster at fixed accuracy; filtering need not yet be bounded.  Under a tight
+encoding, $q_s=O(\mu^4)$ is sufficient for bounded ideal filtering cost.
+At exact centering, generic coupling gives $q_s=\Theta(\mu^2)$.
+\end{proposition}
+
+\begin{proof}
+On the unnormalized fast and slow clusters, $H_\mu^{-1}$ has scales
+$\Theta(\mu)$ and $\Theta(\mu^{-1})$, respectively.  The lower bound on the
+fast part of $f$ therefore gives fast solution norm $\Theta(\mu\norm f)$,
+while the slow solution norm is $\Theta(\mu^{-1}q_s\norm f)$.  Dividing the
+squared slow norm by the sum proves \eqref{eq:slow-solution-mass}.
+
+For the exact-centering vector $b\in U$, standard separated-subspace
+perturbation, or direct substitution in the block eigenvector equation,
+gives in the leading $K$ component
+\begin{equation}
+ P_s(\mu)b=-\mu^2D_{0,KU}C^{-1}b+o(\mu^2).
+ \label{eq:exact-center-slow-rhs}
+\end{equation}
+It is therefore $\Theta(\mu^2)$ when the limiting coupling is nonzero.
+Equation \eqref{eq:slow-solution-mass} proves the truncation claims.  One
+additional inverse weights the slow part by another $\mu^{-2}$ relative to
+the fast part, so its contribution is bounded only at
+$q_s=O(\mu^4)$, which is the filtering statement.
+\end{proof}
+
+The comparison with \cref{prop:newton-rhs-alignment,cor:top-window-solve}
+requires naming the two formulations.  This section uses the $m$-dimensional
+normal matrix
+\[
+ H_{\rm NE}(\mu)=AXS^{-1}A^\top,
+ \qquad
+ \operatorname{spec}(H_{\rm NE}(\mu))
+ \subset\Theta(\mu^{-1})\cup\Theta(\mu),
+\]
+whereas \cref{sec:spectra-rhs} uses the $(n-m)$-dimensional reduced Hessian
+\[
+ H_{\rm red}(\mu)=Z^\top X^{-2}Z,
+ \qquad
+ \operatorname{spec}(H_{\rm red}(\mu))
+ \subset\Theta(\mu^{-2})\cup\Theta(1).
+\]
+When the corresponding clusters are nonempty, both have fast normalized
+scale $\Theta(1)$ and slow normalized scale $\Theta(\mu^2)$, but they act on
+different variables and right-hand sides.  \Cref{sec:spectra} proves an
+$O(\mu^2)$ slow right-hand-side fraction for $H_{\rm red}(\mu)$.  For
+$H_{\rm NE}(\mu)$, the present coupling calculation
+instead gives $q_s=\Theta(\mu^2)$ only when the limiting coupling is nonzero;
+the decoupled witness has $P_sb=0$.
+
+The residual-versus-state distinction can be proved directly for the normal
+equation.  Under nonzero limiting coupling, let
+$z=H_{\rm NE}(\mu)^{-1}b$ and discard
+$z_s=P_sz$.  Because $P_s$ is a spectral projector,
+\begin{equation}
+ \frac{\norm{H_{\rm NE}(\mu)(z-z_s)-b}}{\norm b}
+ =\frac{\norm{P_sb}}{\norm b}=q_s=\Theta(\mu^2),
+ \label{eq:normal-window-residual}
+\end{equation}
+while \eqref{eq:slow-solution-mass} gives
+$\norm{z_s}^2/\norm z^2=\Theta(1)$ under the same nonzero-coupling
+hypothesis.  A state-preparation algorithm below that constant solution mass
+must retain the slow cluster, but a fixed relative-residual contract may
+discard it.  Thus the two formulations agree on their normalized spectral
+separation, while both the formulation and the output contract matter; this
+is the precise sense in which the result is consistent with
+\cref{sec:spectra}.
+
+\subsection{Effective spectral dimension}
+\label{sec:effective-spectral-dimension}
+
+Two clusters are not necessary for a sharp solver-selection law.  Normalize
+$\norm H=1$ and $\norm b=1$, let
+\begin{equation}
+ \mathsf m_b(S)=\inner b{\mathbf1_S(H)b},
+ \label{eq:spectral-measure}
+\end{equation}
+and let $\lambda_*$ be the smallest eigenvalue visible to $b$, with
+$\kappa_*=\lambda_*^{-1}$.  We say that $(H,b)$ has effective spectral
+dimension $D$ if constants $c,C>0$, independent of $\lambda_*$, satisfy
+\begin{equation}
+ c t^{D/2}\leq F_b(t):=\mathsf m_b([0,t])\leq C t^{D/2}
+ \qquad(\lambda_*\leq t\leq1).
+ \label{eq:effective-dimension-definition}
+\end{equation}
+This is invariant under simultaneous orthogonal changes
+$(H,b)\mapsto(VHV^\top,Vb)$; it is not coordinate sparsity in disguise.
+Unlike an unanchored per-shell condition, \eqref{eq:effective-dimension-definition}
+controls the mass at the smallest visible eigenvalue and permits fixed gaps
+between the first few eigenvalues.
+
+\begin{theorem}[Spectral-dimension phase laws]
+\label{thm:spectral-dimension-laws}
+Assume the norm-tight unit-normalization convention: after $\norm H=1$, the
+block-encoding normalization is $\alpha_H=\Theta(1)$, and truncation cutoffs
+are measured in this same normalization.  Operationally,
+\begin{equation}
+ \kappa_{\rm eff}(\epsilon_{\rm ls})
+ :=\inf\left\{K\in[1,\kappa_*]:
+ \frac{\inner b{H^{-2}\mathbf1_{[0,1/K)}(H)b}}{\inner b{H^{-2}b}}
+ \leq\epsilon_{\rm ls}^2\right\}.
+ \label{eq:dls-effective-cutoff-definition}
+\end{equation}
+For an encoding of $H/\alpha_H$, the solver's encoded cutoff scale is
+$\alpha_H\kappa_{\rm eff}$; the standing tight convention identifies these
+up to constants.
+Under \eqref{eq:effective-dimension-definition}, this quantity obeys
+\begin{equation}
+ \kappa_{\rm eff}(\epsilon_{\rm ls})=
+ \begin{cases}
+  \Theta_{\epsilon_{\rm ls}}(\kappa_*),&D<4,\ 0<\epsilon_{\rm ls}<1,\\
+  \kappa_*^{\,1-\Theta(\epsilon_{\rm ls}^2)},&D=4,\\
+  \Theta\!\left(\min\{\kappa_*,
+                  \epsilon_{\rm ls}^{-4/(D-4)}\}\right),&D>4.
+ \end{cases}
+ \label{eq:dls-truncation-dimension-law}
+\end{equation}
+For $D<4$, the hidden constant may depend on the fixed error and on the
+cumulative-law constants.  A sublinear power of $\kappa_*$ is possible only
+when the allowed error tends to one as $\kappa_*\to\infty$.  At $D=4$, a
+definite leading cumulative coefficient gives exponent
+$1-\epsilon_{\rm ls}^2+o(1)$; under only
+\eqref{eq:effective-dimension-definition},
+$1-\Theta(\epsilon_{\rm ls}^2)$ is sharp, and the result saturates at
+$\Theta(\kappa_*)$ when
+$\epsilon_{\rm ls}^2\log\kappa_*=O(1)$.  The ideal filtering
+parameter is
+\begin{equation}
+ \rho=
+ \begin{cases}
+  \Theta(\kappa_*),&D<4,\\
+  \Theta(\kappa_*/\sqrt{\log\kappa_*}),&D=4,\\
+  \Theta(\kappa_*^{(8-D)/4}),&4<D<8,\\
+  \Theta(\sqrt{\log\kappa_*}),&D=8,\\
+  \Theta(1),&D>8.
+ \end{cases}
+ \label{eq:dls-filter-dimension-law}
+\end{equation}
+Thus fixed-accuracy truncation becomes independent of mesh conditioning above
+$D=4$, whereas filtering does so only above $D=8$.  For a non-tight encoding,
+both the effective cutoff scale and every filtering branch acquire a factor
+$\alpha_H$; in particular the $D>8$ filtering cost is
+$\Theta(\alpha_H)$ rather than $\Theta(1)$.
+\end{theorem}
+
+\begin{proof}
+For $p>0$, put $Z_p=\inner b{H^{-p}b}$ and write $s=D/2$.  Abel summation,
+equivalently Stieltjes integration by parts, gives the exact layer-cake
+identity
+\begin{equation}
+ Z_p=1+p\int_{\lambda_*}^1 t^{-p-1}F_b(t)\,dt.
+ \label{eq:spectral-abel-identity}
+\end{equation}
+Using $F_b(t)=\Theta(t^s)$ in this integral gives
+\begin{equation}
+ Z_p=
+ \begin{cases}
+  \Theta(\kappa_*^{p-D/2}),&D<2p,\\
+  \Theta(\log\kappa_*),&D=2p,\\
+  \Theta(1),&D>2p.
+ \end{cases}
+ \label{eq:spectral-moment-law}
+\end{equation}
+The squared norm of $H^{-1}b$ is $Z_2$.  If a cutoff discards eigenvalues
+strictly below $u=1/K$, as in \eqref{eq:dls-effective-cutoff-definition}, its
+discarded squared solution norm is
+\begin{equation}
+ T_2(u)=u^{-2}F_b(u^-)
+       +2\int_{\lambda_*}^{u}t^{-3}F_b(t)\,dt,
+ \label{eq:spectral-partial-abel}
+\end{equation}
+where $F_b(u^-)=\mathsf m_b([0,u))$ is the left limit.
+For $D<4$, fix a sufficiently small constant $u_0>0$.  Dyadically summing
+the retained moment on $[u,1]$ and comparing it with $Z_2$ gives
+\begin{equation}
+ \frac{\inner b{H^{-2}\mathbf1_{[u,1]}(H)b}}{Z_2}
+ =\Theta\!\left(
+   \left(\frac{\lambda_*}{u}\right)^{2-D/2}\right)
+ \qquad(\lambda_*\leq u\leq u_0).
+ \label{eq:subcritical-retained-mass}
+\end{equation}
+Indeed, the upper bound follows by geometric summation, while a shell
+$[u,\gamma_{\rm sh}u]$ with a fixed $\gamma_{\rm sh}>1$ chosen from the two
+cumulative-law constants has mass $\Theta(u^{D/2})$ and gives the matching
+lower bound.  Requiring the
+retained fraction to be at least $1-\epsilon_{\rm ls}^2$ therefore gives
+\begin{equation}
+ u=\Theta\!\left(
+ \lambda_*(1-\epsilon_{\rm ls}^2)^{-2/(4-D)}\right)
+ =\Theta_{\epsilon_{\rm ls}}(\lambda_*),
+ \label{eq:subcritical-cutoff}
+\end{equation}
+for every fixed $\epsilon_{\rm ls}<1$, proving the first line.  A cutoff
+$u=\lambda_*^{1-\beta}$ for fixed $\beta>0$ has retained fraction tending to
+zero, so it is
+possible only when $\epsilon_{\rm ls}\to1$.  For $D=4$, both
+\eqref{eq:spectral-abel-identity} and \eqref{eq:spectral-partial-abel} are
+logarithmic.  Discarding an $\epsilon_{\rm ls}^2$ fraction yields
+$K=\kappa_*^{1-\Theta(\epsilon_{\rm ls}^2)}$, with the stated refinement when the
+leading cumulative coefficient exists.  For $D>4$, the discarded tail is
+$\Theta(K^{-(D-4)/2})$ relative to the constant total.  Setting it to
+$\epsilon_{\rm ls}^2$ and capping at $\kappa_*$ proves
+\eqref{eq:dls-truncation-dimension-law}.
+
+For filtering, $x=H^{-1}b$ and hence
+\[
+ \rho^2=\alpha_H^2\frac{\norm{H^{-1}x}^2}{\norm x^2}
+ =\alpha_H^2\frac{Z_4}{Z_2}=\Theta\!\left(\frac{Z_4}{Z_2}\right).
+\]
+Applying \eqref{eq:spectral-moment-law} with $p=4$ in the numerator and
+$p=2$ in the denominator gives all five cases in
+\eqref{eq:dls-filter-dimension-law}.
+\end{proof}
+
+Local conventions in the remaining witnesses are as follows:
+$e_0,e_{e_1},e_f$ are coordinate basis vectors, whereas $e_k$ in the
+marked-diagonal construction is the $k$-dimensional all-ones vector; the
+symbols $\delta_{\rm c},\delta_Q,\delta_{\mathcal G}$ denote, respectively,
+the corrector perturbation, projector error, and expander contrast.
+
+\begin{proposition}[Constant-degree torus witnesses]
+\label{prop:torus-dimension-witnesses}
+Let $L$ be even and $T_L^d$ the periodic $d$-dimensional $L$-grid.  With
+its combinatorial Laplacian $\Delta_{T_L^d}$, set
+\begin{equation}
+ H_{L,d}=\frac{L^{-2}I+\Delta_{T_L^d}}{L^{-2}+4d}.
+ \label{eq:massive-torus}
+\end{equation}
+Then $H_{L,d}$ is $(2d+1)$-sparse, has norm one, and has
+$\kappa=1+4dL^2=\Theta(L^2)$.  A localized source $e_0$ realizes $D=d$;
+the dipole $(e_0-e_{e_1})/\sqrt2$ realizes $D=d+2$.  For the dipole branch,
+the resulting phases are:
+\begin{center}
+\begin{tabular}{@{}rrrr@{}}
+\toprule
+physical $d$ & effective $D$ & $\kappa_{\rm eff}$ & $\rho$ \\
+\midrule
+$3$ & $5$ & $\Theta(\min\{\kappa,\epsilon_{\rm ls}^{-4}\})$
+            & $\Theta(\kappa^{3/4})$ \\
+$4$ & $6$ & $\Theta(\min\{\kappa,\epsilon_{\rm ls}^{-2}\})$
+            & $\Theta(\kappa^{1/2})$ \\
+$5$ & $7$ & $\Theta(\min\{\kappa,\epsilon_{\rm ls}^{-4/3}\})$
+            & $\Theta(\kappa^{1/4})$ \\
+$6$ & $8$ & $\Theta(\min\{\kappa,\epsilon_{\rm ls}^{-1}\})$
+            & $\Theta(\sqrt{\log\kappa})$ \\
+$\geq7$ & $>8$ & mesh-independent at fixed $\epsilon_{\rm ls}$
+                   & mesh-independent \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{proposition}
+
+\begin{proof}
+Fourier modes diagonalize the torus Laplacian, with
+\[
+ \lambda_k=\frac{L^{-2}+4\sum_{j=1}^d\sin^2(\pi k_j/L)}{L^{-2}+4d}.
+\]
+For the localized source, every squared Fourier overlap is $L^{-d}$.
+Lattice-volume bounds, first for
+$\lambda_k\asymp L^{-2}(1+\norm k^2)$ at low frequency and then by the
+same product-counting bounds on the remaining fixed spectral range, give
+\[
+ \mathsf m_{e_0}([0,t])=\Theta(t^{d/2})
+ \qquad(\lambda_*\leq t\leq1).
+\]
+Thus the cumulative hypothesis, including its bottom anchoring, holds with
+$D=d$.  Equivalently, Abel summation gives
+\[
+ \sum_k\lambda_k^{-p}=
+ \begin{cases}
+  \Theta(L^{2p}),&d<2p,\\
+  \Theta(L^{2p}\log L),&d=2p,\\
+  \Theta(L^d),&d>2p,
+ \end{cases}
+\]
+The dipole Fourier symbol is $1-e^{2\pi i k_1/L}$.  It vanishes on modes
+with $k_1=0$, so no pointwise comparison with $\lambda_k$ is valid.  Instead
+sum over permutation-symmetric spectral balls.  Symmetry gives
+\[
+ \sum_{\lambda_k\leq t}\sin^2(\pi k_1/L)
+ =\frac1d\sum_{\lambda_k\leq t}\sum_{j=1}^d
+       \sin^2(\pi k_j/L).
+\]
+Together with the lattice-volume estimate, this aggregated identity yields
+\[
+ \mathsf m_{(e_0-e_{e_1})/\sqrt2}([0,t])
+ =\Theta(t^{(d+2)/2})
+\]
+from the smallest visible eigenvalue through $t=1$.  At the bottom, the
+first visible modes have squared overlap $\Theta(L^{-(d+2)})$, exactly
+$\Theta(\lambda_*^{(d+2)/2})$; the constant mode has zero overlap and
+$\lambda_*=\Theta(L^{-2})$.  Hence the repaired cumulative definition is
+satisfied with $D=d+2$.  The table follows by substituting $D=d+2$ in
+\cref{thm:spectral-dimension-laws}.
+\end{proof}
+
+The two source types occur as actual QIPM correctors, not merely abstract
+linear systems.
+
+\begin{proposition}[Positive full-step feasible corrector]
+\label{prop:torus-feasible-corrector}
+Let $B_T$ be an oriented incidence matrix of $T_L^d$ and set
+\begin{equation}
+ \mathcal A=[B_T,I],\qquad
+ W=\diag(I_E,L^{-2}I_V),\qquad
+ \mathcal A W\mathcal A^\top=\Delta_{T_L^d}+L^{-2}I.
+ \label{eq:torus-ipm-factor}
+\end{equation}
+For $d\geq2$, choose perpendicular torus edges $f,g$ meeting at a vertex,
+fix $\tau>0$ and $0<\delta_{\rm c}\leq1/4$, and retain $x_i/s_i=w_i$, where
+$w_i$
+is the corresponding diagonal entry of $W$.  Set
+\begin{equation}
+ p_i=x_is_i=
+ \begin{cases}
+  \tau(1+\delta_{\rm c}),&i=f,\\
+  \tau(1-\delta_{\rm c}),&i=g,\\
+  \tau,&\text{otherwise},
+ \end{cases}
+ \quad
+ x_i=\sqrt{p_iw_i},\quad s_i=\sqrt{p_i/w_i}.
+ \label{eq:torus-perturbed-products}
+\end{equation}
+With $b_{\rm LP}=\mathcal Ax$, $c=s$, and $y=0$, this is primal and dual
+feasible, has average complementarity $\tau$, and has centrality
+$\norm{XSe-\tau e}/\tau=\sqrt2\delta_{\rm c}$.  Its full $\sigma=1$ feasible
+centering step is positive, has a normal-equation right-hand side of
+effective dimension $D=d+2$, preserves average complementarity, and satisfies
+\begin{equation}
+ \frac{\norm{X^+S^+e-\tau e}}\tau
+ \leq\frac{\delta_{\rm c}^2}{1-\delta_{\rm c}^2}.
+ \label{eq:torus-quadratic-centering}
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+The definitions make feasibility and the centrality calculation immediate.
+The feasible corrector equations are
+\[
+ \mathcal A\Delta x=0,
+ \quad \mathcal A^\top\Delta y+\Delta s=0,
+ \quad S\Delta x+X\Delta s=\tau e-XSe.
+\]
+Eliminating $\Delta x,\Delta s$ gives
+\begin{equation}
+ (\mathcal AW\mathcal A^\top)\Delta y
+ =-\mathcal AS^{-1}(\tau e-XSe).
+ \label{eq:torus-corrector-normal}
+\end{equation}
+After normalization, its right-hand side is proportional to
+\[
+ \frac{\mathcal A_f}{\sqrt{1+\delta_{\rm c}}}
+ -\frac{\mathcal A_g}{\sqrt{1-\delta_{\rm c}}}.
+\]
+Its low-frequency Fourier symbol vanishes linearly and has nonzero gradient,
+so its cumulative spectral weight is $\Theta(t^{(d+2)/2})$.  Explicitly, for
+any nonzero
+linear form $\ell$, lattice-ball comparison gives
+$\sum_{\norm k\leq r}|\ell(k)|^2=\Theta(r^{d+2})$; applying this to the
+linear part of the symbol gives the claimed cumulative spectral weight.
+
+It remains to prove full-step safety.  Put
+$u=X^{-1}\Delta x$, $v=S^{-1}\Delta s$, and
+$P=\diag(p)$.  The Newton
+equations imply
+\begin{equation}
+ P(u+v)=\tau e-p,\qquad
+ u^\top Pv=\Delta x^\top\Delta s=0.
+ \label{eq:torus-relative-step}
+\end{equation}
+Thus $P^{1/2}u$ and $P^{1/2}v$ are orthogonal and sum to
+$P^{-1/2}(\tau e-p)$, whose squared norm is
+$2\tau\delta_{\rm c}^2/(1-\delta_{\rm c}^2)$.  Since
+$p_i\geq\tau(1-\delta_{\rm c})$, for either $z=u,v$,
+\[
+ |z_i|^2\leq
+ \frac{2\delta_{\rm c}^2}
+ {(1-\delta_{\rm c}^2)(1-\delta_{\rm c})}<1
+ \qquad(\delta_{\rm c}\leq1/4).
+\]
+Hence $x+\Delta x>0$ and $s+\Delta s>0$.  Moreover
+\[
+ p_i^+=p_i(1+u_i)(1+v_i)=\tau+p_i u_iv_i.
+\]
+Equation \eqref{eq:torus-relative-step} gives
+$\sum_i p_iu_iv_i=0$, so the average remains $\tau$.  Finally,
+\[
+ \norm{P(u\circ v)}
+ \leq\norm{P^{1/2}u}\norm{P^{1/2}v}
+ \leq\frac12\norm{P^{-1/2}(\tau e-p)}^2
+ =\frac{\tau\delta_{\rm c}^2}{1-\delta_{\rm c}^2},
+\]
+which proves \eqref{eq:torus-quadratic-centering}.
+\end{proof}
+
+The localized branch is also QIPM-native, but through an infeasible
+corrector.  At complementarity $\tau$, set
+$x_i=\sqrt{\tau w_i}$, $s_i=\sqrt{\tau/w_i}$ and
+$b_{\rm LP}=\mathcal Ax$.  Give the exactly centered
+($x_is_i=\tau>0$), primal-feasible
+point a one-coordinate dual residual $r_d=\eta e_f$.  A $\sigma=1$
+infeasible feasibility corrector has
+\begin{equation}
+ (\mathcal AW\mathcal A^\top)\Delta y=\eta\mathcal AWe_f.
+ \label{eq:torus-infeasible-corrector}
+\end{equation}
+A ground variable at vertex zero gives normalized right-hand side $e_0$ and
+$D=d$; a torus edge gives a dipole and $D=d+2$.
+
+These witnesses are solver-selection examples, not end-to-end speedups.  The
+torus already admits FFT and multigrid solvers.  The constructions describe
+a single corrector rather than an IPM trajectory, and do not charge block
+encoding, norm estimation, state or observable readout, or classical iterate
+recovery.
+
+\subsection{Stable active-subspace equilibration}
+\label{sec:stable-active-equilibration}
+
+The negative coupling law has a positive structural counterpart.  Suppose
+the active range is available through its orthogonal projector $Q$, and put
+$R=I-Q$.  The next theorem directly assembles a left-equilibrated operator;
+this direct assembly, rather than multiplication of normalized encodings, is
+the source of the gain.
+
+\begin{theorem}[Stable split equilibration]
+\label{thm:stable-split-equilibration}
+Suppose
+\[
+ H_\mu=\mu^{-1}C_\mu+\mu D_\mu,\qquad 0<\mu\leq1,
+\]
+where, for constants independent of $\mu$,
+\[
+ C_\mu=QC_\mu Q,\quad
+ c_-Q\preceq C_\mu\preceq c_+Q,\quad
+ D_\mu\succeq0,\quad \norm{D_\mu}\leq d_+,\quad
+ RD_\mu R\succeq d_-R.
+\]
+Let $P_\mu=\mu Q+\mu^{-1}R$ and assemble
+\begin{equation}
+ M_\mu=C_\mu+RD_\mu+\mu^2QD_\mu
+ =C_\mu+D_\mu-(1-\mu^2)QD_\mu.
+ \label{eq:stable-split-operator}
+\end{equation}
+Then $M_\mu=P_\mu H_\mu$ exactly and
+$\norm{M_\mu}+\norm{M_\mu^{-1}}=O(1)$.  For every
+$f\in U=\operatorname{range}Q$,
+\begin{equation}
+ M_\mu^{-1}f=\mu^{-1}H_\mu^{-1}f,
+ \label{eq:stable-state-preservation}
+\end{equation}
+so the normalized Newton state is preserved exactly, without recovery or
+postselection.  If $C_\mu,D_\mu,Q$ have block-encoding normalizations
+$\alpha_C,\alpha_D,1$, direct LCU assembly has normalization
+\begin{equation}
+ \Gamma_\mu\leq\alpha_C+(2-\mu^2)\alpha_D.
+ \label{eq:stable-lcu-normalization}
+\end{equation}
+Thus bounded component normalizations give a uniformly conditioned,
+uniformly normalized conventional QLS solve through the Hermitian dilation
+below, and the ideal DLS filtering parameter is $O(\Gamma_\mu)$ as well.
+\end{theorem}
+
+The left-equilibrated $M_\mu$ need not be Hermitian.  To use the Hermitian
+QLS contract of \cref{def:qls}, encode its standard dilation
+\begin{equation}
+ \mathcal H(M_\mu)=
+ \begin{pmatrix}0&M_\mu\\M_\mu^\dagger&0\end{pmatrix}.
+ \label{eq:stable-hermitian-dilation}
+\end{equation}
+The dilation has the same block-encoding normalization $\Gamma_\mu$ and
+the same singular condition number as $M_\mu$.  Moreover,
+$\mathcal H(M_\mu)^{-1}(f,0)^\top=(0,M_\mu^{-1}f)^\top$, so selecting the
+second register preserves the solution normalization and requires no
+postselection beyond the fixed register label.
+
+\begin{proof}
+Since $RC_\mu=0$,
+\[
+ P_\mu H_\mu=C_\mu+\mu^2QD_\mu+RD_\mu=M_\mu.
+\]
+In $U\oplus U^\perp$ blocks,
+\[
+ M_\mu=
+ \begin{pmatrix}
+ C_\mu+\mu^2D_{UU}&\mu^2D_{UK}\\
+ D_{KU}&D_{KK}
+ \end{pmatrix}.
+\]
+The Schur complement of $D_{KK}$ is
+\[
+ G_\mu=C_\mu+\mu^2
+ (D_{UU}-D_{UK}D_{KK}^{-1}D_{KU})\succeq c_-I_U,
+\]
+because the parenthesized Schur complement is positive semidefinite.
+Also $D_{KK}\succeq d_-I_{U^\perp}$.  The block inverse formula therefore
+bounds every block of $M_\mu^{-1}$ using only $c_-,d_-,d_+$, while
+$\norm{M_\mu}\leq c_++2d_+$.
+
+For state preservation, let $x_\mu=H_\mu^{-1}f$.  Because $f\in U$,
+$P_\mu f=\mu f$, and hence
+$M_\mu x_\mu=P_\mu H_\mu x_\mu=\mu f$.  This proves
+\eqref{eq:stable-state-preservation}.  Finally, applying LCU to the second
+form in \eqref{eq:stable-split-operator} gives coefficient weight
+$\alpha_C+\alpha_D+(1-\mu^2)\alpha_D$, proving
+\eqref{eq:stable-lcu-normalization}.  Uniform conditioning bounds
+$\Gamma_\mu\norm{M_\mu^{-1}}$ and its restriction to any solution state,
+which proves the two solver claims.
+\end{proof}
+
+The split also supplies a projector-error firewall.  If
+$\norm{\widehat Q-Q}\leq\delta_Q$ and one assembles
+\[
+ \widehat M_\mu=C_\mu+D_\mu-(1-\mu^2)\widehat QD_\mu,
+\]
+then $\norm{\widehat M_\mu-M_\mu}\leq\delta_Qd_+$.  For a sufficiently small
+constant $\delta_Q$, the Neumann perturbation bound and
+\cref{thm:stable-split-equilibration} give
+\begin{equation}
+ \frac{\norm{\widehat M_\mu^{-1}f-M_\mu^{-1}f}}
+      {\norm{M_\mu^{-1}f}}=O(\delta_Q),
+ \label{eq:projector-firewall}
+\end{equation}
+uniformly in $\mu$.  Thus $\delta_Q=O(\epsilon_{\rm ls})$ suffices.  In
+contrast, forming $\widehat P_\mu H_\mu$ from the raw normal matrix loses
+this stability.  For $H_\mu=\diag(\mu^{-1},\mu)$ and a projector rotated by
+angle $\theta$, its $(2,1)$ entry is
+$(1-\mu^{-2})\sin\theta\cos\theta$; uniform normalization requires
+$\sin\theta=O(\mu^2)$.  Given a block encoding of $A_B/\alpha_B$, QSVT can
+construct $Q$ to the needed accuracy in
+\begin{equation}
+ O\!\left(\frac{\alpha_B}{\sigma_{\min}^+(A_B)}
+ \log(1/\epsilon_{\rm ls})\right)
+ \label{eq:active-projector-cost}
+\end{equation}
+queries, charging active-basis conditioning but no polynomial power of
+$\mu$.
+
+\begin{proposition}[Separately normalized composition cannot help]
+\label{prop:no-composed-preconditioning}
+Let $H/\alpha_H$ and an invertible $P/\alpha_P$ be separately encoded, with
+$\alpha_H\geq\norm H$ and $\alpha_P\geq\norm P$, and compose their encodings.
+For $x=H^{-1}f$, the DLS parameter of the resulting system
+$PHx=Pf$ satisfies
+\begin{equation}
+ \rho_{\rm prod}
+ =\alpha_H\alpha_P
+  \frac{\norm{P^{-\dagger}H^{-1}x}}{\norm x}
+ \geq \alpha_H\frac{\norm{H^{-1}x}}{\norm x}
+ =\rho_H.
+ \label{eq:no-composition-law}
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+Equation \eqref{eq:no-composition-law} uses the general non-Hermitian
+parameter \eqref{eq:dls-general-filtering-parameter}, because
+$(PH)^{-\dagger}=P^{-\dagger}H^{-1}$.  Since
+$\alpha_P\geq\norm P$, every
+vector $y$ satisfies
+$\alpha_P\norm{P^{-\dagger}y}\geq\norm y$.  Apply this with
+$y=H^{-1}x$.  The displayed expression is precisely the filtering
+parameter for normalization $\alpha_H\alpha_P$, proving the result.
+\end{proof}
+
+This normalization obstruction is known in quantum preconditioning:
+Lapworth and S\"underhauf show explicitly how multiplying separately
+normalized block encodings can erase a classical gain, while Nie, Lai, and
+An show how algebraic regrouping can restore it for Pauli structure
+\cite{leigh2025-preconditioned-block-encodings-quantum-linear,hantao2026-pauli-structured-preconditioning-quantum-linear}.
+Here separate composition has $\alpha_H,\alpha_P=\Theta(\mu^{-1})$, whereas the
+direct split has $\Gamma_\mu=O(1)$, a $\Theta(\mu^{-2})$ normalization
+compression.
+
+\begin{proposition}[Constant-sparse expander occurrence]
+\label{prop:stable-expander-witness}
+There is a family of constant-sparse standard-form LPs for which the
+unpreconditioned exact-centering solve has $\rho=\Theta(\mu^{-2})$, while
+\eqref{eq:stable-split-operator} has $O(1)$ singular conditioning and
+$O(1)$ block-encoding normalization and prepares exactly the same normalized
+Newton state independently of $\mu$.  The uniform bounds hold on
+$0<\mu\leq\mu_0$ with $\mu_0$ and all constants depending only on the degree
+$d$, the Laplacian gap, and $\delta_{\mathcal G}$, not on $m$.
+\end{proposition}
+
+\begin{proof}
+Let $\mathcal G=(\mathcal L,\mathcal R,\mathcal E)$ be a connected balanced
+$d$-regular bipartite expander on $m$ vertices, with constant $d$ and a
+constant Laplacian gap.  Orient each edge from $\mathcal L$ to $\mathcal R$,
+let $B_{\mathcal G}$ be its signed incidence matrix, and put
+\[
+ r=\mathbf1_{\mathcal R},\qquad \zeta=2r-e,\qquad
+ u_0=m^{-1/2}e.
+\]
+Here $r$ is the right-part indicator and $e$ is the all-ones vector of the
+dimension required by context; these symbols are local to this witness and
+are distinct from the coupling variables above.  Then
+$B_{\mathcal G}^\top r=e$ and
+$B_{\mathcal G}e=L_{\mathcal G}r=d\zeta$.  Fix
+$0<\delta_{\mathcal G}<1$, set
+$\omega_i=1+\delta_{\mathcal G}\zeta_i$ and
+$a_i=\sqrt{2/\omega_i}$, and consider
+\begin{equation}
+ \begin{aligned}
+ \min_{x,u,v\geq0}\quad&\sum_{i=1}^m a_i(u_i+v_i)\\
+ \text{subject to}\quad&B_{\mathcal G}x+u-v=B_{\mathcal G}e.
+ \end{aligned}
+ \label{eq:expander-lp}
+\end{equation}
+Its constraint matrix $[B_{\mathcal G},I,-I]$ has row and column sparsity
+$O(d)$.
+
+The point $x=e,u=v=te$ is strictly primal feasible for $t>0$.  Taking
+$y=-\varepsilon r$ for sufficiently small $\varepsilon>0$
+gives strictly positive dual slacks.  Nonnegativity of the objective shows
+that
+\[
+ x^*=e,\quad u^*=v^*=0,\quad y^*=0,
+ \qquad s_x^*=0,\quad s_u^*=s_v^*=a
+\]
+is optimal and strictly complementary.  Its active face is bounded: if
+$h\geq0$ and $B_{\mathcal G}h=0$, any left-vertex row forces all incident
+components of $h$ to vanish.  Also $e$ is the primal face's analytic center
+because $B_{\mathcal G}^\top r=e$.
+
+For completeness, the dual limit is also unique even though the dual optimal
+face is not a singleton.  Dual feasibility and optimality imply
+$B_{\mathcal G}^\top y\leq0$ and
+$e^\top B_{\mathcal G}^\top y=0$, hence
+$B_{\mathcal G}^\top y=0$.  Connectedness gives $y=ce$, and the remaining
+dual inequalities give
+\[
+ \{y:\ y\text{ is dual optimal}\}
+ =\{ce:\ |c|\leq\min_i a_i\}.
+\]
+On its relative interior the dual analytic-center objective is
+$\sum_i\log(a_i^2-c^2)$, which is strictly maximized at $c=0$.  Thus
+$y(\mu)\to0$, and the displayed primal--dual point is the central-path
+limit.
+
+Along the path,
+\begin{align}
+ H_\mu&=\mu^{-1}C_\mu+\mu D_\mu,\nonumber\\
+ C_\mu&=B_{\mathcal G}\diag(x_{\mathcal E}(\mu)^2)
+          B_{\mathcal G}^\top\longrightarrow L_{\mathcal G},\nonumber\\
+ D_\mu&=\diag\!\left(
+ \frac1{(a_i-y_i(\mu))^2}+\frac1{(a_i+y_i(\mu))^2}
+ \right)\longrightarrow\diag(\omega_i).
+ \label{eq:expander-normal-split}
+\end{align}
+Here $U=\operatorname{range}B_{\mathcal G}=e^\perp$ and
+$Q=I-\ket{u_0}\bra{u_0}$.  The constants are uniform in $m$.  Write
+$s_x=-B_{\mathcal G}^\top y$, $s_u=a-y$, $s_v=a+y$; the central equations
+are $x_es_{x,e}=\mu$, $u_is_{u,i}=\mu$, $v_is_{v,i}=\mu$, and
+$B_{\mathcal G}x+u-v=B_{\mathcal G}e$.  Seek a solution constant on edges
+and on each side: $x_e=\bar x$, $y_i=y_{\mathcal L}$ on $\mathcal L$,
+$y_i=y_{\mathcal R}$ on $\mathcal R$, with $\bar x=1+\mu^2w$,
+$y_{\mathcal L}=\mu z_{\mathcal L}$,
+$y_{\mathcal R}=\mu z_{\mathcal R}$.  Since
+$\omega=1\mp\delta_{\mathcal G}$ on $\mathcal L$ and $\mathcal R$, the
+system reduces to three scalar equations independent of $m$:
+\[
+ dw+\frac{2z_{\mathcal R}}
+ {2/(1+\delta_{\mathcal G})-\mu^2z_{\mathcal R}^2}=0,
+ \qquad
+ -dw+\frac{2z_{\mathcal L}}
+ {2/(1-\delta_{\mathcal G})-\mu^2z_{\mathcal L}^2}=0,
+ \qquad
+ z_{\mathcal L}-z_{\mathcal R}=\frac1{1+\mu^2w}.
+\]
+At $\mu=0$ they have the solution
+$w=(1-\delta_{\mathcal G}^2)/(2d)$,
+$z_{\mathcal L}=(1+\delta_{\mathcal G})/2$,
+$z_{\mathcal R}=-(1-\delta_{\mathcal G})/2$, with Jacobian determinant
+$-2d\neq0$.  The implicit function theorem gives a branch on
+$0<\mu\le\mu_0(d,\delta_{\mathcal G})$ with $\bar x>0$,
+$y_{\mathcal L}-y_{\mathcal R}=\mu/\bar x>0$, and $|y_i|<a_i$; the ansatz
+therefore satisfies the full central-path system, and uniqueness of the
+central point identifies it as the central path.  Hence
+$C_\mu=\bar x^2L_{\mathcal G}$ exactly, $D_\mu$ takes two side-constant
+values, and the expander gap together with
+$\omega_i\in[1-\delta_{\mathcal G},1+\delta_{\mathcal G}]$ gives the
+hypotheses of \cref{thm:stable-split-equilibration} with constants depending
+only on $d$, the Laplacian gap, and $\delta_{\mathcal G}$.
+
+For the exact-centering right-hand side $f=b=B_{\mathcal G}e$,
+$L_{\mathcal G}(Qr)=b$ and $Qr=\zeta/2$.  Its limiting active-to-null
+response is nonzero:
+\begin{equation}
+ u_0^\top\diag(\omega)Qr=\frac{\delta_{\mathcal G}\sqrt m}{2}
+ =\delta_{\mathcal G}\norm{Qr}.
+ \label{eq:expander-coupling}
+\end{equation}
+The coupling theorem therefore gives $\rho(H_\mu,f)=\Theta(\mu^{-2})$.
+In contrast, direct assembly gives
+\begin{equation}
+ M_\mu=C_\mu+\mu^2D_\mu
+ +(1-\mu^2)\ket{u_0}\bra{u_0}D_\mu.
+ \label{eq:expander-direct-split}
+\end{equation}
+It has uniform singular conditioning and $O(d)$ normalization: $C_\mu$ is
+a bounded-weight degree-$d$ Laplacian, $D_\mu$ is diagonal, $u_0$ is the
+uniform state, and the last term is rank one.  Since $b\in U$,
+$M_\mu^{-1}b=\mu^{-1}H_\mu^{-1}b$ at every $\mu$, completing the witness.
+\end{proof}
+
+The theorem assumes a supplied active partition, coherent current weights,
+and direct access to $C_\mu,D_\mu,Q$.  It also charges
+$\sigma_{\min}^+(A_B)$, right-hand-side preparation, norm estimation, and
+the requested output.  \Cref{sec:positive-modules} gives a partition-free
+construction on
+the strict-complementarity tail and thereby removes the supplied-partition
+assumption; that construction is not needed here.  Classical application of
+\eqref{eq:expander-direct-split} is already linear-time per Krylov iteration.
+The quantum statement is therefore meaningful only for a state or a few
+observables; tomography or a classical iterate restores dimension-dependent
+cost.
+
+\subsection{An exact-center marked-diagonal specialization}
+\label{sec:marked-diagonal-specialization}
+
+The sparse search lower bound of Orsucci and Dunjko
+\cite[Proposition~7]{orsucci2021-on-solving-classes-of-positive} can also be
+realized at an exact LP center.  This gives a useful QIPM specialization,
+but its marked-search core is prior art.
+
+Choose an integer $T\geq2$, set the local dimension
+$N_{\rm md}=T^8$ and $\mu=T^{-2}=N_{\rm md}^{-1/4}$, and hide
+$j\in[N_{\rm md}]$.  The subscript distinguishes this dimension from the
+optimal-partition set $N$ above.  Let $e_k$ denote the $k$-dimensional
+all-ones vector in this construction.  Row $i$ of
+$A_j\in\R^{N_{\rm md}\times2N_{\rm md}}$ has disjoint support
+$(2i-1,2i)$ and values
+\begin{equation}
+ (\mu/2,\mu/2)\quad(i=j),\qquad
+ (1,\mu-1)\quad(i\ne j).
+ \label{eq:marked-diagonal-A}
+\end{equation}
+Because $\mu$, $\sqrt\mu$, and $\mu^{3/2}$ are rational, all entries have
+magnitude at most one and $O(\log N_{\rm md})$-bit rational descriptions;
+row sparsity is two and column sparsity one.  Set
+\[
+ b=\mu^{3/2}e_{N_{\rm md}},\qquad
+ c=\sqrt\mu e_{2N_{\rm md}},\qquad
+ x^0=s^0=\sqrt\mu e_{2N_{\rm md}},\qquad y^0=0.
+\]
+Then $A_jx^0=b$, $(A_j)^\top y^0+s^0=c$, and
+$X^0S^0e=\mu e$, so this is an exact $\mu$-center.  Since
+$X^0(S^0)^{-1}=I$,
+\begin{equation}
+ H_j=A_jA_j^\top
+ =\diag(h,\ldots,\mu^2/2,\ldots,h),
+ \qquad h=1+(1-\mu)^2,
+ \label{eq:marked-diagonal-H}
+\end{equation}
+and the exact short-step right-hand side is
+$f=(1-\sigma)\mu^{3/2}e_{N_{\rm md}}$.  Its normalized preparation is uniform
+and independent of $j$.  The squared solution weight on the marked
+coordinate is at least $4/5$, while
+\[
+ \begin{aligned}
+ \kappa(H_j)=\Theta(\mu^{-2}),\qquad
+ \xi(H_j,f)=\Theta(1),\qquad
+ \rho(H_j,f)&=\Theta(\mu^{-2}),\\
+ \kappa_{\rm eff}(\epsilon_{\rm ls})
+ &=\frac{2h}{\mu^2}=\Theta(\mu^{-2})
+ \quad\text{for every fixed }\epsilon_{\rm ls}^2<4/5.
+ \end{aligned}
+\]
+After norm-tight normalization the only eigenvalues are $1$ and
+$\mu^2/(2h)$, so $\kappa_{\rm eff}$ drops to $1$ only once
+$\epsilon_{\rm ls}^2$ reaches the marked weight, which is at least $4/5$.
+Consequently, under the stated sparse-value oracle, or the canonical
+diagonal block encoding reducible to it, preparing the conventional exact
+normalized multiplier state to trace error $1/10$ (so that measuring the
+marked coordinate succeeds with probability at least $4/5-1/10=7/10$)
+requires
+$\Omega(\sqrt{N_{\rm md}})=\Omega(\mu^{-2})=\Omega(\kappa)$ queries.
+
+Taking $1-\sigma=\mu^2/4=\Theta(N_{\rm md}^{-1/2})$ gives a positive feasible
+short step whose endpoint remains in a fixed two-norm central neighborhood.  This
+makes the occurrence native to an IPM, subject to three essential caveats.
+First, it is not representation invariant: row equilibration turns
+\eqref{eq:marked-diagonal-H} into the identity and makes the scaled
+multiplier state easy (the primal/slack direction itself is invariant).
+Second, simply omitting the marked component leaves relative normal residual
+only $\Theta(\mu^2)$, so ordinary residual-based inexact IPMs can bypass the
+state-preparation contract.  Third, the hard scale occurs at one point of
+each fixed instance's path; it does not persist as that fixed instance's
+barrier parameter tends to zero.  The lower bound is therefore for the
+original exact normalized multiplier-state contract, not for every QIPM or
+every equivalent representation.  This distinction also accords with the
+representation and finite-precision cautions in classical IPM analysis
+\cite{wright1998-ill-conditioning-computational-error-interior}.
+This $\Omega(\kappa)$ statement is a full-query-model bound and survives
+factor access.  It is consistent with
+\cref{thm:quantum-cluster-obstruction}\textup{(iii)}, which is a
+polynomial-metric statement and becomes an end-to-end factor-access solve
+only under its explicit overlap hypothesis.
+
+\subsection{Novelty and scope}
+
+The application of the 2026 DLS solvers to IPM Newton systems, the exact
+coupling law, the $D=4$ versus $D=8$ selection rule and its QIPM correctors,
+and the state-preserving stable split appear to be new.  This is deliberately
+not an unconditional priority claim.  Effective conditioning, active-set
+preconditioning, Green-function moment thresholds, and the generic
+marked-diagonal search bound are prior art.  None of the results in this
+section proves an end-to-end quantum LP speedup or a new universal QLS lower
+bound.  Access construction, active-set discovery where needed, precision,
+iterate maintenance, and output costs remain part of any such claim.

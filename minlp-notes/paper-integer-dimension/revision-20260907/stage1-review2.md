@@ -1,0 +1,32 @@
+# Stage 1 independent review 2
+
+Reviewed the frozen sources in `reviews/revision-stage1-round1/source`, the entire introduction and bibliography diff against git HEAD, and the author and literature reports. No other reviewer reports were consulted. This review focuses on the introduction's theorem scope, novelty and closest formulation/representability predecessors; it is not a substitute for the scheduled technical proof reviews.
+
+## Assessment
+
+No major issue identified. The main contribution is now stated precisely: half the noncommutative rank governs the accuracy-dependent minimum integer dimension for a fixed quadratic system on a full-dimensional box, and both the lower bound against arbitrary convex lifts and matching binary linear upper construction belong to that claim. The sentence is appropriately qualified. The introduction explicitly credits minimum MICP rank and parity to Lubin et al., compact logarithmic quadratic approximation to Beach et al., and binary embeddings to Vielma. It does not suggest that logarithmic precision growth itself is new. The covariance, scalar, and vector comparisons are distinguished from their inherited approximation and algebraic ingredients.
+
+The importance is explained in terms of intrinsic count, general versus binary integers, and rational description size, without promising solver speed. The cross-product example gives an accessible reason that the joint algebraic invariant matters. The formula summaries checked below agree with the referenced theorem statements.
+
+## Valid minor findings
+
+1. **Qualify the scope of the cited embedding proposition.** Introduction lines 208–211 currently say that Vielma's Proposition 1 embeds “finite polyhedral unions using distinct binary codes.” That proposition assumes rational nonempty polyhedra with extreme points and a common recession cone (Assumption 1, local primary PDF p.5; Proposition 1, p.6–7). Arbitrary finite polyhedral unions do not satisfy that assumption. Since the local graph bands used here are bounded, the simplest accurate statement is that the cited construction applies to finite unions of bounded rational polyhedra, with the elementary real-coefficient adaptation if that is the intended comparison. Alternatively state the common-recession hypothesis. This is a citation-scope correction, not a defect in this paper's compact-band constructions. The earlier broad mention at lines 31–33 can also be changed to “bounded polyhedral unions” for consistency.
+
+2. **State the rational compiler's interval and tolerance in its introductory claim.** Introduction lines 143–145 say “for every rational convex polynomial given in dense encoding, in time and total encoding length polynomial in the input.” The cited Theorem `thm:convex-hybrid` is explicitly for convexity on `[0,1]` and positive rational tolerance. The immediately preceding paragraph allows an arbitrary compact interval and every positive absolute tolerance; a reader can consequently carry those unrestricted data into the algorithmic claim. Add “on `[0,1]`, with positive rational tolerance” (or state a justified rational affine interval reduction). This keeps the distinction between existence for real data and the finite rational input model precise at first presentation.
+
+## Optional preferences, not findings
+
+- Lines 244–246 contrast LinA's permission for discontinuous approximants with this paper's containment of a continuous graph. A discontinuous approximating function can still define a valid graph-containing error band, so that contrast is not itself the novel distinction. The next sentences already give the meaningful distinction—comparison to arbitrary convex lifts and compact encoding. Removing the continuity contrast would sharpen the passage, but the existing wording does not make a false exclusion claim.
+- A later related-work expansion could mention Zadik, Lubin, and Vielma's *Shapes and recession cones in mixed-integer convex representability* (2024). I screened its primary arXiv abstract, which concerns exact representation, recession cones, and shapes of projected convex sections, not an accuracy-dependent rank law. Its omission does not presently undermine the qualified novelty claim. Primary record: https://arxiv.org/abs/2103.03379.
+
+## Evidence inspected independently
+
+- `literature/AGENTS.md` read and followed; no knowledge-base package or index edited.
+- Lubin, Vielma, Zadik, local primary arXiv manuscript: definition of a closed convex lift (p.2), Definitions 4.2/4.3 (p.11), Lemma 4.1 and its parity proof (p.12). These support the introduction's rank/parity attribution and its distinction about nonclosed lifts. Source: `literature/papers/lubin2022-mixed-integer-convex-representability/fulltext.md`.
+- Vielma, local primary manuscript: Assumption 1 (p.5), Proposition 1 and Corollary 1 (p.6–7), and embedding complexity discussion (p.8). The common-recession hypothesis was also verified with fresh text extraction from `original.pdf`.
+- Beach, Hildebrand, Huchette, local primary manuscript: introduction and Sections 2.1–2.2 (p.2–5), including the univariate square's error `2^(-2L-2)` and the use of one binary per sawtooth stage. This directly supports the compact logarithmic approximation attribution. It does not supply this draft's nc-rank identification or arbitrary-lift lower bound.
+- Lyu, Hicks, Huchette, local primary manuscript: Section 3 / Proposition 1 and common SOS2 construction (p.6–7). Shared same-input partitions are appropriately credited.
+- Frozen theorem statements `thm:ncrank`, `thm:finite-covariance`, `thm:rational-finite`, `thm:convex-hybrid`, `thm:vector-rank`, and `thm:count-hardness` checked against the introductory summaries. The quadratic asymptotic, coefficient/output-uniform finite law, rational count guarantee, and logarithmic curvature-rank description match the stated results, subject to minor finding 2 above.
+- Independent web searches for the exact representability/compact formulation titles and combinations of minimum integer count, graph approximation and noncommutative rank. Primary author records corroborate the closest representability context (https://research.google/pubs/mixed-integer-convex-representability/; https://juan-pablo-vielma.github.io/publications/index_topic.html). No evidence found that contradicts the narrowly qualified priority assertion. Search absence is not proof of priority.
+
+No unsupported major criticism or mathematical counterexample was found in the scope of this stage.

@@ -1,0 +1,180 @@
+--- V2/certify/recheck.py
++++ V3/certify/recheck.py
+@@ -11,7 +11,6 @@
+ import concurrent.futures
+ from datetime import datetime, timezone
+ import fcntl
+-from fractions import Fraction
+ import hashlib
+ import importlib.metadata
+ import json
+@@ -24,6 +23,7 @@
+ import sys
+ import tempfile
+ import time
++from .rational_text import parse_rational_text
+ 
+ LAB = Path(__file__).resolve().parents[1]
+ 
+@@ -45,7 +45,7 @@
+     if previous is None or current is None:
+         return "unavailable"
+     try:
+-        before, after = Fraction(str(previous)), Fraction(str(current))
++        before, after = parse_rational_text(str(previous)), parse_rational_text(str(current))
+     except (ValueError, ZeroDivisionError):
+         return "unavailable"
+     return "equal" if before == after else "changed"
+--- V2/certify/summarize.py
++++ V3/certify/summarize.py
+@@ -13,6 +13,7 @@
+ from fractions import Fraction
+ import json
+ from pathlib import Path
++from .rational_text import parse_rational_text, format_rational_text
+ 
+ LAB = Path(__file__).resolve().parents[1]
+ 
+@@ -21,7 +22,7 @@
+     if value is None or value in ("", "NA"):
+         return None
+     try:
+-        return Fraction(str(value))
++        return parse_rational_text(str(value))
+     except (ValueError, ZeroDivisionError):
+         return None
+ 
+@@ -33,8 +34,8 @@
+         return None
+     difference = sense * (reference - bound)
+     relative = difference / max(Fraction(1), abs(reference))
+-    return {"bound": str(bound), "reference": str(reference),
+-            "signed_difference": str(difference), "normalized_difference": str(relative),
++    return {"bound": format_rational_text(bound), "reference": format_rational_text(reference),
++            "signed_difference": format_rational_text(difference), "normalized_difference": format_rational_text(relative),
+             "reference_beyond_bound": difference < 0,
+             "near_reference_1e4": 0 <= relative <= Fraction(1, 10000),
+             "near_reference_1e2": 0 <= relative <= Fraction(1, 100)}
+@@ -69,8 +70,8 @@
+             if result is None:
+                 continue
+             # Preserve the historical tolerance, applied with exact arithmetic.
+-            excess = -Fraction(result["signed_difference"])
+-            tolerance = Fraction(1, 1000000) * max(Fraction(1), abs(Fraction(bound)))
++            excess = -parse_rational_text(result["signed_difference"])
++            tolerance = Fraction(1, 1000000) * max(Fraction(1), abs(parse_rational_text(bound)))
+             if excess > tolerance:
+                 discrepancies.append({"instance": name, "solver": solver,
+                                       "model_status": baseline["model_status"], "comparison": result})
+--- V2/certify/rational_text.py
++++ V3/certify/rational_text.py
+@@ -0,0 +1,28 @@
++"""Exact rational report text without Python's decimal-int digit limit.
++
++This module handles textual report boundaries, not model extraction or proof
++inference. Decimal and exponent strings retain their exact decimal value.
++"""
++from decimal import Decimal, InvalidOperation
++from fractions import Fraction
++
++from flint import fmpq
++
++
++def parse_rational_text(text: str) -> Fraction:
++    """Parse an integer/fraction or finite decimal string exactly."""
++    text = text.strip()
++    try:
++        value = fmpq(text)
++    except ValueError:
++        try:
++            numerator, denominator = Decimal(text).as_integer_ratio()
++        except (InvalidOperation, ValueError, OverflowError) as error:
++            raise ValueError("not finite rational text") from error
++        return Fraction(numerator, denominator)
++    return Fraction(int(value.numerator), int(value.denominator))
++
++
++def format_rational_text(value: Fraction) -> str:
++    """Print a canonical rational without converting large Python ints to str."""
++    return str(fmpq(value.numerator, value.denominator))
+--- V2/certify/run_all.py
++++ V3/certify/run_all.py
+@@ -9,11 +9,19 @@
+ from __future__ import annotations
+ import argparse, json, os, re, shutil, signal, subprocess, sys, tempfile, time, traceback
+ from pathlib import Path
+-from fractions import Fraction
+ from flint import fmpq
++from .rational_text import parse_rational_text
+ 
+ LAB = Path(__file__).resolve().parents[1]
+ os.environ.setdefault("OMP_NUM_THREADS", "1")
++
++
++def _display_float(text):
++    """Optional binary64 display; the exact rational string is authoritative."""
++    try:
++        return float(parse_rational_text(text))
++    except (ValueError, ZeroDivisionError, OverflowError):
++        return None
+ 
+ 
+ def canonicalize_fractions(path):
+@@ -139,11 +147,10 @@
+             rec["scip_time"] = att["time"]; rec["viprchk_time"] = att["viprchk_time"]
+             rec["verified_range"] = att["verified_range"]
+             lo = att["verified_range"][0]
+-            rec["external_master_lb"] = float(Fraction(lo)) if lo not in ("-inf",) else None
++            rec["external_master_lb"] = _display_float(lo)
+             rec["exact_dual_bound"] = att.get("exact_dual_bound")
+             if rec["exact_dual_bound"]:
+-                try: rec["exact_dual_bound_float"] = float(Fraction(rec["exact_dual_bound"]))
+-                except Exception: pass
++                rec["exact_dual_bound_float"] = _display_float(rec["exact_dual_bound"])
+             os.replace(os.path.join(outdir, "master.vipr"), os.path.join(outdir, "master_verified_raw.vipr"))
+             break
+         else:
+@@ -161,8 +168,9 @@
+     rec["sense"] = checker_report.get("sense")
+     rec["certified_bound_original_sense"] = checker_report.get("certified_bound_original_sense") if verified else None
+     if rec["certified_bound_original_sense"] is not None:
+-        rec["certified_bound_original_sense_float"] = float(Fraction(rec["certified_bound_original_sense"]))
+-        rec["certified_lb"] = rec["sense"] * rec["certified_bound_original_sense_float"]
++        approximate = _display_float(rec["certified_bound_original_sense"])
++        rec["certified_bound_original_sense_float"] = approximate
++        rec["certified_lb"] = None if approximate is None else rec["sense"] * approximate
+     rec["checker_time"] = checker_seconds
+     rec["time"] = time.time() - t0
+     rec["status"] = "verified" if verified else "rejected"
+--- V2/certify/driver.py
++++ V3/certify/driver.py
+@@ -20,6 +20,7 @@
+ from .convexity import certify_constraint, certify, frac, AFFINE, CONVEX, CONCAVE
+ from .safecut import SafeCutter
+ from .exact_model import exact_repn, exact_constant, exact_constraint_rows
++from .rational_text import parse_rational_text, format_rational_text
+ 
+ INF = float("inf")
+ 
+@@ -461,7 +462,7 @@
+         return
+     if proof.get("sense") != "min" or proof.get("lower_bound") in (None, "-inf", "inf"):
+         raise ValueError("a finite minimization lower bound is required")
+-    lo = Fraction(proof["lower_bound"])
++    lo = parse_rational_text(proof["lower_bound"])
+     if viprchk is not None:
+         import subprocess
+         result = subprocess.run([viprchk, path], capture_output=True, text=True)
+@@ -469,9 +470,9 @@
+         report["checks"].append(("external_viprchk", "", "OK" if accepted else "FAIL", diagnostic))
+         if not accepted:
+             return
+-    report.update(ok=True, status="verified", certified_master_lb=str(lo),
+-                  certified_bound_original_sense=str(exact.sense*lo),
+-                  verified_range=[str(lo), proof.get("upper_bound")])
++    report.update(ok=True, status="verified", certified_master_lb=format_rational_text(lo),
++                  certified_bound_original_sense=format_rational_text(exact.sense*lo),
++                  verified_range=[format_rational_text(lo), proof.get("upper_bound")])
+ 
+ 
+ def vipr_parse_problem(path):

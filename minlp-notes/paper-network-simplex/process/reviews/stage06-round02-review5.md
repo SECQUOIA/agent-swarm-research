@@ -1,0 +1,49 @@
+# Stage 6, round 2 — independent review 5
+
+**Verdict: no major or minor findings.** The accepted major experimental-control issue is resolved. The corrected baseline, official rerun, and revised interpretation support accepting this stage. This verdict concerns the assigned Stage 6 snapshot; it does not replace the later full-manuscript review.
+
+I reviewed `process/snapshots/stage06-round02`, the round-1 assessment, correction record, both requested validation records, the changed external implementation and tests, the benchmark runner and optimization-only rerun, table generator, raw records, and the interfaces to the unchanged accepted mathematical sections. I did not read another round-2 report, coordinate judgments, or edit shared manuscript/code/data. All executable evidence is under `verification/reviewer5/stage06-round02/`.
+
+## Disposition of accepted findings
+
+1. **R5-S06-01, previously major — resolved.** `strong_baselines.optimize_ef` now substitutes fixed weights before assembling either full or globally merged optimization models. It retains only positive-weight state-flow blocks, uses native scaled capacity bounds, and solves a single joint LP. This directly supplies the elementary control missing in round 1, including for the aggregate-budget case. The original free-weight branch is retained.
+
+   I independently checked the substitution: each positive state satisfies `Af = weight*b` and `0 <= f <= weight*u`; summing those flows reconstructs the original aggregate flow. An observed zero-weight state contributes zero to every corresponding product. Product objective/row coefficients enter exactly their active state-flow coordinates. Every original simplex objective coefficient contributes to the fixed objective constant, including coefficients of globally unobserved labels. Every fixed simplex contribution to an additional row moves to its right side. Global merging remains valid with these rows: unobserved states affect them only through aggregate flow and the already fixed original simplex coordinates. A merged positive flow can be split proportionally among its constituent original weights. Zero states have zero flows because capacities are bounded.
+
+   The official rerun uses the archived original objectives, weights, and additional rows. All optimization methods have new warmup/run records; no reviewer diagnostic timings have been substituted. I checked the original-input identities and reproduced all three cases separately, including all methods, objectives, model counts, and the runner's outside-timing audits. The revised manuscript correctly reports global merging's lower recorded median on both sparse and budgeted cases, acknowledges the sparse timing-range overlap, and preserves the distinct compression benefit when all global labels are observed. In particular, the primary variable counts are now 5,547, 516, 255, and 222; the all-labels-observed full/global counts are both 7,215. The revised comparisons no longer depend on retaining fixed simplex columns or variable-weight capacity rows in the full/global baseline.
+
+2. **R5-S06-02, previously minor — resolved.** `verification/stage06-tables.py` now checks unique complete ordered flat keys, exact membership label counts, optimization case names/order, required warmup/run/summary methods, rotations, statuses, and timing summaries. My earlier duplicate-case counterexample is rejected. Eleven private mutations listed below also exercise the repaired guard. All actual frozen cases are complete, and all five tables regenerate byte for byte from the official JSON.
+
+3. **Other accepted round-1 minor findings — resolved.** The printed benchmark command contains one continuation backslash and executes as the intended two command argument lists after extraction from the PDF. The implemented length bound explicitly excludes observation sorting. The manuscript now distinguishes three-label sixteen-circuit separation from inverse-basis recovery beginning at three labels. This agrees with the code and accepted theory; the correction history explains the historical author-record update.
+
+## Independent mathematical and implementation checks
+
+I wrote a fresh original-hull vertex comparison rather than relying only on the added implementation test. The network vertices were enumerated by fixing capacity-box coordinates and solving independent balance columns. The reference hull then used their Cartesian products with all original simplex vertices. Additional dense original-coordinate constraints were imposed directly on that vertex hull, without using the production state-flow transformation.
+
+`independent_fixed.py` checked six small networks with varied orientations, parallel arcs, a loop, nonuniform capacities, and simplex sizes zero through five. It included absent and sparse observations, interior and boundary simplex weights, exact zero weights, dense mixed x/y/z constraints, nonzero original y objective terms, and deliberately infeasible fixed-y constraints. It compared 72 fixed-weight and 36 free-weight vertex LPs with both full and globally merged implementations: **216 joint results**, including **36 infeasible results**, agreed. It independently checked original-point objectives, coupled rows, aggregate balances, fixed weights, row/variable counts, and **246 recovered positive state-flow blocks**. The largest objective/row discrepancy was approximately `1.78e-14`.
+
+The direct fixed-y branch neither changes the free-y algebra nor changes the point-membership implementation. Its state selection and reconstruction do not divide by zero weights. Solver failures still raise rather than becoming infeasibility declarations. The combined suite passed **22 tests**, including the correction agent's separately assembled vertex tests and injected solver failures.
+
+I also reassessed the complete computation section, not only the corrected paragraphs:
+
+- The two-positive-state membership reduction follows from `g=x-f`; intersected capacity/observation bounds and the aggregate balance give both state balances. Its exact formulation and numerical implementation are clearly distinguished.
+- The fixed-weight independent-network objective identity requires the stated absence of additional coupling. The aggregate-budget control correctly excludes that baseline and compares the intersection of the component hull with the budget.
+- The exact separators, numerical compressed models, rationalized dual certificates, and small-denominator primal reconstruction have distinct and appropriately limited certificate claims.
+- The two-supplier interpretation has the required parallel-path underlying graph and common balance/capacity domain. It is presented as a modeling illustration, not as industrial validation or an exact hull after arbitrary additional constraints.
+- The implemented flat-chain scope, sorting cost, inverse-basis recovery, historical baseline attribution, zero-state reductions, and numerical timing caveats remain consistent with the accepted theory and unchanged source. Sections 01–07 are byte-identical to the accepted previous snapshot.
+
+## Data, reproduction, and presentation
+
+`check_records.py` verified **all 100 dependency hashes**, the frozen snapshot/current reviewed-source agreement, and the unchanged accepted sections. It independently recomputed **483 timing summaries** and checked the expected status of **515 timed method records**. Flat, many-label membership, and cold-library records equal their archived round-1 values exactly. Optimization objectives, weights, added rows, and identifying instance fields match the archive, while every timed optimization measurement has been replaced by a fresh measurement.
+
+The private table-generator exercise regenerated all five tables exactly and rejected these eleven mutations: duplicate flat case, missing flat case, duplicate membership case, incorrect membership label count, reversed optimization order, missing optimization case, missing warmup method, missing timed method, incorrect rotation, incorrect status, and corrupted timing summary. The final private input copy was restored to the actual official JSON.
+
+`recheck_official.py` ran a fresh audited warmup and one additional run of every method in each of the three official optimization cases. All objectives and recorded model statistics matched. These new measurements are only verification evidence; they are not substituted into the paper or treated as a statistical performance study.
+
+A private copy built to **45 pages** with no final warnings, unresolved references/citations, or overfull/underfull boxes. I inspected rendered pages 40 and 41, including the updated main optimization table, both control comparisons, and their interpretation. The tables are legible and agree with the text. `check_shell.py` extracts the printed reproduction command and tests its arguments through a harmless Bash function; it passes.
+
+## Findings and limitations
+
+**New findings: none.** No optional editorial preference is being treated as a defect or prerequisite for acceptance.
+
+The independent LP comparisons establish finite numerical consistency, not an exact numerical optimality theorem. Their combinatorial reference formulation is independent of the state-flow implementation, but both numerical formulations use SciPy/HiGHS. I did not repeat the complete five-run timing experiment or unchanged full-length membership study: I verified the raw records and hashes, reran the corrected optimization workloads once beyond their warmups, and ran the combined test suite. I did not rerun all earlier mathematical-stage verification scripts because their accepted sections and dependencies are unchanged. Shared-host timing limitations remain as disclosed in the manuscript, and the corrected discussion stays within that evidence.

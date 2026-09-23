@@ -1,0 +1,93 @@
+Review of curve-hulls/report.md (root curve-hull cuts on waterno2_*)
+Reviewer: independent agent, 2026-09-23.  Scripts: curve-hulls/code/review/.
+Python: ~/miniconda3/envs/exact-quadratic-hull/bin/python, Gurobi 13 (WLS academic).
+
+OVERALL VERDICT
+The headline holds up. The saved waterno2 cuts are exactly valid. The substituted model is a correct
+relaxation of the original. In an independent rebuild (no model.py), the saved waterno2_06 cuts raise
+Gurobi's 300 s dual bound from 94.4 to 212.4, above MINLPLib's listed best dual bound of 165.19.
+Every table entry matches the raw results files. The problems found are provenance and reproducibility
+defects, not validity defects (see "Defects" below). The dual bounds are still uncertified
+floating-point Gurobi output, as the report says.
+
+SCRIPTS (all written by the reviewer; none of them use the author's validate.py or check_point.py)
+- rbuild.py      own OSiL reader and Gurobi builder for waterno2 (linear, quadratic, power(var,3) only;
+                 anything else raises).  "sub" mode: y=x^2, z=x^3 with exact bounds.  Cuts are translated
+                 from the saved funcs (k*t**p) to (x, y, z).
+- exact_cuts.py  exact rational check of every saved cut (see claim 1).
+- rowcheck.py    row-by-row equivalence of the author's model.build(...,"sub") and the OSiL model.
+- auxbounds.py   checks that auxiliary-variable bounds contain g([l,u]), using exact rationals.
+- fixpoint.py    fixes the MINLPLib best point in the reviewer's orig/sub/sub+cuts models and the author's sub+cuts model.
+- rrun.py        300 s reproduction with rbuild.  tablecheck.py dumps the raw results.
+Outputs: rrun_*.out, waterno2_06_*_300_s0.log, fixpoint_*.out.
+
+CLAIM 1  Cut validity (waterno2_06, waterno2_24; also _09/_12/_18)          VERDICT: CONFIRMED
+- Each cut claims p(t) = c0 + c[0] t + c[1] k2 t^2 + c[2] k3 t^3 >= 0 on [l,u].  The check converts all
+  floats to Fractions exactly.  The minimum is taken over the endpoints and the real roots of p'
+  in the interval; each root is (-B +- sqrt(D))/(2A), and p(root) is reduced to X + Y sqrt(D) with an
+  exact sign test.  The interval is the union of the float bounds in the cut file and the exact decimal
+  bounds in the OSiL file (for example, ".58").  The checker was tested on t^3 - t and on cuts with c0 lowered by 1e-9.
+- waterno2_06: 673 cuts on 72 variables, 0 violated; worst slack +1.46e-11 (absolute), +1.2e-12 (relative).
+  waterno2_24: 2479 cuts on 289 variables, 0 violated; worst slack +2.5e-12 (absolute), +4.1e-13 (relative).
+  _09 (1006), _12 (1102), _18 (1751): 0 violated; worst slacks 2.5e-12, 6.6e-12, 5.7e-15.
+- For every cut, [l,u] equals the OSiL bounds of variable v.  Each v is continuous and has a diagonal x_v^2
+  term and an x_v^3 term in the OSiL model.  All selected variables have l >= 0.
+- In the author's model, each t{v}_j is defined from x_v only (checked from Gurobi's stored QC rows
+  and NL expression trees).  For the _24 file, t{v}_j equals funcs_j(x_v) exactly at random points.
+- Caveat: the _12/_18/_24 cut files are from the seed-1 runs (1102/1751/2479 cuts).  The seed-0 cuts
+  behind the table (1232/1664/2202) were overwritten, because run.py writes cuts/<name>.json regardless
+  of seed.  The validity of the seed-0 cuts for _12/_18/_24 therefore cannot be checked.
+
+CLAIM 2  The substituted model plus cuts is a relaxation of the original        VERDICT: CONFIRMED
+- rowcheck.py (_06 and _24) sets x to random points in the box, computes each t from its defining
+  constraint, and evaluates all rows.  Results:
+  - Rows 1234/1234 (_06) and 4942/4942 (_24) are present, with matching senses and right-hand sides.
+  - The maximum relative row mismatch against the reviewer's OSiL evaluation is 0 (_06) and 1.3e-17 (_24).
+  - The objective matches, and the original variable bounds and types are unchanged.
+  - The model.py selection equals the reviewer's selection (78 and 312 variables).
+- The auxiliary bounds contain g([l,u]) exactly (156 and 624 variables).
+- Together with claim 1, this gives the argument: for any feasible x of the original, setting t = g(x)
+  satisfies every definition, row, bound and cut.  The new model is therefore a relaxation.
+- Fixing the MINLPLib best point (p4, obj 282.888; p5, obj 7332.72): the reviewer's orig, sub and sub+cuts
+  models are all feasible, with identical objectives, on _06 and _24.  The author's sub+cuts model is feasible on _24.
+- DEFECT: the author's sub+cuts model is INFEASIBLE at the _06 best point with the current code.
+  check_models.py waterno2_06 now prints "sub+cuts status 3"; the IIS contains a cut, x366, t366_0 and t366_1.
+  Cause: the saved _06/_09 cuts were generated under an earlier scaling (for example, t = 4x^2 on [0,0.58]).
+  The current model.py defines t = x^2 there, so run.add_static puts the saved coefficients on differently
+  scaled variables.  131 of the 673 _06 cuts are affected.
+  This is a stale-artifact problem, not an invalid run: within each run, the cuts and the model came from
+  the same code, and the cuts are valid for the funcs recorded with them.  However, the report's statements
+  that "waterno2 was not affected" by the rescaling, and that check_models passes on every reported
+  instance, are no longer true of the files on disk.  In fact, the seed-0 table runs (cut files dated
+  10:29-10:32) used the old scaling, and the seed-1 replicates used the new one.
+
+CLAIM 3  Dual bound improvement reproduces (waterno2_06, 300 s, 1 thread, seed 0)   VERDICT: CONFIRMED
+- Built with rbuild (independent of model.py), using the saved cuts as static rows (no phase-1 callback):
+    orig  dual  94.44  (primal 285.09, 89k nodes)
+    sub   dual  91.36  (117k nodes)
+    cuts  dual 212.42  (primal 282.92, 69k nodes)
+  The author's 1800 s values are orig 112.89, sub 117.42 and cuts 229.74.  The direction matches, and the
+  gain at 300 s (2.2x) is similar to the author's gain at 1800 s (2.0x).  Substitution alone gives no gain.
+- MINLPLib page (fetched 2026-09-23): best dual 165.1902989 (SCIP); GUROBI 162.19; best primal 282.8880374 (p4).
+  The waterno2_24 page lists SCIP 1095.126488 and primal 7332.721691.  Both match listed_bounds.json.
+  The 300 s cuts bound already exceeds 165.19 and stays below the best primal.  All reported cuts-run
+  bounds (229.7/636.6/1555/3226/4464) are below the listed best primals (282.9/922.6/2263/5270/7333), so
+  there is no contradiction with known points.
+- As the report says, this is still an uncertified floating-point bound, and the comparison with
+  MINLPLib is not like-for-like (unknown solver settings and times).
+
+CLAIM 4  Tables agree with raw results                                          VERDICT: CONFIRMED (minor wording)
+- Every Section-4 entry matches results/*.out: cut counts, root bounds, and orig/sub/cuts/soc duals for
+  the 18 rows.  The seed replicates (1578.30/3191.63/4417.70; lnts100 and lnts400 seeds) and the Section-6
+  incumbents (2234.09/5090.69/6962.67; 5077.88/7082.77) also match.  The listed bounds match listed_bounds.json.
+- Minor points:
+  - "root bound 7-67 times": the actual ratios are 6.7-67 (waterno2_09: 454.8/68.0 = 6.69).
+  - The lnts100 root value 0.5275 appears as "0.527".
+  - The seed-0 waterno2 results have no incumbent_check field (only the seed-1 runs do).
+
+RECOMMENDED FIXES
+1. Make run.py write cut files named by seed (and mode), and regenerate or restore the seed-0
+   waterno2_12/18/24 cuts.  Alternatively, state that the saved files are from seed 1.
+2. Save the scaling with each cut file, or regenerate the _06/_09 cuts with the current model.py.
+   Then rerun check_models.py, and correct "waterno2 was not affected" and the Section-5 check_models claim.
+3. Change "7-67 times" to "6.7-67 times".

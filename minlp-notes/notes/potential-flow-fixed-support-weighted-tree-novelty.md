@@ -1,0 +1,47 @@
+# Fixed-support weighted tree optimization: bounded source audit
+
+Date: 2026-09-05. Candidate: [fixed-support weighted tree algorithm](potential-flow-fixed-support-weighted-tree.md). This is a source comparison, not an independent proof audit.
+
+No equivalent theorem was located for exact joint optimization of a zero-sum potential functional with support at most `p`, over arbitrary rational balanced nomination boxes and independent interval or explicitly finite positive resistances on a tree, with `N^{O(p)}` bit complexity and rational scenario recovery. The plausible contribution is the objective-support reduction to a small family of nomination faces. Tree flow formulas, two-terminal algorithms, endpoint elimination of resistance choices, and rational quadratic-program solutions are established or elementary ingredients. The combined theorem deserves qualified consideration; broad novelty is not established by this bounded search.
+
+## Direct passive-flow predecessor
+
+Martine Labbé, Fränk Plein, and Martin Schmidt, *Bookings in the European gas market: Characterisation of feasibility and computational complexity results*, Optimization and Engineering 21, 305–334 (2020), DOI 10.1007/s11081-019-09447-0, [open preprint](https://optimization-online.org/wp-content/uploads/2018/12/6977.pdf). Section 5 develops cut-flow formulas, path potential sums, and dynamic programming on trees. Lemmas 13–14 determine flows and potentials from nominations; Theorem 18 and Corollary 19 obtain maximum root-to-node and pairwise potential changes through jointly attained path-flow extrema. Theorem 20 gives quadratic-time booking validation. The inspected formulation uses fixed edge laws and booking-compliant nominations. Local evidence: [[labbe2020-bookings-in-the-european-gas]] p.13-20.
+
+Our comparison: the candidate must credit the known two-terminal tree case. Its parameter is the number of nonzero objective coefficients, extending beyond one pairwise difference while retaining polynomial complexity for each fixed support size. A general weighted sum cannot be optimized by independently optimizing its pairwise summands: they share the same nomination. The proposed zero-cut contraction and bounded path decomposition explain why fixed support still permits a controlled search.
+
+The candidate also permits shifted nomination bounds and joint resistance uncertainty. On trees, resistance elimination is straightforward once nominations are fixed, because the flow does not depend on resistances and the objective is linear in each resistance. Consequently interval and independent finite sets reduce to their attained endpoints. This is an elementary extension of the tree representation; its value lies in combining it with a resistance-independent nomination-face family.
+
+Labbé, Plein, Schmidt, and Thürauf, *Deciding feasibility of a booking in the European gas market on a cycle is in P for the case of passive networks* (2021), DOI 10.1002/net.22003, [publisher primary text](https://onlinelibrary.wiley.com/doi/full/10.1002/net.22003). The introduction and concluding scope statement describe reducing pairwise nomination optimization on a cycle to polynomial systems of fixed dimension and applying real algebraic geometry. This establishes an earlier passive-flow strategy of structural dimension reduction followed by fixed-dimensional optimization. It does not state the inspected candidate's objective-support parameter on trees.
+
+## General resource allocation is related but does not directly subsume the claim
+
+Thibaut Vidal, Daniel Gribel, and Patrick Jaillet, *Separable Convex Optimization with Nested Lower and Upper Constraints*, INFORMS Journal on Optimization 1(1), 71–90 (2019), DOI 10.1287/ijoo.2018.0004, [open accepted manuscript](https://arxiv.org/pdf/1703.01484). Section 1, PDF pages 2–4, minimizes a separable convex objective under variable bounds and lower/upper bounds on nested partial sums. The authors give a divide-and-conquer algorithm without requiring strict convexity or differentiability, and an `O(n log m)` algorithm for the quadratic case. Their general continuous complexity uses approximate solutions and an evaluation oracle.
+
+Our comparison: tree flow coordinates and nomination constraints lead naturally to network or nested resource-allocation structure, so decomposition and monotonicity arguments in that literature are relevant. However, signed terms `w_e beta_e x_e|x_e|` need not form a convex minimization problem, and the candidate maximizes as well as minimizes. Its nomination objective can also be nonseparable after expressing flows as subtree sums. Neither the convexity assumptions nor the fixed-support reduction follow just from the existence of a tree. The inspected resource-allocation result therefore does not directly supply the new theorem.
+
+The candidate's ordered nomination statuses are a threshold consequence of first-order optimality under one balance equation: gradients above or below one multiplier force opposite box endpoints. Such multiplier arguments are standard optimization machinery. The potentially distinct structural statement is that sparse potential support makes those gradients strictly ordered on only `O(p)` paths, independently of nominations and resistances, leaving only `O(p)` free coordinates on one of `N^{O(p)}` faces.
+
+Searches for nonconvex separable tree optimization, fixed terminal count, and fixed numbers of sign changes did not produce a primary theorem with this precise assumption set. This is not evidence that all related network or resource-allocation literature has been exhausted.
+
+## Rational exact quadratic optimization is classical
+
+Stephen A. Vavasis, *Quadratic programming is in NP*, Information Processing Letters 36(2), 73–77 (1990), DOI 10.1016/0020-0190(90)90100-C. The [publisher abstract](https://www.sciencedirect.com/science/article/pii/002001909090100C) was inspected; the original full text was not retrieved. A former author page redirected to the university home page and supplied no paper.
+
+Alberto Del Pia, Santanu S. Dey, and Marco Molinaro, *Mixed-integer Quadratic Programming is in NP*, [open primary preprint](https://arxiv.org/pdf/1407.4798). Section 2.2, Theorem 3, PDF page 3, explicitly records the classical continuous-QP result: when a global optimum exists, one optimum is determined by a rational linear system whose size is polynomial in the input. The source attributes the continuous result to Vavasis. This directly supports treating rational quadratic optimizers as prior theory rather than a new arithmetic phenomenon.
+
+Our comparison: once the candidate reaches a rational quadratic over a fixed-dimensional polytope, active-face stationarity and rational linear feasibility are a standard exact route. The candidate's self-contained treatment of singular stationary systems is useful proof detail. It is not an independent novelty claim. Hyperplane arrangements and rational linear programming are also standard tools.
+
+Fixed potential support is not automatically a bound on the rank or inertia of the unreduced quadratic objective. On a long path, an endpoint objective has support two but depends on every path drop; within an appropriate flow-sign region, the cut-flow quadratic can have rank growing with path length. Thus a fixed-rank quadratic result cannot be invoked merely because `p` is small. The support-to-face reduction performs the necessary dimension reduction.
+
+## Contribution assessment and boundaries
+
+The strongest qualified formulation is: “Building on known two-terminal tree optimization and standard exact quadratic optimization, sparse support of a weighted potential functional yields `N^{O(p)}` exact joint nomination/resistance optimization on passive quadratic trees, with rational recovery of an optimal physical scenario.”
+
+This is an XP-type parameterized bound, not an `f(p)N^C` fixed-parameter tractability claim and not a strongly polynomial algorithm. It is more distinctive as an objective-support boundary when paired with the growing-support tree hardness result. The latter's underlying convex-knapsack mechanism is classical, as documented in the [tree hardness source audit](potential-flow-weighted-nomination-tree-novelty.md).
+
+The result fixes the topology to a tree and excludes extra physical bounds filtering the scenario domain. It must not be extended by wording to one-cycle networks, arbitrary weighted objectives with growing support, or an exact rational algorithm for general nonlinear laws. The proof's smooth monotonicity argument may apply structurally beyond quadratics, but its final exact rational optimization claim uses quadratic sign cells.
+
+The older Hasler–Wang nonlinear circuit-tolerance source remains missing, as recorded in the [circuit audit](potential-flow-series-parallel-envelope-novelty.md). It is a residual structural-priority gap; no theorem about joint nomination uncertainty and fixed weighted-objective support can be inferred from its title. The primary comparisons above neither establish duplication nor justify an unqualified first-result claim.
+
+The search was bounded and used primary publisher or author text plus the repository's readable primary Labbé package. Sources were inspected only for the statements cited, with missing full texts explicitly identified. External PDF page numbers refer to the linked files; package citations use the repository's page markers.

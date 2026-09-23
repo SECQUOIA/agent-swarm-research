@@ -1,0 +1,62 @@
+# S6b author report: full manuscript and standalone delivery
+
+Status: authored and frozen for the required five independent reviews. This report does not accept S6b. The lead retains adjudication; a different correction agent must fix every valid issue. Stage7 remains a separate full-manuscript review cycle. No changes were committed or staged and no external submission was made.
+
+## Concrete manuscript
+
+The title is **Topology, Uncertainty, and Precision in Passive Potential-Flow Optimization**. The full PDF has 216 pages: 28 pages of main narrative, references on pages 29–36, a complete contents guide on pages 37–40, and full technical Appendices A–K on pages 41–216. The main narrative comprises a real abstract/introduction, model and output definitions, seven grouped principal theorems, proof mechanisms, objective/topology/output comparisons, original TikZ diagrams, worked examples, literature synthesis, certified-computation scope, and a conclusion. The author/affiliation block remains anonymous.
+
+All accepted technical sections01–11 are byte-identical to the 18-input S6a build manifest. No accepted proof or technical statement was edited for this stage. In particular Section 11 remains SHA256 `5f0b6d8a13cd351e48e9ad8d23e284720e975cc9cdac07fa9a4529583298bd15`. They are input in original dependency order after `\appendix`; theorem and section references are automatic. Their complete development is part of this single manuscript, with no dependence on repository notes or an unwritten companion. The old unused `07-open-problems.tex` placeholder was removed.
+
+The main statements preserve the distinctions between exact thresholds, algebraic values, exact rational scenarios, additive accuracy-bit outputs, and generally irrational physical states; fixed global rank versus fixed rank per block; fixed objective support versus unrestricted support; fixed affine dimension versus a balanced full box; independent finite/continuous parameters versus global correlations; unfiltered validation versus operating-filter feasibility; and fixed finite powers/dense laws versus unrestricted binary exponents. Parameter-dependent polynomial exponents are called XP, not FPT. NP/coNP membership is limited to the proved families.
+
+Newer completed developments are explicit: the full O(rp) weighted face reduction and directional coefficient intervals; dense cycle polytopes and capacities; few-measurement convex maximization; the sharper all-graph coefficient bound and strict-margin global-polytope witnesses; growing-degree scalar semialgebraic approximation; arbitrarily many bounded-rank weighted blocks on one nomination line; fixed-law dense piecewise polynomials; several parameters at fixed total noncactus rank; and rational support/curvature certificates with sharpness only over the stated conserved quadratic error set. The unrestricted several-parameter higher-block sum is a precise external extension, not an unfinished claimed theorem.
+
+During authoring, the lead identified clarifications that were incorporated before freeze: localization concerns free nominations, not all coefficients or contributions; the integrated original-envelope verifier accepts optional curvature witnesses, while generic support verification is separate; deterministic disconnected certificate support is distinguished from connected-only envelope/producer scope; and the certificate setup states rational nominations and positive rational coefficients explicitly. The exact Hasler–Wang1993 identity is cited with the full-text limitation. A narrowly qualified originality sentence identifies the joint network-specific results absent from the inspected source statements and retains the classical-ingredient caveat. No mathematical concern requiring a change to an accepted proof arose.
+
+## Literature and attribution
+
+The bibliography now has 56 entries and 56 actual citation keys, with no missing/uncited entry and no `\nocite{*}` or seed comments. Ten uncited seed entries were removed; one current SRS-status reference was added. The manuscript credits classical energy, duality, electrical sensitivity/confluence, parametric LP, cycle-capacity linearization, fixed-dimensional real algebra, analytic approximation, convex optimization, zonotope, Bregman, and cut/cycle projection methods. No broad firstness claim is made.
+
+Primary original PDFs directly inspected during this stage:
+
+- Pfetsch et al.2026 overview, printed p10: nonlinear cactus MPD question; nearby switch/active models are distinct. The main claims only the additive resolution and exact restricted single-source/sink classification. The lead's fresh official-copy comparison confirms the local original is unchanged.
+- Klimm et al. arXiv2604.26882v1: model, Corollary4, Remark8, Theorem11 and its discretization opening. The comparison concerns installed arcs/conductance investment, zero fixed cost convexity, positive variable cost and finite bounds in the SP FPTAS, and the explicit arithmetic caveat. Theorem13 is not cited as verified hardness. The separately identified proof algebra issue does not imply that its theorem statement is false.
+- Chauffoureaux–Hasler1990 original: introduction, linearization calculation, structural source-to-resistor criterion and conclusion. The main text attributes monotonicity and extremal-parameter mechanisms to this predecessor.
+- Undated Wang–Hasler EPFL original: model, Theorems1/4/5 and ladder discussion. Its variable is source value and its object is a scalar transfer characteristic. It does not state the full resistance-attainable vector-region theorem compared here. The unconfirmed1997 package year is not treated as verified publication metadata.
+- Vigneron original author manuscript, §2.3, Theorem6, §§3.1–3.2: a bit-model extension is present; accuracy dependence is polynomial in1/epsilon. Approximate algebraic summation and common arrangements are credited.
+- Onn–Rothblum original, Algorithm2.5/Theorem2.6 and rational-versus-real arithmetic discussion: zonotope directions and oracle formulation are credited; the manuscript supplies its distinct algebraic-endpoint/additive recovery accounting.
+
+For the other technical comparisons, the exact primary locators and limits in the accepted appendices and `completion-literature-screen.md` were retained. The Binyamini–Novikov, Yomdin, Borcea–Bøgvad–Shapiro, Petras and Vigneron comparison is not broadened beyond the accepted scalar construction. Hasler–Wang1993 remains full-text inaccessible: the citation establishes publication identity only, and no unseen theorem is asserted.
+
+A fresh primary browser check of Ajdarów, Main, Novotný and Randour, ICALP2025, DOI10.4230/LIPIcs.ICALP.2025.138, confirmed authors/metadata and the introduction/Section5 SRS status: polynomial-time decidability and NP membership are still unproved in that source. The official article is linked in the bibliography. No source search is represented as exhaustive priority clearance. Managed literature, indexes, bibliography and reading status were not changed.
+
+## Coverage and documentation
+
+The lead's read-only audit in `completion-s6b-lead-corpus.json` verifies that all 43 promoted potential-flow results, 173 potential-flow notes, 73 Python files, and the complete 308-file direct-dependency inventory are byte-identical between main checkout and worktree. No newer development had to be imported. The final `completion-coverage.md` maps every promoted result and essential supporting development to an included appendix and main narrative.
+
+README, PROCESS and the 308-row coverage inventory now describe standalone Paper A. Former Paper B allocations no longer exclude needed content; the other manuscript sources remain untouched. The historical unrestricted weighted gap is replaced by its completed scalar/hybrid scope and remaining precise extension. The obsolete P0 seed-literature paragraph was replaced by actual citation roles and primary-source limitations. The coverage checker now checks the 13 included A section files rather than obsolete stubs or Paper B. Its inventory function remains intact and all 308 rows pass. It is a repository coverage check, not part of standalone witness verification.
+
+## Standalone source and reproducibility archive
+
+Deliverables are `dist/paper-a.pdf`, `dist/potential-flow-paper-a.tar.gz`, and `dist/package-manifest.json`. The archive contains 64 files, including a manifest for 63 payload files. It preserves the relative `paper-potential-flow/complexity`, `paper-potential-flow/verification`, `paper-potential-flow/reproducibility`, and `code/potential_flow_mpd` layout. Included code is the 14-module transitive closure needed for the saved witnesses, numerical benchmark, supplied-block solver, and selected diagnostics. Six original JSON data/evidence files are included unchanged.
+
+The archive excludes Paper B, the parent repository, research notes/results, managed copyrighted PDFs, original dataset INP files, internal research-agent review reports, temporary files, and generated TeX auxiliary files. Executable checks with `review` in their filename are diagnostic programs, not review reports. It contains a standalone README and portable build/replay evidence with relative commands and sanitized temporary prefixes. No distributed replay record contains a local account path.
+
+The dataset attribution is Vrachimis, Eliades and Polycarpou, *Real-time hydraulic interval state estimation for water transport networks: a case study*, Drinking Water Engineering and Science11(2018),19–24, DOI10.5194/dwes-11-19-2018, with Zenodo10.5281/zenodo.1185136. The included derived instance uses only topology and pipe geometry; laws, nominations and intervals are synthetic. No original hydraulic validation or raw-data redistribution is implied.
+
+The A-only build wrapper imports `build('complexity')`; it never calls the two-paper CLI and explicitly fails on overfull boxes. The reproduction runner always works in a temporary copy, because existing numerical benchmark producers rewrite adjacent JSON. The package-regeneration script checks source hashes against the latest clean build before copying its PDF, and also works from an extracted archive. No existing numerical/research code or original JSON was changed. The selected numerical producers remain proposals with no requested accuracy guarantee and do not implement every theoretical algorithm.
+
+## Validation
+
+The exact commands, outputs, interpreter/package versions, hashes, archive contents, source-preservation checks, extraction checks and return codes are in `completion-s6b-checks.json`, `completion-s6b-build.json`, `completion-s6b-source-manifest.json`, and the review-safe `completion-s6b-manifest.json`.
+
+- A-only full build passes: zero errors, undefined references/citations, duplicate labels, and overfull boxes. All 23 manuscript TeX/BibTeX inputs are hashed.
+- Standard-library replay: 18 commands pass, including normal and optimized certificate/rejection paths, saved original/base/design certificates, goal examples, exact supplied-block weighted output, directional-coefficient and sensitivity checks.
+- Scientific replay: 28 commands pass, including that exact suite, previous A1–A4/S5a/S5c diagnostics, S6a numerical comparison, deterministic certificate producer, ten-case original-instance benchmark, and producer/scaling checks. Tested Python 3.12.14, numpy 2.5.2, scipy 1.18.1, sympy 1.14.0, networkx 3.6.1, cvxpy 1.9.2, clarabel 0.11.1.
+- The final archive is extracted outside the worktree. Its complete build and both replay suites pass there, with every original payload hash preserved. Regeneration was additionally tested from an extracted archive.
+- Rendered pages were inspected for title/abstract, topology figure, localization diagram, comparison-table layout, contents and appendix transition. LaTeX diagnostics are clean. The focus is readable mathematics and traceable scope rather than reducing the full proof record's length.
+
+Finite checks supplement proofs. Some optional older diagnostics use numerical roots, grids or finite differences; exact saved witnesses establish their specific verified claims, not all universal statements. Numerical outputs can vary by platform. S6a's 16 retained runs remain untouched; the S6b portable suites broaden delivery/replay coverage without replacing that accepted evidence.
+
+No work remains for this author before the S6b review gate. The stage is frozen for independent review, not accepted or externally submitted.

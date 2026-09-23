@@ -1,0 +1,23 @@
+import Formal.DAGSpectral.CriterionSelectContrastPath
+import Formal.DAGSpectral.CriterionSelectWeightedScan
+import Formal.DAGSpectral.CriterionSelectHeadline
+import Formal.DAGSpectral.CriterionSelectEigenTrace
+import Formal.DAGSpectral.CriterionSelectContrast
+import Formal.DAGSpectral.CriterionSelectWeighted
+#print axioms DAGSpectral.bestByRun_bitWork
+#print axioms DAGSpectral.IsRelativeCover.selectDeterminant_guarantee
+#print axioms DAGSpectral.IsRelativeCover.selectMinimumEigenvalue_guarantee
+#print axioms DAGSpectral.IsRelativeCover.selectInverseTrace_guarantee
+#print axioms DAGSpectral.IsRelativeCover.selectContrast_guarantee
+#print axioms DAGSpectral.IsRelativeCover.selectWeightedContrast_guarantee
+#print axioms DAGSpectral.selectPathsRun_determinant_bitWork
+#print axioms DAGSpectral.selectPathsRun_inverseTrace_bitWork
+#print axioms DAGSpectral.selectPathsRun_eigenvalue_bitWork
+
+#print axioms DAGSpectral.selectPathsRun_contrast_bitWork
+#print axioms DAGSpectral.selectWeightedContrastRun_polynomial_bitWork
+#print axioms DAGSpectral.produced_selectDeterminant
+#print axioms DAGSpectral.produced_selectEigenvalue
+#print axioms DAGSpectral.produced_selectInverseTrace
+#print axioms DAGSpectral.produced_selectContrast
+#print axioms DAGSpectral.produced_selectWeightedContrast

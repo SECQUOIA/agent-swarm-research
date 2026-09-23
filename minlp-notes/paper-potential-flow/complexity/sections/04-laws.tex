@@ -1,0 +1,774 @@
+\section{Representation of edge laws}
+\label{sec:a-laws}
+
+The structural reduction of \cref{sec:a-block-rank} uses monotonicity,
+whereas its exact algorithm uses a polynomial representation. We first
+separate these roles for continuous piecewise-polynomial laws with
+independent uncertain coefficients. We then show why a fixed fractional
+power changes exact arc comparison, even on one cycle. Finally, positive
+rational approximations recover an algorithm polynomial in accuracy bits
+for a fixed finite family of fractional powers. All optimization domains
+in this section are unfiltered product domains: operating capacities are
+tested after optimization, not imposed as scenario constraints.
+
+\subsection{Dense polynomial laws and their admissibility}
+\label{subsec:a-law-model}
+An edge has the law
+\begin{equation}
+ g_e(x,\theta_e)=f_{e0}(x)+\sum_{j=1}^{h_e}\theta_{ej}f_{ej}(x),
+ \qquad \theta_{ej}\in[\underline\theta_{ej},\overline\theta_{ej}].
+ \label{eq:a-law-affine}
+\end{equation}
+The intervals are finite and rational, and all their coordinates are
+independent, including across edges. Every basis function is continuous
+on $\R$, vanishes at zero, and is specified by a finite list of rational
+breakpoints and rational polynomial pieces, including its two unbounded
+outer intervals. Polynomials are densely encoded: coefficients through
+the stated degree are listed, including zeros. Degrees, piece counts,
+and the $h_e$ may grow with input size. The complete law must be strictly
+increasing for every allowed coefficient vector. Individual bases need
+not be increasing, and coefficient intervals need not be positive.
+There is no derivative-matching condition at breakpoints.
+
+This affine notation will also be useful for explicitly stated correlated
+models; the results proved here use independent boxes. In particular, a
+parameter shared by different edges is not a coordinate $\theta_{ej}$ in
+this model. Fixed laws correspond to $h_e=0$. Positive uncertain mixtures
+of $x$, $x|x|$, $x^3$, and $\max\{x-a,0\}$ with rational $a\ge0$ give
+examples whenever the complete law is strictly increasing. Signed even
+integer powers use two polynomial pieces.
+
+\begin{proposition}[Validation of the law family]
+\label{prop:a-law-validation}
+All the representation and admissibility conditions above can be checked
+in polynomial bit time in the dense rational input size.
+\end{proposition}
+\begin{proof}
+Check breakpoint order and discard empty pieces. Rational evaluation
+checks continuity at every breakpoint and the value at zero of every
+basis. Refine each edge's pieces by the union of its basis breakpoints.
+The total number of refined descriptions is polynomial in the explicit
+input size; this operation does not enumerate combinations of pieces.
+On an open refined interval $J$, the minimum derivative over the box is
+\begin{equation}
+ f'_{e0}(x)+\sum_j\min\{
+ \underline\theta_{ej}f'_{ej}(x),
+ \overline\theta_{ej}f'_{ej}(x)\}.
+ \label{eq:a-law-min-derivative}
+\end{equation}
+Discard identically zero $f'_{ej}$ when forming a root partition. Isolate
+and order the real roots in $J$ of the product of all remaining $f'_{ej}$.
+Its degree and coefficient bits are polynomial in dense input length.
+Between consecutive roots each endpoint choice in
+\cref{eq:a-law-min-derivative} is fixed. Univariate polynomial sign tests
+check nonnegativity of the resulting rational polynomial on each such
+interval, including unbounded intervals. At partition roots use continuity
+of this minimum of finitely many continuous polynomials. One-sided limits
+suffice at original breakpoints. These tests are polynomial-time instances
+of the real-algebraic primitives in \cref{subsec:a-pre-computation}.
+They prove, or refute, that every complete law is nondecreasing.
+
+For each original refined interval $J$, also test the rational linear
+system that sets every coefficient of
+$f'_{e0}+\sum_j\theta_{ej}f'_{ej}$ to zero, together with the coefficient
+box. Rational LP decides its feasibility in polynomial time. A feasible
+system supplies an allowed law constant on $J$, which fails strict
+increase. Conversely, a continuous nondecreasing function failing strict
+increase is constant on a nontrivial interval. Some open subinterval
+lies in one refined piece, and a polynomial derivative vanishing there
+vanishes identically on that piece. Thus one of these LPs is feasible.
+Reject exactly in this case. There are polynomially many LPs and sign
+tests. No field containing all isolated roots simultaneously is needed.
+\end{proof}
+
+The strictness test is essential. The family $x+\theta|x|$ with
+$\theta\in[-1,1]$ is nondecreasing but has a flat half-line at either
+endpoint; the smaller box $[-1/2,1/2]$ is admissible. In contrast,
+$(1-\theta)x^3+\theta x$, $\theta\in[0,1]$, is admissible despite a zero
+derivative at $x=0,\theta=0$. Isolated derivative zeros are permitted.
+
+\subsection{Structural transfer, dense degrees, and coefficient recovery}
+\begin{lemma}[Law-independent nomination faces]
+\label{lem:a-law-faces}
+For any fixed continuous strictly increasing laws vanishing at zero,
+the graph-defined face family of \cref{lem:a-blk-faces} contains a
+maximizer of a prescribed terminal drop. Its size and free-coordinate
+bounds are unchanged. The same family contains a joint maximizer when
+the laws are jointly continuous in flow and parameters in a compact parameter domain and
+remain admissible throughout that domain.
+\end{lemma}
+\begin{proof}
+Existence follows from \cref{thm:a-pre-existence}. Acyclic physical flows
+give $|x_e|\le B:=\sum_v\max\{|\ell_v|,|u_v|\}$, as in the proof of
+\cref{lem:a-blk-faces}. On this flow interval, compactness and continuity
+of the laws bound every normalized potential by a sum of edge-drop
+bounds along a path. If inputs converge, every subsequential state limit
+satisfies the limiting equations; uniqueness identifies it. This proves
+continuity of the state and attainment on the compact input domain.
+
+To handle corners, fix a nonnegative smooth kernel $\kappa$ supported
+on $[-1,1]$ with integral one, and put
+\begin{align*}
+ S_\rho f(x)&=\int\kappa(t)f(x-\rho t)\,dt
+                  -\int\kappa(t)f(-\rho t)\,dt,\\
+ g_{e,\rho}(x)&=S_\rho g_e(x)+\rho x,\qquad 0<\rho\le1.
+\end{align*}
+Convolution preserves increase, centering enforces value zero at zero,
+and $g'_{e,\rho}\ge\rho$. The smoothed laws converge uniformly on the
+flow interval to the original laws; for a compact continuous parameter
+family this convergence is uniform in the parameters too. The preceding
+bounded-state subsequence argument gives uniform convergence of physical
+states. Centering is what preserves the sign of flow and its acyclic
+bound in this argument.
+
+For these smooth laws the differentiated network has positive diagonal
+resistances $g'_{e,\rho}(x_e)$. The proofs of
+\cref{lem:a-blk-order,lem:a-blk-unimodal} therefore apply: the unit
+adjoint has ordered block ranges, and positive forcing $\delta$ at the
+internal vertices of a suppressed path gives
+$\jmath_i-\jmath_{i-1}=\delta$. The same threshold patterns leave at
+most $8r_H-2$ free nominations in the selected nonbridge block. The
+perturbing sum of normalized potentials is uniformly bounded, so its
+contribution tends uniformly to zero with $\delta$. Let $\rho,\delta$
+tend to zero and take a subsequence in one of the finite closed faces.
+Its limit maximizes the original objective. This argument only proves
+existence of an optimizer on a face; neither smoothing nor its rate is
+part of the algorithm. Finally, at a joint maximizer fix its parameters
+and replace its nomination by such a face maximizer. It remains jointly
+optimal. The face family depends on the graph and nomination bounds,
+not on the chosen laws.
+\end{proof}
+
+\begin{lemma}[Growing dense degree in the box lemma]
+\label{lem:a-law-dense}
+In \cref{lem:a-blk-boxlp}, fix only the core dimension and the number
+of linking equations. Allow the degree bound to grow, with all core
+polynomials densely encoded. Its exact optimization and recovery
+conclusions still have polynomial bit complexity. The returned common
+local algebraic field has polynomial degree and encoding length, not
+necessarily constant degree.
+\end{lemma}
+\begin{proof}
+The support scores there are $\eta^\top W_j(z)$, of degree at most
+$D+1$ in a fixed number of variables. The number of realizable sign
+vectors is $(h(D+1))^{O(d_0+k+1)}$. Listing only these vectors and forming
+their guarded support sums therefore gives a polynomial-size formula.
+Every sum has polynomial coefficient bits. The fixed-dimensional
+quantifier-elimination bound \cref{eq:a-pre-qe-cost} is polynomial in
+polynomial count, numerical degree, and coefficient bits; it does not
+require degree to be fixed. Apply it also to the optimal-pair formula,
+then use \cref{prim:a-pre-sample-points}. Degrees and encoding lengths
+of the resulting algebraic sample are polynomial for fixed dimensions.
+
+For recovery, all columns evaluated at this sample lie in its one
+ordered algebraic field. The construction in \cref{lem:a-blk-boxlp}
+enumerates polynomially many support cells in fixed dimension, then
+subsets of at most $k+2$ image vertices and fixed-size affine systems.
+Exact field arithmetic and sign determination are polynomial in the
+field degree and coefficient bits. Fixed-size determinants and the
+final polynomially many sums keep these sizes polynomial. Thus growing
+local degree does not create a compositum of independently represented
+roots. Dense encoding ensures $D$ is bounded by input size; sparse
+binary-encoded exponents would not give this bound.
+\end{proof}
+
+For later rational recovery define basis bounds $N_{ej},M_{ej}\in\Q_{\ge0}$
+on $[-B-1,B+1]$ by taking, over all pieces $\sum_i a_ix^i$, the maxima of
+\[
+ \sum_i|a_i|T^i,\qquad
+ \sum_{i\ge1}i|a_i|T^{i-1},\qquad T=\max\{1,B+1\},
+\]
+respectively. Zero bounds are allowed. Put
+$U_{ej}=\max\{|\underline\theta_{ej}|,|\overline\theta_{ej}|\}$ and
+$M_e=M_{e0}+\sum_jU_{ej}M_{ej}$. These rationals have polynomial bit
+length even for growing dense degrees.
+
+\begin{lemma}[Pressure sensitivity for affine law boxes]
+\label{lem:a-law-sensitivity}
+For a simple terminal path $P_{st}$ put $C_b=\sum_{e\in P_{st}}M_e$.
+Writing $F_{s,t}(b,\theta)=\pi_s-\pi_t$, we have
+\begin{equation}
+ |F_{s,t}(b,\theta)-F_{s,t}(c,\eta)|
+ \le C_b\|b-c\|_1+
+              2\sum_{e,j}N_{ej}|\theta_{ej}-\eta_{ej}|.
+ \label{eq:a-law-sensitivity}
+\end{equation}
+\end{lemma}
+\begin{proof}
+Use the centered smoothing from \cref{lem:a-law-faces}. A continuous
+piecewise polynomial is locally Lipschitz; its convolution derivative
+is the convolution of its almost-everywhere derivative. Hence the
+complete smoothed derivative lies in $[\rho,M_e+\rho]$ on physical flows.
+The unit $s$--$t$ electrical adjoint has effective resistance at most
+$\sum_{e\in P_{st}}(M_e+\rho)$, by testing its minimum energy against
+a unit path flow. Grounding at $t$, its potential range is between zero
+and that resistance, by the maximum principle. The nomination
+sensitivity $dF=h^\top db$ is thus bounded by this path constant times
+$\|db\|_1$.
+
+Linearity of centered convolution preserves the affine coefficients.
+At fixed $b$, differentiating the state equations and pairing with the
+unit adjoint gives
+\[
+ \frac{\partial F_{s,t,\rho}}{\partial\theta_{ej}}
+       =\jmath_e S_\rho f_{ej}(x_e).
+\]
+As in \cref{lem:a-blk-resistance-lipschitz}, the electrical current is
+acyclic and decomposes into paths of total weight one, so
+$|\jmath_e|\le1$. Also $|S_\rho f_{ej}(x_e)|\le2N_{ej}$. Integrate first
+on the balanced nomination segment and then on the coefficient-box
+segment. Every intermediate law is admissible. Uniform state convergence
+as $\rho\downarrow0$ proves the claimed estimate.
+\end{proof}
+
+\begin{theorem}[Independent polynomial-law uncertainty]
+\label{thm:a-law-polynomial}
+Fix $\mathfrak r$. On a connected graph of block rank at most
+$\mathfrak r$, take the law model \cref{eq:a-law-affine} and a nonempty
+balanced rational nomination box. In polynomial time in the dense
+input size and requested accuracy bits one can compute a rational
+interval of width at most $\eps$ containing the maximum of any prescribed
+terminal drop, and rational admissible nomination and coefficient inputs
+whose objective is within $\eps$ of that maximum. Maximum and minimum
+signed flow on any arc are exactly computable real algebraic numbers
+of polynomial encoding length. Consequently unfiltered robust validation
+of rational arc capacities is polynomial-time decidable, including equality.
+\end{theorem}
+\begin{proof}
+The case $s=t$, an edgeless graph, or $B=0$ is immediate for the relevant
+zero objective; rational feasible inputs are obtained by box/balance
+allocation. Otherwise use \cref{lem:a-law-faces}. For each face all but
+one block have fixed aggregated nominations. Since coefficients are
+independent across blocks, the maximum face value is the sum of the
+independently optimized block drops.
+
+In a block, use the affine flow coordinates $X_e(z)$ of
+\cref{eq:a-blk-core}. Pull back every basis breakpoint $a$ to the
+affine hyperplane $X_e(z)=a$. Their arrangement has polynomial size in
+the fixed core dimension. Use its closed cells, intersected with the
+compact nomination and circulation polytope. Constant affine forms
+are assigned their appropriate piece; at a breakpoint either adjacent
+formula agrees. Thus boundary states are neither lost nor added.
+On a cell every $f_{ej}(X_e(z))$ is a rational polynomial. Substitution
+of a degree-$D$ polynomial into an affine form in $d$ variables has at
+most $\binom{D+d}{d}$ monomials and polynomial coefficient bits when
+$d$ is fixed.
+
+For a cycle-basis row $Z_{H,i}$ and a path vector $\omega_H$, the
+linking equations and objective are
+\begin{align*}
+ \sum_e Z_{H,ie}\Bigl(f_{e0}(X_e)
+               +\sum_j\theta_{ej}f_{ej}(X_e)\Bigr)&=0,\\
+ G_H(z,\theta)&=\sum_e\omega_{H,e}\Bigl(f_{e0}(X_e)
+               +\sum_j\theta_{ej}f_{ej}(X_e)\Bigr).
+\end{align*}
+Their equivalence to the physical equations follows from orthogonality
+to the cycle space, exactly as in \cref{eq:a-blk-polynomials}.
+There are $r_H$ linking equations; each scalar $\theta_{ej}$ is one
+interval leaf. Move the fixed terms to the right side and apply
+\cref{lem:a-law-dense}. A bridge uses its conserved affine flow and no
+cycle equation, so is covered as well. Compare local cell optima exactly.
+
+Keep algebraic data for distinct blocks separate. Approximate each
+block maximum by an interval of width at most $\eps/(8n)$, sum by face,
+and take the maximum lower and upper endpoints. This brackets the global
+maximum with width at most $\eps/8$. Selecting the face with largest
+lower endpoint loses at most $\eps/8$; store its exact local optimizers.
+To recover a rational input, enclose their free nomination coordinates
+in rational intervals and intersect with their rational face and exact
+balance. This polytope contains the algebraic nomination, so rational
+LP (or box/balance allocation) returns a feasible rational nomination.
+Round each coefficient in its own isolating interval intersected with
+its input interval. Choose widths so that the two terms in
+\cref{eq:a-law-sensitivity} are each at most $\eps/8$, ignoring zero
+sensitivity constants rather than dividing by them. Only polynomially
+many precision bits are required. Greedy disaggregation and arbitrary
+rational coefficients off the terminal core complete the scenario.
+Its new physical state need not have the sampled circulations; the
+sensitivity estimate controls its pressure directly.
+
+For an arc $e=(u,v)$, aggregate into its one block. At fixed coefficients,
+strict increase of $g_e$ makes maximizing $x_e$ equivalent to maximizing
+$\pi_u-\pi_v$ over nominations. Thus a joint arc maximizer lies on
+one of the same faces after its coefficients are fixed. Use the affine
+objective $X_e(z)$ in the box lemma. A minimum uses $-X_e$ and reversed
+ordered terminals; oddness of the law is unnecessary. Exact comparison
+of the polynomially many local algebraic values gives each extremum,
+and rational-capacity comparison includes equality. There is no sum of
+independent block values here. This conclusion does not require, or
+claim, a rational near-extremal arc scenario for arbitrary polynomial laws.
+\end{proof}
+
+The general monotone-flow model and uncertainty in physical coefficients
+are established. For example, \citet[Sections 3 and 4]{amann2018-deciding-robust-feasibility-and-infeasibility}
+study polynomial robust feasibility, with explicit tree and cycle
+reductions. \citet[Sections 1 and 3]{thurauf2025-adjustable-robust-nonlinear-network-design}
+reduce robust-feasibility checking for a fixed design to polynomially many
+nonlinear worst-case problems and use them in an iterative adversarial
+design algorithm. That reduction is not a polynomial-time solver for each problem.
+The contribution of \cref{thm:a-law-polynomial} is the fixed-block-rank
+bit bound with growing dense degrees and arbitrarily many independent
+coefficients, using the face reduction and fixed-dimensional support
+elimination. It does not extend by analogy to uncertain breakpoints,
+sparse binary exponents, or shared coefficient constraints.
+
+\subsection{A fractional-power exact arc obstruction}
+Write $\phi_q(x)=\sgn(x)|x|^q$ for $q>0$, with $\phi_q(0)=0$.
+The law is algebraic for rational $q$, but that alone does not provide
+a polynomial-size dense description of a sum of many such laws in a
+bounded-dimensional core.
+
+\begin{theorem}[Fractional-power arc comparison]
+\label{thm:a-law-srs}
+For the fixed common law $g_e(x)=\beta_e\phi_{3/2}(x)$, exact comparison
+of one signed arc flow with a rational capacity is $\SRS$-hard already
+on a simple cycle with fixed integral nominations and positive integral
+resistances. The same holds for every fixed reduced rational exponent
+$p/q>1$ whose denominator $q$ is even. It also holds for robust validation
+when singleton scenario boxes are allowed.
+\end{theorem}
+\begin{proof}
+Take positive integers $a_1,\ldots,a_k,K$ and the question
+$\sum_i\sqrt{a_i}\le K$. If necessary append unit radicands and increase
+$K$ accordingly to ensure $k\ge2$. On a consistently oriented simple
+cycle with $k+1$ edges prescribe a base flow and resistances by
+\[
+ c_i=a_i,\quad\beta_i=1/a_i\quad(1\le i\le k),\qquad
+ c_{k+1}=-1,\quad\beta_{k+1}=K.
+\]
+Set the nomination at each vertex to its outgoing base flow minus its
+incoming base flow. It is integral and balanced, and every conserved
+flow is $x_i=c_i+z$ for one circulation $z$. The physical equation is
+\[
+ h(z):=\sum_{i=1}^{k+1}\beta_i\phi_{3/2}(c_i+z)=0.
+\]
+It is continuous, strictly increasing, and has opposite infinite limits,
+so its root $z^*$ is unique. At zero,
+$h(0)=\sum_i\sqrt{a_i}-K$. Consequently, including the equality case,
+\[
+ \sum_i\sqrt{a_i}\le K
+ \quad\Longleftrightarrow\quad h(0)\le0
+ \quad\Longleftrightarrow\quad z^*\ge0
+ \quad\Longleftrightarrow\quad x_{k+1}\ge-1.
+\]
+This is one lower capacity. Reversing that arc gives the upper capacity
+$-x_{k+1}\le1$, since the law is odd. Multiplying all resistances by
+$\prod_i a_i$ makes them positive integers without changing the root.
+The product and every nomination have polynomial binary encoding length.
+
+For a fixed reduced $p/q>1$ with even $q$, coprimality makes $p$ odd.
+Replace the positive-edge data by
+\[
+ c_i=a_i^{q/2},\qquad\beta_i=a_i^{-(p-1)/2}.
+\]
+Then $\beta_i\phi_{p/q}(c_i)=a_i^{1/2}$. Retain the final edge and the
+same capacity. The preceding equivalences hold unchanged. All exponents
+in these rational data are fixed integers, so their encoding lengths
+are polynomial. A common positive integer clears the resistance
+denominators. Singleton boxes give the robust statement. If a convention
+requires bounds on every arc, bound all other flows by the rational
+acyclic-flow bound $B$; those bounds impose no further restriction.
+\end{proof}
+
+This is a lower bound for exact comparison, not $\NP$-hardness or an
+additive-approximation obstruction. No converse reduction is asserted,
+and the proof says nothing about fixed exponents of odd denominator.
+General homogeneous laws and their arithmetic evaluation issues already
+appear in \citet[Section 2.1, May 2018 manuscript]{gro2017-algorithmic-results-for-potential-based}.
+The specific contribution here is the capacity predicate on a single
+cycle with fixed data. A bounded source comparison does not establish
+priority for all older nonlinear-circuit or hydraulic literature.
+
+\subsection{Positive rational approximation with an explicit encoding}
+\label{subsec:a-law-rational}
+Positive rational approximation of fractional powers is established.
+For example, the uniform half-line estimate in
+\citet[Section 3.3, equation (37), Lemma 3.4, and Remark 3.1,
+arXiv version]{bonito2015-numerical-approximation-of-fractional-powers}
+for $\lambda^{-\alpha}$ becomes one for $t^\alpha$ on $(0,1]$ under
+$\lambda=1/t$. Its positive fractions extend continuously by zero at
+$t=0$. Their Section 3.2 also uses Gaussian quadrature on dyadic panels.
+The following construction supplies the rational encoding and monotonicity
+properties needed by the network algorithm, with an explicit proof of
+its error and bit bounds.
+
+\begin{lemma}[Positive rational scalar approximation]
+\label{lem:a-law-positive-rational}
+Fix a rational $0<\alpha<1$. Given a positive rational $\tau\le1$,
+one can construct positive rational $a_\nu,s_\nu$ such that
+\[
+ R_\alpha(t)=\sum_{\nu=1}^J a_\nu\frac{t}{t+s_\nu},\qquad
+ R_\alpha(1)=1,\qquad
+ \sup_{0\le t\le1}|R_\alpha(t)-t^\alpha|\le\tau.
+\]
+The term count is $O_\alpha((1+\log(1/\tau))^2)$. Construction time,
+coefficient bits, and the expanded dense numerator and denominator
+sizes are polynomial in the tolerance encoding and accuracy bits.
+\end{lemma}
+\begin{proof}
+For $t\ge0$ set
+\[
+ I_\alpha(t)=\int_0^\infty\frac{t s^{\alpha-1}}{t+s}\,ds.
+\]
+It converges for $t>0$, and its integrand is zero for $t=0$.
+Substitution $s=tu$ for $t>0$ proves
+$I_\alpha(t)=t^\alpha I_\alpha(1)$, also valid at zero. For $0\le t\le1$,
+truncating to $[2^{-L},2^L]$ loses at most
+\[
+ \alpha^{-1}2^{-\alpha L}
+       +(1-\alpha)^{-1}2^{-(1-\alpha)L}.
+\]
+On panel $[2^k,2^{k+1}]$, substitute $s=2^ku$ and use the $n$-point
+Gauss--Legendre rule on $[1,2]$, with nodes $u_j\in(1,2)$ and positive
+weights $w_j$ summing to one. It is exact through degree $2n-1$.
+The resulting approximation is
+\[
+ Q(t)=\sum_{k=-L}^{L-1}\sum_{j=1}^n
+       w_j2^{k\alpha}u_j^{\alpha-1}
+       \frac{t}{t+2^ku_j}.
+\]
+For completeness, the error is uniform even at zero. The panel integrand
+\[
+ F_{k,t}(u)=2^{k\alpha}u^{\alpha-1}\frac{t}{t+2^ku}
+\]
+is analytic on a neighborhood of $|u-3/2|\le1$. On this disk
+$\mathop{\rm Re}u\ge1/2$, so the principal power is analytic,
+$|u^{\alpha-1}|\le2$, and $|t/(t+2^ku)|\le1$. Cauchy's coefficient
+bound makes the degree-$(2n-1)$ Taylor remainder on $[1,2]$ at most
+$4\,2^{k\alpha}2^{-2n}$. Exactness and positivity of the quadrature
+bound its integration error by twice that remainder. Thus
+\begin{equation}
+ \sup_{[0,1]}|I_\alpha-Q|
+ \le \alpha^{-1}2^{-\alpha L}
+       +(1-\alpha)^{-1}2^{-(1-\alpha)L}
+       +16L\,2^{L-2n}.
+ \label{eq:a-law-quadrature}
+\end{equation}
+For target unnormalized error $\zeta$, take $L=O_\alpha(1+\log(1/\zeta))$
+and $n=O_\alpha(1+\log(1/\zeta))$ so the right side is at most
+$\zeta/2$. This gives $J=2Ln$ terms. Integer choices can be made from
+rational upper bounds on the displayed powers, or from these fixed
+constant inequalities with additional slack.
+
+Here is an effective rounding argument. The Legendre recurrence
+constructs a rational polynomial of degree $n$ and polynomial coefficient
+bits. Root isolation and the positive weight formula
+$2/((1-v_j^2)P'_n(v_j)^2)$ on $[-1,1]$, followed by the affine change
+of interval, give rational enclosures for each node and weight.
+Their fixed rational powers are obtained by isolating the corresponding
+positive algebraic roots. Each individual number has polynomial algebraic
+degree and encoding length; one never forms their joint algebraic field.
+Polynomial-time arbitrary-precision enclosures also follow directly from
+\citet[Sections 1 and 7.2]{johansson2018-gauss-legendre}.
+
+Before rounding, $s=2^ku_j\ge2^{-L}$ and
+$0<a=w_j2^{k\alpha}u_j^{\alpha-1}\le2^L$. Enclose and round each $a,s$
+upward to positive dyadic rationals with error at most $h\le1$.
+This works even for an arbitrarily small weight: an upper endpoint of
+a sufficiently narrow enclosure is positive. Along these rounding
+segments, $s\ge2^{-L}$ and $a\le2^{L+1}$. For every $t\ge0$,
+\[
+ \left|\frac{\partial}{\partial a}\frac{at}{t+s}\right|\le1,
+ \qquad
+ \left|\frac{\partial}{\partial s}\frac{at}{t+s}\right|
+       =\frac{at}{(t+s)^2}\le\frac as\le2^{2L+1}.
+\]
+Choose a dyadic $h$ with
+$Jh(1+2^{2L+1})\le\zeta/2$. Its required precision is
+$O(\log(1/\zeta)+L+\log J)$ bits, and the rounded sum $Q_{\Q}$ has
+uniform error at most $\zeta$. Its coefficients remain positive.
+
+On $[1,2]$, $s^{\alpha-1}/(1+s)\ge1/6$, so
+$I_\alpha(1)\ge1/6$. If $\zeta\le1/12$, then $Q_{\Q}(1)\ge1/12$.
+Set $R_\alpha(t)=Q_{\Q}(t)/Q_{\Q}(1)$. Since $t^\alpha\le1$,
+\[
+ |R_\alpha(t)-t^\alpha|
+ \le\frac{|Q_{\Q}(t)-I_\alpha(t)|+
+             t^\alpha|I_\alpha(1)-Q_{\Q}(1)|}{Q_{\Q}(1)}
+ \le24\zeta.
+\]
+Take $\zeta\le\min\{1/12,\tau/24\}$. Normalization is exact rational
+arithmetic. Products of the $J$ positive linear denominators have degree
+$J$ and polynomial coefficient bits: denominator bit lengths add, and
+coefficient growth adds at most polynomially many further bits.
+Summing the corresponding numerators has the same bounds. This proves
+the dense encoding and construction claims.
+\end{proof}
+
+\begin{lemma}[Rational constitutive approximation]
+\label{lem:a-law-constitutive}
+Fix a nonempty finite family $\mathcal Q\subset\Q\cap(1,\infty)$. Given rational
+$B>0$ and $\delta>0$, one can construct for every $q\in\mathcal Q$ a
+rational function $\psi_q$ which is smooth, strictly increasing on $\R$,
+vanishes at zero, and has a denominator positive on all of $\R$, such that
+\[
+ \sup_{|x|\le B}|\psi_q(x)-\phi_q(x)|\le\delta.
+\]
+Its expanded dense encoding and construction time are polynomial in the
+input and accuracy bits, with constants depending on $\mathcal Q$.
+\end{lemma}
+\begin{proof}
+Odd integer $q$ use $\psi_q(x)=x^q$ exactly. Otherwise write uniquely
+\[
+ q=2j+1+2\alpha,\qquad j\ge0\text{ an integer},\quad0<\alpha<1.
+\]
+Choose $T=2^h\ge\max\{1,B\}$ with $h$ a nonnegative multiple of the
+denominator of $2\alpha$. The rational $T^{2\alpha}$ has polynomial
+bit length because the exponent family is fixed. Put
+\[
+ \psi_q(x)=T^{2\alpha}x^{2j+1}
+                 R_\alpha(x^2/T^2).
+\]
+The corresponding expression with $R_\alpha(t)$ replaced by $t^\alpha$
+is exactly $\phi_q(x)$. Apply \cref{lem:a-law-positive-rational} with
+$\tau\le\min\{1,\delta/(T^{2\alpha}B^{2j+1})\}$.
+Every term of $\psi_q$ is a positive rational multiple of
+$x^{2j+3}/(x^2+c)$ for a rational $c>0$, and
+\[
+ \frac{d}{dx}\frac{x^{2j+3}}{x^2+c}
+ =\frac{x^{2j+2}((2j+1)x^2+(2j+3)c)}{(x^2+c)^2}.
+\]
+It is positive for $x\ne0$ and nonnegative at zero. Therefore the sum
+is strictly increasing, is odd, vanishes at zero, and is unbounded in
+both directions. Its denominator is a product of positive quadratics.
+The number of terms, their bit lengths, and expansion sizes are polynomial
+as in the preceding lemma; $j$ and all rational exponent denominators
+are fixed. For $1<q<3$ this is the case $j=0$. The extra odd power proves
+the same assertion for fixed exponents above three.
+\end{proof}
+
+\begin{lemma}[Rational-law local optimization]
+\label{lem:a-law-rational-core}
+Suppose $g_e(x)=\beta_e\psi_e(x)$, where the densely encoded rational
+$\psi_e=P_e/Q_e$ are strictly increasing, vanish at zero, and
+$Q_e(x)>0$ for all real $x$. Resistances have independent positive
+rational intervals. At fixed block rank, the face construction and
+exact local algebraic optimization of \cref{thm:a-law-polynomial}
+remain polynomial in the rational encoding, provided polynomial-bit
+rational bounds on the laws on $[-B,B]$ are supplied. Thus terminal-drop optima have arbitrarily accurate rational intervals;
+each nomination face has separate exact local algebraic optimizers, and
+global face selection is additive. Arc-flow optima have exact local
+algebraic values and scenarios.
+\end{lemma}
+\begin{proof}
+The face reduction is \cref{lem:a-law-faces}. In a local core $z$,
+substitute $X_e(z)$ into $P_e,Q_e$, and form the positive product
+$Q_*(z)=\prod_e Q_e(X_e(z))$. Multiplying every cycle equation by $Q_*$
+gives polynomial coefficients of the resistance leaves and introduces
+no spurious roots. The total degree is at most the sum of the substituted
+degrees. In a fixed number of variables, expansion has polynomially
+many monomials and polynomial coefficient bits.
+
+For a path-drop objective introduce one extra core coordinate $v$ and
+the equation
+\[
+ \sum_e\omega_{H,e}\beta_e P_e(X_e)
+           \prod_{f\ne e}Q_f(X_f)-vQ_*(z)=0.
+\]
+Bound $v$ by the supplied rational path-drop bound. Treat this as one
+extra linking equation and maximize the core-only objective $v$ using
+\cref{lem:a-law-dense}. The core dimension and equation count each
+increase by just one. For an arc use the affine objective $X_e(z)$
+without that extra equation. Keep independent block values separate
+and sum rational intervals for the pressure objective as before.
+\end{proof}
+
+\subsection{Physical error and rational scenario recovery}
+Fix $\mathcal Q\subset\Q\cap(1,\infty)$ nonempty and finite. Throughout this subsection
+let
+\begin{align*}
+ H&=\left\lceil\max\mathcal Q\right\rceil,&
+ c_*&=2^{1-H},& T_0&=\max\{1,B\},\\
+ M&=H T_0^{H-1},& N_0&=B T_0^{H-1}.
+\end{align*}
+Thus $H$ is a fixed integer, $c_*>0$ is rational, and on $[-B,B]$ every
+$\phi_q$ and its derivative are bounded in absolute value by $N_0$ and
+$M$, respectively. These bounds have polynomial rational bit length.
+
+\begin{lemma}[Constitutive error controls the physical state]
+\label{lem:a-law-state-error}
+Let $m>0$, $\beta_L=\min_e L_e$, and $\beta_U=\max_e U_e$. Suppose
+$|\psi_e-\phi_{q_e}|\le\delta$ on $[-B,B]$, where the $\psi_e$ are
+continuous strictly increasing laws vanishing at zero. For the same
+admissible $(b,\beta)$, let $x,\pi$ be the original state and $y,\widehat\pi$
+the state with laws $\beta_e\psi_e$. For $0<\eta\le1$, the condition
+\begin{equation}
+ \delta\le\frac{c_*\beta_L\eta^H}{m\beta_U}
+ \label{eq:a-law-delta-budget}
+\end{equation}
+implies
+\begin{equation}
+ \|x-y\|_\infty\le\eta,\qquad
+ |(\pi_s-\pi_t)-(\widehat\pi_s-\widehat\pi_t)|
+       \le m\beta_U(M\eta+\delta).
+ \label{eq:a-law-state-error}
+\end{equation}
+Both estimates are uniform on the full scenario domain.
+\end{lemma}
+\begin{proof}
+For $q>1$ the signed power satisfies
+\begin{equation}
+ (\phi_q(a)-\phi_q(b))(a-b)
+              \ge2^{1-q}|a-b|^{q+1}
+              \ge c_*|a-b|^{q+1}\quad(q\in\mathcal Q).
+ \label{eq:a-law-strong}
+\end{equation}
+For equal signs assume $a=b+d\ge b\ge0$ after symmetry. The function
+$(b+d)^q-b^q$ is increasing in $b$, so it is at least $d^q$.
+For opposite signs convexity gives
+$|a|^q+|b|^q\ge2^{1-q}(|a|+|b|)^q$.
+Multiplying these increment bounds by $|a-b|$ proves the inequality.
+
+Both flows lie in $[-B,B]^E$ by acyclicity, and $A(x-y)=0$.
+Pairing this circulation with the difference of the two potential
+gradients yields
+\[
+ \sum_e\beta_e[\phi_{q_e}(x_e)-\phi_{q_e}(y_e)](x_e-y_e)
+ =\sum_e\beta_e[\psi_e(y_e)-\phi_{q_e}(y_e)](x_e-y_e).
+\]
+Let $D=\|x-y\|_\infty$. If $D=0$ the flow bound is immediate. Otherwise
+select an edge $e$ attaining $D$. Nonnegativity of all terms on the
+left, \cref{eq:a-law-strong}, and the uniform error on the right give
+$c_*\beta_L D^{q_e+1}\le m\beta_U\delta D$, hence
+$D^{q_e}\le\eta^H$ under \cref{eq:a-law-delta-budget}.
+If $D>\eta$ and $D\le1$, then $D^{q_e}\ge D^H>\eta^H$;
+if $D>1$, then $D^{q_e}>1\ge\eta^H$. Both contradict the bound.
+Thus $D\le\eta$. Each edge-drop error is at most
+$\beta_U(M\eta+\delta)$. Summing on a simple terminal path proves the
+second estimate.
+\end{proof}
+
+\begin{lemma}[Original-law input rounding]
+\label{lem:a-law-fractional-rounding}
+For two admissible scenarios $(b,\beta)$ and $(b',\beta')$, original-law
+terminal drops satisfy
+\begin{equation}
+ |F_{s,t}(b,\beta)-F_{s,t}(b',\beta')|
+ \le M\sum_{e\in P_{st}}U_e\,\|b-b'\|_1
+                     +N_0\|\beta-\beta'\|_1.
+ \label{eq:a-law-original-lipschitz}
+\end{equation}
+For a target arc $e=(u,v)$ with original flows $x_e,x'_e$, write the
+corresponding endpoint drops as $\Delta,\Delta'$. Then
+\begin{equation}
+ |x_e-x'_e|^{q_e}\le
+ \frac{|\Delta-\Delta'|+N_0|\beta_e-\beta'_e|}{c_*L_e}.
+ \label{eq:a-law-inverse-rounding}
+\end{equation}
+In particular, a right side at most $\xi^H$, $0<\xi\le1$, guarantees
+flow error at most $\xi$. Polynomially many input precision bits suffice
+for any prescribed pressure or flow accuracy.
+\end{lemma}
+\begin{proof}
+The original laws are continuously differentiable. Add $\rho x$ to each
+complete law and use the ordinary electrical adjoint. Its nomination
+path bound is $\sum_{e\in P_{st}}(U_eM+\rho)$. At fixed nomination,
+resistance differentiation gives
+$\partial F_\rho/\partial\beta_e=\jmath_e\phi_{q_e}(x_e)$, because the
+added linear term is independent of $\beta_e$. This is bounded by
+$N_0$. Integrate over the two box segments and pass to the uniform
+zero-smoothing limit as before. This proves
+\cref{eq:a-law-original-lipschitz}.
+
+Subtracting $\Delta=\beta_e\phi_{q_e}(x_e)$ and
+$\Delta'=\beta'_e\phi_{q_e}(x'_e)$ gives
+\[
+ \beta_e[\phi_{q_e}(x_e)-\phi_{q_e}(x'_e)]
+       =\Delta-\Delta'+(\beta'_e-\beta_e)\phi_{q_e}(x'_e).
+\]
+Use the increment version of \cref{eq:a-law-strong}, the bound $N_0$,
+and $\beta_e\ge L_e$. The final implication follows from $q_e\le H$
+exactly as in \cref{lem:a-law-state-error}. For the endpoint drop, take
+the one-edge path in \cref{eq:a-law-original-lipschitz}; its nomination
+constant is $U_eM$. Thus a desired inverse error requires only a fixed
+power $\xi^H$ of the desired flow error. All constants have polynomial
+rational bit length.
+\end{proof}
+
+\begin{theorem}[Fixed fractional powers: polynomial accuracy-bit algorithms]
+\label{thm:a-law-fractional}
+Fix a block-rank bound $\mathfrak r$ and a nonempty finite family
+$\mathcal Q\subset\Q\cap(1,\infty)$. On each edge choose $q_e\in\mathcal Q$
+and the law $\beta_e\phi_{q_e}$, with independent positive rational
+resistance intervals. For a nonempty balanced rational nomination box,
+one can compute a rational interval of width at most $\eps$ containing
+the maximum prescribed terminal drop, and rational admissible nomination
+and resistance inputs within $\eps$ of that maximum. The same guarantees
+hold for the maximum and minimum signed flow on any prescribed arc.
+Running time is polynomial in input size and accuracy bits, with its
+exponent and constants allowed to depend on $\mathfrak r,\mathcal Q$.
+No exact threshold comparison or rational physical-state output is claimed.
+\end{theorem}
+\begin{proof}
+Replace $\eps$ by $\min\{\eps,1\}$. The edgeless and $B=0$ cases are
+immediate. Put $a=\eps/8$ and choose rational
+\[
+ \eta=\min\{1,a,a/(2m\beta_U M)\},\qquad
+ \delta=\min\{1,a/(2m\beta_U),
+                     c_*\beta_L\eta^H/(m\beta_U)\}.
+\]
+Construct the rational $\psi_{q_e}$ by
+\cref{lem:a-law-constitutive}. Their flow objectives differ from the
+original ones by at most $a$, and their terminal-drop objectives by at
+most $a$, uniformly over the scenario domain, by
+\cref{lem:a-law-state-error}. A rational absolute drop bound is
+$m\beta_U(N_0+\delta)$, so \cref{lem:a-law-rational-core} applies.
+All construction degrees and bit lengths are polynomial in the original
+input and accuracy bits; $H$ and exponent denominators are fixed.
+
+Compute each surrogate block optimum exactly, retaining its local
+algebraic scenario. Enclose each block value to width
+$\eps/(8n)$, sum by face, and select the face with greatest lower
+endpoint. This gives an interval $[L,U]$ of width at most $\eps/8$
+containing the surrogate maximum, and a separately encoded algebraic
+scenario whose surrogate value loses at most $\eps/8$. For an arc there
+is only one relevant block, and exact local comparison is possible;
+one may use the same interval budget. A minimum is obtained by maximizing
+the negative objective. The interval $[L-a,U+a]$ contains the original
+maximum and has width at most $3\eps/8$.
+
+Apply \cref{lem:a-law-fractional-rounding} to recover rational inputs
+for the \emph{original} laws.
+For pressure, choose sufficiently narrow nomination and resistance
+isolating boxes that \cref{eq:a-law-original-lipschitz} is at most
+$\eps/8$. For an arc, use \cref{eq:a-law-inverse-rounding} and require
+its right side to be at most $(\eps/8)^H$. Nomination-box intersection
+with its rational face and balance contains the exact algebraic point;
+rational LP returns an exactly feasible rational point. Resistance
+coordinates are rounded in their original intervals independently.
+All needed enclosures have polynomial precision. On a terminal core,
+round its aggregated nomination first and then greedily disaggregate;
+its objective is determined by that aggregate, so the sensitivity bound
+is applied on that core. Complete irrelevant coefficients with rational
+endpoints. No exact original-law flow computation is needed for this
+recovery.
+
+The output's original objective loses at most $a$ in comparing the two
+optima, $\eps/8$ in face selection, $a$ in comparing the two laws at the
+selected algebraic scenario, and $\eps/8$ in rounding. This totals at
+most $\eps/2$, within the requested tolerance. In particular, for arc
+optimization one starts from an arc optimizer, not a pressure optimizer
+with possibly different target resistance.
+\end{proof}
+
+The preceding theorem includes any fixed finite family in $(1,3)$,
+and the odd-power factor in \cref{lem:a-law-constitutive} extends it to
+all fixed rational exponents greater than one. The approximation
+principle itself is not a novelty claim: the contribution is its use
+with the block-rank reduction, rational encoding, uniform physical-error
+transfer, and rational scenario recovery. If exponents are arbitrary
+binary input, $\alpha$ or $1-\alpha$ can be exponentially small and the
+present dyadic construction can require exponentially many panels.
+Also the odd power and the exponent $H$ would no longer be fixed.
+No algorithm polynomial in such an exponent encoding is asserted.
+Exact integer power laws have the polynomial representations already
+treated above, including the linear law at the endpoint $q=1$.
+\Cref{thm:a-law-srs} remains compatible with these additive guarantees:
+an accuracy interval need not decide an exact equality or a threshold
+closer than the requested error.
+
+For example, the water head-loss exponent $1.852$ in
+\citet[Example 2.3, May 2018 manuscript]{gro2017-algorithmic-results-for-potential-based}
+is the fixed reduced rational $463/250$. Its even denominator puts that
+mathematical law within both the single-cycle exact barrier and the
+fixed-family additive theorem.

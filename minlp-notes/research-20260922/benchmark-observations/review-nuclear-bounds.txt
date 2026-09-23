@@ -1,0 +1,184 @@
+Review of benchmark-observations/nuclear-bounds.md (nuclear* dual bounds)
+Date: 2026-09-22. Reviewer: independent adversarial review (fresh agent).
+
+SUMMARY
+The three bounds (K), (CW) and (P) are mathematically sound, and the certified
+values reproduce exactly on all 18 instances with an independent parser and
+independent exact rational code. Every proven bound is at least the listed
+primal lam_T. Three fixes are needed: (P) must allow y >= 0, because two of the
+author's certificates contain a zero; several rounded table values are rounded
+the unsafe way (by at most 2.3e-7); and some side claims are wrong or
+unsupported. No finding invalidates a headline bound.
+
+WHAT WAS DONE (targeted checks only; no CI checks were inspected)
+- Wrote a new OSiL parser with exact Fractions. It does not import the
+  author's code. Scripts: benchmark-observations/code/review_nuclear/
+  (parse.py, nstruct.py, kchk.py, bounds.py).
+  Run: ~/miniconda3/envs/exact-quadratic-hull/bin/python code/review_nuclear/bounds.py <instances>
+- The structure is found from the rows themselves, not from assumed variable
+  indices. Burnup rows define the k chains and the paired phi variables.
+  Peaking rows, normalization rows and eigen rows are then matched to the
+  (node, t) pairs, with an assertion for every pairing. The reload rows are
+  classified as F1, F2 or F3, and each formulation's side rows are checked.
+- All 18 instances were processed: va-vf, 14, 14a, 14b, 25, 25a, 25b, 49,
+  49a, 49b, 10a, 10b and 104.
+
+1. MODEL DESCRIPTION: correct, with two description errors
+Verified on all 18 instances:
+- The objective is min, with a single coefficient -1 on the lam variable whose
+  eigen rows use phi_T and k_T (the last burnup step), and constant 0.
+- There is one eigen row for each (i,t). Each is an equality 0 with
+  lam_t*phi_{i,t} (coefficient -1) plus sum_j G_ij phi_{j,t} k_{j,t}. G is the
+  same at every t, G >= 0 with exact decimal entries, and G is irreducible
+  (strongly connected) in all 18 instances.
+- Burnup is an equality k_{t+1} = k_t - a phi_t k_t for every node and every
+  t = 1..T-1. The a values match the note (104 family: .0849333333333333).
+- Normalization sum_i V_i phi k = 1 is an equality at every t. V is identical
+  at every t (1/2 or 1 in va-vf; 1 elsewhere).
+- Peaking phi k <= c holds for every (i,t). The exact file values are used,
+  e.g. .166666666666667, 8.33333333333333e-2, 4.08163265306122e-2 and
+  1.92307692307692e-2; the note's fractions are approximations. The author's
+  code (nuc_verify.py) uses the file's decimals exactly; only the JSON field
+  peak_c is a float.
+- phi, k and lam have lower bound 0 in F1. In F2/F3, phi >= phi_lb > 0 and
+  k >= 0.12. The ONLY variables with negative (-INF) lower bounds are the F1
+  kappa variables: 9 in va-vf, 18 in 14, 20 in 25, 42 in 49 and 91 in 104.
+  Each kappa is defined by an equality to a nonnegative expression, so this
+  is harmless, but the note does not mention it.
+- F1 in 14/25/49/104 multiplies kappa by continuous copies of the binaries,
+  linked by x - b = 0 equalities (576/625/2401/10816 links). The note does not
+  mention this; it is harmless.
+- KF = 6/5, except 5/4 for vb, vd, ve and vf, and 63/50 for vc. N and T match
+  the note.
+Description errors:
+- (a) "every other row sums to 1 +- 3e-4" is false for va-vf, whose G row
+  sums range from 0.67 to 1.055 (va 0.842-1.055, vb/vc 0.67-1.00, vd 0.79-1.00,
+  ve 0.77-1.00, vf 0.71-1.00). It holds for the 14, 25, 49 and 104 families
+  (0.9998-1.0001).
+- (b) The 104-family anomaly is confirmed: node 92 (0-based 91) has entries
+  .4532, 1.0312, .0672, .1066 and 1.4042, which sum to 3.0624, and
+  rho(G) = 1.456888. The row names (e1233 and e1025) were not re-checked.
+
+2. PROOF STEPS
+(K) k_{i,t} <= KF: correct.
+- Monotonicity: k_{t+1} = k_t(1 - a phi_t) <= k_t uses phi, k >= 0, which hold
+  in every formulation.
+- F1: correct. For every F1 instance I checked the following.
+  * Each node has exactly one type (sum_g y_ig = 1, equality, binary).
+  * Each type has one type row sum_i W_i y_ig = 1 (equality) with W = V.
+  * The k_{i,1} row is KF*y for fresh types and y*kappa_g otherwise.
+  * Each kappa row is kappa_g = sum_j V_j k_{j,T} y_{j,pred(g)}, with the
+    k_{j,T} and y of the same node, over all nodes and one predecessor type.
+  * The predecessor graph is acyclic and ends in fresh types. Maximum ages:
+    3 (va-vf, 14), 4 (25), 6 (49), 7 (104), matching the author.
+  So kappa_g is a convex combination of k_{j,T} <= k_{j,1}, and induction on
+  age gives kappa_g <= KF.
+- F2: correct. All F2 instances have phi_lb > 0 and k_lb = 0.12, so each burn
+  step is strictly positive and k_{j,T} < k_{j,1}. The node rows
+  b0 + sum_j b_ij = 1 are equalities over binaries. The contradiction argument
+  holds. The "each fuel to at most one node" rows exist but are not needed.
+- F3: correct. k_{i,1} = KF b0 + sum z, with z <= k_{j,T} (the end-of-cycle k),
+  z <= KF b and z >= 0 for every z. The node rows are equalities, so
+  k_{i,1} <= KF.
+(CW): correct.
+- phi_T != 0 by normalization, so lam_T is an eigenvalue of
+  M = G diag(k_T) >= 0.
+- Then |lam_T| <= rho(M) <= max_i (Mw)_i/w_i <= KF max_i (Gw)_i/w_i. This
+  uses k_T in [0, KF] and G >= 0.
+- As the note says, the argument needs neither phi >= 0 nor irreducibility,
+  but (K) does use phi >= 0.
+(P): correct with fix.
+- The argument holds: p = phi_T*k_T lies in P = {0 <= p <= c, V'p = 1},
+  y'phi >= y'p/KF, and y'Gp >= 0.
+- Fix: the note and the author's dinkelbach() docstring require y > 0, but
+  the author's certificates for nuclearvd and nuclearve each contain one
+  y_i = 0. Those two certificates give the reported bounds (1.2055239 and
+  1.2024306). The proof remains valid if the condition is weakened to
+  "y >= 0 and min_{p in P} y'p > 0". I verified this condition exactly with a
+  fractional knapsack on -y: one node carries at most V_i c <= 0.15 < 1 of the
+  normalization.
+- "With y the left Perron vector it is at least as strong as (CW)" holds for
+  the exact Perron vector. With rationalized vectors it holds only
+  approximately; for example, the author's own y is weaker than CW on va-vc
+  and on the 14, 25 and 49 families. The table correctly reports the better
+  bound in each case.
+Solver cuts: valid.
+- lam_t <= nu_t (Collatz-Wielandt at each t) is valid because normalization
+  holds at each t.
+- sum V k_{t+1} = sum V k_t - a follows from burnup plus normalization at t.
+- k <= KF is valid by (K).
+
+3. RECOMPUTED BOUNDS (exact rationals, my code)
+I recomputed CW with my own Perron vector w and P with my own left Perron
+vector y. I also re-evaluated the author's w and y certificates with my own
+Collatz-Wielandt and Dinkelbach/knapsack code, using the exact c from the file.
+The certified minimum matches the author's best_bound to all printed digits
+for all 18 instances. The only differences come from my own rationalized w,
+which is slightly better, by up to 5e-9.
+  instance   my CW      author P (rechecked)  certified best  listed primal
+  va         1.1846331  1.1846369             1.1846331       1.01423
+  vb         1.1951807  1.1951822             1.1951807       1.03134
+  vc         1.2047421  1.2047436             1.2047421       1.00485
+  vd         1.2057480  1.2055239             1.2055239       1.04165
+  ve         1.2029052  1.2024306             1.2024306       1.03764
+  vf         1.1945653  1.1933305             1.1933305       1.02409
+  14/14a/14b 1.2000100  1.2000122             1.2000100       1.12969 / 1.12963 / 1.12759
+  25/25a/25b 1.2000047  1.2000058             1.2000047       1.12066 / 1.12070 / 1.11580
+  49/49a/49b 1.1999692  1.1999719             1.1999692       1.15142 / 1.15149 / 1.14692
+  10a/10b/104 1.7482651 1.2021302             1.2021302       - / 1.16521 / -
+Every bound is >= the listed primal lam_T, so there is no contradiction. For
+the 104 family, my Perron-vector y gives only KF*rho = 1.748. The value
+1.20213 depends on the author's LP-chosen y, and that certificate checks
+exactly.
+
+Rounding (correct with fix): the table prints 6-decimal values rounded to
+nearest. Some displayed values are therefore slightly above the certified
+lower bound on the objective, so they are not themselves valid bounds:
+  va -1.184633 (by 7.1e-8), vc -1.204742 (1.3e-7),
+  49/49a/49b -1.199969 (2.3e-7), 10a/10b/104 -1.202130 (1.6e-7).
+Round outward (for example, va -1.184634, 49 -1.199970, 104 -1.202131) or
+state the exact values.
+
+4. COMPARISON WITH LISTED MINLPLIB VALUES
+Source: scouting/minlplib-open-data/open.csv. The listed primal and dual values
+in the table match the CSV exactly. The gap column is (bound - primal)/|primal|,
+the same convention as the CSV (for example, 14b listed gap 0.0627).
+- "Improve the listed dual bound on every instance except 14b and 25b":
+  correct. The listed 14b and 25b values, 1.19830 and 1.19662, are 0.14% and
+  0.28% tighter; "about 0.2%" is acceptable. 49b is improved from 1.20177 to
+  1.19997.
+- "Make every gap finite": wrong as worded. nuclear10a and nuclear104 have no
+  listed primal, and the note's own table shows inf for them. Say "every gap
+  with a known primal".
+- The gap ranges "16-20%" (actually 15.7-19.9%), "4-7.5%" (actually 4.2-7.55%)
+  and "3.2%" (10b) are acceptable.
+- "The b-variant listed dual bounds come from the same mechanism (z <= 1.2 b
+  plus row sums about 1)": gap (unsupported). That mechanism alone gives about
+  KF*rho or KF*max rowsum, which is about 1.20001 for 14/25. The listed 14b and
+  25b bounds (1.19830 and 1.19662) are tighter than that, so the solver must
+  use more than that mechanism. The listed 10b bound, 4.87, matches neither
+  KF*rho (1.748) nor KF*max rowsum (3.675). Mark this claim as a conjecture or
+  remove it.
+
+VERDICTS
+- Model description (Section 1): correct with fix. Fix the row-sum statement
+  for va-vf, and mention the free kappa variables and the binary copies.
+- (K), F1 induction: correct.
+- (K), F2 contradiction: correct.
+- (K), F3 linearization: correct.
+- (CW): correct.
+- (P): correct with fix. Allow y >= 0 with min_P y'p > 0, which the vd and ve
+  certificates need.
+- Exact certified values (JSON): correct. Reproduced exactly for all 18
+  instances.
+- Table bound values as printed: correct with fix. Round outward for va, vc,
+  the 49 family and the 104 family.
+- "Every gap finite": wrong as worded. This is false for 10a and 104, which
+  have no primal.
+- Improvement over listed duals, except 14b/25b: correct.
+- Origin of the b-variant listed duals: gap (unsupported, and 10b does not fit).
+- "Assignment-MILP variant does not help": informal heuristic argument, not
+  proven; label it as such.
+- Solver dual and primal columns: not re-run. These are floating-point solver
+  claims, as the note says.
+- Literature section: not checked.

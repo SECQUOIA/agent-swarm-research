@@ -1,0 +1,730 @@
+\section{Structured cone systems and scalar estimation}\label{sec:structured}
+A dense cone Hessian need not make its inverse forms difficult. We give two
+classical comparisons. The first uses a sparse positive definite base and a
+small number of corrections, with sampling access to the correction
+\emph{source} vectors. It produces a scalar estimate or a solution sampler
+without materializing a dense Newton direction. The second uses an
+explicit factorization and returns a full direction. These are different
+output contracts and require different structural parameters.
+
+The low-rank cone identities and their use in sparse factorizations are
+established techniques \citep{AlizadehGoldfarb2003,GoldfarbScheinberg2005,ChenGoulart2025}.
+Dimension-independent sample-query matrix arithmetic is also established
+\citep{ChiaEtAl2022}. The result below combines a full-rank sparse base with
+possibly indefinite corrections. Its explicit access and error analysis is
+needed because sampling a nearly zero transformed correction column can be
+arbitrarily expensive. We never normalize such a column.
+
+\subsection{A sparse base with sampled low-rank corrections}
+We work over $\R$ in this section. Suppose $C\in\R^{m\times n}$ has
+row and column sparsity at most $d$, and public spectral bounds give
+\begin{equation}\label{eq:structured-model}
+ S=CC^T,\quad \kappa^{-1}I\preceq S\preceq I,\qquad
+ N=S+CXLX^TC^T,\quad aS\preceq N\preceq\beta S.
+\end{equation}
+Here $0<a\leq1\leq\beta$, $X\in\R^{n\times r}$ satisfies $\norm X\leq1$,
+and the explicitly supplied $r\times r$ symmetric matrix $L$ obeys
+$\norm L\leq\ell$, where $\ell\geq1$. Neither invertibility nor a sign
+condition is imposed on $L$. Each column has a representation
+$X_j=T_jv_j$, with $\norm{v_j}=1$, supplied $\SQ(v_j)$, and a known
+contraction $T_j$ having at most one entry per row and column. Each $T_j$
+has constant-cost row and column sparse count, location, and value access,
+including reporting an absent entry, as in Definition~\ref{def:access}.
+This includes diagonal maps and coordinate
+embeddings. The norm of $X_j$, or of $CX_j$, is not supplied. The nonzero
+right-hand side $b$ has $\SQ(b)$; scaling permits $\norm b=1$ throughout
+the proof.
+
+\begin{theorem}[Sparse base and low-rank corrections]\label{thm:structured-sq}
+Under \eqref{eq:structured-model}, row and column sparse access to $C$ and
+the stated vector access suffice for a randomized setup with a good event
+of probability at least $1-\zeta$. On that event its coordinate oracle
+represents one fixed vector $\widetilde y$ with
+\[
+ \norm{\widetilde y-N^{-1}b}\leq\epsilon\norm{N^{-1}b}.
+\]
+Each requested draw either returns a failure flag or an exact sample from
+$p_{\widetilde y}$ conditional on not failing. On the good setup event its
+flag probability is at most any prescribed $\delta\in(0,1/2)$.
+Setup, coordinate queries, and draws all have bounded cost, including on
+bad setup outcomes. With
+$R_*=2+(r+1)\kappa\beta\ell/a$, a common bound is
+\begin{equation}\label{eq:structured-cost}
+ (d+1)^{O(\sqrt\kappa\log(R_*/\epsilon))}
+ \poly(R_*,\epsilon^{-1},\log(1/\zeta),\log(1/\delta)).
+\end{equation}
+The draw law is asserted on the good setup event; bad setups count toward
+$\zeta$. No exact output-norm oracle is asserted. The case $r=0$ is
+Theorem~\ref{thm:solution-sampling}, with capped rejection.
+\end{theorem}
+\begin{proof}
+Put $D_*=1+\ell/a$ and $U_*=D_*\ell$. The matrices
+\[
+ K=X^TC^TS^{-1}CX,\quad h=X^TC^TS^{-1}b,\quad J=(I+LK)^{-1}
+\]
+obey $0\preceq K\preceq I$ and $\norm h\leq\sqrt\kappa$.
+Indeed, $C^TS^{-1}C$ is an orthogonal projection. The identity
+\begin{equation}\label{eq:structured-core}
+ J=I-LX^TC^TN^{-1}CX,\qquad \norm J\leq D_*
+\end{equation}
+follows by multiplying by $I+LK$; the norm estimate uses
+$N^{-1}\preceq a^{-1}S^{-1}$. Thus Woodbury's identity does not require
+$L^{-1}$ and gives
+\[
+ z=JLh,\quad \norm z\leq U_*\sqrt\kappa,\qquad
+ y=N^{-1}b=S^{-1}b-S^{-1}CXz.
+\]
+
+Use Lemma~\ref{lem:residual} to obtain a polynomial $P=P(S)$ with
+$\norm{I-SP}\leq\eta\leq1$. Functional calculus gives
+\begin{equation}\label{eq:structured-polynomial-norms}
+ \norm P\leq2\kappa,\quad \norm{PC}\leq2\sqrt\kappa,
+ \quad \norm{C^TPC}\leq2.
+\end{equation}
+For example, writing $C=S^{1/2}V$ with $VV^T=I$ proves all three bounds.
+Let $K_P=X^TC^TPCX$ and $h_P=X^TC^TPb$. Their biases satisfy
+$\norm{K_P-K}\leq\eta$ and
+$\norm{h_P-h}\leq\eta\sqrt\kappa$.
+
+Each entry of $K_P$ is estimated by sampling from $v_i$ and evaluating
+$T_i^TC^TPC T_jv_j$ locally. Specifically, if $I\sim p_{v_i}$, the
+variable $(T_i^TC^TPC T_jv_j)_I/(v_i)_I$ has the desired expectation and
+second moment at most $4$; zero sampled denominators have probability zero.
+For $(h_P)_i$ use $T_i^TC^TPb$ instead; its second moment is at most
+$4\kappa$. Median-of-means estimates with entry errors
+$\rho/(2r)$ and $\nu/(2\sqrt r)$, respectively, give
+\[
+ \norm{\widehat K-K}\leq\rho,\qquad
+ \norm{\widehat h-h}\leq\nu
+\]
+with joint probability $1-\zeta$, provided
+$\eta\leq\rho/2$ and $\eta\sqrt\kappa\leq\nu/2$.
+One may symmetrize $\widehat K$ without increasing its error. The total
+number of local evaluations is
+\begin{equation}\label{eq:structured-estimates}
+ O\left[\left(\frac{r^4}{\rho^2}
+       +\frac{r^2\kappa}{\nu^2}\right)
+       \log\frac{r+1}{\zeta}\right].
+\end{equation}
+All these estimates start at the supplied vectors, not at $CX_j$.
+
+If $U_*\rho\leq1/2$, perturbing the small inverse gives
+$\norm{(I+L\widehat K)^{-1}}\leq2D_*$ and, for
+$\widehat z=(I+L\widehat K)^{-1}L\widehat h$,
+\[
+ \norm{\widehat z-z}\leq
+ 2U_*(\nu+\rho U_*\sqrt\kappa).
+\]
+The fixed output $\widetilde y=Pb-PCX\widehat z$ consequently satisfies
+\begin{equation}\label{eq:structured-error}
+ \norm{\widetilde y-y}\leq
+ \eta\kappa(1+U_*)+4U_*\sqrt\kappa\,\nu
+                   +4U_*^2\kappa\rho.
+\end{equation}
+For completeness, the polynomial bias in $S^{-1}b$ is at most
+$\eta\kappa$, that in $S^{-1}CXz$ is at most
+$\eta\sqrt\kappa\norm z$, and the remaining term is bounded using
+\eqref{eq:structured-polynomial-norms}. The explicit choices
+\begin{align*}
+ \rho&=\frac{\epsilon}{48\beta U_*^2\kappa},&
+ \nu&=\frac{\epsilon}{48\beta U_*\sqrt\kappa},\\
+ \eta&=\min\left\{\frac{\epsilon}{12\beta\kappa(1+U_*)},
+                         \frac\rho2,\frac\nu{2\sqrt\kappa}\right\}
+\end{align*}
+make \eqref{eq:structured-error} at most $\epsilon/(4\beta)$.
+Since $N\preceq\beta I$, $\norm y\geq1/\beta$, which proves the
+stated relative error with room to spare. On the good event,
+$\norm{\widehat z}\leq4U_*\sqrt\kappa$.
+
+It remains to sample without division by small component norms. The raw
+trial in Lemma~\ref{lem:rejection} applies also to a rectangular or singular
+transform $T$: if its rows have at most $W$ entries and $B_T\geq\norm T$,
+its output probability at coordinate $i$ in one trial is
+\begin{equation}\label{eq:raw-rectangular}
+                  \frac{|(Tv)_i|^2}{WB_T^2\norm v^2}.
+\end{equation}
+The proof uses only the column norm upper bound and row
+Cauchy--Schwarz inequality, so it needs no lower singular-value bound.
+Choose a common $W=(d+1)^{O(\sqrt\kappa\log(R_*/\epsilon))}$ bounding
+both row and column support sizes and materialization costs of all needed
+transforms. Sparse walks through $CC^T$, and the one-entry maps $T_j$,
+give such a bound. Put $w_0=Pb$, $w_j=PC T_jv_j$, $c_0=1$ and
+$c_j=-\widehat z_j$. Take raw denominators
+$D_0=4W\kappa^2$ and $D_j=4W\kappa$ for $j\geq1$, and
+$Z=\sum_{j=0}^r c_j^2D_j$. Select $j$ with probability $c_j^2D_j/Z$
+and perform one raw trial for $w_j$. If it returns $i$, accept again with
+probability
+\[
+ \frac{|\sum_{j=0}^r c_jw_{j,i}|^2}
+      {(r+1)\sum_{j=0}^r |c_jw_{j,i}|^2}.
+\]
+The denominator is positive whenever this step is reached. Summing over
+$j$ shows that the final raw probability is
+$|\widetilde y_i|^2/((r+1)Z)$. On the good setup event,
+\[
+ Z\leq4W\kappa^2(1+16U_*^2),\qquad
+ \norm{\widetilde y}\geq\frac1{2\beta}.
+\]
+Thus the total acceptance probability is at least
+$\pi_*=[16(r+1)W\beta^2\kappa^2(1+16U_*^2)]^{-1}$.
+
+To make runtime unconditional, setup returns a failure flag if its small
+core is singular, if the Frobenius norm of its inverse exceeds
+$2\sqrt r D_*$, or if $\norm{\widehat z}>4U_*\sqrt\kappa$.
+These checks do not reject a good setup and use small dense arithmetic.
+Every draw is capped at $\lceil\pi_*^{-1}\log(1/\delta)\rceil$ trials.
+Failure of all trials returns a flag. Independent identical trials ensure
+that truncation leaves the conditional accepted law unchanged. On a bad
+setup the loop still terminates, even if $\widetilde y=0$. Each trial
+costs $O((r+1)W)$; \eqref{eq:structured-estimates}, the small solve, and
+these caps prove \eqref{eq:structured-cost}. For nonunit $b$, scale the
+fixed vector back by its known norm; its sampling law is unchanged.
+\end{proof}
+
+\begin{corollary}[Structured positive inverse forms]\label{cor:structured-scalar}
+Under the same hypotheses, $q=b^TN^{-1}b$ admits a relative-$\epsilon$
+estimate with failure probability at most $\zeta$ and cost of the form
+\eqref{eq:structured-cost}. This statement uses only setup and coordinate
+queries, so it has no per-draw failure parameter.
+\end{corollary}
+\begin{proof}
+Normalize $b$ to unit norm. Then $q\geq1/\beta$ and
+$\norm{N^{-1}b}\leq\kappa/a$. Run the preceding setup with vector
+error $\epsilon a/(4\beta\kappa)$ and failure budget $\zeta/2$.
+Its scalar bias is at most $\epsilon/(4\beta)$. Independently sample
+$I\sim p_b$ and average $\widetilde y_I/b_I$ by median of means.
+Conditionally on good setup its second moment is at most
+$\norm{\widetilde y}^2\leq4\kappa^2/a^2$.
+Thus $O(\beta^2\kappa^2a^{-2}\epsilon^{-2}\log(1/\zeta))$
+coordinate evaluations achieve additional error $\epsilon/(2\beta)$.
+A union bound proves the claim. No positivity of the approximate linear
+map, or noncancellation promise for its individual correction terms, is used.
+\end{proof}
+
+\subsection{Lorentz and generalized-power barriers}
+At an interior Lorentz point $(t,z)$ with $t>\norm z$, let
+$H=\nabla^2 F_L(t,z)$ for $F_L(t,z)=-\log(t^2-\norm z^2)$.
+Put $r_z=\norm z$, $s=t^2-r_z^2>0$,
+$d_x=s/2$, and $\chi=(t+r_z)/(t-r_z)$. If $r_z>0$, put
+$u_\pm=2^{-1/2}(1,\pm z/r_z)$. Differentiation and inversion give
+\begin{equation}\label{eq:lorentz-structured}
+ H^{-1}=d_x I+r_z(t+r_z)u_+u_+^T-r_z(t-r_z)u_-u_-^T,
+ \quad \chi^{-1}d_xI\preceq H^{-1}\preceq\chi d_xI.
+\end{equation}
+Indeed, the eigenvalues are $(t+r_z)^2/2$, $(t-r_z)^2/2$ and $s/2$
+on the two radial eigendirections and their orthogonal complement. At
+$z=0$ the correction vanishes. For $L_c$ blocks, let
+$\mathcal D=\bigoplus d_xI$, $C=A\mathcal D^{1/2}$ and $S=CC^T$.
+Use the orthonormal columns $(1,0)$ and $(0,z/r_z)$ in each block for $X$.
+The normalized inverse correction $L$ is explicit, block diagonal, and
+has norm at most $\chi_{\max}-1$. Thus $r\leq2L_c$,
+$a=\chi_{\max}^{-1}$ and $\beta=\chi_{\max}$ suffice in
+\eqref{eq:structured-model}. Supplied block norms and $\SQ(z)$ give all
+required source access. A known positive scaling of $S$ normalizes its
+spectral upper bound to one and scales $N$ and the desired output accordingly.
+This proves the Lorentz instance of both preceding results.
+
+For generalized-power cones, let $x_i>0$, $\alpha_i>0$,
+$\sum_{i=1}^{m_x}\alpha_i=1$, and
+\[
+ p=\prod_i x_i^{2\alpha_i},\quad s=p-\norm z^2>0,
+ \quad \lambda=p/s,\quad 1\leq\lambda\leq\Lambda.
+\]
+The barrier
+\begin{equation}\label{eq:power-barrier}
+ F(x,z)=-\log s-\sum_i(1-\alpha_i)\log x_i
+\end{equation}
+has parameter $m_x+1$ \citep{RoyXiao2022}. Its use and low-rank
+Hessian structure precede this work \citep{ChenGoulart2025}; closed-form
+inverse-Hessian operators are given by \citet{KapelevichAndersenVielma2024}.
+Set $k_i=1+(2\lambda-1)\alpha_i$ and
+$D_0=\diag(k_i/x_i^2,(2/s)I)$. With $c=\norm\alpha^2$,
+write the two disjointly supported columns
+\[
+ X_1=(\alpha_i/(\sqrt c\sqrt{k_i}))_i\oplus0,
+ \qquad X_2=0\oplus z/\norm z.
+\]
+At $z=0$, omit the correction: $\lambda=1$ and $H=D_0$.
+Otherwise direct differentiation of \eqref{eq:power-barrier} gives
+\begin{equation}\label{eq:power-normalized}
+ H=D_0^{1/2}(I+XBX^T)D_0^{1/2},\qquad
+ B=\begin{pmatrix}
+ 4\lambda(\lambda-1)c&-4\lambda\sqrt{c(\lambda-1)/2}\\
+ -4\lambda\sqrt{c(\lambda-1)/2}&2(\lambda-1)
+ \end{pmatrix}.
+\end{equation}
+For example, before normalization the correction is
+$4\lambda(\lambda-1)aa^T-(4\lambda/s)(az^T+za^T)+(4/s^2)zz^T$,
+where $a_i=\alpha_i/x_i$ and the two groups are embedded separately.
+This verifies both the signs and the diagonal base.
+
+\begin{lemma}[Power-cone comparison and estimated core]\label{lem:power-core}
+The inverse Hessian satisfies
+\begin{equation}\label{eq:power-comparison}
+ (4\lambda)^{-1}D_0^{-1}\preceq H^{-1}\preceq4\lambda D_0^{-1}.
+\end{equation}
+In $H^{-1}=D_0^{-1/2}(I+XL(t)X^T)D_0^{-1/2}$, the symmetric coefficient
+matrix is
+\[
+ t=\sum_i\frac{\alpha_i^2}{c k_i},\quad
+ L(t)=-(I+B\diag(t,1))^{-1}B.
+\]
+For every $t$ in the interval
+\begin{equation}\label{eq:power-clip}
+ \mathcal I_\lambda=
+ [1/(2\lambda),\ \min\{1,1/(2\lambda c)\}],
+\end{equation}
+this formula is defined, $\norm{L(t)}\leq10\Lambda^2$, and
+$\norm{L(t')-L(t)}\leq100\Lambda^4|t'-t|$.
+The true $t$ belongs to this interval and can be estimated to error $u$
+with $O(u^{-2}\log(1/\zeta))$ samples from $p_\alpha$.
+\end{lemma}
+\begin{proof}
+Since $1\leq k_i\leq2\lambda$ and $k_i\geq2\lambda\alpha_i$,
+$t\geq1/(2\lambda)$ and $ct\leq1/(2\lambda)$, proving the interval
+claim. In the orthonormal basis obtained by normalizing the two column
+directions of $X$, the normalized
+Hessian is
+\[
+ Q(t)=\begin{pmatrix}
+ 1+4\lambda(\lambda-1)ct&-4\lambda\sqrt{ct(\lambda-1)/2}\\
+ -4\lambda\sqrt{ct(\lambda-1)/2}&2\lambda-1
+ \end{pmatrix}.
+\]
+Its trace is at most $4\lambda$ and its determinant is
+$2\lambda-1-4\lambda(\lambda-1)ct\geq1$ on
+\eqref{eq:power-clip}. Its leading diagonal is positive, so both
+eigenvalues lie in $[1/(4\lambda),4\lambda]$. On the orthogonal
+complement the matrix is identity. This proves \eqref{eq:power-comparison}.
+For $G=\diag(t,1)$,
+\[
+ L(t)=G^{-1/2}(Q(t)^{-1}-I)G^{-1/2}.
+\]
+This identity proves symmetry and gives
+$\norm{L(t)}\leq2\lambda(4\lambda+1)\leq10\Lambda^2$.
+Differentiation of the inverse formula gives
+$L'(t)=L(t)\diag(1,0)L(t)$, hence
+$\norm{L'(t)}\leq100\Lambda^4$. Finally, $t$ is the expectation of
+$1/k_I\in[0,1]$ for $I\sim p_\alpha$. Hoeffding's inequality proves the
+sample bound. Clipping an estimate to \eqref{eq:power-clip} never increases
+its error. Clipping merely to $[1/(2\Lambda),1]$ would not preserve the
+determinant bound and is insufficient.
+\end{proof}
+
+\begin{corollary}[Conditional cone-system bound]\label{cor:cone-sq}
+Let $A$ have full row rank and row and column sparsity $d$, with
+constant-cost row and column sparse count, location, and value access, a
+public block partition and constant-cost conversion between block-local
+and global indices. For $L_c$
+Lorentz blocks assume supplied $\SQ(z)$ separately for each block and
+queryable axial coordinates; for $L_c$ generalized-power blocks assume
+supplied $\SQ(\alpha)$ and $\SQ(z)$ separately for each block,
+coordinate queries to $x$, and each block's barrier scalars $p,s$.
+These vector interfaces include each block's norm, rather than merely
+the norm and sampling law of a concatenated vector. Radial-vector norm
+and coordinate access are available also when $z=0$; sampling is requested
+only for nonzero radial blocks, and a zero block's radial correction is
+omitted.
+Supply $\SQ(b)$ and spectral bounds normalizing
+$S=A\mathcal D A^T$ to $[\kappa_S^{-1},1]$, where $\mathcal D$ is
+respectively the scalar Lorentz base or $\bigoplus D_0^{-1}$.
+For $N=AH^{-1}A^T$, relative solution approximation, its capped sampler,
+and relative estimation of $b^TN^{-1}b$ have cost
+\begin{equation}\label{eq:cone-cost}
+ (d+1)^{O(\sqrt{\kappa_S}\log(2L_c\Gamma\kappa_S/\epsilon))}
+ \poly(L_c,\Gamma,\kappa_S,\epsilon^{-1},
+                         \log(1/\zeta),\log(1/\delta)),
+\end{equation}
+where $\Gamma=\max\chi$ for Lorentz cones and $\Gamma=\Lambda$ for
+power cones. The setup and draw contracts are those of
+Theorem~\ref{thm:structured-sq}; scalar estimation omits $\delta$.
+\end{corollary}
+\begin{proof}
+The Lorentz case has already been reduced to
+Theorem~\ref{thm:structured-sq}. For power cones take $C=A\mathcal D^{1/2}$.
+The columns in \eqref{eq:power-normalized} are diagonal contractions of
+$\alpha/\norm\alpha$ and embeddings of $z/\norm z$; their disjoint
+supports across and within blocks give $\norm X\leq1$. They do not
+require the exact norm of $X_1$. Lemma~\ref{lem:power-core} gives
+$a=1/(4\Lambda)$, $\beta=4\Lambda$, $\ell=10\Lambda^2$ and $r\leq2L_c$.
+Only $L$ requires approximation. Estimate each $t$ and clip as in
+\eqref{eq:power-clip}, obtaining a fixed block diagonal $\widehat L$.
+If $\norm{\widehat L-L}\leq v$, then
+\[
+ \norm{S^{-1/2}(\widehat N-N)S^{-1/2}}\leq v,
+ \quad \widehat N=S+CX\widehat L X^TC^T.
+\]
+For $v\leq a/2$, therefore,
+$(a/2)S\preceq\widehat N\preceq(\beta+a/2)S$. The resolvent identity
+also gives, for every $b$,
+\[
+ \norm{\widehat N^{-1}b-N^{-1}b}
+ \leq\norm{\widehat N^{-1}}\norm{\widehat N-N}\norm{N^{-1}b}
+ \leq\frac{2\kappa_S v}{a}\norm{N^{-1}b}.
+\]
+Take $v\leq\min\{a/2,\epsilon a/(8\kappa_S)\}$, and run the theorem
+on $\widehat N$ with tolerance $\epsilon/4$. Since $\epsilon\leq1/2$,
+the resulting total relative error is less than $\epsilon$.
+The estimates of $t$ use accuracy $v/(100\Lambda^4)$ and joint failure
+budget $\zeta/2$; the remaining setup uses $\zeta/2$. The lemma bounds
+$\norm{\widehat L}\leq10\Lambda^2$ even on inaccurate estimates.
+These are polynomial costs, and the logarithm of every required tolerance
+has the order asserted in \eqref{eq:cone-cost}. For the scalar contract,
+run this vector construction at tolerance
+$\epsilon a/(4\beta\kappa_S)$ and apply the independent estimator from
+Corollary~\ref{cor:structured-scalar}.
+\end{proof}
+
+This is a one-system oracle theorem. For fixed $d,L_c,\Gamma,\kappa_S$
+and accuracy, growing the cone dimensions alone does not force a
+polynomial query cost for these outputs. Maintaining the supplied iterate
+access, forming $b$, or keeping the parameters bounded along a path is not
+included. The cyclic one-cone example in Section~\ref{sec:realizations}
+has a growing sparse-base condition number and hence does not contradict
+the theorem. Standard three-dimensional cone blocks instead give bounded
+block sparsity directly, so Section~\ref{sec:classical} already applies
+when the resulting reduced system has the stated spectral bounds.
+
+\subsection{The power-cone scalar oracle cannot be omitted}
+The supplied value $p$ is substantive. Fix uniform weights on $2M$
+positive coordinates, grouped into pairs. Encode a hidden bit $h_j$ by
+choosing pair $(a,b)$ or $(c,d)$, where
+$a^2+b^2=c^2+d^2$ and $ab\ne cd$. The norm is public. A squared-coordinate
+sample is simulated by choosing a uniform pair and querying its one bit;
+coordinate queries also need one bit. For the quantum comparison, fix the
+canonical coherent value and preparation interfaces: prepare a uniform
+pair index, query its hidden bit, apply the corresponding public
+two-coordinate rotation, and uncompute the bit. Equal pair norms make
+this a preparation of the normalized input vector. Coherent value queries,
+the preparation unitary and its inverse, and their controlled versions all
+use $O(1)$ hidden-bit queries. This specifies a particular unitary
+completion; no claim is made about arbitrary completions of classical
+$\SQ$ access. However,
+\[
+ p=\big[(ab)^{M-|h|}(cd)^{|h|}\big]^{1/M}
+\]
+determines $|h|$ exactly and therefore its parity. The classical and
+quantum bounded-error parity lower bounds give $\Omega(M)$ queries for
+exact acquisition of $p$ under the classical vector access or its specified
+canonical coherent version.
+There is also a constant-relative obstruction without a bound on the
+logarithmic range. Take
+\[
+ (a,b)=(\sqrt{1-e^{-2\gamma M}},e^{-\gamma M}),\qquad
+ (c,d)=(1/\sqrt2,1/\sqrt2),\qquad \gamma=4.
+\]
+Both squared pair norms equal one, and adjacent possible values of $p$
+have ratio
+\[
+ [(1/2)/(e^{-4M}\sqrt{1-e^{-8M}})]^{1/M}>e^4/2>3.
+\]
+A relative error less than $1/2$ therefore still determines the integer
+$|h|$ and its parity. The same canonical interface simulation applies.
+This proves the same linear lower bound, in ideal
+real arithmetic; it uses a logarithmic coordinate range growing with $M$.
+With a known bounded range of $\log x_i$, estimating its weighted mean
+can instead estimate $p$. Sampling weights proportional to $\alpha_i$
+suffices, but ordinary $\SQ(\alpha)$ samples proportional to
+$\alpha_i^2$ and does not automatically supply that oracle. Uniform weights
+permit uniform index sampling. These costs are part of acquiring the input
+to Corollary~\ref{cor:cone-sq}.
+
+The aggregated logarithm cone illustrates the limit of algebra alone.
+For $s=v\sum_i\log(w_i/v)-u>0$, $v,w_i>0$, the Hessian of
+$-\log s-\log v-\sum_i\log w_i$ is diagonal plus rank at most three.
+To see this, let $h=(0,0,(1/w_i)_i)$, and use the positive diagonal
+with entries $1$, $m/(vs)+1/v^2$, and $(1+v/s)/w_i^2$, where $m$
+is the number of $w$ coordinates. The remaining terms are
+$-e_ue_u^T+(\nabla s)(\nabla s)^T/s^2-(e_vh^T+he_v^T)/s$;
+$\nabla s$ belongs to $\operatorname{span}\{e_u,e_v,h\}$.
+The inverse has the same rank bound for its departure from the inverse
+diagonal, by the inverse identity. This observation supplies no
+uniform spectral comparison or scalar-acquisition bound, so we make no
+corresponding parameter-free sampling claim.
+
+\subsection{Eccentricity profiles with full output}\label{subsec:profile}
+For explicit directions a useful comparison allows many cones, including a
+few with arbitrarily large eccentricity. Assume
+$A=[A_1\ \cdots\ A_{L_c}]$ has full row rank, and each
+$(t_j,z_j)$ is interior, with $t_j>\norm{z_j}$ and
+$H_j=\nabla^2[-\log(t_j^2-\norm{z_j}^2)]$. Write
+$N=\sum_j A_jH_j^{-1}A_j^T$ and
+$S=\sum_j d_jA_jA_j^T$, with the notation of
+\eqref{eq:lorentz-structured}. For a threshold $\theta\geq1$, retain the
+blocks $B_\theta=\{j:\chi_j>\theta\}$ exactly and put
+\[
+ P_\theta=\sum_{j\in B_\theta}A_jH_j^{-1}A_j^T
+              +\sum_{j\notin B_\theta}d_jA_jA_j^T,
+ \qquad b_\theta=|B_\theta|.
+\]
+\begin{proposition}[Profile preconditioner and energy certificate]
+\label{prop:profile}
+The matrix $P_\theta$ is positive definite and
+\begin{equation}\label{eq:profile-order}
+ \theta^{-1}P_\theta\preceq N\preceq\theta P_\theta,
+ \qquad \rank(P_\theta-S)\leq2b_\theta.
+\end{equation}
+Preconditioned conjugate gradients reduce the $N$-energy error by a factor
+$\eta$ in $O(\theta\log(2/\eta))$ iterations. If $q=b-N\widehat y$,
+then
+\begin{equation}\label{eq:profile-residual}
+ \theta^{-1}q^TP_\theta^{-1}q
+ \leq\norm{\widehat y-N^{-1}b}_N^2
+ \leq\theta q^TP_\theta^{-1}q.
+\end{equation}
+\end{proposition}
+\begin{proof}
+For each untreated block,
+$\theta^{-1}d_jI\preceq H_j^{-1}\preceq\theta d_jI$.
+The treated contributions are identical in the two matrices and positive
+semidefinite, so summing proves \eqref{eq:profile-order}.
+Equation~\eqref{eq:lorentz-structured} gives the rank bound.
+The preconditioned spectrum lies in $[\theta^{-1},\theta]$.
+The usual Chebyshev residual bound for conjugate gradients is
+$2((\sqrt\kappa-1)/(\sqrt\kappa+1))^k$ in the energy norm;
+$\kappa\leq\theta^2$ proves the iteration count. If $\theta=1$,
+one iteration suffices. Inverting the Loewner bounds and using
+$\norm{\widehat y-N^{-1}b}_N^2=q^TN^{-1}q$ proves the certificate.
+\end{proof}
+
+The certificate has an exact Newton interpretation. For
+$H\Delta x+A^T\Delta y=r_d$ and $A\Delta x=r_p$, the reduced right-hand
+side is $b=AH^{-1}r_d-r_p$. An approximate multiplier induces
+$\widehat{\Delta x}=H^{-1}(r_d-A^T\widehat{\Delta y})$, and
+\begin{equation}\label{eq:primal-energy}
+ \norm{\widehat{\Delta x}-\Delta x}_H^2
+       =\norm{\widehat{\Delta y}-\Delta y}_N^2.
+\end{equation}
+Thus \eqref{eq:profile-residual} controls the primal barrier metric
+without a raw Euclidean condition factor. It does not by itself certify a
+different full-KKT or Euclidean residual contract.
+
+Here is an explicit implementation bound. Let $A$ have $m$ rows and $n$
+columns. Supply a width-$\tau$ elimination order for its structural
+row-intersection graph, and write $\bar\tau=\tau+1$. Each column support
+is a clique of size at most $\bar\tau$, so assembling $S$ costs
+$O(\bar\tau\nnz A)$; its positive definite Cholesky factor costs
+$O(m\bar\tau^2)$ and occupies $O(m\bar\tau)$ words. After deleting
+zero update columns, write $P_\theta=S+UJU^T$ with at most $2b_\theta$
+columns and diagonal $J$ with entries $\pm1$. The small core
+$J+U^TS^{-1}U$ is nonsingular: the determinant identity and
+$P_\theta\succ0$ prove this even when the update is indefinite.
+Forming $U$, solving for $S^{-1}U$, forming its Gram matrix, and factoring
+the core give the following conservative exact-arithmetic setup and
+application costs:
+\begin{align}
+ C_{\rm setup}&=O\bigl(n+\bar\tau\nnz A+m\bar\tau^2
+                  +mb_\theta(\bar\tau+b_\theta)+b_\theta^3\bigr),
+                  \label{eq:profile-setup}\\
+ C_{\rm apply}&=O\bigl(m(\bar\tau+b_\theta)+b_\theta^2\bigr).
+                  \label{eq:profile-apply}
+\end{align}
+These counts use dense storage for the transformed correction columns.
+A matrix-free product by $N$ costs $O(\nnz A+n)$ by applying
+\eqref{eq:lorentz-structured} blockwise. Hence the total solve cost is
+\begin{equation}\label{eq:profile-cost}
+ C_{\rm prof}=C_{\rm setup}
+     +O\bigl(\theta\log(2/\eta)[\nnz A+n+C_{\rm apply}]\bigr).
+\end{equation}
+For an adaptive choice, sort the eccentricities in decreasing order.
+Keeping the largest $b$ and choosing $\theta=\chi_{(b+1)}$, with
+$\chi_{(L_c+1)}=1$, gives \eqref{eq:profile-cost} with correction count
+at most $b$. Sorting costs $O(L_c\log L_c)$; evaluating the displayed
+bound for all $b$ then costs $O(L_c)$. Ties do not affect the argument.
+This gives a tradeoff between correction count and the first untreated
+eccentricity, in the supplied coordinates.
+
+The rank charge has a sharp worst-case interpretation. Take $b$ genuine
+three-dimensional Lorentz blocks, $A=I$, and choose
+$t+r_z=\sqrt{2\chi}$, $t-r_z=\sqrt{2/\chi}$. Then $S=I$ and $N$ has
+three orthogonal $b$-dimensional eigenspaces $E_+,E_0,E_-$ with eigenvalues
+$\chi,1,\chi^{-1}$. If $P=I+R\succ0$, $R=R^T$, and $\rank R<2b$,
+then
+\begin{equation}\label{eq:profile-rank-lower}
+                  \kappa(P^{-1/2}NP^{-1/2})\geq\chi.
+\end{equation}
+To prove this, let $p_+,p_-$ be the positive and negative inertia of $R$.
+If $p_+<b$, some $v\in E_+$ has $v^TRv\leq0$, so its generalized
+Rayleigh quotient is at least $\chi$. Since $\dim\ker R>b$,
+$\ker R\cap E_+^\perp$ contains a nonzero vector whose quotient is at
+most one. Otherwise $p_+\geq b$ implies $p_-<b$; a vector in $E_-$ has
+quotient at most $\chi^{-1}$ and one in $\ker R\cap E_-^\perp$ has
+quotient at least one. This proves \eqref{eq:profile-rank-lower}.
+Thus guaranteeing condition at most $\theta^2$ for every profile with
+$b$ blocks of eccentricity $\chi>\theta^2$ requires rank at least $2b$
+in this base-plus-update class. In the same $A=I$ family, allowing
+unequal block eccentricities, under the stronger Loewner contract
+\eqref{eq:profile-order}, blocks with $\chi_j>\theta$ force at least
+$b_\theta$ positive and $b_\theta$ negative update directions by restriction
+to their high and low eigenspaces. The profile rank bound is sharp in that
+sense too. These are linear-algebra bounds within a specified preconditioner
+class, not oracle lower bounds for optimization.
+
+Signed Woodbury arithmetic can be numerically unstable. An alternative
+uses $P_\theta=S+UU^T-VV^T$. Blockwise,
+$d_jI-r_j(t_j-r_j)u_{j,-}u_{j,-}^T\succ0$, hence $S-VV^T\succ0$.
+The augmentation
+\[
+ \begin{pmatrix}S&V&U\\V^T&I&0\\U^T&0&-I\end{pmatrix}
+\]
+is symmetric quasidefinite: its positive principal block on the first two
+groups is positive definite, and its last block is negative definite.
+Adding its at most $2b_\theta$ hub vertices to every graph bag increases
+width by at most $2b_\theta$. Quasidefinite matrices admit pivot-free
+$LDL^T$ factorization under every symmetric permutation
+\citep{Vanderbei1995}. A supplied width order therefore gives setup
+$O((m+b_\theta)(\bar\tau+2b_\theta)^2)$ and subsequent application and
+storage $O((m+b_\theta)(\bar\tau+2b_\theta))$, in addition to coefficient
+formation. Either implementation may be used. Neither this exact
+factorization fact nor \eqref{eq:profile-cost} is a uniform bit-complexity
+bound. Product-form factorizations address numerical cancellation in this
+setting \citep{GoldfarbScheinberg2005}; working precision and residual
+verification still have to match the desired outer solve contract.
+
+\subsection{Latent sparsity and explicit-output comparisons}
+Dense cone blocks can also hide a small graph. For one Lorentz block, let
+$J_0=\diag(1,-I)$, $u=J_0(t,z)$ and $s=t^2-\norm z^2$. Then
+\begin{equation}\label{eq:onehub}
+ H=-2J_0/s+4uu^T/s^2=D_x+ww^T,
+ \qquad w=2u/s.
+\end{equation}
+The diagonal $D_x$ is indefinite. For all blocks, put these diagonals and
+embedded $w$ columns into $D_x,W$. The equality Newton system has the
+same primal and multiplier solution as
+\begin{equation}\label{eq:latent-augmentation}
+ \begin{pmatrix}D_x&W&A^T\\W^T&-I&0\\A&0&0\end{pmatrix}
+ \begin{pmatrix}\Delta x\\h\\\Delta y\end{pmatrix}
+ =\begin{pmatrix}r_d\\0\\r_p\end{pmatrix}.
+\end{equation}
+Eliminating the hub block gives $H$ exactly. Full row rank of $A$ and
+$H\succ0$ imply nonsingularity of both systems. Define a graph with the
+$n$ scalar coordinate vertices, $m$ equality-row vertices, and two hubs
+per cone; include every structural equality incidence and join both hubs
+to all coordinates of their cone. The matrix in
+\eqref{eq:latent-augmentation} uses a subgraph of this fixed graph.
+
+\begin{proposition}[Supplied latent width]\label{prop:latent-width}
+If a width-$\tau_L$ tree decomposition of this graph, with
+$O((\tau_L+1)(n+m+L_c))$ total bag entries, is supplied, then one Newton
+system can be solved exactly in
+\[
+                 O((n+m+L_c)(\tau_L+1)^2)
+\]
+field operations, after $O(n+\nnz A)$ coefficient formation. This
+one-right-hand-side statement does not assert a reusable symmetric factor
+or numerical stability.
+\end{proposition}
+\begin{proof}
+Use \eqref{eq:onehub} to form \eqref{eq:latent-augmentation} without
+square roots. Replace each vertex in each bag by its row and column
+copies. Every nonzero of the matrix is now covered in its row--column
+bipartite graph, both copies inherit a connected subtree, and the new
+width is at most $2\tau_L+1$. Write $N_{\rm aug}=n+m+L_c$ for the
+augmented matrix order and $k=O(\tau_L+1)$ for the copied decomposition
+width plus one. The supplied total-bag-entry bound implies
+$|\mathcal T|=O(kN_{\rm aug})$ decomposition nodes.
+The preprocessing in Section 3 of \citet{FurerHoppenTrevisan2025}
+converts this compact decomposition to a nice decomposition with
+$O(N_{\rm aug})$ nodes in
+$O(k(|\mathcal T|+N_{\rm aug}))=O(k^2N_{\rm aug})$ time.
+Their Corollary 3 then solves a consistent rectangular
+system in $O((\hbox{rows}+\hbox{columns})(\hbox{width}+1)^2)$ field
+operations. Our system is square and nonsingular; applying that theorem
+proves the bound. Its arbitrary pivoting handles exact cancellations,
+so no zero-free prescribed pivot order is assumed.
+\end{proof}
+
+For a reusable symmetric factor, there is a two-hub alternative. With
+$r_z>0$, define
+\[
+ D=2I/s,\quad
+ u_+=\frac{\sqrt{2r_z(t+r_z)}}s(1,-z/r_z),\quad
+ u_-=\frac{\sqrt{2r_z(t-r_z)}}s(1,z/r_z).
+\]
+Then $H=D+u_+u_+^T-u_-u_-^T$ and
+$u_-^TD^{-1}u_-=2r_z/(t+r_z)<1$, so $D-u_-u_-^T\succ0$.
+Zero radial vectors give zero hub columns. For the product barrier let
+$U,V$ collect the positive and negative columns. Replacing the dual zero
+block by $-\rho I$, $\rho>0$, gives the expanded matrix
+\[
+ \begin{pmatrix}
+ D&V&U&A^T\\V^T&I&0&0\\U^T&0&-I&0\\A&0&0&-\rho I
+ \end{pmatrix}.
+\]
+It is quasidefinite with positive group $(x,V)$ and negative group $(U,y)$.
+A width-$\tau_L$ order gives factorization
+$O((n+m+L_c)(\tau_L+1)^2)$ and storage and subsequent solve cost
+$O((n+m+L_c)(\tau_L+1))$. Forming these coefficients uses norms and square
+roots; these counts are in real arithmetic. If $K_0$ is the original KKT
+matrix, $w_0=K_0^{-1}g\ne0$, and $\rho\norm{K_0^{-1}}<1$, the Neumann
+bound gives
+\[
+ \frac{\norm{w_\rho-w_0}}{\norm{w_0}}
+ \leq\frac{\rho\norm{K_0^{-1}}}{1-\rho\norm{K_0^{-1}}}.
+\]
+For $g=0$ both solutions are zero. Thus a public inverse-norm bound can
+control regularization bias. Floating-point stability or successful
+refinement requires additional scaling and backward-error hypotheses.
+
+The two-hub count is necessary for a positive diagonal base with signed
+rank-one stars on a generic block. If all coordinates of $u=J_0(t,z)$
+are nonzero and the dimension is at least three, a representation
+$H=D'+\sigma vv^T$ with $D'\succ0$ diagonal would require
+$\sigma(v_i/u_i)(v_j/u_j)=4/s^2$ for every $i\ne j$.
+Three indices force all ratios to be equal and $\sigma=1$, leaving
+$D'=-2J_0/s$, whose time diagonal is negative. This does not restrict more
+general sparse bases.
+
+A concrete graph class has constant latent width. Let the coarse bipartite
+graph join cones to equality rows that use them, and assume each scalar
+column of $A$ occurs in at most one row. If the coarse graph has width $w$,
+replace each cone vertex in each bag by its two hubs. Attach a leaf bag
+$\{u_j,v_j,x_i,y_k\}$ for a coordinate used by row $k$, to a bag containing
+the corresponding coarse edge; unused coordinates need only the first
+three vertices. Edge coverage and connectedness of vertex bags are
+preserved. Consequently
+\[
+                    \tau_L\leq\max\{2w+1,3\}.
+\]
+Coarse forests have $\tau_L\leq3$, independently of block dimensions and
+number of cones. Materialized Hessians may nevertheless contain arbitrarily
+large cliques. The better of \eqref{eq:profile-cost} and
+Proposition~\ref{prop:latent-width} is a valid exact-arithmetic full-output
+comparison: the profile method permits large latent width with few
+outliers; the latent-width method permits many eccentric blocks.
+
+These comparisons concern accepted Newton solves, not a guarantee that
+arbitrary alternative directions follow the same trajectory. A trajectory
+replacement requires the structural and access assumptions uniformly over
+every iterate allowed by the robust outer algorithm, and requires the
+classical direction to meet that algorithm's stated residual contract.
+For example, even without cone structure, a consistent full-column-rank
+system $Kx=f$ of total row and column dimension $D_K$, with $M$
+nonzeros and condition $\kappa_K$, has a zero-start
+CGLS solution with
+\[
+ \norm{Kx_k-f}\leq
+ 2\left(\frac{\kappa_K-1}{\kappa_K+1}\right)^k\norm f.
+\]
+This follows by applying the CG energy bound to $K^TK$, whose condition is
+$\kappa_K^2$, and identifying that energy norm with the residual norm.
+It gives the familiar exact-arithmetic cost
+$O((M+D_K)\kappa_K\log(2/\eta))$ for relative residual $\eta$, and makes no
+new algorithmic claim. Direct sparse positive definite elimination with a
+supplied width-$w$ order gives the separate $O(D(w+1)^2)$ arm for order
+$D$. These elementary comparisons must be charged alongside a quantum
+solve when it returns the same explicit direction.
+
+In particular, data with $n+m=D$, $\nnz A\leq D^{1+o(1)}$, and supplied profile parameters
+$\bar\tau,\theta,b_\theta=D^{o(1)}$, or supplied latent width
+$\tau_L=D^{o(1)}$, admit $D^{1+o(1)}$ arithmetic per solve up to accuracy
+logarithms. In the latent-width case, the nonzero-count hypothesis follows
+already from the structural incidence graph: width $\tau_L$ bounds its
+edges, hence $\nnz A$, by $O(D(\tau_L+1))$, since $L_c\leq n$.
+Materializing a full direction already requires $\Omega(D)$
+word writes. Under matched access and the preceding uniform outer
+hypotheses, these classes therefore exclude a polynomial dimension speedup
+obtained solely by replacing the linear solver in an architecture that
+materializes every iterate. This conclusion does not apply to scalar,
+sample, or quantum-state outputs. Nor does a dense assembled matrix or a
+large raw condition number by itself evade either structured comparison.

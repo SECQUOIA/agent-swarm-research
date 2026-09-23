@@ -1,0 +1,498 @@
+--- round1/code/network_simplex_benchmarks/README.md
++++ corrected/code/network_simplex_benchmarks/README.md
+@@ -20,8 +20,11 @@
+ 
+ `strong_baselines.py` implements vectorized sparse full/global-label-merged
+ disaggregation, fixed-y independent network optimization, and positive-state
+-point membership. Optimization retains all original y coordinates and costs.
+-Extra original-coordinate rows are mapped into each relevant formulation.
++point membership. With fixed weights, joint full/global optimization uses only
++positive state flows and native scaled bounds; the original y objective becomes
++a constant and fixed y contributions in extra rows move to the right-hand side.
++The free-weight branch retains every original y coordinate and cost. Both
++branches reconstruct every original x/y/z coordinate and map additional rows.
+ 
+ The legacy full membership baseline already treated x,y,z as data. The new
+ baseline removes only exactly zero states, uses block sparse assembly, and
+@@ -39,7 +42,7 @@
+ The all-labels-observed ablation has 16 blocks, three length-two paths per
+ block, four disjoint labels per block, 64 global labels, 111 arcs, and 192
+ observations. Global merging cannot help. Initial/eliminated variable counts
+-are checked as 495/367, versus 7,279 for full or global disaggregation.
++are checked as 495/367, versus 7,215 for fixed-weight full/global disaggregation.
+ 
+ Flat cases have lengths 8,32,128,512, weights `(1/2,1/2)` and `(1/3,1/3)`,
+ and feasible or McCormick-feasible infeasible points. Comparators are the new
+@@ -60,7 +63,9 @@
+ 
+ Tests compare with the unchanged legacy EF on arbitrary small multigraphs,
+ nonzero y costs, fixed/free weights, zero states, observation conflicts, and
+-aggregate budgets. Injected solver failures must raise rather than count as
++aggregate budgets. An independent path/loop–simplex vertex formulation also
++checks fixed zero weights, dense coupled x/y/z rows, objective constants and
++complete original-point reconstruction. Injected solver failures must raise rather than count as
+ infeasibility. Exact witnesses/cuts and numerical support audits are labeled
+ separately and checked outside timed runs.
+ 
+@@ -70,3 +75,18 @@
+ the retained flat oracle explicitly. The old flat runner importing current
+ production code would no longer reproduce the old algorithm; use the snapshot
+ to reproduce historical comparisons.
++
++The Stage 6 round-1 measurements and their 83 source/evidence files are preserved
++with hashes under `paper-network-simplex/verification/stage06-corrections/round1-archive/`.
++After the fixed-weight baseline correction, all methods in the same three
++optimization cases were rerun using their saved objectives, weights, and rows.
++The 16 flat cases, three many-label membership cases, and cold-library timings
++remain unchanged. To repeat this specific optimization-only update:
++
++```sh
++PYTHONPATH=code python paper-network-simplex/verification/stage06-corrections/rerun_optimization.py
++python paper-network-simplex/verification/stage06-tables.py
++```
++
++The table generator validates unique complete case keys, optimization names and
++order, expected method coverage and rotations, and every timing summary.
+--- round1/code/network_simplex_benchmarks/paper_stage06.py
++++ corrected/code/network_simplex_benchmarks/paper_stage06.py
+@@ -352,7 +352,7 @@
+         case = opt_case(instance, objective, [F(9, 640)]*64, [],
+                         ['full','global','initial','eliminated','network_states'], args.repetitions)
+         case['name'] = 'all_labels_global_but_few_per_block'
+-        assert case['warmup']['full']['stats']['variables'] == case['warmup']['global']['stats']['variables'] == 7279
++        assert case['warmup']['full']['stats']['variables'] == case['warmup']['global']['stats']['variables'] == 7215
+         assert case['warmup']['initial']['stats']['variables'] == 495
+         assert case['warmup']['eliminated']['stats']['variables'] == 367
+         output['optimization'].append(case); save()
+--- round1/code/network_simplex_benchmarks/strong_baselines.py
++++ corrected/code/network_simplex_benchmarks/strong_baselines.py
+@@ -1,7 +1,8 @@
+ """Vectorized numerical disaggregation baselines, without graph compression.
+ 
+ Instance balances use outgoing-minus-incoming, as in baselines.py. Optimization
+-keeps every original y and its objective, even when state flows are merged.
++keeps every original y and its objective when weights are free. Fixed weights
++use positive state flows, native scaled bounds, and a constant y objective.
+ Point membership keeps only positive state flows; with two positive states it
+ can use the elementary f,x-f network reduction. Status 0 is numerical feasibility,
+ not an exact certificate. Input-domain flow checks use numerical LP tolerance.
+@@ -37,6 +38,51 @@
+     if objective.shape != (E+m+len(obs),) or not np.all(np.isfinite(objective)):
+         raise ValueError("Objective must be finite and in original x,y,z order")
+     labels = sorted({j for _, j in obs}) if merge else list(range(m))
++    if y_fixed is not None:
++        yf = np.asarray(y_fixed, float)
++        if yf.shape != (m,) or not np.all(np.isfinite(yf)):
++            raise ValueError("Fixed y must have m finite values")
++        y = tuple(map(_rational, y_fixed))
++        if any(v < 0 for v in y) or sum(y) > 1:
++            result = OptimizeResult(success=False, status=2, message='Fixed y outside simplex')
++            return _finish(result, started, perf_counter(), (), 0, states=0, merged=merge,
++                           reduction='fixed-weight-domain-check')
++        grouped = [y[j] for j in labels]+[1-sum(y[j] for j in labels)]
++        states = [(j, w) for j, w in zip(labels+[m], grouped) if w > 0]
++        slots = {j: i for i, (j, _) in enumerate(states)}
++        q = len(states)
++        weights = np.asarray([w for _, w in states], float)
++        A, b = incidence(instance), np.asarray(instance.balances, float)
++        u = np.asarray([arc[2] for arc in instance.arcs], float)
++        eq = kron(eye(q, format='csr'), A, format='csr')
++        rhs_eq = np.kron(weights, b)
++        active = [(k, e, slots[j]) for k, (e, j) in enumerate(obs) if j in slots]
++        positions = [slot*E+e for _, e, slot in active]
++        c = np.tile(objective[:E], q)
++        np.add.at(c, positions, [objective[E+m+k] for k, _, _ in active])
++        rows, rhs_ub = [], []
++        for coefficients, rhs in extra_rows:
++            coefficients = np.asarray(coefficients, float)
++            if coefficients.shape != objective.shape:
++                raise ValueError("Additional rows must use original x,y,z order")
++            row = np.tile(coefficients[:E], q)
++            np.add.at(row, positions, [coefficients[E+m+k] for k, _, _ in active])
++            rows.append(csr_matrix(row[None, :]))
++            rhs_ub.append(float(rhs)-coefficients[E:E+m]@yf)
++        ub = vstack(rows, format='csr') if rows else csr_matrix((0, q*E))
++        bounds = np.column_stack((np.zeros(q*E), np.kron(weights, u)))
++        assembled = perf_counter()
++        result = linprog(c, A_eq=eq, b_eq=rhs_eq,
++                         A_ub=ub if rows else None, b_ub=rhs_ub if rows else None,
++                         bounds=bounds, method='highs')
++        _finish(result, started, assembled, (eq, ub), q*E, states=q, merged=merge,
++                reduction='fixed-positive-state-blocks')
++        if result.success:
++            flows = result.x.reshape(q, E)
++            result.fun += float(objective[E:E+m]@yf)
++            result.original_point = np.r_[flows.sum(axis=0), yf,
++                [flows[slots[j], e] if j in slots else 0. for e, j in obs]]
++        return result
+     slots = {j: i for i, j in enumerate(labels)}
+     q = len(labels)+1
+     # State weights are offset + W*y. All original y columns are retained.
+@@ -67,15 +113,6 @@
+         ub = vstack((ub, csr_matrix(row[None, :])), format='csr')
+         rhs_ub = np.r_[rhs_ub, float(rhs)]
+     bounds = [(0., 1.)]*m + [(0., None)]*(q*E)
+-    if y_fixed is not None:
+-        y_fixed = np.asarray(y_fixed, float)
+-        if y_fixed.shape != (m,) or not np.all(np.isfinite(y_fixed)):
+-            raise ValueError("Fixed y must have m finite values")
+-        if np.any(y_fixed < 0) or y_fixed.sum() > 1+1e-12:
+-            result = OptimizeResult(success=False, status=2, message='Fixed y outside simplex')
+-            now = perf_counter()
+-            return _finish(result, started, now, (eq, ub), m+q*E, states=q, merged=merge)
+-        bounds[:m] = [(v, v) for v in y_fixed]
+     assembled = perf_counter()
+     result = linprog(c, A_eq=eq, b_eq=rhs_eq, A_ub=ub, b_ub=rhs_ub,
+                      bounds=bounds, method='highs')
+--- round1/code/network_simplex_benchmarks/test_strong_baselines.py
++++ corrected/code/network_simplex_benchmarks/test_strong_baselines.py
+@@ -4,7 +4,7 @@
+ from unittest.mock import patch
+ 
+ import numpy as np
+-from scipy.optimize import OptimizeResult
++from scipy.optimize import OptimizeResult, linprog
+ 
+ from .baselines import Instance, incidence, full_ef, full_ef_membership
+ from .strong_baselines import optimize_ef, membership_ef, optimize_independent_states
+@@ -79,6 +79,65 @@
+                             new = membership_ef(instance, x, weights, changed, merge=merge, two_state=reduce)
+                             self.assertEqual(new.status, old.status, (seed, weights, perturb, merge, reduce))
+ 
++    def test_fixed_weight_joint_lp_against_original_hull_vertices(self):
++        # Four network vertices, including an independent loop; original hull
++        # vertices are enumerated directly without a state-flow formulation.
++        flows = np.asarray([[a, 1-a, loop] for a in (0, 1) for loop in (0, 1)])
++        obs = [(0, 0), (1, 0), (2, 2), (0, 4)]
++        m, E = 5, 3
++        instance = Instance([(0, 1, 1), (0, 1, 1), (0, 0, 1)],
++                            np.array([1., -1.]), m, obs, np.full(E, .5))
++        vertices = []
++        for state in range(m+1):
++            y = np.eye(m+1)[state, :m]
++            for flow in flows:
++                vertices.append(np.r_[flow, y, [flow[e]*y[j] for e, j in obs]])
++        vertices = np.asarray(vertices).T
++        for seed in range(12):
++            rng = np.random.default_rng(seed)
++            objective = rng.normal(size=E+m+len(obs))
++            for weights in ((F(1, 4), F(1, 4), 0, F(1, 4), 0),
++                            (F(1, 2), 0, F(1, 2), 0, 0),
++                            (0, 0, 0, 1, 0), (0,)*m):
++                y = np.asarray(weights, float)
++                witness = np.r_[instance.reference, y, [instance.reference[e]*y[j] for e, j in obs]]
++                # Dense original x/y/z rows, including costs of unobserved labels.
++                rows = rng.normal(size=(3, len(objective)))
++                rhs = rows@witness + np.array([0., .05, .1])
++                vertex_lp = linprog(objective@vertices,
++                    A_eq=np.vstack((np.ones(vertices.shape[1]), vertices[E:E+m])),
++                    b_eq=np.r_[1., y], A_ub=rows@vertices, b_ub=rhs,
++                    bounds=(0., None), method='highs')
++                self.assertEqual(vertex_lp.status, 0)
++                for merge in (False, True):
++                    result = optimize_ef(instance, objective, weights, merge=merge,
++                                         extra_rows=list(zip(rows, rhs)))
++                    self.assertEqual(result.status, vertex_lp.status)
++                    self.assertAlmostEqual(result.fun, vertex_lp.fun, places=7)
++                    p = result.original_point
++                    self.assertAlmostEqual(objective@p, result.fun, places=7)
++                    np.testing.assert_allclose(p[E:E+m], y, atol=1e-10)
++                    self.assertTrue(np.all(rows@p <= rhs+1e-8))
++                    self.assertTrue(np.all(p[:E] >= -1e-9) and np.all(p[:E] <= 1+1e-9))
++                    np.testing.assert_allclose(incidence(instance)@p[:E], instance.balances, atol=1e-9)
++                    self.assertEqual(full_ef_membership(instance, p[:E], p[E:E+m], p[E+m:]).status, 0)
++                    labels = sorted({j for _, j in obs}) if merge else list(range(m))
++                    positive = [weights[j] for j in labels]+[1-sum(weights[j] for j in labels)]
++                    positive = [float(w) for w in positive if w > 0]
++                    self.assertEqual(result.model_stats['variables'], E*len(positive))
++                    recovered = result.x.reshape(len(positive), E)
++                    self.assertTrue(np.all(recovered >= -1e-9))
++                    self.assertTrue(np.all(recovered <= np.asarray(positive)[:, None]+1e-9))
++                    for f, w in zip(recovered, positive):
++                        np.testing.assert_allclose(incidence(instance)@f, w*instance.balances, atol=1e-9)
++        # A y-only extra row must not disappear when y is substituted.
++        row = np.zeros(E+m+len(obs)); row[E+3] = 1
++        for merge in (False, True):
++            result = optimize_ef(instance, np.zeros(len(row)), (0, 0, 0, 1, 0),
++                                 merge=merge, extra_rows=[(row, F(1, 2))])
++            self.assertEqual(result.status, 2)
++            self.assertFalse(hasattr(result, 'original_point'))
++
+     def test_two_state_conflicting_observations_are_infeasible(self):
+         a = Instance([(0, 1, 1)], np.array([1., -1.]), 2, [(0, 0), (0, 1)], np.ones(1))
+         result = membership_ef(a, [1], [F(1, 2)]*2, [F(2, 5)]*2)
+@@ -90,6 +149,10 @@
+         with patch('network_simplex_benchmarks.strong_baselines.linprog', return_value=OptimizeResult(status=4, success=False, message='injected failure')):
+             with self.assertRaises(RuntimeError):
+                 optimize_ef(a, np.zeros(a.edge_count+a.simplex_size+len(a.observations)))
++            for merge in (False, True):
++                with self.assertRaises(RuntimeError):
++                    optimize_ef(a, np.zeros(a.edge_count+a.simplex_size+len(a.observations)),
++                                 [F(1, 8)]*a.simplex_size, merge=merge)
+             x = [F(str(v)) for v in a.reference]
+             y = [F(1, 8)]*a.simplex_size
+             z = [x[e]*y[j] for e, j in a.observations]
+--- round1/paper-network-simplex/README.md
++++ corrected/paper-network-simplex/README.md
+@@ -107,6 +107,15 @@
+ the all-labels-observed control demonstrates additional local compression.
+ All timing ranges and audit distinctions remain in the raw data.
+ 
++The current full/global optimization baselines substitute fixed simplex weights
++before assembly, using only positive state flows and native scaled bounds.
++The three optimization cases were remeasured after this correction; membership
++and cold-library measurements remain unchanged. The original measurements and
++sources are retained in `verification/stage06-corrections/round1-archive/`.
++The table generator checks distinct complete case keys, optimization order,
++expected method coverage, and all stored timing summaries. The correction
++record includes the command for the optimization-only rerun.
++
+ The current exact flat oracle stores a compact default for unused labels,
+ uses no library at two observed labels, and returns unit flow/product cuts
+ through three observed labels. Its research predecessor is retained in
+--- round1/paper-network-simplex/process/stage06-author.md
++++ corrected/paper-network-simplex/process/stage06-author.md
+@@ -1,7 +1,11 @@
+ # Stage 6 author record
+ 
+-Status: author work complete; the required five independent stage reviews are
+-pending. No new mathematical claim is accepted by this record alone.
++Historical round-1 author record. The five stage reviews are now complete;
++they required the corrections documented in [stage06-corrections.md](stage06-corrections.md).
++The measurement and verification counts below describe round 1, not the revised
++optimization baseline. The original version of this record is preserved in the
++hashed round-1 archive. The inverse-recovery sentence below was corrected after
++review; this editorial change does not silently revise the historical timings.
+ 
+ ## Scope and source coverage
+ 
+@@ -26,8 +30,9 @@
+ flow as a shared default. At one or two labels it uses explicit interval tests
+ and recovery without constructing any circuit library. Three labels use the 16
+ reduced circuits and both proved bypass-balance repairs, giving unit flow and
+-product coefficients. Larger label sets use the reduced normal library and
+-finite inverse-basis recovery. Every basis is allowed: forcing the explicit
++product coefficients in separation. At three or more observed labels, recovery
++uses finite inverse bases; larger label sets also use the general reduced
++normal library for separation. Every basis is allowed: forcing the explicit
+ profile sum to the total branch flow would incorrectly exclude points with
+ positive residual branch flow.
+ 
+@@ -74,7 +79,9 @@
+ ## Measurements and interpretation
+ 
+ The reproducible generator is `paper_stage06.py`; raw results are in
+-`verification/stage06-benchmarks.json`. All 16 flat cases, three many-label
++the hashed round-1 archive's `verification/stage06-benchmarks.json`. The current
++file at that path outside the archive contains revised optimization runs.
++All 16 flat cases, three many-label
+ membership cases, and three optimization cases use one recorded warmup and
+ five repetitions with rotated method order. Build, solve, total, recovery, and
+ separate audit costs are retained where applicable, with raw records and
+--- round1/paper-network-simplex/sections/08-computation.tex
++++ corrected/paper-network-simplex/sections/08-computation.tex
+@@ -39,12 +39,14 @@
+ merges unobserved labels, eliminates the residual profile, and uses the
+ five-test formula when at most two labels are observed. At three labels it
+ uses the 16 circuits and both flow-balance repairs of
+-\cref{thm:three-state-chain}; larger label sets use finite inverse bases.
++\cref{thm:three-state-chain} for separation. Recovery uses finite inverse
++bases at three or more observed labels.
+ Its stored default is shared across unused global labels. Compatibility
+ accessors can materialize the former dense state arrays, with the corresponding
+ output cost. Tuple normal construction and hashing retain a dimension factor
+ relative to the preindexed-mask operation count in \cref{thm:fixed-chain};
+-the implemented cost is still linear in $L$ at fixed observed-label count.
++apart from the constructor's $O(|\Obs|\log|\Obs|)$ observation sorting,
++the implemented cost is linear in $L$ at fixed observed-label count.
+ 
+ The general formulation stores exact rational coefficients, including the
+ observed-coordinate substitutions, but calls a numerical LP solver.
+@@ -88,12 +90,17 @@
+ 
+ \subsection{Baselines that retain the elementary reductions}
+ 
+-For optimization, the full disaggregation keeps all original $y$ variables
+-and one flow per state; it eliminates explicit $x,z$ variables by substitution
+-in objectives and additional rows. The global-merger baseline retains flows
+-only for labels observed somewhere and one default, while preserving every
+-original $y$ objective coefficient and constraint. Both use sparse block and
+-Kronecker assembly. They use no graph blocks, cycle coordinates, or observation
++For optimization with fixed weights, the full disaggregation uses only
++positive-weight state flows, block balances $Af^j=\lambda_j b$, and native
++variable bounds $0\le f^j\le\lambda_j u$. It eliminates $x,z$ by substitution
++and adds the constant $c_y^\top\bar y$ to the objective value. In additional
++original-coordinate rows, the fixed $y$ contribution moves to the right-hand
++side. This is one joint LP and remains valid with the aggregate budget below.
++The global-merger baseline first groups labels observed nowhere into one
++default, then applies the same construction to its positive-weight states.
++With free weights, both interfaces retain every original $y$ variable and its
++objective and constraint contributions. Both use sparse block and Kronecker
++assembly. They use no graph blocks, cycle coordinates, or observation
+ rank elimination. Initial compression and observed elimination use the two
+ variants of the general implementation, including their preprocessing costs.
+ 
+@@ -215,13 +222,16 @@
+ \Cref{tab:computation-opt} shows that global merging accounts for much
+ of the full-versus-compressed difference on the original sparse instance.
+ Only 11 of its 128 labels are observed anywhere: the full formulation's
+-5,675 variables drop to 644 under global merging, then to 255 under initial
++5,547 variables drop to 516 under global merging, then to 255 under initial
+ compression and 222 under observed elimination. Elimination removes 33 of
+ 48 auxiliary coordinates. It saves rows and nonzeros but is slower overall
+-than initial compression in this run, because its extra symbolic work
+-outweighs the solver saving. The globally merged and initially compressed
+-LPs have similar total times; comparing only with the full formulation
+-would overstate the specifically graph-local benefit.
++than initial compression in this run: its extra symbolic work is not offset
++by a solver saving. The globally merged and initially compressed
++LPs have median total times of 4.25 and 4.82 milliseconds, respectively;
++global merging has the lower median despite its larger model, although the
++five-run timing ranges overlap.
++Comparing only with the full formulation would overstate the specifically
++graph-local benefit.
+ 
+ The McCormick optimum is $\BenchMcObjective$, compared with hull optimum
+ $\BenchHullObjective$. The repeated single-cut loop requires
+@@ -240,11 +250,13 @@
+ 
+ The all-labels-observed control in \cref{tab:computation-ablations}
+ isolates a benefit that global merging cannot provide. Both full and global
+-formulations have 7,279 variables; initial compression has 495, and observed
++formulations have 7,215 variables; initial compression has 495, and observed
+ elimination has 367 with no auxiliary variables. Initial compression is
+ substantially faster here. The aggregate-budget control retains the same
+-size ordering and has objective $\BenchBudgetObjective$. The compact
+-formulations remain faster than repeated cutting on this coupled relaxation.
++size ordering and has objective $\BenchBudgetObjective$. Global merging is
++also faster than initial compression on that control, with median totals of
++4.33 and 5.84 milliseconds. Both remain faster than repeated cutting on this
++coupled relaxation.
+ The budget and the local-label control are small targeted comparisons, not
+ evidence about industrial instances.
+ 
+@@ -323,9 +335,16 @@
+ 
+ The accompanying repository includes the exact interfaces, independent
+ verification programs, unchanged historical results, and a pre-upgrade
+-source snapshot. The current measurement command, run from its root, is
++source snapshot. The optimization comparisons were rerun after replacing the
++variable-weight LP baseline by the fixed-weight construction above. All three
++optimization cases retained their original objectives, weights, and additional
++rows; each method received a fresh audited warmup and five rotated runs.
++Membership and cold-library measurements were retained unchanged. The original
++measurements and sources are preserved in a hashed round-1 archive, and the
++correction record supplies a command for this optimization-only rerun.
++The complete measurement command, run from the repository root, is
+ \begin{verbatim}
+-PYTHONPATH=code python -m network_simplex_benchmarks.paper_stage06 \\
++PYTHONPATH=code python -m network_simplex_benchmarks.paper_stage06 \
+   --output paper-network-simplex/verification/stage06-benchmarks.json
+ python paper-network-simplex/verification/stage06-tables.py
+ \end{verbatim}
+--- round1/paper-network-simplex/tables/08-ablations.tex
++++ corrected/paper-network-simplex/tables/08-ablations.tex
+@@ -1,10 +1,10 @@
+-% Generated by verification/stage06-tables.py; data SHA256 aa7255ccc78ddc6f4a9097dd331c6be69bdfac7544a6ffb1d2b6a1c6381e3b26
++% Generated by verification/stage06-tables.py; data SHA256 373ce70b3839c12a206b193e9952d856f585da400f902bda773a725a609f73ac
+ \begin{table}[tb]\centering\small
+ \caption{Two controls: median total optimization milliseconds. Independent network optimization is inapplicable with the aggregate budget. Repeated cutting was measured on the original and budgeted instance, not on the all-labels-observed control.}
+ \label{tab:computation-ablations}
+ \setlength{\tabcolsep}{3pt}
+ \begin{tabular}{lrrrrrr}\toprule
+ Case & Full & Global & Initial & Eliminated & Networks & Cuts\\\midrule
+-Aggregate budget & 48.16 & 8.74 & 7.69 & 8.44 & -- & 313.25 \\
+-All labels observed & 52.30 & 56.02 & 12.01 & 20.30 & 137.75 & -- \\
++Aggregate budget & 32.80 & 4.33 & 5.84 & 6.11 & -- & 273.35 \\
++All labels observed & 30.36 & 30.38 & 10.16 & 18.39 & 129.00 & -- \\
+ \bottomrule\end{tabular}\end{table}
+--- round1/paper-network-simplex/tables/08-flat.tex
++++ corrected/paper-network-simplex/tables/08-flat.tex
+@@ -1,4 +1,4 @@
+-% Generated by verification/stage06-tables.py; data SHA256 aa7255ccc78ddc6f4a9097dd331c6be69bdfac7544a6ffb1d2b6a1c6381e3b26
++% Generated by verification/stage06-tables.py; data SHA256 373ce70b3839c12a206b193e9952d856f585da400f902bda773a725a609f73ac
+ \begin{table}[tb]\centering\small
+ \caption{Flat-chain membership: median construction-plus-query milliseconds. Boundary weights are $(1/2,1/2)$; interior weights are $(1/3,1/3)$. Full retains only positive states. The one-flow reduction applies only with two positive states. Exact columns exclude optional decomposition; all ranges and constructive workloads are retained in the data.}
+ \label{tab:computation-flat}
+--- round1/paper-network-simplex/tables/08-membership.tex
++++ corrected/paper-network-simplex/tables/08-membership.tex
+@@ -1,4 +1,4 @@
+-% Generated by verification/stage06-tables.py; data SHA256 aa7255ccc78ddc6f4a9097dd331c6be69bdfac7544a6ffb1d2b6a1c6381e3b26
++% Generated by verification/stage06-tables.py; data SHA256 373ce70b3839c12a206b193e9952d856f585da400f902bda773a725a609f73ac
+ \begin{table}[tb]\centering\small
+ \caption{Feasible membership on the 51-arc, 36-observation family: median construction-plus-query milliseconds. The exact-separator column is membership without requested decomposition; the raw data separately record constructive queries and all timing ranges.}
+ \label{tab:computation-member}
+--- round1/paper-network-simplex/tables/08-optimization.tex
++++ corrected/paper-network-simplex/tables/08-optimization.tex
+@@ -1,14 +1,14 @@
+-% Generated by verification/stage06-tables.py; data SHA256 aa7255ccc78ddc6f4a9097dd331c6be69bdfac7544a6ffb1d2b6a1c6381e3b26
++% Generated by verification/stage06-tables.py; data SHA256 373ce70b3839c12a206b193e9952d856f585da400f902bda773a725a609f73ac
+ \begin{table}[tb]\centering\footnotesize
+ \caption{The 43-arc, 128-label optimization case. Times are milliseconds; total reports median [minimum,maximum] over five runs. The network baseline reuses one matrix for sequential solves. Repeated-cut build/solve columns exclude its separately recorded separator and reconstruction work, which the total includes.}
+ \label{tab:computation-opt}
+ \setlength{\tabcolsep}{3pt}
+ \begin{tabular}{lrrr rrr}\toprule
+ Method & Vars. & Rows & Nonzeros & Total & Build & Solve\\\midrule
+-Full & 5675 & 9160 & 34689 & 35.71 [32.49,40.60] & 1.62 & 34.04 \\
+-Global merge & 644 & 853 & 3216 & 7.44 [5.70,10.27] & 1.77 & 5.50 \\
+-Initial compression & 255 & 225 & 936 & 6.95 [5.13,10.16] & 3.98 & 2.93 \\
+-Observed elimination & 222 & 192 & 839 & 8.32 [6.15,11.24] & 5.47 & 2.80 \\
+-Independent networks & 43 & 28 & 86 & 22.35 [19.97,26.85] & 0.36 & 21.95 \\
+-Repeated cuts & 207 & 179 & 630 & 310.53 [306.33,355.86] & 15.05 & 108.11 \\
++Full & 5547 & 3612 & 11094 & 19.05 [17.81,23.05] & 1.07 & 18.12 \\
++Global merge & 516 & 336 & 1032 & 4.25 [3.41,5.01] & 0.70 & 3.18 \\
++Initial compression & 255 & 225 & 936 & 4.82 [4.70,5.62] & 2.48 & 2.31 \\
++Observed elimination & 222 & 192 & 839 & 6.45 [5.52,9.31] & 4.11 & 2.47 \\
++Independent networks & 43 & 28 & 86 & 22.02 [19.39,28.09] & 0.37 & 21.64 \\
++Repeated cuts & 207 & 179 & 630 & 292.22 [280.98,330.97] & 14.78 & 100.57 \\
+ \bottomrule\end{tabular}\end{table}
+--- round1/paper-network-simplex/tables/08-values.tex
++++ corrected/paper-network-simplex/tables/08-values.tex
+@@ -1,4 +1,4 @@
+-% Generated by verification/stage06-tables.py; data SHA256 aa7255ccc78ddc6f4a9097dd331c6be69bdfac7544a6ffb1d2b6a1c6381e3b26
++% Generated by verification/stage06-tables.py; data SHA256 373ce70b3839c12a206b193e9952d856f585da400f902bda773a725a609f73ac
+ \newcommand{\BenchPython}{3.12.14}
+ \newcommand{\BenchNumpy}{2.5.2}
+ \newcommand{\BenchScipy}{1.18.1}
+--- round1/paper-network-simplex/verification/stage06-tables.py
++++ corrected/paper-network-simplex/verification/stage06-tables.py
+@@ -8,10 +8,38 @@
+ source = PAPER/'verification/stage06-benchmarks.json'
+ data = json.loads(source.read_text())
+ assert not data['quick'] and data['repetitions'] == 5
+-assert len(data['flat']) == 16 and len(data['membership']) == 3 and len(data['optimization']) == 3
++flat_keys = [(case['gadgets'], case['weights'], case['feasible']) for case in data['flat']]
++expected_flat = [(length, weights, feasible) for length in (8, 32, 128, 512)
++                 for weights in ('boundary', 'interior') for feasible in (True, False)]
++assert len(set(flat_keys)) == len(flat_keys) and flat_keys == expected_flat
++assert [case['states'] for case in data['membership']] == [16, 128, 1024]
++optimization_methods = {
++    'sparse_global_and_local_labels': ['full','global','initial','eliminated','network_states','cuts'],
++    'same_instance_aggregate_budget': ['full','global','initial','eliminated','cuts'],
++    'all_labels_global_but_few_per_block': ['full','global','initial','eliminated','network_states'],
++}
++assert [case['name'] for case in data['optimization']] == list(optimization_methods)
+ for case in data['flat']+data['membership']+data['optimization']:
++    if 'gadgets' in case:
++        methods = ['full','unreduced','flat']
++        if case['weights'] == 'boundary': methods.append('two_state')
++        if case['gadgets'] <= 32: methods += ['initial','eliminated']
++    elif 'name' in case:
++        methods = optimization_methods[case['name']]
++    else:
++        methods = ['full','global','initial','eliminated','separator']
++    assert list(case['warmup']) == methods and set(case['summary']) == set(methods)
+     assert len(case['runs']) == 5
++    for repeat, run in enumerate(case['runs']):
++        shift = repeat % len(methods)
++        assert run['order'] == methods[shift:]+methods[:shift]
++        assert set(run['measurements']) == set(methods)
++    expected_status = 0 if case.get('feasible', True) else 2
++    assert all(case['warmup'][method]['status'] == expected_status for method in methods)
+     for method, stats in case['summary'].items():
++        assert all(run['measurements'][method]['status'] == expected_status for run in case['runs'])
++        fields = {key for key in case['runs'][0]['measurements'][method] if key.endswith('_seconds')}
++        assert set(stats) == fields
+         for key, value in stats.items():
+             raw = [run['measurements'][method][key] for run in case['runs']]
+             assert value == {'minimum':min(raw), 'median':median(raw), 'maximum':max(raw)}

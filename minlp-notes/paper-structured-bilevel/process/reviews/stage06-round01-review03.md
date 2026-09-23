@@ -1,0 +1,74 @@
+# Stage 6, round 1 — independent review 03
+
+**Recommendation: accept after two minor corrections below. No major mathematical finding.**
+
+I reviewed the complete frozen Section 6, all eight new Python files, the prepared input/result archives and tables, README, main-file and coverage integration, and the relevant external implementation dependencies. I inspected the author report as evidence, checked the actual measured sources, and independently reran correctness checks. I did not delegate, read another current review/root assessment, alter the manuscript, or overwrite official results.
+
+Snapshot: `process/snapshots/stage06-round01`. The manifest digest is `b9c28c41440e7ea2e660731eac9023d900279ad1ebae7bf99866f32ffb3d4bc8`; all **30 file hashes match**. Review artifacts are under `verification/stage06-review03/`.
+
+## Minor findings
+
+### R03-1 — A one-shot constraint iterator is consumed before the upper solve
+
+**Location:** `code/compressed_solver.py:340`, `optimize_tariff`, and subsequent loops over `constraints` at lines 359 and 383/402.
+
+The dimension check uses `any(... for row in constraints)`. For a valid iterator or generator, this exhausts every row. All later upper-row loops therefore see no constraints, and the function silently returns the unconstrained result. There is no sequence-only check or documented rejection of this input form. The independent face solver materializes its rows and does not have this behavior.
+
+Concrete reproduction using the manuscript's false-convexification example:
+
+```python
+ins = Instance((1,), (-1,), (1,), (0,), (1,), 3, 1, 1, 3)
+atlas = build_atlas(ins)
+rows = [Constraint(0, (1,), '1/2'), Constraint(0, (-1,), '-1/2')]
+optimize_tariff(atlas, rows)        # None: correct, no actual response is 1/2
+optimize_tariff(atlas, iter(rows))  # value 2, attained at x=2, z=(1,)
+```
+
+The pessimistic calls likewise differ: the list correctly returns `None`, while the iterator returns the unconstrained unattained supremum 2. The preserved reproducer is `verification/stage06-review03/check_iterator_rows.py`, with actual output in `iterator-rows.log`.
+
+**Fix:** materialize `constraints = tuple(constraints)` once before validation, then reuse that tuple. Alternatively, explicitly reject unsupported one-shot inputs before consuming them; materialization is simpler and agrees with the other upper-solver interfaces. Add a focused regression requiring the list and iterator forms of these infeasible rows to agree under both semantics.
+
+This is classified as a minor interface/input-handling defect: it does not invalidate the mathematical atlas or upper-optimization proof, and all recorded experiment/test calls use reusable lists or tuples. It does matter for the executable exact-feasibility contract and should be corrected before acceptance.
+
+### R03-2 — README still describes the authored computation material as future work
+
+**Location:** `README.md:7–8` and `README.md:36`.
+
+The opening says computation and final synthesis remain, and line 36 says later computation stages will add reproduction commands and logs. The same README now documents the complete authored stage 6, which is included in `main.tex`, and the commands/logs already exist. Coverage correctly labels stage 6 as author-complete and review-pending.
+
+**Fix:** say stages 1–5 are accepted, stage 6 is authored and awaiting its review gate, and stage 7 remains. Replace the future-tense reproduction sentence with a pointer to the existing stage 6 commands and logs. This should not imply that stage 6 has already passed review.
+
+## Mathematical and implementation acceptance
+
+- **Convex certificates and aligned sweep** (`subsec:convex-implementation`, lines 13–111). The small system uses `I+SH`, so it never assumes invertibility or positivity of `H`. The determinant identity gives invertibility from the positive definite free principal matrix. Exact affine box/KKT tests and closed coverage make a returned path sound; full status enumeration is complete. Upper substitution gives a rational quadratic on closed intervals, including singleton feasible intersections. The generic numerical proposal routine can fail and is not advertised as an unconditional complete path algorithm. The aligned effective-price map has positive slope for either permitted sign of the rank-one coefficient, handles signed/zero loadings and simultaneous events, and covers both tails. The arithmetic count matches maintained weighted sums rather than reconstruction of an entire response vector at every event. I read `quadratic_solver.py`, including input validation, coverage, failure behavior, and both upper solvers.
+
+- **Fiber reduction and complete global candidates** (`lem:scalar-fiber-pieces`, `thm:nonconvex-atlas`, lines 114–258). Strict local convexity gives a unique allocation on every nonempty aggregate fiber, regardless of the full Hessian's sign. The multiplier event construction covers endpoints, zero-slope gaps, signed and zero loadings, fixed coordinates and the singleton-aggregate case. Positive quadratic pieces supply feasible stationary candidates; concave pieces need only endpoints; a flat piece supplies its whole interval at its one tilt-canceling price. Comparing original values gives global responses. Pairwise roots and domain boundaries cover all changes. Identical winning value polynomials have identical aggregate derivatives, so distinct global responses cannot persist through an open price interval. The same-fiber uniqueness then identifies the full response.
+
+- **Incremental envelope/contact implementation.** `_insert_envelope` retains domain endpoints and all crossings with the current winner, including tangencies. A final global tie cannot have been strictly dominated when its later branch was inserted. Hence it was recorded as a crossing/boundary, or represents an identical response. Final reconstruction compares all original branches at retained contacts and adds every global flat interval. Deduplication by aggregate is safe because fiber minimizers are unique. Conservative polynomial cut/processing bounds and quadratic-algebraic comparisons are sound; no common field containing the whole atlas is promised.
+
+- **Optimistic and pessimistic full upper tasks.** On open response cells, affine upper rows give a possibly empty, singleton, or interval restriction; upper endpoints remain closed while the original cell endpoints remain excluded. Revenue endpoints, stationary points and an interior sample cover constant values and attainment. At a cut, optimism intersects each actual response component with the rows. Pessimism checks every row at both endpoints of every affine fiber component and takes the least revenue among all actual global responses. This is universal feasibility followed by worst-response revenue, not optimization over only the upper-feasible part of a tie. Attained candidates correctly win ties against limits. Closed compact optimistic graphs imply attainment; pessimistic feasibility need not be closed. Apart from R03-1's iterable handling, the executable loops implement these distinctions correctly.
+
+- **Original contacts and examples** (`eq:contact-conjugacy`, `eq:actual-contact`, `ex:false-contacts`, `ex:capacity-jump`, lines 261–330). The affine-minorant proof establishes value equality under convexification. Intersecting the convexified argmin with the original contact set is necessary and sufficient for original global responses. The one-variable example correctly excludes the false midpoint, and its optimistic maximum/pessimistic nonattainment are correct. Direct substitution confirms the capacity example's two contacts, equal value `-9/320`, rejected middle-piece endpoints, and upper value `51/160`. The monotonicity comparison across the switch justifies universal infeasibility on the low-price side. The plot source depicts actual contacts and the false added segment consistently.
+
+- **Independent full-task baseline** (`prop:original-face-baseline`, lines 333–395; `code/original_faces.py`). Every global optimizer is stationary with positive semidefinite Hessian on its minimal face. The explicitly checked nonzero principal determinant makes that free Hessian positive definite, so the original-coordinate solve includes it. Fixed box coordinates correctly need no gradient sign. The code checks all nonempty principal minors, uses Sylvester's criterion on each ordered free submatrix, and rejects unsupported singular inputs before solving. Direct dense objective substitution, all overlapping-domain crossings, cutwise global ties, and its separate upper solver are complete under that restriction. No compressed routine is imported. The argument for an older singular-face oracle establishes a value witness at a lower-dimensional face, not recovery of the whole flat set; the manuscript makes that distinction explicitly.
+
+- **Degree and arithmetic promises.** Candidate coefficients are rational; cuts solve rational quadratics; flat prices, nontrivial upper-row boundaries and interior revenue stationary points are rational. Each selected pair/value therefore stays in the field of its one quadratic price, while comparisons between different quadratic cuts need only fixed-degree arithmetic. Rational sampling between cuts does not require a growing compositum. Enumeration and storage claims are stated separately from practical symbolic timings. The added accepted-stage-5 positive-objective multiplicative corollary is consistent with the earlier exact-response gap and its polynomial input-length scaling.
+
+## Independent checks and data audit
+
+1. A private build completed successfully: **73 pages**, no final warnings, undefined references/citations, or overfull/underfull boxes. Build output and `out/main.log` are under `verification/stage06-review03/build/`.
+2. I invoked all 18 new full-task cases through their comparison function, importing the frozen solvers and the actual repository dependency paths. Both upper semantics, all independently generated baseline strata, and attained original-coordinate witnesses passed. Results are in `full-task-results.json`; the author's output directory was not used.
+3. Additional exact tests exercised a **central flat interval in a two-variable fiber**, not just a completely flat one-dimensional box. For `d=(1,1)`, `c=(-1,-1/2)`, `u=(1,1)`, `h=1/2`, the interval `[1/2,3/2]` is globally flat at price `3/4` (or `-3/4` when `gamma=-1`). An upper equality selecting `z_1=3/4` gives the correct attained optimistic response `(3/4,1/4)` and pessimistic infeasibility. Baseline rejection, zero aggregate and an isolated upper-feasible leader were also checked. See `independent-boundaries.json`.
+4. I reran the independent original-face-value/full-pairwise-envelope diagnostic against the frozen compressed solver: 350 value queries, 72 atlas strata, 30 full-partition envelope comparisons and 11 explicit cases passed. I separately invoked the convex certificate diagnostic, which exited successfully. Logs are isolated in this review folder. These are distinct finite diagnostic categories, not formal verification coverage counts.
+5. I independently reconstructed and solved both methods on all four small **measured** full-task instances: jump and heterogeneous `N=2,4,6`. Every exact value and attainment flag agrees with every recorded repetition; attained outputs also passed direct original-face witness checks. See `benchmark-correctness-rerun.json`.
+6. All three table files regenerate **byte for byte** from the raw archive. The full prepared convex/screening input archive also regenerates byte for byte from its actual deterministic generators. All 60 record keys are distinct, all retained workers exited zero within the external limit, and recorded output/attainment fields are consistent. The numerical discrepancy and ambiguity figures quoted for `N=8,20` match the raw records. See `data-checks.txt` and the isolated regenerated files.
+7. Solver and external numerical/screening dependency hashes match the recorded measured hashes. The preserved measured driver and helper match `ee8ff621af8a9a7a03bbfd59007000c84cb8441667ddccfd2f52475459c3705e` and `8f9ace9546106d843e73b29c3af64b24dfc2b311b845aa49783505fe30e08ae9`, respectively. I inspected their diffs against the frozen wrappers: added directory creation/input archival and source-hash enumeration are outside worker timing. The compressed-source diff contains only the described rational sign and midpoint fast paths plus documentation. These provenance differences do not justify changing the recorded timing numbers.
+8. I read the dense screening and independent MILP code. The binary formulation has the stated exact real-arithmetic KKT meaning, and its big-M bound is valid on the box. Numerical HiGHS statuses are correctly distinguished from exact rational certificates. The tables include generation, cover/formulation and rational verification costs as stated, and preserve the unfavorable timing result. Repeated-type `N=1000`, heterogeneous `N=48`, the separate convex `N=10000` family, older pairwise compressed timings, and the new exponential full-task baseline are not conflated.
+
+## Attribution, integration and limits
+
+The bibliography's new attribution is narrow enough for the independently checked primary sources: [Bemporad et al.](https://cse.lab.imtlucca.it/~bemporad/publications/papers/automatica-mpqp.pdf) for affine active-region/continuous parametric-QP responses, the [Kiwiel publication record](https://link.springer.com/article/10.1007/s10107-006-0050-z) for quadratic resource-allocation breakpoint methods, the [Gardiner–Lucet publisher abstract](https://link.springer.com/article/10.1007/s11228-010-0157-5) for piecewise quadratic convex-envelope algorithms, and [Moehle et al., Section 6.3](https://web.stanford.edu/~boyd/papers/pdf/portf_constr_lcso.pdf) for recursive envelope construction. The manuscript's original-contact and rational-bit proofs are self-contained and do not import an external tangent implementation. The Gardiner–Lucet subscription full text was not used.
+
+Coverage accounts for the scalar algorithms, contact reconstruction, full-task comparator, finite diagnostics, measured refinement, historical results and negative screening comparison. It leaves the final abstract, synthesis and whole-manuscript review in stage 7, as assigned. Other than R03-2, the presentation clearly states which algorithm solves which task and which comparisons have narrower scope.
+
+I did not rerun all 60 timing workers or historical benchmarks, infer a hardware speed guarantee, or audit every external solver/library internals. The independent reruns establish exact correctness on the identified cases, while the asymptotic claims rest on the proof review. The two minor corrections above do not require changing the reported list-based experimental outcomes.

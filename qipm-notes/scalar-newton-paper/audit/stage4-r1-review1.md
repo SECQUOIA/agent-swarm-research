@@ -1,0 +1,30 @@
+# Stage 4, round 1: independent review 1
+
+Scope: new abstract/introduction, rate table, contribution and prior-work statements, conclusion, barrier conventions, bibliography integration, README, Makefile, and submission packaging. I compared the summary claims with the detailed statements in Sections 3–10 and consulted the Stage 4 author report. I did not edit the manuscript or read other reviewers' new reports.
+
+**Verdict: no major or minor issue identified requiring correction in this integration stage.** This is not a substitute for the separate whole-manuscript review.
+
+## Claims checked against the detailed results
+
+- The classical upper rate has the correct `kappa epsilon^{-2}` statistical factor, `sqrt(kappa) log(2/epsilon)` local-walk exponent, and logarithmic confidence cost. The explanation attributes the constituent Chebyshev, importance-sampling, and Kantorovich tools rather than claiming a new general estimator primitive.
+- The statistical table row preserves the finite-population minimum and restricts the confidence-sensitive lower bound to a sufficiently large population. Its detailed theorem supplies the population and confidence promises referenced by the caption.
+- The clock row has the correct shifted sparsity base and denominator. The caption explicitly states the two-public-form reduction and correctly interprets it as a lower bound for a routine accepting an arbitrary supplied form. It does not falsely assert simultaneous two-form hardness for a single fixed right-hand side without that reduction.
+- The composition row is explicitly conditional on the oracle-preserving inner family. Its `chi<=5/3` and `epsilon<=chi/200` regime matches the distributional product theorem. The prose's fixed-coefficient `epsilon^{-2}s^{Omega(sqrt(kappa))}` consequence and restricted high-accuracy `kappa^2` product agree with Section 5. The separate lower factors are never multiplied without the composition hypothesis; the unresolved full product is acknowledged.
+- The plain-block upper and lower bounds agree with Theorem 6.1, including normalization alpha and dimension-three exact-encoding lower instances. The table and surrounding discussion distinguish block calls from state preparation. The sparse quantum row correctly leaves a gap between `sqrt(kappa)/epsilon` and `d kappa/epsilon`, while identifying the canonical sign-block family on which the smaller bound is attained.
+- The optimization summary correctly distinguishes coordinates, ordinary values, decrements, and formulation access. It does not promise a freely available reduced LP objective. The temporal and reuse summaries describe output-dependent hardness rather than multiplying arbitrary one-shot hardness by an iteration count. The conclusion's endpoint language refers to the proved promised-input compilation, not unrestricted real-valued endpoint estimation.
+- The structured summary faithfully retains the sparse full-rank base, small possibly indefinite core, source-vector SQ input, fixed approximate solution, flagged sampling, and explicit cone-data/spectral promises. It does not grant SQ access to small transformed columns or an exact norm of the approximate output. Scalar and full-output comparisons remain separate.
+- The new barrier conventions have the correct local/dual norms, self-concordance and parameter inequalities, Newton sign for maximization, and predictor decrement under a multiplier change. Restricting to independent affine coordinates avoids applying an inverse to a singular ambient restricted Hessian. The text correctly avoids equating an intrinsic decrement condition number with an augmented KKT condition number.
+
+## Prior work and originality
+
+The qualified contribution paragraph is appropriately narrow. It identifies concrete access-preserving and parameterized statements, and expressly excludes priority for the surrounding primitives. The comparison with prior ordinary LP value hardness prevents an overly broad scalar-optimization novelty claim. Similarly, the quantum upper bound is explicitly credited to CGJ, and the cone identities, SQ low-rank tools, recycling, and elimination algorithms retain attribution.
+
+I independently reopened the primary current spectral-sum manuscript and checked Theorem 3.1, Section 3.3, and its explanation of sparse polynomial powering. It supports the introduction's stated overlap and trace-versus-arbitrary-vector distinction: [Edenhofer–Hasegawa–Le Gall](https://arxiv.org/html/2509.20183v3). I also checked the primary robustness record, whose stated approximate length-squared model and coverage of both sparse and low-rank dequantization support the new attribution: [Le Gall](https://arxiv.org/abs/2304.04932). The primary Zhao et al. metadata and abstract confirm the distinct sample/space setting and author list: [Zhao et al.](https://arxiv.org/abs/2604.07639). Its HTML full-text endpoint failed in this review; no unverified theorem from that source is used to justify a manuscript bound. The narrow adjacent-model comparison does not import its lower bound.
+
+These checks support the current qualified wording; they are not a claim to have proved priority by exhaustive search.
+
+## Standalone artifacts
+
+The Makefile and README commands are consistent with the repository's qipm interpreter requirement. The five diagnostic scripts have no imports from outside the packaged directory; their NumPy/SciPy requirements are documented. The packaging script uses only the standard library, verifies required files, and excludes audit material. The current ZIP passes its CRC check, contains 24 files, and every archived file is byte-identical to its current source counterpart. The source and compiled bibliography are both present.
+
+The README appropriately distinguishes numerical diagnostics from proofs and internal reviews from external peer review. It also states that authorship and venue administration remain to be supplied, rather than inventing those details. I found no unsupported journal-acceptance or finite-bit implementation claim.

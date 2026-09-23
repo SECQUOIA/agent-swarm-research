@@ -1,0 +1,655 @@
+\section{Corrections to Prior Work and Recorded Dead Ends}
+\label{sec:corrections}
+
+Corrections and negative results delimit what the positive theorems actually
+establish.  The first result below corrects a norm estimate in a publicly
+posted QCPM complexity derivation.  The next two results isolate representation and
+initialization costs on sparse Hamiltonian and central-path constructions.
+We then record false shortcuts that were tested and rejected.  None of these
+statements is a general verdict against Hamiltonian optimization,
+preconditioning, or state reuse.
+
+\subsection{Correction to the QCPM simulation norm}
+\label{sec:corrections-qcpm}
+
+We consider arXiv:2311.03977v2 (16 October 2024), the quantum central-path
+method (QCPM) of Augustino, Leng, Nannicini, Terlaky, and Wu
+\cite{augustino2024-quantum-central-path-algorithm-linear}.  All formulas in
+this subsection refer to that version.  Let $d=m+n+2$ be the dimension of its
+self-dual embedding, and use its notation
+\begin{equation}
+ s(z)=Mz+q,\qquad F(z)=z\odot s(z),\qquad
+ f_\mu(z)=\frac12\norm{F(z)-\mu e}_2^2.                 \label{eq:corr-qcpm-potential}
+\end{equation}
+The central-path Hamiltonian is
+$H(\mu)=-(h^2/2)\nabla^2+f_\mu$, and Algorithm~1 sets
+% QCPM v2 has an internal normalization inconsistency between Algorithm 1's
+% h(t) and equation (23); the definition of a here deliberately follows
+% Algorithm 1, as do all constants below.
+\begin{equation}
+ h(t)=a\mu(t)^2,
+ \qquad a=\frac{\gamma^2}{2R_1C_{d,\delta}},            \label{eq:corr-qcpm-h}
+\end{equation}
+where $C_{d,\delta}=\sqrt d/2+(3/4)\log(2/\delta)$ is the
+concentration factor displayed in Algorithm~1.  We assume $d\geq1$,
+$a,\eta>0$, and $0<\varepsilon<1$.  The spatial domain $\Omega_D$ is
+fixed and compact and contains $e$; statements involving $z(\mu)$ also
+require that point to belong to $\Omega_D$.  The invoked
+real-space simulation theorem measures a potential $V$ on a fixed domain
+$\Omega_D$ by
+\begin{equation}
+ \norm V_{\infty,1}=\int\sup_{z\in\Omega_D}|V(z,\tau)|\,d\tau.             \label{eq:corr-qcpm-simulator-norm}
+\end{equation}
+The QCPM proof truncates to a fixed box containing the central-path
+neighborhood and replaces the supremum in
+\eqref{eq:corr-qcpm-simulator-norm} by an assumed bound
+$\sup_{\Omega_D} f_\mu\leq K\gamma^2\mu^2$.  That bound is false.
+
+\begin{proposition}[Global-supremum counterexample]
+\label{prop:corr-qcpm-supremum}
+If $\Omega_D$ contains the initial center $e=z(1)$, then, for every
+$0<\mu\leq1$,
+\begin{equation}
+ \sup_{z\in\Omega_D}f_\mu(z)
+ \geq f_\mu(e)=\frac d2(1-\mu)^2.                       \label{eq:corr-qcpm-counterexample}
+\end{equation}
+Consequently, at $\mu=\varepsilon\leq1/2$, the asserted bound would require
+$K\geq d/(8\gamma^2\varepsilon^2)$.
+\end{proposition}
+
+\begin{proof}
+The self-dual embedding is initialized so that $s(e)=e$.  Thus $F(e)=e$,
+and \eqref{eq:corr-qcpm-potential} gives
+\[
+ f_\mu(e)=\tfrac12\norm{(1-\mu)e}_2^2
+          =\tfrac d2(1-\mu)^2.
+\]
+Taking the supremum proves \eqref{eq:corr-qcpm-counterexample}.  When
+$\varepsilon\leq1/2$, its right-hand side is at least $d/8$, which gives the
+claim about $K$.
+\end{proof}
+
+Ground-state concentration controls state-weighted mass, not the operator
+supremum on a fixed domain.  A scalar phase shift does not restore the
+claimed scaling.  If $z(\mu)\in\Omega_D$, then $f_\mu(z(\mu))=0$, and
+for every real scalar $c$ the triangle inequality gives
+\[
+ \sup_{z\in\Omega_D}|f_\mu(z)-c|
+ \geq\frac12|f_\mu(e)-f_\mu(z(\mu))|
+ =\frac d4(1-\mu)^2.
+\]
+
+There is a second, independent issue in the time dilation.  Let
+$\mu:[0,1]\to[\varepsilon,1]$ be continuous.  After division
+by $h(t)\mu(t)$, the evolution equation is
+\begin{equation}
+ i\eta\,\partial_t\Psi
+ =\left[-\frac{\theta(t)}2\nabla^2
+       +\frac{f_{\mu(t)}}{\mu(t)h(t)}\right]\Psi,
+ \qquad \theta(t)=\frac{h(t)}{\mu(t)}=a\mu(t).           \label{eq:corr-qcpm-scaled-evolution}
+\end{equation}
+The linear substitution used in the QCPM proof treats $\theta$ as constant,
+although it varies with $t$.  The clock that normalizes the kinetic term is
+instead
+\begin{equation}
+ \tau(t)=\frac1\eta\int_0^t\theta(u)\,du
+        =\frac a\eta\int_0^t\mu(u)\,du.                 \label{eq:corr-qcpm-clock}
+\end{equation}
+Indeed, $dt/d\tau=\eta/\theta(t)$, so
+\eqref{eq:corr-qcpm-scaled-evolution} becomes
+\begin{equation}
+ i\partial_\tau\widetilde\Psi
+ =\left[-\frac12\nabla^2
+        +\frac{f_{\mu(t(\tau))}}{h(t(\tau))^2}\right]
+   \widetilde\Psi.                                      \label{eq:corr-qcpm-corrected-evolution}
+\end{equation}
+Combining \eqref{eq:corr-qcpm-h}--\eqref{eq:corr-qcpm-clock} yields the
+exact corrected identity
+\begin{equation}
+ \boxed{
+ \Lambda:=\norm V_{\infty,1}
+ =\frac1{a\eta}\int_0^1
+   \frac{\sup_{z\in\Omega_D}f_{\mu(t)}(z)}{\mu(t)^3}\,dt.}
+                                                               \label{eq:corr-qcpm-exact-norm}
+\end{equation}
+This identity does not use a lower-bound argument.  The clock correction by
+itself works in the authors' favor: it lowers the norm weight from the
+constant-$\theta$ argument's $\mu^{-4}$ to $\mu^{-3}$.  The
+$\varepsilon^{-3}$ blow-up below is driven entirely by the false global
+supremum bound.
+
+The schedule in Algorithm~1 is
+\begin{equation}
+ g(t)=c_e^{-1}\int_0^t
+ \exp\!\left[-\frac1{\tau(1-\tau)}\right]d\tau,
+ \qquad
+ \mu(t)=\varepsilon+(1-\varepsilon)(1-g(t)),            \label{eq:corr-qcpm-schedule}
+\end{equation}
+where $c_e$ normalizes $g(1)=1$.
+The bump integrand is extended by zero at both endpoints.  It is
+continuous, nonnegative, and positive on $(0,1)$, so $c_e>0$.
+
+\begin{lemma}[Width of the flat endpoint]
+\label{lem:corr-qcpm-endpoint}
+For $0<\varepsilon\leq\min\{1/4,c_e\}$, put
+$u_\varepsilon=1/(2\log(1/\varepsilon))$.  Then
+$\mu(t)\leq2\varepsilon$ for every
+$t\in[1-u_\varepsilon,1]$.
+\end{lemma}
+
+\begin{proof}
+For $0<u<1$, substitute $v=1-\tau$ in the tail of
+\eqref{eq:corr-qcpm-schedule}.  Since $(1-v)v\leq v$,
+\begin{equation}
+ 1-g(1-u)
+ \leq\frac1{c_e}\int_0^u e^{-1/v}\,dv
+ \leq\frac{u}{c_e}e^{-1/u}.                             \label{eq:corr-qcpm-tail}
+\end{equation}
+At $u=u_\varepsilon$, the exponential equals $\varepsilon^2$.  The last
+quantity in \eqref{eq:corr-qcpm-tail} is at most $\varepsilon$:
+$\varepsilon\leq1/4$ implies $0<u_\varepsilon\leq1/2$, and
+$u_\varepsilon\varepsilon\leq c_e$ follows from $\varepsilon\leq c_e$.
+For $t\geq1-u_\varepsilon$,
+monotonicity then gives
+$\mu(t)\leq\varepsilon+(1-\varepsilon)\varepsilon\leq2\varepsilon$.
+\end{proof}
+
+\begin{theorem}[Corrected QCPM simulator-norm scale]
+\label{thm:corr-qcpm-norm}
+For the choices in Algorithm~1 and
+$0<\varepsilon\leq\min\{1/4,c_e\}$,
+\begin{equation}
+ \boxed{
+ \Lambda\geq
+ \frac{d}{128a\eta\,\varepsilon^3\log(1/\varepsilon)}.} \label{eq:corr-qcpm-lower}
+\end{equation}
+If $\Omega_D=[0,D]^d$, a valid global upper certificate is
+\begin{equation}
+ \Lambda\leq\frac{F_D}{a\eta\varepsilon^3},
+ \qquad
+ F_D=\frac d2\left[
+ D\bigl(D\norm M_\infty+\norm q_\infty\bigr)+1
+ \right]^2.                                             \label{eq:corr-qcpm-upper}
+\end{equation}
+Here $\norm M_\infty$ is the maximum absolute row sum.
+\end{theorem}
+
+\begin{proof}
+On the interval supplied by \cref{lem:corr-qcpm-endpoint}, take
+$\varepsilon\leq1/4$.  Proposition~\ref{prop:corr-qcpm-supremum} gives
+$\sup_{\Omega_D} f_{\mu(t)}\geq d/8$, while
+$\mu(t)^{-3}\geq(2\varepsilon)^{-3}$.  The interval has length
+$1/(2\log(1/\varepsilon))$.  Substitution in
+\eqref{eq:corr-qcpm-exact-norm} proves \eqref{eq:corr-qcpm-lower}.
+
+For the upper bound, every $z\in[0,D]^d$ satisfies
+\[
+ |s_i(z)|\leq D\norm M_\infty+\norm q_\infty.
+\]
+Hence $|F_i(z)-\mu|$ is at most
+$D(D\norm M_\infty+\norm q_\infty)+1$ for $0<\mu\leq1$, and
+$f_\mu(z)\leq F_D$.  Since $\mu(t)\geq\varepsilon$, the exact identity
+\eqref{eq:corr-qcpm-exact-norm} gives \eqref{eq:corr-qcpm-upper}.
+\end{proof}
+
+Since $a^{-1}=2R_1C_{d,\delta}/\gamma^2$,
+\cref{eq:corr-qcpm-lower} gives the simulator-norm lower bound
+\begin{equation}
+ \Omega\!\left(
+  \frac{R_1dC_{d,\delta}}
+       {\gamma^2\eta\varepsilon^3\log(1/\varepsilon)}
+ \right).                                                \label{eq:corr-qcpm-complexity-scale}
+\end{equation}
+By contrast, the bound claimed in v2 is
+\[
+ \norm V_{\infty,1}\leq\frac{K\gamma^2}{\theta\eta},
+ \qquad
+ O\!\left(\frac{K\gamma^2}{a\eta\varepsilon}\right)
+ =O\!\left(\frac{R_1C_{d,\delta}}{\eta\varepsilon}\right)
+ \quad(K=O(1)).
+\]
+Thus $\gamma^2$ cancels against $1/a$.  Conditional on all other simulation
+hypotheses, \eqref{eq:corr-qcpm-upper} supplies the
+norm-based upper certificate
+\[
+ O\!\left(\frac{F_DR_1C_{d,\delta}}
+ {\gamma^2\eta\varepsilon^3}\right)
+\]
+before polylogarithmic factors and potential-evaluation cost.
+
+The calculation has a schedule-independent form.
+
+\begin{corollary}[Norm--speed tradeoff]
+\label{cor:corr-qcpm-tradeoff}
+Let $\mu:[0,1]\to[\varepsilon,1]$ be $L$-Lipschitz, with
+$\mu(0)=1$, $\mu(1)=\varepsilon$, and $0<L<\infty$.
+In particular, a differentiable schedule with $|\dot\mu|\leq L$
+satisfies this hypothesis by the mean value theorem.  Retain $h=a\mu^2$.  For
+$\varepsilon\leq1/4$,
+\begin{equation}
+ \boxed{\Lambda\geq\frac{d}{64a\eta L\varepsilon^2}.}   \label{eq:corr-qcpm-tradeoff}
+\end{equation}
+\end{corollary}
+
+\begin{proof}
+The endpoint values imply $L\geq1-\varepsilon$, hence
+$\varepsilon/L\leq1$.  On the terminal interval
+$[1-\varepsilon/L,1]$, the Lipschitz bound gives
+$\mu(t)\leq\varepsilon+L(1-t)\leq2\varepsilon$.  Throughout that interval,
+\cref{prop:corr-qcpm-supremum} gives
+$\sup_{\Omega_D} f_\mu\geq d/8$, and
+$\mu^{-3}\geq(2\varepsilon)^{-3}$.  Equation
+\eqref{eq:corr-qcpm-exact-norm} proves the result.
+\end{proof}
+No monotonicity assumption is needed for this bound.
+
+Taking $L$ large weakens \eqref{eq:corr-qcpm-tradeoff}, but moves $L$ into
+the derivative, smoothness, and adiabatic estimates.  The corollary alone
+does not optimize that tradeoff, and it does not exclude a theorem that
+rigorously exploits localization.
+
+As a numerical check, adaptive quadrature gives
+$c_e=0.007029858406609657$.  For
+\[
+ J(\varepsilon)=\varepsilon^3\log(1/\varepsilon)
+ \int_0^1(1-\mu(t))^2\mu(t)^{-3}\,dt,
+\]
+the computed values are
+\begin{center}
+\begin{tabular}{c@{\qquad}c}
+\toprule
+$\varepsilon$ & $J(\varepsilon)$ \\
+\midrule
+$10^{-2}$ & $0.77120646$ \\
+$10^{-3}$ & $0.89055595$ \\
+$10^{-4}$ & $0.95036732$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+The sampled values are consistent with a limit of one; no limit is
+deduced from this computation.  Retaining only the witness
+$f_\mu(e)=d(1-\mu)^2/2$ gives
+\[
+ \Lambda\geq\Lambda_e
+ :=\frac{d}{2a\eta}\int_0^1
+ (1-\mu(t))^2\mu(t)^{-3}\,dt
+ \geq\frac{d}{128a\eta\varepsilon^3\log(1/\varepsilon)}
+ \quad\bigl(0<\varepsilon\leq\min\{1/4,c_e\}\bigr).
+\]
+The proof certifies $J(\varepsilon)\geq1/64$ in this range and makes no
+claim that this constant is sharp.  The quadrature is a sanity check on the proved scale, not
+an estimate of the full supremum or part of the proof.
+
+\paragraph{Formal verification of the norm correction.}
+The companion Lean development in \path{formal/QipmFormal/QCPM/}
+checks the finite-dimensional potential and initialization identity,
+the compact-domain supremum bound, robustness under scalar shifts,
+the corrected clock and its inverse, and the integral change of variables.
+It also checks the actual normalized bump schedule, the explicit
+endpoint threshold, both lower-bound constants, and the fixed-box upper
+certificate.  The headline bounds use the spatial supremum of the stated
+potential; their continuity and integrability are proved rather than
+assumed as extra properties of that supremum.  The initialization row
+equations $Me+q=e$ and inclusion of the required points in the fixed domain
+are explicit hypotheses.  The source correspondence is to Algorithm~1
+of v2, whose normalization differs from its equation~(23).
+The verification does not formalize Schr\"odinger evolution, the external
+simulation or adiabatic theorems, or an unconditional query lower bound.
+
+The norm and clock errors invalidate the stated complexity derivation, not
+the QCPM idea itself, and \eqref{eq:corr-qcpm-complexity-scale} is not an
+unconditional query lower bound for every implementation of the evolution.
+Chakrabarti et al.\ analyze missing error controls in the pseudo-spectral
+real-space simulation
+\cite{chakrabarti2025-speedups-quantum-dynamics}.  Gribling et al.\ cite
+that analysis and separately identify the absence of a suitable directly
+applicable infinite-dimensional adiabatic theorem
+\cite{gribling2025-self-concordant-schrodinger-operators-spectral}.  We do
+not claim those broader criticisms as new.  Even after correcting the norm,
+the following obligations remain:
+\begin{itemize}[leftmargin=*]
+ \item The schedule in \eqref{eq:corr-qcpm-schedule} is nonconstant and
+ $C^\infty$-flat, but it is not analytic through either endpoint.  An
+ analytic function with its zero endpoint Taylor series would be locally
+ constant.  The quoted exponential adiabatic theorem assumes analytic
+ continuation through the closed interval.
+ \item The adiabatic theorem must be applied to the generator in
+ \eqref{eq:corr-qcpm-scaled-evolution}; the derivative discussion analyzes a
+ differently scaled Hamiltonian and does not establish uniform derivative
+ constants for time-dependent $h$.
+ \item The exact potential \eqref{eq:corr-qcpm-potential} is generally
+ quartic.  The displayed Gaussian state and oscillator gap concern its
+ quadratic approximation.  A dimension-, $\mu$-, and input-uniform transfer
+ to the exact ground state and spectral gap is not established.
+ \item The proposition and algorithm use different choices of $h$; the
+ proposition's choice has no $\gamma$ or $\delta$ dependence and therefore
+ cannot by itself provide arbitrary neighborhood opening and failure
+ probability.
+ \item The initial exact ground state is assumed rather than prepared.
+ Knowing its minimizer $e$ does not prepare the ground state of a quartic
+ Hamiltonian.
+ \item The real-space theorem assumes a smooth periodic potential and
+ periodic boundary conditions.  Restriction of
+ \eqref{eq:corr-qcpm-potential} to a box neither makes it periodic nor
+ controls the boundary and truncation errors.
+ \item The box size must retain its solution-radius dependence unless an
+ input-size promise bounds the central path.
+\end{itemize}
+A localized or clipped-potential repair would need leakage, spurious-state,
+uniform-gap, boundary, and comparison estimates; concentration alone does
+not supply them.
+
+\subsection{Sparse metric, dense inverse metric}
+\label{sec:corrections-densification}
+
+The proposal of Gribling, Apers, Nieuwboer, and Walter replaces the Euclidean
+Laplacian by the Laplace--Beltrami operator of the Hessian metric
+\cite{gribling2025-self-concordant-schrodinger-operators-spectral}.  If
+$G(x)=\nabla^2\phi(x)$, its principal part is
+\begin{equation}
+ L\psi=\frac1{\sqrt{\det G}}
+ \sum_{i,j}\partial_i\!\left(
+ (G^{-1})_{ij}\sqrt{\det G}\,\partial_j\psi
+ \right).                                                \label{eq:corr-laplace-beltrami}
+\end{equation}
+Sparse constraints do not make these standard-coordinate coefficients
+entrywise sparse.
+
+\begin{theorem}[Path-simplex inverse metric]
+\label{thm:corr-path-simplex}
+Let
+\[
+ \mathcal D_n=\{x\in\R^n:0<x_1<\cdots<x_n<1\}
+\]
+and use the logarithmic barrier
+\begin{equation}
+ \phi(x)=-\log x_1-\sum_{i=1}^{n-1}\log(x_{i+1}-x_i)
+          -\log(1-x_n).                                  \label{eq:corr-path-barrier}
+\end{equation}
+Every inequality contains at most two variables, and the
+constraint-intersection graph is a path.  At the analytic center
+$\bar x_i=i/(n+1)$, the Hessian $G=\nabla^2\phi(\bar x)$ is tridiagonal, but
+\begin{equation}
+ (G^{-1})_{ij}
+ =\frac{\min(i,j)(n+1-\max(i,j))}{(n+1)^3}>0             \label{eq:corr-path-green}
+\end{equation}
+for every $i,j$.  For
+$i,j\in[\lceil(n+1)/4\rceil,\lfloor3(n+1)/4\rfloor]$,
+these entries are $\Theta(1/n)$, so $\Theta(n^2)$ coefficients are of
+comparable order.
+\end{theorem}
+
+\begin{proof}
+Write the $n+1$ slacks as
+$s_0=x_1$, $s_i=x_{i+1}-x_i$ for $1\leq i<n$, and
+$s_n=1-x_n$.  At $\bar x$, every slack is $1/(n+1)$.  If $B$ is the signed
+path-incidence Jacobian of this affine slack map, then
+\[
+ G=B^T\diag(s^{-2})B=(n+1)^2T_n,
+\]
+where $T_n$ has diagonal entries two and adjacent off-diagonal entries
+minus one.  The discrete Green identity is
+\[
+ (T_n^{-1})_{ij}
+ =\frac{\min(i,j)(n+1-\max(i,j))}{n+1}.
+\]
+Scaling gives \eqref{eq:corr-path-green}.  In the middle half, both factors
+in its numerator are bounded above by $n$ and below by a fixed positive
+multiple of $n$, proving the final assertion.
+\end{proof}
+
+Thus a direct standard-coordinate, nondivergence-form finite-difference
+stencil for the principal symbol in \eqref{eq:corr-laplace-beltrami} has
+$\Omega(n^2)$ mixed-derivative directions at the analytic-center grid point,
+although the input has only $O(n)$ nonzeros.  This is a densification warning,
+not a simulation or query lower bound.  Indeed, at an arbitrary interior
+point put $r_k=s_k^2$, $R=\sum_{k=0}^nr_k$, and let $i\leq j$.  Weighted path
+inversion gives
+\begin{equation}
+ (G(x)^{-1})_{ij}
+ =\frac{(\sum_{k=0}^{i-1}r_k)(\sum_{k=j}^{n}r_k)}{R}.     \label{eq:corr-path-semiseparable}
+\end{equation}
+Every strict off-diagonal block is rank one, and prefix sums give an $O(n)$
+matrix--vector apply.  The witness therefore rules out only the inference
+from sparse Hessian support to an entrywise sparse inverse-metric tensor.
+It does not rule out implicit, transform-based, or coordinate-adapted
+simulation.
+
+Abe and Nagai parameterize their Riemannian Hamiltonian simulation by the
+kinetic-matrix sparsity and separately assume sparse-access oracles for that
+matrix; they note that constructing those black-box oracles is generally
+nontrivial \cite{abe2026-quantum-riemannian-hamiltonian-descent}.
+Theorem~\ref{thm:corr-path-simplex} shows only that input-level $O(n)$
+sparsity is lost: the direct stencil has $\Theta(n^2)$ terms.  On a tensor
+grid with $q$ points per coordinate it still has at most $2n^2+1$ neighbors
+per row, sparse relative to the $q^n$-dimensional grid.  Thus the theorem
+does not rule out sparse-Hamiltonian access or refute the separately assumed
+Abe--Nagai oracles.  Gribling et al.\ likewise leave the simulation and
+qubit-realization questions open.
+
+\subsection{A hidden-sign start-oracle separation}
+\label{sec:corrections-hidden-sign}
+
+We reuse, without reconstructing it, the path-sparse hidden-sign LP
+\eqref{eq:structural-locality-lp} from
+\cref{sec:structural-geometric-locality}.  Recall that
+$p_0=1$, $p_i=\prod_{j=1}^i\varsigma_j$, and
+$q_i=u_i+v_i$.
+
+\begin{theorem}[Value, output, and central-start separation]
+\label{thm:corr-hidden-sign}
+For the family \eqref{eq:structural-locality-lp}:
+\begin{enumerate}[leftmargin=*]
+ \item It is strictly primal--dual feasible and has the unique optimum
+ \begin{equation}
+  \operatorname{OPT}=N+1+\alpha p_N.                    \label{eq:corr-hidden-opt}
+ \end{equation}
+ Estimating its shifted value $\operatorname{OPT}-(N+1)$ to additive error
+ less than $\alpha$ requires $\Omega(N)$ bounded-error raw sparse queries.
+ \item Every classical nonnegative output $\widehat x$ satisfying
+ $\norm{A_\varsigma\widehat x-b}_1<1/2$ determines $p_N$ and therefore also
+ requires $\Omega(N)$ queries.
+ \item The primal central path has the public support-two orthonormal null
+ basis stated in \cref{sec:structural-geometric-locality}, and its reduced
+ log-barrier Hessian has condition number one for every $\mu>0$.
+ \item At $\mu=3/4$, one lookup at the final cell of a reusable random-access
+ value oracle for the exact primal central point reveals $p_N$.  If setup and
+ that lookup use respectively $Q_{\rm setup}$ and $Q_{\rm lookup}$ raw
+ queries, then
+ $Q_{\rm setup}+Q_{\rm lookup}=\Omega(N)$.  In particular, query-free
+ invocations after preprocessing force $Q_{\rm setup}=\Omega(N)$.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+The feasibility argument and central-path calculations are given throughout
+\cref{sec:structural-geometric-locality}, with the displayed formulas in
+\eqref{eq:structural-locality-barrier}--
+\eqref{eq:structural-locality-condition-one}.  In particular, feasibility
+fixes $d_i=p_i$ and leaves $q_i\geq1$, so the objective is
+$\sum_iq_i+\alpha p_N$ and has the unique minimum
+\eqref{eq:corr-hidden-opt}.  The shifted value reveals parity.
+
+For an approximate output define
+$r_0=\widehat d_0-1$ and
+$r_i=\widehat d_i-\varsigma_i\widehat d_{i-1}$.  Telescoping gives
+\begin{equation}
+ \widehat d_N-p_N
+ =\sum_{j=0}^N\left(\prod_{k=j+1}^N\varsigma_k\right)r_j,               \label{eq:corr-hidden-telescope}
+\end{equation}
+so $|\widehat d_N-p_N|<1/2$ under the asserted residual bound.  The sign of
+$\widehat d_N=\widehat u_N-\widehat v_N$ is therefore $p_N$.
+
+Finally, \eqref{eq:structural-locality-center} gives $q=2$ at $\mu=3/4$.
+The final pair is $(3/2,1/2)$ or its swap according to $p_N$, so one
+coordinate-oracle lookup determines parity even with coordinate error below
+$1/2$.  Since quantum parity has query complexity $\Theta(N)$, each claimed
+raw-query lower bound, including the combined setup--lookup bound, follows
+from the local sign-oracle reduction used throughout \cref{sec:lp-hardness}.
+\end{proof}
+
+This theorem charges an original-form feasible start.  It does not apply to
+infeasible-start or homogeneous self-dual methods, which can supply a
+different universal start; nor does it say that the scalar reduced Newton
+solve itself is hard.
+
+\subsection{Dead ends and false shortcuts}
+\label{sec:corrections-dead-ends}
+
+\paragraph{First inverse versus filtering.}
+A small value of
+$\norm H\norm{H^{-1}f}/\norm f$ does not imply a fast DLS filtering solve.
+Filtering depends on the second inverse through
+$\norm H\norm{H^{-2}f}/\norm{H^{-1}f}$, and active--inactive coupling can
+restore the full condition-number exponent.  The exact identities and sparse
+sharpness pair are in
+\cref{sec:beyond-kappa-coupling,sec:beyond-kappa-truncation}.
+
+\paragraph{Sparse support versus inverse access.}
+Sparse Hessian or KKT support does not imply a sparse inverse, a cheap block
+encoding after elimination, or low circuit depth on bounded-range hardware.
+The factor-normalization and inverse-compilation frontiers in
+\cref{sec:preconditioning-whitening} prove the access cost; the bounded-range
+depth claim requires the bounded-occupancy geometric input placement of
+\cref{sec:structural-geometric-locality}.  The dense metric in
+\cref{sec:corrections-densification} gives a separate coordinate-level
+warning.  None of these statements says that every structured inverse is
+expensive.
+
+\paragraph{Condition one versus the surrounding maps.}
+A condition-one reduced Newton matrix does not make the affine feasible
+offset, coordinate gauge, transformed right-hand side, recovery map, or
+requested output free.  The LP separations in
+\cref{sec:lp-affine-separation,sec:lp-prefix-rigidified} place parity in
+the affine offset while leaving the reduced geometry public.  The full-KKT
+and preconditioner dichotomies in
+\cref{sec:lp-full-kkt,sec:preconditioning-parity} show how input dependence
+can relocate among these objects.
+
+\paragraph{Exact Schur preconditioning.}
+An exact Schur transformation can make the abstract product constantly
+conditioned while relocating input dependence into construction, transformed
+RHS loading, or recovery.  The complete ledger is proved in
+\cref{sec:lp-full-kkt,sec:preconditioning-whitening}.  Supplying the
+preconditioned product itself as a unit-cost oracle is a strictly stronger
+input model, not a consequence of sparse access to the original system.
+
+\paragraph{State output versus coordinate access.}
+A normalized solution state is not a reusable coordinate oracle.  Its norm
+and global phase are absent, while coherent diagonal construction also needs
+controlled and adjoint access and pays a normalization factor.  The tight
+state-to-diagonal product appears in
+\cref{sec:preconditioning-state-interface}; the implicit-coordinate escape
+route in \cref{sec:positive-compressed-dual} states the stronger interface it
+actually constructs.
+
+\paragraph{One-step bounds versus a fixed trajectory.}
+Reapplying a one-step lower bound at every point of one fixed LP trajectory
+is invalid without freshness, a memory restriction, an adaptivity/causality
+restriction, or mandatory explicit output.  The fresh-oracle direct sum is
+\cref{thm:prec-online-direct-sum}; the surrounding discussion shows how
+caching a static input can erase later raw-query cost.
+
+\paragraph{Residual bounds versus projective variation.}
+Ordinary short-step neighborhood and relative OSS residual bounds do not
+imply finite projective variation.  Section~\ref{sec:positive-lazy} gives a
+sparse cycling counterexample and the additional hypotheses needed for
+reuse.  The refined audit in \cref{sec:positive-face-repair} also corrects
+an earlier version's proposed sharpness family: its convergent leakage and
+transverse-forcing ledgers still allow linearly growing realized variation,
+and a separate oscillating-displacement family shows that adding the
+$O(\mu_t)$ tail bound on face leakage does not help either; finite realized
+variation is therefore stated as an independent hypothesis rather than
+derived from the ledgers.
+
+\paragraph{Expanderization.}
+Replacing a path by an expander does not evade the bounded-degree
+local-linear mixture or cut/resistance obstruction.  Those no-go results are
+\cref{sec:frontier-mixture,sec:frontier-electrical}.  In the favorable
+well-spread regime, \cref{sec:positive-checkpoint-span} gives the matching
+classical sampling shortcut; making rare columns influential instead moves
+cost into normalization or one-time search.
+
+\paragraph{Scalar gap versus density visibility.}
+A constant scalar objective gap can coexist with a trace-normalized central
+density that is only $O(1/G)$ from a public state.  Thus an output lower bound
+must state its accuracy and normalization contract.  The zero-query boundary
+and the mass--visibility inequalities are proved in
+\cref{sec:condensation-visibility,sec:condensation-query-lower}; the dilution
+example is \cref{rem:wta-dilution}.
+
+\paragraph{Pairwise distance versus a common decoder.}
+Pairwise distinguishability of states indexed by an unknown winner set does
+not provide one public measurement that decodes every set.  The failed
+collision shortcut loses a factor $1/k$.  Section~\ref{sec:state-conversion-model}
+repairs this only by measuring a proposed label and verifying that label with
+fresh input queries; the verifier, not pairwise trace distance alone, supplies
+the common decision procedure.
+
+\subsection{Disposition of remaining algorithmic candidates}
+\label{sec:corrections-dispositions}
+
+To state the factorized rectangular observation precisely, let $B_\mu$ have
+full row rank, let $f=B_\mu h$ lie in $\operatorname{range}(B_\mu)$, and let
+$\alpha_{B_\mu}\geq\norm{B_\mu}$ be its block-encoding normalization.  Define
+\begin{equation}
+ \rho_{B_\mu}(f)=\alpha_{B_\mu}
+ \frac{\norm{(B_\mu B_\mu^T)^{-1}f}_2}
+ {\sqrt{f^T(B_\mu B_\mu^T)^{-1}f}}.                    \label{eq:corr-rectangular-rho}
+\end{equation}
+This pseudoinverse parameter is distinct from the nonsingular filtering
+parameter in \eqref{eq:dls-general-filtering-parameter}.  In the mixed
+strictly-complementary exact-centering asymptotic, assume
+$B_\mu B_\mu^T=\mu^{-1}C+\mu D+o(\mu)$,
+$f=b\in U:=\operatorname{range}C$, and the generic active--inactive coupling
+of \cref{sec:beyond-kappa-coupling}, so that
+\[
+ (B_\mu B_\mu^T)^{-1}b=\mu(p,-g)+o(\mu),
+ \qquad b^T(B_\mu B_\mu^T)^{-1}b=\Theta(\mu).
+\]
+With the essential normalization
+$\alpha_{B_\mu}=\Theta(\mu^{-1/2})$, substitution in
+\eqref{eq:corr-rectangular-rho} gives the proved algebraic observation
+$\rho_{B_\mu}(b)=\Theta(1)$.
+
+Here $D_\mu=(XS^{-1})^{1/2}$, $B_\mu=AD_\mu$, and
+$h=(XS)^{-1/2}r_c$ is the scaled complementarity right-hand side; thus
+$f=B_\mu h$ is the row-space right-hand side denoted ``$Bh$''.  The two
+scaled direction components are
+\[
+ u=\Pi_{\ker B_\mu}h,
+ \qquad
+ v=B_\mu^+f=B_\mu^+(B_\mu h),
+\]
+with $u+v=h$.  They recover the physical directions through
+$\Delta x=D_\mu u$ and $\Delta s=D_\mu^{-1}v$.  The
+constant value of \eqref{eq:corr-rectangular-rho} is not an end-to-end QIPM
+speedup.  Six obligations remain: a DLS-quality rank-deficient rectangular
+filter theorem with its cutoff and error law; preparation of $f=B_\mu h$;
+coherent construction, norm control, and cancellation-safe physical recovery
+of $u$ and $v$; inexact-neighborhood propagation; maintenance of the changing
+diagonal oracles; and a complete output ledger with a strong classical
+comparison.  Li's instance-dependent rectangular minimum-norm algorithm
+already uses closely related second-inverse geometry
+\cite{li2025-new-condition-number-application-multivariate-polynomial}, so
+the primitive also substantially collides with prior work.
+
+A further candidate, the augmented spectral Newton sketch, instead samples the
+augmented matrix \([D_{\rm N}^{1/2}A^T,v_{\rm N}]\), where \(D_{\rm N}\) and
+\(v_{\rm N}\) denote the sketch's Newton scaling and regression target.
+Under its stated row-access assumptions,
+a \((1\pm\varepsilon)\) embedding of the augmented Gram matrix gives a valid
+least-squares embedding lemma at
+\(\Otilde(\sqrt{nm}/\varepsilon)\) row-query scale; the infeasible-step
+analysis, implicit update mechanism, and end-to-end comparison remain open,
+and the direction overlaps the factorized rectangular candidate above.
+
+State-to-diagonal lifting is a useful but known primitive, not a new result:
+Rattew and Rebentrost give the amplitude-to-diagonal block encoding, with the
+phase-aligned coherent access assumptions recorded in
+\cref{sec:preconditioning-state-interface}
+\cite{rattew2023-non-linear-transformations-of-quantum}.  Likewise, the
+projective-plus-implicit expander candidate is closed by the dichotomy in
+\cref{sec:positive-checkpoint-span}: bounded contributions admit a comparable
+classical sketch, while rare influential columns incur normalization or
+one-time search cost.

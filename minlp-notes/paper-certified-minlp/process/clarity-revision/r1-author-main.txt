@@ -1,0 +1,1589 @@
+    Checkable Lower Bounds for Convex Mixed-Integer Nonlinear
+                           Optimization
+              through Rational Outer Approximations
+                                          Anonymous authors
+
+
+                                                 Abstract
+         An exact mixed-integer linear proof does not by itself certify a bound for a convex mixed-
+     integer nonlinear program: the nonlinear cuts must be valid, and the proof must refer to the
+     master justified for the stated model. We develop an implemented certificate interface that closes
+     these gaps through rigorous rational affine underestimators, a common exact interpretation of the
+     loaded expression tree, explicit master matching, and replay of saved rational discrete inferences.
+     We prove that evidence satisfying this contract gives a bound on every feasible point of the
+     interpreted nonlinear model, independently of numerical subproblem accuracy. Focused Lean
+     proofs validate selected mathematical implications; the executable checker remains outside that
+     formal coverage. A frozen uniform experiment yields accepted artifacts for 203 of 289 attempted
+     models in separate replay. Exact audits also identify three new completed proofs that received
+     external acceptance despite invalid supplied linear-combination or integer-disjunction steps. The
+     interface makes nonlinear bound claims replayable without repeating their numerical search
+     and makes failures attributable to explicit checking obligations, building on established convex
+     certificates and rigorous-bounding principles.
+
+Keywords: convex MINLP; outer approximation; lower-bound certificates; rational arithmetic;
+verification.
+
+
+1    Introduction
+An exact mixed-integer linear programming (MILP) proof establishes a bound for its input model.
+Certifying a convex mixed-integer nonlinear program (MINLP) requires two further links: the
+nonlinear cuts must be valid for the stated nonlinear model, and the proved MILP must be the
+master justified by those cuts and the original constraints. Without these links, exact discrete
+arithmetic can certify the wrong relaxation. The research problem addressed here is to make this
+complete connection explicit and replayable.
+    For minimization, the output of interest is a rational number β and evidence establishing
+
+                        β ≤ f (x)      for every feasible mixed-integer point x                            (1)
+
+for a precisely interpreted nonlinear model. Outer approximation (OA) supplies the classical
+optimization principle: affine underestimators of convex functions define a MILP relaxation whose
+lower bounds transfer to the original problem [9, 17]. The certification difficulty lies in preserving
+that principle through expression translation, derivative evaluation, coefficient rounding, master
+construction, and proof checking. For example, rounding a tangent’s slope without correcting its
+intercept can exclude a nonlinear feasible point; a proof for a different master cannot repair that
+error.
+
+                                                     1
+    We develop and implement a certificate interface that joins these obligations. A common exact
+interpretation of the loaded expression tree governs nonlinear checks and master construction.
+Rigorous enclosures justify rational affine underestimators, an explicit correspondence check binds
+the discrete proof to the reconstructed master, and complete rational replay establishes its bound.
+The soundness argument constructs an objective-preserving image of every original feasible point in
+that master. Numerical search supplies candidate points, slopes, and proofs; acceptance depends on
+their checked properties rather than on numerical subproblem accuracy. The resulting artifact can
+be replayed without repeating the search.
+
+1.1   Contribution and scope
+The contribution is the concrete integration of established convex-support and discrete-proof
+principles into a checked nonlinear-to-linear certificate interface, together with evidence about its
+reliability. We distinguish four parts of the work:
+
+  1. Method. The interface uses one exact loaded-model interpretation, a rational cut contract for
+     bounded, one-sided, and free coordinates, explicit master identity, and complete discrete-proof
+     replay. We prove the composition sound: accepted evidence satisfying the stated mathematical
+     contracts implies (1).
+
+  2. Empirical findings. A frozen uniform experiment yields accepted artifacts for 203 of 289
+     attempted models in separate replay. Exact audits identify invalid supplied proof inferences
+     that received external acceptance and infeasible saved solver points. These local witnesses
+     distinguish failures of particular justifications from conservative rejection or mere disagreement
+     with a reference objective.
+
+  3. Validation. A suite of 161 targeted tests exercises executable contracts and regression cases.
+     Focused Lean proofs check coordinate correction, finite-sum composition, and selected transfer
+     and primal-completion implications. The formal result assumes genuine support and enclosure
+     inequalities; the executable expression, interval, master-matching, and proof-checking software
+     remains part of the trusted base.
+
+  4. Reusable artifacts. Portable checker code, frozen inputs and outcomes, complete proof bundles,
+     exact failure extracts, and original-model witness audits support reproduction. A descriptive
+     catalogue collects checked bounds for 222 distinct loaded models across the recorded protocols;
+     it is a reusable collection, not a uniform-run success rate.
+
+The method’s significance is that a nonlinear bound is tied to its stated model by explicit checking
+obligations. The empirical contribution shows where those obligations change what can be justified,
+and the validation and artifacts make the reasoning inspectable. We establish neither a new general
+support-minimization principle nor a certificate-size or solver-performance advantage over prior
+work.
+    The implementation covers supported smooth convex expressions and exactly recognized
+quadratic and structured functions. General nonconvex MINLP, nonlinear equalities, and un-
+supported expression domains lie outside its contract. It certifies the exact interpretation of the
+loaded expression model, whose relation to the source modeling file is specified in Section 2. A
+lower bound becomes a certified optimality gap only when combined with an independently checked
+feasible upper-bound witness for that same model. We obtain matching witnesses for a self-contained
+quadratic example and clay0204m; proximity to a library reference value alone supplies no such
+witness.
+
+                                                  2
+1.2   Relationship to prior work
+Mixed-integer convex optimality certificates. Certificates for convex MINLP are established
+prior work. Baes et al. [1] derive finite optimality certificates and mixed-integer duality using
+subgradients and mixed-integer-free polyhedra. Under their respective assumptions, Theorems 1
+and 3 bound the number of certificate points by 2|J| , where |J| is the number of integer variables.
+This is a bound on the number of points, not on the bit length of their real-valued data. Basu et al.
+[2] relate finite convex optimality certificates to Helly numbers for more general feasible sets.
+    The closest computational comparison is Halbig et al. [13]. Their generalized certificates consist
+of suspension points (points used to anchor the certificate planes) and hyperplanes. They give
+construction and reduction algorithms, structural bounds on certificate size, and experiments on
+MINLPLib and MIPLIB. Their verification procedure removes integrality and solves a continuous
+convex problem to test each certificate plane (Algorithm 3); a linear mixed-integer optimization
+problem tests integer-freeness of the certificate polyhedron.
+    Our interface checks nonlinear cut inequalities by recomputing rigorous function and derivative
+enclosures at supplied support points, then replays saved rational inferences for the discrete bound.
+It gives an outer-approximation certificate with a different checking procedure from the geometric
+certificates above. The certified bound may come from an interrupted master solve and need not
+equal a known optimum. Its soundness implication assumes valid underestimators and a valid
+master-bound proof, without a Slater condition or an attainment premise. This is a conditional
+validity result, not a completeness theorem guaranteeing such evidence for every optimum.
+
+Outer approximation and numerical safeguards. Coey et al. [7] derive outer-approximation
+cuts from conic dual certificates and analyze scaling in the presence of MILP feasibility tolerances.
+Our interface checks affine underestimation for explicitly interpreted nonlinear expressions and
+exports an exact rational master proof. The approaches differ in their nonlinear representations and
+checking obligations.
+    Directed rounding and rational repair provide established safeguards for approximate numerical
+information. Neumaier and Shcherbina [23] develop safe bounds and cuts for linear and mixed-integer
+linear programming. Eifler and Gleixner [10] combine safe Gomory mixed-integer cuts with rational
+proof verification. Borst et al. [4] treat certified propagation and dual proof analysis.
+    Jansson [15] develops rigorous lower bounds for convex optimization, and Jansson [16] surveys
+verified convex and conic computations and their use in reliable global and combinatorial optimization.
+Messine and Trombettoni [20] minimize supporting affine functions over finite boxes to bound convex
+relaxations. Our finite-box correction applies this established calculation to the residual obtained
+after subtracting the proposed affine row. Elloumi et al. [11] describe QIBEX-R, which combines
+interval branch-and-bound for quadratic mixed-integer problems with curvature correction and
+rigorous relaxation bounds, drawing on this verified-bounding literature. These rigorous-bounding
+methods provide precedents for the nonlinear layer; our contribution joins that layer to explicit
+model/master binding and saved discrete-proof replay.
+
+MILP proofs and checker correctness. Cheung et al. [6] introduce the VIPR format, whose
+inference steps can be checked independently of the producing MILP solver. Exact MILP solving
+and certificate production are available in the SCIP software family [14]. Recent work also constructs
+VIPR proofs using a black-box ILP solver and rational reconstruction [25]. These methods supply
+discrete evidence; they do not establish the validity of nonlinear cuts supplied as input.
+    Proof-format semantics and correctness of a particular executable checker are separate issues.
+Wood et al. [27] prove a logical encoding of VIPR validity correct in Why3 and implement an
+
+
+                                                  3
+SMT-based checker. Their theorem verifies the logical transformation; it does not automatically
+verify the C++ translation program. They also identify trust-sensitive aspects of the existing checker.
+The CakeML project also contains a VIPR formalization, pure checker, and verified program with file
+and standard-input semantics theorems [5]. Our Python replay kernel is a separate, unmechanized
+implementation that checks complete proofs in a restricted subset of VIPR. Its acceptance contract
+includes binding to the input master and rejection of unsupported or malformed cases.
+
+Formal nonlinear optimization and verified reductions. Solovyev and Hales [24] verify
+nonlinear inequalities using Taylor interval approximations in HOL Light. Narkawicz and Muñoz
+[22] verify a generic global-optimization branching algorithm in PVS. Magron et al. [19] combine
+semialgebraic approximations and sums-of-squares witnesses with Coq to establish nonlinear lower
+bounds. These methods provide important precedents for proof-producing numerical computation,
+with a different representation of the nonlinear and discrete reasoning.
+    CvxLean verifies optimization reductions in Lean [3]. Its reduction proofs explain why a
+transformed problem represents the original one; the external numerical solve is a distinct obligation.
+This distinction also governs our formalization: Section 5 states the proved implications and the
+separate executable obligations needed to apply them to an artifact.
+    Section 2 fixes the model and certificate contract. Section 3 proves soundness, Sections 4 and 5
+distinguish executable checking from formal coverage, and Section 6 reports the experiments and
+audits. Section 7 draws the practical conclusions; Appendix A describes the accompanying materials
+and reproduction commands.
+
+
+2     Model semantics and the certification contract
+2.1   The mathematical problem
+Let J ⊆ {1, . . . , n} index the integer variables. We consider
+
+                                 p∗ = inf   f (x)
+                               subject to x ∈ B0 ,       xj ∈ Z (j ∈ J),
+                                                                                                   (2)
+                                            ℓ ≤ Ax ≤ u,
+                                            hi (x) ≤ 0    (i = 1, . . . , m),
+
+where A is rational, each finite component of ℓ, u is rational, and B0 = nj=1 [L0j , Uj0 ] has rational
+                                                                                Q
+
+finite endpoints and may have infinite endpoints. Bounds with an infinite endpoint have their usual
+half-line or whole-line meaning. Binary variables are integer variables restricted to [0, 1], and a
+fixed variable has equal lower and upper bounds. For this box-based formulation, f, h1 , . . . , hm are
+defined, finite, and convex on B0 . This sufficient domain contract is deliberately stronger than
+requiring definedness only at feasible points. Functions may include rational powers, exponentials,
+and logarithms; the coefficients in their expression representations are rational, but their values
+need not be rational. Let F denote the feasible set of (2). An upper nonlinear row g(x) ≤ ui is
+normalized as hi = g − ui ; a lower row g(x) ≥ ℓi is normalized as hi = ℓi − g. Convexity is required
+after normalization. Affine equalities are allowed through equal row bounds. General nonlinear
+equalities and two-sided nonlinear rows are rejected by the present implementation.
+     We use an infimum because attainment is not needed for a lower-bound certificate. The basic
+assertion is β ≤ f (x) for all x ∈ F . This assertion remains meaningful when F is empty; under the
+extended-real convention inf ∅ = +∞, it implies β ≤ p∗ . It is not a certificate that F is nonempty.
+
+
+                                                    4
+Maximization of a concave objective fmax is treated by minimizing −fmax ; a lower bound β for that
+minimization gives the upper bound −β in the original sense.
+   An epigraph variable t handles a nonlinear objective. The lifted feasible set is
+                                  Fb = {(x, t) : x ∈ F, f (x) − t ≤ 0},                                (3)
+and the lifted objective is t. In particular, (x, f (x)) ∈ Fb for every x ∈ F . No artificial finite bound
+on t is required. For affine objectives, the master retains the exact affine objective, including its
+constant.
+
+2.2   Expressions and model identity
+A certificate refers to a particular mathematical expression model. A rational coefficient p/q,
+with integers p, q and q > 0, denotes its exact real value. In the implementation, every finite
+floating-point leaf of the loaded Pyomo tree denotes its exact stored binary value as a rational, and
+every integer leaf denotes that integer. All subsequent symbolic additions and multiplications use
+exact arithmetic. This rule also applies to bounds, fixed values, row shifts, exponents, and objective
+constants. Addition, multiplication, and powers are interpreted compositionally; logarithms and
+noninteger powers require their stated domains. Algebraic normalization is admissible only when it
+preserves this interpretation on the certified domain. In particular, cancellation of a denominator
+must not remove a domain restriction.
+    There are three different objects in a software pipeline: the source modeling file, the model built
+by its modeling environment, and the exact expression model checked by the certificate system. A
+source decimal such as 0.1 can become a binary floating-point value during construction. Treating
+that resulting value as an exact rational is a precise convention, but it does not recover the decimal
+rational 1/10. Similarly, floating-point aggregation performed before extraction cannot be undone
+by subsequently storing the aggregate as a rational. If the modeling environment rewrites x/3 using
+a binary approximation to 1/3, that resulting coefficient defines the checked input; the original
+rational division is not recovered. The Python model loader executes the input file and is trusted
+input construction, not a sandbox for untrusted programs.
+    The distinction affects more than tiny changes in the optimum. For example, if the binary values
+of 0.1, 0.2, and 0.30000000000000004 are treated as exact coefficients, then
+                    (0.1)x2 + (0.2)x2 − (0.30000000000000004)x2 = −2−55 x2 .                           (4)
+Floating-point coefficient aggregation can instead produce zero. The first expression is concave and
+the second affine. A convexity check of one expression cannot justify underestimator evaluation of
+the other.
+    The required invariant is therefore that curvature analysis, domain checks, differentiation or
+subgradient justification, interval evaluation, and master construction all refer to the same exact
+expression model. A reproducible artifact must identify that model and document its relation to
+the source file. A hash identifies bytes; it does not prove semantic equivalence. When extraction
+itself is not formally verified, the extraction code and its interpretation rules remain part of the
+trusted software base. Agreement with a solver using another input format must be described as an
+empirical comparison unless equivalence of the interpreted models has been established.
+
+2.3   Boxes, support points, and domains
+A checker may derive a tighter rational box B ⊆ B0 from the affine rows and integer restrictions,
+provided it establishes F ⊆ B. This propagation need not reach a fixed point. Every accepted
+tightening must preserve all feasible points; incomplete propagation affects strength, not validity.
+
+                                                    5
+    The implementation first validates original expression domains on B0 , before algebraic cancella-
+tions, and does not infer missing domains from nonlinear constraints. For example, x/x cannot be
+replaced by 1 on a box containing zero. This can reject an otherwise valid constrained problem.
+Subsequent linear bound propagation may strengthen a cut by reducing B without changing the
+input-domain convention.
+    A cut for a nonlinear row hi is an affine function a⊤ x + b satisfying
+
+                                      a⊤ x + b ≤ hi (x)      (x ∈ B).                                    (5)
+
+Here a ∈ Qn and b ∈ Q. Condition (5) is sufficient for a⊤ x + b ≤ 0 to be valid for the row hi (x) ≤ 0
+on B. It is stronger than necessary for validity on that feasible subset. In particular, cut validity is
+not equivalent to global underestimation on the box.
+   A point z ∈ B used to justify an underestimator need not satisfy the nonlinear rows or integrality
+constraints. What is required is a valid support inequality
+
+                                 hi (x) ≥ hi (z) + s⊤ (x − z)     (x ∈ B)                                (6)
+
+for a vector s, and justified enclosures of the quantities used in the rational correction. Differentiability
+of a convex function on an open convex neighborhood of B is one sufficient condition, with s = ∇hi (z).
+More general support conditions can apply on boundary domains, but evaluating an undefined
+                                                                                    √
+derivative at a boundary is not justified by convexity alone. For example, − x is convex and finite
+on [0, 1] but has no finite supporting slope at zero. The implementation must reject a proposed cut
+when its evaluation or support conditions cannot be established. The mathematical formulation
+permits subgradients; that permission is not a claim that the implementation supports arbitrary
+nonsmooth functions.
+
+2.4    What a complete check establishes
+A rational master M retains justified bounds, affine rows, integrality, and valid nonlinear-row cuts,
+together with either the original affine objective or epigraph cuts. Its obligation is to contain the
+appropriate image of every feasible point of (2), with the same objective value. A proof of the
+master’s bound then transfers to (1). The master objective includes the affine constant exactly
+once. Variable correspondence, row coefficients and directions, bounds, integrality, and the objective
+sense must match the proof input. A proof for a presolved model requires a separately justified
+transformation; matching only its objective value is insufficient. No assumption of accurate nonlinear
+subproblem solutions is part of this implication.
+    The following distinctions govern the use of the term “verified” throughout the paper.
+
+   1. Nonlinear-lemma checking establishes curvature, domains, bound propagation, and the validity
+      of the rational cuts. It does not establish a master bound.
+
+   2. Complete certificate checking additionally checks master identity and a proof of the reported
+      master bound under an explicitly stated proof-checker contract.
+
+   3. Proof-assistant verification establishes the specific theorems or executable checks processed by
+      the proof assistant. Its coverage must be stated separately from that of the ordinary software
+      checker.
+
+Even complete certificate checking has a trusted computing base: the arithmetic and expression
+implementation, parser, proof checker, and their execution environment unless individually verified.
+
+
+                                                     6
+Repeating the producer’s numerical search is unnecessary, but sharing code for mathematical rules
+means the implementation is not independently developed in every component. The accurate
+description is a separate replay from the numerical search, with shared trusted components identified
+explicitly.
+   A complete lower-bound check returns a finite bound only after all its obligations pass. Partial
+nonlinear/master checking has a distinct result and yields no certified bound. Rejection can reflect
+unsupported syntax, a failed sufficient condition, or a mathematically invalid proof step; those
+outcomes have different diagnostic meanings and none is silently treated as acceptance.
+   Finally, a feasible MILP-master solution is generally not a feasible nonlinear solution. A primal
+witness must independently satisfy all original domains, bounds, integrality conditions, affine rows,
+and nonlinear rows, and provide an outward objective enclosure. For minimization, such a witness
+with upper bound U , combined with a checked lower bound β, proves 0 ≤ U − p∗ ≤ U − β when
+the witness exists. Equality U = β proves attainment and exact optimality. Comparison with a
+rounded reference objective supplies none of these feasibility premises.
+
+
+3     Soundness of the certificate interface
+This section proves the mathematical implications used by the checker. The results apply to accepted
+evidence satisfying their hypotheses; they do not assert that every convex MINLP has evidence
+accepted by the implementation. We separate the nonlinear support calculation, the discrete proof,
+and their composition so that a defect in one interface cannot be hidden by a successful check of
+another.
+
+3.1   Rational propagation preserves feasible points
+Start with the declared box, intersect binary coordinates with [0, 1], and substitute exact fixed
+values. For a row j cj xj ≤ u, let Rk− be a lower bound on j̸=k cj xj over the current box. If
+                     P                                       P
+
+ck ̸= 0 and Rk− is finite, the implied bound is
+
+                   xk ≤ (u − Rk− )/ck   (ck > 0),       xk ≥ (u − Rk− )/ck   (ck < 0).                (7)
+
+For a lower row j cj xj ≥ ℓ, use an upper bound Rk+ for the other terms and divide ℓ − Rk+ by ck ,
+                 P
+
+reversing the corresponding directions. The endpoints of each term are obtained by its coefficient
+sign. A missing endpoint gives no finite tightening in that direction. All finite operations are
+rational. An upper bound on an integer coordinate may be rounded down; a lower bound may be
+rounded up.
+Lemma 3.1 (Feasible-point preservation). Any finite sequence of these operations produces a box
+B containing every original mixed-integer feasible point. If a coordinate interval becomes empty, the
+original feasible set is empty.
+Proof. Initially every feasible point satisfies the declared, fixed, and binary bounds. Suppose it lies
+in the box before an update. Its other terms are at least Rk− , so the upper row implies ck xk ≤ u − Rk− .
+Division gives (7). The lower-row argument is identical with an upper bound on the other terms.
+Integer rounding preserves each feasible integral coordinate. Intersecting with an implied bound
+therefore preserves the point. Induction proves the inclusion; an empty coordinate interval cannot
+contain such a point.
+
+    The implementation makes at most 20 sweeps. This is a strength limit, not a soundness
+assumption. Bounds from integer rounding need not contain the continuous relaxation: the inclusion
+
+                                                    7
+needed here is F ⊆ B. Every cut is nevertheless justified on the whole resulting box. A constant
+affine row is either a tautology or a contradiction. The finite-bound interface omits the former and
+rejects the latter; it does not issue a nonlinear infeasibility certificate merely because propagation
+detects a contradiction.
+
+3.2   Safe rational affine underestimators
+The finite-box calculation below is support minimization applied to an affine residual, an established
+rigorous-bounding principle [15, 20]. We state it with explicit rational-enclosure and unbounded-
+coordinate conditions because these are the replay interface. Write a normalized row, including an
+objective epigraph row if necessary, as
+
+                                         r(x) = g(x) + q ⊤ x + c.                                   (8)
+
+Here q, c are rational and g is convex on the certified box. Let z ∈ B and suppose a finite vector p
+satisfies
+                                 g(x) ≥ g(z) + p⊤ (x − z) (x ∈ B).                               (9)
+A justified subgradient gives this inequality. The implementation uses finite symbolic derivatives in
+supported differentiable cases; it has no general subgradient oracle. Rationality is required of the
+supplied point z and cut slope a, but not of the true values g(z) or p.
+   Set ϕ(z) = r(z) − a⊤ z and d = p + q − a. For each coordinate define
+
+                                        Wj (dj ) = sup dj (zj − y).                                (10)
+                                                     y∈Bj
+
+Because zj ∈ Bj , Wj ≥ 0. The exact formulas, including the conditions for finiteness, are in
+Table 1. A sign failure in a half-line, or a nonzero residual slope on a free coordinate, makes this
+particular support bound infinite. This need not mean that the nonlinear function has no finite
+affine underestimator.
+
+Table 1: Exact coordinate correction, with zj ∈ Bj . Infinite endpoints are not used in arithmetic.
+                Bj           Condition for finite Wj           Wj (dj )
+                [Lj , Uj ]   Lj , Uj finite                    max{dj (zj − Lj ), dj (zj − Uj )}
+                [Lj , +∞)    dj ≥ 0                            dj (zj − Lj )
+                (−∞, Uj ]    dj ≤ 0                            dj (zj − Uj )
+                R            dj = 0                            0
+
+
+Theorem 3.2 (Rational cut safety). Let B be nonempty, z ∈ B, and suppose (9) holds. If every
+Wj is finite and b ∈ Q satisfies              X
+                                   b ≤ ϕ(z) −   Wj (dj ),                               (11)
+                                                           j
+
+then a⊤ x + b ≤ r(x) for every x ∈ B.         In particular, a⊤ x + b ≤ 0 is valid for every point in B
+satisfying r(x) ≤ 0.
+
+Proof. Adding the affine terms to (9) gives
+
+                     r(x) − a⊤ x ≥ ϕ(z) +
+                                              X                            X
+                                                  dj (xj − zj ) ≥ ϕ(z) −         Wj (dj ) ≥ b.
+                                              j                              j
+
+
+                                                       8
+The middle inequality is the definition of each supremum. On a finite interval its value is the larger
+endpoint value; on a half-line it is finite exactly for the listed sign; on R only zero slope is bounded
+above. This also proves Table 1.
+
+Corollary 3.3 (Finite rational enclosure test). Suppose v ∈ Q satisfies v ≤ ϕ(z) and finite rational
+intervals [d−    +
+            j , dj ] enclose dj . The conditions and quantities in Table 2 imply Wj (dj ) ≤ Wj . Therefore
+                                                                                            c
+
+                                                        X
+                                             b≤v−           W
+                                                            cj                                       (12)
+                                                        j
+
+certifies the cut by Theorem 3.2.
+
+Proof. On a finite interval, zj − Lj ≥ 0 and zj − Uj ≤ 0. The respective products increase with dj
+and decrease with dj , giving the two endpoint bounds. The same signs give the half-line bounds,
+and the sign tests establish finiteness. On a free coordinate the enclosing interval must be exactly
+[0, 0]. Finally v ≤ ϕ(z) and W
+                             cj ≥ Wj imply (11).
+
+
+
+Table 2: Rational sufficient tests for interval gradient data. All intervals must be nonempty and
+finite.
+               Bj           Acceptance condition W   cj
+
+                 [Lj , Uj ]   d−    +
+                               j ≤ dj                   max{d+                 −
+                                                                j (zj − Lj ), dj (zj − Uj )}
+                 [Lj , +∞)    d−
+                               j ≥0                     d+j (zj − Lj )
+                 (−∞, Uj ]    d+
+                               j ≤0                     d−j (zj − Uj )
+                 R            d−    +
+                               j = dj = 0               0
+
+    For a fixed coordinate, Lj = Uj = zj , so the correction is zero. Exact elimination of a fixed
+variable avoids differentiating it; without elimination the stated support data must still be justified.
+Every variable in the row participates, including variables occurring only in q ⊤ x. An absent
+coefficient in the sparse cut means aj = 0, not an absent residual term.
+    Direct outward interval evaluation of the right-hand side of (11) also gives a valid sufficient test.
+The implementation uses this variant, with rational input conversion and exact extraction of the
+final interval’s lower endpoint. Dependency loss can weaken the cut but cannot invalidate an actual
+enclosure. On an upper-unbounded coordinate the producer can choose aj below a rigorous lower
+bound for pj + qj ; on a lower-unbounded coordinate it can choose it above a rigorous upper bound.
+Free coordinates require an exact residual zero. The epigraph coordinate has coefficient −1 and zero
+nonlinear derivative, so taking its slope as −1 meets that condition without bounding the epigraph
+variable.
+
+Example 3.4 (Why the intercept must change when the slope is rounded). Let r(x) = x2 − 1/9 on
+[0, 1] and z = 1/3. Its tangent is (2/3)x − 2/9. Replacing the slope by a = 67/100 while retaining
+intercept −2/9 makes the cut left-hand side equal to 1/900 at the feasible point z. Rounding has
+excluded an original feasible point. Here d = 2/3 − 67/100 = −1/300, ϕ(z) = −67/300, and
+
+                                 W = max{−1/900, 1/450} = 1/450.
+
+The safe intercept b = −203/900 follows from (11). Indeed,
+
+                 r(x) − (67/100)x − 203/900 = (x − 67/200)2 + 799/360000 > 0.
+                                                
+
+
+                                                    9
+The largest intercept for this fixed slope is −1/9 − (67/100)2 /4, so the support correction is sufficient
+without being best possible. If the box were instead [0, +∞), the slope 67/100 would fail the
+residual-sign test. Choosing a = 3/5 gives d = 1/15, W = 1/45, and the valid half-line intercept
+b = −2/9. Thus bounded and unbounded coordinates require different rounding decisions. Neither
+construction requires z to be an optimizer or an integer point.
+    Global underestimation is stronger than the implication needed for a feasible-set cut. For
+example, on [−1, 1] the row x ≤ 0 implies 2x ≤ 0, although 2x ≤ x fails for positive x. This interface
+deliberately uses the stronger condition because its evidence is simple to replay.
+
+3.3    What the discrete proof must establish
+Let M denote the rational mixed-integer linear master, and let c⊤    M y be its linear objective. An
+objective constant is represented, if needed, by a separate variable fixed to one. We give the
+argument for minimization. A row is an equality or a weak linear inequality with rational coefficients.
+A row dominates another when it logically implies it by one of the checker’s admitted tests: the
+same left-hand coefficients with a stronger right-hand side and compatible direction, or a constant
+contradiction. Equalities can dominate either corresponding weak inequality.
+    A derived row C carries a finite set A(C) of assumption-row indices. Suppose every supplied
+solution is exactly master feasible, and let bM be the least objective value of those solutions when
+any are supplied. Define
+                            (
+                                {y ∈ M : c⊤
+                                          M y ≤ bM }, if a solution is supplied,
+                       S=                                                                            (13)
+                                M,                    otherwise.
+A solution cutoff is valid on S, not necessarily throughout M . The following rules implement this
+distinction, following the ordinary VIPR solution and assumption semantics [6, 27].
+Proposition 3.5 (Inference invariant). Suppose every inference reference points to a strictly earlier
+row. For every row derived by the rules below, every y ∈ S satisfying all assumptions in A(C)
+satisfies C.
+   1. Original master rows have no assumptions. An assumption row has its own index as its
+      assumption set.
+   2. A solution row must be dominated by c⊤ M y ≤ bM and requires a supplied feasible solution. Its
+      assumption set is empty relative to S.
+   3. A linear combination uses rational multipliers whose nonzero inequality terms all have the
+      same direction after multiplication; equality terms are unrestricted. Its sum must dominate
+      the claimed row. Its assumptions are the union from all nonzero terms.
+   4. A rounding step first forms such a combination. Every nonzero left-hand coefficient must be
+      integral and multiply an integer variable. An upper right-hand side is rounded down, or a
+      lower right-hand side up. The rounded row must dominate the claim. Equality rounding is not
+      admitted.
+   5. An unsplit step references two actual assumption rows D1 , D2 of the form a⊤ y ≤ k and
+      a⊤ y ≥ k + 1, in either order, where k and the linear form are integral on every master-feasible
+      point. It also references branch conclusions C1 , C2 that each dominate C. Its assumption set
+      is                                                                 
+                                 A(C) = A(C1 ) \ {D1 } ∪ A(C2 ) \ {D2 } .
+
+                                                   10
+      Here the notation {Di } means the index of that assumption row.
+
+Proof. Proceed in derivation order. Original rows and assumptions satisfy the invariant immediately.
+Solution rows hold by (13). For a combination, a point satisfying the union of dependencies satisfies
+every nonzero source row. Multiplication with the checked signs and addition give the summed
+relation, hence its dominated claim. Zero multipliers contribute neither an inequality nor an
+assumption. For rounding, the left-hand side is an integer at the point, so floor or ceiling of the
+right-hand side preserves validity.
+    For an unsplit step, take y ∈ S satisfying A(C). The integral disjunction is exhaustive, so
+y satisfies at least one Di . Together with A(Ci ) \ {Di }, this gives every dependency of Ci . The
+induction hypothesis proves Ci , which implies C. Dependencies involving the other branch or any
+unrelated assumption remain in the displayed union; discharging one branch cannot erase them
+from the other branch’s proof.
+
+Theorem 3.6 (Unconditional master bound). Suppose all solutions and every derivation pass
+the preceding rules, and some assumption-free derived row dominates c⊤M y ≥ β for finite β. Then
+c⊤
+ M y ≥  β for every y ∈ M . No attainment  assumption is required. With no supplied solutions, an
+assumption-free derived contradiction instead proves M = ∅.
+
+Proof. Proposition 3.5 proves the bound on S. With no supplied solutions, S = M . Otherwise a
+supplied solution attaining the finite minimum bM among the finite list belongs to S, so bM ≥ β.
+Every point of M \ S has objective greater than bM , hence at least β. The contradiction statement
+follows from the same invariant with S = M .
+
+    Maximization uses the greatest checked solution value, a cutoff c⊤  M y ≥ bM , and a final upper
+inequality; the same proof reverses the objective order. An infeasibility claim requires an empty
+solution section. In particular, a cutoff cannot manufacture infeasibility by excluding feasible
+solutions. The stronger integer-objective cutoff bM − 1 is outside the admitted rules. A valid earlier
+bound can suffice even when later valid rows are weaker or have unused assumptions; every later
+row and the end of the file must still be checked. The argument establishes the semantic statement
+needed by the nonlinear layer, rather than merely matching a numerical endpoint in a proof header.
+
+3.4   Transfer and primal completion
+Let s = 1 for an original minimization and s = −1 for an original maximization, and set h = sforig .
+Use the exact affine objective if h is affine. Otherwise append a free real coordinate t, minimize t,
+and treat h(x) − t ≤ 0 as another convex row. The master includes original affine rows, justified
+bounds, the original integrality conditions, and accepted cuts. Its extra constant variable, if present,
+is fixed to one. It has no other constraints without a separate validity justification.
+
+Theorem 3.7 (Nonlinear bound transfer). Suppose the box contains F , every master cut satisfies
+Theorem 3.2 on its applicable box, the proof input is the stated master under a checked variable
+bijection, and Theorem 3.6 establishes its bound β. Then
+
+                                       sforig (x) ≥ β   (x ∈ F ).
+
+Thus β is a lower bound for original minimization, and −β an upper bound for original maximization.
+A verified infeasible master would imply F = ∅.
+
+
+
+
+                                                  11
+                                                       Complete replay
+        Numerical search         Saved bundle                                   Bound for the
+                                                        Exact model
+           OA points              Model and                                         original
+                                                          and cuts
+           and slopes             cut lemmas                                    loaded model
+                                                       Master identity
+          Exact MILP            Rational master                                 sforig (x) ≥ β
+                                                         Every proof
+         proof producer         Completed proof                                for every x ∈ F
+                                                          inference
+
+Figure 1: The certificate interface. Complete replay requires every checking obligation to pass; the
+last implication is objective-preserving bound transfer. Search is outside the trusted base once
+its output passes. Lean checks selected mathematical implications separately, with no verified
+executable connection to this pipeline.
+
+
+Proof. For x ∈ F , define E(x) by preserving every original variable, setting t = h(x) if needed, and
+setting the constant variable to one if present. Original affine rows, integrality, and propagated
+bounds hold by construction and Lemma 3.1. Every nonlinear row is nonpositive at x, and every
+epigraph row is zero at E(x); safe underestimation therefore proves all master cuts there. Thus
+E(x) ∈ M . Its master objective equals h(x), including the affine constant exactly once. The master
+bound applied to E(x) proves the result. If M were empty, no such extension of a feasible x could
+exist.
+
+   For minimization this proves β ≤ inf x∈F f (x), including the convention inf ∅ = +∞. The proof
+does not require a minimizer, a Slater point, or a finite optimum before the certificate is supplied. An
+unbounded relaxation or unsuccessful check provides no finite bound. The mathematical infeasibility
+implication is broader than the implemented public API, which reports finite bounds only.
+
+Corollary 3.8 (Primal completion). Suppose an independently checked x̄ ∈ F has a justified finite
+objective upper enclosure f (x̄) ≤ U for minimization. A checked lower bound β proves
+
+                           β ≤ p∗ ≤ f (x̄) ≤ U,     0 ≤ f (x̄) − p∗ ≤ U − β.
+
+If U = β, then x̄ attains the exact optimum. The corresponding assertion for maximization follows
+by sign normalization.
+
+Proof. Feasibility gives p∗ ≤ f (x̄) and Theorem 3.7 gives the other lower bound. The two inequalities
+give the gap and, in the equality case, attainment.
+
+    The primal check must include variable bounds and integrality as well as rows and objective
+evaluation. A master solution only supplies the premise used in (13). A recorded nonlinear reference
+value supplies neither a feasible point nor a rigorous objective enclosure.
+
+
+4    Implementation and its checking boundary
+The implementation separates a numerical producer from replay. The producer uses nonlinear and
+MILP solvers to seek useful evidence. Replay reconstructs the exact model, checks the cuts, matches
+the rational master, and checks its discrete derivations. Reusing the producer’s search history is
+unnecessary. Several mathematical utilities are shared, so replay is independent of the numerical
+search but is not a separately developed implementation of every mathematical rule.
+
+
+
+
+                                                  12
+4.1   Artifact and execution contract
+A certificate bundle consists of the supplied model, a nonlinear-lemma file, a rational LP master, and
+a completed VIPR proof. Each nonlinear lemma names its normalized row and supplies a rational
+point z, a sparse rational slope vector a, and an intercept b. The checker reconstructs the box and
+expressions from the model; it does not trust a supplied box, derivative value, curvature label, or re-
+ported solver bound. New bundles record the semantic identifier pyomo-expression-rationals-v1
+and source hash. For compatibility with the saved historical files these fields may be absent; a
+present identifier must match, and a present source hash is checked. In either case the explicit model
+passed to replay defines the theorem being checked. The frozen campaign manifest additionally
+identifies its exact bytes.
+    Complete checking performs the following operations in order.
+   1. Load and validate the model, normalize the objective and nonlinear rows, check domains and
+      curvature, extract exact affine rows, and propagate rational bounds.
+   2. Reconstruct each lemma’s row and symbolic derivatives, verify its point and variable names,
+      and recompute a rigorous intercept bound. Require the supplied b to be no larger than that
+      bound.
+   3. Regenerate the LP master and require byte equality with the saved LP file. Compare the
+      VIPR problem against the reconstructed rational master semantically, as specified below.
+   4. Check every supplied master solution and every discrete proof step. Require a finite minimiza-
+      tion lower bound for the normalized master. If an external checker was requested, require
+      matching successful corroboration as well.
+Only then does the public routine return ok=True and a bound in the original objective sense.
+Partial mode returns status="partial", potentially with partial_ok=True, but ok=False and
+no certified bound. A missing proof, exception, unsupported input, or failed check cannot expose a
+certified numerical result. The lower-level VIPR kernel supports infeasibility and either objective
+sense; the MINLP interface deliberately supports finite normalized lower-bound reports. Theorems
+about infeasibility in Section 3 do not enlarge this API.
+    The model loader executes a Python/Pyomo file and applies a documented dedenting repair to
+top-level model assignments in converted files. It therefore belongs to trusted input construction.
+Replay requires one active objective and refuses active disjunctive, logical, or special ordered set
+(SOS) constraints. Supported source variable and affine-row names follow the identifier pattern of
+a letter or underscore followed by letters, digits, or underscores; reserved auxiliary names cannot
+alias original variables. The exact extractor replaces fixed variables by their exact values and
+performs polynomial coefficient accumulation with rational arithmetic. Nonpolynomial subtrees
+remain available for original-domain checks, even when multiplied by zero. Differentiation and
+interval evaluation use the same rational-leaf interpretation, rather than a separate floating-point
+coefficient aggregation.
+
+4.2   Sufficient curvature and domain rules
+Curvature checking combines composition rules in the spirit of disciplined convex programming [12]
+with a small number of algebraic recognizers. Each expression carries a curvature classification and,
+where justified, rational lower and upper range bounds. These are separate facts: a product may be
+nonnegative without being convex or concave. Unknown curvature or a missing range endpoint is
+not replaced by a guessed value.
+
+                                                  13
+   For completeness, the composition principle is immediate from Jensen’s inequality. If v is convex
+and u is convex and nondecreasing on the range of v, apply monotonicity to v(λx + (1 − λ)y) ≤
+λv(x)+(1−λ)v(y) and then convexity of u. If u is convex and nonincreasing, use a concave v instead.
+Reversing both convexity inequalities gives the corresponding concave rules. The implementation
+applies these principles to sums, rational scalings, affine absolute values, and the functions in Table 3.
+Negative scaling interchanges convex and concave classifications.
+
+Table 3: Principal scalar composition tests. “Positive” means a strictly positive certified lower
+bound; all original expression domains must also pass.
+   Expression             Sufficient condition                                         Curvature
+   exp(v)                 v affine or convex                                           Convex
+   log(v)
+   √                      v positive, affine or concave                                Concave
+      v                   v nonnegative, affine or concave                             Concave
+   vp , p ≥ 1             v nonnegative, affine or convex                              Convex
+   vp , 0 < p < 1         v nonnegative, affine or concave                             Concave
+   vp , p < 0             v positive, affine or concave                                Convex
+   v 2k , k ∈ Z>0         v affine, or nonnegative convex, or nonpositive concave      Convex
+   k0 /v, k0 > 0          v positive, affine or concave                                Convex
+   k0v , k0 > 0           v affine; also v convex if k0 > 1, or concave if k0 < 1      Convex
+
+    The power and reciprocal tests follow from first and second derivatives on the stated intervals;
+for k0v use exp(v log k0 ). Power one preserves curvature, and power zero is the constant one after
+checking the original base domain. Nonnegative-domain rules extend to an included zero endpoint
+only when the expression is defined and continuous there. Convexity recognition at such an endpoint
+does not establish differentiability there.
+
+Quadratic forms and norms. For q(x) = x⊤ Qx + b⊤ x + c with rational symmetric Q, global
+convexity on Rn is equivalent to Q ⪰ 0 because ∇2 q = 2Q. This gives a sufficient test on any certified
+box, including a box with fixed coordinates. Off-diagonal monomial coefficients are split equally
+between Qij and Qji . The exact elimination test uses the following elementary characterization.
+                                                                                                   h          i
+Lemma 4.1 (Exact quadratic tests). For symmetric Q, a positive leading pivot α in Q =                  α v⊤
+                                                                                                       v C
+reduces positive semidefiniteness to C − vv ⊤ /α ⪰ 0. A negative diagonal entry rules it out. A zero
+diagonal entry requires its whole remaining row and column to be zero, in which case they can be
+removed. These rules give an exact rational test. Moreover, if
+                                                 "        #
+                                             Q   b/2
+                                         H= ⊤        ⪰ 0,
+                                            b /2 c
+       p
+then   q(x) is globally defined and convex.
+
+Proof. For α > 0, completing the square writes the quadratic form as α(t+v ⊤ z/α)2 +z ⊤ (C−vv ⊤ /α)z.
+A negative diagonal gives a negative value on a coordinate vector. If a diagonal is zero and some
+corresponding entry vj is nonzero, the restriction to those two coordinates has a term 2vj t with no
+t2 term and takes negative values. This proves the elimination rules by induction.    For the second
+                                                                 ⊤
+                                                                            p
+statement, factor the real positive semidefinite matrix as H = R R. Then q(x) = ∥R(x, 1)∥2 , the
+norm of an affine map, and the triangle inequality proves convexity. The factor need not be rational
+or computed by the checker; exact testing of H is sufficient.
+
+
+                                                     14
+    Testing −Q gives concavity. The homogenized test is used only as a sufficient recognition rule
+for square roots of quadratics; no claim is made to recognize every convex square-root expression.
+At a norm origin, finite subgradients may exist even though the symbolic-gradient route abstains.
+
+Monomials and geometric means. The algebraic recognizer collects rational exponents in
+m(x) = i xαi i on a positive orthant. It accepts convexity when all αi ≤ 0, or when exactly one
+         Q
+
+exponent is positive and i αi ≥ 1. It accepts concavity when all αi ≥ 0 and i αi ≤ 1. A rational
+                          P                                                   P
+
+coefficient scales or reverses the result. These established conditions are stated by Lundell and
+Westerlund [18, Theorems 2.1–2.2, p. 507], who attribute them to earlier work. We include a direct
+proof to make the recognition contract self-contained and avoid reliance on floating eigenvalue
+calculations.
+
+Lemma 4.2 (Monomial tests). The preceding sufficient curvature tests hold on the positive orthant.
+When all nonzero exponents are positive, the resulting convexity or concavity extends continuously
+to the nonnegative orthant wherever the product is so defined.
+
+Proof. With D = diag(1/xi ), differentiation gives
+
+                                ∇2 m(x) = m(x)D αα⊤ − diag α D.
+                                                                  
+
+
+If every αi ≤ 0, the middle matrix is the sum of a positive semidefinite outer product and
+a nonnegative diagonal matrix. For nonnegative exponents, weighted Cauchy–Schwarz yields
+( i αi ui )2 ≤ ( i αi ) i αi u2i , so the middle matrix is negative semidefinite if the exponent sum is
+ P              P      P
+
+at most one.
+    For the remaining convex case remove zero exponents and write α = (p, −b1 , . . . , −bk ) with
+bi > 0, B = i bi , and p ≥ 1 + B. The lower block of the middle matrix is diag(b) + bb⊤ ≻ 0,
+               P
+
+and b⊤ (diag(b) + bb⊤ )−1 b = B/(1 + B), as follows by multiplying that matrix by 1/(1 + B). Its
+Schur complement is p(p − 1) − p2 B/(1 + B) = p(p − 1 − B)/(1 + B) ≥ 0. If k = 0, this is simply
+p(p − 1) ≥ 0. The Hessian criteria prove the interior assertions. Taking limits of the convexity
+inequalities proves their continuous boundary extensions.
+
+    The syntax recognizer restricts fractional powers of products to justified nonnegative variable
+factors and a unit constant before distributing the exponents. Original
+                                                                   √       denominator and power
+domains are checked first. Thus it does not use identities such as x2 = x on a negative domain.
+For example, the product-range calculation can prove xy ≥ 0 for x, y ≥ 0, after which the exponent
+                                 √
+test recognizes the concavity of xy. It never labels the bilinear product itself concave for that
+reason.
+
+One-variable linear fractions. A further rule recognizes (αx+β)/(γx+δ) when the denominator
+is bounded strictly away from zero with a constant sign. For γ ̸= 0, write
+                              αx + β  α    k                          αδ
+                                     = +        ,          k=β−          .
+                              γx + δ  γ  γx + δ                       γ
+
+Its second derivative is 2kγ 2 /(γx + δ)3 . Convexity therefore holds when k and the denominator have
+the same sign, concavity when their signs differ, and the function is constant if k = 0. A constant
+denominator uses rational scaling instead. This is a one-variable test; it is not a general curvature
+test for ratios or perspectives. The former perspective shortcut was disabled because curvature
+of the inner expression on its own variable bounds need not justify curvature on the actual ratio
+domain.
+
+                                                  15
+Domain and range enforcement. Range propagation uses rational endpoint arithmetic for
+sums, scales, integer powers, and finite products. Finite products use all four endpoint products. On
+sign-certified half-lines the corresponding extreme products give the finite endpoint, and unsupported
+sign combinations return an unknown range. Exponential, logarithmic, and rational-power endpoint
+bounds use outward interval arithmetic at 128-bit precision, with exact rational extraction of their
+dyadic endpoints. Precision affects how often a strict sign can be proved, not the logical sign
+criterion.
+    The original tree is visited before simplification. Division and negative integer powers require
+the relevant range to exclude zero strictly; logarithms require positivity. Noninteger constant
+powers require a nonnegative base for positive exponents and a positive base for negative exponents.
+Variable powers require a positive base. A square root requires nonnegativity, possibly supplied by
+Lemma 4.1. Only the stated arithmetic nodes and supported unary functions are admitted. These
+checks take place on declared bounds, not on a domain inferred from nonlinear constraints. A model
+can therefore be mathematically convex and feasible yet be rejected by the sufficient rules.
+
+4.3   Interval cut replay and numerical proposals
+The nonlinear expression is translated to SymPy with exact rational leaves, and symbolic derivatives
+are built from that same expression. The interval evaluator implements addition, multiplication,
+powers, exponential, logarithm, and absolute value. A rational point is converted by interval division
+of its integer numerator and denominator, never through a binary64 approximation. Rational powers
+are evaluated with the applicable square-root or exponential/logarithm formula. If a formula or
+derivative is unsupported, undefined, or nonfinite at the point, the cut is refused. In particular,
+recognizing an absolute value or norm as convex does not provide a general nonsmooth derivative
+rule.
+     The precise bridge from differentiation to (9) is a derivative along feasible segments, not merely
+a list of finite coordinate differences. If, for each x ∈ B, the right derivative of θ 7→ g(z + θ(x − z))
+at zero is p⊤ (x − z), convexity gives
+
+                                           g(z + θ(x − z)) − g(z)
+                       g(x) − g(z) ≥ lim                          = p⊤ (x − z).
+                                       θ↓0           θ
+A differentiable extension near z is sufficient; valid relative-domain chain rules can also give this
+condition at a boundary. The symbolic-expression layer is trusted to provide derivatives with this
+                                                                                             √
+meaning. Finiteness of arbitrary one-sided coordinate derivatives alone would not suffice: − xy on
+the nonnegative quadrant has zero derivatives along the two axes at the origin, but the zero vector
+does not support it. The implemented symbolic quotient derivatives are singular there and the cut
+                                                √
+is rejected. Likewise, singular derivatives of − x and unsupported sign expressions at norm origins
+are refused. Removable singularities can be simplified only consistently with the original checked
+domain. These are explicit obligations of the expression and differentiation implementation, not
+consequences of interval finiteness or a mechanized verification of every accepted expression.
+    Cut checking uses a 200-bit interval context. All function and derivative endpoints must be
+finite. The right-hand side of (11) is enclosed by interval operations, including the maximum of
+its two endpoint products on a finite coordinate. The final endpoint’s sign, integer mantissa, and
+binary exponent are read directly and converted to a rational. This avoids rounding the endpoint
+through a different precision before comparing it to the supplied intercept. The arithmetic libraries
+and symbolic derivative implementation remain trusted components of this operation.
+    The numerical producer uses a separate loaded model. Its OA log supplies candidate row
+names, points, and slopes; exact reconstructed rows define the certificate mathematics. Points are
+
+                                                   16
+rationalized and clipped to the propagated box. Slopes are initially shortened to 12 significant
+decimal digits by default, with directed repairs on one-sided coordinates and exact slopes where
+available on free coordinates. The intercept is rounded downward to 30 significant decimal digits
+after rigorous evaluation. These digit counts control representation and practical replay robustness;
+they provide no universal separation margin between two independent interval evaluations. Complete
+replay still requires the exact inequality b ≤ the newly computed lower endpoint, with no tolerance.
+Poor points or broad enclosures can lead to fewer cuts or weaker bounds.
+
+4.4   Binding the discrete proof to the master
+The LP writer includes rational affine rows, accepted cut rows, explicit finite bounds, integrality
+declarations, and the normalized objective. Every free variable has explicit infinite bounds. Fixed
+variables retain equal bounds, and a nonzero affine objective constant is carried by a new variable
+objconst fixed to one. This prevents a silent loss of the constant during proof export. An epigraph
+coordinate is real and free. Integer bounds tightened by propagation are justified by Lemma 3.1.
+    The VIPR problem parser is shared with the proof kernel. Comparison requires the same
+variable set under a bijection, the same integer-variable set, minimization sense, and identical
+rational objective coefficients. A uniform single t_ prefix introduced by SCIP can be removed only
+if this yields that bijection; genuine original names with that prefix are preserved when already
+matched. Constraints and bounds are compared as multisets after dividing each nonzero row by
+the absolute value of its first coefficient in sorted variable order. This permits positive rational row
+scaling, retaining the relation direction. The current matcher is deliberately stricter than general
+linear equivalence: it does not recognize arbitrary equivalent row transformations or negative scaling
+even of equalities. Additional, missing, or altered rows are rejected. A certificate for a different
+presolved model cannot pass merely because it has the same reported optimum.
+    The saved LP must also equal the regenerated LP byte for byte. This adds an artifact consistency
+check; the semantic VIPR comparison supplies the mathematical link to the proof. Original zero-
+coefficient affine tautologies are omitted in both constructions, and contradictory constant rows are
+rejected earlier. A hash or LP byte comparison alone cannot replace proof-input matching.
+
+4.5   Proof grammar, arithmetic, and streaming
+The kernel accepts complete proofs in a restricted subset of VIPR versions 1.0 and 1.1. It requires
+the section order
+                         VER, VAR, INT, OBJ, CON, RTP, SOL, DER
+with the declared numbers of variables, indices, rows, solutions, and derivations. Input uses ASCII
+integer or fraction tokens with positive denominators; decimal and exponent notation are outside this
+parser’s contract. Variable names, integer indices, vector coefficient indices, and linear-combination
+references must satisfy the corresponding uniqueness and range checks, including entries whose
+value is zero. Omitted solution coordinates mean zero and are still checked against all original rows
+and integrality conditions. The finite primal endpoint of a range report requires a feasible solution
+attaining that endpoint or a better one.
+    Each noncomment derivation occupies one line and carries a complete asm, sol, lin, rnd, or
+uns reason implementing Proposition 3.5. Row labels are metadata; references identify rows by
+indices. The OBJ coefficient abbreviation denotes the exact parsed objective. Arithmetic uses
+rational numbers through python-flint. A combination with incompatible inequality directions or
+a stronger-than-justified right-hand side is rejected even if its discrepancy is numerically small.
+
+
+
+                                                  17
+Assumptions arise only from actual assumption rows and are tracked through every nonzero inference
+term.
+     The checker requires every inference reference to precede its row, including references with zero
+multipliers. A lifetime annotation is −1 or a nonnegative in-range index; references after a stated
+last use are errors. The optional single terminal global marker emitted by SCIP is accepted only if
+the independently computed assumption set is empty. It cannot remove assumptions or validate a
+coefficient. Repeated markers, incomplete reasons, unexpected extra tokens, missing derivations,
+and noncomment suffix material beyond the declared count are rejected.
+     An assumption-free row dominating the requested dual endpoint or contradiction is recorded
+as the proving derivation. It need not be the final row. Every declared later derivation must still
+pass, and the parser must consume the entire file. Consequently a valid proof prefix followed by
+invalid arithmetic cannot be accepted. A later valid but weaker bound is harmless. The lower-level
+kernel can also accept a range with no finite dual endpoint when its remaining obligations hold; the
+MINLP interface requires a finite lower endpoint before reporting a result.
+     Large proofs are processed in two passes. A first pass validates record shapes, references, and
+lifetime annotations and computes actual last uses with two arrays of eight-byte integers, about 16
+bytes per row. A second pass retains one such array and live sparse rows, freeing a row only after
+its computed final reference. Rows annotated −1 are therefore also freed when safe. The parser
+initially holds the original master rows for solution checking; this storage and the longest input line
+must be included in memory accounting. The method avoids storing the whole proof text, but has
+no constant-memory guarantee: many simultaneously live dense rows, long rational tokens, or a
+large original master can still consume substantial memory.
+
+4.6    Failures that motivated the checking boundary
+Two small counterexamples show why an external success message is insufficient. The inspected
+upstream viprchk checkout1 used an initially zero best objective for a solution inference even with
+an empty solution section. A matching artifact for min x subject to x ≥ 1 could thereby receive
+acceptance for a claimed lower bound of 106 , although x = 1 is feasible. The new kernel refuses a
+solution cutoff without an exactly checked witness. Wood et al. also discuss solution-inference and
+reference-management weaknesses in older checker behavior [27]; this work makes no priority claim
+for identifying that general risk.
+    The second reproduced defect rounded the continuous inequality x ≥ 1/2 to x ≥ 1. This
+implication is false, even when every printed coefficient is rational. The corrected rule checks both
+integer coefficients and integer variable declarations before applying a floor or ceiling. Likewise,
+complementary branch inequalities form an exhaustive disjunction only for an integral linear form.
+Merely seeing adjacent integer right-hand sides is insufficient.
+    Other targeted regressions cover exact floating-leaf aggregation, lost domains after cancellation,
+singular norm derivatives, omitted slopes on half-lines and free coordinates, objective constants and
+maximization signs, source/master mismatches, invalid solution witnesses, cross-branch assumption
+retention, duplicate entries, invalid lifetimes, forged global markers, and invalid suffixes after an
+already sufficient bound. These tests establish distinct observable contracts; passing them is not a
+formal proof of the parser or executable.
+    The distinction between rejection and refutation is material. An insufficient safe-cut enclosure
+can reject a globally valid cut. An unsupported curvature rule can reject a convex model. In contrast,
+an exact arithmetic audit can establish that a particular recorded inference is invalid. Even the latter
+   1
+     VIPR checkout 30f2951d1e90e47afa821bdd1b12b82246656c42; the audit records the source hash and regression
+inputs. The statement concerns those inspected bytes.
+
+
+                                                     18
+does not prove the final bound false if some different valid proof exists. The experimental section
+therefore retains these outcomes separately rather than relaxing the check to recover historical
+success labels.
+
+4.7   Generation, frozen replay, and trust
+The current producer uses numerical OA with Gurobi and IPOPT, followed by exact SCIP and
+VIPR completion tools. It first tries its default exact-SCIP configuration and can retry with selected
+separation, presolve, and propagation features disabled. Each attempt has its own search budget,
+and proof completion and checking add time. A solver time limit is consequently not a total pipeline
+wall-clock limit. Fraction canonicalization in newly generated completed proofs preserves their
+rational values; solution sections and inference meanings are not rewritten to obtain acceptance.
+Existing historical artifact directories are preserved.
+     Replay requires only the checker dependencies: Pyomo, NumPy, SymPy, mpmath, and python-
+flint, together with the included Python modules. Neither Gurobi, IPOPT, nor SCIP is required to
+check an already complete bundle. The optional external viprchk must return a zero status and
+one complete range message matching the exact internal result; it is additional corroboration. The
+generation harness requests this corroboration, while standalone replay need not.
+     The campaign wrapper hashes model, lemma, LP, and proof files before and after checking. It
+records source and environment identifiers, input records, optional external-checker identity, explicit
+missing/rejected/verified/error/timeout outcomes, and the original record index. Resume requires
+matching artifact fingerprints and the inputs, source/environment identifiers, external checker, and
+timeout pinned in the manifest; worker parallelism may change. A worker runs in its own process
+group so its timeout also stops descendant checkers. Completed output records are flushed; only an
+interrupted final JSON fragment may be recovered. These measures provide provenance and detect
+ordinary changes; they do not establish semantic equivalence or protect against an adversary that
+changes and restores a file during verification. Stable artifact contents and trusted model execution
+remain explicit execution assumptions. Summaries report whether all expected record indices are
+present exactly once and use exact rational objective-sense comparisons before converting values for
+display. An incomplete cohort can still be summarized, with its completeness flag false.
+     The trusted computing base comprises the loader and exact reconstruction, domain/range and
+curvature rules, symbolic differentiation, interval arithmetic and endpoint conversion, rational
+propagation, serialization and master comparison, proof parser and rational kernel, their libraries,
+and the runtime. The numerical search and proof producer need not be trusted when their outputs
+pass this contract. Shared trusted code can create common failures, so separate replay and adversarial
+tests reduce dependence on the numerical solver without eliminating implementation trust. Focused
+proof-assistant theorems in the following section address only their stated mathematical coverage;
+they do not automatically certify this entire software stack or every benchmark artifact.
+
+
+5     Focused proof-assistant verification
+The mathematical interface has a standalone formalization in Lean 4 [8]. It proves the coordinate
+correction inequalities, their finite-dimensional composition into a rational affine underestimator,
+objective-preserving bound transfer, and primal completion. The purpose is to check the algebraic
+and logical connections in the certificate contract. It does not remove the implementation trust
+described in Section 4.7, and no benchmark certificate is reported as checked by Lean.
+
+
+
+
+                                                  19
+5.1   Coordinate correction and finite sums
+The formal coordinate type has four constructors: a bounded interval with rational endpoints,
+a lower-bounded half-line, an upper-bounded half-line, and the real line. Membership interprets
+rational endpoints in R. Thus an infinite endpoint is a case of the definition and never a real
+number used in arithmetic. A fixed coordinate is the bounded constructor with equal endpoints.
+An inconsistent bounded interval cannot have the support point required by the theorem.
+    For rational zj , d−    +
+                       j , dj , the function correction returns exactly the rational quantity Wj in
+                                                                                              c
+Table 2. The predicate accepts requires an ordered enclosure and the corresponding sign or zero
+condition from that table. The theorem coordinate_correction_sound proves
+
+                   dj (zj − xj ) ≤ W
+                                   cj   if xj , zj ∈ Bj ,   d−         +
+                                                             j ≤ dj ≤ dj ,   accepts.                (14)
+
+Here the actual residual dj is real and need not be rational. The finite-interval proof splits on the
+sign of dj to select a worst endpoint, then uses the enclosure endpoint with the correct multiplication
+sign. The half-line proofs use the accepted sign to control every point of that unbounded domain.
+The free-coordinate proof derives dj = 0 from the zero enclosure. Separate theorems prove zero
+correction for a fixed coordinate and nonnegative correction when the support coordinate and actual
+residual satisfy the assumptions. These are universal inequalities, not tests at finitely many selected
+points. The formalization proves the sufficient inequalities used for acceptance; it does not formalize
+the supremum notation or the necessity of the finiteness conditions in Table 1.
+    The theorem safe_affine_of_shift_bounds first proves the finite-sum algebra over an arbitrary
+finite coordinate type, including an empty type. Its premises are the support inequality for g, the
+individual shift bounds, and the intercept inequality. It derives the affine underestimator by summing
+the shift inequalities and expanding the residual p + q − a. The theorem rational_enclosure_cut
+then instantiates those individual bounds using (14). Its certificate inputs a, q, z, c, b, v, d− , d+ are
+rational, its support vector and function values are real, and its conclusion is (5) for every point of
+the box. Rational sums and inequalities are cast exactly into the real-number argument. Neither
+theorem assumes the desired affine underestimator as a hypothesis.
+    There are two deliberate interfaces. First, a valid support inequality is a premise; deriving it
+from convexity, domains, differentiability, or a subgradient is outside these proofs. Second, the
+claimed enclosures must actually contain the real values. Lean verifies what follows from those
+inequalities, rather than the mpmath computation that supplies them. This separation permits a
+clear correspondence with Corollary 3.3 without claiming a formal verification of the executable
+nonlinear checker.
+
+5.2   Transfer, cutoffs, and primal witnesses
+The predicate LowerBoundOn means β ≤ f (x) for every x in a specified feasible set. The generic
+theorem objective_preserving_transfer takes an embedding into a master and equality of
+objective values and proves the transferred bound. These premises are precisely the interface
+obligations in Theorem 3.7; their establishment by the parser and master matcher is not mechanized.
+    For the epigraph case, the formalization also constructs the embedding. The defined mas-
+ter retains a base set containing F and a family of cuts valid whenever x ∈ F and h(x) ≤ t.
+The theorem epigraph_graph_feasible proves that (x, h(x)) satisfies those constraints, and
+epigraph_bound_transfer applies the master bound to that graph point. A separate lemma de-
+rives epigraph-cut validity from underestimation of h(x)−t. The base-set inclusion collects the affine,
+bound, and integrality obligations; it is an assumption rather than a verified propagation algorithm.
+
+
+
+                                                    20
+The signed-objective theorems establish the minimization and maximization interpretations. An
+empty master implies an empty original feasible set under the same embedding.
+    The theorem incumbent_cutoff_lifting formalizes the additional argument in Theorem 3.6:
+a checked feasible incumbent belongs to its own weak objective cutoff, so any lower bound valid
+inside that cutoff also holds outside it. This proves the lifting step without an optimum-attainment
+premise. It assumes the bound on the restricted set; it does not formalize the VIPR inference
+invariant or replay a derivation.
+    Finally, primal_infimum_bounds proves the bound chain and objective-gap inequalities of
+Corollary 3.8. A feasible witness makes the objective image nonempty, and the certified finite lower
+bound makes it bounded below; both hypotheses are supplied before using the real infimum. The
+separate theorem matching_primal_attains proves that a feasible witness with objective at most
+the certified lower bound has objective exactly that bound and is optimal. Thus the formal result
+does not mistake a master solution or a reference objective for a feasible nonlinear witness.
+
+5.3   Build and trust boundary
+The companion package pins Lean 4.33.1 and mathlib 4.33.1 [26], with exact transitive dependency
+revisions in its manifest. Its verification script checks that every proof module is imported, builds
+with warnings treated as failures, and audits every project-owned declaration, including private
+and generated auxiliary declarations. The transitive axiom audit permits only Lean’s standard
+propext, Classical.choice, and Quot.sound. It rejects unfinished proofs and additional axioms.
+A subsequent leanchecker pass replays compiled project declarations through the installed Lean
+kernel. This is a second checking pass with the same kernel, not a separately implemented proof
+assistant; imported mathlib declarations remain the dependency base.
+    The package’s coverage table maps each assertion above to its declaration and lists its premises.
+The executable parser, model extraction, curvature recognizer, propagation, symbolic differentiation,
+interval evaluation, serialization, master comparison, VIPR grammar and arithmetic implementation,
+and primal-witness evaluator are outside the formalized coverage. The numerical experiments likewise
+remain ordinary software checks. The contribution of this component is a machine-checked account
+of selected mathematical interfaces, with that boundary explicit; it is not a claim to originate verified
+nonlinear optimization or verified MILP checking.
+
+
+6     Computational evidence and independent solution audits
+The experiments answer three questions: which archived certificates survive the current checks, how
+often the repaired pipeline produces a checkable bound under one uniform protocol, and what a
+disagreement with a reported objective can actually establish. These are distinct questions. In
+particular, a rejected certificate does not establish that its proposed bound is false, and a numerical
+reference value is not an independently verified feasible objective.
+
+6.1   Population, provenance, and protocol
+The frozen repository catalogue contains 299 models selected for convexity and discrete variables
+from MINLPLib [21]. Seven selected files did not load and three did not pass the then-used curvature
+screen. The remaining 289 names form the complete denominator of both campaigns below. The
+supplement lists all 299 names and the ten exclusions, including their recorded reasons. The selection
+is a repository snapshot, not a claim about the current size or classification of MINLPLib. We
+distribute the loaded Python model files with MINLPLib’s CC-BY 4.0 attribution. GAMS is the
+
+
+                                                   21
+library’s primary representation; the certificates concern the exact loaded expression semantics of
+Section 2, not an unverified equivalence of every converted model.
+     The historical campaign used a 60-second numerical outer-approximation budget, heterogeneous
+exact-SCIP budgets of 180 or 90 seconds, and varying concurrency. Its archived producer labels
+are therefore neither current acceptance evidence nor results of a uniform timing experiment. We
+replayed all 289 records with six workers and a 1,200-second per-record limit, including both the
+internal exact proof kernel and the external viprchk corroboration. The replay manifest identifies
+the checker sources and inputs by SHA-256; the harness checks artifact hashes again after checking.
+     We also generated new artifacts for the same 289 names, including every historical failure, using
+a protocol frozen before the first run. Numerical outer approximation and each exact-SCIP attempt
+received a requested search budget of 30 seconds. The producer tried its default configuration and,
+after an unsuccessful complete check, at most one conservative fallback. We requested one solver
+and LP thread and ran six workers. A separate 360-second wall-clock limit killed the entire instance
+process group, retaining partial files and recording the timeout without retry. The 30-second settings
+are search budgets: loading, preprocessing, nonlinear subproblem overruns, proof completion, and
+checking are additional work covered by the outer limit. Tool events distinguish SCIP invocations,
+proof completion, external checking, and internal proof replay.
+     After generation, a separate complete replay used six workers and a 1,200-second per-record limit.
+Its acceptance criterion uses a separate execution of the same internal checker, which is implemented
+separately from the solver and external VIPR checker; the generator’s external-check results remain
+additional evidence. The replay chooses the canonical completed proof when present, otherwise
+the completed failed fallback, otherwise the completed failed default attempt. This rule was fixed
+before replay and uses no bound-quality selection. Consequently, a complete proof surviving a
+producer timeout can earn a separate replay verdict without being counted as completed production.
+All attempt outcomes remain in the data. We rehash the frozen sources, settings, model inputs,
+wrapper, and tool executables after generation.
+     The machine has an Intel Xeon w5-2565X processor (18 physical cores, 36 logical processors)
+and approximately 30 GiB of memory, running Linux under WSL2. Generation uses Gurobi 13.0.3,
+IPOPT 3.14.20, and SCIP 10.0.3 with SoPlex 8.0.3. Package versions, executable hashes, and the
+full hardware description are recorded with the protocol. The one-thread setting concerns OA, SCIP,
+and LP search; proof completion retains its tool defaults (its banner reports 36 available threads),
+so the entire pipeline is not claimed to be single-threaded. Times are observed costs on a shared
+machine, not isolated solver speed comparisons. In particular, sums over concurrent workers are not
+campaign elapsed times. Large archive compression takes place after the timed campaigns.
+
+6.2   Historical replay and uniform regeneration
+Of 269 historical records labeled accepted, 188 retain that verdict. The 81 revocations comprise
+67 domain or curvature failures, 13 cut-verification failures, and one discrete-proof failure. Eleven
+further discrete-proof failures came from historical records already labeled as crashed, giving 92
+current rejections in total. Nine records lack a completed proof. No record in the complete historical
+replay timed out or mutated during checking. These counts replace the historical acceptance claim;
+the archived old flags are retained solely to make the change auditable.
+    The accepted historical proofs contain 29,903,993 derivations and occupy 38,826,726,525 bytes.
+Their median size is 74,469,242 bytes and their largest size is 2,163,285,624 bytes. Median accepted
+checking time is 16.679 seconds, with a maximum of 463.845 seconds. The sum over accepted
+records is 7,987.954 seconds; the sum over all 289 records is 8,234.349 seconds. The campaign
+elapsed time is 1,465.381 seconds. These checking times include model and lemma validation, master
+
+
+                                                  22
+Table 4: Complete replay outcomes and exact reference comparisons. Both denominators are
+289; generation outcomes are reported separately in the text. Historical replay also used external
+corroboration. Reference rows count only verified bounds; d is the signed normalized difference from
+an unverified reference (Section 6.3).
+            Quantity                         Historical archive    Uniform-run artifacts
+            Verified                                       188                      203
+            Near reference: 0 ≤ d ≤ 10−4                    52                       46
+            Near reference: 0 ≤ d ≤ 10−2                    81                       80
+            Negative reference difference                   23                       25
+            Rejected                                        92                       19
+            Missing complete artifacts                       9                       67
+            Timed out during replay                          0                        0
+            Other replay errors                              0                        0
+
+
+Table 5: Observed in-generation calls in the uniform campaign. Sums include completed calls only;
+starts without ends are interrupted observations. SCIP times cover the process invocation, not just
+search. These rows are separate from full pipeline and later replay times.
+                     Phase                   Started   Ended      Seconds (sum)
+                     SCIP process               358       358         7,401.357
+                     Proof completion           358       358           371.307
+                     External proof check       477       477         1,290.663
+                     Internal proof replay      202       201         1,583.153
+
+
+reconstruction, and internal and external proof checking; the harness records hashing separately.
+Thus the aggregate is not a measurement of just the linear-proof kernel.
+    The uniform generation records 198 completed accepted productions, 67 producer errors, 8
+unsuccessful completed-check attempts, 4 outer timeouts, and 12 worker errors. Its elapsed time is
+2,840.697 seconds. Separate replay accepts 203 bounds, rejects 19 bundles, and finds 67 incomplete
+bundles. Of its accepted bounds, 4 come from outer-timed-out production, 1 from worker errors,
+and 0 from producer rejections; 0 use a retained failed-attempt completed proof. Accepted proofs
+occupy 14,233,742,052 bytes and contain 11,749,855 derivations. Their summed and median checking
+costs are 2,791.064 and 5.173 seconds, respectively; the maximum is 221.484 seconds. All-record
+checking costs sum to 2,953.982 seconds and separate replay elapsed time is 533.541 seconds. These
+observations characterize this fixed protocol, including its unsuccessful attempts; they do not
+estimate asymptotic coverage or establish superiority over another solver.
+    All 67 producer errors occur at the curvature/domain admission check. Thus the 67 missing
+replay bundles arise before master generation. The nineteen primary rejections comprise eighteen
+proof-rule or proof-grammar failures and one post-proof rational-reporting failure, addressed below.
+    Table 5 separates recorded tool phases during generation. Interrupted calls have no imputed
+completion time.
+
+
+
+
+                                                23
+6.3      Bound quality without assuming reference feasibility
+For a replayed bound B in the original objective sense, a recorded library objective r, and s = 1 for
+minimization or s = −1 for maximization, we compute
+
+                                                        s(r − B)
+                                           d(B, r) =               .
+                                                       max{1, |r|}
+
+The bound and the decimal reference string are converted to exact rationals before subtraction. We
+report the number satisfying 0 ≤ d ≤ 10−4 and 0 ≤ d ≤ 10−2 , and report d < 0 separately. This is a
+signed normalized difference from an unverified reference, not an optimality gap. Even d = 0 does
+not prove that a feasible nonlinear point exists at that value.
+    Among the 188 accepted historical bounds, 52 satisfy the first threshold and 81 satisfy the
+second. There are 23 negative differences; every magnitude is below 6 · 10−10 . Such small differences
+can arise from rounded reference strings. In particular, we do not convert their sign into a claim of
+an incorrect solver result. The supplement records every exact comparison, including the uniform
+campaign’s results in Table 4. For saved solver objectives rsolver , we include recorded GAMS model
+statuses 1 (Optimal), 2 (Locally Optimal), and 8 (Integer Solution),2 and flag pairs satisfying
+
+                                     s(B − rsolver ) > 10−6 max{1, |B|}.
+
+This one-sided criterion flags 18 historical bound/solver pairs. These are investigation candidates;
+the two returned-point audits below support stronger, explicitly limited conclusions.
+
+6.4      What rejected proof steps reveal
+The twelve historical failures that reach the discrete proof checker admit small exact arithmetic
+audits. In eleven, the claimed upper row has exactly the coefficients obtained by the supplied rational
+linear combination, but its right-hand side is smaller than that combination permits. The exact
+positive excess ranges from approximately 1.55 · 10−12 to 1.93 · 10−10 . An arbitrarily small excess
+still invalidates that inference over the reals. In the remaining instance, smallinvDAXr5b200-220,
+a positive multiplier uses an upper inequality in a combination requiring lower inequalities; the
+multiplied directions are incompatible. The portable supplement includes the twelve first-failure
+steps, their referenced rows, and an independent Fraction-arithmetic recombination script. Full
+completed proofs are in the bulk archive. These are invalid justifications, not proofs that their final
+proposed bounds are unattainable or false.
+     Three new completed proofs receive an external acceptance message but fail local conditions of
+the internal rules. Two linear combinations mix opposite inequality directions: in each, a strictly
+positive multiplier of an upper branch row appears among lower-row terms. The offending rows
+have nonzero coefficients and are not constant tautologies. In the third proof, an uns step cites the
+same integer coordinate u with branches u ≤ 64 and u ≥ 66. Integer activity 65 is uncovered. Other
+master rows might in principle exclude that activity, but the submitted standalone disjunction step
+does not establish such an exclusion. The supplement gives the exact antecedents and multipliers.
+These observations concern the individual supplied inferences and do not imply false final bounds.
+     Nonlinear rejection has a different interpretation. For example, the first historical risk2bpb
+cut exceeds the newly recomputed sufficient safe intercept by approximately 1.17 · 10−12 . This
+establishes failure of this certificate test, not global invalidity of the affine inequality. A separately
+recorded repaired generation for risk2bpb passes all checks and gives an original-sense bound of
+  2
+      GAMS 53 User’s Guide, Model Status table.
+
+
+                                                       24
+approximately −55.876139395. The library string −55.8761394 lies slightly beyond this bound;
+the difference is consistent with rounding at the reference’s displayed precision. Targeted repaired
+generations for batchdes, clay0204m, and risk2bpb are retained as regression evidence, separate
+from the uniform campaign.
+
+6.5   Repairs discovered during the uniform experiment
+The uniform run exposed twelve worker failures when proof normalization passed a rational token
+through Python’s decimal-to-integer conversion limit. We preserved this campaign and its producer
+source, then replaced that conversion with parsing and serialization through the existing FLINT
+rational type. A separate cohort regenerated all twelve observed occurrences under the same requested
+search budgets, settings, concurrency, and outer limit. The original 289-record denominator and its
+failures remain unchanged.
+    A further reporting boundary appeared in tls12: its primary bundle passed nonlinear checks,
+exact master matching, and the entire proof kernel, but a rational bound with a 4,326-digit numerator
+failed during subsequent report construction. The same boundary appeared in the default attempt
+of the producer-repair cohort. A third source version repairs exact rational text input and output at
+the reporting interfaces, including replay comparisons and reference summaries. Decimal reference
+strings retain exact decimal semantics; the interpreter’s global integer-conversion guard remains
+enabled. Optional binary64 display values become unavailable when the exact value is outside
+binary64 range, while exact strings remain authoritative. The proof, domain, curvature, propagation,
+and master-matching rules are unchanged.
+    All twelve producer-repair runs returned verified output, and all twelve selected bundles passed
+separate replay. Generation took 478.703 seconds of elapsed time and replay took 62.473 seconds.
+Auditing all nineteen primary rejections and all secondary attempt reports identified exactly two
+completed proofs affected by the subsequent reporting defect, both for tls12. With the third source
+version, both passed full replay in a separate 73.431-second cohort, without further optimization.
+The frozen primary replay counts remain 203 verified and 19 rejected; the corrected reporting
+layer accepts one additional primary bundle. The supplement preserves the sources, records, and
+completed attempts for each version. These targeted repairs do not constitute a second uniform
+experiment or replace its denominator.
+
+6.6   Exact returned-point and source audits
+For clay0204m, a saved SBB run reports objective 5075 with normal completion and model status
+Integer Solution; its log also warns of a nonconvex model. We therefore do not describe it as an
+unqualified global optimality status. Its printed point violates the two rows
+
+                         x2 − x4 + 51b13 ≤ 46.5,        x6 − x7 + 86b24 ≤ 82
+
+by 4.5 and 3, respectively. Allowing every printed coordinate an error of 0.00005 changes the row
+values by at most 0.00265 and 0.0044. The violations are consequently robust to the displayed
+precision. Independently, exact rational evaluation of a 52-variable point checks all 90 loaded
+constraints and 32 binary variables at objective 6545. A complete certificate proves the matching
+lower bound 6545. Together these establish an exact optimum for the loaded model. The archived
+point comes from rounded BARON output with small distance coordinates explicitly replaced by
+zero; its feasibility follows from the new rational evaluation, not from BARON’s status or tolerance.
+    For risk2bpb, the saved SHOT run reports an objective near −56.82087261 and optimal model
+status. Its printed point assigns one to both b4 and b5 , although both variables are fixed at zero in
+
+                                                   25
+the source model. These unit violations suffice to reject that returned point. They do not identify
+the internal cause of the discrepancy. The archived run used SHOT 1.1 with CPLEX 22.1; the
+baseline scripts requested 60 seconds, relative and absolute optimality tolerances 10−4 and 10−6 ,
+and four threads.
+    To ensure that these statements compare the intended formulas, a separate source audit matches
+the GAMS and loaded Python models under the same exact binary64-constant interpretation. It
+eliminates the GAMS free objective variable and defining equality, then compares each remaining
+constraint, variable type, fixed value, and bound with an explicit index map. The clay0204m
+comparison maps 53 variables and 91 rows to 52 variables and 90 rows; risk2bpb maps 464 variables
+and 581 rows to 463 variables and 580 rows. The audited violated rows and fixed bounds use exactly
+representable coefficients, so their violations do not depend on a distinction between decimal and
+binary64 constants. This is source-formula equivalence; it does not verify the GAMS compiler or
+recover either solver’s historical in-memory model. The conclusions concern the saved returned
+points and the specified source models, without attributing an unobserved internal defect.
+
+6.7   Reproduction artifacts and scope of the evidence
+A small portable core contains the checker sources, pinned dependency specifications, all 289
+campaign models, compact campaign records and exact comparison tables, the source and returned-
+point audit, and representative certificates. The separate bulk archive contains the completed
+historical and new proofs, including rejected completed attempts. Generator dependencies are
+documented separately: running the checker does not require Gurobi, IPOPT, SCIP, or GAMS.
+License-identifying solver banners are removed only from distributed log copies; the redaction
+manifest records original and distributed hashes. Model files, mathematical data, and proof files are
+unmodified.
+    The descriptive merged catalogue contains verified bounds for 222 distinct loaded models. It
+chooses the strongest exact normalized lower bound among 405 accepted records from the historical,
+primary, producer-repair, and reporting-repair evidence, requiring identical model SHA-256 and
+objective sense for every comparison. Exact ties use a fixed cohort order. Each entry identifies its
+original-sense bound, complete proof, source cohort, and hashes. This union is a reusable bound
+collection; its coverage is not attributed to the uniform search budget.
+    The core’s solver-free replay includes a mixed-integer quadratic example, min y subject to
+(x − 12 )2 ≤ y, x ∈ {0, 1} and 0 ≤ y ≤ 2. Eleven checked cuts and 39 proof derivations establish
+the lower bound 1/4, attained by (x, y) = (0, 1/4). The clay0204m matching-point audit and the
+targeted repaired examples exercise larger complete bundles. These checks supplement the 161
+targeted software tests; test counts are not a formal proof of the implementation. Section 5 specifies
+the separate proof-assistant result and its boundary.
+
+
+7     Discussion and conclusions
+The certificate interface makes the implication from a rational master bound to a convex MINLP
+bound explicit and checkable. Its essential connection is objective-preserving feasible-set inclusion:
+rigorously justified cuts retain every nonlinear feasible point, master identity binds those cuts to
+the discrete proof, and complete rational replay establishes the transferred bound. This allows
+numerical search to propose evidence without making its tolerances part of the final mathematical
+assertion.
+    A first lesson is that exactness must refer to one model throughout the calculation. Exact
+arithmetic in the discrete proof is insufficient if curvature analysis, derivative evaluation, or master
+
+                                                  26
+construction interpret an expression differently. The loaded-tree contract fixes the coefficients and
+domains to which the certificate refers. The bound therefore concerns that exact model; relating it
+to an earlier modeling file is a further semantic obligation.
+     A second lesson is that verification failures need mathematical classification. The audits identify
+invalid supplied linear combinations and integer disjunctions, including steps that received external
+acceptance. Tiny residuals and successful process status do not justify those steps. Other rejected
+artifacts fail sufficient domain, curvature, or cut-enclosure tests and may still represent convex
+models or valid cuts. A local invalid inference refutes its supplied justification, not necessarily its
+final proposed bound. Retaining the evidence makes these distinctions reproducible.
+     A third lesson is that primal feasibility supplies information that objective comparisons cannot.
+Original-variable audits expose violations in two saved solver points, while independently checked
+original-model witnesses complete exact optimality proofs in two cases. These conclusions require
+bounds, integrality, rows, and objective evaluation for the same model. A feasible master point or a
+close library reference value cannot substitute for that work.
+     The uniform experiment demonstrates practical certificate production and replay for 203 of
+289 attempted models under the stated protocol. Complete proofs surviving unsuccessful producer
+returns further show the value of separating an artifact’s validity from a process outcome. The
+long-rational failures show that exact values must survive text conversion and reporting as well
+as inference arithmetic. These results establish capability and identify failure mechanisms; the
+incomplete admission rules, large proof files, and shared-machine timings limit broader coverage and
+efficiency conclusions. Two-pass replay reduces unnecessary storage without bounding the number
+of simultaneously live rows, and the present measurements do not establish a speed advantage over
+other certificate methods or solvers.
+     The validation has complementary roles. Executable tests and exact local audits exercise concrete
+checking behavior; Lean verifies selected mathematical implications from explicit premises. The
+formal proofs do not verify the model loader, symbolic and interval software, master matcher, or
+executable VIPR checker. The completed result is consequently a replayable certificate method for
+the stated model class with an explicit trust boundary, supported by reproducible capability and
+reliability evidence.
+
+
+A     Data, code, and reproduction
+The accompanying review materials are self-contained for reading the paper, building its PDF,
+checking the focused Lean proofs, and replaying the advertised experimental evidence. They comprise
+three separate archives; no public repository deposit or DOI is asserted here. The small core and bulk
+proof archives are identified by byte counts and SHA-256 hashes in supplement/archives.json,
+included with the paper source. MINLPLib inputs retain their attribution and license notice.
+Installed third-party packages, licensed solver binaries, and user-supplied literature PDFs are not
+redistributed.
+
+Paper and formal sources. The archive certified-minlp-paper-source.tar.gz contains
+main.tex, all required sections and generated tables, the selected bibliography, the vector figure
+source, and the focused formal/ project with its dependency pins, coverage statement, and audit
+scripts. Extract it and run, from the extracted paper directory,
+latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex
+A TeX installation with the packages listed in main.tex, including TikZ, and BibTeX is sufficient;
+no experimental archive is needed to compile the paper. The source archive contains no stale LaTeX
+
+                                                  27
+auxiliary files or Lean caches. To check the formal source fingerprints and rebuild its proofs, install
+Elan, Git, and Python 3 and run from formal/:
+
+sha256sum -c verification/SHA256SUMS
+lake exe cache get
+bash scripts/verify.sh
+
+The toolchain and manifest select the exact Lean and mathlib versions. Downloading the dependency
+cache is separate from building and replaying the project proofs. The recorded isolated verification
+passed all three modules, audited 95 project declarations, and completed kernel replay; Section 5
+specifies what this establishes.
+
+Checker-only core. The archive certified-minlp-core.tar.gz is 6,478,681 bytes compressed.
+It contains all 289 campaign model files, current checker code, pinned dependency specifica-
+tions, versioned source snapshots, compact records and audit data, representative complete bun-
+dles, and the scripts used to regenerate tables and the bound catalogue. Extract it to obtain
+minlp-certified-evidence/. From that directory, using Python 3.13:
+
+python3 -m venv replay-env
+replay-env/bin/python -m pip install -r requirements-checker.txt
+replay-env/bin/python reproduce.py verify
+replay-env/bin/python reproduce.py small --out ../small-checks
+replay-env/bin/python reproduce.py summaries --out ../summary.json
+
+The five checker dependencies are Pyomo, NumPy, SymPy, mpmath, and python-flint. The small
+command checks four complete bundles, the exact original-model source and primal audits, and
+fifteen local failed-step extracts. The current 161-test suite additionally uses pytest as specified in
+requirements-tests.txt. No licensed optimization software is required for these commands. The
+core README gives commands to regenerate all thirteen table and catalogue outputs from saved
+records; doing so reproduces recorded results, not new solver timings.
+
+Complete proof collection. The separate archive certified-minlp-certificates.tar.gz
+is 30,664,561,063 bytes compressed and contains 93,713,729,595 bytes of regular-file contents. It
+retains accepted and rejected completed proofs and completed fallback attempts. Extract it into the
+same parent directory as the core when full replay is needed. The core provides both a streaming
+archive verifier and commands for complete historical and uniform replay, plus the separate repair
+cohorts. A full readback already matched all 5,207 archive entries to their recorded file hashes or
+symlink targets; routine example checking does not require repeating that large read.
+    The default distributed checker is version V3. The frozen primary V1 replay remains 203 verified,
+19 rejected, and 67 missing. The two targeted V3 checks establish that the reporting correction
+admits one additional primary bundle, so a new full V3 replay of those fixed artifacts is expected
+to produce 204, 18, and 67, subject to its time and environment limits; this expected total is not
+presented as another completed uniform replay. The core documents restoration of V1, V2, and V3
+into separate copies, including shared test and example data. Their restored test counts are 152,
+153, and 161, respectively. New replay commands write new records and manifests.
+
+Generation and provenance. Generating new evidence requires the additional numerical solver
+and proof-production tools described in the core README: Gurobi, IPOPT, exact SCIP, and
+VIPR completion/checking utilities. The wrapper accepts local executable paths and freezes models,
+
+                                                  28
+software, settings, budgets, and environment before launch. Original absolute paths in frozen
+manifests document the recorded machine; portable replay resolves supplied files relative to the
+extracted layout. Numerical generation and elapsed times can change with machine load or software
+builds. Exact strings, input hashes, versioned code, and complete outcome records define the
+reproducible checking claim.
+
+
+References
+ [1] Michel Baes, Timm Oertel, and Robert Weismantel. Duality for mixed-integer convex minimiza-
+     tion. Mathematical Programming, 158(1–2):547–564, 2016. doi: 10.1007/s10107-015-0917-y.
+     URL https://doi.org/10.1007/s10107-015-0917-y.
+
+ [2] Amitabh Basu, Michele Conforti, Gérard Cornuéjols, Robert Weismantel, and Stefan Weltge.
+     Optimality certificates for convex minimization and Helly numbers. Operations Research Letters,
+     45(6):671–674, 2017. doi: 10.1016/j.orl.2017.10.002. URL https://doi.org/10.1016/j.orl.
+     2017.10.002.
+
+ [3] Alexander Bentkamp, Ramon Fernández Mir, and Jeremy Avigad. Verified reductions for
+     optimization. In Tools and Algorithms for the Construction and Analysis of Systems, volume
+     13994 of Lecture Notes in Computer Science, pages 74–92. Springer, 2023. doi: 10.1007/
+     978-3-031-30820-8_8. URL https://doi.org/10.1007/978-3-031-30820-8_8.
+
+ [4] Sander Borst, Leon Eifler, and Ambros Gleixner. Certified Constraint Propagation and Dual
+     Proof Analysis in a Numerically Exact MIP Solver, 2024. URL https://arxiv.org/abs/2403.
+     13567.
+
+ [5] CakeML Project. Formalisation of VIPR: Verifying integer programming results. Soft-
+     ware and HOL4 proof development, 2026. URL https://github.com/CakeML/cakeml/
+     tree/8a32c2e8a6a3cfc7495ed13c8de9865df0c15510/examples/vipr. Inspected commit
+     8a32c2e8a6a3cfc7495ed13c8de9865df0c15510; accessed September 13, 2026.
+
+ [6] Kevin K. H. Cheung, Ambros Gleixner, and Daniel E. Steffy. Verifying integer programming
+     results. In Integer Programming and Combinatorial Optimization, volume 10328 of Lecture
+     Notes in Computer Science, pages 148–160, 2017. doi: 10.1007/978-3-319-59250-3_13.
+
+ [7] Chris Coey, Miles Lubin, and Juan Pablo Vielma. Outer approximation with conic certificates
+     for mixed-integer convex problems. Mathematical Programming Computation, 12:249–293, 2020.
+     doi: 10.1007/s12532-020-00178-3. URL https://doi.org/10.1007/s12532-020-00178-3.
+
+ [8] Leonardo de Moura and Sebastian Ullrich. The Lean 4 theorem prover and programming
+     language. In Automated Deduction – CADE 28, volume 12699 of Lecture Notes in Computer
+     Science, pages 625–635. Springer, 2021. doi: 10.1007/978-3-030-79876-5_37. URL https:
+     //doi.org/10.1007/978-3-030-79876-5_37.
+
+ [9] Marco A. Duran and Ignacio E. Grossmann. An outer-approximation algorithm for a class
+     of mixed-integer nonlinear programs. Mathematical Programming, 36(3):307–339, 1986. doi:
+     10.1007/bf02592064. URL https://doi.org/10.1007/BF02592064.
+
+[10] Leon Eifler and Ambros Gleixner. Safe and Verified Gomory Mixed-Integer Cuts in a Rational
+     Mixed-Integer Program Framework. SIAM Journal on Optimization, 34(1):742–763, 2024. doi:
+     10.1137/23m156046x. URL https://doi.org/10.1137/23M156046X.
+
+                                                29
+[11] Sourour Elloumi, Amélie Lambert, Bertrand Neveu, and Gilles Trombettoni. Global solution
+     of quadratic problems using interval methods and convex relaxations. Journal of Global
+     Optimization, 91(2):331–353, 2025. doi: 10.1007/s10898-024-01370-8. URL https://doi.org/
+     10.1007/s10898-024-01370-8.
+
+[12] Michael Grant, Stephen Boyd, and Yinyu Ye. Disciplined convex programming. In Leo
+     Liberti and Nelson Maculan, editors, Global Optimization: From Theory to Implementation,
+     Nonconvex Optimization and Its Applications, pages 155–210. Springer, 2006. URL https:
+     //stanford.edu/~boyd/papers/disc_cvx_prog.html.
+
+[13] Katrin Halbig, Lukas Hümbs, Florian Rösel, Lars Schewe, and Dieter Weninger. Computing
+     Optimality Certificates for Convex Mixed-Integer Nonlinear Problems. INFORMS Journal on
+     Computing, 36(6):1579–1610, 2024. doi: 10.1287/ijoc.2022.0099. URL https://doi.org/10.
+     1287/ijoc.2022.0099.
+
+[14] Christopher Hojny, Mathieu Besançon, Ksenia Bestuzheva, Sander Borst, João Dionísio,
+     Johannes Ehls, Leon Eifler, Mohammed Ghannam, Ambros Gleixner, Adrian Göß, Alexander
+     Hoen, Jacob von Holly-Ponientzietz, Rolf van der Hulst, Dominik Kamp, Thorsten Koch,
+     Kevin Kofler, Jurgen Lentz, Marco Lübbecke, Stephen J. Maher, Paul Matti Meinhold, Gioni
+     Mexi, Til Mohr, Erik Mühmer, Krunal Kishor Patel, Marc E. Pfetsch, Sebastian Pokutta,
+     Chantal Reinartz Groba, Felipe Serrano, Yuji Shinano, Mark Turner, Stefan Vigerske, Matthias
+     Walter, Dieter Weninger, and Liding Xu. The SCIP Optimization Suite 10.0, 2025. URL
+     https://doi.org/10.48550/arXiv.2511.18580.
+
+[15] Christian Jansson. A rigorous lower bound for the optimal value of convex optimization problems.
+     Journal of Global Optimization, 28(1):121–137, 2004. doi: 10.1023/B:JOGO.0000006720.68398.
+     8c. URL https://doi.org/10.1023/B:JOGO.0000006720.68398.8c.
+
+[16] Christian Jansson. On verified numerical computations in convex programming. Japan Journal
+     of Industrial and Applied Mathematics, 26(2–3):337–363, 2009. doi: 10.1007/BF03186539. URL
+     https://doi.org/10.1007/BF03186539.
+
+[17] Jan Kronqvist, David E. Bernal, Andreas Lundell, and Ignacio E. Grossmann. A review and
+     comparison of solvers for convex MINLP. Optimization and Engineering, 20:397–455, 2019.
+     doi: 10.1007/s11081-018-9411-8. URL https://doi.org/10.1007/s11081-018-9411-8.
+
+[18] Andreas Lundell and Tapio Westerlund. Convex underestimation strategies for signo-
+     mial functions. Optimization Methods & Software, 24(4–5):505–522, 2009. doi: 10.1080/
+     10556780802702278. URL https://doi.org/10.1080/10556780802702278.
+
+[19] Victor Magron, Xavier Allamigeon, Stéphane Gaubert, and Benjamin Werner. Formal proofs
+     for nonlinear optimization. Journal of Formalized Reasoning, 8(1):1–24, 2015. doi: 10.6092/
+     issn.1972-5787/4319.
+
+[20] Frédéric Messine and Gilles Trombettoni. Reliable bounds for convex relaxation in interval global
+     optimization codes. AIP Conference Proceedings, 2070:020050, 2019. doi: 10.1063/1.5090017.
+     URL https://doi.org/10.1063/1.5090017.
+
+[21] MINLPLib. MINLPLib: A library of mixed-integer and continuous nonlinear programming
+     instances, 2026. URL https://www.minlplib.org/. Accessed September 13, 2026.
+
+
+
+                                                 30
+[22] Anthony Narkawicz and César Muñoz. A Formally Verified Generic Branching Algorithm for
+     Global Optimization. In Verified Software: Theories, Tools, Experiments, volume 8164 of Lecture
+     Notes in Computer Science, pages 326–343. Springer, 2014. doi: 10.1007/978-3-642-54108-7_17.
+     URL https://doi.org/10.1007/978-3-642-54108-7_17.
+
+[23] Arnold Neumaier and Oleg Shcherbina. Safe bounds in linear and mixed-integer linear pro-
+     gramming. Mathematical Programming, 99(2):283–296, 2004. doi: 10.1007/s10107-003-0433-3.
+     URL https://doi.org/10.1007/s10107-003-0433-3.
+
+[24] Alexey Solovyev and Thomas C. Hales. Formal Verification of Nonlinear Inequalities with
+     Taylor Interval Approximations. In NASA Formal Methods, volume 7871 of Lecture Notes in
+     Computer Science, pages 383–397. Springer, 2013. doi: 10.1007/978-3-642-38088-4_26. URL
+     https://doi.org/10.1007/978-3-642-38088-4_26.
+
+[25] Stefan Szeider. VIPR certificate construction from black-box ILP solvers. In 32nd International
+     Conference on Principles and Practice of Constraint Programming (CP 2026), volume 379 of
+     Leibniz International Proceedings in Informatics (LIPIcs), pages 52:1–52:14. Schloss Dagstuhl –
+     Leibniz-Zentrum für Informatik, 2026. doi: 10.4230/LIPIcs.CP.2026.52. URL https://doi.
+     org/10.4230/LIPIcs.CP.2026.52.
+
+[26] The mathlib Community. The Lean mathematical library. In Proceedings of the 9th ACM
+     SIGPLAN International Conference on Certified Programs and Proofs, CPP 2020, pages 367–
+     381. ACM, 2020. doi: 10.1145/3372885.3373824. URL https://doi.org/10.1145/3372885.
+     3373824.
+
+[27] Kenan Wood, Runtian Zhou, Haoze Wu, Hammurabi Mendes, and Jonad Pulaj. Satisfiability
+     modulo theories for verifying MILP certificates. Journal of Symbolic Computation, 135:102543,
+     2026. doi: 10.1016/j.jsc.2025.102543. URL https://doi.org/10.1016/j.jsc.2025.102543.
+     Open manuscript: arXiv:2312.10420v4.
+
+
+
+
+                                                31
+

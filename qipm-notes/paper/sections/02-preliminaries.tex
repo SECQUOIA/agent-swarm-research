@@ -1,0 +1,812 @@
+\section{Preliminaries}
+\label{sec:preliminaries}
+
+This section fixes the optimization, access, and output models used throughout
+the paper.  The distinctions are part of the problem specification: input
+sparsity is not Newton-system sparsity, the spectral condition number is not a
+block-encoding normalization, and a normalized quantum state is not an
+explicit solution vector.
+
+\subsection{Conic programs and central paths}
+\label{sec:prelim-conic}
+
+For a linear program (LP) in standard form, the primal--dual pair is
+\begin{equation}
+ \begin{aligned}
+  \text{(P$_{\rm LP}$)}\qquad
+  \min_{x\in\R^n}\quad &c^\top x
+       &\text{subject to}\quad& Ax=b,\quad x\geq 0,\\
+  \text{(D$_{\rm LP}$)}\qquad
+  \max_{y\in\R^m,\,s\in\R^n}\quad &b^\top y
+       &\text{subject to}\quad& A^\top y+s=c,\quad s\geq 0,
+ \end{aligned}
+ \label{eq:lp-pair}
+\end{equation}
+Throughout the LP discussion, $A\in\R^{m\times n}$ has full row rank unless
+stated otherwise.  We write
+$X=\diag(x)$, $S=\diag(s)$, and $e$ for the all-ones vector.  A feasible
+primal--dual point has gap
+\begin{equation}
+ c^\top x-b^\top y=x^\top s.
+ \label{eq:lp-pd-gap}
+\end{equation}
+
+The product-cone form of a semidefinite program (SDP) used below has
+$q$ matrix blocks.  Put
+$\mathcal K=\prod_{j=1}^q\Splus^{d_j}$ and equip it with
+$\inner{X}{S}=\sum_j\tr(X_jS_j)$.  For symmetric data
+$C_j,A_{ij}\in\Sym^{d_j}$, define
+$\mathcal A(X)_i=\sum_j\tr(A_{ij}X_j)$ and
+$(\mathcal A^*y)_j=\sum_i y_iA_{ij}$.  The pair is
+\begin{equation}
+ \begin{aligned}
+  \text{(P$_{\rm SDP}$)}\qquad
+  \min_{X\in\mathcal K}\quad &\inner{C}{X}
+       &\text{subject to}\quad& \mathcal A(X)=b,\\
+  \text{(D$_{\rm SDP}$)}\qquad
+  \max_{y\in\R^m,\,S\in\mathcal K}\quad &b^\top y
+       &\text{subject to}\quad& \mathcal A^*y+S=C.
+ \end{aligned}
+ \label{eq:sdp-pair}
+\end{equation}
+Its primal--dual gap is $\inner{C}{X}-b^\top y=\inner{X}{S}$.
+The one-block formulation is the special case $q=1$; scalar nonnegative
+variables can equivalently be included as $1\times1$ blocks.  These are the
+standard conic dual pairs under the trace inner product
+\cite{boyd2004-convex-optimization}.
+
+\begin{definition}[Strict feasibility]
+\label{def:strict-feasibility}
+An LP is \emph{strictly primal--dual feasible} if there are points satisfying
+\eqref{eq:lp-pair} with $x>0$ and $s>0$.  An SDP is strictly primal--dual
+feasible if there are feasible points with $X_j\succ0$ and $S_j\succ0$ for
+every block.  We use \emph{strict feasibility} for this two-sided condition
+unless one side is named.  Because both sides are then feasible, their optimal
+values are finite; the two-sided Slater condition gives zero duality gap and
+attainment on both sides \cite{boyd2004-convex-optimization}.
+\end{definition}
+
+We next recall the barrier terminology in the normalization used by
+Nesterov and Nemirovskii \cite{nesterov1994-interior-point-polynomial-algorithms-convex}.
+For a $C^3$ convex function $F$ on an open convex domain, define the local
+norms
+\begin{equation}
+ \norm{h}_x=\sqrt{D^2F(x)[h,h]}.
+ \label{eq:local-norms}
+\end{equation}
+On an affine feasible slice, derivatives and Hessians in
+\eqref{eq:local-norms} are restricted to its tangent space.
+
+\begin{definition}[$\nu$-self-concordant barrier]
+\label{def:self-concordant-barrier}
+A function $F$ is a \emph{$\nu$-self-concordant barrier} for a convex set
+$Q$ if $\operatorname{dom}F=\operatorname{relint}Q$, it tends to $+\infty$
+at the relative boundary, its Hessian is positive definite on the tangent
+space, and, for all $x\in\operatorname{relint}Q$ and tangent directions $h$,
+\begin{equation}
+ |D^3F(x)[h,h,h]|\leq2\norm{h}_x^3,
+ \qquad
+ |DF(x)[h]|\leq\sqrt\nu\,\norm{h}_x.
+ \label{eq:sc-barrier}
+\end{equation}
+The declared value $\nu$ is called a barrier parameter; it need not be the
+least admissible value.
+\end{definition}
+
+The logarithmic barrier for the nonnegative orthant and the log-determinant
+barrier for the product PSD cone are, respectively,
+\begin{equation}
+ F_{\log}(x)=-\sum_{i=1}^n\log x_i,
+ \qquad
+ F_{\log\det}(X)=-\sum_{j=1}^q\log\det X_j.
+ \label{eq:canonical-barriers}
+\end{equation}
+They have parameters $\nu=n$ and $\nu=\sum_jd_j$.  Both are logarithmically
+homogeneous: $F(tx)=F(x)-\nu\log t$ in the appropriate cone notation.  The
+symbol $\nu$ always denotes this cone barrier's parameter, which for these
+canonical barriers equals the degree of logarithmic homogeneity.  Restricting
+the cone barrier to an affine feasible slice preserves self-concordance with
+parameter at most $\nu$, possibly with a smaller least parameter; we do not
+redefine $\nu$ after that restriction.  The cone barrier parameter, rather
+than the ambient number of stored coefficients, controls the standard
+path-following iteration bound
+\cite{nesterov1994-interior-point-polynomial-algorithms-convex}.
+
+\begin{definition}[Central path and its two parametrizations]
+\label{def:central-path}
+Let $F$ be a self-concordant barrier on the relative interior of the primal
+feasible region, suppose $\mathrm{OPT}$ is finite and attained, and suppose
+the barrier subproblem has a unique minimizer.
+The \emph{$\mu$-parametrized primal central path} is
+\begin{equation}
+ x_F(\mu)=\arg\min\{c^\top x+\mu F(x):Ax=b,\ x\in\operatorname{dom}F\},
+ \qquad \mu>0.
+ \label{eq:general-central-path}
+\end{equation}
+Its primal objective gap is
+\begin{equation}
+ g_F(\mu)=c^\top x_F(\mu)-\mathrm{OPT}.
+ \label{eq:objective-gap-g}
+\end{equation}
+On any interval where $g_F$ is one-to-one, the same curve indexed by
+$g>0$ is the \emph{$g$-parametrized central path}, denoted $x_F(g)$.
+For the canonical LP barrier, the primal--dual central path additionally
+satisfies
+\begin{equation}
+ Ax=b,\quad A^\top y+s=c,\quad x,s>0,\quad XSe=\mu e.
+ \label{eq:lp-central-path}
+\end{equation}
+For the product-PSD log-det barrier it satisfies
+\begin{equation}
+ \mathcal A(X)=b,\quad \mathcal A^*y+S=C,\quad
+ X_j,S_j\succ0,\quad S_j=\mu X_j^{-1}\quad(1\leq j\leq q).
+ \label{eq:sdp-central-path}
+\end{equation}
+Thus the primal--dual gap on either canonical path is exactly $\nu\mu$, with
+$\nu$ the cone barrier parameter fixed above.
+\end{definition}
+
+The first-order condition in \eqref{eq:general-central-path} is the source of
+the dual slack relation $s=-\mu\nabla F(x)$ whenever that gradient is
+identified with a cone dual variable.  For a general self-concordant barrier,
+$g_F(\mu)\leq\nu\mu$; equality need not hold
+\cite{nesterov1994-interior-point-polynomial-algorithms-convex}.
+
+\begin{definition}[Trace-normalized log-det center]
+\label{def:trace-logdet-center}
+On the affine slice $\sum_j\tr X_j=1$, the \emph{trace-normalized log-det
+center} at parameter $\mu$ is the minimizer of
+\begin{equation}
+ \inner{C}{X}-\mu\sum_j\log\det X_j,
+ \qquad X_j\succ0,\quad \sum_j\tr X_j=1.
+ \label{eq:trace-logdet-center}
+\end{equation}
+With the Lagrangian sign convention
+$\inner{C}{X}-\mu\sum_j\log\det X_j-
+\lambda(\sum_j\tr X_j-1)$, stationarity reads
+$X_j=\mu(C_j-\lambda I)^{-1}$.  This expression is admissible only for
+$\lambda<\min_j\lambda_{\min}(C_j)$, so every inverse is positive definite.
+The corresponding log-det Hessian is
+$D^2F(X)[U,V]=\sum_j\tr(X_j^{-1}U_jX_j^{-1}V_j)$
+\cite{boyd2004-convex-optimization}.
+\end{definition}
+
+This is a specialization of the product-PSD central path, not a different
+optimization model.  Trace normalization also makes
+$\bigoplus_jX_j$ a density operator, connecting the conic and quantum output
+conventions below.
+
+\begin{remark}[The convention for $g$]
+\label{rem:g-convention}
+The conditioning sections use $g$ only for the primal objective gap
+\eqref{eq:objective-gap-g}.  Although an objective gap is sometimes called a
+``duality gap'' informally, here \emph{primal--dual gap} means
+$c^\top x-b^\top y=x^\top s$, which equals $\nu\mu$ on the canonical LP
+central path.  In general $g_F(\mu)\leq\nu\mu$, and equality need not hold.
+\end{remark}
+
+\begin{definition}[Analytic center]
+\label{def:analytic-center}
+If $F$ attains a minimum over the relative interior of a feasible convex set,
+its minimizer is the \emph{$F$-analytic center}.  With the canonical barriers
+we simply say \emph{analytic center}.  For a bounded feasible region, the
+large-$\mu$ limit of \eqref{eq:general-central-path}, when it exists, is this
+center.  For a face on the boundary of the original domain, ``analytic center
+of the face'' means the minimizer of a barrier defined on that face's relative
+interior; it does not mean evaluating the original barrier at a boundary
+point \cite{nesterov1994-interior-point-polynomial-algorithms-convex}.
+\end{definition}
+
+For an LP point satisfying the two feasibility equations, put
+$\bar\mu=x^\top s/n$.  The narrow neighborhood used by short-step analyses is
+the following standard one \cite{wright1997-primal-dual-interior-point-methods}.
+
+\begin{definition}[$N_2(\theta)$ neighborhood]
+\label{def:n2-neighborhood}
+For $0<\theta<1$, the \emph{$N_2(\theta)$ neighborhood} of the LP central path
+is
+\begin{equation}
+ N_2(\theta)=\left\{(x,y,s):
+ \begin{array}{l}
+ Ax=b,\ A^\top y+s=c,\ x,s>0,\quad \bar\mu=x^\top s/n,\\[-2pt]
+ \norm{XSe-\bar\mu e}_2\leq\theta\bar\mu
+ \end{array}\right\}.
+ \label{eq:n2-neighborhood}
+\end{equation}
+Unless an infeasible or matrix-valued analogue is explicitly named,
+$N_2(\theta)$ always means \eqref{eq:n2-neighborhood}.
+\end{definition}
+
+A short-step path-following method keeps a fixed small $\theta$, changes the
+target complementarity by a $1-\Theta(1/\sqrt\nu)$ factor, and takes a full Newton
+step back into the neighborhood.  This gives
+$O(\sqrt\nu\log(\nu/\epsilon_{\rm opt}))$ Newton steps under standard
+initialization and scaling conventions; this statement is an iteration count,
+not a linear-solver, data-loading, or readout cost
+\cite{nesterov1994-interior-point-polynomial-algorithms-convex,wright1997-primal-dual-interior-point-methods}.
+
+\subsubsection{Newton formulations and conditioning}
+\label{sec:newton-formulations}
+
+At a positive, possibly infeasible LP iterate, define residuals
+\begin{equation}
+ r_p=b-Ax,\qquad r_d=c-A^\top y-s,\qquad
+ r_c=\widehat\mu e-XSe,
+ \label{eq:newton-residuals}
+\end{equation}
+where frequently $\widehat\mu=\sigma\bar\mu$ for a centering parameter
+$\sigma\in[0,1]$.  Linearizing primal feasibility, dual feasibility, and
+complementarity gives the full primal--dual KKT system
+\begin{equation}
+ \begin{bmatrix}
+  A&0&0\\
+  0&A^\top&I\\
+  S&0&X
+ \end{bmatrix}
+ \begin{bmatrix}\Delta x\\\Delta y\\\Delta s\end{bmatrix}
+ =
+ \begin{bmatrix}r_p\\r_d\\r_c\end{bmatrix}.
+ \label{eq:full-kkt}
+\end{equation}
+This equation, with the residual signs in \eqref{eq:newton-residuals}, is what
+we call the \emph{standard infeasible-start Newton correction}; a
+feasible-start direction has $r_p=r_d=0$
+\cite{wright1997-primal-dual-interior-point-methods}.  A full step eliminates
+the affine primal and dual residuals exactly, but complementarity is targeted
+only to first order.  After a full step satisfying the third block row exactly,
+$(X+\Delta X)(S+\Delta S)e=\widehat\mu e+\Delta X\Delta S e$.
+The quadratic term is uncontrolled by the linear system alone, so progress
+also requires a neighborhood invariant and a step-size rule.
+
+Eliminating $\Delta x$ and $\Delta s$ gives the normal-equation coefficient
+matrix
+\begin{equation}
+ H_{\rm NE}=AXS^{-1}A^\top
+ \label{eq:normal-matrix}
+\end{equation}
+and the equation
+\begin{equation}
+ H_{\rm NE}\Delta y
+ =r_p-AS^{-1}r_c+AXS^{-1}r_d.
+ \label{eq:normal-equations}
+\end{equation}
+Under the standing rank assumption, it is positive definite for $x,s>0$.  Even when
+$A$ is sparse, $H_{\rm NE}$ can be dense because two rows are coupled whenever
+they share a nonzero column.  Accordingly, $\nnz(A)$ and the maximum
+row/column sparsity $s_H$ of the matrix actually sent to a solver are distinct
+parameters.
+
+Two reformulations used later move an inexact-solve residual to a more useful
+part of the Newton equations.  At a feasible iterate, if
+$V\in\R^{n\times(n-m)}$ has full column rank
+and $\operatorname{range}V=\ker A$, a feasible direction can be represented as
+$\Delta x=V\lambda$ and $\Delta s=-A^\top\Delta y$.  Substitution in the third
+row of \eqref{eq:full-kkt} gives the \emph{orthogonal-subspaces system (OSS)}
+\begin{equation}
+ \underbrace{[-XA^\top\ \ SV]}_{H_{\rm OSS}}
+ \begin{bmatrix}\Delta y\\\lambda\end{bmatrix}=r_c.
+ \label{eq:oss}
+\end{equation}
+Every approximate coefficient vector still reconstructs directions satisfying
+$A\Delta x=0$ and $A^\top\Delta y+\Delta s=0$ exactly.  This is the
+\emph{OSS} introduced by Mohammadisiahroudi et al.
+\cite{mohammadisiahroudi2025-inexact-feasible-interior-point-method}.
+
+The \emph{modified normal-equation system (MNES)} instead chooses an index
+set $B$ for which $A_B\in\R^{m\times m}$ is nonsingular.  With
+$D=X^{1/2}S^{-1/2}$, its principal submatrix $D_B$, $\widehat A=A_B^{-1}A$, and
+$E=D_B^{-1}\widehat A D$, its coefficient and right-hand side are
+\begin{equation}
+ H_{\rm MNES}=EE^\top
+ =D_B^{-1}A_B^{-1}H_{\rm NE}(D_B^{-1}A_B^{-1})^\top,
+ \qquad h_{\rm MNES}=D_B^{-1}A_B^{-1}h_{\rm NE},
+ \label{eq:mnes}
+\end{equation}
+where $h_{\rm NE}$ denotes the right-hand side of
+\eqref{eq:normal-equations}.  If an approximate solution has residual
+$\widehat r$, the reconstruction uses the correction
+$v_B=D_B\widehat r$, $v_{\bar B}=0$; the primal and dual feasibility rows are
+then exact, while the residual $-Sv$ is confined to the complementarity row
+\cite{mohammadisiahroudi2024-efficient-use-quantum-linear-system}.  The names
+OSS and MNES always mean the formulations \eqref{eq:oss} and
+\eqref{eq:mnes}.  Neither name implies that $V$, $\widehat A$, or the
+resulting system is sparse; that property must be established for the
+instance at hand.
+
+\begin{definition}[OSS/MNES inexact Newton residual convention]
+\label{def:inexact-newton-residual}
+Let $\eta\in[0,1)$ be the named forcing tolerance.  An inexact OSS solve uses
+the linear-system residual $r_{\rm OSS}=H_{\rm OSS}\widetilde z-r_c$ and the
+convention $\norm{r_{\rm OSS}}_2\leq\eta\bar\mu$.  An inexact MNES solve uses
+$\widehat r=H_{\rm MNES}\widetilde z-h_{\rm MNES}$ and the
+$\sqrt{\bar\mu}$-scaled convention
+\begin{equation}
+ \norm{\widehat r}_2\leq\eta\sqrt{\bar\mu/n},
+ \qquad\text{which ensures}\qquad
+ \norm{Sv}_\infty\leq\eta\bar\mu.
+ \label{eq:inexact-newton-residual}
+\end{equation}
+These are residuals of the named Newton formulation, not the global
+RHS-relative feasibility residual of Definition~\ref{def:global-residual}.
+The formulation-specific scaling is part of the contract
+\cite{mohammadisiahroudi2025-inexact-feasible-interior-point-method,mohammadisiahroudi2024-efficient-use-quantum-linear-system}.
+\end{definition}
+
+For primal-barrier geometry, let $x_F(\mu)$ lie in the affine slice
+$x^0+\ker A$, and let $W$ have orthonormal columns spanning $\ker A$.  Its
+reduced Hessian is
+\begin{equation}
+ H_{\rm red}(\mu)=W^\top\nabla^2F(x_F(\mu))W.
+ \label{eq:reduced-hessian}
+\end{equation}
+
+\begin{definition}[Reduced central-path Hessian condition number]
+\label{def:reduced-kappa}
+The \emph{reduced central-path Hessian condition number} is
+\begin{equation}
+ \kappa_{\rm red}(\mu;F)
+ =\frac{\lambda_{\max}(H_{\rm red}(\mu))}
+        {\lambda_{\min}(H_{\rm red}(\mu))}.
+ \label{eq:reduced-kappa}
+\end{equation}
+The Euclidean metric and an orthonormal tangent basis are part of this
+definition.  The value is invariant under replacing $W$ by another
+orthonormal basis, but not under an arbitrary nonorthogonal reparametrization.
+For the LP log barrier, $\nabla^2F(x)=X^{-2}$.
+\end{definition}
+
+\begin{definition}[Ambient and KKT condition numbers]
+\label{def:ambient-kkt-kappa}
+For the named ambient cone barrier $F$, the \emph{ambient barrier-Hessian
+condition number} is
+$\kappa_{\rm amb}(x;F)=\kappa_2(\nabla^2F(x))$ before restriction to the
+feasible tangent space.  It is representation-dependent: changing the
+ambient cone representation or its coordinates changes the named $F$ and may
+change $\kappa_{\rm amb}$.  For a named nonsingular Newton or saddle matrix $K$
+in a specified scaling, its \emph{KKT condition number} is
+$\kappa_2(K)=\sigma_{\max}(K)/\sigma_{\min}(K)$.  We write $\kappa_H$ for the
+condition number of the actual linear-system matrix $H$ being solved.
+\end{definition}
+
+These quantities are not interchangeable.  Eliminating variables, changing
+row scales, choosing a nonorthogonal null-space basis, or passing from an
+indefinite KKT matrix to normal equations can change singular values and can
+square a condition number.  In particular, a statement about
+$\kappa_{\rm red}$ says nothing by itself about
+$\kappa_2(H_{\rm NE})$, $\kappa_2(H_{\rm OSS})$, or the full saddle system.
+
+\subsection{Quantum computation and access models}
+\label{sec:prelim-quantum-access}
+
+Algorithms are uniform quantum circuits with arbitrary input-independent
+gates, intermediate measurements, and classical control.  A query and a gate
+are different resources.  Calls to an oracle, its inverse, or a controlled
+version count as oracle calls unless a result explicitly states otherwise.
+
+\begin{definition}[Raw sparse coefficient (sign) access]
+\label{def:raw-sparse-access}
+In the \emph{raw sparse coefficient (sign) access model}, the dimensions and a
+fixed list of nonzero positions of the LP or SDP data are public.  The hidden
+input is a string $\varsigma\in\{-1,+1\}^{n_{\rm bit}}$ that determines designated
+coefficient signs (or designated entries from a fixed finite alphabet).
+The charged oracle is
+\begin{equation}
+ O_\varsigma\ket{i,z}=\ket{i,z\mathbin\oplus\operatorname{enc}(\varsigma_i)}.
+ \label{eq:sign-xor-oracle}
+\end{equation}
+A sparse row, sparse column, or coefficient query is admissible only when it
+can be simulated coherently with the stated number of calls to
+$O_\varsigma$; a query does not reveal several hidden signs merely because a
+coefficient is repeated in a derived matrix.  The equivalent phase convention
+$\ket{i}\mapsto\varsigma_i\ket{i}$ and the XOR convention
+\eqref{eq:sign-xor-oracle} interconvert with one charged query in either
+direction, using phase kickback and the assumed controlled form of the
+oracle.
+\end{definition}
+
+\begin{remark}
+Definition~\ref{def:raw-sparse-access} is a deliberately restrictive,
+project-specific specialization of the standard quantum query model
+\cite{beals2001-quantum-lower-bounds-by-polynomials}.  Public support and
+hidden signs make reductions auditable.  Supplying a prefix-parity table, an
+eliminated matrix, or an arbitrary input-dependent block-encoding completion
+at unit cost is a stronger model and is never implicit.
+\end{remark}
+
+\begin{definition}[Block encoding]
+\label{def:block-encoding}
+Let $M$ act on $\ell$ qubits.  An $(\alpha,a,\epsilon)$ \emph{block encoding} of
+$M$ is an $(\ell+a)$-qubit unitary $U$ such that
+\begin{equation}
+ \norm{M-\alpha(\bra{0^a}\otimes I)U(\ket{0^a}\otimes I)}_2\leq\epsilon,
+ \qquad \alpha>0.
+ \label{eq:block-encoding}
+\end{equation}
+The scalar $\alpha$ is the \emph{block-encoding normalization} (also called
+subnormalization), $a$ is the ancilla count, and $\epsilon$ is absolute
+operator-norm error \cite{andras2019-quantum-singular-value-transformation-beyond}.
+\end{definition}
+
+Normalizations multiply under products: composing encodings with
+normalizations $\alpha$ and $\beta$ yields normalization $\alpha\beta$ and
+the corresponding propagated error.  Hence the cost of polynomial inversion
+is governed by the normalized spectral cutoff.  For invertible $H$, the
+access-normalized condition parameter is
+\begin{equation}
+ \kappa_{\rm BE}(H;\alpha_H)=\alpha_H\norm{H^{-1}}_2,
+ \label{eq:kappa-be}
+\end{equation}
+whereas $\kappa_H=\norm{H}_2\norm{H^{-1}}_2$.  They coincide only when the
+encoding is normalized at the operator norm.  Sparse-access constructions can
+have $\alpha_H$ controlled by the row/column sparsity of $H$, not by
+$\nnz(A)$, and product encodings can have a still larger normalization
+\cite{andras2019-quantum-singular-value-transformation-beyond}.
+
+\begin{definition}[State-preparation access]
+\label{def:state-preparation-access}
+For a nonzero vector $v\in\C^N$, \emph{state-preparation access} supplies a
+unitary $U_v$ with
+\begin{equation}
+ U_v\ket{0}=\ket{v}:=\frac{1}{\norm{v}_2}\sum_{i=1}^N v_i\ket{i},
+ \label{eq:state-prep}
+\end{equation}
+together with controlled access to $U_v$ and $U_v^\dagger$.  If
+$\norm{v}_2$ is needed by the task, it must be supplied or estimated
+separately; when signed amplitudes matter, the oracle promise also fixes a
+phase convention for the controlled circuit.  For a mixed state, the
+analogous oracle prepares a specified purification.  This model is stronger
+than receiving independent copies, because inverse access enables
+amplitude-estimation procedures
+\cite{joran2023-quantum-tomography-state-preparation-unitaries}.
+\end{definition}
+
+State preparation exposes one normalized ray.  It does not, merely by being
+callable, provide coherent numerical access to individual $v_i$, a diagonal
+operator $\diag(v)$, or a reusable update oracle.  Such interfaces are
+separately defined output contracts below.
+
+\begin{definition}[Plain block-encoding access and factor access]
+\label{def:plain-factor-access}
+\emph{Plain block-encoding access} to a Hermitian positive-definite matrix
+$H$ supplies a controlled $(\alpha_H,a_H,\epsilon_H)$ block encoding of $H$
+and its adjoint.  \emph{Factor access} supplies instead a controlled
+$(\alpha_G,a_G,\epsilon_G)$ block encoding of a possibly rectangular $G$
+(padded to square dimensions in the standard way) and its adjoint, together
+with the promise
+\begin{equation}
+ H=G^\dagger G.
+ \label{eq:factor-access}
+\end{equation}
+These are different input models.  The standard product construction using
+two factor-oracle calls gives an
+$(\alpha_G^2,2a_G,2\alpha_G\epsilon_G+\epsilon_G^2)$ block encoding of $H$
+(the $\epsilon_G^2$ term is needed because \cref{def:block-encoding} does not
+require $\alpha_G\ge\norm G$).  Thus a QLS
+solver applied to this composed encoding uses normalization
+$\alpha_H=\alpha_G^2$ and access-normalized inversion parameter
+$\alpha_G^2\norm{H^{-1}}_2$.  A solver that acts on $G$ directly must instead
+state its dependence on $\alpha_G$ and on the relevant singular-value cutoff
+of $G$; it may not silently substitute plain access to $H$.
+\end{definition}
+
+Normal equations and reduced log-barrier Hessians often have natural factors,
+so later results state explicitly which side of
+Definition~\ref{def:plain-factor-access} they assume.  No factorization is
+free merely because one exists algebraically.
+
+\begin{definition}[Quantum linear-system solver]
+\label{def:qls}
+A \emph{quantum linear-system (QLS) solver} for a nonsingular Hermitian matrix
+$H$ is a procedure that, given the stated matrix access and a preparation
+oracle for $\ket b$, produces a state $\rho$ satisfying
+\begin{equation}
+ \Dtr\!\left(\rho,
+ \frac{H^{-1}\ket b\!\bra bH^{-1}}
+      {\norm{H^{-1}\ket b}_2^2}\right)\leq\epsilon_{\rm ls}.
+ \label{eq:qls-contract}
+\end{equation}
+Its resource statement must name the linear-system condition number
+$\kappa_H$, the block-encoding normalization $\alpha_H$ (or sparse-oracle
+normalization), the preparation cost of $\ket b$, success probability, and
+precision $\epsilon_{\rm ls}$.
+\end{definition}
+
+HHL introduced the state-output linear-systems primitive
+\cite{harrow2009-quantum-algorithm-linear-systems-equations}.  The
+Childs--Kothari--Somma algorithm achieves polylogarithmic precision dependence
+in sparse access, variable-time techniques improve amplification overhead,
+and QSVT implements inversion as a singular-value polynomial
+\cite{andrew2017-quantum-algorithm-systems-linear-equations,andris2012-variable-time-amplitude-amplification-quantum,andras2019-quantum-singular-value-transformation-beyond}.
+Discrete-adiabatic and adiabatic solvers provide other implementations
+\cite{luigi2022-optimal-scaling-quantum-linear-systems,subasi2019-adiabatic-quantum-linear-system}.
+These algorithm families have different constants and parameter dependences,
+but all require an access-and-output ledger; none turns
+\eqref{eq:qls-contract} into a classical vector for free.
+
+\begin{definition}[Charged QRAM access]
+\label{def:charged-qram}
+A \emph{QRAM access assumption} supplies a coherent lookup unitary for an
+explicit classical table, for example
+$\ket{i,z}\mapsto\ket{i,z\mathbin\oplus\operatorname{enc}(d_i)}$
+\cite{giovannetti2008-architectures-for-a-quantum-random}.
+In \emph{charged QRAM access}, raw-input oracle calls and QRAM writes used to
+build or update that table are charged as separate resources; subsequent
+lookups have the advertised QRAM query cost.
+\end{definition}
+
+QRAM can reduce coherent lookup depth once data have been loaded, but it does
+not erase the information cost of producing an input-dependent table.  The
+lower bounds in this paper therefore charge setup.  A QRAM containing all hidden parities,
+Newton entries, or solution coordinates has already been given information
+that raw coefficient access was designed to hide.
+
+Tomography illustrates the output bottleneck.  For an $N$-dimensional pure
+state, a classical amplitude vector with $\ell_2$ error $\epsilon$ requires
+$\Thetatilde(N/\epsilon)$ controlled calls in the state-preparation
+unitary model, while sampling-based approaches have quadratic dependence on
+$1/\epsilon$; mixed-state costs also depend on rank and the requested matrix
+norm \cite{joran2023-quantum-tomography-state-preparation-unitaries}.  Thus a
+polylogarithmic-dimensional QLS state-generation cost is compatible with a
+linear-dimensional classical readout cost.
+
+\subsection{Output and accounting contracts}
+\label{sec:prelim-output-contracts}
+
+An algorithm solves only the contract it is asked to solve.  The following
+names are canonical throughout the paper.
+
+\begin{definition}[Value-estimation output]
+\label{def:value-output}
+For a scalar target $v$, an \emph{additive $\epsilon$ value-estimation output}
+is a classical $\widetilde v$ such that
+$|\widetilde v-v|\leq\epsilon$.  A \emph{target-relative $\epsilon$
+value-estimation output} satisfies
+$|\widetilde v-v|\leq\epsilon|v|$ and is used only under a nonzero-target
+promise.  An unqualified ``relative value estimate'' always means this
+target-relative contract.  The required success probability is part of
+either contract.
+\end{definition}
+
+\begin{definition}[Reference-scaled value-estimation output]
+\label{def:reference-scaled-value-output}
+For a stated scale $s_{\rm ref}>0$, a \emph{reference-scaled $\epsilon$
+value-estimation output} satisfies
+$|\widetilde v-v|\leq\epsilon s_{\rm ref}$.  This contract is used when zero
+may be a valid target or when the problem supplies a natural external scale;
+the scale is always named rather than called a relative error.
+\end{definition}
+
+\begin{definition}[Classical vector output]
+\label{def:classical-vector-output}
+A \emph{classical vector output} for $x\in\R^N$ is an explicit classical list
+$\widetilde x\in\R^N$ satisfying a named error guarantee, including its norm
+and scale.  Unless stated otherwise that guarantee is
+$\norm{\widetilde x-x}_2\leq\epsilon$.  Producing only
+$\widetilde x/\norm{\widetilde x}_2$, samples from its coordinates, or an
+implicit circuit is a different contract.
+\end{definition}
+
+\begin{definition}[Compact optimizer output]
+\label{def:compact-optimizer-output}
+A \emph{compact (sparse-support) optimizer output} is a classical description
+of an identified component or subset $I$ together with the nonzero
+coordinates of a solution supported on $I$, satisfying a named optimality and
+feasibility tolerance.  It is an explicit sparse solution description, not a
+full dense vector and not merely a quantum state or sampling oracle.
+\end{definition}
+
+\begin{definition}[Normalized solution-state output]
+\label{def:solution-state-output}
+For a nonzero solution vector $x$ in the original problem coordinates, an
+\emph{$\epsilon$ normalized solution-state output} (also called an
+\emph{amplitude-encoded solution state}) is a density operator $\rho$ such that
+\begin{equation}
+ \Dtr\!\left(\rho,
+ \ket{x/\norm{x}_2}\!\bra{x/\norm{x}_2}\right)\leq\epsilon,
+ \qquad
+ \Dtr(\rho,\sigma)=\tfrac12\norm{\rho-\sigma}_1.
+ \label{eq:solution-state-output}
+\end{equation}
+The output does not include $\norm{x}_2$, coordinate values, or a preparation
+unitary unless those items are explicitly requested.  When $x$ is an LP
+primal candidate, we use the synonymous stable name \emph{amplitude-encoded
+primal-state output}.  A state encoding coefficients in a reduced or
+null-space basis is a different contract; the later original-coordinate
+state lower bounds do not automatically apply to that reduced-coordinate
+output.
+\end{definition}
+
+\begin{definition}[Trace-normalized density output]
+\label{def:trace-density-output}
+For a nonzero PSD solution $X$, an \emph{$\epsilon$ trace-normalized density
+output} is $\rho$ satisfying
+\begin{equation}
+ \Dtr\!\left(\rho,X/\tr X\right)\leq\epsilon.
+ \label{eq:trace-density-output}
+\end{equation}
+For a product-PSD solution this means the direct-sum density operator
+$\bigoplus_jX_j/(\sum_j\tr X_j)$, including its block-label register.  This
+contract deliberately discards the total trace, which must be output
+separately when needed.
+\end{definition}
+
+\begin{definition}[Coordinate-oracle output]
+\label{def:coordinate-oracle-output}
+An \emph{$\epsilon$ coordinate-oracle output} for $x\in\R^N$ is a reusable,
+controlled circuit $O_{\widetilde x}$ and its adjoint acting as
+\begin{equation}
+ O_{\widetilde x}\ket{i,z}
+ =\ket{i,z\mathbin\oplus\operatorname{enc}(\widetilde x_i)},
+ \qquad |\widetilde x_i-x_i|\leq\epsilon
+ \label{eq:coordinate-oracle-output}
+\end{equation}
+for every $i$, with a stated fixed-point encoding and failure convention.
+The cost of one invocation and any one-time compilation cost are both part of
+the contract.  A normalized solution state is not a coordinate-oracle output.
+\end{definition}
+
+\begin{definition}[Unconditional and heralded preparation]
+\label{def:heralded-output}
+An \emph{unconditional preparation} is a channel whose output state itself
+satisfies the promised error bound after all internal randomness and flags
+are discarded.  A \emph{heralded preparation} outputs a classical or
+computational-basis success flag; conditioned on that flag, the state obeys
+the error bound, the success probability is at least a stated $p>0$ on every
+allowed input, and repetitions or amplification needed to obtain success are
+charged.  An unobserved or unspecified ``good branch'' is neither contract.
+\end{definition}
+
+\begin{definition}[Global RHS-relative residual]
+\label{def:global-residual}
+For $b\neq0$, the \emph{global RHS-relative $\ell_2$ primal residual} of an LP
+candidate $x$ is
+\begin{equation}
+ \operatorname{res}_p(x)=\frac{\norm{Ax-b}_2}{\norm b_2}.
+ \label{eq:global-residual}
+\end{equation}
+For an SDP candidate $X$, replace $Ax$ by $\mathcal A(X)$.  A statement that
+the residual is at most $\eta$ always refers to this ratio unless it names a
+different contract.  Per-row relative residuals, coefficientwise residuals,
+normal-equation residuals, local-norm residuals, and backward error under
+perturbed data are different and do not imply one another without additional
+scale assumptions.
+\end{definition}
+
+\begin{definition}[First-preparation and amortized total-query accounting]
+\label{def:amortized-accounting}
+For one fixed input oracle and $R$ requested outputs, \emph{setup} is the
+reusable input-dependent work performed before the first output is produced.
+Let $Q_{\rm setup}$ and $W_{\rm setup}$ be, respectively, its raw-input query
+count and QRAM-write count, and let $Q_t$ and $W_t$ be the corresponding
+nonreusable costs attributable to output $t$.  Raw queries and QRAM writes are
+distinct columns in the resource ledger and are never added together.  The
+\emph{first-preparation cost} is the pair
+$(Q_{\rm setup}+Q_1,W_{\rm setup}+W_1)$.  The total ledgers are
+\begin{equation}
+ Q_{\rm total}(R)=Q_{\rm setup}+\sum_{t=1}^R Q_t,
+ \qquad
+ W_{\rm total}(R)=W_{\rm setup}+\sum_{t=1}^R W_t,
+ \label{eq:total-query-ledger}
+\end{equation}
+with amortized costs obtained by dividing each column by $R$.  If setup caches
+the complete fixed instance, later $Q_t$ may be zero in a pure query model.
+Conversely, every raw query or QRAM write used to prepare consumed advice or
+additional state copies is charged in setup or in the consuming call.
+\end{definition}
+
+Definition~\ref{def:amortized-accounting} prevents two opposite accounting
+errors: repeatedly charging the same static information as if it were fresh,
+and declaring an input-dependent reusable data structure free.  In the pure
+query model with a fixed, finite, cacheable hidden input, an additive
+per-round raw-query lower bound therefore needs a genuine freshness, memory,
+communication, or consumable-resource assumption.
+
+\subsection{Lower-bound toolkit}
+\label{sec:prelim-lower-bound-tools}
+
+\paragraph{Parity.}
+For $n_{\rm bit}$ oracle bits, bounded-error quantum computation of their
+parity needs $\Omega(n_{\rm bit})$ queries.  This follows from the polynomial
+method because a
+$T$-query algorithm has an acceptance probability represented by a real
+multilinear polynomial of degree at most $2T$, whereas parity has linear
+approximate degree \cite{beals2001-quantum-lower-bounds-by-polynomials}.  Our
+raw-sign reductions therefore verify that each optimization-data query can be
+simulated by $O(1)$ sign queries and then decode parity from the contracted
+output.
+
+\paragraph{Adversary bounds and composition.}
+Ambainis's adversary method assigns nonnegative weights to pairs of inputs
+with different answers and bounds the progress one query can make
+\cite{ambainis2002-quantum-lower-bounds-by-quantum}.  Its positive-weight
+spectral formulation composes, and already covers an OR of independent
+parity gadgets, with the product of the outer and inner adversary scales
+\cite{hyer2005-tight-adversary-bounds-for-composite}.  The more general
+negative-weight bound $\operatorname{Adv}^{\pm}$ composes for Boolean outer functions and
+characterizes bounded-error Boolean function evaluation up to constants
+\cite{lee2011-quantum-query-complexity-of-state,reichardt2011-reflections-for-quantum-query-algorithms}.
+We do not invoke either composition statement when component queries overlap
+or an aggregate predicate is supplied.
+
+\paragraph{Polynomial method and symmetrization.}
+More generally, every measurement probability after $T$ standard input
+queries is a degree-$2T$ polynomial in the input bits.  Averaging over inputs
+of equal Hamming weight turns it into a univariate polynomial without
+increasing degree.  Approximation constraints at the promised weights can
+then be combined with classical polynomial inequalities to lower-bound $T$
+\cite{beals2001-quantum-lower-bounds-by-polynomials}.  Later applications
+state the promise points and error interval explicitly; symmetrization does
+not justify inserting unpromised inputs.
+
+\paragraph{Trace distance and Helstrom decoding.}
+Trace distance is contractive under channels, and the statistical distance
+between the outcome distributions of any measurement on $\rho$ and $\sigma$
+is at most $\Dtr(\rho,\sigma)$.  Conversely, for equal priors the optimal
+binary discrimination success probability is
+$\tfrac12(1+\Dtr(\rho,\sigma))$, the Helstrom bound
+\cite{nielsen2010-quantum-computation-quantum-information-10th}.  Hence a fixed
+measurement that decodes a hidden bit from an ideal solution state with bias
+$\beta$ still has positive bias from any output within trace distance less
+than $\beta$.
+
+\paragraph{State conversion.}
+In the state-conversion problem, an input oracle indexed by $x$ must transform
+a prescribed family of initial states $\{\ket{\rho_x}\}$ into target states
+$\{\ket{\sigma_x}\}$ to bounded error.  The filtered $\gamma_2$ query distance
+compares the two Gram matrices
+$[\langle\rho_x|\rho_y\rangle]$ and
+$[\langle\sigma_x|\sigma_y\rangle]$ through the matrices that record which
+input symbols a query can distinguish.  It gives lower bounds for general
+state conversion, the direction used in this paper, and matching upper and
+lower bounds up to a gap in their error parameters.  In the special case of
+function evaluation, the resulting general adversary bound characterizes
+bounded-error query complexity up to constants
+\cite{lee2011-quantum-query-complexity-of-state}.  Later uses specify the full
+oracle completion: prescribing only $U_x\ket0$ is insufficient when an
+algorithm may query $U_x$ away from $\ket0$.
+
+\subsection{Recurring notation}
+\label{sec:prelim-notation}
+
+\begin{table}[t]
+ \centering
+ \small
+ \caption{Notation used across the technical sections.  Several sections
+ locally rebind $G$, $N$, $P$, $\alpha$, and $\eta$ and state those
+ conventions locally.}
+ \label{tab:recurring-notation}
+ \begin{tabular}{@{}lp{0.72\linewidth}@{}}
+  \toprule
+  Symbol & Meaning \\
+  \midrule
+  $m,n$ & Number of LP equality constraints and primal variables. \\
+  $q,d_j$ & Number of PSD blocks and dimension of block $j$. \\
+  $n_{\rm bit},\varsigma$ & Number of hidden signs and their string in a raw coefficient-oracle reduction. \\
+  $N$ & Dimension of a vector requested by an output contract. \\
+  $N_H$ & Dimension of the actual Newton, normal-equation, OSS, or MNES system sent to a linear solver. \\
+  $A,b,c$; $\mathcal A,b,C$ & LP data; product-form SDP data. \\
+  $X,S$ & Diagonal LP matrices $\diag(x),\diag(s)$, or primal and dual PSD variables when the context is semidefinite. \\
+  $F,\nu$ & Named ambient cone barrier and its declared cone parameter. \\
+  $\mu$ & Central-path parameter. \\
+  $\bar\mu$ & Average LP complementarity $x^\top s/n$ at an iterate. \\
+  $\sigma$; $\sigma_{\min},\sigma_{\max}$ & Newton centering parameter; minimum and maximum singular values. \\
+  $g$ & Primal objective gap $c^\top x_F-\mathrm{OPT}$, not automatically the primal--dual gap. \\
+  $N_2(\theta)$ & Feasible Euclidean complementarity neighborhood in \eqref{eq:n2-neighborhood}. \\
+  $W,V$ & Orthonormal tangent basis used in $H_{\rm red}$; a general full-rank null-space basis used in OSS. \\
+  $H_{\rm red},H_{\rm NE},H_{\rm OSS},H_{\rm MNES}$ & Reduced barrier Hessian and the named Newton-system matrices. \\
+  $\kappa_{\rm red}$ & Condition number of $H_{\rm red}$ in an orthonormal Euclidean tangent basis. \\
+  $\kappa_{\rm amb}$ & Condition number of the named ambient cone-barrier Hessian before tangent restriction. \\
+  $\kappa_H$ & Spectral condition number of the actual named linear-system matrix $H$; not $\kappa_2(A)$ unless proved equal. \\
+  $s_H$ & Maximum row/column sparsity of $H$; not $\nnz(A)$. \\
+  $(\alpha_H,a_H,\epsilon_H)$ & Normalization, ancilla count, and operator error of a block encoding of $H$. \\
+  $(\alpha_G,a_G,\epsilon_G)$ & Corresponding factor block-encoding data for $H=G^\dagger G$. \\
+  $\kappa_{\rm BE}$ & Access-normalized inversion parameter $\alpha_H\norm{H^{-1}}_2$. \\
+  $\epsilon_{\rm opt},\epsilon_{\rm ls}$ & Optimization accuracy and one-linear-solve state accuracy. \\
+  $\eta$ & Named feasibility or inexact-Newton residual tolerance, as specified by the applicable contract. \\
+  $\Dtr$ & Trace distance $\tfrac12\norm{\rho-\sigma}_1$. \\
+  $Q_{\rm setup},Q_{\rm total}$ & Charged setup queries and total raw queries including setup. \\
+  $W_{\rm setup},W_{\rm total}$ & Charged setup writes and total QRAM writes including setup. \\
+  $\nnz(A)$ & Number of stored nonzeros of $A$; it does not encode fill or derived-system sparsity. \\
+  \bottomrule
+ \end{tabular}
+\end{table}

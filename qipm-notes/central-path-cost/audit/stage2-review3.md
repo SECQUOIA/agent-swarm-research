@@ -1,0 +1,56 @@
+# Stage 2 independent review 3
+
+**Verdict: NO MAJOR ISSUES.** I found no invalid central theorem, scalar certificate, asymptotic order, or discrete lower-bound argument. The intended results are supported by their proofs. Four small scope/notation repairs below should nevertheless be made before the stage closes. I did not edit the manuscript, read other reviewer reports, or communicate with reviewers.
+
+## Required minor repairs
+
+1. **State the restriction hypothesis in the full-gap scheduling paragraph.** `sections/03a-distribution.tex`, paragraph immediately after Corollary “Accuracy-dependent numerical rank,” currently says that if a conic central path has gap `nu/eta`, the L2-tail bound applies to its primal projection. That gap identity alone does not imply the explicit spectral velocity formula: it holds for arbitrary logarithmically homogeneous conic barriers. State that the conic barrier restricted to its feasible slice is the unit-scale spectral product barrier under study, with the same objective and parameter, or explicitly assume that its primal projection is the central path computed here and that its induced metric is the specified metric. The later residual-transfer paragraph states the analogous restriction hypothesis carefully. The intended result is correct; this is a missing qualifier in an application sentence, not a failure of the distribution theorem.
+
+2. **Redefine the metric in the unequal-scale subsection.** `sections/03b-discrete.tex:4–6` imposes `F=sum b` “throughout this section,” while the final subsection uses positive scales `alpha_i` and the distance `H_0 sqrt(r)` associated with `F_alpha=sum alpha_i b`. Insert the latter definition at the start of “Unequal scales can produce a larger discrete separation,” and restrict the initial unit-scale convention to the preceding subsections. All distances, local norms, and labeled centers in the last subsection must use this weighted barrier. Its proof is valid with this explicit change; it is not valid in the previously declared unit-scale metric.
+
+3. **Identify the support vector when switching to minimization.** `sections/03b-discrete.tex:5–6` introduces objective `-sum w_i x_i`, while the tube theorem uses the foundational support-gap notation `g_c`. Explicitly write that the LP minimizes `-w^T x`, equivalently maximizes `c^T x` with `c=w`, so that `g_c=sum w_i(1-x_i)`. Without this sentence a reader may naturally assign `c=-w` from the stated minimization objective, reversing the meaning of the terminal gap condition. The proof and all central coordinates use `c=w` and are consistent under that convention.
+
+4. **Give the pointwise distribution law's parameter range.** At `sections/03a-distribution.tex:19–22`, state `eta>0` for the `Q_1(eta)/eta` inequality; at zero the written expression is `0/0`. The following sentence already treats the integral at zero correctly. Alternatively define the quotient at zero by its limit `sum w_i`.
+
+## Scientific checks
+
+### Exact weighted comparison and activation order
+
+- The scalar central equation gives `q(eta w_i/alpha_i)` and the asserted velocity. Both tail bounds hold; they imply integrable distance from the Heaviside velocity and `H(s)=s+kappa+o(1)`.
+- The prefix inequality follows by decomposition into initial indicator vectors. Weighted Cauchy–Schwarz gives exactly `sum d_i^2/alpha_i`, and the endpoint distance is exact because within each factor scales agree. Fixed positive and negative Jordan coordinates remain consistently ordered by signed value along the path.
+- The sharpness construction is legitimate for every fixed ordered positive scale vector: `c_i=1/(sqrt(S_i)+sqrt(S_{i-1}))` strictly decreases, so `u_i=H^{-1}(M c_i)` gives strict threshold order. The smooth/step length error is bounded independently of M, and the endpoint distance is exactly `M Gamma`. This proves a supremum, not attainment by a finite objective. The text states that distinction correctly.
+- The cumulative-mass formula is the exact tanh expression. Jensen's equality condition is correct. In the adjacent exchange proof, `u<=v` and `u+v>=T` imply `|u-T/2|<=|v-T/2|`; hence the ordering extrema have the stated directions. The scale-range explanation correctly needs exponential cumulative dynamic range for square-root-rank overhead.
+
+### Scalar dilation and certificates
+
+- The formulas for Y, A, P and W agree with inversion of `p`; the ratio tends to one at both boundaries and is strictly larger inside, proving an attained maximum. Convexity is used in the correct direction.
+- The KKT argument uses `eta=lambda/2`; it yields coordinatewise domination by the central point at that parameter and then bounds the first accurate center. No unsupported sharpness of `c_star Gamma` is claimed.
+- I independently checked the elasticity identity: `dE/dlog y=E-K`, with `K=y^2(1-x^2)/(2x^2(1+x^2))`. The comparison B and the polynomial positivity proof give `K<1`. The implication `E>2 => x>4/5` follows from the preceding monotonicity. The derivative bound for G and the resulting k=107/200 bound are valid.
+- The two integrated elasticity inequalities and their minimizations have the correct constants. The positive-series upper tail for Y, rational squaring directions for A, and the strict lower witness all prove the advertised rational enclosure. Attainment justifies converting pointwise strict upper inequalities into the strict maximum bound.
+- Ran `/home/sgusev/miniconda3/envs/qipm/bin/python central-path-cost/scripts/verify_scalar_certificate.py`: all exact rational, series-tail, and squared-radical checks passed. This script checks the displayed enclosures and margins with Fraction arithmetic, not floating-point approximations.
+
+### Distribution and arbitrary-path lower bounds
+
+- The Q1/Q2 constants, breakpoint antiderivative, normalized numerical-rank schedules, and L2-tail bound are correct. In the l1-tail schedule the post-eta=1 speed bound uses `min(z^2,1)<=z`, yielding `2m` at the prescribed terminal parameter.
+- The rank-profile lower bound without factor two follows from exact allocation and AM–GM. The proposed inverse-square-root-coordinate family has logarithmic optimizer `s_i=c/sqrt(i)` and diverging norm. Its stronger rank certificate is indeed zero for sufficiently large r because the uniform upper ratio tends below one. Thus the manuscript's strengthening and claimed failure of both certificates are valid.
+- The determinant compression proof has the correct convexity direction: the Schur complement is matrix concave and negative logdet is convex and order reversing. The gradient norm bound uses compressed barrier parameter m. The two inequalities involving Hadamard and `1-z_i^2<=2(1-z_i)` hold even when some z_i are negative.
+- Both decay examples include the finite-rank requirement needed for the asymptotics. The geometric lower index and numerical-rank upper schedule give `L^(3/2)`; the polynomial Q2 integration eliminates the extraneous logarithm and matches the lower rank certificate.
+
+### Dyadic input and finite sequences
+
+- The exact exponents are polynomial-time constructible rational sums and integer floors. For every i>=2, `A_i=Theta(r)`, so the ordinary numerator/denominator input really has `Theta(r^2)` objective bits. No hidden exponent encoding is used.
+- The first accurate parameter lies in `(T-1,T]`; the all-but-O(sqrt r) activated coordinates justify the lower error endpoint. Tail sums give the endpoint and arbitrary-path norms `Theta(r sqrt(log r))`. Summation by parts controls rounding in the central arclength lower bound without accumulating a spurious order-r error per interval.
+- At `J=floor(r^(2/3))`, the first J threshold gaps are at least log 2. The clipped progress argument bounds each jump by `O(C sqrt(1+C))`; it handles clipping-boundary crossings and backward moves correctly. Initial tube proximity bounds initial progress by `Gamma_r delta_r/v_0`, and actual terminal accuracy forces the terminal label past the cutoff because `T-b=Theta(r^(2/3))`. The stated little-o conditions suffice.
+- The decrement-to-tube lemma follows from the lower segment Hessian estimate and gives precisely `log((1-beta)/(1-2beta))`. The pullback residual calculation, restricted dual norm inequality, and weak-duality transfer are correct with their explicit hypotheses.
+- The spectral extension allows off-frame iterates: spectral contraction and the largest spectral coordinate forced by accuracy supply the needed endpoint statements. Positive objective eigenvalues are essential here and are explicitly chosen.
+- The unequal-scale core argument is sound once the metric is explicitly corrected as in minor item 2. A jump intersecting three cores in positive length crosses a full middle core, contradicting its distance bound. The sum of at most two weighted-coordinate increments is at most `sqrt(2) C`. Initialization and endpoint crossing force all core gains even with backtracking. The construction correctly makes no rational-input efficiency claim.
+
+## Verification and literature scope
+
+Ran the numerical geometry script under the qipm interpreter: all 80 random weighted-prefix checks, all associated five-channel permutation comparisons, the weighted sharpness convergence checks, and 401 scalar speed/error checks passed. The final weighted ratio was approximately 1.2734824 versus prefix target 1.2748644. These are supporting checks, not substitutes for proofs. The current final LaTeX log had no `Warning`, `Overfull`, or `undefined` matches; I did not run a competing build.
+
+Read the source-map Stage 2 coverage and the literature ledger, as well as root's additional literature screen. The new sections cover the promised standard-barrier developments: exact velocity, rank and decay schedules, endpoint sharpness, unequal-scale frontier, scalar dilation, determinant limitations, rational finite-input family, arbitrary-label growing tubes, decrement/residual transfer, and unequal-scale discrete separation. General scalar/coupled-barrier and primal–dual-completion theorems are properly deferred to their assigned stages.
+
+Independently opened [Lorentz's primary 1951 article](https://msp.org/pjm/1951/1-3/pjm-v1-n3-p07-s.pdf), and searched the central-path/Lorentz/hypercube-geodesic intersection. The manuscript properly credits the classical rearrangement norm, rather than claiming the prefix inequality itself is novel. NT2002 supplies the local-step geometry and product theorem; NN2008 supplies the prior primal endpoint and objective-target comparison problem. Stage 2's actual claims are the explicit profile realization, sharp special-family constants, and stated finite-sequence model. The current literature framing does not overclaim generic first geodesic comparisons or generic lower bounds for arbitrary optimization algorithms. The targeted searches did not identify a duplicate result, but this is not a priority certificate and the final synthesis still needs the planned broader lower-bound/curvature literature comparison.
+
+No changes are requested merely because later-stage material, final abstract, and submission metadata are intentionally unfinished. The radial-coupling scratch was not treated as an established theorem.

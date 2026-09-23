@@ -1,0 +1,121 @@
+\section{Experimental protocol and supporting accounting}
+\label{app:experimental-accounting}
+
+Section~\ref{sec:experiments} organizes the findings by capability, failure
+mechanism, and cost. This appendix records the frozen protocols and full
+production and repair accounting that support those findings. Its summaries
+are derived from the frozen campaign records, with separate denominators for
+the primary and targeted runs.
+
+\subsection{Frozen protocols and measurement boundaries}
+
+The historical campaign used a 60-second numerical outer-approximation budget,
+heterogeneous exact-SCIP budgets of 180 or 90 seconds, and varying concurrency.
+Its archived producer labels are therefore neither current acceptance evidence
+nor results of a uniform timing experiment. We replayed all 289 records with
+six workers and a 1,200-second per-record limit, including both the internal
+exact proof kernel and the external \texttt{viprchk} corroboration. The replay
+manifest identifies the checker sources and inputs by SHA-256; the harness
+checks artifact hashes again after checking.
+
+We also generated new artifacts for the same 289 names, including every
+historical failure, using a protocol frozen before the first run. Numerical
+outer approximation and each exact-SCIP attempt received a requested search
+budget of 30 seconds. The producer tried its default configuration and, after
+an unsuccessful complete check, at most one conservative fallback. We requested
+one solver and LP thread and ran six workers. A separate 360-second wall-clock
+limit killed the entire instance process group, retaining partial files and
+recording the timeout without retry. The 30-second settings are search budgets:
+loading, preprocessing, nonlinear subproblem overruns, proof completion, and
+checking are additional work covered by the outer limit. Tool events distinguish
+SCIP invocations, proof completion, external checking, and internal proof replay.
+
+After generation, a separate complete replay used six workers and a
+1,200-second per-record limit. Its acceptance criterion uses a separate
+execution of the same internal checker, which is implemented separately from the solver and external VIPR
+checker; the generator's external-check results remain additional evidence.
+The replay chooses the canonical completed proof when present, otherwise the
+completed failed fallback, otherwise the completed failed default attempt.
+This rule was fixed before replay and uses no bound-quality selection.
+Consequently, a complete proof surviving a producer timeout can earn a
+separate replay verdict without being counted as completed production.
+All attempt outcomes remain in the data. We rehash the frozen sources, settings,
+model inputs, wrapper, and tool executables after generation.
+
+The machine has an Intel Xeon w5-2565X processor (18 physical cores, 36 logical
+processors) and approximately 30\,GiB of memory, running Linux under WSL2.
+Generation uses Gurobi 13.0.3, IPOPT 3.14.20, and SCIP 10.0.3 with
+SoPlex 8.0.3. Package versions, executable hashes, and the full hardware
+description are recorded with the protocol. The one-thread setting concerns
+OA, SCIP, and LP search; proof completion retains its tool defaults (its
+banner reports 36 available threads), so the entire pipeline is not claimed
+to be single-threaded. Times are observed costs on a shared machine,
+not isolated solver speed comparisons. In particular, sums over concurrent
+workers are not campaign elapsed times. Large archive compression takes place
+after the timed campaigns.
+
+\subsection{Complete production and replay accounting}
+
+The following generated summary retains every primary V1 production outcome,
+including process failures whose surviving artifacts later verify. It also
+records the selected proof sizes, derivation counts, and checker timings.
+\input{tables/uniform-results-text}
+
+All 67 producer errors arise at domain/curvature admission, before master
+generation. The nineteen primary replay rejections comprise eighteen proof-rule
+or proof-grammar failures and one post-proof rational-reporting failure.
+Table~\ref{tab:generation-phases} separates recorded tool phases during
+generation; interrupted calls have no imputed completion time.
+\input{tables/generation-phases}
+
+Under the historical replay protocol, the accepted proofs contain 29,903,993 derivations and occupy
+38,826,726,525 bytes. Their median size is 74,469,242 bytes and their largest
+size is 2,163,285,624 bytes. Median accepted checking time is 16.679 seconds,
+with a maximum of 463.845 seconds. The sum over accepted records is
+7,987.954 seconds; the sum over all 289 records is 8,234.349 seconds.
+The campaign elapsed time is 1,465.381 seconds. These checking times include
+model and lemma validation, master reconstruction, and internal and external
+proof checking; the harness records hashing separately. Thus the aggregate
+is not a measurement of just the linear-proof kernel.
+
+\subsection{Separately versioned representation repairs}
+\label{app:repair-accounting}
+
+V1 denotes the frozen primary producer and checker. V2 repairs producer proof
+normalization, and V3 additionally repairs exact rational report input/output.
+These changes concern the survival of exact values through textual interfaces,
+not additional mathematical proof rules. Keeping all three versions separates
+the uniform protocol result from targeted recovery of affected artifacts.
+
+The uniform run exposed twelve worker failures when proof normalization passed
+a rational token through Python's decimal-to-integer conversion limit. We
+preserved this campaign and its producer source, then replaced that conversion
+with parsing and serialization through the existing FLINT rational type.
+A separate cohort regenerated all twelve observed occurrences under the same
+requested search budgets, settings, concurrency, and outer limit. The original
+289-record denominator and its failures remain unchanged.
+
+A further reporting boundary appeared in \texttt{tls12}: its primary bundle
+passed nonlinear checks, exact master matching, and the entire proof kernel,
+but a rational bound with a 4,326-digit numerator failed during subsequent
+report construction. The same
+boundary appeared in the default attempt of the producer-repair cohort.
+A third source version repairs exact rational text input and output at the
+reporting interfaces, including replay comparisons and reference summaries.
+Decimal reference strings retain exact decimal semantics; the interpreter's
+global integer-conversion guard remains enabled. Optional binary64 display
+values become unavailable when the exact value is outside binary64 range,
+while exact strings remain authoritative. The proof, domain, curvature,
+propagation, and master-matching rules are unchanged.
+
+\input{tables/repair-results-text}
+
+The current checker is V3. Its two targeted checks establish one additional
+accepted primary artifact; they do not constitute a new full 289-record replay.
+A complete V3 replay of the fixed primary artifacts is expected to give
+204 verified, 18 rejected, and 67 missing, subject to the documented time and
+environment limits. The measured uniform outcome remains V1's 203/19/67.
+Appendix~\ref{app:reproduction} specifies the version restoration and replay
+commands. The descriptive catalogue combines protocols by matching model
+hashes and objective senses; its 222-model coverage is not attributed to a
+single search budget.

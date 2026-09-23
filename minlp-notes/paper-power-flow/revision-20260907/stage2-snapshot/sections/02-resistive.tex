@@ -1,0 +1,239 @@
+\section{A bounded-degree reduction with fixed numerical data}
+\label{sec:resistive}
+
+\begin{theorem}
+\label{thm:rpf-complete}
+The problem $\RPF$ is $\ER$-complete. Hardness holds for simple graphs with
+maximum degree three, conductances in $\{1,2\}$, voltage intervals in
+\[
+ \bigl\{[1/2,2],\ [1,1],\ [1,4]\bigr\},
+\]
+and injection intervals in
+\[
+ \bigl\{[-85,85],\ [-1/2,-1/2],\ [1/2,1/2],\
+ [-5/2,-5/2],\ [-1,-1]\bigr\}.
+\]
+For an instance of $\ETRINV$ with $n$ named variables and $m$ equations,
+the reduction constructs at most $n+16m$ buses and $18m$ lines.
+\end{theorem}
+
+The construction uses a voltage-pinned bus to impose a linear relation on
+its neighbors, and one variable-voltage bus to impose inversion.
+Copying values along paths keeps the degree bounded even when a variable
+occurs arbitrarily often. Throughout this section, a \emph{free injection}
+means the fixed interval $[-85,85]$, not an unbounded or omitted constraint.
+
+\subsection{Pinned buses and the supply of distinct value copies}
+\label{subsec:copies}
+
+A \emph{value bus} has voltage interval $[1/2,2]$ and free injection.
+A \emph{pinned bus} has voltage $1$ and a specified injection $p$.
+If its distinct neighbors carry voltages $a_1,\ldots,a_d$ with conductances
+$h_1,\ldots,h_d$, its equation is
+\begin{equation}
+ \sum_{r=1}^d h_r(1-a_r)=p.
+ \label{eq:pinned}
+\end{equation}
+In particular, a pinned bus $C$ with injection $-1/2$ and two unit-conductance
+lines enforces $a+b=5/2$. Write $\comp{x}=5/2-x$; the map $x\mapsto\comp{x}$
+is an involution of $[1/2,2]$.
+
+For each variable $x$ begin with a value bus $X_x$. Successively extending a
+path
+\begin{equation}
+ X_x\mathbin{\text{---}} C_1\mathbin{\text{---}}\comp{X}_x\mathbin{\text{---}}C_2\mathbin{\text{---}}X'_x\mathbin{\text{---}}\cdots
+ \label{eq:copy-chain}
+\end{equation}
+supplies alternating voltages $x,\comp{x},x,\ldots$.
+Each $C_r$ has voltage $1$, injection $-1/2$, and exactly its two path lines.
+Every value bus may receive at most one further line from an equation gadget.
+Here is a deterministic allocation rule. Maintain the current end of each
+path, its parity (plain or complemented), and whether its one gadget slot is
+unused. On a request for a copy, extend the path until the end has the requested
+parity and an unused slot; allocate that slot and continue from this end for
+the next request. Each extension adds one pinned bus, one value bus, and two
+lines. At most two extensions are needed per request. All requested copies
+are distinct, even if they represent the same variable in the same equation.
+Unused named variables retain their single isolated bus $X_x$.
+
+\subsection{Addition and inversion gadgets}
+
+For $x+y=z$, introduce a pinned bus $A$ with injection $1/2$ and three
+unit-conductance lines to fresh requested copies of $x$, $y$, and
+$\comp{z}$. Its equation is
+\[
+ (1-x)+(1-y)+(1-\comp{z})=1/2
+ \quad\Longleftrightarrow\quad x+y=z.
+\]
+For $x+x=z$ the two plain copies of $x$ are distinct buses. The same allocation
+rule covers $x+y=x$ and $x+x=x$; such equations are correctly infeasible in
+the positive source interval.
+
+For $xy=1$, introduce buses $I,W,C_I,D$ with the data in
+Table~\ref{tab:inversion}. Request three distinct complemented value buses:
+two for $x$ and one for $y$. Connect them as in Figure~\ref{fig:inversion}.
+If $x=y$, all three still have distinct bus identities.
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{@{}clll@{}}
+\toprule
+Bus & Voltage interval & Injection interval & Neighbors (conductance)\\
+\midrule
+$I$ & $[1/2,2]$ & $[-1,-1]$ & $W$ (1), $C_I$ (1)\\
+$W$ & $[1,4]$ & $[-85,85]$ & $I$ (1), $D$ (1)\\
+$C_I$ & $[1,1]$ & $[-1/2,-1/2]$ & $I$ (1), first $\comp{x}$ copy (1)\\
+$D$ & $[1,1]$ & $[-5/2,-5/2]$ & $W$ (1), second $\comp{x}$ copy (2), $\comp{y}$ copy (1)\\
+\bottomrule
+\end{tabular}
+\caption{The four new buses for an inversion equation $xy=1$.}
+\label{tab:inversion}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[every node/.style={font=\small},
+ bus/.style={circle,draw,minimum size=8mm},
+ pin/.style={rectangle,draw,minimum size=8mm}]
+\node[bus] (I) at (0,0) {$I$};
+\node[bus] (W) at (2,0) {$W$};
+\node[pin] (D) at (4,0) {$D$};
+\node[pin] (C) at (0,1.5) {$C_I$};
+\node[bus] (x1) at (0,3) {$\comp{x}^{(1)}$};
+\node[bus] (x2) at (4,1.5) {$\comp{x}^{(2)}$};
+\node[bus] (y) at (6,0) {$\comp{y}$};
+\draw (x1)--(C)--(I)--(W)--(D)--(y);
+\draw (D)--node[right] {$g=2$}(x2);
+\end{tikzpicture}
+\caption{Inversion gadget. Squares have voltage $1$; the three upper or
+rightmost value copies belong to variable paths, whose lines are omitted.
+Every unmarked line has conductance $1$. Superscripts distinguish buses,
+not numerical values.}
+\label{fig:inversion}
+\end{figure}
+
+The equation at $C_I$ gives
+\[
+ (1-v_I)+(1-\comp{x})=-1/2,
+ \qquad\text{hence }v_I=x.
+\]
+The injection equation at $I$ is therefore
+\begin{equation}
+ x\bigl[(x-v_W)+(x-1)\bigr]=-1,
+ \qquad v_W=2x-1+1/x.
+ \label{eq:inversion-I}
+\end{equation}
+Division is valid because $x\ge1/2$. At $D$ the equation reads
+\begin{equation}
+ (1-v_W)+2(1-\comp{x})+(1-\comp{y})=-5/2
+ \quad\Longleftrightarrow\quad y=v_W-2x+1.
+ \label{eq:inversion-D}
+\end{equation}
+Together these equations imply $y=1/x$.
+
+Conversely, if $x,y\in[1/2,2]$ and $xy=1$, set $v_I=x$ and
+$v_W=h(x):=2x-1+1/x$. Both pinned-bus equations and the injection equation
+at $I$ then hold. The voltage bound on $W$ is valid: on $[1/2,2]$,
+$h'(x)=2-x^{-2}$ and $h''(x)=2x^{-3}>0$, so its minimum is
+$2\sqrt{2}-1$ at $1/\sqrt{2}$ and its maximum is the larger endpoint value,
+$h(2)=7/2$. Thus
+\begin{equation}
+ 1<2\sqrt{2}-1\le v_W\le7/2<4.
+ \label{eq:W-range}
+\end{equation}
+
+\subsection{The complete network and proof of equivalence}
+
+Construct all variable paths and equation gadgets with the allocation rule
+above. Path value buses have at most two path lines and one gadget line.
+Path pinned buses and $C_I$ have degree two; addition buses and $D$ have
+degree three; $I$ and $W$ have degree two. Distinct requested copies and fresh
+gadget buses prevent loops and parallel edges. Consequently $G$ is simple and
+its maximum degree is three.
+
+Every bus voltage belongs to $[1/2,4]$ and every conductance is at most $2$.
+For every voltage vector in the prescribed box, not just the intended
+solutions, a free-injection bus satisfies
+\begin{equation}
+ |\power_i(v)|
+ \le v_i\sum_{j:\{i,j\}\in E}g_{ij}|v_i-v_j|
+ \le 4\cdot3\cdot2\cdot\frac72=84<85.
+ \label{eq:free-bound}
+\end{equation}
+The free-injection intervals therefore add no restriction inside that box.
+
+\begin{lemma}
+\label{lem:reduction-equivalence}
+The constructed network is feasible if and only if $S_\Phi\ne\varnothing$.
+More precisely, restriction to $(v_{X_x})_{x= x_1,\ldots,x_n}$ is a bijection
+from its feasible voltage set onto $S_\Phi$.
+\end{lemma}
+\begin{proof}
+Given a feasible voltage vector, put $x=v_{X_x}$ for each named variable.
+Every path pinned bus has exactly its two prescribed neighbors, so its
+equation forces successive values to be complementary. Every requested copy
+thus has its specified value. The addition equation yields $x+y=z$; equations
+\eqref{eq:inversion-I}--\eqref{eq:inversion-D} yield $xy=1$. This recovers a
+point of $S_\Phi$.
+
+Conversely, given a point of $S_\Phi$, assign alternating values $x$ and
+$5/2-x$ along each variable path, voltage $1$ to every pinned bus, and
+$v_I=x$, $v_W=2x-1+1/x$ in each inversion gadget. The preceding algebra
+verifies every fixed-injection equation. The voltage bounds follow from the
+source interval and~\eqref{eq:W-range}; the remaining injection bounds follow
+from~\eqref{eq:free-bound}. An isolated $X_x$ has injection zero and retains
+exactly the unconstrained source coordinate $x\in[1/2,2]$.
+
+Finally all bus voltages have been uniquely determined by the recovered
+source coordinates: path values alternate, pinned values are fixed, and
+\eqref{eq:inversion-I} determines $W$. These two maps are inverse bijections.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:rpf-complete}]
+Each equation requests exactly three value copies. With at most two path
+extensions per request, the paths contribute at most $12m$ new buses and
+$12m$ lines in addition to the $n$ initial buses. An addition adds one
+further bus and three lines; an inversion adds four further buses and six
+lines. Hence the stated bounds $n+16m$ and $18m$ hold, including unused
+variables. All numerical data are exactly those displayed in the theorem.
+The number of objects is linear in $n+m$; encoding their indices uses
+$O((n+m)\log(n+m+2))$ bits, and the construction is polynomial-time.
+Lemma~\ref{lem:reduction-equivalence} and $\ER$-completeness of $\ETRINV$
+give hardness. Proposition~\ref{prop:rpf-membership} gives membership.
+\end{proof}
+
+\begin{proposition}[Preservation of the solution set]
+\label{prop:rational-bijection}
+The extension map from source solutions to feasible network voltages in
+Lemma~\ref{lem:reduction-equivalence} is a homeomorphism whose forward and
+inverse coordinate functions are rational with rational coefficients.
+Its inverse is restriction to the buses $X_x$, a coordinate projection.
+\end{proposition}
+\begin{proof}
+The extension map has coordinate functions $x$, $5/2-x$, $1$, and
+$2x-1+1/x$. They are rational and continuous because $x\ge1/2$.
+The inverse projection is linear and continuous. The statement also holds
+for empty solution sets and for unused source coordinates.
+\end{proof}
+
+\begin{corollary}
+\label{cor:rpf-np}
+If $\RPF$ belongs to $\NP$, then $\NP=\ER$. In particular, unless these
+classes coincide, not every feasible rational instance has a polynomial-size
+certificate verifiable in deterministic polynomial time. The problem belongs
+to $\PSPACE$.
+\end{corollary}
+\begin{proof}
+By completeness every problem in $\ER$ reduces to $\RPF$. Membership of
+$\RPF$ in $\NP$ would imply $\ER\subseteq\NP$, and
+\eqref{eq:complexity-inclusions} gives equality. The certificate formulation
+is the definition of $\NP$; the space upper bound follows from the same
+inclusions.
+\end{proof}
+
+The fixed-data conclusion is stronger than a claim that large numerical
+coefficients can be encoded economically: all numerical choices in the
+hard instances come from finite sets independent of instance size. Their
+combinatorial incidence pattern carries the growing input. The theorem uses
+general graphs and signed injection intervals; it makes no assertion here
+about a load-only model or a tree restriction.

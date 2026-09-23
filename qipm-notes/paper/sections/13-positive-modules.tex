@@ -1,0 +1,1244 @@
+\section{Positive Algorithmic Modules}
+\label{sec:positive-modules}
+
+The lower bounds in \cref{sec:lp-hardness,sec:preconditioning} do not rule out
+useful quantum subroutines.  They say what a positive result must count.  This
+section gives such results at their natural interfaces: a pathwise reuse
+theorem, a partition-free tail solver and face repair, an implicit-coordinate
+dual method with compressed output, and an explicit border solver for
+block-angular systems.  Some compose to conditional trajectory theorems; none
+is an unconditional end-to-end speedup for arbitrary sparse LPs.
+
+We use the following rules throughout.  We refer to these as the referee
+rules; they are also a checklist for assessing any positive QIPM claim.
+\begin{enumerate}[leftmargin=*]
+ \item A small spectral condition number does not make loading, normalization,
+ RHS preparation, or recovery free.  Every block encoding and output compiler
+ must be expanded into the access model of
+ \cref{sec:prelim-quantum-access,sec:prelim-output-contracts}.
+ \item A strict-complementarity construction applies only after its stated,
+ data-dependent tail threshold; the separation margin and active singular gaps
+ are parameters, not consequences of sparsity.
+ \item Compressed dual output is dimensionally useful only when the retained
+ dimension satisfies $m=o(n)$, and only if the classical comparator is
+ charged in the same model.
+ \item A coherent primal-coordinate oracle is substantive output.  When its
+ values are well spread, constant-overhead value-to-amplitude conversion makes
+ it at least as informative as a primal-state preparer.
+ \item A genuinely dual-only certificate can fall outside a primal-output lower
+ bound.  A claimed contradiction requires an explicit low-query reduction to
+ the hard output contract.
+\end{enumerate}
+These rules instantiate rather than repeat the ledgers of
+\cref{sec:preconditioning}.  In particular, all costs below retain operator
+normalization, RHS amplification, residual conversion, tomography, and static
+input construction.
+
+\subsection{Projective lazy refresh and its exact boundary}
+\label{sec:positive-lazy}
+
+Consider a realized sequence of nonsingular real systems, indexed by
+$t=0,\ldots,T$, with $f_t\ne0$:
+\begin{equation}
+ H_tz_t=f_t,\qquad q_t=\norm{z_t},\qquad \psi_t=z_t/q_t,
+ \qquad M_t=\frac{q_t}{\norm{f_t}}H_t,
+ \label{eq:positive-projective-definitions}
+\end{equation}
+and define
+\begin{equation}
+ \delta_t=\norm{M_{t+1}(\psi_{t+1}-\psi_t)},
+ \qquad V_{\rm proj}=\sum_{t<T}\delta_t.
+ \label{eq:positive-projective-variation}
+\end{equation}
+Here $z_t$ is the coordinate vector of the solution in whatever fixed basis
+the module stores it in (for the OSS systems below, the fixed $V$ spanning
+$\ker A$), so $\delta_t$ and $V_{\rm proj}$ depend on that basis.
+Fix $\eta>0$ and $\epsilon\geq0$.  At the initial checkpoint $s=0$ and
+every subsequent refresh, store a classical $\widehat z_s$ satisfying
+$\norm{H_s\widehat z_s-f_s}/\norm{f_s}\leq\epsilon$.
+At each later time $t$, let $s$ be the most recent checkpoint and choose
+the scalar minimizing $\norm{H_t(a\widehat z_s)-f_t}$.
+For $v=H_t\widehat z_s\ne0$ this scalar is
+$\inner{v}{f_t}/\norm v^2$; for $v=0$ choose zero.
+Reuse the vector if this minimum relative residual is at most $\eta$;
+otherwise refresh at $t$.  The minimization and threshold comparison here
+are exact.  Write $R$ for the total number of checkpoint solves, including
+the initial solve.
+
+\begin{theorem}[Pathwise residual-certified refresh]
+\label{thm:positive-lazy-refresh}
+Suppose $G>0$ and, for every test at time $t$ with most recent checkpoint
+$s$, including a test that triggers a refresh,
+\begin{equation}
+ \norm{M_tM_j^{-1}}\leq G\qquad(s\leq j\leq t).       \label{eq:positive-cross-gain}
+\end{equation}
+If $\epsilon\leq\eta/(2G)$, then the number $R$ of checkpoint solves satisfies
+\begin{equation}
+ \boxed{R\leq1+\frac{2GV_{\rm proj}}{\eta}.}          \label{eq:positive-refresh-count}
+\end{equation}
+The statement is pathwise: the systems may depend adaptively on earlier
+inexact steps.
+\end{theorem}
+
+\begin{proof}
+Put $u_s=\widehat z_s/q_s$ and
+$e_s=M_s(u_s-\psi_s)=(H_s\widehat z_s-f_s)/\norm{f_s}$, so
+$\norm{e_s}\leq\epsilon$.  The nonzero right-hand sides imply $q_s>0$.
+For a test at $t$, the least-squares scalar is no worse than $a=q_t/q_s$.
+The candidate's normalized residual vector is
+\[
+ M_t(u_s-\psi_t)=M_tM_s^{-1}e_s-
+ \sum_{j=s}^{t-1}M_tM_{j+1}^{-1}
+       M_{j+1}(\psi_{j+1}-\psi_j).
+\]
+The triangle inequality and \eqref{eq:positive-cross-gain} give
+\[
+ \frac{\norm{H_t(a\widehat z_s-z_t)}}{\norm{f_t}}
+ \leq G\left(\epsilon+\sum_{j=s}^{t-1}\delta_j\right).
+\]
+Consequently every failed test after a checkpoint consumes more than
+$\eta/(2G)$ of projective variation.  The consumed intervals are disjoint,
+and are contained in $\{0,\ldots,T-1\}$, which proves
+\eqref{eq:positive-refresh-count}, including when no test fails.
+\end{proof}
+
+\paragraph{Formal verification and scope.}
+The Lean development in \path{formal/QipmFormal/Refresh/} verifies the
+normalization identities, scalar least-squares minimization, residual
+transport, and the bound for the sequential reuse/refresh procedure.
+It checks the initial solve, equality at the acceptance threshold, and
+the final interval with no further refresh.  The claim map and reproduction
+command are in \path{formal/REFRESH.md}.  The audit permits only
+\texttt{propext}, \texttt{Classical.choice}, and \texttt{Quot.sound}.
+This verifies the pathwise theorem under its stated gain and checkpoint
+accuracy hypotheses; it does not establish those hypotheses for an IPM
+trajectory, nor verify the tail, OSS, cycling, or quantum-cost results below.
+A test with numerical error needs an explicit rejection guarantee as well
+as safe acceptance: rejecting a truly acceptable vector can add checkpoint
+solves without consuming the variation used by this proof.
+
+For $H_t=AD_tA^T$, the test uses $A^T\widehat z_s$, the current diagonal,
+and $A$; it costs $O(\nnz(A))$ classical arithmetic without forming $H_t$.
+This per-iteration term remains in the ledger.  The theorem amortizes QLS and
+readout, not all outer-loop work.  It is a residual-screened classical cache,
+distinct from coherent eigenpath traversal \cite{positive-boixo2010-eigenpath}
+and from classical Krylov recycling or inverse maintenance
+\cite{parks2006-recycling-krylov-subspaces-sequences-linear-systems,
+lee2015-efficient-inverse-maintenance-and-faster}.
+Classical warm starts and reoptimization instead transfer information between
+perturbed problem instances
+\cite{positive-yildirim2002-warm-start,
+r4-n062-reoptimization-primal-dual-interior-point-method}; they do not certify
+reuse of a direction along one fixed central tail.
+
+The projective parameters are finite on the exact central tail even when the
+unscaled normal matrix becomes ill conditioned.
+
+\begin{theorem}[Directed strict-complementarity tail]
+\label{thm:positive-directed-tail}
+Let $Q$ project onto $U$, let $Q^\perp=I-Q$, and suppose
+\begin{equation}
+ H_\mu=\mu^{-1}C_\mu+\mu D_\mu,\qquad
+ C_\mu=QC_\mu Q,                                       \label{eq:positive-tail-split}
+\end{equation}
+where, uniformly on $0\leq\mu\leq\mu_0$,
+\[
+ c_-Q\preceq C_\mu\preceq c_+Q,\quad D_\mu\succeq0,\quad
+ \norm{D_\mu}\leq d_+,\quad Q^\perp D_\mu Q^\perp\succeq d_-Q^\perp.
+\]
+Assume $C_\mu,D_\mu$ are $C^1$ with bounded derivatives.  For nonzero
+$f\in U$, set $z_\mu=H_\mu^{-1}f$, $\psi_\mu=z_\mu/\norm{z_\mu}$, and
+$N_\mu=(\norm{z_\mu}/\norm f)H_\mu$.  There are finite constants $B,L,G$
+depending only on the displayed bounds and $\mu_0$ such that
+\begin{equation}
+ \sup_\mu\norm{N_\mu}\leq B,\quad
+ \sup_{0<\mu\leq\nu\leq\mu_0}\norm{N_\mu N_\nu^{-1}}\leq G,\quad
+ \sup_\mu\norm{\psi_\mu'}\leq L.                       \label{eq:positive-directed-bounds}
+\end{equation}
+Hence every decreasing discretization, using the refresh policy above with
+$\epsilon\leq\eta/(2G)$, satisfies
+\begin{equation}
+ V_{\rm proj}\leq BL\mu_0,\qquad
+ R\leq1+\frac{2GBL\mu_0}{\eta},                        \label{eq:positive-tail-refresh}
+\end{equation}
+independently of its endpoint and number of steps.
+\end{theorem}
+
+\begin{proof}
+Put $\mathcal A_\mu=C_\mu+\mu^2D_\mu$ and
+$w_\mu=\mathcal A_\mu^{-1}f$.
+Then $z_\mu=\mu w_\mu$ and
+$N_\mu=a_\mu\mathcal A_\mu$, where $a_\mu=\norm{w_\mu}/\norm f$.
+In $U\oplus U^\perp$ blocks, Schur elimination gives
+\[
+ E_\mu=D_{UU}-D_{U\perp}D_{\perp\perp}^{-1}D_{\perp U}\succeq0,\quad
+ S_\mu=C_{UU}+\mu^2E_\mu,
+\]
+\[
+ w_U=S_\mu^{-1}f,\qquad
+ w_\perp=-D_{\perp\perp}^{-1}D_{\perp U}w_U.
+\]
+The hypotheses bound these factors and their derivatives and bound
+$\norm{w_\mu}$ above and away from zero.  Thus $a_\mu$ and the normalized ray
+are $C^1$ at zero, proving the first and third bounds.
+
+The only unbounded block of $\mathcal A_\nu^{-1}$ is
+$\nu^{-2}D_{\perp\perp,\nu}^{-1}$ in its lower-right block.  Every block of $\mathcal A_\mu$
+that can multiply it contains $\mu^2$.  For $\mu\leq\nu$ this ratio is at most
+one, so $\norm{\mathcal A_\mu\mathcal A_\nu^{-1}}=O(1)$.  The bounded ratio
+$a_\mu/a_\nu$ proves the directed cross-gain.  Finally the fundamental
+theorem of calculus gives
+\[
+ \sum_t\norm{N_{\mu_{t+1}}(\psi_{\mu_{t+1}}-\psi_{\mu_t})}
+ \leq B\int_0^{\mu_0}\norm{\psi_\mu'}\,d\mu\leq BL\mu_0,
+\]
+and \cref{thm:positive-lazy-refresh} gives the refresh count.
+\end{proof}
+
+The order in \eqref{eq:positive-directed-bounds} is essential.  For
+$C=\diag(1,0)$, $D=\diag(0,1)$, and $f=e_1$, the ray and forward gain are
+constant, whereas the reverse gain is $(\nu/\mu)^2$.  On an exact LP central
+path, $C_\mu=A_B\diag(x_B^2)A_B^T$, $D_\mu=A_N\diag(s_N^{-2})A_N^T$, and
+$f=b\in\operatorname{range}(A_B)$.  Boundary analyticity supplies the stated
+regularity even for degenerate optimal faces
+\cite{halicka1999-analytical-properties-central-path-linear-programming,
+positive-monteiro1996-limiting-derivatives}.  Its constants are instance
+dependent and need not be bounded by sparsity or dimension alone.
+
+At checkpoint $s$, let $\Gamma_{f,s}$ be the RHS-state amplification,
+$\mathcal K_s=\alpha_s\norm{H_s^{-1}}$ the effective QLS parameter, and
+$\rho_s=\alpha_s\norm{z_s}/\norm{f_s}$ the normalized-state-to-residual
+conversion.  Suppose these are bounded by $\Gamma_f,\mathcal K,\rho$ on the
+tail.  A refresh must have residual accuracy $O(\eta/G)$, as required by
+\cref{thm:positive-lazy-refresh}; hence its QLS precision contributes
+$\log(G/\eta)$, and tight coherent tomography uses
+$\Otilde(mG\rho/\eta)$ controlled state preparations.  The resulting ledger is
+\begin{equation}
+ \Otilde\!\left[
+ \left(1+\frac{GBL\mu_0}{\eta}\right)
+ \Gamma_f\mathcal K\frac{mG\rho}{\eta}
+ \log\frac{G}{\eta}\right],                           \label{eq:positive-lazy-quantum-ledger}
+\end{equation}
+where RHS preparation and amplification are explicit rather than hidden in
+the operator cost.  Copy tomography instead has quadratic inverse dependence
+on the required $O(\eta/(G\rho))$ normalized-state accuracy
+\cite{joran2023-quantum-tomography-state-preparation-unitaries}.  The ordinary
+$T=O(\sqrt n\log(\mu_0/\epsilon_{\rm opt}))$ sparse updates and residual
+tests remain.
+
+\begin{corollary}[Exact-central feasible OSS]
+\label{cor:positive-exact-oss}
+With a fixed full-rank $V$ spanning $\ker A$, let
+\begin{equation}
+ \mathcal M_\mu=[-X_\mu A^T\ \ S_\mu V],\qquad
+ f_\mu=-\tau\mu e.                                     \label{eq:positive-oss}
+\end{equation}
+On the exact central path, its normalized solution ray has finite tail
+variation and bounded directed cross-gain.  Every coefficient vector reconstructs
+$\Delta x=V\lambda$, $\Delta s=-A^T\Delta y$ and hence preserves both
+feasibility equations exactly.  Consequently residual-certified reuse with
+checkpoint accuracy $\epsilon\leq\eta/(2G)$ has a
+final-precision-independent refresh count on the exact-central tail.
+\end{corollary}
+
+\begin{proof}
+At the center,
+\[
+ \mathcal M_\mu^T\mathcal M_\mu
+ =\diag(AX_\mu^2A^T,V^TS_\mu^2V),
+\]
+so $\norm{\mathcal M_\mu^{-1}}=O(1/\mu)$.  Analyticity gives
+$\norm{\mathcal M_\mu-\mathcal M_\nu}=O(|\mu-\nu|)$, and therefore
+$\norm{\mathcal M_\mu\mathcal M_\nu^{-1}}=O(1)$ for $\mu\leq\nu$.
+Differentiating centrality shows that the OSS solution divided by $\mu$ is an
+analytic nonzero vector.  Thus the normalized exact-central OSS ray has finite
+variation.  The reconstruction identities prove exact feasibility, and
+\cref{thm:positive-lazy-refresh} gives the refresh conclusion.
+\end{proof}
+
+This does not extend to every standard inexact trajectory.
+
+\begin{proposition}[Cycling and proximal no-go]
+\label{prop:positive-cycling-proximal}
+There is a row-$3$-sparse LP and a feasible three-phase trajectory in a fixed
+$N_2(\theta)$ neighborhood, satisfying the standard fixed relative OSS
+residual contract, for which
+\begin{equation}
+ \sum_{t<T}\delta_t=\Omega\!\left(
+ \log\frac{\mu_0}{\epsilon_{\rm opt}}\right).          \label{eq:positive-cycling}
+\end{equation}
+Moreover, no Tikhonov rule inferred only from that neighborhood and residual
+contract can simultaneously guarantee finite projective variation, admissible
+OSS residual, and bounded reconstructed steps.  A residual-safe ridge scale
+does not improve worst-case conditioning.
+\end{proposition}
+
+\begin{proof}
+Use
+\[
+ \min\sum_{j=4}^n x_j\quad\text{subject to}\quad
+ x_1+x_2+x_3=1,\quad x\geq0.
+\]
+Set $\tau=a_0/\sqrt n$, $\mu_t=(1-\tau)^t\mu_0$, and use
+\[
+ u_0=\frac{1}{\sqrt2}(1,-1,0),\qquad
+ u_1=\frac{1}{\sqrt2}(0,1,-1),\qquad
+ u_2=\frac{1}{\sqrt2}(-1,0,1).
+\]
+Cycle
+\[
+ x_{1:3}^{(t)}=e/3+d u_{t\bmod3},\quad x_{4:n}^{(t)}=\mu_te,
+ \quad y^{(t)}=-3\mu_t,
+ \quad s_{1:3}^{(t)}=3\mu_te,\quad s_{4:n}^{(t)}=e.
+\]
+Then $\norm{X_ts_t-\mu_te}=3d\mu_t$, and the feasible step to the next
+phase has OSS residual $3d\mu_t(u_{j+1}-\tau u_j)$.  Taking
+$d=\Theta(1/\sqrt n)$ meets the usual relative contract
+$\eta_n=\Theta(1/\sqrt n)$.
+With the fixed sparse basis
+$V=[e_1-e_3,e_2-e_3,e_4,\ldots,e_n]$, the exact OSS coefficient rays converge
+cyclically to the three distinct lines $(1,-1)$, $(0,1)$, and $(-1,0)$.
+The normalized destination operator acts on their differences at constant
+scale, so $\delta_t=\Omega(d)$ eventually.  Since
+$T=\Theta(\sqrt n\log(\mu_0/\epsilon_{\rm opt}))$, this proves
+\eqref{eq:positive-cycling}.
+
+The preceding cycling half uses both $d=\Theta(1/\sqrt n)$ and
+$\eta_n=\Theta(1/\sqrt n)$.  The proximal no-go switches both regimes: fix
+constants $d>0$ and $0<\eta<\theta<1$ such that
+\begin{equation}
+ 3d\leq\theta,\qquad
+ \frac{c_1d}{\sqrt{a_0^2+9d^2}}>\eta,                  \label{eq:positive-separated-rays}
+\end{equation}
+where $c_1>0$ is the constant separation of the three projective lines.
+For the ridge selector
+\[
+ z_\lambda=\arg\min_z\{\norm{Mz-f}^2+\lambda\norm{z-c}^2\},
+\]
+let $z_*=M^{-1}f$, $v$ be a right singular vector of singular value $\sigma$,
+and $e=c-z_*$.  Direct diagonalization gives the exact frontier
+\begin{align*}
+ \langle v,z_\lambda-c\rangle
+ &=-\frac{\sigma^2}{\sigma^2+\lambda}\langle v,e\rangle,\\
+ \left|\left\langle \frac{Mv}{\sigma},Mz_\lambda-f\right\rangle\right|
+ &=\frac{\lambda\sigma}{\sigma^2+\lambda}|\langle v,e\rangle|.
+\end{align*}
+On the cycling face $\sigma=\Theta(\mu)$.  A ray-locked sequence of bounded
+steps and finite projective variation is Cauchy, so on at least one of every
+three phases it stays a fixed distance from that phase's exact face target.
+If the ridge moves a nonvanishing fraction toward those targets infinitely
+often, its projective variation diverges.  Otherwise its residual is at least
+$c_1d\mu_t$ on an infinite separated subsequence.  Since
+$\norm{f_t}=\mu_t\sqrt{a_0^2+9d^2}$,
+\eqref{eq:positive-separated-rays} makes this exceed the admissible
+$\eta\norm{f_t}$.  This is the fixed-constant regime, not the
+$d=\Theta(1/\sqrt n)$ regime used above.
+
+Conversely the universal
+bound
+\begin{equation}
+ \norm{Mz_\lambda-f}\leq \frac{\sqrt\lambda}{2}\norm e          \label{eq:positive-prox-residual}
+\end{equation}
+is sharp, since $\sigma\lambda/(\sigma^2+\lambda)$ is maximized at
+$\sigma=\sqrt\lambda$.  With $\norm f=\Theta(\mu)$ and $\norm e=\Theta(1)$,
+the uniform worst-case residual-safe scale is
+$\lambda=O(\eta^2\mu^2)$.  The augmented system
+$[M^T\ \sqrt\lambda I]^T$ then retains condition $\Theta(1/\mu)$; its normal
+matrix retains $\Theta(1/\mu^2)$.  Thus regularization cannot establish the
+missing trajectory property or improve the safe worst-case scale.
+\end{proof}
+
+Residual-certified reuse nevertheless gives an honest conditional QIPM.  If
+the feasible short-step theorem accepts every coefficient vector satisfying
+$\norm{\mathcal M_t\widehat z_t-f_t}\leq\eta\norm{f_t}$, then exact OSS
+reconstruction preserves feasibility and the published neighborhood, gap, and
+iteration guarantees apply unchanged
+\cite{mohammadisiahroudi2025-inexact-feasible-interior-point-method}.  Under
+finite realized $V_{\rm proj}$, the directed cross-gain bound, and checkpoint
+accuracy $\epsilon\leq\eta/(2G)$, \cref{thm:positive-lazy-refresh} also applies.
+Assume block encodings of $A^T/\alpha_A$ and $V/\alpha_V$, coherent value
+access to the current $x_t,s_t$, and known bounds
+$R_x\geq\norm{x_t}_\infty$ and $R_s\geq\norm{s_t}_\infty$.  If
+$F_{\infty,t}\geq\norm{f_t}_\infty$, define
+\[
+ \alpha_{\mathcal M,t}=R_x\alpha_A+R_s\alpha_V,\quad
+ \mathcal K_t=\alpha_{\mathcal M,t}\norm{\mathcal M_t^{-1}},\quad
+ \Gamma_{f,t}=\frac{\sqrt n F_{\infty,t}}{\norm{f_t}},
+\]
+and the conversion factor
+$\rho_t=\alpha_{\mathcal M,t}\norm{z_t}/\norm{f_t}$, its dense-output ledger is
+\begin{equation}
+ C_{\rm iter}+O(T\nnz\mathcal M)+
+ \sum_{s\in\mathcal R}\Otilde\!\left(
+  \Gamma_{f,s}\mathcal K_s\frac{n\rho_s}{\epsilon}\right),     \label{eq:positive-certified-ledger}
+\end{equation}
+plus $O(nR)$ checkpoint writes.  Here $C_{\rm iter}$ is the full cost of
+maintaining the promised coherent iterate oracles.  In particular, rebuilding
+dense $x_t,s_t$ memories each round gives
+$C_{\rm iter}=\Theta(nTB_{\rm bit})$; the ledger omits that term only when the
+outer implementation already supplies coherent reads without such rebuilds.
+A quantum residual test costs
+$\Otilde((\Lambda_{t,s}+\Gamma_{f,t})/\eta)$, where
+$\Lambda_{t,s}=\alpha_{\mathcal M,t}\norm{\widehat z_s}/
+\norm{\mathcal M_t\widehat z_s}$; on the cycling witness
+$\Lambda_{t,s}=\Omega(1/\mu_t)$.  Generic verification is therefore not free
+\cite{rolando2021-complexity-quantum-state-verification-quantum}.  Proximal
+QLS warm starts remain useful for a certified instance, but do not change this
+sequence-level conclusion \cite{kim2026-catalyst-framework-problem-proximal-point}.
+Iterative-refinement tomography can change how one solves a single high-accuracy
+system, but it does not remove the per-refresh/output factors in
+\eqref{eq:positive-certified-ledger}
+\cite{mohammadisiahroudi2023-exponentially-more-precise-tomography-for}.
+
+\subsection{Partition-free equilibration and exact face repair}
+\label{sec:positive-face-repair}
+
+The stable solver in \cref{sec:stable-active-equilibration} assumes a supplied
+active range.  On a strict-complementarity tail it can instead be constructed
+from current coordinates.  Suppose
+\begin{equation}
+ \underline x\leq x_i\leq\overline x\ (i\in B),\qquad
+ \underline s\leq s_i\leq\overline s\ (i\in N),        \label{eq:positive-tail-margins}
+\end{equation}
+and $(1-\theta)\mu\leq x_is_i\leq(1+\theta)\mu$.
+
+\begin{lemma}[Constant-margin tail selector]
+\label{lem:positive-tail-selector}
+If
+\begin{equation}
+ \mu\leq \frac{1}{2(1+\theta)}
+ \min\{\underline x^2,\underline s^2\},                 \label{eq:positive-selector-threshold}
+\end{equation}
+then $E=\diag({\bf1}\{x_i\geq s_i\})$ equals $P_B$, and every comparison has
+absolute margin at least $\frac12\min\{\underline x,\underline s\}$.
+\end{lemma}
+
+\begin{proof}
+For $i\in B$, $s_i\leq(1+\theta)\mu/\underline x\leq
+\underline x/2\leq x_i/2$.  The symmetric calculation gives
+$x_i\leq s_i/2$ for $i\in N$.
+\end{proof}
+
+This is the classical tail rule of Mehrotra--Ye, now used coherently
+\cite{positive-mehrotra1993-optimal-face,positive-cartis2016-active-set}.  It
+requires current value oracles and enough bits to resolve the promised margin;
+it does not convert amplitude states into coordinate values.
+
+\begin{theorem}[Constructive stable active-range equilibration]
+\label{thm:positive-partition-free-equilibration}
+Under \cref{lem:positive-tail-selector}, define $F=I-E$,
+\begin{align}
+ C_\mu&=\mu AEXS^{-1}EA^T,&
+ D_\mu&=\mu^{-1}AFXS^{-1}FA^T,\nonumber\\
+ Q_U&=\Pi_{\operatorname{range}(AE)},&
+ \widehat M_\mu&=C_\mu+D_\mu-(1-\mu^2)Q_UD_\mu.        \label{eq:positive-constructive-split}
+\end{align}
+Then $H_\mu=AXS^{-1}A^T=\mu^{-1}C_\mu+\mu D_\mu$, and direct encodings have
+\begin{equation}
+ \alpha_C\leq\alpha_A^2\frac{\overline x^2}{1-\theta},
+ \qquad
+ \alpha_D\leq\alpha_A^2\frac{1+\theta}{\underline s^2}. \label{eq:positive-split-normalization}
+\end{equation}
+If $\sigma_B=\sigma_{\min}^+(A_B)>0$, QSVT constructs $Q_U$ to error $\delta$
+in
+\begin{equation}
+ O\!\left(\frac{\alpha_A}{\sigma_B}\log\frac{1}{\delta}\right) \label{eq:positive-active-filter-cost}
+\end{equation}
+queries.  If the fixed tail block bounds of
+\cref{thm:stable-split-equilibration} hold, $\widehat M_\mu$ has
+$\mu$-independent normalization and inverse norm.  For $f\in\operatorname{range}(AE)$,
+\begin{equation}
+ \widehat M_\mu^{-1}f=\mu^{-1}H_\mu^{-1}f                 \label{eq:positive-state-identity}
+\end{equation}
+for the exact projector, and constant projector error gives constant
+solution-state error.  With RHS factor $\Gamma_f$, state preparation costs
+\begin{equation}
+ \Otilde\!\left(
+ \Gamma_f\Gamma_M\norm{\widehat M_\mu^{-1}}
+ \frac{\alpha_A}{\sigma_B}\right),
+ \quad \Gamma_M=\alpha_C+(2-\mu^2)\alpha_D,              \label{eq:positive-equilibration-ledger}
+\end{equation}
+with no polynomial $1/\mu$ factor.
+\end{theorem}
+
+\begin{proof}
+The selector splits the columns exactly.  On $B$,
+$\mu x_i/s_i=\mu x_i^2/(x_is_i)\leq\overline x^2/(1-\theta)$;
+on $N$, $\mu^{-1}x_i/s_i=(x_is_i)/(\mu s_i^2)\leq
+(1+\theta)/\underline s^2$.  This proves
+\eqref{eq:positive-split-normalization}.  QSVT thresholding of $AE/\alpha_A$
+at its smallest nonzero singular value gives
+\eqref{eq:positive-active-filter-cost}
+\cite{andras2019-quantum-singular-value-transformation-beyond}.
+With $P_\mu=\mu Q_U+\mu^{-1}(I-Q_U)$, multiplication gives
+$\widehat M_\mu=P_\mu H_\mu$.  Its $U\oplus U^\perp$ diagonal blocks are
+uniformly invertible and the upper off-diagonal block is $O(\mu^2)$; the Schur
+complement bounds its inverse.  Since $P_\mu f=\mu f$, the solution identity
+follows.  Direct LCU gives $\Gamma_M$, and a Neumann bound makes constant
+projector error sufficient.  Multiplying projector, QLS, RHS, and direct
+encoding factors yields \eqref{eq:positive-equilibration-ledger}.
+\end{proof}
+
+Thus \cref{thm:positive-partition-free-equilibration} removes exactly the
+supplied-partition assumption left open in \cref{sec:stable-active-equilibration}.
+It is narrower than the published partition-estimated infeasible-QIPM
+preconditioner \cite{zeguan2026-preconditioned-inexact-infeasible-quantum-interi}:
+it gives constant tail conditioning for active-range RHSs by direct assembly,
+not a full infeasible-QIPM theorem.  The input-dependent gaps and output remain
+charged, consistent with classical active-partition preconditioning
+\cite{positive-chai2007-preconditioning}.
+
+The dangerous face components of an OSS residual can also be isolated exactly.
+Let $Z$ span $\ker A_B$ and $Y$ span $\ker A_B^T$ orthonormally, and define
+\begin{align}
+ G_p&=Z^TX_B^{-1}S_BZ,&g_p(r)&=Z^TX_B^{-1}r_B,\nonumber\\
+ G_d&=Y^TA_N S_N^{-1}X_NA_N^TY,&
+ g_d(r)&=Y^TA_NS_N^{-1}r_N.                              \label{eq:positive-leakage-data}
+\end{align}
+Write
+$\sigma_N=\sigma_{\min}(A_N^T|_{\ker A_B^T})$ when
+$\ker A_B^T\ne\{0\}$.
+
+\begin{theorem}[Face leakage, repair, and restricted stability]
+\label{thm:positive-face-repair}
+For any feasible OSS direction error with residual $r$, the primal and dual
+face errors are
+\begin{equation}
+ p_F=ZG_p^{-1}g_p(r),\qquad q_F=-YG_d^{-1}g_d(r).         \label{eq:positive-face-errors}
+\end{equation}
+Under \eqref{eq:positive-tail-margins}, the primal map has sharp two-sided
+$\Theta(1/\mu)$ amplification when $\ker A_B\ne\{0\}$, and the dual map has
+the same amplification when $\ker A_B^T\ne\{0\}$; otherwise the corresponding
+map is zero.  The correction
+\begin{equation}
+ \widehat{\Delta x}^{+}_B=\widehat{\Delta x}_B-p_F,\quad
+ \widehat{\Delta y}^{+}=\widehat{\Delta y}+YG_d^{-1}g_d(r),\quad
+ \widehat{\Delta s}^{+}=\widehat{\Delta s}-A^TYG_d^{-1}g_d(r)  \label{eq:positive-face-correction}
+\end{equation}
+preserves primal and dual feasibility and makes $g_p(r^+)=g_d(r^+)=0$ exactly.
+It also obeys $\norm{r^+}\leq C_{\rm rep}\norm r$, and the inverse of the OSS
+map restricted by these two equations is uniformly bounded as $\mu\downarrow0$.
+The sharp worst-case amortized condition is
+\begin{equation}
+ \sum_t\left(\frac{\norm{g_p(r_t)}}{\mu_t}
+             +\frac{\norm{g_d(r_t)}}{\mu_t}\right)<\infty.    \label{eq:positive-leakage-ledger}
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+Writing the direction error as $(e_x,e_y,e_s)$ gives
+$Ae_x=0$, $e_s=-A^Te_y$, and $Se_x-XA^Te_y=r$.  Multiply the $B$ rows by
+$Z^TX_B^{-1}$; the dual term vanishes and
+$Z^TX_B^{-1}S_B(e_x)_B=g_p(r)$.  This is the normal equation for the
+$X_B^{-1}S_B$-weighted projection of $(e_x)_B$ onto $\ker A_B$.  Eliminating
+$e_x$ gives $AXS^{-1}A^Te_y=-AS^{-1}r$; left-multiplying by $Y^T$ and using
+$Y^TA_B=0$ gives
+$Y^T(A_NX_NS_N^{-1}A_N^T)e_y=-g_d(r)$, the normal equation for the
+$H_\mu$-weighted projection of $e_y$ onto $\ker A_B^T$, whose coordinate is
+$-G_d^{-1}g_d(r)$ because $Y^TH_\mu Y=G_d$.  These are
+\eqref{eq:positive-face-errors}.
+
+Complementarity and the tail margins imply
+\[
+ c_p\mu I\preceq G_p\preceq C_p\mu I,\qquad
+ c_d\mu I\preceq G_d\preceq C_d\mu I,
+\]
+where, when $\ker A_B^T\ne\{0\}$, the dual constants also contain
+$\sigma_N^2>0$.  This proves both sides of the $1/\mu$ amplification on each
+nonzero face.  The primal correction lies in $\ker A$ and is
+supported on $B$; the dual correction lies in $\ker A_B^T$.  They therefore
+preserve feasibility and affect disjoint projected residual components, giving
+$g_p(r^+)=g_d(r^+)=0$.  The displayed spectral bounds and the bounded tail
+coordinates give $\norm{r^+}\leq C_{\rm rep}\norm r$.
+
+At $\mu=0$, the kernel of the limiting OSS map consists precisely of primal
+motions in $\ker A_B$ and dual motions in $\ker A_B^T$.  The two corrected
+equations remove those components.  Compactness of the unit sphere on the
+remaining complement and continuity give a uniform smallest restricted
+singular value.  Finally each step can realize face displacement comparable
+to $\norm{g_p}/\mu+\norm{g_d}/\mu$; aligned successive residuals attain that
+order.  Summability is therefore sufficient and worst-case sharp.
+\end{proof}
+
+The object controlled by \eqref{eq:positive-leakage-ledger} is the
+residual-induced total variation inside the primal and dual optimal faces.
+It is not by itself a bound on the realized projective variation.  A local
+strict-complementarity chart also needs the transverse-forcing ledger
+\begin{equation}
+ W_r=\sum_t\left\|
+ \frac{r_{t+1}}{\mu_{t+1}}-\frac{r_t}{\mu_t}\right\|<\infty.             \label{eq:positive-transverse-ledger}
+\end{equation}
+Define the total face leakage
+\begin{equation}
+ \mathcal L_\infty=
+ \sum_t\bigl(\norm{p_F(r_t)}+\norm{q_F(r_t)}\bigr).       \label{eq:positive-total-face-leakage}
+\end{equation}
+These ledgers bound the residual-induced face motion and the transverse
+forcing.  They do not bound realized $V_{\rm proj}$, even together with the
+tail bound
+$\sum_{k\geq t}(\norm{p_F(r_k)}+\norm{q_F(r_k)})=O(\mu_t)$: the
+row-$3$-sparse family of \cref{prop:positive-cycling-proximal} with face
+displacement $d_t=\varrho_{t\bmod3}\mu_t$ and $\varrho=(1,3,1)$ has convergent
+$\mathcal L_\infty$ and $W_r$, satisfies that tail bound, and stays inside
+the neighborhood and residual contract, yet its realized $V_{\rm proj}$
+grows linearly in the number of steps.  An oscillating relative face
+displacement $d_t/\mu_t$ moves the normalized ray by $\Theta(1)$ per step,
+while both ledgers are absolute sums that do not see it; with the constant
+ratio $\varrho=(1,1,1)$ the same family has bounded $V_{\rm proj}$ when
+$\delta_t$ is measured in an orthonormal basis of $\ker A$, but not in the
+skew stored basis $V=[e_1-e_3,e_2-e_3,e_4,\ldots,e_n]$ of
+\cref{prop:positive-cycling-proximal}: there the three cycling directions
+have coefficient norms $1,1/\sqrt2,1/\sqrt2$, so $\norm{z_t}$ is phase
+dependent, $\delta_t=\Theta(1)$ on two of every three steps, and
+$V_{\rm proj}$ still grows linearly.  The constant-ratio family therefore
+does not certify finite $V_{\rm proj}$ for
+\cref{thm:positive-lazy-refresh} in the basis the module stores.  Neither
+$o(\mu_t)$ leakage nor convergence of $d_t/\mu_t$ suffices either:
+$d_t=\varrho_{t\bmod3}\mu_t/\sqrt t$ gives convergent ledgers and an
+$o(\mu_t)$ tail while $V_{\rm proj}$ diverges logarithmically.  Finite
+realized $V_{\rm proj}$ therefore remains a separate trajectory hypothesis,
+as in \cref{thm:positive-lazy-refresh}; it is the hypothesis under which that
+theorem bounds the refresh count, and its failure is not shown here to
+preclude reuse.  If
+repaired directions are used, $r_t$ here is the corrected and retested
+residual.
+
+The repair is basis free.  With $T=E\sqrt{XS^{-1}}E$,
+$B_r=E(XS)^{-1/2}E$, $K_F=AT$, $Q=\Pi_{\ker(AE)^T}$,
+$D_N=FXS^{-1}F$, and $H_N=AD_NA^T$,
+\begin{equation}
+ p_F(r)=T\Pi_{\ker K_F}B_rr,\qquad
+ q_F(r)=-(QH_NQ)^+QAFS^{-1}Fr.                          \label{eq:positive-basis-free-repair}
+\end{equation}
+Indeed the weighted kernel projector equals
+$W^{1/2}Z(Z^TWZ)^{-1}Z^TW^{1/2}$ on $B$, with $W=X_B^{-1}S_B$;
+sandwiching it yields the first expression.  The second is the inverse of the
+$H_N$ form on $\ker A_B^T$.  Given known positive lower bounds on the relevant
+gaps $\sigma_B$ and $\sigma_N$, QSVT implements the projectors with
+\begin{equation}
+ \chi_p=O\!\left(\frac{\alpha_A}{\sigma_B}
+ \frac{\overline x}{\underline x}\sqrt{\frac{1+\theta}{1-\theta}}\right),
+ \quad
+ \chi_d=O\!\left(\frac{\alpha_A^2}{\sigma_N^2}
+ \frac{1+\theta}{1-\theta}\frac{\overline s^2}{\underline s^2}\right), \label{eq:positive-face-condition-ledger}
+\end{equation}
+both independent of $\mu$.  With
+\[
+ R_T=\frac{\overline x}{\sqrt{(1-\theta)\mu}},\qquad
+ R_B=\frac{1}{\sqrt{(1-\theta)\mu}},\qquad
+ \alpha_p=R_TR_B=\Theta(1/\mu),
+\]
+the primal correction map has RHS factor
+$\Gamma_p=\alpha_p\norm{Er}/\norm{p_F(r)}$.  If
+$c_N(r)=QAFS^{-1}Fr$, the dual factor is
+\[
+ \Gamma_d(r)=\frac{\alpha_A\underline s^{-1}\norm{Fr}}
+                   {\norm{c_N(r)}}.
+\]
+Writing $\Gamma_{r,B},\Gamma_{r,N}$ for selected-residual preparation, the
+conservative normalized correction-state ledgers are
+\begin{equation}
+ Q_p=\Otilde(\Gamma_{r,B}\Gamma_p\chi_p),\qquad
+ Q_d=\Otilde(\Gamma_{r,N}\Gamma_d\chi_p\chi_d),          \label{eq:positive-repair-query-ledger}
+\end{equation}
+with norm recovery and the RHS-specific inverse success amplitude charged
+separately.  These are operator modules, not free corrections.
+
+Replacing the fixed face radius in the row-$3$-sparse example by $d_t>0$
+gives exactly
+\[
+ r_t=3\mu_t(d_{t+1}u_{j+1}-\tau d_tu_j),
+\]
+and, for adjacent radii within a fixed factor, its leakage is
+$\Theta(d_t+d_{t+1})$.  This verified identity establishes the leakage ledger
+as a necessary worst-case condition.  It does not establish the projective
+threshold claimed in a preliminary version of this analysis: exact solves show that when
+$d_t\gg\mu_t$, the phase-dependent transverse coefficient changes by
+$\Theta(\mu_t/d_t)$, while the normalized OSS operator amplifies that component
+by $\Theta(d_t/\mu_t)$, so $\delta_t=\Theta(1)$ rather than
+$\Theta(d_t+d_{t+1})$.
+
+For example, on a geometric schedule with
+$d_t=\Theta(\mu_t^\gamma)$ and $0<\gamma<1$, both
+$\mathcal L_\infty$ and $W_r$ converge, but realized $V_{\rm proj}$ grows
+linearly with the number of steps.  This family also violates the tail
+requirement
+$\sum_{k\geq t}(\norm{p_F(r_k)}+\norm{q_F(r_k)})=O(\mu_t)$; the
+oscillating-displacement family above shows that even that tail bound
+together with both convergent ledgers does not bound projective variation.
+Thus the sharpness-family
+claim from that preliminary version is corrected here.  A blanket $O(\mu^2)$ residual rule
+is sufficient but is not the sharp leakage boundary.
+
+There is a sharp internal dichotomy.  If the selector is omitted and one uses
+$T_{\rm all}=(X^{-1}S)^{-1/2}$ and $K_{\rm all}=AT_{\rm all}$, the weighted
+kernel formula reconstructs the entire Newton error, not merely face leakage.
+For
+\[
+ A=\begin{pmatrix}1&1&0&0\\0&0&1&-1\end{pmatrix},\quad
+ x=(1/2,1/2,\mu,\mu),\quad s=(2\mu,2\mu,1,1),
+\]
+$\kappa(K_{\rm all})=1/(2\mu)$ and
+$\kappa(AXS^{-1}A^T)=1/(4\mu^2)$.  A Tikhonov kernel filter
+$\lambda(K_{\rm all}^TK_{\rm all}+\lambda I)^{-1}$ accurate to $\delta<1/2$
+forces $\lambda\leq2\delta\mu/(1-\delta)$ and hence condition
+$\Omega(1/(\delta\mu^2))$.  Cluster resolution, by the coordinate selector or
+an equivalent spectral cutoff, is necessary.
+
+Finally, if a materialized repair must meet the pointwise budget
+$O(\tau\mu_t)$, an arbitrary constant-norm correction in dimension $d$ needs
+absolute tomography error $O(\tau\mu_t)$.  Generic coherent tomography costs
+\begin{equation}
+ \Thetatilde\!\left(\frac{d}{\tau\mu_t}\right)          \label{eq:positive-face-tomography}
+\end{equation}
+state-unitary calls.  This is a boundary for that generic extraction route,
+not an LP-specific output lower bound.  A concise formula, sparse output, or
+the compressed representation below can evade it.
+
+\subsection{Implicit dual coordinates and compressed output}
+\label{sec:positive-compressed-dual}
+
+The state-to-diagonal obstruction of
+\cref{sec:preconditioning-state-interface} is avoided when the changing
+diagonal is computed from a smaller explicit iterate instead of from an
+amplitude state.  Let the columns of $A$ have at most $d_c$ nonzeros and store
+only $y_t\in\R^m$.  A static block encoding of $A/\alpha_A$ costs $C_A$ per
+use, a coherent read of one retained-iterate entry costs $C_{y,{\rm read}}$,
+and $B_{\rm bit}$ is the common arithmetic word width.  The one-time cost
+$C_{\rm build}(A)$ is separate.  Coherent RAM may make
+$C_{y,{\rm read}}$ polylogarithmic; otherwise the actual multiplexed-read
+cost must be substituted below.
+
+\begin{theorem}[Implicit slack oracle and affine closure]
+\label{thm:positive-implicit-slack}
+Given static coherent sparse-column access, coherent value access to $c_i$,
+and coherent reads of $y_t$, a
+reversible circuit computes
+\begin{equation}
+ s_i(y_t)=c_i-a_i^Ty_t                                  \label{eq:positive-slack-oracle}
+\end{equation}
+to absolute error $\epsilon_s$ using $d_c$ column accesses and
+\[
+ \Otilde\!\left(d_cB_{\rm bit}+d_cC_{y,{\rm read}}
+                  +\log(1/\epsilon_s)\right)
+\]
+gates.  If
+$s_i\geq\underline s_t>0$, it gives a unit-normalized encoding of
+$\underline s_tS_t^{-1}$ with operator error
+\begin{equation}
+ O\!\left(\frac{\epsilon_s}{\underline s_t}+\epsilon_{\rm arith}\right), \label{eq:positive-slack-operator-error}
+\end{equation}
+and therefore an encoding of $AS_t^{-2}A^T$ with normalization
+$\alpha_A^2/\underline s_t^2$.  It suffices to make the error in
+\eqref{eq:positive-slack-operator-error} at most
+\[
+ O\!\left(\frac{\eta}{J_t\rho_t\mathcal K_{M,t}}\right),
+\]
+with $\rho_t$ as in \eqref{eq:positive-forcing-factor}; the factor
+$1/\mathcal K_{M,t}$ converts operator error into relative vector error, and
+$1/(J_t\rho_t)$ is the vector accuracy target of
+\cref{thm:positive-compressed-qipm}.  On active coordinates this follows,
+for example, from absolute slack error
+$O(\eta\mu_t/(J_t\rho_t\mathcal K_{M,t}))$.  Thus finite precision is charged
+against the transformed residual budget.  Updating
+$y_{t+1}=y_t+\lambda_t\Delta y_t$ updates every implicit slack exactly with no
+history factor and no $n$-coordinate rewrite.
+\end{theorem}
+
+\begin{proof}
+Query $c_i$ and the support and values of $a_i$, then read the matching entries
+of $y_t$ and reversibly accumulate \eqref{eq:positive-slack-oracle}.  Approximate
+$\underline s_t/z$ on the promised interval and use it as a controlled-rotation
+amplitude; uncomputation yields the diagonal encoding.  Product encodings give
+the normal matrix.  The affine identity
+$c_i-a_i^Ty_{t+1}=s_i(y_t)-\lambda_ta_i^T\Delta y_t$ proves exact closure.
+No state-preparation oracle for $s$ is queried, so the state-to-diagonal
+premise is absent.
+\end{proof}
+
+The dual method does not store a primal iterate.  Its selector instead uses
+the implicit exact-barrier coordinate
+\begin{equation}
+ x_i^b=\frac{\mu_t}{s_i(y_t)},\qquad
+ E_t=\diag\!\left({\bf1}\{x_i^b\geq s_i(y_t)\}\right)
+    =\diag\!\left({\bf1}\{s_i(y_t)^2\leq\mu_t\}\right). \label{eq:positive-dual-selector}
+\end{equation}
+This is \cref{lem:positive-tail-selector} with exact complementarity
+($\theta=0$), applied to $(x^b,s(y_t))$; the tail-margin hypotheses in this
+application are explicitly assumed for this implicit pair.  Below
+$\mu_t\leq\frac12\min\{\underline x^2,\underline s^2\}$, an active coordinate
+has $x_i^b\geq2s_i$ and an inactive coordinate has $s_i\geq2x_i^b$.
+Consequently the $x^b$--$s$ comparison has the constant margin of that lemma;
+equivalently, the directly queryable squared test is at least $\mu_t/2$ from
+its threshold.  The squared test is resolved with $O(\log(1/\mu_t))$ bits and
+does not require a stored $x_t$.
+
+The partition-free stable dual equation is
+\begin{equation}
+ G_t\Delta y_t=g_t,\qquad
+ G_t=\mu_tAS_t^{-2}A^T,\qquad g_t=b-\mu_tAS_t^{-1}e.      \label{eq:positive-dual-newton}
+\end{equation}
+Using \eqref{eq:positive-dual-selector}, define
+$C_t=\mu_t^2AES_t^{-2}EA^T$, $D_t=AFS_t^{-2}FA^T$,
+$Q_t=\Pi_{\operatorname{range}(AE)}$, and
+\begin{equation}
+ M_t=C_t+D_t-(1-\mu_t^2)Q_tD_t=P_tG_t,\qquad
+ P_t=\mu_tQ_t+\mu_t^{-1}(I-Q_t).                        \label{eq:positive-dual-stable}
+\end{equation}
+With direct component normalizations $\alpha_{C,t}$ and $\alpha_{D,t}$,
+\begin{equation}
+ \alpha_{M,t}\leq\alpha_{C,t}+(2-\mu_t^2)\alpha_{D,t},\qquad
+ \mathcal K_{M,t}=\alpha_{M,t}\norm{M_t^{-1}}.           \label{eq:positive-dual-normalization}
+\end{equation}
+The assembled block encoding of $M_t$ is an
+$(\alpha_{M,t},\cdot,\epsilon_{M,t})$ encoding in the sense of
+\cref{def:block-encoding}; its precision is fixed so that
+$\epsilon_{M,t}\le\alpha_{M,t}$, a convention used below.
+Both component normalizations and $\mathcal K_{M,t}$
+are independent of $\mu_t$ under the explicit tail gaps.  Since
+$b\in\operatorname{range}(A_B)$, the transformed RHS can be assembled without
+encoding the badly normalized $P_t$:
+\begin{align}
+ \widetilde g_t=P_tg_t
+ &=\mu_tb-\mu_t^2AES_t^{-1}Ee-\mu_t^2Q_tAFS_t^{-1}Fe\nonumber\\
+ &\quad-(I-Q_t)AFS_t^{-1}Fe.                            \label{eq:positive-transformed-rhs}
+\end{align}
+Let $\Gamma_{g,t}$ be its actual LCU numerator divided by
+$\norm{\widetilde g_t}$, so cancellation is charged.
+Thus the transformed system actually solved is
+\begin{equation}
+ M_t\Delta y_t=\widetilde g_t.                            \label{eq:positive-transformed-system}
+\end{equation}
+
+\begin{theorem}[Conditional compressed dual QIPM]
+\label{thm:positive-compressed-qipm}
+Assume the implicit-access model of \cref{thm:positive-implicit-slack}, the
+strict-complementarity margins and known gaps used above, and the inexact
+dual-barrier theorem of
+\cite{zeguan2026-quantum-dual-logarithmic-barrier-method} (their
+Theorem~3.3), which with $B_t=S_t^{-1}A^\top$ and
+$\delta^{\rm N}_t=\norm{B_t\Delta y_t}\le1/2$ accepts any step $\widehat z_t$
+satisfying $\norm{B_t(\widehat z_t-\Delta y_t)}\le\eta\delta^{\rm N}_t$ for a fixed
+$\eta\le0.1$, in
+$T=O(\sqrt n\log(n\mu_0/\epsilon_{\rm opt}))$ iterations.  Assume throughout
+the tail that $0<\mu_t\leq1$ and $\operatorname{range}Q_t\ne\{0\}$.  For
+$g_t\ne0$ set
+\begin{equation}
+ J_t=\frac{\norm{P_t^{-1}}\norm{P_tg_t}}{\norm{g_t}},\qquad
+ \rho_t=\frac{\alpha_{M,t}\norm{\Delta y_t}}{\norm{\widetilde g_t}}.     \label{eq:positive-forcing-factor}
+\end{equation}
+Solving \eqref{eq:positive-transformed-system} and coherently reconstructing
+its $m$-vector direction $\widehat z_t$ with
+\[
+ \norm{\widehat z_t-\Delta y_t}
+ \le\frac{\eta}{2J_t\rho_t}\norm{\Delta y_t}
+\]
+produces
+\[
+ (y_T,\mu_T,O_{s,T},O_{x,T}),\qquad
+ x_i=\frac{\mu_T}{s_i}+\frac{\mu_T}{s_i^2}a_i^T\Delta y_T,
+\]
+with the positivity, neighborhood, and convergence guarantees of the outer
+method.  The $T$ outer updates use solves $t<T$; one additional terminal solve
+at $(y_T,\mu_T)$ supplies the displayed $\Delta y_T$ and final coordinate
+oracle.  Its query count is
+\begin{equation}
+ \boxed{Q_{\rm path}=\Otilde\!\left(
+ \sum_{t\leq T}\frac{mJ_t\rho_t}{\eta}
+ \Gamma_{g,t}\mathcal K_{M,t}\chi_{Q,t}\right),}       \label{eq:positive-compressed-query}
+\end{equation}
+where $\chi_{Q,t}=O((\alpha_A/\sigma_B)\log(1/\delta_Q))$.  Its data and gate
+ledger is
+\begin{equation}
+ C_{\rm build}(A)+\Otilde\sum_{t\leq T}\left[
+ \frac{mJ_t\rho_t}{\eta}\Gamma_{g,t}\mathcal K_{M,t}\chi_{Q,t}
+ \bigl(C_A+d_c(B_{\rm bit}+C_{y,{\rm read}})\bigr)
+ +mB_{\rm bit}\right].                                  \label{eq:positive-compressed-gates}
+\end{equation}
+There is no $nT$ iterate-write term.  If every displayed factor and $\eta^{-1}$
+is $O(1)$, the favorable tail regime is $Q_{\rm path}=\Otilde(Tm)$.
+\end{theorem}
+
+\begin{proof}
+Let $e_t=\widehat z_t-\Delta y_t$ with
+$\norm{e_t}\le(\eta/(2J_t\rho_t))\norm{\Delta y_t}$.  Since
+$G_t=P_t^{-1}M_t$ and
+$\norm{M_t}\le\alpha_{M,t}+\epsilon_{M,t}\le2\alpha_{M,t}$ by the
+block-encoding contract and the precision convention
+$\epsilon_{M,t}\le\alpha_{M,t}$ fixed after
+\eqref{eq:positive-dual-normalization},
+$\norm{G_t}\le2\norm{P_t^{-1}}\alpha_{M,t}$, while
+\eqref{eq:positive-forcing-factor} gives
+$J_t\rho_t=\alpha_{M,t}\norm{P_t^{-1}}\norm{\Delta y_t}/\norm{g_t}$.
+Using $g_t=G_t\Delta y_t$ and $G_t^2\preceq\norm{G_t}G_t$,
+\[
+ J_t\rho_t
+ \ge\frac{\norm{G_t}\norm{\Delta y_t}}
+          {2\norm{G_t\Delta y_t}}
+ \ge\frac{\norm{G_t}^{1/2}\norm{\Delta y_t}}
+          {2\norm{\Delta y_t}_{G_t}}.
+\]
+With $G_t=\mu_tB_t^\top B_t$ we have
+$\norm{B_te_t}=\mu_t^{-1/2}\norm{e_t}_{G_t}
+\le \mu_t^{-1/2}\norm{G_t}^{1/2}\norm{e_t}$ and
+$\delta^{\rm N}_t=\norm{B_t\Delta y_t}
+=\mu_t^{-1/2}\norm{\Delta y_t}_{G_t}$, so
+$\norm{B_te_t}\le\eta\delta^{\rm N}_t$.  Thus the reconstructed step
+meets the weighted contract of the outer theorem.
+
+The operator-error budget of \cref{thm:positive-implicit-slack} supplies this
+vector accuracy; its factor $1/\rho_t$ enters only logarithmic precision
+terms.  Normalized-state
+and norm errors $O(\eta/(J_t\rho_t))$ suffice; tight coherent tomography uses
+$\Otilde(mJ_t\rho_t/\eta)$ controlled preparations.  Multiplication by RHS,
+QLS, and projector costs gives \eqref{eq:positive-compressed-query}.  The
+slack and selector queries depend only on the current explicit $y_t$, so each
+accepted direction costs $\Otilde(mB_{\rm bit})$ to store and never materializes an
+$n$-vector.  Expanding one state preparation yields
+\eqref{eq:positive-compressed-gates}.  The transferred step accuracy invokes
+the outer theorem, completing the composition.
+\end{proof}
+
+Stable conditioning alone is insufficient.  On the normalized tail
+$0<\mu_t\leq1$, assuming $\operatorname{range}Q_t\ne\{0\}$ and $g_t\ne0$, if
+$u_t=\norm{Q_tg_t}$ and $v_t=\norm{(I-Q_t)g_t}$, direct substitution gives
+\begin{equation}
+ J_t=\frac{\sqrt{u_t^2+\mu_t^{-4}v_t^2}}{\sqrt{u_t^2+v_t^2}}.    \label{eq:positive-forcing-dichotomy}
+\end{equation}
+Thus $v_t\leq C\mu_t^2u_t$ implies $J_t\leq\sqrt{1+C^2}$, while purely
+inactive forcing gives $J_t=\mu_t^{-2}$.  The favorable theorem explicitly
+requires stable forcing, bounded RHS cancellation, and stable output
+conversion, not only a stable matrix.  Full face-repair tomography still obeys
+\eqref{eq:positive-face-tomography}; classically, the same uniformly
+conditioned sparse repair can be computed by Krylov iteration with only
+logarithmic precision dependence.
+
+The matched classical baseline applies the same stable operator matrix-free.
+It costs $\Theta(nd_c)$ arithmetic per multiplication and
+\begin{equation}
+ \Otilde\!\left(nd_c\log\frac{J_t}{\eta}\right)           \label{eq:positive-classical-krylov}
+\end{equation}
+per direction under the uniform condition promise.  Ignoring the different
+query and gate units, a necessary regime for the compressed quantum route to
+improve this comparator is
+\begin{equation}
+ \frac{mJ_t\rho_t\Gamma_{g,t}\mathcal K_{M,t}\chi_{Q,t}}{\eta}
+ =o(nd_c).                                                \label{eq:positive-compressed-regime}
+\end{equation}
+Randomized column sketches may improve the classical side further.  Moreover,
+$C_{\rm build}(A)=\Omega(nd_cB_{\rm bit})$ for an explicit sparse input file,
+so no sublinear end-to-end wall-clock claim follows unless a reusable oracle
+or concise input circuit is supplied.
+
+The condition-one prefix family of \cref{sec:lp-hardness} neither contradicts
+nor validates \cref{thm:positive-compressed-qipm}.  Its hard public start is
+primal--dual infeasible, its selector tail begins only at $\mu=O(1/P)$, and
+its retained dimension is $m=\Theta(P)$, already giving a
+$\Omegatilde(P)$ generic tomography budget.  The compatibility is exact:
+
+\begin{proposition}[Compressed-coordinate compiler bound]
+\label{prop:positive-compiler-bound}
+On the prefix family, suppose a compiler uses $S$ raw coefficient queries and
+returns data for a coherent coordinate oracle of either the exact central
+primal point or a nonzero $x\geq0$ satisfying the robust contract
+$\operatorname{res}_p(x)\leq1/100$ of
+\cref{thm:lp-prefix-capstone}.  If one oracle use costs $q$ further raw
+queries, then
+\begin{equation}
+ S+q=\Omega(P).                                         \label{eq:positive-compiler-bound}
+\end{equation}
+The same conclusion holds for a direction oracle whose update is nonnegative
+and satisfies that residual contract.  In particular, the affine compressed
+output above, including its Newton correction, has $q=O(1)$; whenever it meets
+this robust approximately feasible contract, $S=\Omega(P)$.
+\end{proposition}
+
+\begin{proof}
+Here the plateau height is $H=\Theta(\sqrt P)$.  Both the central vector and
+every output admitted by the robust contract have $\Theta(P)$ plateau
+coordinates with
+$\norm x=\Theta(H\sqrt P)$ and $\norm x_\infty=\Theta(H)$.  Query the value
+oracle in a uniform superposition and rotate by $x_j/(CH)$.  The success
+probability is constant, so constant-round amplification prepares the hard
+primal state with $S+O(q)$ raw queries.  The central and robust primal-state
+clauses of \cref{thm:lp-prefix-capstone} give $\Omega(P)$, proving the claim.
+For a direction oracle, add the public start before applying the same argument.
+\end{proof}
+
+This is where hardness belongs: loading or retained-dimension tomography, not
+the equilibrated condition number.  A dual-only certificate without a primal
+coordinate oracle remains outside that reduction.
+
+\subsection{Checkpoint spans and the classical sketching boundary}
+\label{sec:positive-checkpoint-span}
+
+Lazy refresh strengthens the implicit representation.  If the checkpoint
+directions are $\widehat z_{s_1},\ldots,\widehat z_{s_R}$, then scalar reuse
+gives the exact affine representation
+\begin{equation}
+ y_t=y_0+\sum_{r\leq R_t}\theta_{r,t}\widehat z_{s_r},\qquad R_t\leq R.     \label{eq:positive-checkpoint-span}
+\end{equation}
+
+\begin{theorem}[Checkpoint-span trajectory oracle]
+\label{thm:positive-checkpoint-span}
+Under the hypotheses of \cref{thm:positive-lazy-refresh}, if the stored
+vectors have $B_{\rm bit}$ bits per entry and columns of $A$
+have sparsity $d_c$, a $y_t$ coordinate uses $R_t+1$ coherent reads and a
+slack coordinate uses $O(d_cR_t)$ reads.  Including reversible arithmetic, a
+$y_t$ query costs $\Otilde(R_tB_{\rm bit})$ gates after the public $y_0$ term
+is supplied, and a slack query costs
+$\Otilde(d_c(R_t+1)B_{\rm bit})$ gates.  All vector loads and scalar updates
+over the path cost
+\begin{equation}
+ \Otilde\!\left(mB_{\rm bit}
+ \left(1+\frac{GV_{\rm proj}}{\eta}\right)+TB_{\rm bit}\right). \label{eq:positive-span-ledger}
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+Collect consecutive scalar steps using one checkpoint to obtain
+\eqref{eq:positive-checkpoint-span}.  A coordinate query reads that coordinate
+from each stored vector and evaluates the affine sum.  A slack query repeats
+this for the at most $d_c$ entries of its column.  Each checkpoint loads one
+$m$-vector and each ordinary iteration changes one scalar.  Sum these costs and
+apply \cref{thm:positive-lazy-refresh}.
+\end{proof}
+
+This representation assumes accepted steps meet the outer residual contract.
+A scheduled exact-tail version can avoid per-iteration residual tests; an
+online version must charge them.
+
+For a checkable tall example, let $B$ be the oriented incidence matrix of a
+fixed-degree balanced bipartite expander on $m$ vertices.  For each vertex
+$i$ and copy $k\in[K]$, introduce $u_{ik},v_{ik}$ with respective columns
+$K^{-1/2}e_i$ and $-K^{-1/2}e_i$ and costs $a_{ik}\in[1,2]$:
+\begin{equation}
+ \begin{aligned}
+  \min\quad&\sum_{i,k}a_{ik}(u_{ik}+v_{ik})\\
+  \text{subject to}\quad&Bx+K^{-1/2}\sum_{k=1}^K
+       (u_{\cdot k}-v_{\cdot k})=B\mathbf1,\qquad x,u,v\geq0.
+ \end{aligned}                                           \label{eq:positive-scaled-copy-family}
+\end{equation}
+Here $n=|E(B)|+2mK=\Theta(mK)$; $K$ is the copy multiplicity, unrelated to
+the effective QLS symbols $\mathcal K$ above.  On a sufficiently small tail,
+$|y_i|/\sqrt K\leq1/2$.  The quantum algorithm and its comparator receive the
+same random/coherent-query access to $(a_{ik})$ and the formula-defined sparse
+columns.  If the costs arrive as an explicit file, loading already costs
+$\Omega(nB_{\rm bit})$.  This family has constant direct normalization and
+condition and projective constants independent of $K$, but it is not a
+quantum-advantage example.
+
+\begin{proposition}[Bounded-average sketch obstruction]
+\label{prop:positive-classical-sketch}
+For the scaled-copy family, the inactive contribution at vertex $i$ is
+\begin{equation}
+ D_{ii}(y)=\frac{1}{K}\sum_{k=1}^K\left[
+ \frac{1}{(a_{ik}-y_i/\sqrt K)^2}+\frac{1}{(a_{ik}+y_i/\sqrt K)^2}\right], \label{eq:positive-copy-average}
+\end{equation}
+where all summands lie in a fixed bounded interval on the promised tail.
+Sampling $O(\varepsilon^{-2}\log(m/\delta))$ terms independently for every
+vertex produces $\norm{\widehat D-D}\leq\varepsilon$ with probability at least
+$1-\delta$, in $O(m\varepsilon^{-2}\log(m/\delta))$ classical queries,
+independently of $K$.
+\end{proposition}
+
+\begin{proof}
+Scalar Hoeffding at each vertex and a union bound give the diagonal operator
+bound.  Uniform invertibility of the equilibrated matrix and the resolvent
+identity convert it to $O(\varepsilon)$ relative direction error.
+\end{proof}
+
+The column scale is essential.  The inactive block has row sparsity $2K$,
+column sparsity one, and entries $K^{-1/2}$, so its standard sparse-access
+normalization is $O(1)$.  Making one hidden column contribute $\Theta(1)$
+requires increasing its magnitude to $\Theta(1)$, which raises the standard
+sparse-access factor normalization and its two-factor product Gram
+normalization to
+\begin{equation}
+ \alpha_{A_N}^{\rm sparse}=\Theta(\sqrt K),\qquad
+ \alpha_{H_N}^{\rm sparse}=\Theta(K).                    \label{eq:positive-rare-normalization}
+\end{equation}
+Since $H_N$ remains diagonal with $\norm{H_N}=\Theta(1)$, a direct diagonal
+encoding can keep constant normalization, but assembling its value oracle
+from raw column access requires locating the exceptional columns, which is
+the Grover preprocessing charged below.
+
+At constant IPM accuracy this $\Otilde(m)$ sketch matches the unavoidable
+$m$-coordinate checkpoint readout.  More generally, well-spread bounded
+contributions admit classical leverage or matrix-concentration sampling.  If a
+rare column is made influential, a standard sparse block encoding acquires
+large normalization; locating the exceptions separately yields only Grover
+preprocessing.  The open target is therefore a structured access model that
+supplies a constant-normalized quantum operator without also supplying a
+bounded-leverage classical sampling distribution.  No explicit sparse LP
+family with that conjunction is known here.
+
+\subsection{A block-angular border module}
+\label{sec:positive-block-angular}
+
+Consider the arrowhead Newton system
+\begin{equation}
+ \begin{pmatrix}
+ D_1&&&B_1\\&\ddots&&\vdots\\&&D_N&B_N\\
+ B_1^T&\cdots&B_N^T&-D_0
+ \end{pmatrix}\binom uv=\binom fg,                      \label{eq:positive-arrowhead}
+\end{equation}
+where $D_i\succ0$, $D_0\succeq0$, local blocks have size at most $p$, and
+the border has size $k$.  Classical block-angular IPMs use the same Schur
+decomposition \cite{birge1988-computing-block-angular-karmarkar-projections,
+grigoriadis1996-an-interior-point-method-for,
+kempke2026-massively-parallel-interior-point-method-arrowhead}.
+
+\begin{theorem}[Explicit border and coherent local directions]
+\label{thm:positive-border-module}
+Let
+\[
+ S=D_0+\sum_{i=1}^NB_i^TD_i^{-1}B_i\succ0,\qquad
+ h=\sum_{i=1}^NB_i^TD_i^{-1}f_i-g,\qquad v=S^{-1}h.
+\]
+Suppose one coherent block query returns $(D_i,B_i,f_i)$ and local
+factorization costs $\poly(p,k)$.  Put $M=Np+k$,
+$\alpha_z=\max_i\norm{D_i^{-1/2}f_i}_\infty$, and
+$\chi_h=\alpha_z/\norm v_S$ for $v\ne0$, and suppose a known upper bound
+$\overline\chi_h\geq\chi_h$ is supplied.  There is a bounded-error algorithm
+using
+\begin{equation}
+ \Otilde\!\left(\sqrt{Mk}\left(\frac{1}{\epsilon}
+                   +\frac{\overline\chi_h}{\eta}\right)\right)    \label{eq:positive-border-queries}
+\end{equation}
+block queries that returns an explicit $\widetilde v$ satisfying
+\begin{equation}
+ \frac{\norm{\widetilde v-v}_S}{\norm v_S}
+ \leq\frac{\epsilon+\eta}{1-\epsilon}.                 \label{eq:positive-border-error}
+\end{equation}
+It also implements, with one additional block query, the coherent local oracle
+$|i,0\rangle\mapsto|i,D_i^{-1}(f_i-B_i\widetilde v)\rangle$.  No tomography
+of the $Np$ local coordinates and no condition-number factor is required.
+Without a known relative bound, one must instead request absolute inverse-energy
+error $\delta_h$, replacing the second term by $\alpha_z/\delta_h$, or charge
+adaptive estimation of $\norm v_S$.
+\end{theorem}
+
+\begin{proof}
+Stack $C_i=D_i^{-1/2}B_i$ and $D_0^{1/2}$ into $C$, so $S=C^TC$, and stack
+$z_i=D_i^{-1/2}f_i$.  The tall-matrix spectral approximation and
+inverse-local-norm mean-estimation primitives used by Apers--Gribling
+\cite{apers2026-quantum-speedups-linear-programming-interior} return explicit
+$\widetilde S,\widetilde h$ with
+$(1-\epsilon)S\preceq\widetilde S\preceq(1+\epsilon)S$ and
+$\norm{\widetilde h-h}_{S^{-1}}\leq\eta\norm v_S$ at the cost in
+\eqref{eq:positive-border-queries}.  Cancellation with $g$ is exactly the
+$\overline\chi_h$ factor.  With $\widetilde v=\widetilde S^{-1}\widetilde h$,
+\[
+ \widetilde v-v=\widetilde S^{-1}
+ [\widetilde h-h+(S-\widetilde S)v].
+\]
+The spectral sandwich bounds the first operator by $(1-\epsilon)^{-1}$ in
+$S$ norm and the bracket by $(\epsilon+\eta)\norm v_S$, proving
+\eqref{eq:positive-border-error}.  Block elimination gives each local formula.
+\end{proof}
+
+The $\sqrt N$ exponent is optimal in the block-oracle model.  Set the border
+data $D_0=0$ and $g=0$.  For scalar blocks take a known base scenario with
+$D_{\rm base}=B_{\rm base}=f_{\rm base}=1$ and hidden
+$z_i\in\{0,1\}$ of Hamming weight zero or one with
+$D_i=1$, $B_i=z_i$, and $f_i=0$.  Then $S=1+\sum_i z_i$, $h=1$, and the border
+value is $1$ or $1/2$, while the augmented system remains uniformly
+conditioned.  Constant additive accuracy decides OR, proving
+$\Omega(\sqrt N)$ quantum and $\Omega(N)$ randomized block-query lower bounds.
+
+An exact LP realization exists at the public center $x=s=e$, $y=0$ using one
+dense equality row: hidden coefficient pairs are $(\delta,\delta)$ or
+$(1,2\delta-1)$ with $\delta=1/(2N)$.  Its scalar normal matrix has condition
+one and its centering multiplier has a constant marked/unmarked gap.  This is
+a column/coefficient-query lower bound, not a constant-row-sparsity lower bound.
+Indeed, for normalized uniformly conditioned bounded-degree matrices,
+polynomial approximation of $1/x$ implies exponential inverse decay with graph
+distance; a bounded local perturbation far from a fixed border cannot have
+constant effect.  Growing condition, RHS norm, output support, or graph degree
+can evade that qualified obstruction.
+
+The module is not yet an end-to-end QIPM.  First, the product log barrier still
+has parameter $\Theta(Np)$: partial minimization preserves that certificate and
+can give $-N\log x$ even when the projected set admits $-\log x$.  Second,
+static blocks can be cached classically.  Third, later iterations need a
+nonrecursive representation of updated local variables.  The concrete open
+target is a projected barrier of parameter
+$\Otilde(k+\poly(p))$ whose local center and derivatives are recomputable from
+one scenario block and the explicit border.  Only with such a barrier would
+\cref{thm:positive-border-module} yield a genuine
+$\Otilde(\sqrt N\poly(p,k))$ border-output QIPM against the $\Omega(N)$
+classical block-query bound.
+
+\subsection{Supporting exact crossover}
+\label{sec:positive-crossover}
+
+For a tall integer LP $Az\geq b$ in dimension $d$, with coefficient magnitude
+at most $2^\ell$, row sparsity $r$, and a unique nondegenerate strictly
+complementary optimum, let
+\[
+ D=(\sqrt r\,2^\ell)^d,\qquad
+ M=\max\{1,\sqrt r\,2^\ell\sqrt d
+                 (\sqrt r\,2^\ell)^{d-1}\}.
+\]
+A feasible point of objective error
+\begin{equation}
+ E=\frac{1}{8D^2M}                                      \label{eq:positive-crossover-accuracy}
+\end{equation}
+gives true row slacks at most $1/(8D)$ on active rows and at least $7/(8D)$ on
+inactive rows.  Evaluate each slack with error at most $1/(8D)$ and mark it
+when the computed value is at most $1/(2D)$; these inequalities make the
+predicate exact.  Its reversible arithmetic uses
+$O(d(\ell+\log d))$-bit precision (and the corresponding polynomial gate
+cost).  Thus $\log(1/E)=O(d(\ell+\log d))$, independent of the number $n$ of
+rows.  Coherent enumeration identifies all binding rows in
+$\Otilde(\sqrt{nd})$ row queries; exact rational solves for the primal and dual
+variables and a Grover feasibility check then return an exact KKT certificate.
+The enumeration cost is tight for this sparse-certificate wrapper by $d$
+independent search blocks.
+
+This is only a supporting crossover lemma for the tall-row-oracle QIPM of
+Apers--Gribling.  It assumes the structural promise and coherent row access,
+and explicit input loading can erase sublinear wall time.  More importantly,
+Objois--Vladu give an exact quantum Clarkson algorithm with
+$\Otilde(\sqrt n\,d^3)$ row queries under a comparable nondegeneracy promise
+(a unique optimal basis of $d$ constraints) but without the integrality,
+bit-size, or strict-complementarity structure, and
+Dadush--V\'egh--Zambelli give an exact primal--dual oracle framework
+\cite{positive-objois2025-adaptive-sparsification,
+positive-dadush2026-exact-oracle-lp}.  The wrapper is therefore not a
+best-known exact-LP result.
+
+\subsection{Synthesis}
+\label{sec:positive-synthesis}
+
+The positive modules identify three real escape routes from the obstructions
+of \cref{sec:beyond-kappa,sec:lp-hardness,sec:preconditioning}: amortize
+classical readout by projective variation, generate changing diagonals from a
+smaller affine iterate, or request an explicit low-dimensional border rather
+than the full Newton vector.  Each route has a matching condition that cannot
+be dropped.  Lazy reuse, as bounded here, needs finite realized $V_{\rm proj}$
+and a fixed residual tolerance; partition-free equilibration needs a certified
+tail, active gaps, stable forcing, and bounded RHS/output factors; compressed output
+needs $m=o(n)$ and charges its coordinate compiler; block aggregation needs a
+small-parameter projected barrier and a nonrecursive local-state
+representation.
+
+The first-class negative results explain why simply combining the modules is
+not enough.  A standard feasible inexact neighborhood permits logarithmically
+divergent face cycling.  Proximal locking trades motion for residual and gives
+no residual-safe condition improvement.  Unfiltered global repair recreates
+the ill-conditioned Newton inverse.  Generic full-vector tomography recreates
+inverse-precision cost.  Benign tall averages admit equally benign classical
+sketches, while rare influential columns move the cost into normalization or
+Grover search.
+
+Accordingly, this section proves reusable operators and conditional
+end-to-end compressed-output theorems, not an unconditional quantum advantage.
+A genuine advantage still requires one explicit problem family and access
+model for which all of the following hold simultaneously: stable direct
+normalization and inverse, stable forcing and RHS preparation, finite
+projective variation or a low-parameter barrier, cheap static construction,
+a useful compressed output, and a classical lower bound surviving randomized
+sketching and preprocessing.  None of the modules above silently supplies a
+missing item from that list.

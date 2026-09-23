@@ -1,0 +1,467 @@
+\section{Statistical model and the meaning of a certificate}
+\label{sec:foundations}
+A measurement schedule determines which responses enter the likelihood. With
+correlated errors, changing that schedule changes the covariance matrix that
+must be inverted. We specify this statistical target, distinguish it from a
+commonly used surrogate, and establish quantitative comparisons for interpreting
+global optimization bounds. These distinctions apply both to sensor installation
+and to sampling-time selection.
+
+\subsection{Selected observations and local information}
+\label{subsec:model}
+There are $n$ candidate measurement packets. Packet $t$ contains $d_t$ scalar
+responses, acquired together when that packet is selected. Set
+$d_{\mathrm{tot}}=\sum_t d_t$; scalar candidates have $d_t=1$. The candidate
+observation vector satisfies
+\begin{equation}
+ Y=\mu(\theta)+\epsilon,\qquad \epsilon\sim N(0,R),\qquad
+ R\in\Splusplus^{d_{\mathrm{tot}}},
+ \label{eq:observation-model}
+\end{equation}
+where $\theta\in\R^p$, the mean is differentiable at a specified nominal
+parameter $\theta_0$, and the known covariance is independent of $\theta$.
+A schedule is chosen before observing data. Selecting measurements determines
+which coordinates are observed and does not alter the process or covariance.
+Adaptive sampling and interventions on the process are outside this model.
+
+Write $F=\partial\mu/\partial\theta|_{\theta_0}\in
+\R^{d_{\mathrm{tot}}\times p}$. For a schedule $S\subseteq\{1,\ldots,n\}$,
+$E_S$ selects its scalar coordinates, $F_S=E_SF$, and
+$R_{SS}=E_SRE_S^\top$. Thus a matrix subscript $S$ includes every coordinate
+of its selected packets. The feasible family $\calF$ is finite and nonempty;
+it may encode cardinality, costs, installation, and spacing constraints.
+Complexity claims require the more specific families stated in each theorem;
+an arbitrary feasible family is not assumed to have an efficient oracle.
+
+Marginalizing unobserved responses gives
+$Y_S\sim N(\mu_S(\theta),R_{SS})$. Its score at $\theta_0$ and its Fisher
+information are
+\begin{align}
+ \nabla_\theta\log p_\theta(Y_S)|_{\theta_0}
+ &=F_S^\top R_{SS}^{-1}(Y_S-\mu_S(\theta_0)),\\
+ I(S)&=F_S^\top R_{SS}^{-1}F_S.
+ \label{eq:true-information}
+\end{align}
+The second identity follows by taking the second moment of the first. It is
+exact for the Fisher information of the stated Gaussian model, including a
+nonlinear mean evaluated at $\theta_0$. The approximation in local design
+concerns substituting a nominal parameter for an unknown one or using local
+information to predict estimation accuracy. It does not justify interchanging
+selection and inversion. This selected-covariance formulation is established
+in correlated design and sensor selection \citep{Patan2007,Liu2016,Pazman2022}.
+
+We optimize the augmented matrix
+\begin{equation}
+ J(S)=J_0+I(S),\qquad J_0\in\Splus^p,
+ \label{eq:augmented-information}
+\end{equation}
+with $I(\varnothing)=0$. A fixed $J_0$ can represent independent prior
+information or a declared regularization; these interpretations must be
+reported separately. In a linear Gaussian model, a Gaussian prior with
+precision $J_0\succ0$ makes $J(S)^{-1}$ the posterior covariance. For a
+nonlinear mean, adding a matrix at one nominal parameter does not generally
+compute exact posterior covariance or Bayesian expected information.
+A numerical diagonal regularization changes the design problem and does not
+establish information supplied by an actual prior experiment.
+
+The fixed-covariance assumption is substantive. If $R=R(\theta)$, the
+$(a,b)$ entry of Fisher information includes the additional term
+\begin{equation}
+ \frac12\tr\!\left(R_{SS}^{-1}
+ \frac{\partial R_{SS}}{\partial\theta_a}
+ R_{SS}^{-1}\frac{\partial R_{SS}}{\partial\theta_b}\right).
+ \label{eq:covariance-information}
+\end{equation}
+Patan and Bogacka explicitly consider this dependence \citep{Patan2007}.
+Our results do not silently discard this term in a model that requires it.
+For matrices, $A\preceq B$ means $B-A$ is positive semidefinite,
+$\ip{A}{B}=\tr(A^\top B)$, and $\norm{A}_2$ is the spectral norm.
+A singular prior is allowed; a singular observation covariance is not allowed
+in \eqref{eq:observation-model}. A singular Gaussian likelihood requires
+analysis on its support, possibly with parameter-dependent deterministic
+constraints, and cannot generally be handled by replacing inverses with
+pseudoinverses.
+
+\subsection{Criteria, rank, and parameter coordinates}
+\label{subsec:criteria}
+We use the following conventional criteria \citep{Sagnol2015,Hainy2025}:
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+Criterion & Objective & Domain\\
+\midrule
+D-optimality & maximize $\log\det J(S)$ & $J(S)\succ0$\\
+Weighted trace information & maximize $\tr(WJ(S))$, $W\succeq0$ & $J(S)\succeq0$\\
+A-optimality & minimize $\tr(J(S)^{-1})$ & $J(S)\succ0$\\
+E-optimality & maximize $\lambda_{\min}(J(S))$ & $J(S)\succeq0$\\
+\bottomrule
+\end{tabular}
+\end{center}
+Trace information is distinct from trace inverse information. We use the
+descriptive name ``trace information'' to avoid ambiguity with other uses
+of the letter T in design theory. In particular, the criterion called
+A-optimality in \citet{Wang2024} maximizes $\tr J$, whereas our A-optimality
+minimizes $\tr(J^{-1})$.
+
+All logarithms are natural. We may extend $\log\det J=-\infty$ to singular
+positive semidefinite matrices. Every finite D-optimality certificate must
+include a positive definite feasible information matrix. If none exists,
+the optimum determinant is zero and there is no finite full-parameter
+log-determinant optimum. Inverse-based criteria are used only when their
+inverses exist. In a linear model with no prior, a contrast $c^\top\theta$
+is estimable exactly when $c\in\range I(S)$, and its minimum unbiased
+variance is $c^\top I(S)^\dagger c$. An analogous augmented-matrix expression
+is an algebraic or prior-regularized criterion and requires its declared
+interpretation. A restriction of all information matrices is valid for a
+declared reduced parameter model, or on a common supported invariant range
+expressed in an orthonormal basis. If complementary parameters remain unknown
+nuisance parameters, use the contrast covariance accounting for those
+parameters (in a nonsingular block model, by inverting the nuisance-adjusted
+Schur complement). Mere compression followed by inversion need not give that
+covariance.
+A pseudodeterminant on design-dependent ranges would define a different
+objective.
+
+For positive definite information, maximizing $\log\det J$, $\det J$, and
+$(\det J)^{1/p}$ gives the same schedules. The log-determinant and determinant
+root are concave in $J$; the determinant itself is generally not concave for
+$p>1$. Under an invertible change $\theta=T\eta$, sensitivities become $FT$
+and the prior must become $T^\top J_0T$. The log-determinant changes by the
+schedule-independent constant $2\log|\det T|$. D-optimal schedules and
+relative D-efficiencies are therefore invariant. Unweighted trace information,
+A-optimality, and E-optimality are generally coordinate-dependent. A weight
+or contrast can be transformed with the coordinates when its interpretation
+is to be preserved.
+
+Positive definite local information does not imply global identifiability.
+Observing only the intermediate species in consecutive first-order reactions
+gives the mean
+\begin{equation}
+ B(t;A_0,k_1,k_2)=\frac{A_0k_1}{k_2-k_1}
+ (e^{-k_1t}-e^{-k_2t}),\qquad A_0,k_1,k_2>0,\quad k_1\ne k_2.
+ \label{eq:rate-swap}
+\end{equation}
+Substitution shows that $(A_0,k_1,k_2)$ and
+$(A_0k_1/k_2,k_2,k_1)$ give the same entire trajectory. With fixed covariance,
+they give the same likelihood for every schedule. Nevertheless, at
+$(A_0,k_1,k_2)=(1,1,2)$, the sensitivity matrix with rows at times
+$\log2$, $2\log2$, $3\log2$ and columns in the order $(A_0,k_1,k_2)$
+has determinant $-(\log2)^2/2048$. It has full rank, so any positive definite
+observation covariance gives positive definite local data information for
+these three observations without a prior. A design certificate at one nominal
+parameter, including a regularized certificate, does not resolve
+this ambiguity. A physical restriction such as a known rate ordering changes
+the admissible parameter model and must be stated when used.
+
+\subsection{Selection before inversion and full-inverse gating}
+\label{subsec:gating}
+An alternative expression weights precomputed full-precision entries by
+pairs of selected coordinates. With $D_S=E_S^\top E_S$, it is
+\begin{equation}
+ J_{\gate}(S)=J_0+F^\top D_SR^{-1}D_SF
+ =J_0+F_S^\top(R^{-1})_{SS}F_S.
+ \label{eq:gated-information}
+\end{equation}
+Liu et al. distinguish this expression from marginal information and analyze
+its weak-correlation approximation \citep[Sec.~IV]{Liu2016}. This distinction
+is established prior work. We provide proofs and quantitative consequences
+for interpreting optimization results.
+
+\begin{proposition}[Information inflation and equality]
+\label{prop:gating}
+For every schedule, $J(S)\preceq J_{\gate}(S)$. For a nonempty proper
+selection, partition the scalar coordinates into selected and unselected
+sets and write
+\[
+ R=\begin{pmatrix}A&B\\B^\top&C\end{pmatrix},\qquad
+ A=R_{SS},\quad C=R_{S^cS^c}.
+\]
+Then
+\begin{equation}
+ J_{\gate}(S)-J(S)=F_S^\top A^{-1}B
+ (C-B^\top A^{-1}B)^{-1}B^\top A^{-1}F_S.
+ \label{eq:gating-gap}
+\end{equation}
+Equality holds exactly when $B^\top A^{-1}F_S=0$.
+\end{proposition}
+\begin{proof}
+Positive definiteness of $R$ makes the diagonal blocks and both Schur
+complements positive definite. Block inversion gives
+$(R^{-1})_{SS}=A^{-1}+A^{-1}B(C-B^\top A^{-1}B)^{-1}B^\top A^{-1}$.
+Congruence by $F_S$ proves the formula and positive semidefiniteness.
+The positive definite middle matrix makes the resulting quadratic form zero
+exactly under the stated condition. Empty and full selections give equality
+directly.
+\end{proof}
+Equality includes independent errors, unions of complete independent
+covariance blocks, and special sensitivity directions even when $B\ne0$.
+Correlation within an all-or-nothing sensor block causes no mismatch when
+that block is independent of every other selection unit. Thus the mismatch
+does not invalidate every correlated instance.
+
+Gating has a statistical interpretation under a different experiment. If the
+unselected raw noise values $\epsilon_{S^c}$ are supplied as
+parameter-independent side information, the conditional mean of $Y_S$ is
+$\mu_S+BC^{-1}\epsilon_{S^c}$ and the covariance is
+$A-BC^{-1}B^\top$. Sensitivity remains $F_S$, giving
+\eqref{eq:gated-information}. Equivalently, all channels can be observed
+under the altered model $Y=D_S\mu(\theta)+\epsilon$.
+
+Conditioning on actual unselected responses is different. At fixed
+$Y_{S^c}=y_{S^c}$ the conditional mean is
+$\mu_S+BC^{-1}(y_{S^c}-\mu_{S^c})$, so its sensitivity is
+$F_S-BC^{-1}F_{S^c}$. Conditional information is consequently
+\begin{equation}
+ (F_S-BC^{-1}F_{S^c})^\top(A-BC^{-1}B^\top)^{-1}
+ (F_S-BC^{-1}F_{S^c}).
+ \label{eq:conditional-information}
+\end{equation}
+Adding $F_{S^c}^\top C^{-1}F_{S^c}$ gives full-response information.
+Calling gating simply ``conditioning on the other observations'' without
+this sensitivity correction is generally incorrect.
+
+\begin{example}[Exact information and decision discrepancies]
+\label{ex:gating-witnesses}
+Let $J_0=0$, $p=1$, $R=\left(\begin{smallmatrix}1&3/4\\3/4&1\end{smallmatrix}\right)$,
+and $F=(1,1)^\top$. Observing only the first response gives marginal
+information $1$ and gated information $16/7$. Observing both gives $8/7$;
+the first response conditional on the actual second has information $1/7$.
+The gated score therefore decreases when the second response is selected.
+
+The discrepancy can change an optimum. Select exactly one of three equal-cost
+candidates with
+\[
+ R=\begin{pmatrix}1&0&3/4\\0&1&0\\3/4&0&1\end{pmatrix},\qquad
+ F=(1,6/5,0)^\top,\quad J_0=0.
+\]
+The marginal singleton values are $(1,36/25,0)$ and the gated values are
+$(16/7,36/25,0)$. Their optimizers select the second and first candidates,
+respectively. The same positive-information ranking applies to scalar
+log-determinant and inverse information; the third design is singular.
+\end{example}
+In contrast, marginal information is monotone under adding observations.
+For disjoint coordinate sets $S,T$, block inversion gives
+\begin{equation}
+ \begin{split}
+ I(S\cup T)=I(S)&+(F_T-R_{TS}R_{SS}^{-1}F_S)^\top\\
+ &\cdot(R_{TT}-R_{TS}R_{SS}^{-1}R_{ST})^{-1}
+ (F_T-R_{TS}R_{SS}^{-1}F_S).
+ \end{split}
+ \label{eq:information-increment}
+\end{equation}
+The increment is positive semidefinite; the empty-set case is interpreted
+directly. This identity does not assert submodularity of a scalar criterion.
+
+\subsection{Uniform quantitative bounds for a gated model}
+\label{subsec:gating-bounds}
+The next result specializes the classical inverse-compression form of the
+operator Kantorovich inequality \citep[Eq.~(1)]{Moradi2019}. No new matrix
+inequality is claimed.
+
+\begin{proposition}[Condition-dependent comparison]
+\label{prop:kantorovich}
+Suppose $0<m\le M$ and $mI\preceq R\preceq MI$. Set
+\begin{equation}
+ \kappa=M/m,\qquad \alpha=\frac{(M+m)^2}{4Mm}
+ =\frac{(\kappa+1)^2}{4\kappa}.
+ \label{eq:alpha}
+\end{equation}
+Every schedule satisfies
+\begin{equation}
+ J(S)\preceq J_{\gate}(S)\preceq\alpha J(S).
+ \label{eq:uniform-gating}
+\end{equation}
+The two information matrices have the same kernel. If $J(S)\succ0$ and
+$r_S=\rank(R_{S,S^c})$, then
+\begin{equation}
+ 0\le\log\det J_{\gate}(S)-\log\det J(S)
+ \le\min(p,r_S)\log\alpha.
+ \label{eq:rank-gating}
+\end{equation}
+For an empty or full selection set $r_S=0$.
+\end{proposition}
+\begin{proof}
+For $\lambda\in[m,M]$, $(\lambda-m)(\lambda-M)\le0$, hence
+$\lambda+Mm/\lambda\le M+m$. Applying this inequality to an orthogonal
+eigendecomposition gives $R+MmR^{-1}\preceq(M+m)I$. Compress to selected
+coordinates and put $A=R_{SS}$, $K=(R^{-1})_{SS}$. Then
+\[
+ K\preceq\frac{(M+m)I-A}{Mm}\preceq\alpha A^{-1}.
+\]
+The second inequality follows by diagonalizing $A$ and using
+$t(M+m-t)\le(M+m)^2/4$ for its positive eigenvalues. Congruence by $F_S$,
+and $J_0\preceq\alpha J_0$, prove the upper comparison; the lower comparison
+is Proposition~\ref{prop:gating}. The sandwich equates zero quadratic forms
+and hence kernels.
+For $J(S)\succ0$, the eigenvalues of
+$J(S)^{-1/2}J_{\gate}(S)J(S)^{-1/2}$ lie in $[1,\alpha]$.
+Equation~\eqref{eq:gating-gap} bounds the rank of its difference from the
+identity by $r_S$. At most $\min(p,r_S)$ eigenvalues differ from one;
+the logarithm of their product proves \eqref{eq:rank-gating}.
+\end{proof}
+
+For positive diagonal $D$, replacing $(R,F)$ by $(DRD,DF)$ leaves both
+information matrices unchanged for every coordinate selection. The same is
+true for invertible block-diagonal transformations when entire blocks are
+selected together. Thus a scaling to unit marginal variances can avoid
+conditioning measured in arbitrary physical units. Spectral enclosures for
+the scaled covariance must themselves be valid if used in a certificate.
+
+\begin{corollary}[Consequences for design optimization]
+\label{cor:gated-design}
+Under the assumptions of Proposition~\ref{prop:kantorovich}, with $\alpha$
+as in \eqref{eq:alpha}, suppose $\calF$ contains a positive definite information
+design. Let $S_G$
+maximize $\log\det J_{\gate}$ and let $S_*$ maximize $\log\det J$ over
+$\calF$. Then
+\begin{equation}
+ \log\det J(S_G)\ge\log\det J(S_*)-p\log\alpha,\qquad
+ \left(\frac{\det J(S_G)}{\det J(S_*)}\right)^{1/p}\ge\alpha^{-1}.
+ \label{eq:gated-design-guarantee}
+\end{equation}
+If $r_S\le r$ uniformly over feasible schedules, the additive loss improves
+to $\min(p,r)\log\alpha$. A global gated optimizer of weighted trace
+information achieves at least $1/\alpha$ of the true optimum of that same
+criterion. A global gated A-optimal design has true trace-inverse objective
+at most $\alpha$ times the true A-optimum, on the common positive definite
+domain.
+\end{corollary}
+\begin{proof}
+The D-optimality chain is
+\[
+ \log\det J(S_G)\ge\log\det J_{\gate}(S_G)-p\log\alpha
+ \ge\log\det J_{\gate}(S_*)-p\log\alpha
+ \ge\log\det J(S_*)-p\log\alpha.
+\]
+Use \eqref{eq:rank-gating} for the refinement. Taking the trace after
+multiplication by $W\succeq0$ preserves the sandwich and proves the trace
+statement by the same optimality chain. Inversion reverses order:
+$\alpha^{-1}J(S)^{-1}\preceq J_{\gate}(S)^{-1}\preceq J(S)^{-1}$.
+Take traces and compare the two minimizers to obtain the A-optimality claim.
+\end{proof}
+These guarantees require global optimization of the stated gated criterion.
+An additive gated log-objective suboptimality $\eta\ge0$ adds $\eta$ to the
+loss in \eqref{eq:gated-design-guarantee}. A heuristic solution or solver
+termination status alone does not establish global optimality.
+
+\begin{example}[Sharpness]
+\label{ex:gated-sharpness}
+For $0<\rho<1$, select exactly one observation from
+\[
+ R=\begin{pmatrix}1&\rho&0\\\rho&1&0\\0&0&1\end{pmatrix},\qquad
+ F=(1,1/2,b)^\top,\qquad J_0=0.
+\]
+The eigenvalue bounds $m=1-\rho$, $M=1+\rho$ give
+$\alpha=(1-\rho^2)^{-1}$. True singleton information values are
+$(1,1/4,b^2)$, and gated values are $(\alpha,\alpha/4,b^2)$.
+For $1<b^2<\alpha$, gating selects the first candidate and the true objective
+selects the third. The true efficiency $1/b^2$ approaches $1/\alpha$ as
+$b^2\uparrow\alpha$. Every singleton information matrix is positive.
+Rational $\rho,b$ approximate the limit, so the efficiency lower bound is
+sharp as an infimum for rational data, one parameter, and three candidates;
+equivalently, the additive log-information loss has supremum $\log\alpha$.
+Letting $\rho\uparrow1$ rules out a positive efficiency guarantee independent of
+covariance conditioning.
+\end{example}
+For a weak-correlation family $R=\Lambda+\varepsilon\Upsilon$, with fixed
+positive diagonal $\Lambda$ and fixed symmetric zero-diagonal $\Upsilon$,
+the cross block $B$ is $O(\varepsilon)$. Equation~\eqref{eq:gating-gap}
+gives $O(\varepsilon^2)$ information error because the inverse blocks stay
+bounded near zero. This recovers the first-order agreement of
+\citet[Proposition~2]{Liu2016}. Weak correlation is a sufficient asymptotic
+regime, not a necessary condition for equality at a special selection.
+
+\subsection{A source comparison and independent time-block repair}
+\label{subsec:source-comparison}
+\citet{Wang2024} formulate measurement costs for all-or-nothing sensors and
+individually charged samples. In the inspected accepted manuscript,
+Eqs.~(8)--(10) form pair contributions from full inverse-covariance entries,
+and Eq.~(11) gates them by joint selection. The public implementation at
+commit \texttt{430090e610446aab88328ce495ffb15b684c56c4} computes the full
+covariance pseudoinverse before extracting entries or blocks
+\citep{MeasurementOpt2025}. For our positive
+definite examples it is the ordinary inverse in
+\eqref{eq:gated-information}. The mismatch occurs with one measurement
+modality and therefore does not depend on cross-modality counting conventions
+in the displayed formulation.
+
+The comparison concerns arXiv:2406.09557v1, the accepted manuscript OSTI
+2447595, and the immutable software version just specified. We inspected
+their relevant equations; the publisher's final typeset article was not
+retrieved. A local Fisher approximation does not remove a mismatch already
+present for an exactly linear Gaussian mean. Conversely, this argument does
+not invalidate the source's independent-noise case or assert changes in every
+correlated optimizer. Its rotary-bed covariance is diagonal. Agreement
+between optimization packages reusing the same coefficients checks their
+stated objective, rather than independently checking the likelihood.
+
+The source's kinetics code uses eight independent time blocks. At each time,
+order three static-cost measurements (SCMs) before three dynamic-cost
+measurements (DCMs), with species A, B, C in each group. The code covariance is
+\begin{equation}
+ R_6=\begin{pmatrix}C_0&C_0/2\\C_0/2&C_0\end{pmatrix},\qquad
+ C_0=\begin{pmatrix}1&1/10&1/10\\1/10&4&1/2\\1/10&1/2&8\end{pmatrix}.
+ \label{eq:source-covariance}
+\end{equation}
+The leading principal minors of $C_0$ are $1$, $399/100$, and $791/25$,
+so $C_0\succ0$. The other Kronecker factor has eigenvalues $1/2$ and $3/2$,
+so $R_6\succ0$. Same-species cross-modality correlation is $1/2$.
+The SCM--SCM block of $R_6^{-1}$ is $(4/3)C_0^{-1}$. Selecting all SCMs
+and no DCMs therefore gives exactly $4/3$ times the actual data information
+under gating. This algebraic pattern is not asserted feasible at every
+budget. In Table~S-1 of the inspected accepted manuscript (printed p.~S-2,
+PDF p.~46), the A-DCM row, C-DCM column is $0.01$, whereas the transposed
+entry is $0.1$. Equation~\eqref{eq:source-covariance} uses the symmetric
+public-code covariance and does not treat that asymmetric table as a valid covariance model.
+
+Independence across time allows a direct repair. For each time $t$ and subset
+$P\subseteq\{1,\ldots,6\}$, precompute
+\begin{equation}
+ Q_{t,P}=F_{t,P}^\top(R_6)_{PP}^{-1}F_{t,P},\qquad
+ Q_{t,\varnothing}=0.
+ \label{eq:independent-pattern}
+\end{equation}
+Choose one pattern per time with binary $z_{t,P}$ and
+$\sum_P z_{t,P}=1$. Then
+\begin{equation}
+ J=J_0+\sum_{t,P}z_{t,P}Q_{t,P}
+ \label{eq:pattern-sum}
+\end{equation}
+is exactly the marginal information: reorder selected coordinates by time,
+invert the resulting block-diagonal covariance, and sum its sensitivity
+quadratic forms. Tie SCM presence across time and apply installation,
+sampling, and budget restrictions to pattern membership. There are at most
+$64$ patterns per time before pruning. This is ordinary finite pattern
+enumeration, not a new hull theorem. It does not justify independent temporal
+chains when same-time cross-channel covariance is present, or complete-state
+Markov formulas under arbitrary partial observation of a latent state.
+
+\subsection{What a global certificate establishes}
+\label{subsec:certificate-contract}
+For $f(S)=\log\det J(S)$ and a feasible positive definite design
+$\widehat S$, a certificate supplies valid numbers $\ell,U$ such that
+\begin{equation}
+ \ell\le f(\widehat S)\le f_*:=\max_{S\in\calF}f(S)\le U.
+ \label{eq:certificate-contract}
+\end{equation}
+The achieved D-efficiency is at least $\exp(-(U-\ell)/p)$.
+Numerical primal values and support prices become rigorous certificates only
+after feasibility, arithmetic enclosures, and the relevant inequalities and
+model inputs have been justified. ``Exact design'' in design theory means a
+discrete design rather than a continuous weight measure; it does not itself
+mean globally certified optimality or exact numerical arithmetic.
+
+A global upper bound $U_G$ on the gated log optimum also bounds $f_*$ by
+Proposition~\ref{prop:gating}. Re-evaluating a feasible schedule with its
+selected covariance supplies the lower side of
+\eqref{eq:certificate-contract}. The gated solver's own gap is not the
+marginal gap. A valid bound from an existing model can thus remain useful
+while its statistical objective is corrected.
+
+Our rational certificates interpret stored decimal model entries as exact
+rational numbers and enclose logarithms with outward bounds. They certify
+the optimization problem specified by those inputs. They do not establish
+that numerically generated sensitivities or estimated covariances equal
+physical quantities. Sensitivity verification, covariance assumptions,
+finite-scenario coverage, and arithmetic certification answer different
+questions and are reported separately.

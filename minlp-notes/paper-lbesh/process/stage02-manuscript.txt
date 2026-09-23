@@ -1,0 +1,954 @@
+ Radial and point separation for perspective outer approximation
+            of convex generalized disjunctive programs
+                                     Anonymous manuscript
+
+
+1    Introduction
+Generalized disjunctive programming (GDP) represents discrete alternatives by logical statements
+and associates each alternative with a set of algebraic constraints. In a convex minimization GDP,
+the objective and inequality functions are convex and equality constraints are affine, both globally
+and within each alternative; the union of alternatives is generally nonconvex. This structure is
+useful for process selection and design because constraints belonging to an inactive alternative need
+not constrain the selected process. Logic-based outer approximation exploits that distinction when
+constructing mixed-integer linear masters and continuous subproblems [16].
+    For a bounded convex disjunction, a hull formulation distributes the original variables among
+alternatives and scales each copy by its selection weight. Convex nonlinear rows then admit per-
+spective representations. An outer approximation can enforce these rows through affine perspective
+cuts [3, 7]. The choice of the point at which to construct a cut remains consequential even when the
+formulation and the family of valid inequalities are fixed. A point tangent uses the current violated
+point. A radial supporting cut first searches the segment from a strict interior anchor to that point,
+then linearizes at the boundary. The latter incurs extra function evaluations but can remove a
+different portion of the current relaxation.
+    This paper studies a specific computational question: does that additional separation work repay
+its cost in a GDP solver? We compare the extended supporting hyperplane (ESH) policy with
+the extended cutting plane (ECP) policy in one implementation, holding the master construction,
+initialization, incumbent recovery, validation rules, and solver settings fixed within each pair. We
+retain both hull and big-M masters and both single-tree and repeated-master execution. The name
+logic-based ESH (LB-ESH) describes the implementation’s use of the original disjunct structure; it
+does not denote a new family of inequalities. The tested solver uses nonlinear programming (NLP)
+both to seek interior anchors and to recover feasible incumbents at integer selections.
+    Our contribution is the controlled comparison, its explanatory diagnostics, and the explicit
+mathematical and numerical conditions needed to interpret it. First, we give a self-contained account
+of cut validity and fixed-residual separation, including zero selection weights, approximate boundary
+points, small-weight omission, and the distinction between a valid relaxation bound and an objective-
+gap certificate. We derive a residual-calibrated fractional rule and a per-disjunction geometric
+repair bound, and give counterexamples to general cut dominance and to a linear objective-error
+inference after intersecting disjunctions with global constraints. These results clarify the method’s
+scope; we do not assert priority for the underlying convexity and compactness arguments. The
+residual-calibrated rule is analyzed separately from the fixed weight cutoff used in the experiments.
+    Second, an executable oracle diagnostic isolates dependence on equivalent constraint representa-
+tions and measures the function evaluations required by radial searches. Third, the computational
+study combines 51 related generated controls, of which 33 are held out from the pilot split, with 27
+external models, two additional schedules for the held-out single-tree comparisons, pilot ablations,
+
+                                                  1
+and independent conic references. Every supplied incumbent is checked against the original model.
+Failed interfaces, invalid witnesses, and open gaps remain in their declared cohorts. Supplementary
+tolerance and initialization studies are reported separately from the original runs.
+    The results support a limited practical benefit. On the held-out controls, single-tree ESH meets
+the numerical solve criterion on all 33 instances with either formulation; ECP does so on 32 with hull
+and 31 with big-M . Common-solved shifted geometric mean wall times favor ESH by approximately
+4–6% in the single-tree comparisons across the three schedules. ESH has lower arithmetic mean
+cut counts and LP iteration counts on the matched cohorts, but its recorded cut-generation time
+is substantially greater. Formulation and tree policy have larger measured timing effects. The
+external models give equal ESH and ECP accepted solve counts in every matched configuration, and
+exact conic formulations provide a strong alternative where available. Disabling integer-point NLP
+recovery reduces accepted outcomes from 69 of 72 pilot runs to one of 72, exposing an important
+limitation of this implementation.
+    The matched design also limits the interpretation. ECP shares interior initialization even though
+point tangents do not require it; the comparison therefore measures a policy change inside this solver,
+rather than independently optimized implementations. The controls share model structures and
+parameters, and repetition changes scheduling but retains the solver seed. Reported solves satisfy
+stated numerical feasibility and gap tests, rather than exact-arithmetic certificates. Within these
+limits, the study provides evidence for a concrete solver-design decision and documents circumstances
+in which the extra radial work is not rewarded.
+
+
+2     Relationship to prior work
+2.1   Logic-based outer approximation and perspective cuts
+The extended hull construction belongs to disjunctive programming [1]; its convex nonlinear
+counterparts use perspective functions to represent bounded unions of convex sets [4, 8]. Hull
+formulations of separate disjunctions are then intersected with global constraints and logic. That
+intersection need not be the convex hull of the complete GDP feasible set. This distinction matters
+when describing the relaxation targeted by our separation routines.
+    Logic-based outer approximation already combines selected-structure NLP subproblems with a
+linearized disjunctive master [16]. Omitting inactive nonlinear constraints from those subproblems,
+retaining logical structure, and applying a hull transform to affine approximations are inherited
+ingredients. Our radial policy chooses additional linearization points without solving an optimization
+problem at each point, but the complete tested algorithm still uses NLP subproblems.
+    Frangioni and Gentile [7] derive perspective cuts for convex on/off mixed-integer programs. For
+a differentiable convex row g(x) ≤ 0, a tangent at z gives
+
+                                 ∇g(z)T v + g(z) − ∇g(z)T z λ ≤ 0,
+                                                              
+                                                                                                    (1)
+
+where v is a disaggregated variable and λ its selection weight. For positive λ, this is precisely a
+linearization of λg(v/λ). Bestuzheva et al. [3] establish the same equivalence through affine cut
+extension and study perspective cuts in a general-purpose solver, including extensions based on
+valid nonconvex estimators. Accordingly, constructing coefficients in original-variable space and
+attaching an indicator does not itself distinguish a new cut family. Our hull ECP and ESH variants
+choose different z in (1); the big-M variants deactivate tangents in the original variables using valid
+big-M coefficients.
+
+
+
+                                                  2
+2.2   Radial supporting planes and disjunctive strengthening
+The point-tangent comparison follows the ECP tradition for convex mixed-integer nonlinear program-
+ming [18]. Veinott [17] already selects supporting points by intersecting the boundary with a segment
+from a fixed interior point to the current exterior relaxation solution. Kronqvist et al. [11] develop
+ESH for convex mixed-integer nonlinear programming, using interior points, boundary searches, and
+an initial LP phase before mixed-integer refinement. Serrano et al. [14] place this construction in
+the earlier supporting-hyperplane tradition and show its relationship to Kelley’s method applied to
+a gauge representation. Their result explains why a change in constraint representation can change
+point tangents while preserving the underlying feasible-set geometry. Our representation diagnostic
+makes a restricted version of that mechanism explicit and executable. It is not a new geometric
+foundation for ESH.
+    The SHOT implementation of Lundell et al. [12] is a close algorithmic precedent: it combines
+ESH and ECP separation with fixed-integer NLP heuristics, supports both single-tree callbacks
+and repeated-master execution, and falls back to ECP when no strict interior point is available.
+Its experiments include comparisons of tree policies. Our study retains GDP term structure and
+isolates radial versus point separation under matched settings within one GDP solver. SHOT also
+appears among our reformulation-based baselines; that comparison is distinct from the matched
+policy experiment.
+    The closest disjunctive ESH precedent is Kronqvist and Misener [10]. Their strengthening
+procedure holds a cut normal fixed and solves separate convex optimization problems to obtain
+coefficients for the terms of a disjunction. They integrate these inequalities with ESH and compare
+against hull formulations while avoiding direct nonlinear perspective evaluation. Our hull variant
+instead maintains disaggregated variables and constructs term-specific tangents by line search in the
+original bounded domains. The normals may differ among terms, and the same radial tangent policy
+is also used with our original-variable big-M master. This is a difference in separation procedure
+and master representation, not a demonstrated dominance relation. In particular, combining ESH
+with disjunctions or avoiding nonlinear perspective division cannot serve as a novelty claim for this
+paper.
+    Trespalacios and Grossmann [15] construct cuts from a hull formulation strengthened by basic
+steps and project the resulting information into a big-M model. Their separation uses optimization
+over a strengthened relaxation. Basic steps can incorporate interactions among disjunctions that
+are absent from separate-disjunction hulls. Our individual-row separation has a different work
+requirement and targets a different relaxation; it does not replace or subsume that method. No
+empirical comparison with their strengthening procedure is reported here.
+
+2.3   Exact conic formulations and conic outer approximation
+A nonquadratic expression does not establish that an exact conic hull is unavailable. Bernal Neira
+and Grossmann [2] formulate convex GDP alternatives with cones and obtain perspective-free
+hull representations under their stated assumptions. Their scope includes nonlinearities beyond
+quadratics. For quadratic rows, the revised manuscript of Gusev and Bernal Neira [9], specifically
+version 2 dated 17 March 2026, presents the conic exact hull reformulation (CEHR). For a row
+g(x) = xT Qx + cT x + d ≤ 0 with Q ⪰ 0, a nonnegative auxiliary variable t gives the lifted constraints
+
+                            v T Qv ≤ tλ,     t + cT v + dλ ≤ 0,     t ≥ 0,                          (2)
+
+together with scaled bounds and 0 ≤ λ ≤ 1. This has the same closed bounded-domain perspective
+target as the complete family of tangent cuts for the corresponding quadratic row. Comparing a
+
+                                                  3
+finite outer approximation against a weaker algebraic alternative would therefore be insufficient; our
+quadratic comparison uses the exact conic formulation.
+     Coey et al. [5] develop outer approximation with conic certificates, including numerical tolerance
+issues and both iterative and solver-driven implementations. Their study distinguishes separation-
+only variants from algorithms using continuous conic subproblems. Thus affine master refinement,
+optional continuous optimization oracles, and single-tree integration are established algorithmic
+choices. The cone references in our study check supported hull roots and small fixed-assignment
+problems, and the quadratic conic baseline supplies a direct computational alternative. They do not
+constitute a complete comparison against a general conic outer-approximation solver.
+
+2.4    Scope of the contribution
+The literature establishes the constituent cut families and algorithmic ideas. Our original empirical
+result is the measured radial-versus-point tradeoff under matched GDP policies, together with its
+dependence on formulation, tree execution, incumbent recovery, and model scope. The accompanying
+proofs and diagnostic constructions make the interpretation checkable without claiming a new general
+convergence theory, a stronger limiting hull, or a uniformly stronger separator. A supporting plane
+can cut a different region from a point tangent without dominating it.
+    Recent related work also limits broad claims of a new GDP solution paradigm. Nguyen and
+Pulsipher [13] extend logic-based and cutting-plane approaches to infinite-dimensional GDP, a
+different problem class. Current discopt documentation describes algebraic ESH with interior-point
+root searches and a separate GDP reformulation choice [6]. This is relevant implementation context,
+rather than peer-reviewed priority or an executed baseline in our study. It motivates keeping the
+claim specific to the present comparison. We make no claim that this is the first possible combination
+of GDP structure and radial separation, and the search for related work does not prove the absence
+of an equivalent implementation.
+
+
+3     Model and affine perspective cuts
+3.1    Problem class and relaxation target
+Let I be a finite set of disjunctions and Ki the finite set of alternatives in disjunction i. The original
+algebraic variables are x ∈ C = [xL , xU ] ⊂ Rn , with finite bounds; a subset xJ is integer. These
+original integer variables are distinct from the binary selection indicators yik . Write m = i |Ki |.
+                                                                                                  P
+
+We consider the minimization GDP
+
+        min     cT x + dT y,                                                                           (3a)
+         s.t.   (x, y) ∈ A,       hℓ (x, y) ≤ 0   (ℓ ∈ H),                                             (3b)
+                                                              xJ ∈ Z|J| ,
+                 X
+                       yik = 1   (i ∈ I),     y ∈ {0, 1}m ,                                            (3c)
+                k∈Ki
+                yik = 1 =⇒ x ∈ Sik ,          Sik = {x ∈ C : Bik x ≤ bik , gikj (x) ≤ 0 (j ∈ Jik )}.   (3d)
+
+Here A is the intersection of C × [0, 1]m with global affine constraints, including any linear encoding
+of the permitted indicator logic. Affine equalities can be written as pairs of inequalities. Each Sik is
+a continuous convex set: original integrality is imposed separately and is not convexified inside a
+term. A nonlinear objective can be lifted as described below. Maximization of a concave objective
+is converted to minimization by changing its sign.
+
+
+
+                                                      4
+    All nonlinear functions are finite, convex and continuously differentiable on an open convex
+neighborhood of their respective boxes: C for term rows, and C × [0, 1]m for global rows. The results
+need only bounded chosen gradients and valid supporting inequalities, but the implementation uses
+derivatives. Fixed coordinates can be eliminated. This neighborhood assumption avoids assuming
+that a Lipschitz constant restricted to a lower-dimensional box bounds every component of an
+ambient gradient. Convexity and differentiability are input assumptions, not properties certified by
+the software. Native selection indicators do not occur in disjunct constraint bodies in the supported
+implementation; global logical couplings remain allowed.
+    For the hull master, introduce continuous copies νik ∈ Rn and weights λik = yik , with
+                            X                                       X
+                       x=          νik ,                                   λik = 1,         λik ≥ 0,   (4a)
+                            k∈Ki                                    k∈Ki
+                       L                   U
+                  λik x ≤ νik ≤ λik x ,                               Bik νik ≤ bik λik .              (4b)
+
+At positive weight, pik = νik /λik belongs to C; at zero weight, νik = 0. If the indicators are
+integral, the selected copy equals x and every other copy vanishes. The notation uses a full copy
+of x to simplify the presentation. The implementation copies only the coordinates appearing in
+a disjunction, taking their union over its alternatives. Omitted coordinates have only their box
+restriction inside those alternatives, so they can always be extended as νik,j = λik xj ; the projected
+formulation is the same.
+
+3.2   Validity, closure, and completeness
+For a generic convex row g(x) ≤ 0 and z ∈ C, define
+
+                      az = ∇g(z),              bz = g(z) − aTz z,       ℓz (x) = aTz x + bz .           (5)
+
+Convexity gives ℓz (x) ≤ g(x) on C. Its affine perspective cut is
+
+                                                  aTz ν + bz λ ≤ 0.                                     (6)
+
+An ECP cut takes z = p = ν/λ. An ESH cut takes z on the boundary between a strict interior
+anchor and p. Both belong to the established perspective cut family [3, 7]; only the sampling point
+changes.
+
+Proposition 3.1 (Bounded perspective identity). On T = {(ν, λ) : 0 ≤ λ ≤ 1, λxL ≤ ν ≤ λxU },
+set
+                      G(ν, λ) = λg(ν/λ) (λ > 0),      G(0, 0) = 0.
+Then G is convex and continuous on T . At (λ0 z, λ0 ), λ0 > 0, its affine tangent is the left side of
+(6). Moreover, the complete family of cuts (6), z ∈ C, is equivalent on T to G ≤ 0.
+
+Proof. For two positive-weight points, divide their weighted combination by its combined weight
+and apply convexity of g with the resulting nonnegative normalized weights. Multiplication by the
+combined weight proves convexity of G. A zero-weight point contributes the zero vector and extends
+the same argument. Since g is bounded on C, |G(ν, λ)| ≤ λ maxC |g|, proving continuity at the only
+zero-weight point. Ordinary continuity proves the remainder. Differentiation gives ∇ν G = az and
+∂λ G = g(z) − aTz z = bz . Its tangent constant is zero because G(λ0 z, λ0 ) = aTz λ0 z + bz λ0 . Finally,
+g(p) = supz∈C ℓz (p): convexity gives the upper bound on every tangent and z = p attains equality.
+Multiply this identity by λ > 0; at (0, 0) every cut and G ≤ 0 hold.
+
+
+                                                          5
+     The word “closed” here refers to the bounded-domain perspective function, equivalently extended
+by +∞ outside T . It does not invoke an unrestricted recession domain. For a nonempty term S, the
+origin is in the closure of its positive-weight feasible lift: fix p ∈ S and let (λp, λ) → (0, 0). If S = ∅,
+that positive-weight feasible lift and its closure are empty, but the perspective-inequality system
+still permits the inactive origin. This is intentional: an infeasible alternative must be usable with
+weight zero while another alternative is selected. A positive constant infeasible row, for example,
+forces its weight to zero rather than rendering the entire GDP infeasible.
+
+Proposition 3.2 (Hull of a separate disjunction). Let Pik be any convex sets with Sik ⊆ Pik ⊆ C.
+Enforce membership νik /λik ∈ Pik at positive weight and the inactive origin at zero weight, together
+                                                                                         S
+with the aggregation and weight equations in (4). The projection onto x is conv( k Pik ). In
+particular, finitely many affine tangents give the exact hull of the corresponding bounded polyhedral
+outer approximations. All tangents give the hull of the original continuous term sets.
+
+Proof. Every feasible lifted point satisfies x = k:λik >0 λik pik with pik ∈ Pik , a convex combination
+                                                     P
+
+of union points. Conversely, take a finite convex combination of union points, group its terms by
+alternative, and let λik be the total coefficient in group k. Convexity of Pik places the normalized
+combination in that group inside Pik whenever λik > 0. Set νik to its unnormalized combination
+and set empty groups to the inactive origin. This satisfies the lift. If every Pik is empty, neither
+side contains a point. The last assertion follows from proposition 3.1, including the affine rows.
+
+   The all-tangents statement is an infinite-family characterization; it does not claim that a finite run
+generates the exact nonlinear hull. The complete relaxation H used below retains the lifted variables,
+global affine and convex constraints, indicator logic with y ∈ [0, 1]m , and all bounded perspective
+rows, while relaxing xJ integrality. It intersects the separate-disjunction hull formulations; it is
+generally weaker than the convex hull of all GDP feasible points. Logic can further restrict its lifted
+weights. Neither proposition 3.2 nor the subsequent separation results assert the integer hull or
+account for all interactions between disjunctions.
+   For comparison, the big-M master deactivates each term tangent in original variables:
+
+                           ℓz (x) ≤ Mz (1 − yik ),       Mz = max{0, max ℓz (x)}.                       (7)
+                                                                      x∈C
+
+The box maximum is obtained by taking the maximizing endpoint for each nonzero coefficient. This
+finite coefficient makes the inequality redundant when yik = 0 and valid when yik = 1; the same
+construction applies to affine term rows. Any larger valid finite coefficient also preserves validity.
+This is a different fractional relaxation, with no corresponding claim that all its tangents recover H.
+
+3.3    A bounded objective epigraph
+Compactness below must cover every algebraic coordinate, including an artificial epigraph. Suppose
+a continuously differentiable convex objective f (x) is replaced by f (x) − t ≤ 0 and objective t + dT y,
+with t having no other role. A bounded x alone does not bound t. If the nonlinear objective also
+depends on indicators, the same argument applies on C × [0, 1]m before reimposing integrality.
+
+Proposition 3.3 (Optimization-equivalent compact epigraph). For x0 ∈ C, let
+
+              mf = min{f (x0 ) + ∇f (x0 )T (x − x0 )},          Mf ≥ max f (x),     Mf < ∞.
+                     x∈C                                              x∈C
+
+Adding mf ≤ t ≤ Mf preserves an optimal lift for every original feasible x, hence preserves the
+GDP optimum. For a valid gradient bound Lf , one may use Mf = f (x0 ) + Lf diam(C).
+
+                                                         6
+Proof. The tangent inequality implies mf ≤ f (x) throughout C, and the definition of Mf gives the
+other bound. Each original feasible x therefore has the lift t = f (x) in the proposed interval. Any
+feasible lift with t > f (x) can be reduced to that value without affecting another constraint and
+without worsening the objective. The gradient bound implies f (x) − f (x0 ) ≤ Lf ∥x − x0 ∥, proving
+the stated choice of Mf .
+    A validated exactly feasible incumbent and a total-objective cutoff can instead bound t above
+when the indicator cost is bounded. That alternative supplies no bound before such an incumbent
+exists. A lower-bounded LP optimum does not establish boundedness of arbitrary callback candidates.
+The prototype adds an epigraph and initial tangents but does not automatically impose the bounds
+in proposition 3.3; thus the compact-domain theorems are conditional for such inputs. Numerical
+incumbents always use the recomputed original objective, not a possibly understated epigraph
+value.
+
+
+4     What separation guarantees
+The following results specify what can be inferred from successful separation and what cannot.
+They concern exact arithmetic and retained valid cuts unless stated otherwise. They are supporting
+derivations for the comparison, not a claim of a new general convergence framework. Their
+compactness arguments do not provide useful polynomial runtime bounds.
+
+4.1   Uniform margins for the two policies
+For one row g on its compact convex box Cr , write
+        Dr = diam(Cr ),     Rr = max ∥x∥2 ,     Fr = max |g(x)|,      ∥∇g(x)∥2 ≤ Lr     (x ∈ Cr ).
+                                  x∈Cr                   x∈Cr
+
+For a term row, Cr = C; for a global row, Cr = C × [0, 1]m . Enlarged boxes include any bounded
+epigraph. Indices are suppressed when treating one row. A zero-diameter domain or a row with
+L = 0 is checked directly. In the latter case the row is constant on the domain and a positive value
+eliminates its term, or proves global infeasibility.
+Lemma 4.1 (Separation and normal bounds). Let g(p) = v > 0, p ∈ Cr , L, D > 0. The ECP
+tangent violates its inequality at p by v. Suppose also that a fixed anchor x̄ ∈ Cr satisfies g(x̄) ≤ −δ
+for δ > 0. Let z = x̄ + s(p − x̄), 0 < s < 1, satisfy g(z) = 0. Then the ESH tangent satisfies
+                                                  δv
+                                              ℓz (p) ≥
+                                                     .                                               (8)
+                                                 LD
+Every tangent normal has ∥az ∥2 ≤ L, and every perspective-cut normal has
+                                                       q
+                                ∥(az , bz )∥2 ≤ K :=       L2 + (F + LR)2 .                          (9)
+Proof. For ECP, ℓp (p) = g(p) = v. Existence of s ∈ (0, 1) follows by continuity from the negative
+anchor value and positive exterior value. The supporting inequality at x̄ yields
+                               −δ ≥ g(x̄) ≥ aTz (x̄ − z) = −saTz (p − x̄),
+so aTz (p − x̄) ≥ δ/s. The gradient bound, integrated along the segment, gives v = g(p) − g(z) ≤
+L∥p − z∥2 ≤ LD(1 − s). Consequently
+                   ℓz (p) = aTz (p − z) = (1 − s)aTz (p − x̄) ≥ (1 − s)δ/s ≥ δv/(LD).
+Finally, |bz | ≤ |g(z)| + ∥az ∥2 ∥z∥2 ≤ F + LR, proving (9).
+
+                                                    7
+    The anchor may differ by row; a shared anchor is an implementation convenience. Its actual row
+value, not an auxiliary NLP termination code, must establish the strict margin. ECP supplies a
+fallback when such an anchor is unavailable, without any Slater assumption. The proof also works
+for bounded chosen subgradients when the row is Lipschitz on the box: the supporting inequality at
+the anchor holds for every chosen subgradient, so a special directional-derivative-maximizing choice
+is unnecessary. This extension is not implemented.
+
+4.2   Integral candidates and objective bounds
+Theorem 4.2 (Finite fixed-residual rejection). Fix ε > 0. Suppose master candidates satisfy
+all bounds, affine constraints, indicator logic, integrality, and previously retained cuts. Whenever
+a global or selected-term nonlinear row exceeds ε, generate an ECP cut, or an ESH cut with a
+row-specific fixed positive anchor margin, for at least one such row. Retain every generated cut. Only
+finitely many such rejection iterations are possible. Thus an iteration process that keeps producing
+candidates either finds one with every relevant nonlinear row at most ε or exhausts its master
+candidates. This applies to both hull and valid finite-big-M masters.
+Proof. Assign each rejected candidate to a row for which a cut was generated. For a fixed nonconstant
+term row, restrict attention to the subsequence assigned to that row. Its term is active at all these
+candidates. If p generated a cut and q is a later candidate in this subsequence, the retained cut gives
+ℓz (q) ≤ 0, whereas lemma 4.1 gives ℓz (p) > ε for ECP or ℓz (p) > εδ/(LD) for ESH. Cauchy–Schwarz
+and ∥az ∥2 ≤ L imply respectively
+
+                               ∥p − q∥2 > ε/L or ∥p − q∥2 > εδ/(L2 D).
+
+When the term is selected, its hull copy equals x and its big-M deactivation vanishes, so this
+argument is valid in either master. A global row has the same argument in (x, y) coordinates without
+an activity condition. Each compact box can be covered by finitely many balls whose diameters are
+smaller than the appropriate positive distance; at most one point of the subsequence lies in each
+ball. There are finitely many rows. Constant positive rows eliminate their term or the global master
+after one cut. Summing the finite rowwise bounds proves the assertion.
+
+    The theorem does not require optimal master candidates, a globally solved NLP, or feasibility
+of inactive alternatives. It bounds nonlinear rejections, not all possible iterations of an algorithm
+trying to close an objective gap. In exact arithmetic, a valid outer approximation has optimum
+at most the GDP optimum. For an inexact master solve, the solver’s valid minimization bound,
+rather than its incumbent objective, supplies the lower bound B. A residual-feasible point is not
+necessarily exactly feasible and does not automatically supply an upper bound on the exact problem.
+An independently validated exactly feasible point of objective U together with U − B ≤ η establishes
+feasible η-optimality; exact optimality requires zero gap. Fixed-residual separation alone guarantees
+neither an exact incumbent nor closure of this gap.
+
+4.3   Fractional residuals and small selection weights
+For each lifted term row define
+                               (
+                                   λ[g(ν/λ)]+ ,   λ > 0,
+                   r(ν, λ) =                                         [a]+ = max{a, 0}.            (10)
+                                   0,             (ν, λ) = (0, 0),
+
+This is continuous on the scaled bounded domain: 0 ≤ r ≤ λF controls its limit at zero weight. A
+small unscaled row residual and a small weighted perspective residual are different criteria.
+
+                                                        8
+Theorem 4.3 (Residual-calibrated fractional separation). Fix εp > 0 and a positive global-row
+tolerance. At every fractional hull candidate satisfying all previously retained cuts, separate at
+least one term row with r > εp , or a global row exceeding its tolerance, using ECP or ESH as in
+lemma 4.1. Retain all cuts. There are finitely many unsuccessful separation iterations before every
+residual meets its tolerance or no relaxation candidate exists.
+Proof. For a term row with r > εp , its ECP transformed violation is exactly λg(p) = r > εp . Its
+ESH transformed violation is at least rδ/(LD) > εp δ/(LD). The coefficient norm is bounded
+independently of λ by (9). Thus a later block satisfying that cut is separated from its generating
+block in (ν, λ) by more than εp /K or εp δ/(LDK). These blocks range over a compact scaled box.
+Apply the finite-cover argument row by row, adding the global-row argument in theorem 4.2. A
+positive constant term row gives gλ ≤ 0 and needs at most one cut.
+
+   Let Ur ≥ maxp∈C [gr (p)]+ be a valid finite row bound. It is safe to skip the row without
+computing p whenever
+                                          λUr ≤ εp .                                     (11)
+Indeed r ≤ λUr ; if Ur = 0 the row is always satisfied, and otherwise every block requiring separation
+has λ > εp /Ur . A conservative Ur can follow from interval bounds or a gradient bound and a
+reference value. Tight bounds need not be cheap. This rule both justifies omission and places a
+positive lower bound on denominators that actually require evaluation.
+    The frozen implementation instead skips λ ≤ τ and tests gr (p) ≤ ε on the remaining blocks. If
+that complete test succeeds, then
+                                         rr ≤ max{ε, τ Ur }.                                      (12)
+For checked blocks use λ ≤ 1; for skipped ones use λ ≤ τ . Consequently a fixed cutoff has no
+prescribed small absolute residual guarantee without Ur . At fixed τ > 0, cutting checked rows with
+unscaled violation above ε still gives a finite retained-cut packing argument, since their transformed
+margins exceed τ ε for ECP, or τ εδ/(LD) for ESH. This termination fact does not improve (12).
+Row rescaling changes all these residuals, tolerances, and Ur .
+    The residual-calibrated policy (11) is a theoretical alternative, not an implemented experimental
+setting. An intermediate LP objective remains a valid relaxation lower bound under exact valid cuts,
+but a stall or cap provides no completed residual test. In a fractional big-M master the deactivation
+term may absorb a tangent’s entire violation, so theorem 4.3 is not a big-M residual theorem.
+
+4.4    Geometric repair and the limit of an objective inference
+Proposition 4.4 (Repair within one disjunction). Suppose each retained term is nonempty and
+has an anchor x̄ik satisfying its box and affine rows and all its nonlinear rows with common margin
+δik > 0. If pik satisfies that term’s box and affine rows, let vik = maxj∈Jik [gikj (pik )]+ (zero for an
+empty row set). Then
+                     δik pik + vik x̄ik                                     Dvik
+             qik =                      ∈ Sik ,         ∥qik − pik ∥2 ≤             ,   D = diam(C).           (13)
+                         δik + vik                                        δik + vik
+For a hull point whose checked blocks λik > τ have vik ≤ ε,
+                                                  !                                      
+                                       [                          Xλik ε       X
+                       dist x, conv         Sik       ≤ D                 +        λik  .                    (14)
+                                        k                 k:λ >τ
+                                                                 δik +   ε   k:λ ≤τ
+                                                                  ik               ik
+
+                                                                                               P
+If instead every row has weighted residual at most εp , the distance is at most D                k εp /δik .
+
+
+                                                              9
+Proof. Convexity bounds each row at qik by (δik vik − vik δik )/(δik + vik ) = 0. The box and affine
+rows are preserved by a convex combination. Also qik − pik = vik (x̄ik − pik )/(δik + vik ), giving (13).
+For every unchecked positive-weight term choose any feasible qik ; its displacement is at most D.
+                            P
+The convex combination k λik qik lies in the union hull, and the triangle inequality proves (14).
+Zero-weight terms contribute nothing and need no pik . Under the weighted-residual hypothesis,
+λik vik = maxj rikj ≤ εp , and λik vik /(δik + vik ) ≤ εp /δik . Summing gives the final bound.
+
+    These are distances to one disjunction’s hull. Repairs for different disjunctions need not agree,
+nor satisfy the global constraints or coupled logic. Empty terms must be removed for this proposition
+or assigned zero weight; the earlier cut-validity results did not need this nonemptiness condition.
+
+Example 4.5 (No linear intersection error bound from term interiors). On 0 ≤ x, y ≤ 1, impose a
+single-term constraint x2 − y ≤ 0, a global row y ≤ 0, and minimize −x. The term has anchor (0, 1)
+and nonlinear margin one. The exact feasible point is (0, 0) and its objective is zero. For 0 < ε ≤ 1,
+           √
+the point ( ε, 0) satisfies the global row exactly and the term with residual ε, but its objective
+                    √                         √
+underestimation is ε. For every fixed K, ε > Kε when 0 < ε < 1/K 2 . Thus separate-term
+Slater margins cannot imply a uniform O(ε) objective-error bound for their intersection with global
+constraints. Duplicating the alternative gives the same example with a two-term disjunction. A
+joint metric error bound or other joint regularity would be an additional assumption.
+
+Proposition 4.6 (Convergence in value without a rate). Let a sequence of compact lifted candidates
+satisfy the affine hull system and relaxed global logic. Suppose all global positive residuals and
+weighted perspective residuals tend to zero. If each candidate minimizes a valid outer relaxation of
+H, its objective tends to the optimum vH . The conclusion also holds when candidate suboptimality
+tends to zero. If instead the candidates retain integral indicators and original integer coordinates
+and optimize valid outer relaxations of the GDP, the corresponding assertion holds for the GDP
+optimum.
+
+Proof. Continuity of all residuals, including (10) at zero weight, makes every cluster point feasible
+for H. Compactness supplies cluster points. Every relaxation optimum is at most vH ; therefore
+candidate values are at most vH + o(1). Every convergent candidate subsequence has limiting
+objective at least vH . If the full objective sequence did not converge to vH , a subsequence bounded
+away from it would, by compactness, contain a convergent subsequence contradicting these two
+bounds. In the integral case, replace vH by the GDP optimum in the upper-bound argument. The
+bounded integer-coordinate set is closed, so every cluster point retains integrality and the lifted
+constraints enforce the original selected terms; its objective is therefore at least the GDP optimum.
+If the target feasible set is empty, no such compact sequence with vanishing residuals can exist.
+
+    This is a limiting statement, not finite exact convergence or a convergence rate. A fixed residual
+or fixed positive weight cutoff alone does not provide its hypotheses.
+
+4.5   Single-tree execution requires an oracle contract
+Theorem 4.7 (Conditional single-tree residual conclusion). Assume the compact-domain conditions
+above and the following exact-arithmetic solver contracts.
+
+  1. The finite MILP master is solved completely in the absence of resource limits. Every old lazy
+     cut is enforced for final feasibility. Repeated callbacks at points violating old cuts are resolved
+     in finite time, and fresh nonlinear rejection iterations are counted only at candidates satisfying
+     all old cuts.
+
+
+                                                   10
+   2. Every potentially accepted integer candidate is tested against the original global and selected-
+      term rows. A row above a fixed positive residual tolerance produces a valid rejecting cut with
+      the uniform margin in lemma 4.1. Inability to obtain such a cut is a failure, not acceptance.
+
+   3. Any heuristic NLP point proposed as an exactly feasible incumbent is independently validated
+      against bounds, affine and nonlinear rows, fixed values, integrality, logic, and the original
+      objective. Failed NLP solves do not exclude an assignment without a separate valid infeasibility
+      proof.
+
+   4. Fractional cutting is disabled, capped at finitely many cuts, or obeys a retained-cut uniform-
+      margin condition such as theorem 4.3 or its fixed-positive-cutoff variant. Other optional
+      refinement also contributes only finitely many cuts.
+
+Then only finitely many distinct nonlinear integer rejection iterations and permitted fractional cut
+iterations occur. Under the complete-master-solver contract, the algorithm eventually establishes
+master infeasibility or produces an integer point meeting the nonlinear residual tolerance. An exactly
+feasible incumbent U and a valid master bound B additionally establish feasible η-optimality whenever
+U − B ≤ η.
+
+Proof. Contract 1 places fresh integer rejection candidates under theorem 4.2; their number is finite.
+Contract 4 bounds fractional and other refinement. Old-cut repetitions finish in finite time by
+contract 1. After finitely many additions, the complete finite MILP solve either has no feasible
+candidate or processes an integer candidate that cannot be rejected above the prescribed residual
+tolerance. Contract 2 supplies the residual conclusion. Under exact cut validity, master infeasibility
+proves GDP infeasibility. Contracts 1 and 3 supply valid B and U for the stated objective inequality.
+That inequality, rather than final master status alone, establishes the objective conclusion.
+
+    These are substantive conditions on solver behavior, not consequences of choosing a callback API.
+A solver may present a callback candidate violating an earlier lazy cut; generating additional cuts at
+that point does not by itself justify packing it as a new separated point. Unlimited repeated user cuts,
+especially after solver purging, are likewise outside the proof. The frozen numerical implementation
+is not asserted to satisfy this exact termination contract. Feasibility within numerical tolerance
+must retain that qualification even if the numerical master gap closes.
+
+4.6    Approximate roots and finite arithmetic
+An exact tangent at an approximate boundary point remains valid provided its full constant
+g(z) − ∇g(z)T z is retained. It need not pass through z. Deleting g(z) can invalidate the cut: for
+g(x) = x2 − 1 and z = 1/2, the artificial boundary tangent becomes x ≤ 1/2 and excludes feasible
+x = 1. The true tangent is x ≤ 5/4 and remains valid. Validity alone does not establish useful
+separation. A robust oracle should check the transformed cut’s actual violation, fall back to ECP if
+needed, and report failure if neither cut reliably rejects the candidate.
+
+Proposition 4.8 (A sufficient certified arithmetic scheme). On a compact candidate domain, let
+the exact valid cut be q T w ≤ d. Suppose computed coefficients satisfy the certified bound
+
+                      |(qeT w − d)
+                                e − (q T w − d)| ≤ E     for every domain point w.
+
+Then qeT w ≤ de+ E is valid. If the exact generating violation is at least κ, its violation of this relaxed
+computed cut is at least κ − 2E. If later candidates can violate stored cuts by at most ρ, uniform
+bounds κ > 2E + ρ and ∥qe∥2 ≤ K   f give a minimum separation distance (κ − 2E − ρ)/K.       f
+
+
+                                                    11
+Proof. At every point satisfying the exact cut, the computed left-minus-right expression is at most
+E, proving validity after relaxation. At its generating point, that expression is at least κ − E,
+hence at least κ − 2E after relaxation. At a later accepted point it is at most ρ. Subtract the
+two inequalities and apply Cauchy–Schwarz to obtain the distance bound. The same finite-cover
+arguments then apply.
+
+    For example, certified coefficient errors |qej − qj | ≤ ej and |de − d| ≤ ed , with |wj | ≤ Wj , give
+           P
+E = ed + j ej Wj . Nonlinear evaluation errors also need bounds before a residual test becomes
+certified. Ordinary double-precision gradients, NLP statuses and MILP bounds do not supply these
+enclosures. The numerical study instead reports explicitly defined residual and gap tests.
+
+
+5     Algorithm and numerical implementation
+The implementation exposes two cut policies (ESH and ECP), two master formulations (hull and
+big-M ), and two execution modes (single-tree and repeated-master, termed multi-tree). These
+choices form the matched experimental comparisons. The following description concerns the frozen
+implementation used in the study. Its numerical safeguards and finite stopping rules are distinguished
+from the sufficient exact-arithmetic contracts of section 4.
+
+5.1   Initialization and the common separation routine
+The extractor retains the original GDP rows and their term membership, converts the objective to
+minimization, and introduces an epigraph for a nonlinear objective. Affine bound propagation uses
+global rows and unions of branchwise bound deductions. LP optimization over global affine rows
+attempts to recover missing bounds required by a formulation. These are floating-point preprocessing
+operations. The master refuses a required unbounded hull copy or a big-M coefficient that cannot
+be calculated finitely. In particular, a nominal default big-M option is not used as a substitute for a
+missing valid row bound in the reviewed construction.
+     Both policies run the same interior initialization. For each term’s nonlinear row collection, and
+separately for global nonepigraph nonlinear rows, an auxiliary NLP minimizes a common slack s
+subject to gj (x) ≤ s, relevant affine rows, and variable bounds. Original integer coordinates are
+continuous in this auxiliary problem. Otherwise unbounded coordinates receive an artificial finite
+search box around their starting values (scale 103 ), and the common slack has lower bound −106 .
+These restrictions aid anchor search only; they do not become original-model or master bounds and
+do not establish the compactness premise of the theory. The implementation tries up to four starts,
+with deterministic restarts, and retains a candidate anchor if the loaded slack is below −10−6 . This
+is only a candidate for radial use: the separator checks the actual value of the particular row at
+that anchor, requiring it to be below −10−9 . Failure to obtain a usable anchor invokes ECP and
+never proves term infeasibility. The epigraph row uses ECP because it is excluded from the anchor
+NLP. Keeping interior initialization in ECP isolates the subsequent cut-policy change but imposes
+work an independently designed ECP solver need not perform.
+     Initial point tangents are added for every nonlinear row, using anchor coordinates when available
+and otherwise bounded starting values. Invalid or nonfinite evaluations trigger a bounded determin-
+istic search for a finite starting tangent (at most 31 attempts per row), followed by an error if none
+is found. All later tangents retain the full affine constant in (5).
+
+      Common separation routine at (x, y, ν) and cutoff τ .
+
+
+
+                                                   12
+        1. Test global nonlinear rows at (x, y). For each term with yik > τ , test its rows at
+           pik = νik /yik in the hull master, or at x in the big-M master.
+        2. For every tested row with value exceeding min{cut_tol, feas_tol}, use its point
+           tangent for ECP. For ESH, if a finite usable strict anchor is available, bisect that
+           row along the anchor–candidate segment. Stop after at most 60 bisections or once
+           the parameter bracket has width below 10−10 . Linearize at the exterior bracket
+           endpoint.
+        3. Use the radial tangent if its coefficients are finite and its untransformed violation
+           at the test point exceeds 0.1 cut_tol; otherwise use a point tangent. Nonfinite
+           violations or fallback coefficients raise an evaluation error.
+        4. Transform each term tangent using (6) or (7), and submit it as an ordinary master
+           constraint, an integer-candidate lazy constraint, or a fractional user cut according
+           to the caller.
+
+The line search is rowwise, rather than a single root search on the maximum of all rows. Its boundary
+point belongs to the boundary of that row’s sublevel set and need not belong to the boundary,
+or even the feasible set, of the full multirow disjunct. Term structure determines the row tags,
+anchors and cut transformation; it does not turn the line search into projection onto the whole
+term. No optimization problem is solved within this cut routine. The default values of cut_tol and
+feas_tol are both 10−6 . Checking the untransformed radial violation is weaker than the certified
+transformed-margin requirement in section 4.6, particularly at small weights. The fallback checks
+coefficient finiteness but supplies no certified rounding-error bound. Thus this routine implements a
+practical numerical policy, not the certified scheme in proposition 4.8.
+
+5.2   LP initialization and the two tree policies
+      Common LP phase.
+
+        1. Relax all master integer variables, including original integer coordinates and GDP
+           indicators. Solve the current LP with the remaining time budget.
+        2. When the LP is optimal, retain the best attained objective as the initial LP bound.
+           At any usable LP solution, record the maximum numerical weighted perspective
+           residual over all positive-weight hull blocks, including those below the separation
+           cutoff.
+        3. Call the separation routine with its default τ = 10−6 . Repeat after adding cuts
+           unless the routine adds none, a resource/status limit occurs, or the objective
+           stagnates.
+        4. Restore integrality and proceed to the selected mixed-integer execution mode.
+
+The default LP cap is 200 iterations. Stagnation is detected after at least six cut-producing solves
+when the newest objective differs from the one five iterations earlier by at most 10−5 (1 + |vLP |).
+The recorded exit distinguishes no separating cuts, stagnation, iteration limit, time limit and master
+status. A no-cut exit is only a completed test of the rows visited under the numerical cutoff; a
+stagnation or limit exit does not provide even that assertion. The residual diagnostic is absent for
+big-M and is reported as infinite if a required evaluation is undefined. The retained LP bound is
+still the best optimal LP value reached even if cuts were added after its solve. It is a numerical
+solver bound, not an interval certificate.
+
+                                                 13
+      Multi-tree mode.
+
+        1. Solve the current MILP with the remaining time budget. Read its objective bound
+           as the minimization lower bound B; do not use the master incumbent objective for
+           that purpose after an incomplete solve.
+        2. Separate its integer candidate using the common routine. If integer-point NLP
+           recovery is enabled, fix its integer assignment and solve the selected continuous
+           subproblem. Validate any recovered point, update the incumbent U when it
+           improves, and add tangents at the recovered point for global and selected-term
+           rows.
+        3. If separation added no cuts, independently validate the master point as a possible
+           original-model incumbent. A relaxed epigraph objective alone cannot establish that
+           incumbent.
+        4. Stop when the numerical gap criterion holds or a resource/status condition occurs.
+           If no cut was added and no incumbent exists, report a stall. Otherwise repeat with
+           the accumulated master.
+
+The default cap is 500 MILP iterations. Previously added ordinary cuts remain in the master. A
+merely tolerance-feasible incumbent is not used to add an objective cutoff in this mode. Failure
+to recover a point from an NLP does not create an infeasibility cut or a no-good cut for that
+assignment.
+
+      Single-tree mode.
+
+        1. Start one MILP branch-and-cut solve with lazy constraints enabled and the remain-
+           ing time budget.
+        2. At every integer-solution callback, run separation and submit its cuts as lazy
+           constraints. If no cut is generated, independently validate the original point before
+           recording an incumbent.
+        3. When enabled, perform integer-point NLP recovery at that callback. Validate an
+           improving result and submit it as a heuristic solution, setting hull copies to the
+           recovered x in selected terms and zero in inactive terms.
+        4. If optional fractional user cuts are enabled, separate optimal node relaxations at
+           the root and at node counts divisible by 50, using τ = 0.05. Submit those cuts as
+           user cuts.
+        5. On solver return, validate any final master incumbent, obtain the master bound,
+           and apply the numerical incumbent/gap/status rules below.
+
+The main study enables integer-point NLP recovery at every integer callback and disables fractional
+user cuts. The source also offers an adaptive recovery option, but that option is not the main
+experimental policy. NLP-solution tangents are explicitly added in multi-tree mode; the single-
+tree NLP path instead submits the validated heuristic point and relies on callback separation.
+Optional fractional cuts are an ablation, use a larger fixed cutoff than the LP phase, and have
+no explicit finite total cut cap. The implementation does not add an external mechanism that
+verifies old-lazy-cut satisfaction before generating fresh cuts. The corresponding solver properties in
+theorem 4.7 are therefore assumptions for the theoretical algorithm, not proven properties of this
+callback implementation.
+
+                                                  14
+5.3   NLP recovery, validation, and failure states
+The recovery NLP fixes all original integer variables and indicators to the current rounded assignment,
+deactivates inactive disjuncts, and solves the continuous selected model on a clone. Fixed original
+variables are preserved when preparing its start. Validated results are cached by integer assignment;
+repeated failures can also be cached to avoid indefinite retries. An NLP return code is never
+sufficient for incumbent acceptance. A failed or locally infeasible NLP return is not a proof that the
+assignment has no feasible point.
+    Before acceptance, the internal validator requires finite original variable values, normalizes integer
+values only when they are within feas_tol of an integer, and restores fixed values only within that
+same tolerance. It then checks variable bounds, global affine and nonlinear rows, exclusive selection
+and selected-term rows on this normalized point. Indicator logic is included among the global affine
+rows. It reevaluates the original objective on that point and resets any artificial epigraph to the
+resulting minimization value. Inactive-term constraints are not required. The stored incumbent
+and final model writeback use the same normalized values. A feasible point need not be an optimal
+NLP solution to improve the incumbent.
+    For the main settings, internal acceptance allows maximum absolute original-row and bound
+violation 10−6 . With internal minimization incumbent U and bound B, the implementation reports
+a closed numerical gap only when both are finite and
+
+                                      |U − B| ≤ 10−6 + 10−4 |U |.                                    (15)
+
+The symmetric test permits small numerical bound inconsistency and rejects large inconsistency; it is
+not the exact upper/lower-bound inequality of theorem 4.7. The benchmark independently rechecks
+the original witness with a scale-dependent feasibility tolerance and a separate gap formula, specified
+in the experimental design below. Consequently raw solver status and an accepted experimental
+solve are separate quantities.
+    An internal optimal status means a numerically accepted incumbent and a closed numerical
+gap under (15). Results explicitly record rigorous_certificate=False, the feasibility tolerance,
+and the maximum incumbent residual. Time limits, iteration limits, stalls, cutoffs, and other master
+statuses remain distinguishable. Callback exceptions terminate the solve with numerical_error
+and preserve the exception detail. Evaluation errors outside callbacks can propagate as failed runs.
+A solver infeasibility report after an accepted incumbent is treated as a numerical inconsistency, not
+as a successful infeasibility proof. Ambiguous master termination is not silently relabeled infeasible.
+
+5.4   Supported scope and accounting
+The reviewed input scope consists of flat exclusive disjunctions with convex differentiable inequality
+rows and adequate finite bounds for the selected formulation. Unsupported structures are refused:
+nonexclusive disjunctions, nested or multiply assigned disjuncts, active orphan disjuncts, objectives
+inside disjuncts, SOS constraints, nonlinear equalities, two-sided nonlinear rows, and nonfixed
+native GDP indicators inside disjunct bodies. Constant contradictory rows are retained so that
+an infeasible term can be excluded without excluding its alternatives. Declared variables remain
+subject to their bounds even if absent from all expressions. Successful extraction does not certify
+convexity, smoothness or safe evaluation throughout the box; these remain modeling obligations.
+The external-model analysis therefore distinguishes smooth supported expressions from norm and
+domain-sensitive cases.
+    The time budget includes construction and preprocessing. Remaining time is passed to MILP/LP
+solves and, for the default Ipopt interface, as an NLP CPU-time limit. These limits do not guarantee
+
+                                                   15
+hard wall-clock preemption; the experimental process wrapper supplies a separate wall limit. Interior
+initialization, reduced NLP work, cut generation and total wall time are recorded separately. In
+single-tree mode the MILP solve timer includes callbacks and therefore overlaps NLP and separation
+timers. Such times cannot be summed as disjoint costs. NLP recovery disabled means no integer-
+point recovery NLPs; the common interior NLP initialization remains. This distinction is essential
+for interpreting that ablation.
+
+
+6     Representation and cut-geometry diagnostics
+A point tangent depends on the algebraic representation of a feasible set. A radial boundary
+construction has a restricted invariance when its anchor is held fixed. The relationship between
+ESH and cutting planes for gauge reformulations is already established [14]; the results here isolate
+consequences that can be checked by the actual separator without a full GDP solve.
+
+6.1   Equivalent rows and fixed-anchor invariance
+Proposition 6.1 (Boundary halfspace invariance). Let g be convex and differentiable on a neighbor-
+hood of its box, and let ϕ be convex, differentiable and strictly increasing on an interval containing
+the values of g, with ϕ(0) = 0 and ϕ′ (0) > 0. The row gb = ϕ ◦ g ≤ 0 defines the same feasible
+set and is convex. For a fixed strict anchor and exterior point, exact rowwise ESH gives the same
+halfspace for g and gb, including after the hull transform. At an exterior point p with v = g(p) > 0
+and ϕ′ (v) > 0, the ECP inequality for gb is
+
+                                                           ϕ(v)
+                                      ∇g(p)T (x − p) ≤ −          ,                              (16)
+                                                           ϕ′ (v)
+
+instead of the right side −v for g.
+
+Proof. Strict monotonicity and ϕ(0) = 0 preserve the signs of all row values. Convexity of g,
+monotonicity of ϕ and convexity of ϕ, in that order, prove convexity of the composition. The common
+segment has the same boundary point z for both rows. At it, ∇gb(z) = ϕ′ (0)∇g(z) and both row values
+vanish. The affine coefficients, including the homogeneous perspective coefficients, are therefore
+multiplied by the same positive factor. At p, the chain rule gives tangent ϕ(v)+ϕ′ (v)∇g(p)T (x−p) ≤
+0; division by ϕ′ (v) > 0 proves (16).
+
+    A positive linear ϕ preserves point tangents too, but a general convex increasing transformation
+does not. Convexity implies ϕ(v) ≤ vϕ′ (v) for v > 0, so under this transformation the ECP inequality
+at the same exterior point is no stronger than the original one. This does not compare subsequent
+master trajectories or runtime. The proposition requires the same anchor: the auxiliary interior
+optimization itself can respond to a changed representation. It also requires exact boundary roots.
+Approximate root tolerances, row scaling and finite arithmetic need not preserve the halfspace.
+
+6.2   A scalar recurrence and its interpretation
+Proposition 6.2 (An arbitrarily long point-tangent transient). For a ≥ 2, consider
+
+                      min{−x : 0 ≤ x ≤ 2,     ga (x) = exp(a(x − 1)) − 1 ≤ 0}.                   (17)
+
+Every instance has feasible interval [0, 1], optimum −1, and strict anchor zero. Starting from the
+box alone, or the box plus a tangent at zero, the first master optimum is p0 = 2. One exact ESH cut
+
+                                                 16
+gives x ≤ 1. With exact ECP and all cuts retained, successive master optima satisfy
+                                          1 − exp[−a(pk − 1)]
+                           pk+1 = pk −                        ,        pk > 1.                     (18)
+                                                   a
+For any fixed 0 < η < 1, reaching pk ≤ 1 + η requires k > a(1 − η) cuts. Nevertheless pk ↓ 1.
+Proof. The anchor tangent gives x ≤ (ea − 1)/a, whose right side exceeds two for a ≥ 2: e2 > 5,
+and the derivative of ea − 1 − 2a is positive for a ≥ 2. It thus leaves the box optimum unchanged.
+The segment from zero to any p > 1 meets the unique boundary at z = 1, where ga′ (1) = a > 0;
+ESH gives a(x − 1) ≤ 0. The ECP tangent at pk yields
+                                       ga (pk )        1 − exp[−a(pk − 1)]
+                            x ≤ pk −    ′
+                                                = pk −                     .
+                                       ga (pk )                 a
+For u > 0, 0 < 1 − e−u < u. Therefore this new bound is strictly between one and pk , and all
+older upper bounds are weaker. This proves the recurrence for the actual master optima, rather
+than merely for a proposed iteration. Each decrease is strictly less than 1/a, so 2 − pk < k/a. If
+pk ≤ 1 + η, then 1 − η ≤ 2 − pk < k/a, proving the lower bound. Monotonicity and the lower bound
+one give a limit p∗ ≥ 1; if p∗ > 1, continuity in the recurrence gives a strictly positive limiting
+decrement, a contradiction.
+
+   Equation (18) is precisely Newton’s method for the equation ga (x) = 0, started from the exterior
+point. The example exhibits a representation-dependent initial transient, not a failure of asymptotic
+Newton convergence: with ek = pk − 1 → 0, Taylor expansion gives
+
+                                  ek+1 = a2 e2k + O(e3k )   for fixed a.
+
+This elementary mechanism is not GDP-specific. Nor is the iteration lower bound a runtime
+lower bound: ESH spends additional row evaluations on its boundary search. Large a creates
+conditioning and overflow concerns in finite arithmetic. A transformed function-residual tolerance
+is not a common geometric accuracy criterion across a; a numerical diagnostic should instead use
+max{0, pk − 1}, which is also the objective error here, and count evaluations.
+
+6.3   Centered geometry and explicit non-dominance
+For the centered ellipsoid row q(x) = xT Qx − 1, Q ≻ 0, take anchor zero and p = rQ−1/2 u with
+r > 1 and ∥u∥2 = 1. The boundary is z = Q−1/2 u. ESH gives z T Qx ≤ 1, whereas ECP gives
+
+                                            r2 + 1     (r − 1)2
+                                 z T Qx ≤          =1+          > 1.
+                                              2r          2r
+Thus ESH dominates for this centered geometry. A convex increasing representation change as in
+proposition 6.1 preserves the ESH halfspace and weakens or preserves the exterior-point tangent.
+This accounts for the selected centered diagnostic cases; it is not a general dominance statement.
+Example 6.3 (Neither policy generally dominates). Let g(x1 , x2 ) = x21 +x22 −1 on [−2, 2]2 , p = (2, 0)
+and x̄ = (0, 9/10). ECP gives x1 ≤ 5/4. Solving the segment-circle intersection yields
+                                  √
+                          162 + 20 157            9     9
+                     z1 =              ,    z2 =     − z1 ,        z12 + z22 = 1,
+                               481                10 20
+and ESH gives z1 x1 + z2 x2 ≤ 1. Direct bounds on the square root give 0.85 < z1 < 0.87 and 0.50 <
+z2 < 0.52. The point (1.2, 1) satisfies ECP, but its ESH left side exceeds 1.2(0.85) + 0.50 = 1.52 > 1.
+
+                                                   17
+The point (1.3, −2) violates ECP, but its ESH left side is less than 1.3(0.87) − 2(0.50) = 0.131 < 1.
+Both witnesses belong to the common box. Consequently neither halfspace contains the other. They
+are witnesses about the outer approximations, not feasible disk points. Setting λ = 1 transfers this
+non-dominance to the perspective cuts.
+
+   These examples explain why cut count, cut depth at one candidate and total solver benefit must
+be measured separately. They justify a controlled experiment without assuming which policy must
+win.
+
+
+References
+ [1] Egon Balas. Disjunctive programming: Properties of the convex hull of feasible points. Discrete
+     Applied Mathematics, 89(1–3):3–44, 1998. doi: 10.1016/S0166-218X(98)00136-X.
+
+ [2] David E. Bernal Neira and Ignacio E. Grossmann. Convex mixed-integer nonlinear programs
+     derived from generalized disjunctive programming using cones. Computational Optimization
+     and Applications, 88:251–312, 2024. doi: 10.1007/s10589-024-00557-9. URL https://arxiv.
+     org/abs/2109.09657.
+
+ [3] Ksenia Bestuzheva, Ambros Gleixner, and Stefan Vigerske. A computational study of per-
+     spective cuts. Mathematical Programming Computation, 15:703–731, 2023. doi: 10.1007/
+     s12532-023-00246-4. URL https://arxiv.org/abs/2103.09573.
+
+ [4] Sebastián Ceria and João L. C. Soares. Convex programming for disjunctive convex optimization.
+     Mathematical Programming, 86:595–614, 1999. doi: 10.1007/s101079900101.
+
+ [5] Chris Coey, Miles Lubin, and Juan Pablo Vielma. Outer approximation with conic certificates
+     for mixed-integer convex problems. Mathematical Programming Computation, 12:249–293, 2020.
+     doi: 10.1007/s12532-020-00178-3. URL https://arxiv.org/abs/1808.05290.
+
+ [6] discopt contributors. MIP-NLP decomposition. Software documentation, 2026. URL https:
+     //kitchingroup.cheme.cmu.edu/discopt/mip_nlp.html. Accessed 19 September 2026.
+
+ [7] Antonio Frangioni and Claudio Gentile. Perspective cuts for a class of convex 0–1 mixed integer
+     programs. Mathematical Programming, 106(2):225–236, 2006. doi: 10.1007/s10107-005-0594-3.
+
+ [8] Ignacio E. Grossmann and Sangbum Lee. Generalized convex disjunctive programming:
+     Nonlinear convex hull relaxation. Computational Optimization and Applications, 26:83–100,
+     2003. doi: 10.1023/A:1025154322278.
+
+ [9] Sergey Gusev and David E. Bernal Neira. Exact hull reformulation for quadratically constrained
+     generalized disjunctive programs. arXiv:2508.16093v2, 2026. URL https://arxiv.org/abs/
+     2508.16093v2. Version 2, revised 17 March 2026; first submitted in 2025.
+
+[10] Jan Kronqvist and Ruth Misener. A disjunctive cut strengthening technique for convex MINLP.
+     Optimization and Engineering, 22:1315–1345, 2021. doi: 10.1007/s11081-020-09551-6.
+
+[11] Jan Kronqvist, Andreas Lundell, and Tapio Westerlund. The extended supporting hyperplane
+     algorithm for convex mixed-integer nonlinear programming. Journal of Global Optimization,
+     64:249–272, 2016. doi: 10.1007/s10898-015-0322-3.
+
+
+
+                                                 18
+[12] Andreas Lundell, Jan Kronqvist, and Tapio Westerlund. The supporting hyperplane opti-
+     mization toolkit for convex MINLP. Journal of Global Optimization, 84:1–41, 2022. doi:
+     10.1007/s10898-022-01128-0.
+
+[13] Daniel Nguyen and Joshua L. Pulsipher. Solution methods for infinite-dimensional generalized
+     disjunctive programming. arXiv:2608.27707v1, 2026. URL https://arxiv.org/abs/2608.
+     27707v1.
+
+[14] Felipe Serrano, Robert Schwarz, and Ambros Gleixner. On the relation between the extended
+     supporting hyperplane algorithm and Kelley’s cutting plane algorithm. Journal of Global
+     Optimization, 78:161–179, 2020. doi: 10.1007/s10898-020-00906-y. URL https://arxiv.org/
+     abs/1905.08157.
+
+[15] Francisco Trespalacios and Ignacio E. Grossmann. Cutting plane algorithm for convex gen-
+     eralized disjunctive programs. INFORMS Journal on Computing, 28(2):209–222, 2016. doi:
+     10.1287/ijoc.2015.0669.
+
+[16] Metin Türkay and Ignacio E. Grossmann. Logic-based MINLP algorithms for the optimal
+     synthesis of process networks. Computers & Chemical Engineering, 20(8):959–978, 1996. doi:
+     10.1016/0098-1354(95)00219-7.
+
+[17] Arthur F. Veinott, Jr. The supporting hyperplane method for unimodal programming. Opera-
+     tions Research, 15(1):147–152, 1967. doi: 10.1287/opre.15.1.147.
+
+[18] Tapio Westerlund and Frank Pettersson. An extended cutting plane method for solving convex
+     MINLP problems. Computers & Chemical Engineering, 19(Supplement 1):S131–S136, 1995.
+     doi: 10.1016/0098-1354(95)87027-X.
+
+
+
+
+                                              19
+

@@ -1,0 +1,247 @@
+ Radial and point separation for perspective outer approximation
+            of convex generalized disjunctive programs
+                                     Anonymous manuscript
+
+
+1    Introduction
+Generalized disjunctive programming (GDP) represents discrete alternatives by logical statements
+and associates each alternative with a set of algebraic constraints. In a convex minimization GDP,
+the objective and inequality functions are convex and equality constraints are affine, both globally
+and within each alternative; the union of alternatives is generally nonconvex. This structure is
+useful for process selection and design because constraints belonging to an inactive alternative need
+not constrain the selected process. Logic-based outer approximation exploits that distinction when
+constructing mixed-integer linear masters and continuous subproblems [16].
+    For a bounded convex disjunction, a hull formulation distributes the original variables among
+alternatives and scales each copy by its selection weight. Convex nonlinear rows then admit per-
+spective representations. An outer approximation can enforce these rows through affine perspective
+cuts [3, 7]. The choice of the point at which to construct a cut remains consequential even when the
+formulation and the family of valid inequalities are fixed. A point tangent uses the current violated
+point. A radial supporting cut first searches the segment from a strict interior anchor to that point,
+then linearizes at the boundary. The latter incurs extra function evaluations but can remove a
+different portion of the current relaxation.
+    This paper studies a specific computational question: does that additional separation work repay
+its cost in a GDP solver? We compare the extended supporting hyperplane (ESH) policy with
+the extended cutting plane (ECP) policy in one implementation, holding the master construction,
+initialization, incumbent recovery, validation rules, and solver settings fixed within each pair. We
+retain both hull and big-M masters and both single-tree and repeated-master execution. The name
+logic-based ESH (LB-ESH) describes the implementation’s use of the original disjunct structure; it
+does not denote a new family of inequalities. The tested solver uses nonlinear programming (NLP)
+both to seek interior anchors and to recover feasible incumbents at integer selections.
+    Our contribution is the controlled comparison, its explanatory diagnostics, and the explicit
+mathematical and numerical conditions needed to interpret it. First, we give a self-contained account
+of cut validity and fixed-residual separation, including zero selection weights, approximate boundary
+points, small-weight omission, and the distinction between a valid relaxation bound and an objective-
+gap certificate. We derive a residual-calibrated fractional rule and a per-disjunction geometric
+repair bound, and give counterexamples to general cut dominance and to a linear objective-error
+inference after intersecting disjunctions with global constraints. These results clarify the method’s
+scope; we do not assert priority for the underlying convexity and compactness arguments. The
+residual-calibrated rule is analyzed separately from the fixed weight cutoff used in the experiments.
+    Second, an executable oracle diagnostic isolates dependence on equivalent constraint representa-
+tions and measures the function evaluations required by radial searches. Third, the computational
+study combines 51 related generated controls, of which 33 are held out from the pilot split, with 27
+external models, two additional schedules for the held-out single-tree comparisons, pilot ablations,
+
+                                                  1
+and independent conic references. Every supplied incumbent is checked against the original model.
+Failed interfaces, invalid witnesses, and open gaps remain in their declared cohorts. Supplementary
+tolerance and initialization studies are reported separately from the original runs.
+    The results support a limited practical benefit. On the held-out controls, single-tree ESH meets
+the numerical solve criterion on all 33 instances with either formulation; ECP does so on 32 with hull
+and 31 with big-M . Common-solved shifted geometric mean wall times favor ESH by approximately
+4–6% in the single-tree comparisons across the three schedules. ESH has lower arithmetic mean
+cut counts and LP iteration counts on the matched cohorts, but its recorded cut-generation time
+is substantially greater. Formulation and tree policy have larger measured timing effects. The
+external models give equal ESH and ECP accepted solve counts in every matched configuration, and
+exact conic formulations provide a strong alternative where available. Disabling integer-point NLP
+recovery reduces accepted outcomes from 69 of 72 pilot runs to one of 72, exposing an important
+limitation of this implementation.
+    The matched design also limits the interpretation. ECP shares interior initialization even though
+point tangents do not require it; the comparison therefore measures a policy change inside this solver,
+rather than independently optimized implementations. The controls share model structures and
+parameters, and repetition changes scheduling but retains the solver seed. Reported solves satisfy
+stated numerical feasibility and gap tests, rather than exact-arithmetic certificates. Within these
+limits, the study provides evidence for a concrete solver-design decision and documents circumstances
+in which the extra radial work is not rewarded.
+
+
+2     Relationship to prior work
+2.1   Logic-based outer approximation and perspective cuts
+The extended hull construction belongs to disjunctive programming [1]; its convex nonlinear
+counterparts use perspective functions to represent bounded unions of convex sets [4, 8]. Hull
+formulations of separate disjunctions are then intersected with global constraints and logic. That
+intersection need not be the convex hull of the complete GDP feasible set. This distinction matters
+when describing the relaxation targeted by our separation routines.
+    Logic-based outer approximation already combines selected-structure NLP subproblems with a
+linearized disjunctive master [16]. Omitting inactive nonlinear constraints from those subproblems,
+retaining logical structure, and applying a hull transform to affine approximations are inherited
+ingredients. Our radial policy chooses additional linearization points without solving an optimization
+problem at each point, but the complete tested algorithm still uses NLP subproblems.
+    Frangioni and Gentile [7] derive perspective cuts for convex on/off mixed-integer programs. For
+a differentiable convex row g(x) ≤ 0, a tangent at z gives
+
+                                 ∇g(z)T v + g(z) − ∇g(z)T z λ ≤ 0,
+                                                              
+                                                                                                    (1)
+
+where v is a disaggregated variable and λ its selection weight. For positive λ, this is precisely a
+linearization of λg(v/λ). Bestuzheva et al. [3] establish the same equivalence through affine cut
+extension and study perspective cuts in a general-purpose solver, including extensions based on
+valid nonconvex estimators. Accordingly, constructing coefficients in original-variable space and
+attaching an indicator does not itself distinguish a new cut family. Our hull ECP and ESH variants
+choose different z in (1); the big-M variants deactivate tangents in the original variables using valid
+big-M coefficients.
+
+
+
+                                                  2
+2.2   Radial supporting planes and disjunctive strengthening
+The point-tangent comparison follows the ECP tradition for convex mixed-integer nonlinear program-
+ming [18]. Veinott [17] already selects supporting points by intersecting the boundary with a segment
+from a fixed interior point to the current exterior relaxation solution. Kronqvist et al. [11] develop
+ESH for convex mixed-integer nonlinear programming, using interior points, boundary searches, and
+an initial LP phase before mixed-integer refinement. Serrano et al. [14] place this construction in
+the earlier supporting-hyperplane tradition and show its relationship to Kelley’s method applied to
+a gauge representation. Their result explains why a change in constraint representation can change
+point tangents while preserving the underlying feasible-set geometry. Our representation diagnostic
+makes a restricted version of that mechanism explicit and executable. It is not a new geometric
+foundation for ESH.
+    The SHOT implementation of Lundell et al. [12] is a close algorithmic precedent: it combines
+ESH and ECP separation with fixed-integer NLP heuristics, supports both single-tree callbacks
+and repeated-master execution, and falls back to ECP when no strict interior point is available.
+Its experiments include comparisons of tree policies. Our study retains GDP term structure and
+isolates radial versus point separation under matched settings within one GDP solver. SHOT also
+appears among our reformulation-based baselines; that comparison is distinct from the matched
+policy experiment.
+    The closest disjunctive ESH precedent is Kronqvist and Misener [10]. Their strengthening
+procedure holds a cut normal fixed and solves separate convex optimization problems to obtain
+coefficients for the terms of a disjunction. They integrate these inequalities with ESH and compare
+against hull formulations while avoiding direct nonlinear perspective evaluation. Our hull variant
+instead maintains disaggregated variables and constructs term-specific tangents by line search in the
+original bounded domains. The normals may differ among terms, and the same radial tangent policy
+is also used with our original-variable big-M master. This is a difference in separation procedure
+and master representation, not a demonstrated dominance relation. In particular, combining ESH
+with disjunctions or avoiding nonlinear perspective division cannot serve as a novelty claim for this
+paper.
+    Trespalacios and Grossmann [15] construct cuts from a hull formulation strengthened by basic
+steps and project the resulting information into a big-M model. Their separation uses optimization
+over a strengthened relaxation. Basic steps can incorporate interactions among disjunctions that
+are absent from separate-disjunction hulls. Our individual-row separation has a different work
+requirement and targets a different relaxation; it does not replace or subsume that method. No
+empirical comparison with their strengthening procedure is reported here.
+
+2.3   Exact conic formulations and conic outer approximation
+A nonquadratic expression does not establish that an exact conic hull is unavailable. Bernal Neira
+and Grossmann [2] formulate convex GDP alternatives with cones and obtain perspective-free
+hull representations under their stated assumptions. Their scope includes nonlinearities beyond
+quadratics. For quadratic rows, the revised manuscript of Gusev and Bernal Neira [9], specifically
+version 2 dated 17 March 2026, presents the conic exact hull reformulation (CEHR). For a row
+g(x) = xT Qx + cT x + d ≤ 0 with Q ⪰ 0, a nonnegative auxiliary variable t gives the lifted constraints
+
+                            v T Qv ≤ tλ,     t + cT v + dλ ≤ 0,     t ≥ 0,                          (2)
+
+together with scaled bounds and 0 ≤ λ ≤ 1. This has the same closed bounded-domain perspective
+target as the complete family of tangent cuts for the corresponding quadratic row. Comparing a
+
+                                                  3
+finite outer approximation against a weaker algebraic alternative would therefore be insufficient; our
+quadratic comparison uses the exact conic formulation.
+     Coey et al. [5] develop outer approximation with conic certificates, including numerical tolerance
+issues and both iterative and solver-driven implementations. Their study distinguishes separation-
+only variants from algorithms using continuous conic subproblems. Thus affine master refinement,
+optional continuous optimization oracles, and single-tree integration are established algorithmic
+choices. The cone references in our study check supported hull roots and small fixed-assignment
+problems, and the quadratic conic baseline supplies a direct computational alternative. They do not
+constitute a complete comparison against a general conic outer-approximation solver.
+
+2.4   Scope of the contribution
+The literature establishes the constituent cut families and algorithmic ideas. Our original empirical
+result is the measured radial-versus-point tradeoff under matched GDP policies, together with its
+dependence on formulation, tree execution, incumbent recovery, and model scope. The accompanying
+proofs and diagnostic constructions make the interpretation checkable without claiming a new general
+convergence theory, a stronger limiting hull, or a uniformly stronger separator. A supporting plane
+can cut a different region from a point tangent without dominating it.
+    Recent related work also limits broad claims of a new GDP solution paradigm. Nguyen and
+Pulsipher [13] extend logic-based and cutting-plane approaches to infinite-dimensional GDP, a
+different problem class. Current discopt documentation describes algebraic ESH with interior-point
+root searches and a separate GDP reformulation choice [6]. This is relevant implementation context,
+rather than peer-reviewed priority or an executed baseline in our study. It motivates keeping the
+claim specific to the present comparison. We make no claim that this is the first possible combination
+of GDP structure and radial separation, and the search for related work does not prove the absence
+of an equivalent implementation.
+
+
+References
+ [1] Egon Balas. Disjunctive programming: Properties of the convex hull of feasible points. Discrete
+     Applied Mathematics, 89(1–3):3–44, 1998. doi: 10.1016/S0166-218X(98)00136-X.
+
+ [2] David E. Bernal Neira and Ignacio E. Grossmann. Convex mixed-integer nonlinear programs
+     derived from generalized disjunctive programming using cones. Computational Optimization
+     and Applications, 88:251–312, 2024. doi: 10.1007/s10589-024-00557-9. URL https://arxiv.
+     org/abs/2109.09657.
+
+ [3] Ksenia Bestuzheva, Ambros Gleixner, and Stefan Vigerske. A computational study of per-
+     spective cuts. Mathematical Programming Computation, 15:703–731, 2023. doi: 10.1007/
+     s12532-023-00246-4. URL https://arxiv.org/abs/2103.09573.
+
+ [4] Sebastián Ceria and João L. C. Soares. Convex programming for disjunctive convex optimization.
+     Mathematical Programming, 86:595–614, 1999. doi: 10.1007/s101079900101.
+
+ [5] Chris Coey, Miles Lubin, and Juan Pablo Vielma. Outer approximation with conic certificates
+     for mixed-integer convex problems. Mathematical Programming Computation, 12:249–293, 2020.
+     doi: 10.1007/s12532-020-00178-3. URL https://arxiv.org/abs/1808.05290.
+
+ [6] discopt contributors. MIP-NLP decomposition. Software documentation, 2026. URL https:
+     //kitchingroup.cheme.cmu.edu/discopt/mip_nlp.html. Accessed 19 September 2026.
+
+                                                  4
+ [7] Antonio Frangioni and Claudio Gentile. Perspective cuts for a class of convex 0–1 mixed integer
+     programs. Mathematical Programming, 106(2):225–236, 2006. doi: 10.1007/s10107-005-0594-3.
+
+ [8] Ignacio E. Grossmann and Sangbum Lee. Generalized convex disjunctive programming:
+     Nonlinear convex hull relaxation. Computational Optimization and Applications, 26:83–100,
+     2003. doi: 10.1023/A:1025154322278.
+
+ [9] Sergey Gusev and David E. Bernal Neira. Exact hull reformulation for quadratically constrained
+     generalized disjunctive programs. arXiv:2508.16093v2, 2026. URL https://arxiv.org/abs/
+     2508.16093v2. Version 2, revised 17 March 2026; first submitted in 2025.
+
+[10] Jan Kronqvist and Ruth Misener. A disjunctive cut strengthening technique for convex MINLP.
+     Optimization and Engineering, 22:1315–1345, 2021. doi: 10.1007/s11081-020-09551-6.
+
+[11] Jan Kronqvist, Andreas Lundell, and Tapio Westerlund. The extended supporting hyperplane
+     algorithm for convex mixed-integer nonlinear programming. Journal of Global Optimization,
+     64:249–272, 2016. doi: 10.1007/s10898-015-0322-3.
+
+[12] Andreas Lundell, Jan Kronqvist, and Tapio Westerlund. The supporting hyperplane opti-
+     mization toolkit for convex MINLP. Journal of Global Optimization, 84:1–41, 2022. doi:
+     10.1007/s10898-022-01128-0.
+
+[13] Daniel Nguyen and Joshua L. Pulsipher. Solution methods for infinite-dimensional generalized
+     disjunctive programming. arXiv:2608.27707v1, 2026. URL https://arxiv.org/abs/2608.
+     27707v1.
+
+[14] Felipe Serrano, Robert Schwarz, and Ambros Gleixner. On the relation between the extended
+     supporting hyperplane algorithm and Kelley’s cutting plane algorithm. Journal of Global
+     Optimization, 78:161–179, 2020. doi: 10.1007/s10898-020-00906-y. URL https://arxiv.org/
+     abs/1905.08157.
+
+[15] Francisco Trespalacios and Ignacio E. Grossmann. Cutting plane algorithm for convex gen-
+     eralized disjunctive programs. INFORMS Journal on Computing, 28(2):209–222, 2016. doi:
+     10.1287/ijoc.2015.0669.
+
+[16] Metin Türkay and Ignacio E. Grossmann. Logic-based MINLP algorithms for the optimal
+     synthesis of process networks. Computers & Chemical Engineering, 20(8):959–978, 1996. doi:
+     10.1016/0098-1354(95)00219-7.
+
+[17] Arthur F. Veinott, Jr. The supporting hyperplane method for unimodal programming. Opera-
+     tions Research, 15(1):147–152, 1967. doi: 10.1287/opre.15.1.147.
+
+[18] Tapio Westerlund and Frank Pettersson. An extended cutting plane method for solving convex
+     MINLP problems. Computers & Chemical Engineering, 19(Supplement 1):S131–S136, 1995.
+     doi: 10.1016/0098-1354(95)87027-X.
+
+
+
+
+                                                 5
+

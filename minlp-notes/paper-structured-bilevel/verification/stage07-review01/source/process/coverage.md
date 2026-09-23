@@ -1,0 +1,274 @@
+# Source coverage and staged development map
+
+Stage 1 inventory, 2026-09-07. Paths in this document are relative to the
+repository root. This is a research and editorial record, not manuscript prose.
+A row is an assignment, not certification that its proof has passed a new audit.
+The canonical statements, their supporting proofs, negative examples, source
+comparisons, code, and historical reviews must be inspected during the assigned
+stage. Only new stage review gates determine manuscript acceptance.
+
+## Stage order and deliverables
+
+1. **Foundations:** model, semantics, arithmetic, sources, and this inventory.
+2. **Exact responses:** scalar and block compression, global comparison,
+   moving normals, optimistic/pessimistic values and attainment, low-rank LP
+   corollary, and supporting fixed-core polyhedral elimination appendix.
+3. **Robustness and screening:** measurement-fiber theorem, adverse witnesses,
+   budget design, attainment and rank boundaries; dense recovery and its
+   quantitative ambiguity conditions.
+4. **Accuracy:** bounded powers, general signed monotone inverse, one and many
+   resources, convex aggregates, rational recovery, and polynomial upper data.
+   Put long inverse and quantitative bounds in appendices, but provide complete
+   proofs in this manuscript. This stage is deliberately substantial: its
+   dependencies must close before the next stage begins.
+5. **Boundaries:** zero and negative local curvature, scalar dense SPD
+   reductions and conditioned approximation;
+   growing leader dimension, bounded vertex integrity, both distinct path
+   constructions, and arithmetic/degree barriers. Include affine-strip positive
+   projection only with its precise limitation to feasibility.
+6. **Algorithms and computation:** complete convex and nonconvex scalar
+   algorithms, original-response contact reconstruction, reproducible evidence,
+   screening comparisons, and the concrete development below.
+7. **Synthesis:** final abstract, contribution overview and theorem comparison,
+   conclusions, integrated notation, length/readability pass, full bibliography
+   and reproducibility audit. Follow with a new full-manuscript review gate.
+
+Each stage has one author, then five independent reviewers. Root assesses every
+finding; a different agent corrects all accepted issues, including minor issues.
+Any accepted major issue triggers five fresh reviews after correction. A stage
+advances only after no major issues remain and all valid minor issues are fixed.
+No independent agent is asked to author the next stage before the current gate
+passes. Historical source reviews do not replace this process.
+
+## Canonical and note-only mathematical developments
+
+| Development and source | Stage and required treatment |
+| --- | --- |
+| `results/bilevel-fixed-aggregate-response-algorithm.md`; `notes/bilevel-fixed-aggregate-response-investigation.md` | 2. Full scalar clipping proof, realizable sign conditions including zeros, rational denominator construction, global KKT-value comparison, exact common-field recovery, and fixed-normal compactness. |
+| `results/bilevel-fixed-block-response-algorithm.md`; `notes/bilevel-fixed-block-response-extension.md` | 2. Full local active-normal support reduction, equality basis and multiplier signs, determinant positivity, polynomial local row count, and non-Cartesian global regime selection. |
+| `results/bilevel-compressed-response-infimum-semantics.md`; `notes/bilevel-compressed-response-infimum-semantics.md`; `notes/bilevel-moving-local-normal-extension.md` | 2. Rank-changing equality bases and moving shared/local normals; formulas with a fixed number of quantified copies; optimistic infima and pessimistic universal upper feasibility; worst witnesses and nonattainment examples. |
+| `notes/bilevel-fixed-rank-quadratic-corollary.md` | 2. Full supplied diagonal-plus-fixed-rank SPD LP-cell corollary, affine upper data, rational output, lower-dimensional cells, and decomposition supplied rather than computed. |
+| `results/fixed-core-block-polyhedral-optimization.md`, Sections 1--5 and scope in Section 8; `notes/fixed-core-block-optimization-novelty.md` | 2 appendix. State/prove the general support-function elimination framework insofar as it supports this structural method: local vertices, denominator clearing, Minkowski support membership, fixed-dimensional algebra, and common-field recovery. The stage 2 development replaces the algebraic LP recovery dependency by support tuples and fixed-size Carathéodory reconstruction (proved in the manuscript). It is a related general tool, not a logically necessary replacement for the quadratic KKT proof. Credit support functions, Basu--Pollack--Roy, Adler--Beling. Pooling application corollaries are outside this bilevel paper and should not be reproduced. |
+| `notes/fixed-core-convex-leaf-arithmetic-barrier.md`; scalar theorem Section 6 | 4 and 5. Root-sum output degree and exact square-root-sum comparison; distinguish an unresolved exact arithmetic problem from NP-hardness. Include sparse-binary exponent output obstructions. |
+| `results/bilevel-fixed-aggregate-response-algorithm.md`, Section 6; `notes/bilevel-fixed-aggregate-response-investigation.md` | 5. Retain both elementary 3SAT reductions as distinct boundaries for positive local curvature. With zero local cost on the unit box, every point is a follower optimum, and upper Boolean quadratic equations plus linear clause rows encode 3SAT. With negative local quadratic coefficients, minimizing `sum_i z_i(1-z_i)` on that box makes the optimum set the Boolean cube, so linear upper clause rows alone suffice. Present these as an elementary example pair with no novelty claim. |
+| `results/bilevel-near-optimal-response-robustness.md`; `notes/bilevel-reopened-near-optimal-robustness.md` | 3. Full fixed-measurement fiber argument covering nonstationary near-optimal responses, one criterion at a time, nominal global value, robust objective/rows, separately encoded witnesses, budget as leader decision, convex attainment subclass, positive-budget nonattainment, and growing measurement-rank Max-Cut boundary. |
+| `results/bilevel-surrogate-screening-exact-optimization.md`; `notes/bilevel-reopened-approximate-structure.md` | 3. Exact perturbation enclosure, cell-wide sign tests, M times 3^t LPs excluding preprocessing, transition multiplicity bound t <= (r+1)q, a computable neighborhood, approximate certificates when t is large, and failures of small matrix error alone. |
+| `results/bilevel-bounded-power-accuracy-bit-algorithm.md`; `notes/bilevel-bounded-power-accuracy-bit-algorithm.md` | 4. Full dyadic rational approximation and arrangement proof; signed upper objective, exact rational leader recovery, polynomial dependence on numerical power; sparse-binary rational output-length lower bound. |
+| `notes/certified-positive-polynomial-inverse-approximation.md` | 4 appendix. Retain the sharper positive-coefficient estimates as a stated specialization of the general inverse method; do not silently use positivity in the signed theorem. |
+| `notes/certified-monotone-polynomial-inverse-approximation.md` | 4 appendix. Full explicit inverse modulus, real/complex critical-value handling, rational analytic panels, Taylor recurrences and certified errors, polynomial coefficient/degree counts, including interior derivative zeros. This is a major proof dependency, not a black-box repository citation. |
+| `results/bilevel-one-resource-accuracy-bit-algorithm.md`; `notes/bilevel-one-resource-accuracy-bit-algorithm.md` | 4. Exact leader projection, bounded scalar multiplier, signed balance-to-response identity, degenerate equality cases, rational recovery, arbitrary strictly increasing signed polynomial marginals. |
+| `results/bilevel-fixed-resource-accuracy-bit-algorithm.md`; `notes/bilevel-fixed-resource-accuracy-bit-algorithm.md` | 4. Explicit feasible-leader polytope by fixed-dimensional resource projection, multiplier and Hoffman bounds, degree-dependent uniform convexity modulus, residual/complementarity certificate, rational rounding and entire error ledger. The one-resource identity is not assumed to generalize. |
+| `results/bilevel-convex-aggregate-accuracy-bit-algorithm.md`; `notes/bilevel-reopened-nonlinear-aggregate.md` | 4. Convex aggregate mismatch, fixed-dimensional nonlinear branch construction, rational recovery across branch boundaries, and explicit leader-response modulus, without uniform positive local curvature or Slater promises. |
+| `results/bilevel-response-constraint-accuracy-bit-algorithm.md`; `notes/bilevel-reopened-response-constraints.md` | 4. Polynomial upper objective/rows, outer bicriteria and inner algorithms, posterior bounds, tightening modulus, strict anchor plus convex reduced constraints, reserve controls, aggregate composition, isolated feasible optimum, irrational-only feasible leader, exact-arithmetic counterexamples. |
+| `results/bilevel-scalar-leader-spd-box-np-completeness.md`; `notes/bilevel-dense-box-hardness-investigation.md`; `notes/bilevel-dense-box-no-upper-constraints-extension.md` | 5. Full first scalar SPD box construction including removal of all extra upper rows and rational NP certificate. It has a different numerical scope from the conditioned construction and should remain a theorem/corollary rather than being erased as superseded. |
+| `results/bilevel-well-conditioned-box-exact-hardness.md`; `notes/bilevel-well-conditioned-box-exact-hardness.md` | 5. Full ReLU simulation, scaling, coordinate-relative error, coefficient magnitudes <=2, condition number <2, arbitrarily near-identity coupling, exact NP-completeness, and small polynomial-bit gap excluding accuracy-bit optimization. Do not claim strong hardness or an inverse-polynomial absolute gap under these same bounds. |
+| `results/bilevel-conditioned-box-additive-algorithm.md`; `notes/bilevel-conditioned-box-additive-algorithm.md` | 5. Saturation range, fixed-dimensional cost grid, response continuity bound, rational leader and follower recovery; runtime polynomial in condition estimate and inverse error, normalized by upper follower coefficient one-norm. Explain compatibility with exact hardness. |
+| `notes/bilevel-diagonal-leader-dimension-boundary.md`; `notes/bilevel-diagonal-box-parameterized-hardness-source-audit.md` | 5. Attribute W[1]/ETH boundary to Froese--Grillo--Hertrich--Stargalla; give explicit capped-ReLU transfer and mixed-radix continuous-gap alternative proof, including polynomial duplication for bounded coefficient magnitudes. Avoid a novelty claim for this classification. |
+| `results/bilevel-leader-vertex-integrity-boundary.md`; `notes/bilevel-leader-vertex-integrity-boundary.md`; `notes/bilevel-leader-vertex-integrity-source-audit.md` | 5. Growing-leader exact algorithm with supplied fixed core and bounded components, affine candidates and common core arrangement; weak Subset Sum path hardness; identity-Hessian realization; fixed-alphabet exponential elimination messages. This is a path in leader interactions, separate from the follower-constraint path below. |
+| `notes/parametric-path-lp-obstructions.md`; `notes/parametric-path-lp-investigation.md` | 5 appendix. Attribute sparse Klee--Minty shadow to Gärtner--Helbling--Ota--Takahashi; prove or cite its precise used statement, explicit linear-time evaluation recurrence, exponentially many message segments, and total-degree obstruction for unextended polynomial descriptions. Do not interpret it as pointwise optimization hardness. Physical blending realizations are outside scope. |
+| `notes/klee-minty-rank-one-slab-hardness.md` | 5 appendix. Telescoping nonnegative vertex polynomial, rank-one concave coordinate/slab Subset Sum reduction, fixed local coefficient padding, parabolic exposure identity. These support the following bilevel theorem and must be reproduced sufficiently to make its proof self-contained. |
+| `notes/klee-minty-diagonal-follower-bilevel.md` | 5. Scalar leader, diagonal strictly convex follower on a 2VPI path, full vertex-optimality inequality and identity-Hessian rescaling, exponentially many constant response intervals, and NP-completeness with one explicitly nonconvex upper quadratic row plus aggregate slab. Do not claim all-linear upper hardness from this argument. |
+| `notes/parametric-affine-strip-path-projection.md` | 5 appendix or short boundary proposition. Exact polynomial feasibility projection for equal-slope affine interval transitions, zero gains, tree/fixed-cycle-rank extension. This distinguishes a valid narrow path elimination from the invalid general message-size inference. Its pooling interpretation is outside scope. |
+| `notes/bilevel-reopened-quadratic-algorithm.md` | 6. Exact rational KKT path certificate from numerical proposals; rejection/failure behavior; complete exponential oracle; complete aligned rank-one sweep with signed loadings and allowed signs of the rank-one coefficient under SPD; reusable affine upper rows and tariff objectives. |
+| `notes/bilevel-nonconvex-scalar-algorithm.md` | 6. Complete rational nonconvex aligned tariff algorithm: strictly convex fiber allocation, scalar pieces, candidate domains and all true ties/flat intervals, exact envelope, upper feasibility, optimistic maximum and pessimistic supremum/attainment, degree-two output and rational interior samples. |
+| `notes/bilevel-nonconvex-source-positioning.md` | 6. Classical conjugate/envelope attribution; prove contact reconstruction with the original nonconvex objective and false-feasibility counterexample. Do not substitute the convexified response set for original global responses. |
+
+## Stage 2 manuscript locations (accepted after review and minor corrections)
+
+| Source development | Manuscript label and treatment |
+| --- | --- |
+| Exact scalar and block theorems | `sec:exact`, `thm:exact-block`, `eq:scalar-clipping`, `lem:local-branches`, `lem:candidate-size`, `eq:global-response-formula`, and `lem:closed-response`: full proof with shared local elimination, scalar explanatory formula, all ties, size bounds and exact common-field recovery. |
+| Moving shared/local normals and changing equality rank | `subsec:moving-normals`, `lem:moving-compression`, `ex:moving-nonattainment`: all row subsets, determinant guards, pointwise completeness and optimistic failure of attainment. |
+| Optimistic infima and universally feasible pessimistic semantics | `thm:exact-semantics`, `eq:worst-value-formula`, `eq:infimum-predicate`, `ex:pessimistic-nonattainment`: full constant-copy quantified construction, exact value/attainment decisions, joint witness recovery and fixed-normal tie example. |
+| Supplied diagonal-plus-fixed-rank corollary | `cor:low-rank-lp`: full affine arrangement and closed-cell LP proof, rational output, supplied decomposition and SPD requirement. |
+| New constant-local-Hessian arithmetic refinement | `cor:constant-hessian-degree`: for fixed input degree and structural dimensions, common-field algebraic degree is independent of follower count/row counts/coefficient bit lengths; proved from constant KKT denominators and the degree bounds of Basu–Pollack–Roy. |
+| General fixed-core polyhedral theorem | `app:fixed-core`, `thm:fixed-core`, `lem:core-support-membership`: full vertex/support/Minkowski proof and degree tracking, strengthened from the source's fixed-degree statement to polynomial time in actual numerical degree and input bits. |
+| New constructive fixed-core block recovery | `lem:core-recovery`: globally enumerated support tuples span the entire fixed-core aggregate image; a common convex combination of at most k+2 tuples recovers all blocks in the sampled field. This removes reliance on a growing-dimensional algebraic LP oracle. It applies to linear block measurements, never to a nonconvex follower reaction graph. |
+| Arithmetic/degree and curvature boundaries | Only the elementary cubic response/square-root-sum motivation appears at the end of `sec:exact`; the complete barriers and hardness examples remain assigned to stages 4/5 below. |
+
+Stage 2 passed five independent reviews and separate correction of all three
+accepted minor issues. Its accepted build contains 18 pages. See
+`process/assessments/stage02-round01.md` and `process/stage02-corrections.md`.
+All stage 3–7 obligations above remain unchanged.
+
+## Stage 3 manuscript locations (accepted after review and minor corrections)
+
+| Source development | Manuscript label and treatment |
+| --- | --- |
+| Near-optimal measurement compression | `thm:nearoptimal-robust`, `lem:measurement-threshold`, `eq:criterion-attainable-formula`: all attainable measurements use a feasible fiber KKT candidate under the true nominal budget. Globality is required only for the nominal value, not for every fiber candidate. The added measurement count is fixed separately per criterion; the growing union is never placed in one elimination. |
+| Universal robust rows, worst objective, infimum and witnesses | `eq:robust-domain-formula`, `eq:robust-worst-formula` and theorem proof: separately eliminated adverse criteria, exact infimum and attainment, one jointly recovered leader/adverse witness, separate encodings for unrelated requested witnesses. Bounded leader-controlled budgets and irrational adverse output follow the theorem. |
+| Extended bounded algebraic degree | `cor:robust-degree`: constant local Q/E/G suffice even with moving shared and measurement normals. Fixed composition depth, rather than total criterion-call count, bounds output degree for fixed input degree and structural dimensions. |
+| Robust attainment and limits | `prop:robust-attainment`: complete fixed-normal convex proof including zero budgets. `ex:positive-budget-nonattainment`: both nonclosed robust feasibility and unattained objective without upper rows at positive budget. `prop:robust-measurement-hardness`: Max-Cut gives NP-hard adverse value and a restricted coNP-complete universal test when measurement rank grows. |
+| Perturbation enclosure and whole-cell status certificates | `lem:screening-enclosure`, `eq:screening-coordinate-gradient`, `eq:screening-closure-free`: exact VI ellipsoid, rational vertex extrema, strict and relative-interior closure certificates, including lower-dimensional cells. Closest structured-surrogate/VI/parameter-region predecessors are cited. |
+| Exact dense recovery | `thm:screening-recovery`, `eq:screening-exact-affine`, `eq:screening-recovery-lp`: at most M 3^t true-KKT recovery LPs, excluding cover construction/screening. Rational optimum, zero-gradient bound ties, and polynomial dense inversion are covered. A guessed full assignment can be certified on the whole cell without enumeration. |
+| Transition multiplicity and computable radius | `cor:screening-neighborhood`, `eq:screening-radius`: injective leader projection bounds cell dimension; a polynomial simplex cover of existing vertices replaces triangulation; transition union is at most (r+1)q. Explicit rational norms and margin yield the certified radius. |
+| Useful bounds and limitations | `subsec:screening-bounds`, `eq:screening-inner-outer`: signed global lower/upper LP bounds and true-feasible inner leaders with stated equality limits. `ex:screening-conservatism` and shifted-switch example show why small matrix error alone neither bounds certificate ambiguity nor permits unchanged labels. Experiments and total measured costs remain stage 6 obligations. |
+
+Stage 3 author logs are in `verification/stage03-author/`; the finite checks
+support particular identities and certificate contracts, not the general QE
+algorithm. Stage 3 passed five independent reviews and correction of all
+accepted minor issues; see `process/assessments/stage03-round01.md` and
+`process/stage03-corrections.md`. All stage 4–7 assignments and the
+full-manuscript review gate remain unchanged.
+
+## Stage 4 manuscript locations (accepted after review and minor corrections)
+
+| Source development | Manuscript label and treatment |
+| --- | --- |
+| Shared accuracy model and global guarantee | `subsec:accuracy-model`, `thm:accuracy-global`: signed strictly increasing local polynomial marginals, fixed resources/convex polynomial aggregate, arbitrary explicitly listed polynomial upper objective, numerical-degree and accuracy-bit complexity, rational feasible leader and value estimate. |
+| Full general inverse dependency | `app:inverse`, `lem:inverse-modulus`, `thm:inverse-approximation`: explicit interpolation modulus, all complex critical-value real parts, fixed-three-variable elimination, padded bad intervals, geometric rational panels, proper polynomial covering, rational response-centered Taylor recurrence and denominator/numerator/intermediate bit bounds. Interior derivative zeros and closed branch endpoints included. |
+| Sharper nonnegative-coefficient inverse | `prop:positive-inverse`: coefficient-majorized relative complex inverse disk, Rouché proof, 32P panels per dyadic band, O(log(1/eta)) degree and O(P² log(1/eta)) branches. Positivity is confined to this specialization. |
+| Diagonal power and general-marginal transfer | `subsec:accuracy-diagonal`, `lem:rational-rounding`, `eq:diagonal-uniform-error`: explicit dyadic binomial construction, fixed-dimensional sign-cell closures, exact polynomial optimization, common-field scope, rational barycentric recovery, signed error and value ledger. `ex:sparse-power-output` proves the separate sparse binary two-power rational-output obstruction. |
+| Single equality resource | `subsec:accuracy-one-resource`, `eq:signed-balance-identity`: exact resource projection, signed/zero/tiny weights, global bounded scalar multiplier, no-cancellation identity, polynomial balance allowances and rational recovery, full 7epsilon/32 and 5epsilon/32 ledgers. |
+| Multiple fixed resource rows and quantitative dependencies | `app:quantitative`, `lem:resource-projection`, `lem:resource-constants`, `lem:polynomial-bregman`: exact ray projection, explicit integer-Gram multiplier/Hoffman constants, degenerate and equality faces, signed and sharper positive Bregman constants. `eq:accuracy-resource-tolerance` and its paragraph give the distinct threefold residual and 5epsilon/16 objective ledger. |
+| Convex aggregate extension | `lem:accuracy-certificate`, `eq:accuracy-sharp-mismatch`, `subsec:accuracy-graph`, `lem:accuracy-recovery`: frozen-gradient mismatch certificate, sharper 1/P aggregate-only mismatch exponent, realizable nonlinear branch vectors, safe closed validity sets, base-polytope rounding across invalidated branches, true-response transfer including negative inactive slack, full 4/5/4 residual ledger. No strong curvature/Slater/nonsingular-KKT assumption. |
+| Original response moduli | `prop:accuracy-response-modulus`, `eq:response-modulus-basic`: complete two-repair 1/(P+1) modulus and the sharper separable leader-linear cancellation constant. |
+| New sharp leader-response modulus | `eq:response-modulus-sharp`, `eq:active-row-correction` and proposition proof: 1/P Hölder modulus with polynomial-bit constant, common-active-pattern tangent cancellation, strict/weak inequality lifts, explicit Milnor component bound used only for counting, finite segment partition, and sharpness by x^(1/P). It improves the anchor tightening exponent from P+1 to P; no priority claim is made. |
+| Polynomial upper data and nonconvex objective | `eq:upper-polynomial-lipschitz`, `subsec:accuracy-polynomial-upper`, `eq:upper-recovery-error`: explicit listed-monomial substitution in fixed dimension, enlarged response box, numerical upper degree, valid original-point comparison across nonlinear branch boundaries. |
+| Outer, inner and posterior guarantees | `thm:accuracy-upper`, `eq:tightened-value`, `eq:accuracy-posterior`: unconditional rational bicriteria outer output, exact-safe inner output relative to V(delta), distinct emptiness conclusions, computable posterior gap and qualified convergence. Objective-independent shortcut and N=0 polynomial exceptions explicit. |
+| Conditional exact feasibility and examples | `cor:accuracy-tightening`, `cor:accuracy-anchor`, `cor:accuracy-reserve`: supplied effective modulus with numerical exponent dependence, convex reduced constraints/strict anchor, independent concave-service subclass, affine and polynomial reserve controls with uniform headroom. `ex:accuracy-isolated-optimum`, `ex:accuracy-irrational-feasibility`, `subsec:accuracy-limits`: disconnected tightening obstruction, irrational-only feasible leaders, exact radical comparison, and exact-equality limits. |
+
+Stage 4 author logs and manifest are in `verification/stage04-author/`. The
+complete inverse and quantitative dependencies are proofs in the manuscript,
+not citations to internal notes. Stage 4 passed five independent reviews and
+separate correction of all four accepted minor issues, verified by root.
+See `process/assessments/stage04-round01.md` and `process/stage04-corrections.md`.
+All stage 5–7 assignments and the final integrated review remain unchanged.
+
+## Computational artifacts and distinct validation purposes
+
+| Artifact family | Required use in stage 6 or earlier proof check |
+| --- | --- |
+| `code/bilevel_response/`, `code/bilevel_dense_box/` | Exact examples, stationary/global distinction, dense-hardness and conditioned-approximation diagnostics. Re-run only scripts relevant to concrete proof obligations and retain logs. |
+| `code/bilevel_bounded_power/`, `code/bilevel_one_resource/` | Accuracy and inverse diagnostics, signed marginals, rational simplex recovery, quantitative resource constants. Primary stage 4 checks. |
+| `code/bilevel_vertex_integrity/`, `code/bilevel_parameterized/` | Structural and mixed-radix gap verification for stage 5. |
+| `code/parametric_path_lp/` | Exact shadow, fixed alphabet, rank-one slab, diagonal follower, strict-local and affine-strip checks. Physical-penalty/blending checks only if the corresponding non-bilevel application is expressly brought into scope. |
+| `code/fixed_core_blocks/` | Small exact support/Minkowski sum checks for the stage 2 appendix; these do not implement general quantifier elimination. |
+| `code/bilevel_reopened/README.md`, `quadratic_solver.py`, `quadratic_benchmarks.py`, `quadratic_tariff_benchmarks.py`, recorded JSON results | Complete aligned convex sweep versus generic numerical-proposal path; exact exhaustive and independent MILP validation, heterogeneous sizes versus 10,000-variable sweep. Preserve proposal failures. |
+| `notes/bilevel-reopened-screening-computation.md`, `code/bilevel_reopened/screening_milp_comparison.py`, `screening_milp_comparison.json` | Record unfavorable four-case screening-versus-MILP result and all preprocessing, rational/numerical distinctions, not just recovery LP counts. |
+| Remaining `code/bilevel_reopened/` diagnostics/reviews and `verification_summary.json` | Robustness, perturbation screening, nonlinear aggregate, upper-constraint identities. Tie every check to a mathematical claim; do not sum heterogeneous counts into a claim of comprehensive formal verification. |
+| `code/bilevel_nonconvex/README.md`, `scalar_solver.py`, `check_scalar_examples.py`, `review_one.py`, `review_two.py`, `benchmarks.py`, all benchmark JSON files | Complete exact nonconvex specialization, all ties, independent original-coordinate face oracle, all-pair versus incremental envelope, repeated timing distributions and heterogeneous seeds. Preserve the fact that a fixed-price oracle solves a smaller problem. |
+| `notes/bilevel-nonconvex-computation.md`, `code/bilevel_nonconvex/plot_contact_example.py`, `figures/convex_envelope_false_choices.*` | Correctness/scaling illustration, replication with only two types versus heterogeneous breakpoints, contact/false-feasibility figure. Reproduce any figure copied into the paper and state its source parameters. |
+
+Concrete stage 6 development proposed by root: implement an independent complete
+continuous-leader baseline by enumerating stationary faces in original follower
+coordinates, for rational rank-one Hessians with every principal minor nonzero
+(an explicit checked restriction). Compare all feasible candidate values and
+solve optimistic/pessimistic upper problems over the resulting graph. This adds
+an equivalent full-task comparison to the existing fixed-price oracle. Verify
+the completeness restriction and ties, and report exponential enumeration
+honestly. Profile and remove demonstrated symbolic bottlenecks if a simple
+improvement preserves exactness. No production-solver superiority is presumed.
+
+## Source comparison and historical review inventory
+
+The principal scope/closure sources are `notes/bilevel-paper-scope.md`,
+`notes/bilevel-response-complexity-map.md`, `notes/bilevel-classical-positioning.md`,
+`notes/bilevel-reopened-status.md`, `notes/bilevel-reopened-closeout.md`,
+`notes/bilevel-nonconvex-closeout.md`, `notes/research-closeout.md`,
+`notes/research-continuation-closeout.md`, and
+`notes/supporting-results-source-closeout.md`. Broad closeouts contain unrelated
+research; only their bilevel and named dependency dispositions are relevant.
+
+Each `notes/review-bilevel-*.md`, each inverse/fixed-core/Klee--Minty/path review,
+and the linked source audits belong to the corresponding source row above.
+They preserve corrections and rejected stronger claims. They are not additional
+results requiring duplicated paper sections. Historical investigation versions
+are reconciled to the canonical result, with any additional substantive lemma
+retained rather than silently discarded.
+
+Focused attribution sources include the exact aggregate/block, resource,
+bounded-power, monotone-inverse, conditioned/dense-box, fixed-core, leader
+integrity and parameterized novelty/source notes; the reopened literature audit;
+and the nonconvex source positioning. Cite the actual primary publications in
+the paper. The paper's bibliography must not cite repository reviews as theorem
+authority. Source absence in a bounded search is not proof of novelty.
+
+## Completion checks for later stages
+
+- Every table row above has a manuscript theorem, proposition, proof, example,
+  algorithm, experiment, or explicit explained exclusion.
+- Mathematical claims carry the exact domain, output convention, degree and
+  dimension dependence, and attainment qualification used by their proof.
+- No closed investigation or negative finding used as a premise remains an
+  unproved assertion. Genuine broader open problems are identified as limits,
+  not hidden inside a theorem or promised solved by a finite diagnostic.
+- Superseded narrower theorems are retained as explained special cases or
+  supporting alternative proofs when they provide distinct insight.
+- The final text is a coherent publication, not a sequence of repository notes
+  or an assertion that no conceivable future research can exist.
+
+## Stage 5 manuscript locations (accepted after five reviews and corrections)
+
+| Source development | Manuscript labels and complete treatment |
+| --- | --- |
+| Scalar SPD box hardness; no-upper-constraints extension | `subsec:dense-hardness`, `lem:box-np`, `thm:dense-hardness`, `eq:dense-square-gadget`, `eq:shortfall-readout`: full ternary margins, clause-feedback control, minimal 2n+m follower, zero-versus-two readout, polynomial encoding and rational active-status NP certificate. The redundant symmetric auxiliary construction is subsumed by its exact minority-distance identity; the full final no-upper-row construction is retained, not replaced by the near-identity theorem. Joint convexity applies to the sum-of-squares representation only. |
+| Positive-objective multiplicative consequence (`notes/bilevel-dense-box-hardness-investigation.md`, Section 8) | `cor:dense-multiplicative`: `1+H` excludes ratios strictly below three under exact bilevel feasibility; `1+2^(n+m)H` excludes every fixed polynomial ratio in encoded input length, with finite small source sizes handled separately. Affine constants and exponential scaling do not preserve the original coefficient alphabet; scaling loses bounded upper coefficients but retains polynomial binary encoding. No strong-hardness or approximate-follower claim. |
+| Conditioned box exact hardness | `subsec:conditioned-hardness`, `thm:conditioned-hardness`, `eq:scaled-network-energy`: full feedforward recursion, bounded state/residual ranges, rational diagonal scaling, relative-coordinate error, bounded coefficients and eigenvalues, arbitrarily small coupling, polynomial-bit small gap and exact NP certificate. Direct scaling and convex-energy predecessors credited. |
+| Conditioned box additive algorithm | `subsec:conditioned-algorithm`, `thm:conditioned-grid`, `eq:cost-grid-sensitivity`: equality-inclusive saturation, maximum-minor row basis, slab-coordinate grid, direct leader LP, normalized error, r=0/N=0/a=0 cases, exact projected-gradient + denominator + continued-fraction follower recovery, correct numerical K and inverse-accuracy runtime. Barycentric-spanner and prior path/MPC approximation sources credited. |
+| Growing leader dimension / parameterized source audit | `thm:growing-leader`, `prop:mixed-radix`: explicit attributed capped-ReLU transfer from Froese–Grillo–Hertrich–Stargalla v3 Prop4.1/Thm5.3/Cor5.5; independent mixed-radix continuous gap, polynomial coefficient duplication, at most two leaders per follower, W[1]/ETH scope; unary separability remark. |
+| Leader vertex integrity and path | `subsec:leader-structure`, `thm:leader-core`, `thm:leader-path`, `eq:subset-path-distance`: supplied bounded core, complete affine candidates, full relative cells and sound closure LP, weak Subset Sum reduction, exact distance messages, identical local factor/fixed alphabet exponential messages. Leader-interaction graph distinguished from follower-constraint graph. |
+| Sparse Klee–Minty path shadow and parametric LP obstruction | `prop:path-shadow-boundary`, `app:klee-shadow`, `lem:klee-shadow`, `eq:klee-vertices`: full attributed Gärtner–Helbling–Ota–Takahashi edge calculation for the exact used c/lambda; backward linear-time rational evaluation, terminal message and unextended two-variable total-degree lower bound. No pointwise-hardness inference. |
+| Rank-one slab, telescoping, parabolic exposure and fixed coefficient padding | `lem:klee-telescope`, `eq:klee-telescoping`, `lem:klee-padding`: full nonnegative vertex polynomial, rank-one Hessian, distinct terminal values, parabolic exposure, Subset Sum slab equivalence, compact nonempty slab and fixed-local-alphabet padding. |
+| Diagonal/identity-Hessian follower on a constraint path | `subsec:follower-path`, `thm:follower-path-hardness`, `eq:klee-quadratic-follower`: full global vertex-response perturbation inequality, exponential constant intervals, identity scaling, restricted NP completeness with nonconvex upper quadratic row + slab, attainment variant and failure without that row. Also proves the padded fixed-local-alphabet bilevel strengthening by restriction of the full-cube optimum. |
+| Equal-slope affine strip projection | `app:strip-projection`, `prop:strip-projection`, `eq:strip-all-pairs`, `eq:strip-recovery`: all-pairs support proof, negative/zero gains, original-head bounds, multiple bounds, forest and fixed total cycle rank, polynomial degree/bit control, same-field recovery and infimum/attainment scope. Dense objectives on eliminated states excluded. |
+| Zero/negative local curvature (scalar canonical source Section 6) | `prop:curvature-boundary`: both optimistic 3SAT reductions, respectively quadratic and linear upper rows; no pessimistic transfer. |
+| Root-sum / convex-leaf arithmetic; sparse exact upper degree | `prop:root-sum-degree`, `prop:single-power-output`, `subsec:arithmetic-boundaries`: full multiquadratic degree proof, cubic followers with curvature >=2, singleton convex quadratic leaves and exact Square Root Sum comparison; sparse upper equation with degree 2^t via Eisenstein. Common-field output distinguished from radicals and NP-hardness. |
+| Sparse numerical degree and rational approximation output | Existing `ex:sparse-power-output` retained by cross-reference. `prop:single-power-output` adds one power follower with polynomial upper objective or a response row (strict anchor and convex reduced row included); no claim for the one-power affine-objective/no-upper-row subclass. |
+
+The stage 6 computation/contact-reconstruction work and stage 7 integration,
+abstract, conclusions and whole-manuscript review remain assigned as before.
+No stage 6 authoring or experiment-performance claim is included in stage 5.
+
+## Stage 6 manuscript and executable locations (accepted after five reviews and corrections)
+
+| Development | Manuscript and executable treatment |
+| --- | --- |
+| Generic convex quadratic response construction, numerical proposal versus proof | `subsec:convex-implementation`, `prop:convex-certified-path`: complete rational KKT intervals, closed endpoint and coverage checks, singular/indefinite small-rank representation without H inverse, exact exponential oracle, explicit numerical recovery/cap failures; `quadratic_review_checks.py` rerun with corrupt/incomplete certificates and forced failures. |
+| Complete aligned rank-one convex sweep and quadratic upper/tariff objective | `eq:implemented-convex`, `eq:implemented-upper`, `eq:convex-sweep-inversion`: signed/zero loadings, negative rank-one coefficient when total Hessian SPD, simultaneous events, exact interval rows/quadratic optimum, rational arithmetic count and supplied-decomposition validation. Fresh fused sweep timings and archived negative-coupling tests are scoped separately. |
+| Complete scalar nonconvex algorithm | `subsec:nonconvex-compression`, `lem:scalar-fiber-pieces`, `thm:nonconvex-atlas`: strictly convex local fiber, rational allocation, every endpoint/stationary/flat candidate, original global values, finite full partition, incremental contacts completeness, signed/zero loadings and gamma, singleton aggregate/fixed boxes, both upper semantics and nonattainment, each selected output in one quadratic field (not entire atlas). `code/compressed_solver.py`, with full source retained unchanged in repository. |
+| Conjugacy and contact reconstruction | `subsec:contacts`, `eq:contact-conjugacy`, `eq:actual-contact`, `ex:false-contacts`, `ex:capacity-jump`, `fig:contacts`: self-contained value convexification and contact equivalence, explicit false mixture feasibility, jumps, capacity and unattained pessimistic supremum, nonglobal KKT example. Reproduced figure `code/plot_contacts.py`; primary Kiwiel, Gardiner–Lucet and Moehle texts credited narrowly. |
+| New independent complete original-coordinate full-task comparison | `subsec:full-task-baseline`, `prop:original-face-baseline`; `code/original_faces.py`. Every principal minor checked/nonzero restriction enforced, minimal-face SPD proof, dense original stationarity/value substitution, all continuous-price crossings/ties, independent upper-row/revenue optimization with endpoint flags. Exponential 2^N minor and 3^N status scope. Singular-face fixed-price oracle retained as value-only dependency, not substituted for full comparison. |
+| New distinct tests and measured refinement | `subsec:computations`; `code/check_full_task.py`, `run_diagnostics.py`. Eighteen complete-task cases, all response sets on independent strata, direct attained-output bounds/aggregate/revenue/rows/global original cost and pessimistic worst witnesses; singular rejection plus flat tests. Existing independent value/envelope and convex certificate diagnostics rerun. Profile-based rational sign/midpoint fast paths retain all algebraic logic; exact outputs compared with unchanged solver, ordinary timings controlled separately. |
+| Fresh and historical nonconvex computations | `tab:full-task`, `tab:scalar-scaling`, `data/stage06-results.json`, exact prepared inputs and generator seeds; three serial fresh-process repetitions, alternating order, explicit thread settings, all individual measurements and external limits. New baseline solves identical full tasks through N=6; larger baseline sizes unattempted. Heterogeneous N=48 distinguished from two-type N=1000; original pairwise compressed baseline and fixed-price oracle described accurately. |
+| Convex prototype computations | Fresh and archived discussion in `subsec:computations`; complete aligned fused sweep through N=10000 on separate synthetic family, exact returned KKT/service floor, generation/validation and process wall costs retained. Historical generic path N<=120 certificates and dense KKT comparisons covered without claimed universal proposal success or superiority. |
+| Dense screening comparison and negative result | `para:screening-results`, `tab:screening-negative`: independent dense KKT MILP and rigorous real-arithmetic big-M bound, all four archived negative comparisons, fresh N=8/20 three-run confirmation, preprocessing/inversion/recovery/certification costs, default numerical discrepancy and tighter tolerance follow-up. M*3^t remains a recovery-LP count only. |
+| Other reopened robustness/accuracy diagnostics | Their distinct mathematical developments and checks remain in accepted Sections 3–4 and author manifests. Section 6 explains that finite diagnostics do not implement general QE or prove arbitrary-input solver correctness. No additional broad experiment count or application claim is inferred. |
+
+No source-only nonconvex or scalar convex algorithm development is deferred.
+The old pairwise compressed timing implementation is historical, with exact
+pairwise-partition regression coverage in the retained review code; its former
+runtime is not claimed reproducible from the revised scalar implementation.
+Stage 7 still owns final abstract, integrated positioning/conclusions, global
+readability and the full-manuscript review gate.
+
+Stage 6 passed all five independent reviews. Root accepted and verified two
+minor corrections: one-shot constraint input handling and stale README text.
+Measured source versions and raw data remain preserved. See
+`process/assessments/stage06-round01.md` and `process/stage06-corrections.md`.
+
+## Stage 7 synthesis locations (author complete; review gate pending)
+
+| Synthesis obligation | Manuscript treatment |
+| --- | --- |
+| Complete standalone paper | `main.tex` has the final abstract and keywords, blank authors/date, all section inputs and all four appendices. `sec:conclusions` closes the argument and describes accompanying code/data. A clean build with only 17 manuscript inputs succeeds without the repository, process or verification trees. |
+| Importance and original contributions | `subsec:contributions` states five distinct contributions with exact theorem references and separates complete structural guarantees from inherited ingredients and validation baselines. The opening explains the local allocation/shared-quantity model and distinguishes one jointly optimizing follower from independent strategic agents. |
+| Precise relationship to prior work | `subsec:related` and `tab:prior-comparison` compare fixed follower versus shared dimensions, multiplier and primal elimination, global polynomial methods, accuracy bits versus allocation evaluation/inverse-accuracy schemes, criterion-specific robustness, conditioned paths, and scalar contact reconstruction. Novelty language is expressly qualified around complete theorem classes. |
+| Additional original-source lineage | Nie–Wang–Ye2017, Nie–Wang–Ye–Zhong2021, and Nie–Ye–Zhong2026 are credited for global polynomial comparisons, multiplier expressions, sparse supports and disjunctive decompositions. Hladík–Černý–Rada2021 distinguishes fixed total quadratic rank and credits classical stationary-face enumeration. Latest Sugishita–Carvalho IPCO publication is cited alongside the exact v2 source used by the boundary proof. |
+| Accuracy and computation attribution correction | `sec:accuracy` explicitly credits Hochbaum–Shanthikumar's solution-vector accuracy, including numerical subdeterminant and oracle assumptions. `subsec:contacts` cites the actual Gardiner–Lucet Propositions 3.1/4.3 after checking the newly available full original, and explicitly makes no asymptotic envelope improvement claim. |
+| Notation and mathematical scope | `subsec:contributions`, the roadmap, encoding subsection and conclusion distinguish fixed parameters/XP, numerical degree/binary exponents, each selected common field/all unrelated fields, optimistic attainment/pessimistic infima, and exact base feasibility/conditional response-row feasibility. All accepted proofs and computational results remain intact. |
+| Source-only literature audits | `notes/bilevel-reopened-literature-audit.md` and the topic-specific novelty/source notes inform the primary-source comparisons; they are not scientific authority or priority evidence in the manuscript. Actual sources and query scope are recorded in `process/stage07-author.md` and root's independent literature audit. |
+
+The inventory recheck also found `notes/parametric-path-cut-clamp-investigation.md`
+and `notes/parametric-path-cut-box-truncation-source.md`. Their binary
+submodular cut recurrences and flow-divergence/base-polyhedron specialization
+support the separate pooling-capacity paper. They neither formulate a
+continuous bilevel follower result nor supply a missing dependency of this
+manuscript's path proofs. They remain outside the explicitly continuous
+bilevel scope, as do the other physical pooling realizations. The equal-gain
+continuous path projection that does support the present boundary comparison
+is fully proved in Appendix D.
+
+The author added no new measured solver version and reran no timings in this
+stage. Stage 6 source hashes, data and correction provenance are unchanged.
+The stage 7 and final whole-manuscript reviews remain required before acceptance.

@@ -1,0 +1,432 @@
+\section{Projection, sufficient statistics, and limits of local compilation}
+\label{sec:projected-compilers}
+
+An exact reformulation may discard the original recourse coordinates and
+optimize over their projection.  This changes the computational interface:
+a small first-stage barrier need not provide all recourse variables, and a
+small existential barrier need not have a cheap reusable oracle.  We make
+these distinctions explicit.  Farkas elimination, quadratic epigraph
+barriers, and quantum spectral approximation are established tools.  The
+results below combine them under precise access assumptions and identify
+limitations of two specific compilation rules.  They make no claim that a
+small projected barrier preserves the full product-slack geometry.
+
+\subsection{Polyhedral and ordered recourse}
+
+Let $W\in\R^{q\times p}$ and $T\in\R^{q\times k}$ be public, and consider
+\begin{equation}\label{eq:projected-recourse}
+ x\in X_0,\qquad Wy_i=h_i-Tx,\qquad y_i\geq0\quad(1\leq i\leq N).
+\end{equation}
+Write $H=\operatorname{range}W$ and
+$C=\{z\in H:W^Tz\geq0\}$.  This polyhedral cone is pointed in $H$:
+if $z,-z\in C$, then $W^Tz=0$ and $z\in H$, whence $z=0$.
+Let $z_1,\ldots,z_L$ generate its extreme rays; $L=0$ is allowed.
+
+\begin{proposition}[Shared recourse directions]\label{prop:projected-fan}
+The projection of \eqref{eq:projected-recourse} is exactly
+\begin{equation}\label{eq:projected-fan}
+ x\in X_0,\qquad h_i-Tx\in H\ (i\leq N),\qquad
+ a_\ell^Tx\geq\beta_\ell\ (\ell\leq L),
+\end{equation}
+where $a_\ell=-T^Tz_\ell$ and
+$\beta_\ell=\max_i(-z_\ell^Th_i)$.
+On the affine space defined by the displayed equalities, suppose $X_0$
+has a $\nu_0$-barrier $G$, and remove inequalities that are identically
+satisfied.  If the remaining inequalities have a common strict feasible
+point in $\ri X_0$, then
+\[
+ G(x)-\sum_{\ell=1}^L\log(a_\ell^Tx-\beta_\ell)
+\]
+is a barrier of parameter at most $\nu_0+L$ on that relative domain.
+\end{proposition}
+\begin{proof}
+Farkas' lemma gives $Wy=h_i-Tx$, $y\geq0$, precisely when
+$z^T(h_i-Tx)\geq0$ for every $z$ satisfying $W^Tz\geq0$.
+The lineality space of this dual cone is $H^\perp$; it imposes exactly
+$h_i-Tx\in H$.  In $H$, the extreme rays generate $C$, so only their
+inequalities remain.  Taking the maximum over $i$ gives
+\eqref{eq:projected-fan}.  The barrier statement follows by affine
+restriction and addition of logarithmic half-space barriers.
+\end{proof}
+
+If $W$ has full row rank, the membership equalities disappear.  With a
+coherent block oracle for $h_i$, exact comparisons at the supplied data
+precision, and public rays, quantum maximum finding computes all thresholds
+with joint constant success probability in
+$\widetilde O(L\sqrt N)$ block queries
+\citep{DurrHoyer1996}.  Here and below the tilde allows amplification
+logarithms.  Derivatives of the compiled barrier then need no scenario
+queries.  A path-following iteration bound also requires a supplied
+initialization and the usual accuracy and initial-gap factors; it is not a
+consequence of the barrier parameter alone.  Without full row rank, the
+compatibility equalities must be supplied or checked as well.
+
+There is also a local reconstruction statement, with an essential strictness
+hypothesis.  Suppose $h_i-Tx\in\ri(W\R_+^p)$, equivalently there exists
+$y>0$ with $Wy=h_i-Tx$.  Then
+\begin{equation}\label{eq:projected-canonical-recourse}
+ y_i^c(x)=\underset{Wy=h_i-Tx,\ y>0}{\operatorname{argmin}}
+ \left\{\tfrac12\norm y^2-\sum_{j=1}^p\log y_j\right\}
+\end{equation}
+exists uniquely.  Indeed, the objective is coercive at infinity, diverges
+at the coordinate boundary, and has positive-definite Hessian.
+Let $x$ vary in the affine compatibility space
+$\mathcal A_i=\{x:h_i-Tx\in\operatorname{range}W\}$.
+For a tangent direction $h$ to $\mathcal A_i$, its KKT derivative is,
+after applying the same independent-row reduction to $W$ and $T$,
+\[
+ \begin{bmatrix}I+\operatorname{diag}(y_j^{-2})&W^T\\W&0\end{bmatrix}
+ \begin{bmatrix}Dy[h]\\D\lambda[h]\end{bmatrix}
+ =\begin{bmatrix}0\\-Th\end{bmatrix}.
+\]
+The matrix is invertible by positive definiteness and full row rank.
+Thus this recourse rule is smooth on the relative open subset of
+$\mathcal A_i$ with strictly positive feasible recourse, and depends only
+on the requested block and $x$.  Computing it requires a local convex solve, not one arithmetic
+operation.  Mere nonnegative feasibility does not justify
+\eqref{eq:projected-canonical-recourse}; at a boundary point one must
+instead solve a local feasible problem or first determine its minimal face.
+
+For varying $W_i\in\R^{q\times p}$, suppose first that each has full row
+rank.  Its pointed dual cone has at most $\binom p{q-1}$ extreme rays.
+An extreme ray has $q-1$ independent active inequalities: otherwise its
+minimal face has dimension at least two.  Each such subset specifies a line,
+and pointedness permits at most one orientation of that line.  This proves
+the count, including $q=1$.  For rank $r_i<q$, apply the argument in
+$\operatorname{range}W_i$, obtaining $\binom p{r_i-1}$ rays when $r_i>0$,
+and retain the orthogonal compatibility equalities separately.  A rank-zero
+block supplies only equalities.  Consequently, for fixed $q$ a local
+block query suffices, with polynomial local arithmetic, to enumerate the
+inequalities defining that block's projection.
+
+Here is a deliberately conditional algorithmic consequence.  Suppose these
+inequalities and any constraints for $X_0$ define a full-dimensional LP
+in $k$ effective variables, with finite optimum; assume coherent row access,
+the data precision assumptions, and an initial point sufficiently close to
+the central path required by \citet[Theorems~1.3 and~6.1]{ApersGribling2026}.
+Their algorithm returns an explicit feasible $\epsilon$-optimal first-stage
+vector.  With fixed $q$ and a polynomial number of public constraints for
+$X_0$, simulating each row query locally gives
+$\widetilde O(\sqrt N\,\operatorname{poly}(p,k))$ block queries.
+This is a reduction to that algorithm; initialization, facial reduction,
+and full recourse output are additional tasks.
+
+Finally, if recourse has the ordered form
+$h_0+\alpha_i e-Tx\in K$, where $K$ is a proper cone and $e\in K$, it
+reduces exactly to the single constraint with
+$\alpha_* =\min_i\alpha_i$.  This follows because
+$(\alpha_i-\alpha_*)e\in K$, and the minimum is attained.
+For a symmetric cone of rank $r$, its standard barrier adds at most $r$
+to the first-stage parameter.  The threshold again takes
+$\widetilde O(\sqrt N)$ queries.  The scalar family $x\geq z_i$,
+$z_i\in\{0,1\}$, shows the familiar OR lower bounds
+$\Omega(\sqrt N)$ quantum and $\Omega(N)$ randomized
+\citep{BBBV1997} for determining the threshold to error below $1/2$.  These statements concern ordered offsets;
+arbitrary offsets have no such single-threshold reduction.
+
+\subsection{Additive quadratic and matrix sufficient statistics}
+
+Consider the closed formulation
+\begin{equation}\label{eq:projected-quadratic-lift}
+ r_i=A_ix-b_i,\qquad t_i\geq\norm{r_i}^2,\qquad
+ \tau\geq\sum_i t_i,\qquad x\in X_0.
+\end{equation}
+It uses $N$ rotated Lorentz factors and one ray.  Its canonical ambient
+parameter is $2N+1$, before adding a barrier for $X_0$.
+Its exact projection is
+$\tau\geq q(x)=\sum_i\norm{A_ix-b_i}^2$.
+
+\begin{proposition}[Quadratic compilation]\label{prop:projected-quadratic}
+Set $C_i=[A_i,-b_i]$, $\xi=(x,1)$, and
+\[
+ M=\sum_i C_i^TC_i,\qquad Q=\sum_i A_i^TA_i,\qquad
+ g=\sum_i A_i^Tb_i.
+\]
+Then $q(x)=\xi^TM\xi$.  On the quotient by $\ker Q$, the function
+$f(x,\tau)=-\log(\tau-q(x))$ is a barrier of exact parameter one.
+On unquotiented variables, if $G$ is a $\nu_0$-barrier for $X_0$, then
+$G+f$ is a barrier of parameter at most $\nu_0+1$.
+With $s=\tau-q(x)$ and $d=2(Qx-g)$, the derivatives of $f$ are
+\begin{equation}\label{eq:projected-quadratic-hessian}
+ \nabla f=(d,-1)/s,\qquad
+ \nabla^2 f=\begin{bmatrix}2Q/s&0\\0&0\end{bmatrix}
+              +(d,-1)(d,-1)^T/s^2.
+\end{equation}
+\end{proposition}
+\begin{proof}
+Expansion gives the sufficient statistic and the derivatives.  Since
+$\ker Q=\bigcap_i\ker A_i$, $q$ is constant along the deleted directions.
+For a line direction $h$, put $a=Ds[h]$ and
+$b=-D^2s[h,h]\geq0$.  Direct differentiation gives
+\[
+ Df[h]=-a/s,\quad D^2f[h,h]=a^2/s^2+b/s,\quad
+ D^3f[h,h,h]=-2a^3/s^3-3ab/s^2.
+\]
+For $u,v\geq0$, $2u^3+3uv\leq2(u^2+v)^{3/2}$, as is seen by
+squaring and subtracting, leaving $3u^2v^2+4v^3\geq0$.
+Apply this with $u=|a|/s$, $v=b/s$ to obtain self-concordance.
+Also $(Df[h])^2\leq D^2f[h,h]$.  The Hessian is positive definite
+on the quotient, and the function diverges at the epigraph boundary.
+The direction that varies only $\tau$ attains equality in the gradient
+inequality, so the parameter is exactly one.  Addition of $G$ removes any
+remaining flat directions and gives the asserted parameter bound.
+\end{proof}
+
+This is the familiar quadratic epigraph barrier, not a new barrier formula.
+Its relevance here is the exact replacement of many product factors by a
+single statistic, while retaining local recourse access.  Querying block $i$
+recovers $r_i=A_ix-b_i$ and $t_i=\norm{r_i}^2$.  This supplies a feasible
+completion for every projected feasible $(x,\tau)$; strict recourse can be
+obtained by distributing positive coupling slack.  Materializing all $N$
+recourse scalars requires $\Omega(N)$ output operations, whereas one
+requested block uses one block query plus local arithmetic.
+
+The statistic may also be approximated safely.  Let $C$ be the stack of
+all $C_i$, with $m$ rows and $k+1$ columns.  The quantum spectral
+approximation theorem of \citet[Theorem~3.1]{ApersGribling2026} gives, with
+high probability, $\widetilde M$ satisfying
+\[
+ (1-\delta)\widetilde M\preceq M\preceq(1+\delta)\widetilde M
+\]
+in $\widetilde O(\sqrt{m(k+1)}/\delta)$ row queries, for $0<\delta<1$.
+Row sparsity affects arithmetic cost separately; rank deficiency is allowed.
+Taking $\widehat M=(1+\delta)\widetilde M$ yields
+\begin{equation}\label{eq:projected-gram-inflation}
+ M\preceq\widehat M\preceq\frac{1+\delta}{1-\delta}M.
+\end{equation}
+Thus $\tau\geq\xi^T\widehat M\xi$ implies original feasibility.
+For pure least-squares minimization over a fixed $X_0$, an exact minimizer
+of the inflated objective has original objective at most
+$(1+\delta)/(1-\delta)$ times the original infimum, whenever a minimizer
+exists; an additive solve error adds the same error to this bound.
+Subsequent optimization uses only the explicit statistic.  When $m=Np$,
+this gives the source's $\widetilde O(\sqrt{Np(k+1)}/\delta)$ row bound;
+it is a block-query bound only when the specified block oracle simulates
+one row query at constant query cost.  The case $A_i=0$, $b_i\in\{0,1\}$,
+with zero or one nonzero $b_i$, reduces objective approximation with error
+below $1/2$ to OR, and gives the corresponding quantum and randomized
+scenario-query lower bounds.
+
+The matrix counterpart is equally exact.  Let
+$R_i(x)=B_{i0}+\sum_{j=1}^k x_jB_{ij}\in\R^{d_i\times s}$ and let
+$R(x)$ stack the $R_i(x)$.  Delete directions $h$ with $DR[h]=0$.
+
+\begin{proposition}[Matrix quadratic compilation]\label{prop:projected-matrix}
+On $Y-R(x)^TR(x)\succ0$ in the effective variables,
+\[
+ f(x,Y)=-\log\det\bigl(Y-R(x)^TR(x)\bigr)
+\]
+is a barrier of exact parameter $s$.  No barrier for this domain has
+parameter below $s$.  Without quotienting, addition of a $\nu_0$-barrier
+for $X_0$ gives a barrier of parameter at most $\nu_0+s$.
+All data enter through the positive-semidefinite block Gram matrix
+\[
+ \mathcal M_{j\ell}=\sum_i B_{ij}^TB_{i\ell},\qquad0\leq j,\ell\leq k,
+\]
+of order $(k+1)s$.
+\end{proposition}
+\begin{proof}
+Put $S=Y-R^TR$.  Along a direction, set
+\[
+ A=S^{-1/2}DS\,S^{-1/2},\qquad
+ B=2S^{-1/2}(DR)^TDR\,S^{-1/2}\succeq0.
+\]
+Differentiation gives
+\[
+ Df=-\tr A,\quad D^2f=\tr A^2+\tr B,\quad
+ D^3f=-2\tr A^3-3\tr(AB).
+\]
+The bounds $|\tr A^3|\leq\norm A_F^3$ and
+$|\tr(AB)|\leq\norm A_F\tr B$, together with the scalar inequality
+in Proposition~\ref{prop:projected-quadratic}, prove self-concordance.
+Moreover $(\tr A)^2\leq s\tr A^2\leq sD^2f$.
+The Hessian vanishes only if $DR=0$ and $DY=0$, so is positive definite
+in the effective variables.  The boundary divergence is immediate.
+Varying only $Y$ in direction $S$ gives decrement squared $s$.
+For the lower bound against any barrier, fix $x$ and restrict
+$Y=R(x)^TR(x)+\operatorname{diag}(u_1,\ldots,u_s)$.
+This is the positive orthant, with its coordinate boundary in the boundary
+of the full domain, so its parameter lower bound is $s$.
+Finally, expanding $R^TR$ gives
+$\sum_{j,\ell}\xi_j\xi_\ell\mathcal M_{j\ell}$, with $\xi_0=1$.
+\end{proof}
+
+Equivalently, this is a fixed-identity Schur-complement slice of a PSD
+cone; the restriction credits the fixed block.  Applying spectral
+approximation to the stack $[B_{i0},\ldots,B_{ik}]$ and using
+\eqref{eq:projected-gram-inflation} gives a uniform Loewner upper bound
+on $R(x)^TR(x)$, by congruence with $\xi\otimes I_s$.
+Thus the same safety argument compiles a matrix epigraph.  It does not
+by itself give a relative objective guarantee for an arbitrary SDP objective.
+
+\subsection{A scalar normalization cannot repair every convolution barrier}
+
+The preceding reduction uses an additive quadratic statistic.  A natural
+alternative for general blocks is to convolve block measures and take the
+Legendre transform of the resulting log-Laplace function.  The following
+obstruction concerns exactly that construction and scalar normalizations
+that depend only on the number of blocks.
+
+\begin{proposition}[Convolution normalization obstruction]
+\label{prop:projected-cramer}
+Let $\mu$ be uniform probability measure on $[0,1]$, with log-Laplace
+function $f$ and conjugate $F=f^*$.  For $N$ independent variables, consider
+the conjugate of the log-Laplace function of their average, multiplied by a
+positive scalar $a_N$.  Suppose this rule must be a standard
+self-concordant barrier for both of the following collections:
+$N$ copies of $\mu$, and one copy of $\mu$ with $N-1$ point masses at zero.
+Then $a_N\geq1$.  Its barrier parameter on the replicated collection is
+therefore at least $N$.
+\end{proposition}
+\begin{proof}
+Independence gives $f_{\mathrm{av}}(\theta)=Nf(\theta/N)$ for identical
+copies, hence $f_{\mathrm{av}}^*(x)=NF(x)$.
+For the second collection it gives $f_{\mathrm{av}}(\theta)=f(\theta/N)$,
+hence $f_{\mathrm{av}}^*(x)=F(Nx)$.
+For $\theta<0$,
+\[
+ \begin{aligned}
+ f(\theta)&=\log(1-e^\theta)-\log(-\theta),&
+ f'(\theta)&=-1/\theta+O(e^\theta),\\
+ f''(\theta)&=\theta^{-2}+O(e^\theta),&
+ f'''(\theta)&=-2\theta^{-3}+O(e^\theta).
+ \end{aligned}
+\]
+As $x=f'(\theta)\downarrow0$, Legendre differentiation gives
+$F'=\theta$, $F''=1/f''(\theta)$ and
+$F'''=-f'''(\theta)/(f''(\theta))^3$.  Therefore
+\[
+ \frac{(F')^2}{F''}\longrightarrow1,\qquad
+ \frac{|F'''|}{2(F'')^{3/2}}\longrightarrow1.
+\]
+Affine rescaling $x\mapsto Nx$ does not change either ratio.
+Multiplying a function by $a_N$ divides the second ratio by
+$\sqrt{a_N}$, so self-concordance for the second collection forces
+$a_N\geq1$.  On the first collection, the first ratio tends to $a_NN$,
+which is a lower bound on its barrier parameter.
+\end{proof}
+
+The degenerate blocks are part of the hypothesis.  The proposition neither
+rules out a rule using the individual distributions nor supplies a lower
+bound for all barriers of the projected interval.  In particular, it does
+not obstruct a nonfactorized entropic or universal barrier.  We claim only
+the stated normalization impossibility, rather than novelty for the
+classical conjugacy identity used in its proof.
+
+\subsection{Two obstructions to reusable exact summaries}
+
+Quadratic sufficient statistics have bounded dimension when the first-stage
+dimension is fixed.  This fails for arbitrary exponential sums even in one
+first-stage variable.
+
+\begin{proposition}[Continuous exact summaries]\label{prop:projected-exp-summary}
+Fix distinct real $a_1,\ldots,a_N$ and let
+$q_w(x)=\sum_i w_i e^{a_ix}$, with $w\in\R_{++}^N$.
+Suppose a continuous statistic $S:\R_{++}^N\to\R^d$ determines the entire
+strict epigraph of $q_w$.  Then $d\geq N$.  The decoder need not be
+continuous.
+\end{proposition}
+\begin{proof}
+Equal statistics give equal epigraphs and hence equal functions.  Their
+first $N$ derivatives at zero give the Vandermonde system
+$\sum_i(w_i-v_i)a_i^j=0$, $0\leq j<N$, so $w=v$.
+Thus $S$ is injective.  If $d<N$, composing with the coordinate inclusion
+$\R^d\hookrightarrow\R^N$ contradicts invariance of domain, since its
+image lies in a subspace with empty interior.
+\end{proof}
+
+The next statement concerns preprocessing queries rather than the dimension
+of a continuous statistic.  An offline summary is called \emph{reusable}
+if, after preprocessing, it can answer all the stated requests with joint
+success probability at least $2/3$, using no further input queries.
+It may be classical or quantum, provided reuse has this operational meaning.
+This excludes interpreting a single consumable quantum state as an oracle
+for arbitrarily many later answers.
+
+\begin{proposition}[Reusable boundary oracles]\label{prop:projected-reusable}
+Let $z\in\{0,1\}^N$, $\gamma=1/4$, and define the planar epigraph
+\begin{equation}\label{eq:projected-exposed-arcs}
+ E_z=\{(x,t):t\geq\varphi_z(x)\},\qquad
+ \varphi_z(x)=x^2+\max_{1\leq i\leq N}
+                       (2ix-i^2+\gamma z_i).
+\end{equation}
+Each inequality has a constant-size rotated-SOC representation.
+A reusable summary giving all values $\varphi_z(i)$ to absolute error
+less than $\gamma/3$ requires $\Omega(N)$ quantum preprocessing queries
+to the bit oracle for $z$.
+The same lower bound holds for reusable membership answers at the public
+points $(i,2i^2+\gamma/2)$ with the promise of vertical margin $\gamma/2$.
+\end{proposition}
+\begin{proof}
+At $x=i$, the $i$th affine term exceeds term $j\ne i$ by
+$(i-j)^2+\gamma(z_i-z_j)\geq3/4$.  Thus
+$\varphi_z(i)=2i^2+\gamma z_i$.  Either oracle recovers every bit.
+For completeness, a $T$-query quantum algorithm on an $N$-bit input has
+final state in the span of at most $D_T=\sum_{j=0}^T\binom Nj$ fixed
+vectors: expand its amplitudes in the characters of the input signs,
+whose degree increases by at most one per query.  Purification handles
+intermediate measurements and randomness.  An ensemble of $2^N$ states
+in a space of dimension at most $D_T$ can be identified, on a uniform
+input, with probability at most $D_T/2^N$, because each density matrix is
+bounded above by the identity on that space and the decoding POVM sums
+to that identity.  For $T\leq N/4$, the binomial entropy bound makes
+this probability tend to zero.  Constant successful recovery therefore
+requires $T=\Omega(N)$, as in oracle interrogation
+\citep{vanDam1998}.
+\end{proof}
+
+Rescaling the exposed locations to $x=i/N$ and the affine terms to
+$2Ni x-i^2$ preserves the gap.  Replacing the common quadratic by
+$x^r$ on $x>0$, for fixed rational $r>1$, or by $e^x$, gives the same
+recovery proof with constant-size power or exponential constraints.
+The locations then stay in a bounded interval, so the common exponential
+term causes no large-value precision issue.  This is a restriction on
+reusable preprocessing.  Computing a single requested boundary value can
+still use fresh $\widetilde O(\sqrt N)$ maximum-finding queries.
+It also does not rule out approximate summaries under a weaker norm or
+an input distribution that changes the recovery promise.
+
+\subsection{The parameter cost of additive local logarithms}
+
+The same exposed arcs impose a distinct barrier obstruction, even though
+$E_z$ has only two coordinates.
+
+\begin{proposition}[Additive local barrier cost]\label{prop:projected-local-barrier}
+For the slacks
+$s_i(x,t)=t-x^2-2ix+i^2-\gamma z_i$ in
+\eqref{eq:projected-exposed-arcs}, suppose
+\[
+ F(x,t)=-\sum_{i=1}^N w_i\log s_i(x,t),\qquad w_i>0,
+\]
+is a standard self-concordant barrier with parameter $\nu$ on
+$\intr E_z$.  Then $w_i\geq1$ for every $i$, and $\nu\geq\sum_iw_i\geq N$.
+Nevertheless, this line-free planar domain admits a barrier of parameter
+two.
+\end{proposition}
+\begin{proof}
+At $(i,\varphi_z(i)+\epsilon)$, the $i$th slack is $\epsilon$ and all
+other slacks stay at least $3/4$.  In direction $h=(0,1)$,
+\[
+ D^2F[h,h]=w_i\epsilon^{-2}+O(1),\qquad
+ |D^3F[h,h,h]|=2w_i\epsilon^{-3}+O(1).
+\]
+The self-concordance ratio tends to $1/\sqrt{w_i}$, forcing $w_i\geq1$.
+For fixed $x$ and $t\to\infty$,
+\[
+ \frac{(DF[h])^2}{D^2F[h,h]}
+ =\frac{(\sum_iw_i/s_i)^2}{\sum_iw_i/s_i^2}
+ \longrightarrow\sum_iw_i.
+\]
+The gradient inequality implies the parameter bound.
+The epigraph is full-dimensional and contains no affine line, because its
+boundary grows quadratically in either horizontal direction and is bounded
+below on each vertical line.  The universal-barrier theorem in dimension
+two therefore supplies a two-parameter barrier \citep{LeeYue2021}.
+\end{proof}
+
+The upper and lower statements concern different permitted formulas.
+A barrier that combines scenarios through a global construction can have
+parameter independent of $N$; a weighted sum of these local logarithms
+cannot.  Together with the reusable-oracle lower bound, this explains why
+an existential projected barrier, an explicit sufficient statistic, and a
+cheap oracle are three separate requirements.

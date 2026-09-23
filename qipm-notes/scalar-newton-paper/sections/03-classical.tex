@@ -1,0 +1,342 @@
+\section{Classical local algorithms}\label{sec:classical}
+The ingredients are classical: Chebyshev residual polynomials, local
+sparse-walk evaluation, and importance sampling. Sparse-polynomial overlap
+estimation already appears in Gharibian--Le Gall
+\citep{GharibianLeGall2022}; matrix-function entry estimation is studied by
+Montanaro--Shao \citep{MontanaroShao2023} and
+Cifuentes et al.\ \citep{CifuentesEtAl2024}. The specialization needed here
+preserves relative error for a positive inverse quadratic form and uses
+positivity to reduce the statistical factor from $\kappa^2$ to $\kappa$.
+This section proves that specialization, then records the stronger output
+and nonsymmetric variants needed to compare the optimization constructions.
+
+\subsection{A relative inverse polynomial}
+\begin{lemma}[Chebyshev residual]\label{lem:residual}
+For $K>1$ and $0<\eta<1$, there is a real polynomial $P$ of degree at most
+$m-1$, where
+\begin{equation}\label{eq:degree}
+ m=\left\lceil\frac{\log(2/\eta)}{
+       \log((\sqrt K+1)/(\sqrt K-1))}\right\rceil
+       =O(\sqrt K\log(2/\eta)),
+\end{equation}
+such that $|1-\lambda P(\lambda)|\leq\eta$ for
+$\lambda\in[K^{-1},1]$. Consequently, for
+$K^{-1}I\preceq H\preceq I$,
+\begin{equation}\label{eq:relative-polynomial}
+ (1-\eta)H^{-1}\preceq P(H)\preceq(1+\eta)H^{-1},\qquad
+ \norm{I-HP(H)}\leq\eta.
+\end{equation}
+For $K=1$, one may take $P=1$.
+\end{lemma}
+\begin{proof}
+Put $a=K^{-1}$, $c=(1+a)/(1-a)$, and
+$x(\lambda)=(1+a-2\lambda)/(1-a)$. If $T_m$ is the degree-$m$
+Chebyshev polynomial, set
+\[
+ r_m(\lambda)=\frac{T_m(x(\lambda))}{T_m(c)},\qquad
+ P(\lambda)=\frac{1-r_m(\lambda)}{\lambda}.
+\]
+Since $x(0)=c$, the numerator vanishes at zero, so the quotient is a
+polynomial. On $[a,1]$, $|T_m(x(\lambda))|\leq1$. With
+$\theta=(\sqrt K-1)/(\sqrt K+1)$, the identity
+$T_m(c)=(\theta^{-m}+\theta^m)/2$ gives
+$|r_m(\lambda)|\leq2\theta^m$. The displayed choice of $m$ makes this at
+most $\eta$. Finally
+$\log((1+u)/(1-u))\geq2u$ for $u=1/\sqrt K$ proves the degree estimate;
+the matrix inequalities follow by diagonalizing $H$.
+\end{proof}
+
+\begin{lemma}[Local evaluation]\label{lem:local}
+If $H$ is $d$-row-sparse, one coordinate of $P(H)v$, for a specified
+degree-$k$ polynomial $P$, can be evaluated with
+$(d+1)^{O(k+1)}$ sparse and coordinate queries and arithmetic operations.
+If row and column sparsity are both bounded by $d$, a full row or column of
+$P(H)$ can be materialized in the same bound. More generally, a polynomial
+$q(A^*A)A^*$ of degree $k$ in $A^*A$ has this property under row and column
+access to $A$, with walk length at most $2k+1$.
+\end{lemma}
+\begin{proof}
+Expand a requested coordinate of $H^jv$ into matrix walks of length $j$
+starting from that coordinate. Each step has at most $d$ choices. Summing
+for $0\leq j\leq k$ costs at most
+$O((k+1)^2(d+1)^{k+1})$ operations, including multiplying path weights and
+aggregating equal endpoints. The same expansion without the terminal
+coordinate of $v$ materializes the corresponding row; reverse walks
+materialize a column. One can avoid sorting by retaining the walk list and
+aggregating equal endpoints by comparisons in quadratic time, still within
+the stated bound. For $q(A^*A)A^*$ the walks alternate between column and
+row queries to $A$. No length-$N$ vector is formed.
+\end{proof}
+
+\subsection{Positive quadratic forms}
+\begin{lemma}[Positive-form second moment and the Kantorovich inequality]\label{lem:kantorovich}
+If $P\succ0$ has spectrum in $[\alpha,\beta]$ and $b\ne0$, sample
+$I\sim p_b$ and define
+\begin{equation}\label{eq:estimator}
+                    X=\norm b^2\frac{(Pb)_I}{b_I}.
+\end{equation}
+Then
+\begin{equation}\label{eq:second-moment}
+ \E X=b^*Pb,\qquad
+ \frac{\E|X|^2}{(b^*Pb)^2}
+ \leq\frac{\norm b^2\norm{Pb}^2}{(b^*Pb)^2}
+ \leq\frac{(\alpha+\beta)^2}{4\alpha\beta}.
+\end{equation}
+The last inequality is the classical Kantorovich inequality in an equivalent
+form; see \citet[Eq.~(1.1)]{Lin2013}. It is sharp.
+\end{lemma}
+\begin{proof}
+The sampling identity follows from $|b_i|^2/b_i=\overline b_i$ on the
+support of $b$. The second moment is
+$\norm b^2\sum_{i:b_i\ne0}|(Pb)_i|^2$, which is bounded by the expression
+shown. Under the spectral weights of $b/\norm b$, let $Y$ be an eigenvalue
+of $P$ and $t=\E Y$. Since
+$(Y-\alpha)(Y-\beta)\leq0$,
+\[
+ \frac{\E Y^2}{(\E Y)^2}
+ \leq\frac{(\alpha+\beta)t-\alpha\beta}{t^2}
+ \leq\frac{(\alpha+\beta)^2}{4\alpha\beta}.
+\]
+The last maximum occurs at $t=2\alpha\beta/(\alpha+\beta)$.
+Equality is attained by $P=\diag(\alpha,\beta)$ with squared coordinates
+of normalized $b$ equal to $\beta/(\alpha+\beta)$ and
+$\alpha/(\alpha+\beta)$. This proves sharpness for this estimator, without
+asserting an algorithm-independent lower bound.
+\end{proof}
+
+\begin{theorem}[Relative scalar estimation]\label{thm:classical-scalar}
+Suppose $H$ satisfies \eqref{eq:spectral-promise}, is $d$-row-sparse, and
+row-sparse access and $\SQ(b)$ are available. There is a randomized
+algorithm returning a relative-$\epsilon$ estimate of $q(H,b)$ with failure
+probability at most $\zeta$, using
+\begin{equation}\label{eq:classical-bound}
+ O\!\left(\kappa\epsilon^{-2}\log(1/\zeta)
+       (d+1)^{O(\sqrt\kappa\log(2/\epsilon))}\right)
+\end{equation}
+queries and ideal arithmetic operations. Full matrix $\SQ$ is unnecessary.
+\end{theorem}
+\begin{proof}
+For $\kappa=1$, $H=I$ and the norm oracle returns $q=\norm b^2$ exactly.
+Otherwise choose the polynomial in Lemma~\ref{lem:residual} with
+$\eta=\epsilon/4$ and put $Q=b^*P(H)b$. Then
+$|Q-q|\leq\eta q$. The eigenvalues of $P(H)$ lie in
+$[1-\eta,\kappa(1+\eta)]$, so their ratio is at most
+$9\kappa/7$, because $\eta\leq1/8$. Lemma~\ref{lem:kantorovich} gives
+$\operatorname{Var}(\operatorname{Re}X)\leq C\kappa Q^2$ for an absolute
+constant $C$.
+
+Divide independent samples into an odd number
+$g=O(\log(1/\zeta))$ of groups, each of size
+$h=\lceil64C\kappa/\epsilon^2\rceil$. Chebyshev's inequality bounds by
+$1/4$ the probability that a group mean differs from $Q$ by more than
+$\epsilon Q/4$. The median of the group means fails only if at least half
+the groups fail; the binomial Chernoff bound makes this probability at most
+$\zeta$ for a suitable absolute constant in $g$. On success,
+\[
+ |\widehat q-q|
+ \leq(\epsilon/4)Q+(\epsilon/4)q
+ \leq(\epsilon/4)(2+\epsilon/4)q<\epsilon q.
+\]
+Each sample requires one local polynomial evaluation, covered by
+Lemma~\ref{lem:local}; multiplying its cost by $gh$ proves the result.
+\end{proof}
+
+Unlike standard inverse-form quadrature, which charges full matrix--vector
+products \citep{LiSraJegelka2016}, the algorithm only explores neighborhoods
+of sampled coordinates. The price is exponential growth in the degree.
+Its exponential dependence is
+$\exp(O(\sqrt\kappa\log(d+1)\log(2/\epsilon)))$; calling the bound
+polynomial in $\kappa$ would therefore be incorrect.
+
+\begin{corollary}[Bilinear forms]\label{cor:bilinear}
+With the same matrix assumptions, $\SQ(a)$ and coordinate access to $b$
+suffice to estimate $a^*H^{-1}b$ to additive error
+\[
+       \epsilon\sqrt{(a^*H^{-1}a)(b^*H^{-1}b)}
+\]
+with the complexity in \eqref{eq:classical-bound}. If the public promise
+$|a^*H^{-1}b|\geq\gamma\sqrt{(a^*H^{-1}a)(b^*H^{-1}b)}$ holds for
+$0<\gamma\leq1$, replacing $\epsilon$ by $\gamma\epsilon$ gives relative
+error $\epsilon$.
+\end{corollary}
+\begin{proof}
+Write $A=a^*H^{-1}a$ and $B=b^*H^{-1}b$. The zero-vector cases return zero.
+The residual representation gives
+\[
+ |a^*(P(H)-H^{-1})b|\leq\eta\sqrt{AB}.
+\]
+Indeed, $P(H)-H^{-1}=H^{-1/2}E H^{-1/2}$ for a Hermitian $E$ with
+$\norm E\leq\eta$. Sampling from $p_a$, the random variable
+$X=\norm a^2(P(H)b)_I/a_I$ has mean $a^*P(H)b$ and second moment at most
+$\norm a^2\norm{P(H)b}^2$. The pointwise spectral inequality
+$P(H)^2\preceq\kappa(1+\eta)^2H^{-1}$ and $\norm a^2\leq A$ bound this
+by $\kappa(1+\eta)^2AB$. Apply the group-mean argument separately to real
+and imaginary parts, with tolerances $\epsilon\sqrt{AB}/4$ and failure
+probabilities $\zeta/2$. The sample count depends on the known upper bound
+for the ratio of variance to tolerance squared, so it does not require
+knowing $A$ or $B$. Taking $\eta=\epsilon/4$ proves the claim.
+\end{proof}
+
+\subsection{Sampling a sparse inverse solution}\label{subsec:sampling}
+Scalar estimation need not construct a solution sampler. For comparison,
+the following elementary rejection scheme also gives that stronger output.
+\begin{lemma}[Sparse-transform rejection sampler]\label{lem:rejection}
+Let $P$ be invertible, with at most $R$ nonzeros per row and column and
+singular values in $[a_P,b_P]$. Given materializable sparse rows and columns
+of $P$ and $\SQ(v)$, one can sample exactly from $p_{Pv}$ using at most
+$R(b_P/a_P)^2$ trials in expectation. Each trial materializes at most one
+row and one column and uses $O(R)$ further coordinate operations.
+\end{lemma}
+\begin{proof}
+Let $c_j^2=\sum_i|P_{ij}|^2$ and
+$S_i=\sum_j|P_{ij}v_j|^2$. Sample $j\sim p_v$, accept with probability
+$c_j^2/b_P^2$, and, if accepted, sample $i$ from column $j$ with probability
+$|P_{ij}|^2/c_j^2$. Compute $y_i=(Pv)_i$ and $S_i$ from row $i$, and accept
+$i$ with probability $|y_i|^2/(RS_i)$. The event $S_i=0$ has zero
+probability at this stage and can be defined to reject. Column norm bounds
+and Cauchy--Schwarz show both acceptance probabilities lie in $[0,1]$.
+Summing over $j$, the probability of outputting $i$ in one raw trial is
+\[
+ \sum_j\frac{|v_j|^2}{\norm v^2}\frac{c_j^2}{b_P^2}
+         \frac{|P_{ij}|^2}{c_j^2}\frac{|y_i|^2}{RS_i}
+       =\frac{|y_i|^2}{Rb_P^2\norm v^2}.
+\]
+Conditioning on acceptance gives $p_{Pv}$. Its total probability is at least
+$a_P^2/(Rb_P^2)$, proving the expected trial count.
+\end{proof}
+
+\begin{theorem}[Solution sampling]\label{thm:solution-sampling}
+Let $A\in\C^{N\times N}$ be invertible with
+$\norm A\leq1$, $\sigma_{\min}(A)\geq K^{-1}$, and at most $d$ nonzeros
+per row and column. Row and column sparse access and $\SQ(b)$ suffice for
+coordinate access to a fixed $\widetilde x$ satisfying
+\begin{equation}\label{eq:solution-error}
+ \norm{\widetilde x-A^{-1}b}\leq\epsilon\norm{A^{-1}b},
+\end{equation}
+and exact sampling from $p_{\widetilde x}$, in expected cost
+\begin{equation}\label{eq:sampling-cost}
+ K^2(d+1)^{O(K\log(2/\epsilon))}
+\end{equation}
+per sample. For positive definite $A$, this improves to
+$K^2(d+1)^{O(\sqrt K\log(2/\epsilon))}$.
+\end{theorem}
+\begin{proof}
+Apply Lemma~\ref{lem:residual} to $B=A^*A$, whose spectrum is contained
+in $[K^{-2},1]$, and let $q$ be its inverse polynomial with residual
+$r=1-\lambda q(\lambda)$ bounded by $\epsilon$. Put
+$P=q(A^*A)A^*$ and $\widetilde x=Pb$. If $x=A^{-1}b$, then
+\[
+                  Pb-x=-r(A^*A)x,
+\]
+which proves \eqref{eq:solution-error}. The singular value decomposition of
+$A$ shows that the singular values of $P$ are
+$|1-r(\sigma^2)|/\sigma$; thus they lie in
+$[1-\epsilon,K(1+\epsilon)]$ and $\kappa(P)\leq3K$.
+Lemma~\ref{lem:local} materializes each needed row or column in cost
+$W=(d+1)^{O(K\log(2/\epsilon))}$, and also bounds its nonzero count by
+$W$. Lemma~\ref{lem:rejection} therefore costs $O(K^2W^2)$ per sample,
+which has the stated form. For positive definite $A$, use $P=q(A)$ directly
+with degree $O(\sqrt K\log(2/\epsilon))$. When $K=1$, the general matrix
+is unitary and $P=A^*$ is exact; the same rejection proof applies.
+\end{proof}
+
+For fixed sparsity and accuracy, this upper bound implies a necessary
+condition for an $N^c$ classical lower bound under the same access and
+output contract: $K=\Omega(\log N)$ in general and
+$K=\Omega(\log^2N)$ in the positive definite case. These are necessary
+conditions, not hardness claims for every matrix at those scales.
+Andoni--Krauthgamer--Pogrow explicitly pose the question of constructing an
+$\ell_2$ sampler for a solution from an $\ell_2$ sampler for its right-hand
+side \citep[Section~1.4]{AndoniKrauthgamerPogrow2019}; their main results
+instead give coordinate estimates under different hypotheses and error
+guarantees. Our proof states the exact sampling contract and rejection
+cost explicitly.
+
+\subsection{Nonsymmetric inverse forms and optimization values}
+\begin{theorem}[Norm-sensitive inverse overlap]\label{thm:general-overlap}
+Let $M$ satisfy the general hypotheses of Theorem~\ref{thm:solution-sampling}.
+Given $\SQ(a)$ and coordinate access to $e$, the scalar $a^*M^{-1}e$ can be
+estimated to additive error $\epsilon\norm a\norm e$, with failure
+probability $\zeta$, at cost
+\begin{equation}\label{eq:general-overlap}
+ O\!\left(R_e^2\epsilon^{-2}\log(1/\zeta)
+ (d+1)^{O(K\log(2R_e/\epsilon))}\right),
+\end{equation}
+where $1\leq R_e\leq K$ is any supplied upper bound on
+$\norm{M^{-1}e}/\norm e$. In the absence of a sharper bound take $R_e=K$.
+Here the permitted accuracy range is $0<\epsilon\leq R_e/2$,
+extending the default absolute accuracy range when $R_e>1$.
+The modulus $|a^*M^{-1}e|$ admits the same additive accuracy.
+\end{theorem}
+\begin{proof}
+Take the normal-equation residual polynomial from the preceding proof with
+$\eta=\epsilon/(4R_e)\leq1/8$, and put $P=q(M^*M)M^*$.
+Its error satisfies
+\[
+ \norm{Pe-M^{-1}e}\leq\eta R_e\norm e,\qquad
+ \norm{Pe}\leq(1+\eta)R_e\norm e.
+\]
+The estimator $X=\norm a^2(Pe)_I/a_I$, with $I\sim p_a$, has mean
+$a^*Pe$ and second moment at most
+$(1+\eta)^2R_e^2\norm a^2\norm e^2$. The polynomial bias is at most
+$\epsilon\norm a\norm e/4$. Separate real and imaginary median-of-means
+estimates give the claimed statistical error using
+$O(R_e^2\epsilon^{-2}\log(1/\zeta))$ samples. Local evaluation costs
+$(d+1)^{O(K\log(2R_e/\epsilon))}$. The inequality
+$||z|-|\widehat z||\leq|z-\widehat z|$ proves the modulus claim.
+\end{proof}
+The energy-normalized bilinear guarantee in Corollary~\ref{cor:bilinear}
+and the Euclidean-normalized guarantee here answer different questions.
+Neither is a uniform relative estimate of a potentially cancelling overlap.
+The parameter $R_e$ is particularly useful when an optimization value equals
+$|a^*M^{-1}e|$ and the construction supplies a public solution norm.
+
+\subsection{What finite precision changes}\label{subsec:precision}
+Robust dequantization under approximate length-squared sampling is studied
+in \citet{LeGall2025}. The ideal-arithmetic results here do not assert
+free approximate sampling or bounded input precision. The following transfer statement isolates a
+sufficient arithmetic condition for the main scalar theorem.
+\begin{proposition}[Finite-error transfer]\label{prop:precision}
+Run the polynomial estimator of Theorem~\ref{thm:classical-scalar} with
+$L=O(\kappa\epsilon^{-2}\log(1/\zeta))$ samples. Suppose each requested
+sample law, conditional on all previous computation, is within total
+variation $\delta$ of $p_b$. Extend the estimator by the value zero on
+indices with $b_i=0$, and have the approximate implementation return zero
+on those indices. On the support of $b$, suppose every reported real
+estimator value $\widehat X_i$ differs from its exact value
+$\operatorname{Re}X_i$ by at most $\tau\norm b^2$.
+There is a coupling with an exact-oracle execution under which the final
+medians differ by at most $\tau\norm b^2$, except on an event of
+probability at most $L\delta$. In particular, $\tau\leq\epsilon/4$ and
+$\delta\leq\zeta/L$ retain relative error $\epsilon$ and failure at most
+$2\zeta$ for the constants used above.
+\end{proposition}
+\begin{proof}
+Successive maximal couplings make every sample agree with the exact-oracle
+sample except with probability at most $L\delta$, by a conditional union
+bound. An off-support approximate sample necessarily belongs to the
+disagreement event. On agreement, every group mean changes by at most
+$\tau\norm b^2$; the median is Lipschitz with constant one in the maximum
+coordinate norm. Since $q\geq\norm b^2$, this is at most $\tau q$.
+The proof of Theorem~\ref{thm:classical-scalar} leaves error at most
+$17\epsilon q/32$, so the additional $\epsilon q/4$ fits within the
+claimed tolerance.
+\end{proof}
+
+With an exact norm and sampled coordinate, a sufficient condition on a
+computed polynomial coordinate at an index with $b_i\ne0$ is
+\[
+ |\widehat{(P(H)b)_i}-(P(H)b)_i|\leq\tau|b_i|.
+\]
+One may also certify the estimator directly by interval arithmetic, including
+its division and norm multiplication. For finite rational input data and a
+rational spectral bound, the residual polynomial has rational coefficients;
+a finite local-walk sum and its sampled nonzero denominator can therefore
+be evaluated to any such tolerance, or exactly using rational arithmetic.
+This observation proves implementability, not a dimension-independent bit
+bound. Small sampled coordinates, input bit lengths, coefficient growth,
+and the cost of implementing approximate sampling must all be charged.
+In particular, bounded polynomial values on the spectral interval do not,
+by themselves, justify a uniform guard-precision claim for divisions by
+arbitrarily small $b_i$. The transfer proposition is the finite-precision
+claim used here; the oracle bounds remain explicitly ideal-arithmetic bounds.

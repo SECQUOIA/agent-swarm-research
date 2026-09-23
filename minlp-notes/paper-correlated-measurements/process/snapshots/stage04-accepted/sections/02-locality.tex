@@ -1,0 +1,855 @@
+\section{Local conditional information with explicit error bounds}
+\label{sec:locality}
+Chronological Gaussian conditionals make information additive, but the exact
+conditional at a selected time generally depends on the entire selected past.
+We replace that past by a calendar window and bound the resulting error before
+optimizing the schedule. The construction is Vecchia's approximation
+\citep[Section 3.1]{Vecchia1988}; it is also a factorized sparse approximate
+inverse \citep{Schafer2021,Huan2025,KaminetzWebber2026}. The results below
+give explicit constants for the particular chronological windows used here.
+They do not claim a new conditional factorization or a new filtering method.
+Noisy selected subsets and vector conditional blocks are already included in
+the general Vecchia framework \citep[Section 2]{KatzfussGuinness2021};
+block Vecchia computation is also developed by \citet{Pan2025}.
+
+\subsection{The exact complete-observation Markov case}
+\label{subsec:exact-markov}
+Suppose first that the error itself is a completely observed Gaussian Markov
+chain, $\epsilon_t=X_t$, with
+$X_t=A_tX_{t-1}+w_t$, $P_1=\Cov(X_1)\succ0$, and independent innovations
+$\Cov(w_t)\succ0$. All blocks have the same dimension in this subsection.
+Write $P_t=\Cov(X_t)$ and $\Phi_{ji}=A_j\cdots A_{i+1}$ for $i<j$.
+The gap innovation covariance
+$\Omega_{ji}=P_j-\Phi_{ji}P_i\Phi_{ji}^{\top}$ is positive definite.
+For $S=\{t_1<\cdots<t_k\}$ the likelihood factors into its first marginal
+and consecutive gap conditionals. Therefore
+\begin{equation}
+ I(S)=M_{t_1}+\sum_{a=1}^{k-1} W^+_{t_at_{a+1}},\quad
+ M_i=F_i^\top P_i^{-1}F_i,\quad
+ W^+_{ij}=(F_j-\Phi_{ji}F_i)^\top\Omega_{ji}^{-1}
+                       (F_j-\Phi_{ji}F_i).
+ \label{eq:exact-markov-arcs}
+\end{equation}
+Indeed, each gap residual is independent of the preceding selected errors;
+the triangular residual map diagonalizes $R_{SS}$, giving
+\eqref{eq:exact-markov-arcs} by congruence with $F_S$.
+
+The associated ordered graph has vertices $0,1,\ldots,n,n+1$, all forward
+arcs between candidate vertices, source arcs $(0,i)$ of weight $M_i$, and
+zero-weight sink arcs $(i,n+1)$ and $(0,n+1)$. Each source--sink path is one
+schedule. A nonnegative unit flow is a convex combination of paths: subtract
+the minimum flow on any positive source--sink path and repeat; acyclicity
+precludes a residual circulation. Thus its affine information image is exactly
+$\operatorname{conv}\{J(S):S\subseteq[n]\}$, together with visit indicators
+if these are retained. This is a direct sensitivity image of the known
+principal-inverse hull of \citet{Lee2026}, building on \citet{Wei2023}.
+It is not a new hull theorem.
+
+For completeness, the mapping and the innovation-direction equivalence are
+explicit. When all $A_t$ are nonsingular, let $T_1=I$ and
+$T_i=A_i\cdots A_2$. Then
+$R_{ij}=P_iT_i^{-\top}T_j^\top$ for $i\le j$, which is the block-factorizable
+class of \citet{Lee2026}. With
+$K_S=E_S^\top R_{SS}^{-1}E_S$, the affine map
+$(z,K)\mapsto(z,J_0+F^\top KF)$ commutes with convex combinations.
+For $C_{ij}=R_{ij}$, the reverse gap weight is
+\[
+ W^-_{ij}=(F_i-C_{ij}P_j^{-1}F_j)^\top
+ (P_i-C_{ij}P_j^{-1}C_{ij}^\top)^{-1}
+ (F_i-C_{ij}P_j^{-1}F_j).
+\]
+The two Schur-complement evaluations of the two-packet information give
+\begin{equation}
+ M_i+W^+_{ij}=W^-_{ij}+M_j.
+ \label{eq:forward-reverse}
+\end{equation}
+Flow conservation cancels the vertex potentials $M_i$ on every fractional
+flow, so forward source/gap weights and reverse gap/sink weights give the
+same relaxation. Singular transitions are covered by the displayed innovation
+formulas. To obtain the same conclusion from the factorized representation,
+perturb every $A_t$ to nonsingular matrices converging to it, keeping positive
+initial and innovation covariances fixed. The finitely many principal
+inverses and arc coefficients converge. The common bounded flow polytope
+therefore has the limiting affine image asserted above. A transition inverse
+must not be used directly at the singular boundary.
+
+Adding independent measurement noise usually destroys the observed Markov
+property. For example, the three-packet covariance with diagonal $2$ and
+off-diagonal $R_{ij}=2^{-|i-j|}$ has
+$\Cov(\epsilon_1,\epsilon_3\mid\epsilon_2)=1/8\ne0$.
+Complete latent observation and noisy observation therefore require different
+history lengths. Appendix~\ref{app:markov-scope} also records the established
+score-orthogonality extension of exact Markov paths beyond fixed-covariance
+Gaussian mean information; that extension is not used to justify the noisy
+finite-history bounds.
+
+\subsection{Genuine local conditionals and a common error argument}
+\label{subsec:local-conditionals}
+Hereafter $\epsilon_t$ is a complete fixed packet of dimension $d_t$ in
+\eqref{eq:observation-model}. For an integer $L\ge0$, set
+\begin{align}
+ \mathcal H_t(S)&=S\cap\{\max(1,t-L),\ldots,t-1\},\nonumber\\
+ b_t&=R_{t\mathcal H_t}R_{\mathcal H_t\mathcal H_t}^{-1},&
+ D_t&=R_{tt}-R_{t\mathcal H_t}R_{\mathcal H_t\mathcal H_t}^{-1}
+                       R_{\mathcal H_t t},\nonumber\\
+ Z_t&=\epsilon_t-\sum_{j\in\mathcal H_t}b_{tj}\epsilon_j,&
+ G_{t,\mathcal H_t}&=F_t-\sum_{j\in\mathcal H_t}b_{tj}F_j.
+ \label{eq:local-conditionals}
+\end{align}
+An empty history has no regression term. Let $A_L$ be the unit block
+lower-triangular residual map on $S$ and $D_L=\diag(D_t:t\in S)$. Define
+\begin{align}
+ C_L(S)&=D_L^{-1/2}A_LR_{SS}A_L^\top D_L^{-1/2},&
+ Q_L(S)&=A_L^\top D_L^{-1}A_L,\nonumber\\
+ I_L(S)&=\sum_{t\in S}G_{t,\mathcal H_t}^\top D_t^{-1}G_{t,\mathcal H_t},&
+ J_L(S)&=J_0+I_L(S).
+ \label{eq:local-precision}
+\end{align}
+The product of the true densities $p(\epsilon_t\mid\epsilon_{\mathcal H_t})$
+is a normalized Gaussian density with precision $Q_L$, as successive
+integration in reverse chronological order shows. Its mean-parameter
+information is $I_L$. It is a working-model information matrix, not the true
+Fisher information or the covariance of an estimator under misspecification.
+Every regression is recomputed on its actual local history. A full-history
+Kalman filter with older coefficients deleted gives a different approximation.
+
+\begin{lemma}[Residual-to-information transfer]
+\label{lem:residual-transfer}
+If $\norm{C_L(S)-I}_2\le\delta$, then
+\begin{equation}
+ (1-\delta)R_{SS}^{-1}\preceq Q_L(S)\preceq(1+\delta)R_{SS}^{-1}.
+ \label{eq:precision-sandwich}
+\end{equation}
+For $J_0\succeq0$ this implies
+$(1-\delta)J(S)\preceq J_L(S)\preceq(1+\delta)J(S)$.
+If $\delta<1$, a sharper prior-aware upper matrix is
+\begin{equation}
+ J(S)\preceq J_0+\frac{I_L(S)}{1-\delta}.
+ \label{eq:prior-aware-local}
+\end{equation}
+These statements require no sensitivity norm bound or positive prior eigenvalue.
+\end{lemma}
+\begin{proof}
+Put $B=D_L^{-1/2}A_LR_{SS}^{1/2}$. The invertible square matrices
+$BB^\top=C_L$ and $B^\top B=R_{SS}^{1/2}Q_LR_{SS}^{1/2}$ have identical
+eigenvalues. Bounding these between $1-\delta$ and $1+\delta$ and applying
+congruence proves \eqref{eq:precision-sandwich}. Congruence with $F_S$ gives
+the data-information inequalities. Adding $J_0$ proves the remaining
+statements, using $\delta J_0\succeq0$.
+\end{proof}
+
+The following lemma consolidates the overlapping-history calculation needed
+for several models. Define, for $0<x<1$,
+\begin{align}
+ T_L(x)&=\frac{x^{L+1}}{1-x},&
+ N_L(x)&=\sum_{h=1}^L\sum_{d=L+1-h}^L x^{h+2d}
+ =\frac{x^{L+2}(1-x^L)(1-x^{L+1})}{(1-x)(1-x^2)}.
+ \label{eq:tail-near}
+\end{align}
+The empty near sum is zero. Summing the inner geometric series, and then
+$\sum_{h=1}^L(x^{2L+2-h}-x^{2L+2+h})/(1-x^2)$, proves the identity.
+
+\begin{lemma}[Local regression row bound]
+\label{lem:local-row}
+Suppose, uniformly in selected histories,
+$D_t\succeq d_* I$, $\norm{b_{tj}}_2\le B_*x^{t-j}$ for
+$j\in\mathcal H_t$, and
+$\norm{\Cov(Z_t,\epsilon_j)}_2\le K_*x^{t-j}$ for $j<t-L$,
+where $d_*>0$, $B_*,K_*\ge0$, and $0<x<1$. Then
+\begin{equation}
+ \norm{C_L(S)-I}_2\le
+ \frac{2K_*}{d_*}\frac{x^{L+1}}{1-x}
+ \left[1+B_*\frac{x(1-x^L)}{1-x}\right].
+ \label{eq:generic-row-bound}
+\end{equation}
+If a sharper far-pair bound
+$\norm{\Cov(Z_t,Z_s)}_2\le K_*x^{t-s}$ is available for $t-s>L$,
+the right side can instead be
+$2K_*[T_L(x)+B_*N_L(x)]/d_*$.
+\end{lemma}
+\begin{proof}
+For $s<t$, $h=t-s$, regression orthogonality and
+\begin{equation}
+ \Cov(Z_t,Z_s)=\Cov(Z_t,\epsilon_s)
+ -\sum_{j\in\mathcal H_s}\Cov(Z_t,\epsilon_j)b_{sj}^\top
+ \label{eq:residual-pair-identity}
+\end{equation}
+give the respective bounds
+\[
+ K_*x^h\left(1+B_*\sum_{d=1}^Lx^{2d}\right)\quad(h>L),\qquad
+ K_*B_*\sum_{d=L+1-h}^Lx^{h+2d}\quad(1\le h\le L).
+\]
+For the near case, $s$ and all $j\ge t-L$ in the sum belong to
+$\mathcal H_t$, so their covariances vanish; the older terms need not vanish.
+Normalization by $D_t^{-1/2},D_s^{-1/2}$ costs at most $1/d_*$.
+There is at most one packet at each distance on each side. The row sum is
+at most $2K_*/d_*$ times
+$T_L(x)(1+B_*\sum_{d=1}^Lx^{2d})+B_*N_L(x)$.
+The terms multiplying $B_*$ sum to
+$T_L(x)x(1-x^L)/(1-x)$, proving \eqref{eq:generic-row-bound}.
+For any block matrix $E$, its scalar matrix of block norms majorizes
+its action on the vector of component norms. If $E$ is symmetric, that
+scalar matrix is symmetric and its maximum row sum bounds $\norm E_2$.
+Apply this to $E=C_L-I$, whose diagonal blocks vanish. Replacing the far
+majorant proves the final statement.
+\end{proof}
+
+For empty selections, independent packets, or $L\ge n-1$, the construction
+is exact and we use $\delta_L=0$. With complete history, $Z_t$ is orthogonal
+to every earlier selected observation and hence to every earlier residual;
+with independent packets all regressions vanish. These exact cases should
+be handled directly rather than through conservative infinite tails.
+
+\subsection{Noisy scalar chains and complete observed blocks}
+\label{subsec:noisy-markov}
+Consider scalar errors $\epsilon_t=X_t+v_t$, where
+$X_t=a_tX_{t-1}+w_t$. The centered Gaussian initial state, process noises
+and measurement noises are mutually independent. Assume
+\begin{equation}
+ |a_t|\le\rho,\quad 0\le\rho<1,\qquad \Var(X_t)\le\overline P,
+ \qquad r_t=\Var(v_t)\ge r_{\min}>0.
+ \label{eq:scalar-promises}
+\end{equation}
+Transitions may be signed, marginal variances nonstationary, and process
+variances zero. Let $\kappa=\overline P/(\overline P+r_{\min})$ and let
+$d_*>0$ be any valid lower bound on all local innovation variances.
+The choice $d_*=r_{\min}$ is always valid.
+
+\begin{theorem}[Scalar noisy Markov bound]
+\label{thm:scalar-locality}
+Under \eqref{eq:scalar-promises}, for every selected subset,
+\begin{equation}
+ \norm{C_L(S)-I}_2\le\delta_L^{\mathrm{sc}}
+ :=\frac{2\overline P}{d_*}
+       \{T_L(\rho)+\kappa N_L(\rho)\}.
+ \label{eq:scalar-refined-delta}
+\end{equation}
+If both latent marginal variance $P$ and measurement variance $r$ are
+constant, the near coefficient $\kappa$ in this formula can be replaced by
+$\kappa(1-\kappa)$, with $\overline P=P$ and $\kappa=P/(P+r)$.
+At $\rho=0$ or $\overline P=0$ the error is zero.
+\end{theorem}
+\begin{proof}
+Compute the fresh filter for $\mathcal H_t$ from the unconditional marginal
+at its first observation. Its prediction variance is at most the
+unconditional one. Each update has gain
+$K_j=p_j^-/(p_j^-+r_j)\in[0,\kappa]$; the prediction coefficient on an
+observation at $j$ is its gain multiplied by intervening transitions and
+later factors $1-K_u$. Thus $|b_{tj}|\le\kappa\rho^{t-j}$.
+For $j<t-L$, start the same fresh filter at time $j$ with the unconditional
+state. New noises are independent of $\epsilon_j$; transitions multiply
+the cross covariance by $a_u$, and updates by $1-K_u$. Consequently
+\begin{equation}
+ \Cov(Z_t,\epsilon_j)=\Phi_{tj}\Var(X_j)\alpha_t,
+ \quad \alpha_t=\prod_{u\in\mathcal H_t}(1-K_u^{(t)}),
+ \quad \Phi_{tj}=\prod_{u=j+1}^t a_u.
+ \label{eq:old-scalar-identity}
+\end{equation}
+The gains $K_u^{(t)}$ are those of this particular local history. Their
+values coincide whether one starts at $j$ without intervening updates or
+at the first history observation, because unconditional marginal propagation
+is exact. This proves the old-covariance bound with $K_*=\overline P$.
+
+For $s<t-L$, put $e_s=X_s-\E(X_s\mid\epsilon_{\mathcal H_s})$ and
+$p_s^-=\Var(e_s)$. Regression orthogonality gives
+$\Cov(X_s,Z_s)=p_s^-$, since $Z_s=e_s+v_s$. All updates of the $t$-local
+filter occur strictly after $s$; the same transport proves the exact identity
+\begin{equation}
+ \Cov(Z_t,Z_s)=\Phi_{ts}p_s^-\alpha_t,
+ \qquad |\Cov(Z_t,Z_s)|\le\overline P\rho^{t-s}.
+ \label{eq:far-scalar-identity}
+\end{equation}
+Lemma~\ref{lem:local-row} gives \eqref{eq:scalar-refined-delta}.
+For constant $P,r$, every nonempty fresh history starts with gain exactly
+$\kappa$. In a near pair $s\in\mathcal H_t$, so $\alpha_t\le1-\kappa$.
+Every surviving old covariance in \eqref{eq:residual-pair-identity} receives
+this factor through \eqref{eq:old-scalar-identity}. Its regression coefficient
+still contributes $\kappa$, proving the stated refinement. The far bound
+does not receive this factor because its local history can be empty.
+\end{proof}
+
+The simpler gain-only constant, useful for comparison with complete blocks,
+is
+\begin{equation}
+ \delta_L^{\mathrm{gain}}=
+ \frac{2\overline P}{d_*}\frac{\rho^{L+1}}{1-\rho}
+ \left[1+\kappa\frac{\rho(1-\rho^L)}{1-\rho}\right].
+ \label{eq:gain-delta}
+\end{equation}
+It follows directly from Lemma~\ref{lem:local-row}; the exact far identity
+makes \eqref{eq:scalar-refined-delta} no larger. Replacing $\kappa$ by one
+gives the older conservative constant
+$2\overline P\rho^{L+1}(1-\rho^{L+1})/[d_*(1-\rho)^2]$.
+Another improvement uses
+\begin{equation}
+ d_* =\min_t\Var(\epsilon_t\mid\epsilon_1,\ldots,\epsilon_{t-1})
+ \ge r_{\min}.
+ \label{eq:full-grid-floor}
+\end{equation}
+Conditioning on more observations cannot increase conditional covariance,
+so one full-grid Kalman sweep gives a valid floor, while the gain constant
+continues to use $r_{\min}$. Any numerical floor used in a certificate must
+be bounded downward rigorously.
+For stationary $P=r=1$ and $|a|=\rho$, the full-grid prediction recursion
+is $x\mapsto1-\rho^2+\rho^2x/(1+x)$, started at $x=1$.
+Its nonnegative fixed point is $\sqrt{1-\rho^2}$; monotonicity of the map
+keeps every iterate above that point. Thus the explicit horizon-independent
+floor $d_*=1+\sqrt{1-\rho^2}$ is valid in this special case.
+
+\begin{theorem}[Complete blocks in the observation-noise metric]
+\label{thm:block-locality}
+Let $\epsilon_t=X_t+v_t$, $X_t=A_tX_{t-1}+w_t$, with complete blocks of
+a common dimension and the same independence assumptions. Suppose
+$V_t=\Cov(v_t)\succ0$ and
+\begin{equation}
+ \norm{V_t^{-1/2}A_tV_{t-1}^{1/2}}_2\le\rho,\quad 0\le\rho<1,\qquad
+ V_t^{-1/2}P_tV_t^{-1/2}\preceq\overline P I.
+ \label{eq:block-promises}
+\end{equation}
+Then \eqref{eq:scalar-refined-delta} bounds $\norm{C_L(S)-I}_2$ for every subset,
+with $\kappa=\overline P/(1+\overline P)$ and $d_*=1$.
+One may replace $1$ by any uniform lower eigenvalue bound on full-grid
+innovation covariances in these whitened coordinates. The weaker gain-only
+bound \eqref{eq:gain-delta} also remains valid. Neither constant has a
+factor depending on block dimension.
+If $\rho=0$ or $\overline P=0$, use the exact bound zero.
+\end{theorem}
+\begin{proof}
+In coordinates $X'_t=V_t^{-1/2}X_t$, the measurement noise covariance is $I$
+and the transition norm is at most $\rho$. A fresh prediction covariance
+is at most $\overline P I$, so its gain
+$K=P^-(P^-+I)^{-1}$ is symmetric and satisfies
+$0\preceq K\preceq\kappa I$ and $0\preceq I-K\preceq I$.
+Expanding the predictor by successive transitions and updates yields
+$\norm{b_{tj}}_2\le\kappa\rho^{t-j}$ by submultiplicativity, with no
+commutativity assumption. Propagating covariance with an excluded old
+observation starts from a covariance of norm at most $\overline P$;
+the same products give norm at most $\overline P\rho^{t-j}$.
+For a far pair $s<t-L$, full observation gives
+$\Cov(X'_s,Z'_s)=\Pi_s^{-,s}$, the prediction covariance for the
+$s$-local history, of norm at most $\overline P$. All updates in the
+$t$-local history occur after $s$. Therefore
+$\Cov(Z'_t,Z'_s)=\mathcal T_{ts}^{(t)}\Pi_s^{-,s}$, where
+$\mathcal T_{ts}^{(t)}$ is the ordered product of transitions and
+intervening $I-K_u^{(t)}$ updates. Each factor has the norm bound already
+proved, so this covariance has norm at most $\overline P\rho^{t-s}$.
+This far-pair improvement requires no scalar commutativity.
+Every innovation covariance is at least $I$. The sharp-far option of
+Lemma~\ref{lem:local-row} proves the stronger bound, and its original
+option gives \eqref{eq:gain-delta}. Full-grid conditioning gives the
+alternative floor.
+Whiten $F_t$ together with each packet. Local regression residuals then
+transform by $V_t^{-1/2}$, so both true and local information are invariant.
+Normalized residual covariances before and after whitening are related by
+a block orthogonal congruence: each block
+$(V_t^{-1/2}D_tV_t^{-1/2})^{-1/2}V_t^{-1/2}D_t^{1/2}$ is orthogonal.
+The norm and precision conclusions therefore hold in the original coordinates.
+\end{proof}
+
+The contraction in \eqref{eq:block-promises} must be checked in the indicated
+noise metric; contraction of $A_t$ in unrelated coordinates is insufficient.
+This theorem permits noncommuting transitions and time-varying correlated
+noise within packets. It does not allow selecting arbitrary channels from a
+packet or replacing full observation by an arbitrary observation matrix.
+
+\subsection{Spacing and finite-horizon row bounds}
+\label{subsec:spacing-locality}
+For a stationary scalar covariance
+$R_{ij}=Pa^{|i-j|}+r\ind_{i=j}$, let $b=|a|<1$, $P\ge0$, $r>0$, and
+require consecutive selected times to differ by at least $g\ge1$.
+Set $\kappa=P/(P+r)$ and $m_L=\lfloor L/g\rfloor$.
+Define $T_g^{\circ0}(P)=P$ and
+\begin{equation}
+ T_g(x)=P(1-b^{2g})+b^{2g}\frac{rx}{r+x},\qquad
+ d_*^{\mathrm{sp}}=r+T_g^{\circ m_L}(P).
+ \label{eq:spacing-floor}
+\end{equation}
+For distances $h\ge g$ put
+\begin{equation}
+ \phi(h)=\begin{cases}
+ P b^h,&h>L,\\
+ P\kappa(1-\kappa)b^h
+ \displaystyle\sum_{d=\ell_h,\ell_h+g,\ldots\le L} b^{2d},&g\le h\le L,
+ \end{cases}\quad \ell_h=\max(g,L+1-h).
+ \label{eq:spacing-pair-majorant}
+\end{equation}
+For integers $M\ge0$ define
+\begin{equation}
+ B(M)=\begin{cases}0,&M<g,\\
+ \max\{B(M-1),\phi(M)+B(M-g)\},&M\ge g.
+ \end{cases}
+ \label{eq:spacing-row-dp}
+\end{equation}
+
+\begin{proposition}[A finite-horizon bound respecting sampling gaps]
+\label{prop:spacing-locality}
+For every schedule satisfying the minimum gap,
+\begin{equation}
+ \norm{C_L(S)-I}_2\le\delta_{n,L,g}:=
+ \max_{1\le t\le n}\frac{B(t-1)+B(n-t)}{d_*^{\mathrm{sp}}}.
+ \label{eq:spacing-delta}
+\end{equation}
+The bound is zero directly if $P=0$, $b=0$, $L\ge n-1$, or $g\ge n$.
+\end{proposition}
+\begin{proof}
+A fresh local history has at most $m_L$ observations. An observation with
+prediction variance $x\le P$, followed by $d\ge g$ calendar steps, has next
+prediction variance $T_d(x)$. This is increasing in $x$; it is nondecreasing
+in $d$, because $rx/(r+x)\le P$. Iteration of the increasing map $T_g$
+from $P$ decreases and remains in $[0,P]$. Starting from the unconditional
+first prediction, replacing every gap by $g$ and adding observations up to
+$m_L$ can only decrease the target variance. This proves
+$D_t\ge d_*^{\mathrm{sp}}$.
+The far bound is \eqref{eq:far-scalar-identity}. For a near pair, surviving
+history distances $d=s-j$ lie in $[\ell_h,L]$ and are $g$-separated. If
+their ordered values are $d_1<\cdots<d_q$, then
+$d_i\ge\ell_h+(i-1)g$. Since $b^{2d}$ decreases, summing these largest
+possible weights and applying the stationary near factor gives
+\eqref{eq:spacing-pair-majorant}.
+The largest sum of these nonnegative pair weights on $g$-separated distances
+in $\{g,\ldots,M\}$ is exactly $B(M)$: an optimal set either omits $M$ or
+includes it and has all earlier distances at most $M-g$. Left and right
+distances from an anchor satisfy these restrictions separately. Bounding
+each side and dividing by the innovation floor proves the row bound,
+and the block row argument of Lemma~\ref{lem:local-row} proves the norm
+bound. We do not assume that one schedule attains all pair majorants.
+\end{proof}
+
+Using the unrefined near coefficient $\kappa$ instead of
+$\kappa(1-\kappa)$, or the far weight
+$Pb^h[1+\kappa\sum_{j=1}^{m_L}b^{2gj}]$, also gives valid but weaker
+bounds. These distinguish earlier certificates from those using
+\eqref{eq:spacing-pair-majorant}. The stationary factor cannot be inferred
+from only upper latent-variance and lower noise bounds; an exact three-time
+counterexample appears in Appendix~\ref{app:locality-boundaries}.
+
+\subsection{General covariance decay, including unequal packet sizes}
+\label{subsec:general-decay}
+The next result avoids a latent Markov assumption. Let $d_t$ be arbitrary
+positive packet dimensions and suppose
+\begin{equation}
+ R\succeq mI,\qquad \norm{R_{ts}}_2\le C\rho^{|t-s|}\quad(t\ne s),
+ \qquad m,C>0,\quad 0<\rho<1.
+ \label{eq:decay-promises}
+\end{equation}
+No upper bound on diagonal blocks is imposed. Define
+\begin{align}
+ \vartheta&=\frac{4C\rho+m\rho(1-\rho)}{4C\rho+m(1-\rho)},&
+ B_*&=\frac{2C}{m}\frac{\rho}{\vartheta-\rho},\nonumber\\
+ K_*&=C\left(1+B_*\frac{\rho}{\vartheta-\rho}\right),&
+ K_{\mathrm{dec}}&=\frac{2K_*}{m(1-\vartheta)}
+            \left(1+B_*\frac{\vartheta}{1-\vartheta}\right).
+ \label{eq:decay-constants}
+\end{align}
+
+\begin{theorem}[Explicit relative precision from covariance decay]
+\label{thm:general-decay}
+Under \eqref{eq:decay-promises}, every selected subset satisfies
+\begin{equation}
+ \norm{C_L(S)-I}_2\le\delta_L^{\mathrm{dec}}:=
+ \frac{2K_*}{m}\frac{\vartheta^{L+1}}{1-\vartheta}
+ \left[1+B_*\frac{\vartheta(1-\vartheta^L)}{1-\vartheta}\right]
+ \le K_{\mathrm{dec}}\vartheta^{L+1}.
+ \label{eq:decay-delta}
+\end{equation}
+The error bound and its envelope constant $K_{\mathrm{dec}}$ depend only
+on $C/m$ and $\rho$, not on the horizon or any packet dimension.
+For $C=0$ or $\rho=0$ the approximation is exact.
+\end{theorem}
+\begin{proof}
+The choice in \eqref{eq:decay-constants} lies in $(\rho,1)$ and satisfies
+\begin{equation}
+ 2C\left(\frac{\rho}{\vartheta-\rho}-\frac{\rho}{1-\rho}\right)=m/2.
+ \label{eq:weighted-smallness}
+\end{equation}
+Consider any principal block matrix $R_{HH}$ and scalar block weights
+$W_i=w_iI$ such that both ratios obey
+$|w_i/w_j-1|\le\vartheta^{-|i-j|}-1$.
+The diagonal blocks of
+$E=W^{-1}R_{HH}W-R_{HH}$ vanish. Every row and column sum of its block
+norm matrix is at most
+\[
+ 2C\sum_{h\ge1}\rho^h(\vartheta^{-h}-1)=m/2.
+\]
+The row-and-column Schur estimate gives $\norm E_2\le m/2$:
+if a nonnegative scalar matrix has maximum row sum $u$ and column sum $v$,
+Cauchy--Schwarz yields $\norm M_2^2\le uv$, and application to component
+norms gives the block version. Since $R_{HH}\succeq mI$,
+$\norm{R_{HH}^{-1}E}_2\le1/2$. Factoring
+$R_{HH}+E=R_{HH}(I+R_{HH}^{-1}E)$ and summing its Neumann series proves
+\begin{equation}
+ \norm{(W^{-1}R_{HH}W)^{-1}}_2\le2/m.
+ \label{eq:conjugated-inverse}
+\end{equation}
+For example, $w_j=\vartheta^{-|j-i|}$ gives the usual inverse-block decay
+$\norm{(R_{HH}^{-1})_{ij}}_2\le(2/m)\vartheta^{|i-j|}$.
+This is the classical weighted-conjugation localization argument; here it
+is used on each actual local regression.
+
+On $\mathcal H_t$, take $w_j=\vartheta^{-(t-j)}$. These weights satisfy
+the ratio condition. The horizontal row operator obeys
+$\norm{R_{t\mathcal H_t}W}_2
+ \le C\sum_{h\ge1}(\rho/\vartheta)^h
+ =C\rho/(\vartheta-\rho)$, because its norm is at most the sum of
+the block norms. The identity
+\[
+ b_tW=(R_{t\mathcal H_t}W)
+                (W^{-1}R_{\mathcal H_t\mathcal H_t}W)^{-1}
+\]
+and \eqref{eq:conjugated-inverse} give
+$\norm{b_{tj}}_2\le B_*\vartheta^{t-j}$.
+For $j<t-L$, all $u\in\mathcal H_t$ are later than $j$, whence
+\begin{align*}
+ \norm{\Cov(Z_t,\epsilon_j)}_2
+ &\le C\rho^{t-j}+B_*C\sum_{u\in\mathcal H_t}
+                         \vartheta^{t-u}\rho^{u-j}\\
+ &\le C\vartheta^{t-j}
+             \left[1+B_*\sum_{r\ge1}(\rho/\vartheta)^r\right]
+ =K_*\vartheta^{t-j}.
+\end{align*}
+Finally, the Schur-complement variational formula gives $D_t\succeq mI$:
+for a vector $v$ on the target packet, $v^\top D_tv$ is the minimum
+quadratic form of $R_{\{t\}\cup\mathcal H_t}$ over vectors with target
+block $v$, and is therefore at least $m\norm v^2$.
+Lemma~\ref{lem:local-row} proves \eqref{eq:decay-delta}; bounding
+$1-\vartheta^L$ by one gives its last inequality.
+\end{proof}
+
+An alternative $\vartheta\in(\rho,1)$ may be used if the left side of
+\eqref{eq:weighted-smallness} is at most $m/2$; the definitions of $B_*$
+and $K_*$ then remain valid. The constants are conservative: at
+$m=C=1$, $\rho=2/5$, they give $\vartheta=46/55$, $B_*=11/6$ and
+$K_*=193/72$. The first windows making the finite bound at most $0.05$
+and $0.01$ are respectively $49$ and $58$. These imply enormous mask
+counts on a sufficiently long horizon. The theorem broadens covariance
+scope but is not a claim of a practical improvement over the Markov bounds.
+
+\begin{corollary}[Supplied block metrics]
+\label{cor:decay-metric}
+Let $V=\diag(V_t)$, with each $V_t\succ0$. The same theorem holds if
+\eqref{eq:decay-promises} is replaced by
+\begin{equation}
+ R\succeq mV,\qquad
+ \begin{pmatrix}
+ C\rho^{|t-s|}V_t&R_{ts}\\R_{st}&C\rho^{|t-s|}V_s
+ \end{pmatrix}\succeq0\quad(t\ne s).
+ \label{eq:metric-decay-promises}
+\end{equation}
+The metrics may have arbitrarily large Euclidean condition numbers.
+\end{corollary}
+\begin{proof}
+Congruence by $\diag(V_t^{-1/2},V_s^{-1/2})$ identifies the second
+condition with
+$\norm{V_t^{-1/2}R_{ts}V_s^{-1/2}}_2\le C\rho^{|t-s|}$:
+the symmetric block matrix with diagonal $cI$ and off-diagonal $B,B^\top$
+is positive semidefinite exactly when $\norm B_2\le c$, as follows by
+singular-value decomposition. Apply Theorem~\ref{thm:general-decay}
+to $V^{-1/2}RV^{-1/2}$. The block-orthogonal residual transformation in
+Theorem~\ref{thm:block-locality} preserves the norm bound and congruence
+returns the precision bound to the original coordinates.
+\end{proof}
+For rational input and rational $m,C,\rho,V_t$, the promises are rational
+positive-semidefinite tests. All local inverses and information can be
+computed in original coordinates; no irrational whitening is required.
+Here ``metric'' means a supplied positive-definite matrix on each packet;
+the calendar distance remains $|t-s|$.
+
+A direct application is $\epsilon_t=H_tX_t+v_t$ with
+$\norm{A_t}_2\le\rho$, $P_t\preceq\overline P I$,
+$\norm{H_t}_2\le\overline H$, and $V_t\succeq mI$.
+The independent-noise component gives $R\succeq mI$ and
+$R_{ts}=H_tA_t\cdots A_{s+1}P_sH_s^\top$ for $t>s$ gives
+$C=\overline H^2\overline P$. This covers fixed partial packets without
+any process-noise floor, at the cost of the slower generic rate.
+
+\subsection{Partial observations using covariance contraction}
+\label{subsec:partial-locality}
+For a more direct partial-observation bound, take
+$X_t=A_tX_{t-1}+w_t$ and $\epsilon_t=H_tX_t+v_t$ with independent
+Gaussian noises, $P_t=\Cov(X_t)$, process covariance $\Xi_t=\Cov(w_t)$,
+and $V_t=\Cov(v_t)\succ0$. Latent and packet dimensions may be part of
+the input. The matrices $H_t$ are fixed; selecting a packet acquires all
+its responses. Assume, for constants $0\le\gamma<1$ and $s\ge0$,
+\begin{equation}
+ \Xi_t\succeq(1-\gamma^2)P_t\quad(t\ge2),\qquad
+ H_tP_tH_t^\top\preceq sV_t\quad(t\ge1).
+ \label{eq:intrinsic-partial-promises}
+\end{equation}
+The initial covariance may be singular. These promises are invariant under
+invertible changes of state and observation coordinates and do not assume
+that a partial-observation update is a Euclidean contraction.
+
+\begin{theorem}[Intrinsic partial-packet bound]
+\label{thm:partial-locality}
+Put $\kappa=s/(1+s)$. Under \eqref{eq:intrinsic-partial-promises},
+every selected subset satisfies
+\begin{equation}
+ \norm{C_L(S)-I}_2\le
+ \delta_L^{\mathrm{part}}:=
+ 2\kappa\{T_L(\gamma)+\sqrt{\kappa s}\,N_L(\gamma)\}.
+ \label{eq:partial-normalized-delta}
+\end{equation}
+Use zero for $s=0$, $\gamma=0$, or complete history. No dimension
+appears in the constant.
+\end{theorem}
+\begin{proof}
+We give the covariance transport details, including singular covariances.
+For any fresh filter and any chosen update pattern, let $\Pi_t^-$ and
+$\Pi_t^+$ denote its prediction and posterior state covariances.
+Conditional covariance monotonicity gives
+$\Pi_t^+\preceq\Pi_t^-\preceq P_t$.
+At an update,
+\[
+ D=H\Pi^-H^\top+V,\qquad K=\Pi^-H^\top D^{-1},\qquad E=I-KH,
+ \qquad \Pi^+=E\Pi^-E^\top+KVK^\top.
+\]
+At a skipped time use $E=I$ and $\Pi^+=\Pi^-$. For every transition,
+\begin{equation}
+ A_t\Pi_{t-1}^+A_t^\top=\Pi_t^- -\Xi_t
+ \preceq\gamma^2\Pi_t^-.
+ \label{eq:covariance-contraction}
+\end{equation}
+Indeed $\Xi_t\succeq(1-\gamma^2)P_t
+\succeq(1-\gamma^2)\Pi_t^-$. Multiplying
+\eqref{eq:covariance-contraction} by later update and transition matrices
+and using $E\Pi^-E^\top\preceq\Pi^+$ proves
+\begin{equation}
+ \mathcal T_{tj}\Pi_j^+\mathcal T_{tj}^\top
+       \preceq\gamma^{2(t-j)}\Pi_t^-.
+ \label{eq:transport}
+\end{equation}
+Here $\mathcal T_{tj}$ transports a state error just after $j$ to the
+prediction at $t$, including intervening updates and no update at $t$.
+If there is no update at $j$, its starting covariance is the prediction
+there; in particular the formula holds when a fresh filter starts with
+unconditional covariance $P_j$.
+
+Two endpoint estimates retain the signal-to-noise ratio. For any
+$0\preceq\Pi\preceq P_t$, put $D=H_t\Pi H_t^\top+V_t$ and
+$M=\Pi^{1/2}H_t^\top V_t^{-1}H_t\Pi^{1/2}$.
+The nonzero eigenvalues of $M$ are those of
+$V_t^{-1/2}H_t\Pi H_t^\top V_t^{-1/2}$, so $0\preceq M\preceq sI$.
+The singular-value decomposition and the scalar inequality
+$u/(1+u)\le\kappa$ for $0\le u\le s$ give
+\begin{align}
+ \norm{D^{-1/2}H_t\Pi^{1/2}}_2&\le\sqrt\kappa,
+ \label{eq:partial-endpoint}\\
+ K V_tK^\top&\preceq\kappa\Pi^+.
+ \label{eq:partial-gain}
+\end{align}
+For the second inequality use the identities, valid also for singular $\Pi$,
+$\Pi^+=\Pi^{1/2}(I+M)^{-1}\Pi^{1/2}$ and
+$KV_tK^\top=\Pi^{1/2}M(I+M)^{-2}\Pi^{1/2}$.
+For use below, if $UU^\top\preceq c\Pi$ then
+$U=\sqrt c\Pi^{1/2}B$ for a contraction $B$ (and $U=0$ if $c=0$).
+To prove this without assuming $\Pi$ invertible, diagonalize $\Pi$:
+the inequality makes the rows of $U$ on its nullspace zero; divide the
+remaining rows by positive square roots and use $BB^\top\preceq I$.
+Together with \eqref{eq:transport} and \eqref{eq:partial-endpoint}, this
+factorization converts covariance order into the following norm estimates.
+
+For a far pair $s<t-L$, let $\Pi_s^{-,s}$ be the prediction covariance
+from $\mathcal H_s$. Orthogonality yields
+$U=\Cov(X_s,Z_s)=\Pi_s^{-,s}H_s^\top$ and
+\[
+ U D_s^{-1}U^\top\preceq\kappa\Pi_s^{-,s}\preceq\kappa P_s.
+\]
+The $t$-local filter starts at $s$ with $P_s$ and updates only later.
+Its cross covariance with $Z_s$ is $H_t\mathcal T_{ts}U$.
+Transport, factorization, and the target endpoint bound therefore give
+\begin{equation}
+ \norm{D_t^{-1/2}\Cov(Z_t,Z_s)D_s^{-1/2}}_2
+ \le\kappa\gamma^{t-s}.
+ \label{eq:partial-far}
+\end{equation}
+For $j<t-L$, $\Cov(X_j,\epsilon_j)=P_jH_j^\top$, and the signal promise
+implies
+$P_jH_j^\top V_j^{-1}H_jP_j\preceq sP_j$.
+The same transport now gives
+\begin{equation}
+ \norm{D_t^{-1/2}\Cov(Z_t,\epsilon_j)V_j^{-1/2}}_2
+ \le\sqrt{\kappa s}\,\gamma^{t-j}.
+ \label{eq:partial-old}
+\end{equation}
+Finally, for $j\in\mathcal H_s$, its local regression coefficient is
+$b_{sj}=H_s\mathcal T_{sj}K_j$ with gains from the $s$-local filter.
+Using \eqref{eq:partial-gain} before transport and
+\eqref{eq:partial-endpoint} after it yields
+\begin{equation}
+ \norm{D_s^{-1/2}b_{sj}V_j^{1/2}}_2\le\kappa\gamma^{s-j}.
+ \label{eq:partial-coefficient}
+\end{equation}
+For a near pair, insert $V_j^{-1/2}V_j^{1/2}$ in each surviving term of
+\eqref{eq:residual-pair-identity} and use
+\eqref{eq:partial-old}--\eqref{eq:partial-coefficient}. Its normalized
+block norm is at most
+$\kappa\sqrt{\kappa s}\sum_{d=L+1-h}^L\gamma^{h+2d}$.
+Summing these near weights and the far weights
+\eqref{eq:partial-far} on both sides proves
+\eqref{eq:partial-normalized-delta}.
+If $s=0$ the observed state signal vanishes. If $\gamma=0$,
+$A_tP_{t-1}A_t^\top=P_t-\Xi_t=0$, so every cross-time observation
+covariance vanishes. These cases are exact even with singular state
+covariances.
+\end{proof}
+
+\begin{corollary}[Euclidean process-noise floor]
+\label{cor:partial-euclidean}
+Suppose $P_t\preceq\overline P I$, $\Xi_t\succeq qI$ for $t\ge2$,
+$V_t\succeq rI$, and $\norm{H_t}_2\le\overline H$, with
+$0<q\le\overline P$ and $r>0$. Then
+Theorem~\ref{thm:partial-locality} applies with
+$\gamma=\sqrt{1-q/\overline P}$ and $s=\overline H^2\overline P/r$.
+The earlier, weaker unnormalized bound is also valid:
+\begin{equation}
+ \delta_L^{\mathrm{Euc}}=
+ \frac{2\overline H^2\overline P}{r}
+ \left\{T_L(\gamma)+\overline H\sqrt{\overline P/r}\,N_L(\gamma)\right\}.
+ \label{eq:partial-unnormalized}
+\end{equation}
+\end{corollary}
+\begin{proof}
+$qI\succeq(q/\overline P)P_t$ and
+$H_tP_tH_t^\top\preceq\overline H^2\overline P I\preceq sV_t$
+give the intrinsic promises. For the older constants, use
+$KVK^\top\preceq\Pi^+$ in place of
+\eqref{eq:partial-gain}; transport gives
+$\norm{b_{tj}}_2\le\overline H\sqrt{\overline P/r}\gamma^{t-j}$.
+For an old observation, $P_jH_j^\top H_jP_j
+\preceq\overline H^2\overline P P_j$, so transport gives
+$\norm{\Cov(Z_t,\epsilon_j)}_2
+\le\overline H^2\overline P\gamma^{t-j}$.
+For a far residual use
+$UU^\top\preceq\overline H^2\overline P\Pi_s^{-,s}
+\preceq\overline H^2\overline P P_s$ in the same way.
+Lemma~\ref{lem:local-row} with $d_*=r$ proves
+\eqref{eq:partial-unnormalized}. The intrinsic bound is no larger because
+$\kappa\le s$ and $\kappa\sqrt{\kappa s}\le s\sqrt s$.
+\end{proof}
+
+Covariance contraction and finite-memory filtering have substantial prior
+history. In particular, \citet[Theorems 1--2]{Kozdoba2019} use process-noise
+dissipation in a covariance norm to approximate forecasts after burn-in for
+observable time-invariant systems. Here the sufficient covariance inequalities
+are imposed on the supplied finite, possibly time-varying horizon, and
+transport is proved separately for every fresh local selection history.
+The quantity bounded is the relative precision of the resulting local
+conditionals. The process-noise floor is a substantive alternative to the
+complete-block theorem, which allows zero process noise.
+
+\subsection{A finite graph for local information and its scope}
+\label{subsec:calendar-graph}
+Before deciding at time $t$, a state records the last $L$ selection bits.
+A skip arc shifts in zero and has information weight zero. A choose arc
+shifts in one and has positive-semidefinite weight
+\begin{equation}
+ W_{t,H}=G_{t,H}^\top D_{t,H}^{-1}G_{t,H},
+ \qquad H=\{j\in[t-L,t-1]:\text{the state selects }j\}.
+ \label{eq:calendar-arc}
+\end{equation}
+Start from the all-zero history and connect all terminal states to a sink.
+There are $O(n2^L)$ states and arcs. Each schedule yields one path and
+its arc sum is exactly $I_L(S)$, because the state determines the entire
+local conditional in \eqref{eq:local-conditionals}. Conversely, every path
+specifies that schedule. Path decomposition therefore gives the exact hull
+of the surrogate information and calendar visit vectors. If visit marginals
+are binary, every path in a flow decomposition has those same decisions,
+and the deterministic state transitions make the path unique.
+An exact cardinality adds a count layer, giving
+$O(n(k+1)2^L)$ states and arcs. Mandatory or forbidden times remove arcs.
+General linking constraints preserve integer exactness, but intersection
+with such constraints need not preserve the unconstrained continuous hull.
+
+For minimum gap $g$, a valid $L$-bit mask contains no two ones within
+distance $g-1$. The number of such masks is
+\begin{equation}
+ M(L,g)=1+\sum_{q=1}^{\lceil L/g\rceil}
+             \binom{L-(g-1)(q-1)}{q}.
+ \label{eq:separated-mask-count}
+\end{equation}
+To count masks with $q$ ones, subtract $(g-1)(i-1)$ from the $i$th ordered
+one-position; this bijects to $q$ unconstrained positions in a line of
+length $L-(g-1)(q-1)$. If $L<g-1$, the information mask forgets a last
+observation before the spacing restriction expires. A correct graph also
+stores a cooldown counter, or uses $\max(L,g-1)$ bits for feasibility
+while still using only $L$ bits for information. This covers $L=0$ and
+$g>L$. Feasible exact counts satisfy $k\le\lceil n/g\rceil$.
+Any support objective $\sum\ip{N}{W_{t,H}}$, with fixed symmetric $N$,
+is optimized exactly by the ordinary longest-path recurrence on this acyclic
+graph; scalar weights need not be nonnegative for that recurrence. Complexity
+and approximation guarantees for particular objectives are developed separately.
+
+The construction uses a \emph{calendar} window. Keeping the last $m$
+\emph{selected} observations instead is a valid conditional approximation,
+and the scalar contraction bound applies after reindexing the selected
+sequence (each selected gap contracts by at most $\rho$). A direct graph
+then remembers an ordered tuple of up to $m$ calendar indices and may require
+$O(n^{m+1})$ states and arcs. These state representations are different.
+Likewise, refining a physical-time grid can make the per-index contraction
+arbitrarily close to one. The window and graph bounds are conditional on
+the stated decay constants; they do not establish uniform scalability under
+grid refinement. Simultaneous scalar responses should be treated as one
+packet, not as successive strictly contracting calendar steps.
+
+\subsection{Relationship to existing locality guarantees}
+\label{subsec:locality-prior}
+The preceding arguments supply explicit sufficient error bounds for the
+specified local histories. Their ingredients have extensive antecedents.
+Inverse-factor localization is studied by \citet{BenziTuma2000},
+\citet{Krishtal2015}, and \citet{Rubensson2021}; finite-predictor tail
+inequalities include \citet{Meyer2015} and \citet{Inoue2018}.
+The former works concern banded inverse factors, inverse-closed decay
+algebras, or localized iterative factorizations; the latter use stationary
+spectral or multivariate long-memory assumptions. We prove the needed
+local-regression statement directly rather than presume that a theorem for
+an arbitrary localized inverse factor identifies the factor in
+\eqref{eq:local-precision}. In particular, the fixed exponential rate does
+not follow merely from the admissible-weight algebra in
+\citet[Corollary 5.1]{Krishtal2015}; its admissible weights satisfy the
+Gelfand--Raikov--Shilov condition, which a fixed exponential weight fails.
+Nor is an unproved direct-sum/factorization-inheritance argument used here.
+
+\citet[Theorem 2.1]{Schafer2021} characterize fixed-pattern KL-optimal
+inverse-Cholesky factors. Their Theorem 3.4 gives rigorous error and complexity
+bounds for Green's covariances with geometric ordering; the neighborhood
+radius has a $\log(n/\epsilon)$ dependence. Their added-noise construction
+in Section 4.1 uses a latent precision approximation and incomplete Cholesky
+refinement. \citet{Huan2025} study conditional selection for sparse inverse
+factors, including its experimental-design interpretation.
+\citet{KaminetzWebber2026} identify a partial-Cholesky-plus-Vecchia model
+with an augmented Vecchia pattern and prove fixed-pattern Kaporin optimality.
+These are direct antecedents for the approximation and its analysis.
+The comparisons concern model hypotheses, factor and ordering, constants,
+and horizon dependence; they are not a claim that KL cannot control Fisher
+information. Appendix~\ref{app:locality-metrics} proves that a global Gaussian
+KL bound does imply a relative precision and mean-information sandwich.
+
+Two reductions further limit a novelty claim for
+Theorem~\ref{thm:general-decay}. First, pad a selected covariance at its
+original calendar positions with independent $mI$ dummy blocks at deleted
+times. The padded covariance preserves \eqref{eq:decay-promises}; its
+selected local conditionals are unchanged, and its normalized residual
+covariance is, after permutation, $C_L(S)\oplus I$. Thus a suitable
+\emph{class-uniform full-calendar} theorem already implies subset uniformity.
+Second, unbounded original diagonal blocks do not preclude reduction to a
+bounded-spectrum class. Put $D=\diag(R_{tt})$, $E=R-D$, and
+$b_0=2C\rho/(1-\rho)$. The block row bound gives $\norm E_2\le b_0$,
+while $D\succeq mI$. Hence
+\[
+ D\preceq R+b_0I\preceq(1+b_0/m)R,
+ \qquad R\preceq D+b_0I\preceq(1+b_0/m)D,
+\]
+and therefore
+\begin{equation}
+ \frac{m}{m+b_0}I\preceq D^{-1/2}RD^{-1/2}
+            \preceq(1+b_0/m)I.
+ \label{eq:diagonal-priority-reduction}
+\end{equation}
+Its off-diagonal blocks decay with amplitude $C/m$ and rate $\rho$.
+Neither subset uniformity nor absence of an upper bound on the original
+diagonal alone is consequently a new localization principle. The precise
+contribution supplied here is the fully explicit local-regression bounds
+\eqref{eq:scalar-refined-delta}, \eqref{eq:spacing-delta},
+\eqref{eq:decay-delta}, and \eqref{eq:partial-normalized-delta}, and their
+use with a fixed-calendar information graph to certify the original
+selected-covariance design objective. We make no first-localization claim.

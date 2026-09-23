@@ -1,0 +1,398 @@
+--- accepted-stage2/main.tex
++++ stage3/main.tex
+@@ -12,6 +12,17 @@
+ \usepackage{microtype}
+ \usepackage[colorlinks=true,allcolors=blue]{hyperref}
+ \usepackage[nameinlink,noabbrev]{cleveref}
++\hypersetup{
++  pdftitle={Sparse convex hulls for network flows coupled to a simplex},
++  pdfauthor={},
++  pdfsubject={Convex hulls, network flows, and sparse bilinear products},
++  pdfkeywords={network flow, simplex, convex hull, extended formulation},
++  pdfcreator={LaTeX}
++}
++% Omit variable dates, identifiers, and embedded source-path metadata.
++\pdfinfoomitdate=1
++\pdftrailerid{}
++\pdfsuppressptexinfo=-1
+ \newtheorem{theorem}{Theorem}[section]
+ \newtheorem{proposition}[theorem]{Proposition}
+ \newtheorem{lemma}[theorem]{Lemma}
+--- accepted-stage2/sections/08-computation.tex
++++ stage3/sections/08-computation.tex
+@@ -73,14 +73,14 @@
+ 
+ The verification suite compares against independently assembled full-state
+ LPs and, for small graphs, directly enumerated path--simplex vertices.
+-The updated flat tests include arbitrary observations and zero weights,
++The flat tests include arbitrary observations and zero weights,
+ both three-label repairs with exact global cut checks, the four-label
+ ratio-two obstruction, and sparse observed labels among many original
+ simplex coordinates. They also test an interior-residual point with zero
+ explicit profile and positive residual branch flow: this rules out
+ incorrectly reusing a basis construction that forces the explicit profile
+-sum to the full branch flow. Separate tests check every new rank-three
+-inverse basis. The unchanged independent flat audit verifies 192 exact
++sum to the full branch flow. Separate tests check every inverse basis for recovery with three
++observed labels. An independent flat audit verifies 192 exact
+ decompositions and 708 exact violated cuts, with 233 numerical path-hull
+ comparisons. The general compressed audit passes 600 objective comparisons,
+ 758 membership comparisons, and 476 exactly checked Farkas cuts, each also
+@@ -105,8 +105,7 @@
+ variants of the general implementation, including their preprocessing costs.
+ 
+ For point membership, $x,y,z$ are data and only state flows are LP variables.
+-The historical full baseline already had this property. The strengthened
+-baseline removes exactly zero-weight states, checks their observations, and
++The positive-state full baseline removes exactly zero-weight states, checks their observations, and
+ assembles state balances and aggregate equations as sparse block matrices.
+ It accepts solver statuses zero and two as numerical feasibility and
+ infeasibility; other statuses are failures, not successful rejections.
+@@ -262,14 +261,12 @@
+ 
+ \input{tables/08-flat}
+ 
+-The stronger baselines change the long-chain interpretation
++The elementary reductions matter on long chains
+ (\cref{tab:computation-flat}). On the 512-gadget boundary face, both
+ the positive-state block LP and the one-flow LP are faster than the reduced
+-exact oracle. Thus the earlier construction-inclusive advantage over a
+-Python row-by-row full builder that retained the zero residual state does
+-not survive these elementary improvements. The old builder already treated
+-original coordinates as data; the changes are zero-state removal and
+-assembly, followed by the one-flow substitution. At that boundary point,
++exact oracle. The positive-state LP treats original coordinates as data,
++removes zero-weight states, and uses sparse block assembly. The one-flow
++substitution gives a further reduction. At that boundary point,
+ the positive-state LP has 2,050 variables and the one-flow LP has 1,025;
+ the interior three-state LP has 3,075.
+ On feasible interior queries the reduced oracle is faster at the largest
+@@ -278,17 +275,22 @@
+ from 21.02 to 58.95 milliseconds. Five measurements on a shared host do
+ not support a universal speed ordering.
+ 
+-The two-label oracle has no circuit-library setup. For comparison, the
+-retained unreduced three-coordinate library takes \BenchOldCold\ milliseconds
+-to construct in the recorded cold call. The new three-observed-label library
++The reduced oracle merges unobserved labels and eliminates the default
++profile coordinate before separation. The unreduced comparator retains
++that coordinate and uses a signed-subset circuit library; it supplies the
++same exact membership and decomposition outputs. The two-observed-label
++reduced oracle uses five explicit tests and has no circuit-library setup.
++For comparison, the unreduced three-coordinate library takes
++\BenchOldCold\ milliseconds to construct in the recorded cold call.
++The reduced three-observed-label library
+ takes \BenchNewThreeCold\ milliseconds, with another
+ \BenchNewThreeBases\ milliseconds for its inverse bases; these are separate
+ from the two-label workload. Initial and observed-eliminated general models
+-were remeasured on the eight flat cases at lengths eight and 32. They do not
++were measured on the eight flat cases at lengths eight and 32. They do not
+ improve the total times over the dedicated exact oracle on those cases;
+-their complete component and size data are retained. The earlier full-length
+-compressed comparison is preserved as historical evidence, without using it
+-to lead the current performance conclusions.
++their complete component and size data are included in the supplement.
++The general compressed formulations are not timed at the two larger lengths
++in this comparison.
+ 
+ Rows in the tables exclude variable bounds. Nonzero and byte counts refer
+ to input sparse matrices, not peak memory, solver factors, or Python rational
+@@ -336,25 +338,38 @@
+ 
+ \subsection{Reproduction}
+ 
+-The accompanying repository includes the exact interfaces, independent
+-verification programs, historical results, and retained source snapshots.
+-Optimization and membership measurements were collected separately. The
+-reported optimization records use the native fixed-weight construction above;
+-all methods on each of its three cases use the same objectives, weights, and
+-additional rows, with an audited warmup and five rotated runs. Membership and
+-cold-library records retain their separately recorded measurements. Earlier
+-baselines and measurements are preserved with hashes for comparison; the
+-reproducibility documentation identifies the commands for the complete study
+-and the optimization-only run.
+-The complete measurement command, run from the repository root, is
++The accompanying computational supplement contains the exact interfaces,
++numerical formulations, independent checks, measurement generator, and
++canonical raw data used in the tables. Its top-level README gives dependency
++versions, certificate semantics, and commands for the regression suite and
++independent checks. Paths in the commands below are relative to the extracted
++supplement root. The preserved directory layout is required by the benchmark
++runner's import of the unreduced flat-chain comparator.
++
++To repeat the complete measurement protocol, write new results to a separate
++file:
+ \begin{verbatim}
+ PYTHONPATH=code python -m network_simplex_benchmarks.paper_stage06 \
+-  --output paper-network-simplex/verification/stage06-benchmarks.json
++  --output rerun-benchmarks.json
++\end{verbatim}
++The default is one recorded warmup followed by five rotated measurements
++per case. The reported optimization and membership measurements were collected
++separately; all methods within an optimization case use identical objectives,
++weights, and additional rows. Rerunning the generator repeats these inputs
++and protocols, but timing values depend on the machine and software.
++The supplied data preserve the reported measurements rather than replacing
++them with new timings.
++
++To regenerate the published tables from those canonical data, run
++\begin{verbatim}
+ python paper-network-simplex/verification/stage06-tables.py
+ \end{verbatim}
+-The table generator recomputes each reported minimum, median, and maximum
+-from the raw five-run records and verifies the complete case grid.
+-The versioned source, input definitions, objective vectors, additional rows,
+-warmups, raw timing components, exact witness/cut audits, and numerical solver
+-checks are identified by hashes in the validation manifest. The README files
+-give the separate test and manuscript-build commands.
++The generator recomputes every reported minimum, median, and maximum from
++the raw five-run records, verifies the complete case grid and method order,
++and writes the five table and value files under
++\texttt{paper-network-simplex/tables/}. The supplement manifest hashes the
++runnable source, independent checks, raw measurements, and generated tables.
++The data include input definitions, objective vectors, additional rows,
++warmups, timing components, exact witness and cut audits, and numerical solver
++checks. The standalone LaTeX source archive includes all manuscript inputs
++and a separate build README.
+--- accepted-stage2/README.md
++++ stage3/README.md
+@@ -1,25 +1,25 @@
+ # Sparse convex hulls for network flows coupled to a simplex
+ 
+-Read the [paper PDF](main.pdf) or [LaTeX source](main.tex). The manuscript covers
+-observation-sensitive formulations, exact structural separators and recovery,
+-sharp coefficient boundaries, implementations, and reproducible synthetic
+-comparisons. Author and affiliation metadata are left empty for the owner.
++The current [anonymous PDF](delivery/submission.pdf), [standalone LaTeX source](delivery/latex-source.zip),
++and [computational supplement](delivery/computational-supplement.zip) are prepared
++for the September 9 submission revision. Author and affiliation fields are
++intentionally empty. No external submission has been made.
+ 
+-The 48-page manuscript has completed all eight stages and 45 independent review
+-reports, including five reviews of the entire paper. All accepted findings are
+-resolved; see the [final summary](process/final-summary.md) and
+-[whole-manuscript acceptance](process/assessments/stage08-accepted.md).
++The literature/positioning and mathematical-audit stages have been accepted
++under the required independent review process. Delivery preparation is followed
++by five independent Stage 3 reviews and then five whole-manuscript reviews;
++see the current [revision status](revision-20260909/STATUS.md) and
++[process](PROCESS.md). Earlier September 7 completion records are historical
++and do not establish acceptance of this revision.
+ 
+-Build from this directory with TeX Live (including TikZ) and BibTeX:
++Build the manuscript from this directory with TeX Live and BibTeX:
+ 
+ ```sh
+-latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex
++SOURCE_DATE_EPOCH=946684800 FORCE_SOURCE_DATE=1 latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex
+ ```
+ 
+-The [source coverage map](process/coverage.md) connects repository results to
+-manuscript statements. [PROCESS.md](PROCESS.md) records acceptance and the
+-required five independent reviews of each stage and of the complete manuscript.
+-Internal acceptance is distinct from journal peer review or proof of priority.
++The [delivery guide](delivery/README.md) explains deterministic package rebuilding
++and manifests. Each archive builds or runs independently of the repository.
+ 
+ ## Main results and where to find them
+ 
+@@ -40,84 +40,31 @@
+ continuous graph points; the classical integral-flow hull equality does not
+ preserve that count for integral decomposition points.
+ 
+-## Code and verification
++## Computation and verification
+ 
+-[Exact oracle instructions](../code/network_simplex/README.md), the
+-[flat-chain API](../code/network_simplex/FLAT_CHAIN.md), and
+-[compressed-formulation instructions](../code/network_simplex_compressed/README.md)
+-describe supported models and outputs. Exact cuts and decompositions are
+-rational certificates. Floating-point LP feasibility and the general API's
+-`numerically_feasible` status are not exact membership certificates. The
+-bounded-rank libraries are verification prototypes, not a production oracle
+-for every general graph.
+-
+-Run the principal regression suite from this directory:
++The [supplement instructions](delivery/README-supplement.md) give dependencies,
++precise commands, independent-check scope, and the distinction between exact
++certificates and numerical LP outputs. The [interface guide](delivery/API.md)
++records supported inputs and output conventions. The principal regression suite
++can also be run from the repository root:
+ 
+ ```sh
+-PYTHONPATH=../code python -m unittest network_simplex.test_separator \
+-  network_simplex.test_flat_chain \
+-  network_simplex_benchmarks.test_strong_baselines -v
++PYTHONPATH=code python -m unittest network_simplex.test_separator network_simplex.test_flat_chain network_simplex_benchmarks.test_strong_baselines -v
+ ```
+ 
+-The following standalone checks cover manuscript constructions and exact
+-recovery. Some require SymPy, NumPy, and SciPy; the individual files distinguish
+-exact arithmetic from numerical LP comparisons.
+-
+-```sh
+-python verification/stage02-exact.py
+-python verification/stage03-exact.py
+-python verification/stage04-recovery.py
+-python verification/stage05-padding.py
+-python verification/stage05-profile.py
+-python verification/stage07/integral-hull.py
+-```
+-
+-[Final validation](verification/final-validation.json) records the accepted source
+-and evidence hashes, completed reviews, and clean build. Earlier validation
+-manifests identify their reviewed versions; their unchanged-source checks are
+-historical after a documented later correction. The final citation correction
+-is recorded in [its disposition](process/stage08-corrections.md). Earlier stage
+-evidence and independent reviewer programs remain under `verification/` and
+-`process/`.
+-
+-## Reproduce the comparisons
+-
+-Run from this directory:
+-
+-```sh
+-PYTHONPATH=../code python -m network_simplex_benchmarks.paper_stage06 \
+-  --output verification/stage06-benchmarks.json
+-python verification/stage06-tables.py
+-```
+-
+-[Benchmark instructions](../code/network_simplex_benchmarks/README.md) give the
+-methods, dependencies, controls, and an optimization-only rerun command.
+-[Raw results](verification/stage06-benchmarks.json) retain objectives, side rows,
+-versions, warmups, five rotated measurements, timing summaries, and separate
+-audits. Optimization and membership measurements were collected separately;
+-current optimization records use native fixed-weight state-flow bounds.
+-Tables are generated from these records and check complete case keys, method
+-coverage, rotations, and every stored timing summary.
+-
+-The strongest globally merged LP is often fastest. In the control where all
+-labels are globally observed but each block sees few, local compression reduces
+-7,215 state-flow variables to 495 total variables and observed elimination to
+-367. Initial compression is faster than elimination on that control. Stronger
+-LPs also overturn earlier boundary-face long-chain speedups. All experiments
+-are synthetic and run on a shared host; no universal runtime or industrial
+-performance claim follows.
++The supplement includes the canonical raw measurements and all five generated
++table/value files. Its full benchmark command writes fresh timings to a separate
++file; the table generator reproduces the reported tables from canonical data.
++The strongest globally merged LP is often fastest. Local compression has a
++separate size benefit when all labels occur globally but each block sees few.
++All instances are synthetic and timings were collected on a shared host.
+ 
+ ## Historical records
+ 
+-The [old paper-readiness record](../notes/network-simplex-paper-readiness.md)
+-and [continuation record](../notes/network-simplex-reopened-status.md) are
+-superseded research closeouts. Their original 41-circuit descriptions, earlier
+-K4 examples, timings, and default-method assessments remain useful provenance,
+-but the manuscript contains the sharper observed-label results and stronger
+-baseline comparisons. The older fixed-state theorem is retained in
+-[the result note](../results/network-simplex-flat-chain-fixed-states.md).
+-
+-[Pre-upgrade source copies](verification/reference/stage06/README.md) preserve
+-the unreduced flat oracle. [The first computational archive](verification/stage06-corrections/round1-archive/)
+-retains earlier sources and measurements. These are reproducible historical
+-references, not additional production APIs or current performance conclusions.
++The September 7 [final summary](process/final-summary.md),
++[whole-manuscript assessment](process/assessments/stage08-accepted.md),
++[source coverage map](process/coverage.md), and
++[validation manifest](verification/final-validation.json) describe their reviewed
++versions. They remain unchanged as provenance. The active revision's author,
++review, adjudication, and freeze records are under `revision-20260909/`.
++Internal acceptance is distinct from journal peer review or proof of priority.
+--- accepted-stage2/PROCESS.md
++++ stage3/PROCESS.md
+@@ -1,56 +1,53 @@
+ # Manuscript process
+ 
+-The user requested a comprehensive LaTeX paper on sparse network–simplex hulls,
+-with renewed development and verification while writing. Work began 2026-09-07.
+-Other manuscript folders and unrelated working-tree changes are outside scope.
++The active September 9 revision prepares a standalone anonymous submission of
++*Sparse convex hulls for network flows coupled to a simplex*. It includes renewed
++literature positioning, mathematical verification, computational reproducibility,
++and delivery. Other manuscript folders are outside scope. Author and affiliation
++fields are intentionally empty; no external submission is authorized.
+ 
+ ## Required review protocol
+ 
+ Each stage has one author. After the author finishes, five agents independently
+ review the frozen changes. The root evaluates every finding. A different agent
+-corrects all valid findings, including minor ones. Any accepted major finding
++corrects every accepted finding, including minor ones. Any accepted major finding
+ requires another complete five-reviewer round after correction. All accepted
+ minor findings must be resolved before the next stage. The complete manuscript
+ then undergoes the same review and correction process.
+ 
+-Review reports, root assessments, correction records, snapshots, and verification
+-artifacts are retained under `process/` and `verification/`. Internal acceptance
+-does not mean external peer review or establish literature priority.
++No stage is accepted on an author's assertion alone. Earlier material is reopened
++if a later stage exposes a problem. Claims distinguish arithmetic complexity from
++bit complexity, exact certificates from numerical checks, coefficient magnitude
++from encoding length, and constructive formulation size from extension complexity.
++Internal acceptance does not mean external peer review or establish priority.
+ 
+-## Sequential stages
++## Active revision
+ 
+-1. Foundations, notation, literature positioning, and compilable paper skeleton.
+-2. General-graph compression, observation rank, forest complements, and recovery.
+-3. Explicit cycle/theta/parallel-path hulls and complete constructive separators.
+-4. Bounded cycle rank: finite support libraries, coefficient bounds, sharp K4.
+-5. General universality, sparse series–parallel coefficient growth, and the
+-   fixed-state flat-chain theorem; integrate the positive and negative boundaries.
+-6. Implementations, strengthened fair computational comparisons, reproducibility,
+-   and application interpretation.
+-7. Final exposition: introduction, abstract, connections, completeness audit,
+-   conclusion, bibliography, and publication presentation.
+-8. Five independent reviews of the entire manuscript, with required correction
+-   and repeat rounds.
++1. Literature, contribution hierarchy, and significance: accepted after five
++   independent reviews and separate correction of accepted minor findings.
++2. Mathematical audit and development: accepted after five independent reviews
++   with no required corrections.
++3. Standalone exposition, computational reproducibility, and delivery: prepared
++   for five independent frozen-stage reviews.
++4. Whole-manuscript review: pending Stage 3 acceptance.
+ 
+-Stage boundaries may be refined only with the same author/review protocol.
+-No stage is accepted on an author's assertion alone. Earlier material is
+-reopened if a later stage exposes a problem. Claims must distinguish arithmetic
+-complexity from bit complexity, numerical checks from exact certificates, and
+-coefficient magnitude from coefficient encoding length.
++The authoritative current status is [revision-20260909/STATUS.md](revision-20260909/STATUS.md).
++Author reports, independent reviews, adjudications, accepted snapshots, and private
++validation evidence are retained under `revision-20260909/`. The
++[delivery directory](delivery/README.md) contains the current anonymous PDF,
++standalone source and supplement archives, deterministic builder, and manifests.
++Package creation does not itself close a review stage.
+ 
+-## Status
++## Historical development
+ 
+-Stage 1: accepted after five reviews and correction of three minor findings.
+-Stage 2: accepted after five reviews with no required corrections.
+-Stage 3: accepted after five reviews with no required corrections.
+-Stage 4: accepted after five reviews and correction of three minor findings.
+-Stage 5: accepted after five reviews and correction of one minor finding.
+-Stage 6: accepted after two five-reviewer rounds, correction of one major
+-baseline-control issue and all five distinct minor findings.
+-Stage 7: accepted after five reviews with no required corrections.
+-Stage 8: accepted after five fresh whole-manuscript reviews and correction
+-of one minor citation-locator finding. No major or minor finding remains open.
++The September 7 development had eight stages: foundations; compression;
++structural oracles; bounded rank; coefficient obstructions and flat chains;
++computation; final exposition; and whole-manuscript review. It completed nine
++five-reviewer rounds, including a repeated computational review after a major
++baseline-control correction. The 45 reports and their corrections remain in
++`process/` and `verification/`.
+ 
+-All eight stages are complete. The process contains 45 independent review
+-reports in nine five-reviewer rounds. See [the final summary](process/final-summary.md)
+-and [whole-manuscript acceptance](process/assessments/stage08-accepted.md).
++The historical [final summary](process/final-summary.md) and
++[whole-manuscript assessment](process/assessments/stage08-accepted.md) describe
++that version. Their acceptance and source/evidence manifests are preserved
++unchanged. They do not serve as acceptance records for the active revision.

@@ -1,0 +1,78 @@
+\section{Model and affine perspective cuts}\label{sec:model}
+\subsection{Problem class and relaxation target}
+Let $I$ be a finite set of disjunctions and $K_i$ the finite set of alternatives in disjunction $i$. The original algebraic variables are $x\in C=[x^L,x^U]\subset\R^n$, with finite bounds; a subset $x_J$ is integer. These original integer variables are distinct from the binary selection indicators $y_{ik}$. Write $m=\sum_i|K_i|$. We consider the minimization GDP
+\begin{subequations}\label{eq:gdp}
+\begin{align}
+ \min\quad &c^Tx+d^Ty,\\
+ \text{s.t.}\quad &(x,y)\in A,\qquad h_\ell(x,y)\le0\quad(\ell\in H),\\
+ &\sum_{k\in K_i}y_{ik}=1\quad(i\in I),\qquad y\in\{0,1\}^m,\quad x_J\in\Z^{|J|},\\
+ &y_{ik}=1\ \Longrightarrow\ x\in S_{ik},\qquad
+ S_{ik}=\{x\in C:B_{ik}x\le b_{ik},\ g_{ikj}(x)\le0\ (j\in J_{ik})\}.
+\end{align}
+\end{subequations}
+The global row set $H$ and every term row set $J_{ik}$ are finite. Here $A$ is the intersection of $C\times[0,1]^m$ with global affine constraints, including any linear encoding of the permitted indicator logic. Affine equalities can be written as pairs of inequalities. Each $S_{ik}$ is a continuous convex set: original integrality is imposed separately and is not convexified inside a term. A nonlinear objective can be lifted as described below. Maximization of a concave objective is converted to minimization by changing its sign.
+
+All nonlinear functions are finite, convex and continuously differentiable on an open convex neighborhood of their respective boxes: $C$ for term rows, and $C\times[0,1]^m$ for global rows. The results need only bounded chosen gradients and valid supporting inequalities, but the implementation uses derivatives. Fixed coordinates can be eliminated. This neighborhood assumption avoids assuming that a Lipschitz constant restricted to a lower-dimensional box bounds every component of an ambient gradient. Convexity and differentiability are input assumptions, not properties certified by the software. Native selection indicators do not occur in disjunct constraint bodies in the supported implementation; global logical couplings remain allowed.
+
+For the hull master, introduce continuous copies $\nu_{ik}\in\R^n$ and weights $\lambda_{ik}=y_{ik}$, with
+\begin{subequations}\label{eq:hull-affine}
+\begin{align}
+ x&=\sum_{k\in K_i}\nu_{ik},&\sum_{k\in K_i}\lambda_{ik}&=1,\qquad\lambda_{ik}\ge0,\\
+ \lambda_{ik}x^L&\le\nu_{ik}\le\lambda_{ik}x^U,&B_{ik}\nu_{ik}&\le b_{ik}\lambda_{ik}.
+\end{align}
+\end{subequations}
+At positive weight, $p_{ik}=\nu_{ik}/\lambda_{ik}$ belongs to $C$; at zero weight, $\nu_{ik}=0$. If the indicators are integral, the selected copy equals $x$ and every other copy vanishes. The notation uses a full copy of $x$ to simplify the presentation. The implementation copies only the coordinates appearing in a disjunction, taking their union over its alternatives. Omitted coordinates have only their box restriction inside those alternatives, so they can always be extended as $\nu_{ik,j}=\lambda_{ik}x_j$; the projected formulation is the same.
+
+\subsection{Validity, closure, and completeness}
+For a generic convex row $g(x)\le0$ and $z\in C$, define
+\begin{equation}\label{eq:tangent}
+ a_z=\nabla g(z),\qquad b_z=g(z)-a_z^Tz,\qquad
+ \ell_z(x)=a_z^Tx+b_z.
+\end{equation}
+Convexity gives $\ell_z(x)\le g(x)$ on $C$. Its affine perspective cut is
+\begin{equation}\label{eq:perspective-cut}
+ a_z^T\nu+b_z\lambda\le0.
+\end{equation}
+An ECP cut takes $z=p=\nu/\lambda$. An ESH cut takes $z$ on the boundary between a strict interior anchor and $p$. Both belong to the established perspective cut family \citep{frangioni2006,bestuzheva2023}; only the sampling point changes.
+
+\begin{proposition}[Bounded perspective identity]\label{prop:perspective}
+On $T=\{(\nu,\lambda):0\le\lambda\le1,\ \lambda x^L\le\nu\le\lambda x^U\}$, set
+\[
+ G(\nu,\lambda)=\lambda g(\nu/\lambda)\quad(\lambda>0),\qquad G(0,0)=0.
+\]
+Then $G$ is convex and continuous on $T$. At $(\lambda_0z,\lambda_0)$, $\lambda_0>0$, its affine tangent is the left side of \eqref{eq:perspective-cut}. Moreover, the complete family of cuts \eqref{eq:perspective-cut}, $z\in C$, is equivalent on $T$ to $G\le0$.
+\end{proposition}
+\begin{proof}
+For two positive-weight points, divide their weighted combination by its combined weight and apply convexity of $g$ with the resulting nonnegative normalized weights. Multiplication by the combined weight proves convexity of $G$. A zero-weight point contributes the zero vector and extends the same argument. Since $g$ is bounded on $C$, $|G(\nu,\lambda)|\le\lambda\max_C|g|$, proving continuity at the only zero-weight point. Ordinary continuity proves the remainder. Differentiation gives $\nabla_\nu G=a_z$ and $\partial_\lambda G=g(z)-a_z^Tz=b_z$. Its tangent constant is zero because $G(\lambda_0z,\lambda_0)=a_z^T\lambda_0z+b_z\lambda_0$. Finally, $g(p)=\sup_{z\in C}\ell_z(p)$: convexity gives the upper bound on every tangent and $z=p$ attains equality. Multiply this identity by $\lambda>0$; at $(0,0)$ every cut and $G\le0$ hold.
+\end{proof}
+The word ``closed'' here refers to the bounded-domain perspective function, equivalently extended by $+\infty$ outside $T$. It does not invoke an unrestricted recession domain. For a nonempty term $S$, the origin is in the closure of its positive-weight feasible lift: fix $p\in S$ and let $(\lambda p,\lambda)\to(0,0)$. If $S=\varnothing$, that positive-weight feasible lift and its closure are empty, but the perspective-inequality system still permits the inactive origin. This is intentional: an infeasible alternative must be usable with weight zero while another alternative is selected. A positive constant infeasible row, for example, forces its weight to zero rather than rendering the entire GDP infeasible.
+
+\begin{proposition}[Hull of a separate disjunction]\label{prop:poly-hull}
+Let $P_{ik}$ be any convex sets with $S_{ik}\subseteq P_{ik}\subseteq C$. Enforce membership $\nu_{ik}/\lambda_{ik}\in P_{ik}$ at positive weight and the inactive origin at zero weight, together with the aggregation and weight equations in \eqref{eq:hull-affine}. The projection onto $x$ is $\conv(\bigcup_kP_{ik})$. In particular, finitely many affine tangents give the exact hull of the corresponding bounded polyhedral outer approximations. All tangents give the hull of the original continuous term sets.
+\end{proposition}
+\begin{proof}
+Every feasible lifted point satisfies $x=\sum_{k:\lambda_{ik}>0}\lambda_{ik}p_{ik}$ with $p_{ik}\in P_{ik}$, a convex combination of union points. Conversely, take a finite convex combination of union points, group its terms by alternative, and let $\lambda_{ik}$ be the total coefficient in group $k$. Convexity of $P_{ik}$ places the normalized combination in that group inside $P_{ik}$ whenever $\lambda_{ik}>0$. Set $\nu_{ik}$ to its unnormalized combination and set empty groups to the inactive origin. This satisfies the lift. If every $P_{ik}$ is empty, neither side contains a point. The last assertion follows from \cref{prop:perspective}, including the affine rows.
+\end{proof}
+The all-tangents statement is an infinite-family characterization; it does not claim that a finite run generates the exact nonlinear hull. The complete relaxation $\mathcal H$ used below retains the lifted variables, global affine and convex constraints, indicator logic with $y\in[0,1]^m$, and all bounded perspective rows, while relaxing $x_J$ integrality. It intersects the separate-disjunction hull formulations; it is generally weaker than the convex hull of all GDP feasible points. Logic can further restrict its lifted weights. Neither \cref{prop:poly-hull} nor the subsequent separation results assert the integer hull or account for all interactions between disjunctions.
+
+For comparison, the big-$M$ master deactivates each term tangent in original variables:
+\begin{equation}\label{eq:bigm-cut}
+ \ell_z(x)\le M_z(1-y_{ik}),\qquad
+ M_z=\max\{0,\max_{x\in C}\ell_z(x)\}.
+\end{equation}
+The box maximum is obtained by taking the maximizing endpoint for each nonzero coefficient. This finite coefficient makes the inequality redundant when $y_{ik}=0$ and valid when $y_{ik}=1$; the same construction applies to affine term rows. Any larger valid finite coefficient also preserves validity. This is a different fractional relaxation, with no corresponding claim that all its tangents recover $\mathcal H$.
+
+\subsection{A bounded objective epigraph}\label{sec:epigraph}
+Compactness below must cover every algebraic coordinate, including an artificial epigraph. Suppose a continuously differentiable convex objective $f(x)$ is replaced by $f(x)-t\le0$ and objective $t+d^Ty$, with $t$ having no other role. A bounded $x$ alone does not bound $t$. If the nonlinear objective also depends on indicators, the same argument applies on $C\times[0,1]^m$ before reimposing integrality.
+\begin{proposition}[Optimization-equivalent compact epigraph]\label{prop:epigraph}
+For $x_0\in C$, let
+\[
+ m_f=\min_{x\in C}\{f(x_0)+\nabla f(x_0)^T(x-x_0)\},\qquad
+ M_f\ge\max_{x\in C}f(x),\quad M_f<\infty.
+\]
+Adding $m_f\le t\le M_f$ preserves an optimal lift for every original feasible $x$, hence preserves the GDP optimum. For a valid gradient bound $L_f$, one may use $M_f=f(x_0)+L_f\operatorname{diam}(C)$.
+\end{proposition}
+\begin{proof}
+The tangent inequality implies $m_f\le f(x)$ throughout $C$, and the definition of $M_f$ gives the other bound. Each original feasible $x$ therefore has the lift $t=f(x)$ in the proposed interval. Any feasible lift with $t>f(x)$ can be reduced to that value without affecting another constraint and without worsening the objective. The gradient bound implies $f(x)-f(x_0)\le L_f\|x-x_0\|$, proving the stated choice of $M_f$.
+\end{proof}
+A validated exactly feasible incumbent and a total-objective cutoff can instead bound $t$ above when the indicator cost is bounded. That alternative supplies no bound before such an incumbent exists. A lower-bounded LP optimum does not establish boundedness of arbitrary callback candidates. The prototype adds an epigraph and initial tangents but does not automatically impose the bounds in \cref{prop:epigraph}; thus the compact-domain theorems are conditional for such inputs. Numerical incumbents always use the recomputed original objective, not a possibly understated epigraph value.

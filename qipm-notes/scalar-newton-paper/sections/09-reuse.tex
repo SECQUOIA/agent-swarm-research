@@ -1,0 +1,344 @@
+\section{What repeated Newton queries can reuse}\label{sec:reuse}
+The preceding direct sums require independent information in the specified
+output.  A large number of central-path movements alone is insufficient.
+We first give an explicit sparse KKT counterexample and then quantify one
+way in which low-dimensional solution structure permits reuse.  Neither
+statement treats residual certification, dense output, or state preparation
+as free computation.
+
+\subsection{A fixed sparse KKT state at every central multiplier}
+Let $M\in\R^{n\times n}$ be invertible, with bidirectional sparse access,
+row and column sparsity at most $s$, and $\norm M\leq1$.
+For the one-cone program \eqref{eq:one-cone-program}, write
+$v=M^{-1}e$, $a=\rho(\eta)$, and $q_a=1-a^2$.
+Retain both $u=Mx$ and the equality multiplier $\lambda$.
+
+\begin{proposition}[A common KKT ray]\label{prop:fixed-kkt}
+At every exact central point, the augmented predictor equations are
+\begin{equation}\label{eq:fixed-kkt}
+ \begin{pmatrix}
+ D_a&0&I\\0&0&-M^T\\I&-M&0
+ \end{pmatrix}
+ \begin{pmatrix}\dot u\\\dot x\\\dot\lambda\end{pmatrix}
+ =\begin{pmatrix}2e\\0\\0\end{pmatrix},
+ \qquad D_a=\frac2{q_a}I+\frac{4a^2}{q_a^2}ee^T.
+\end{equation}
+Their unique solution and normalized state are
+\begin{equation}\label{eq:fixed-ray}
+ (\dot u,\dot x,\dot\lambda)
+ =\frac{q_a^2}{1+a^2}(e,v,0),\qquad
+ \frac{(e,v,0)}{\sqrt{1+\norm v^2}}.
+\end{equation}
+The KKT matrix is at most $(s+2)$-sparse, with constant-overhead sparse-access
+simulation from $M$ and $M^T$.  Thus any one-shot lower bound for preparing
+$|v\rangle$ at sufficiently small constant state error transfers to each
+individual KKT checkpoint, up to constants.
+\end{proposition}
+\begin{proof}
+Stationarity in $x$ gives $M^T\lambda=0$, so $\lambda=0$.
+The other stationarity equation is $u/(1-\norm u^2)=\eta e$;
+hence $u=ae$ and $x=av$.  Differentiating gives
+$a'=q_a^2/(1+a^2)$ and \eqref{eq:fixed-kkt}.
+The second block row forces $\dot\lambda=0$, the third forces
+$\dot u=M\dot x$, and $D_ae=2(1+a^2)e/q_a^2$ proves
+\eqref{eq:fixed-ray}.  The remaining entries are public diagonal or
+identity entries because $e$ is a basis vector.  This proves sparsity and
+oracle simulation.  Since $\norm v\geq1$, the $x$ register has probability
+at least $1/2$; measuring that register extracts $|v\rangle$ with constant
+probability.  Sufficiently small constant Euclidean state error perturbs
+this probability and the conditional state by only constant amounts.
+\end{proof}
+
+This is a state-output comparison, not a claim that every scalar derived
+from that state is hard.  It also imposes no uniform bound on the condition
+number of the augmented KKT matrix near the boundary.
+
+The converse output distinction can be equally sharp.  A signed equality
+chain $r_0=\alpha$, $r_i=\sigma_i r_{i-1}$, with $|\alpha|\leq1$
+and objective $\alpha+2r_L$, reduces to maximizing
+$(1+2H)\alpha$, where $H=\prod_i\sigma_i$.
+Its optimum is three for $H=1$ and one for $H=-1$; two-sided relative
+value error below $1/2$ therefore costs $\Theta(L)$ quantum or classical
+queries.  Yet its nonzero reduced-coordinate solution state lives in a
+one-dimensional Hilbert space and is input independent up to global phase.
+The discarded sign or scale is essential to scalar readout.  The terminal
+optimizer coordinate $r_L^*$ is actually one in both cases, so that
+coordinate cannot serve as the parity readout.  The paired interval barrier
+has parameter one, but this does not supply the hidden reduced objective
+coefficient without acquiring the chain signs.
+
+The same fixed instance can require arbitrarily many bounded local
+movements.  For $\phi(u)=-\log(1-\norm u^2)$, direct inversion of its
+radial Hessian gives
+\[
+ \norm{\nabla\phi(u)}_{u,*}^2
+   =\frac{2\norm u^2}{1+\norm u^2}\leq1.
+\]
+Objective gap at most $0<\epsilon\leq1$ implies
+$e^Tu\geq1-\epsilon/2$, so $1-\norm u^2\leq\epsilon$ and
+$\phi(u)-\phi(0)\geq\log(1/\epsilon)$.
+The gradient bound makes the barrier-metric length of every interior path
+from the center to such a point at least $\log(1/\epsilon)$.
+A chord with starting Dikin norm at most $R<1$ has length at most
+$\log(1/(1-R))$.  One can see this directly for the ball: along a line
+$\phi(u+td)$ is the sum of two negative logarithms of affine factors.
+If $h^2=d^T\nabla^2\phi(u)d$, the absolute logarithmic slopes at zero
+have squared sum $h^2$; at $t\geq0$ their denominators are at least
+$1-th$.  Therefore the metric speed is at most $h/(1-th)$, whose
+integral from zero to one is $-\log(1-h)$.
+A round containing at most $m$ such chords consequently obeys
+\begin{equation}\label{eq:movement-reuse}
+ \#\text{rounds}\ \geq
+ \frac{\log(1/\epsilon)}{m\log(1/(1-R))}.
+\end{equation}
+Pullback by $M$ preserves this barrier metric on the equality slice.
+Equation~\eqref{eq:movement-reuse} concerns this explicit primal barrier
+and bounded-Dikin chords; it is not an arbitrary algorithmic iteration
+lower bound.
+
+\begin{lemma}[An elementary hard ray]\label{lem:tree-hard-ray}
+There are four-sparse matrices $M_\sigma$, of dimension $\Theta(L)$ and
+condition number $\Theta(L)$, for which preparing
+$|M_\sigma^{-1}e\rangle$ to sufficiently small constant state error has
+quantum query complexity $\Theta(L)$.  One classical read-and-solve step
+also uses $O(L)$ queries and arithmetic.  These matrices may be used in
+Proposition~\ref{prop:fixed-kkt}.
+\end{lemma}
+\begin{proof}
+Take a path $p_0,\ldots,p_L$ with hidden edge signs
+$\sigma_1,\ldots,\sigma_L$.  Attach a complete public binary tree with
+$h=2^{\lceil\log_2L\rceil}$ leaves at $p_0$, and a disjoint copy at
+$p_L$.  For every nonroot node $z$ impose
+$y_z-s_zy_{\pi(z)}=0$, where $s_z$ is the appropriate hidden path
+sign or the public value one; impose $y_{p_0}=1$.
+These equations define a triangular matrix $A_\sigma$ with row sparsity
+two and column sparsity four.  Its dimension is
+$N_L=L+4h-3$, and $\norm A\leq\sqrt{\norm A_1\norm A_\infty}
+\leq\sqrt8$.  Set $M=A/\sqrt8$.
+The unscaled solution $A^{-1}e$ is one on the first tree and
+$H=\prod_i\sigma_i$ on the second, with prefix parities on the path.
+The solution $M^{-1}e=\sqrt8 A^{-1}e$ has the same normalized state,
+since its common public factor cancels. This state has constant probability
+$2h/N_L\geq2/5$ in
+the span of the two public uniform leaf states.  Measuring their sum and
+difference identifies $H$ whenever that subspace is observed.
+A constant number of sufficiently accurate preparations therefore computes
+parity, which needs $\Omega(L)$ queries \citep{BealsEtAl2001}.
+Reading all signs and forward substitution gives the matching upper bound.
+
+Every entry of $A^{-1}$ is zero or a signed ancestor indicator. Its absolute row
+and column sums are $O(L)$, so $\norm{A^{-1}}=O(L)$.
+The path submatrix of $A^{-1}$ is, after diagonal sign changes, the
+cumulative-sum matrix; applying it to the uniform vector shows norm
+$\Omega(L)$.  Since $1\leq\norm A=O(1)$, the condition is
+$\Theta(L)$.  The augmented KKT graph also has a width-three tree
+decomposition: for each nonroot $z$ use the bag
+$\{\lambda_z,u_z,x_z,x_{\pi(z)}\}$ and join bags along the dependency
+tree; omit the absent parent variable at the root.
+\end{proof}
+
+After one $O(L)$-query solve, the stored vector $v$ determines every center
+and predictor in \eqref{eq:fixed-ray} by public scalar rescaling, regardless
+of the movement count in \eqref{eq:movement-reuse}.  Implicit classical
+output then needs only a scalar and the stored vector.  Repeated dense
+writes or quantum state preparations still cost work, but no further raw
+input query is required.  More generally, reading all $O(ns)$ addressable
+nonzero coefficient words of a fixed sparse matrix gives a finite cap on
+subsequent coefficient-query complexity.  This cap applies to outputs
+mathematically determined by those words, with arbitrary storage and
+computation.  It does not reconstruct unspecified behavior of an arbitrary
+unitary completion, nor bound arithmetic, gate, memory, or bit complexity.
+
+The same reuse is directly relevant to scalar output.  For any fixed public
+readout $c$, one has $c^Tx(\eta)=\rho(\eta)c^TM^{-1}e$.
+One additive-$\epsilon$ estimate of $c^TM^{-1}e$ therefore supplies the
+entire sequence of these scalar centers to additive error $\epsilon$,
+since $0\leq\rho(\eta)<1$.  Choosing the plateau readout of
+Section~\ref{sec:realizations} makes this one scalar classically hard;
+its reuse needs no transfer from a state-output lower bound.
+
+The sharper one-shot state lower
+$\Omega(\kappa\log(1/\varepsilon_{\rm state}))$ of
+\citet[Theorem~1]{MoriEtAl2026} holds for a constant-sparsity family under
+coherent sparse position/value access, with
+$0<\varepsilon_{\rm state}\leq1/11$ measured in Euclidean distance
+between normalized solution states; right-hand-side preparation cost is
+treated as negligible. This concerns a different output from our scalar
+inverse forms. Its existence cannot justify
+multiplying one-shot hardness by a movement count.  The elementary family
+above already disproves that general inference without relying on a
+precision-sensitive state-preparation theorem.
+
+\subsection{Residual-certified span reuse}
+Consider any sequence of nonsingular systems $H_tz_t=f_t\ne0$ and unit
+rays $\psi_t=z_t/\norm{z_t}$.  Maintain a span of stored checkpoint
+vectors.  At time $t$, minimize the \emph{current} relative residual
+$\norm{H_ty-f_t}/\norm{f_t}$ over this span.  If the residual is too
+large, solve the system once and append its ray.  Every use of an old
+vector requires its image under the current operator; it is not assumed
+that old residuals remain valid.
+
+\begin{proposition}[Exact span]\label{prop:exact-reuse}
+If the full sequence of solution rays has span dimension $r$, exact
+residual minimization and exact checkpoint rays require at most $r$
+refresh solves, for any acceptance threshold in $(0,1)$.  This is sharp.
+\end{proposition}
+\begin{proof}
+If the current ray belongs to the stored span, that span contains the exact
+solution and its minimum residual is zero.  Each rejection therefore adds
+a linearly independent ray.  For sharpness take $H_t=I$, $f_t=e_t$,
+$t=1,\ldots,r$; every not-yet-stored vector has relative residual one.
+\end{proof}
+
+For a robust version, set
+$A_t=(\norm{z_t}/\norm{f_t})H_t$, so
+$A_t\psi_t=f_t/\norm{f_t}$, and assume $\norm{A_t}\leq B_0$.
+Necessarily $B_0\geq1$.  These normalized operators are only for
+analysis; the algorithm can minimize the original relative residual and
+need not know $\norm{z_t}$.  Let $0<\eta\leq1$ be the desired residual
+scale.  Suppose minimization returns a candidate with residual at most
+$\eta/8$ above the true minimum, and the test estimates that candidate's
+residual to additive error $\eta/8$.  Accept if the reported value is at
+most $3\eta/4$.  An accepted candidate has true relative residual at
+most $7\eta/8$, whereas rejection implies minimum residual greater than
+$\eta/2$.
+
+\begin{theorem}[Numerical span with normalized checkpoints]\label{thm:robust-reuse}
+Let $D$ be the system dimension and let $1\leq r\leq D$ be an integer.
+Suppose every refreshed stored vector $\widehat\psi_t$ has norm one and
+$\norm{\widehat\psi_t-\psi_t}\leq\xi$.  Define the Kolmogorov width
+\[
+ d_r=\inf_{\dim S=r}\sup_t\operatorname{dist}(\psi_t,S),
+ \qquad \Delta=\frac{\eta}{2B_0}-\xi>0.
+\]
+If
+\begin{equation}\label{eq:width-refresh}
+ d_r+\xi<\frac{\Delta^{2-1/r}}{2r},
+\end{equation}
+then the residual procedure makes at most $2r-1$ refreshes, on the event
+that all stated minimization, test and checkpoint errors hold.
+\end{theorem}
+\begin{proof}
+For a stored span $V$, its best relative residual is at most
+$B_0\operatorname{dist}(\psi_t,V)$.  Rejection therefore implies
+$\operatorname{dist}(\psi_t,V)>\eta/(2B_0)$, and the next approximate
+stored vector has distance greater than $\Delta$ from $V$.
+Suppose $2r$ refreshes occur and form a matrix $Y$ from their normalized
+columns.  Its first QR diagonal has magnitude one and all later diagonals
+exceed $\Delta$, giving
+\[
+ \sqrt{\det(Y^*Y)}>\Delta^{2r-1}.
+\]
+Choose an $r$-space $S$ with all column distances at most
+$d_r+\xi+\epsilon$, where $\epsilon>0$ is arbitrary.
+The first $r$ singular values of $Y$ are at most $\sqrt{2r}$ since its
+columns have norm one.  The remaining $r$ are at most
+$\norm{(I-\Pi_S)Y}\leq\sqrt{2r}(d_r+\xi+\epsilon)$, since
+$\Pi_SY$ has rank at most $r$.  Thus
+\[
+ \sqrt{\det(Y^*Y)}\leq(2r)^r(d_r+\xi+\epsilon)^r.
+\]
+Letting $\epsilon\downarrow0$ contradicts \eqref{eq:width-refresh}.
+Normalization of every stored column is used in this volume bound.
+\end{proof}
+
+There is a stronger bound under a correspondingly stronger stability
+assumption.  Suppose the exact rays have rank $r$, and whenever a new exact
+ray is dependent on \emph{the exact versions of the previously selected
+checkpoint rays}, it has a representation in those rays whose coefficients
+have sum of absolute values at most $\Lambda$.  If
+$B_0\Lambda\xi\leq\eta/2$, replacing that representation by the stored
+approximate rays has relative residual at most $\eta/2$.
+It cannot trigger a rejection.  Hence at most $r$ refreshes occur.
+Stability in an unspecified final basis is insufficient for this adaptive
+argument.  This condition permits checkpoint error linear in $\eta$;
+any resulting tomography complexity must still use the cost law of the
+particular tomography interface.
+
+These statements specialize the established ideas of subspace recycling
+and greedy reduced bases \citep{ParksEtAl2006,BinevEtAl2011} to a
+residual-certified checkpoint contract.  They give refresh counts, not
+unconditional quantum speedups.  With explicit vectors of dimension $D$
+and $R$ retained checkpoints, forming current images and solving their
+least-squares problem costs, for example,
+$O(R\,\mathrm{mv}(H_t)+DR^2+R^3)$ arithmetic per test.
+Quantum tests have their own input preparation, normalization and
+coefficient-conditioning costs.  If the systems are expressed in a linear
+nullspace representation enforcing homogeneous feasibility equations,
+span combinations preserve those equations.  For an affine feasibility
+constraint one must instead retain a particular feasible point and combine
+homogeneous directions.  Neither observation supplies cone-scaling access
+for free.
+
+\subsection{When low numerical rank is justified, and what it does not buy}
+A useful sufficient regularity condition is holomorphic dependence.  Suppose
+a unit-ray curve on $[-1,1]$ extends holomorphically to a Bernstein ellipse
+of parameter $\chi>1$, continuously to its boundary, with norm at most
+$W$.  Its vector-valued Chebyshev coefficients satisfy
+$\norm{c_j}\leq2W\chi^{-j}$ for $j\geq1$, by the usual contour
+integral on the ellipse.  The degree-$(r-1)$ truncation lies in the span
+of $r$ coefficient vectors, and its tail is bounded by
+\begin{equation}\label{eq:analytic-width}
+ d_r\leq\sum_{j=r}^{\infty}2W\chi^{-j}
+       =\frac{2W\chi^{-(r-1)}}{\chi-1}.
+\end{equation}
+Thus a uniform ellipse and bound give a logarithmic numerical-rank scale.
+They are actual hypotheses, not consequences of strict complementarity.
+For example, the strictly complementary separable QP
+$\min_{x\geq0}\frac12\norm x^2+c^Tx$, with distinct $c_i>0$, has
+barrier central coordinates and predictors
+\[
+ x_i(\tau)=\frac{-c_i+\sqrt{c_i^2+4\tau}}2,
+ \qquad x_i'(\tau)=\frac1{\sqrt{c_i^2+4\tau}}.
+\]
+The coordinate functions of the predictor are linearly independent:
+analytic continuation of a vanishing linear combination to a neighborhood
+of $-c_i^2/4$ forces its $i$th coefficient to vanish, since only that
+summand has that branch singularity.  The normalized predictor rays
+therefore span the full dimension; common normalization does not change
+linear relations among coordinate functions on the real interval.
+Nor is there a uniform complex neighborhood as $\min_i c_i\downarrow0$.
+For a normalized-ray example in dimension two, choose $c_2=2c_1$.
+The squared first coordinate of the normalized predictor is
+$(c_2^2+4\tau)/(c_1^2+c_2^2+8\tau)$, with a nonremovable pole tending
+to zero from below.  A uniform Bernstein ellipse for normalized rays on
+$[0,1]$ is therefore impossible in this family.
+
+Low rank alone also does not make certification cheap.  With coefficient
+queries, take $H_0=H_1=I_D$, $f_0=e_0$, and
+\[
+ f_1=e_0+\sum_{i=1}^{D-1}a_i e_i,\qquad a_i\in\{0,1\},
+ \quad\sum_i a_i\in\{0,1\}.
+\]
+The solution span has dimension at most two and $B_0=1$.
+The minimum relative residual from $\operatorname{span}\{e_0\}$ is zero
+or $1/\sqrt2$.  Any test separating these cases solves unique search,
+requiring $\Omega(D)$ randomized or $\Omega(\sqrt D)$ quantum queries.
+For completeness, under a uniform marked location a $Q$-query randomized
+algorithm hits it with probability at most $Q/(D-1)$ until the transcript
+changes; the quantum hybrid bound changes the average final-state distance
+by at most $O(Q/\sqrt D)$.
+An exact norm oracle for $f_1$ would reveal the case immediately, which is
+why the coefficient-query input is explicit here.
+
+Even a single stored ray does not eliminate explicit-output cost.  For
+$H=I$ and $f_b=D^{-1/2}((-1)^{b_1},\ldots,(-1)^{b_D})$, a phase query
+implemented by the canonical bit oracle prepares the amplitude state.
+The input for the following lower bound is this bit/value oracle; a
+phase-only unitary would not expose the overall sign.
+A classical vector within Euclidean error
+$1/4$ determines all but at most $D/16$ signs by rounding its coordinates.
+This requires $\Omega(D)$ classical queries and $\Omega(D)$ writes;
+its quantum query cost is also $\Omega(D)$.  To see the latter without
+assuming exact recovery, a $Q$-query final state, as the signs vary, lies
+in a space of dimension at most $\sum_{j=0}^Q\binom Dj$ by the
+multilinear query expansion \citep{BealsEtAl2001}.
+Any one rounded output is correct for at most
+$V=\sum_{j\leq D/16}\binom Dj\leq2^{H_2(1/16)D}$ inputs.
+For any measurement, its average success on uniform inputs is at most
+$V\sum_{j\leq Q}\binom Dj/2^D$: bound each state's density matrix by
+the projector onto this common space and sum the measurement operators.
+Constant success consequently requires $Q=\Omega(D)$.
+Here $H_2$ is binary entropy.  The argument separates inexpensive state
+preparation from a classical vector, even when the same rank-one target
+is requested at every checkpoint.

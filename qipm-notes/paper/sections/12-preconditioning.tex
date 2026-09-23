@@ -1,0 +1,1467 @@
+\section{Preconditioning and Interface Obstructions}
+\label{sec:preconditioning}
+
+``Just precondition'' and ``just keep the state'' are incomplete complexity
+arguments.  Preconditioning may exchange spectral condition for factor
+normalization, right-hand-side preparation, or recovery sensitivity.  A
+normalized Newton state may in turn be too weak to supply the coordinatewise
+diagonal needed by the next Newton system.  This section prices those exchanges
+in the access models of \cref{sec:prelim-quantum-access}.  The conclusions are
+products and complete ledgers, never lower bounds on one spectral factor in
+isolation.
+
+The analytic condition/normalization statements, including the fixed-factor
+minimax result, are model free.  Only their compilation/accounting
+corollaries, the parity reductions, and the lazy-oracle results use the raw
+sparse coefficient model of
+\cref{def:raw-sparse-access}.  The state-interface results instead use the
+distinct state-preparation access of \cref{def:state-preparation-access}; they
+are not raw-coefficient query lower bounds.  The lazy-oracle results finally
+explain why the caching ceiling in \cref{sec:lp-gain-plateau} prevents an
+unconditional per-iteration multiplier on a fixed instance.
+
+\subsection{Factor normalization and whitening}
+\label{sec:preconditioning-whitening}
+
+We first isolate the signed gain-propagation block used by
+\cref{thm:lp-gain-plateau}.  Let $N\geq2$, $M=17N$, and
+\[
+ T=\left\lceil\tfrac12\log_2N\right\rceil,
+ \qquad H=2^T,\qquad H_i=2^{\min\{i,T\}},\qquad g_i=H_i/H_{i-1},
+\]
+and take $a_i=\varsigma_i$ for $i\leq N$ and $a_i=1$ afterward.  Thus
+$\varsigma_i$ here is the hidden sign denoted $\sigma_i$ in
+\cref{thm:lp-gain-plateau}.  Here \(H\) is the plateau height; the normal
+matrix \(H_\mu\) used later is unrelated.  On
+$d=(d_0,\ldots,d_M)^T$, define the pinned lower-bidiagonal factor
+\begin{equation}
+ (B_\varsigma d)_0=d_0,
+ \qquad (B_\varsigma d)_i=d_i-g_ia_id_{i-1}.
+ \label{eq:prec-gain-factor}
+\end{equation}
+Put $\tau_0=1$, $\tau_i=\prod_{j=1}^ia_j$, and
+$D_\tau=\diag(\tau_0,\ldots,\tau_M)$.  Let $B_+$ be
+\eqref{eq:prec-gain-factor} with every sign positive and set
+$S_+=B_+B_+^T$.  Then
+\begin{equation}
+ B_\varsigma=D_\tau B_+D_\tau,
+ \qquad S_\varsigma:=B_\varsigma B_\varsigma^T
+ =D_\tau S_+D_\tau.
+ \label{eq:prec-gauge}
+\end{equation}
+Thus the singular values are independent of the signs, although implementing
+the gauge requires their prefix products.  This switching identity and the
+corresponding inverse formulas are standard signed-graph facts
+\cite{alazemi2024-signed-graphs-and-inverses-of}.
+
+\begin{lemma}[Plateau singular scale]
+\label{lem:prec-small-singular}
+If $L=M-T+1$ is the number of plateau nodes, then
+\begin{equation}
+ \sigma_{\min}(B_\varsigma)
+ \leq2\sin\frac{\pi}{2(L+1)}
+ \leq\frac{\pi}{L+1}<\frac{\pi}{16N},
+ \qquad \norm{B_\varsigma^{-1}}_2=\Theta(N).
+ \label{eq:prec-small-singular}
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+Take a Dirichlet sine vector supported on nodes $T,\ldots,M$, with virtual
+zeros at $T-1$ and $M+1$.  On this support $B_+$ is the first-difference
+operator.  Adding the omitted final difference can only increase its energy,
+and the full Dirichlet path quotient is
+$4\sin^2(\pi/(2(L+1)))$.  Equation~\eqref{eq:prec-gauge} gives the signed
+case, while $\sin x\leq x$ and $L+1>16N$ give the two remaining inequalities.
+
+For $i\geq j$, direct forward substitution gives
+\begin{equation}
+ (B_+^{-1})_{ij}=H_i/H_j.                    \label{eq:prec-factor-inverse}
+\end{equation}
+The column $B_+^{-1}e_0=(H_i)_i$ has norm $\Theta(N)$, whereas summing the
+squares in \eqref{eq:prec-factor-inverse} gives
+$\norm{B_+^{-1}}_F=O(N)$.  Orthogonal equivalence in
+\eqref{eq:prec-gauge} proves the final claim.
+\end{proof}
+
+\begin{theorem}[Sharp plateau whitening frontier]
+\label{thm:prec-whitening-frontier}
+Let $P_\varsigma$ be any square factor such that, for $K\geq1$,
+\begin{equation}
+ \frac1K I\preceq P_\varsigma S_\varsigma P_\varsigma^*
+ \preceq I.                                      \label{eq:prec-whitened-spectrum}
+\end{equation}
+Then
+\begin{equation}
+ \norm{P_\varsigma}_2\sqrt K
+ \geq\frac1{\sigma_{\min}(B_\varsigma)}
+ >\frac{16N}{\pi}.                              \label{eq:prec-whitening-frontier}
+\end{equation}
+Consequently every exact $(\alpha_P,a_{\rm anc},0)$ block encoding of $P_\varsigma$
+obeys
+\begin{equation}
+ \boxed{\alpha_P\sqrt K>\frac{16N}{\pi}}.       \label{eq:prec-alpha-frontier}
+\end{equation}
+For $1\leq a\leq\Theta(N)$, the regularized family
+\begin{equation}
+ P_\varsigma^{(a)}
+ =D_\tau(S_++a^{-2}I)^{-1/2}D_\tau             \label{eq:prec-regularized-family}
+\end{equation}
+has $\norm{P_\varsigma^{(a)}}_2=\Theta(a)$ and, after a constant
+input-independent normalization of the largest eigenvalue,
+\begin{equation}
+ K=\Theta((N/a)^2),\qquad
+ \norm{P_\varsigma^{(a)}}_2\sqrt K=\Theta(N).  \label{eq:prec-tight-frontier}
+\end{equation}
+Thus the order of the frontier is attained throughout, not only at its
+endpoints.
+\end{theorem}
+
+\begin{proof}
+Equation~\eqref{eq:prec-whitened-spectrum} implies
+$\sigma_{\min}(P_\varsigma B_\varsigma)\geq K^{-1/2}$.  On a right
+singular vector of $B_\varsigma$ for its least singular value,
+\[
+ \sigma_{\min}(P_\varsigma B_\varsigma)
+ \leq\norm{P_\varsigma}_2\sigma_{\min}(B_\varsigma).
+\]
+This and \cref{lem:prec-small-singular} prove
+\eqref{eq:prec-whitening-frontier}; the normalization of an exact block
+encoding is at least the encoded norm.
+
+For tightness, the eigenvalues of the congruence in
+\eqref{eq:prec-regularized-family} are
+\[
+ \frac{\lambda}{\lambda+a^{-2}},\qquad \lambda\in\sigma(S_+).
+\]
+The bidiagonal factor has bounded norm, a diagonal entry of one, and inverse
+norm $\Theta(N)$ by \cref{lem:prec-small-singular}.  Hence
+$\lambda_{\max}(S_+)=\Theta(1)$ and
+$\lambda_{\min}(S_+)=\Theta(N^{-2})$.  It follows that the factor norm is
+$\Theta(a)$ and that the ratio of the displayed largest and smallest
+eigenvalues is $\Theta((N/a)^2)$ in the stated range.  This proves
+\eqref{eq:prec-tight-frontier}.
+\end{proof}
+
+The theorem is a specialization, not a new general quantum-preconditioning
+obstruction.  Theorem~3 and Corollary~4 of Nie, Lai, and An already prove the
+separate-block-encoding limitation for arbitrary preconditioners
+\cite{hantao2026-pauli-structured-preconditioning-quantum-linear}.  What is
+specific here is the constant $16/\pi$, the tight interpolation
+\eqref{eq:prec-regularized-family}--\eqref{eq:prec-tight-frontier}, and the
+preprocessing-aware raw-query theorem below.  Directly encoding a classically
+formed or algebraically regrouped product is a different access model, as both
+that work and \cref{prop:no-composed-preconditioning} emphasize.
+
+Two useful approximate operator consequences are immediate.  If the factor is
+supplied through an exact $(\alpha_P,a_{\rm anc},0)$ block encoding, then, for fixed
+$\delta<1$,
+\begin{align}
+ \norm{P_\varsigma S_\varsigma P_\varsigma^*-I}_2\leq\delta
+ &\Longrightarrow
+ \alpha_P\geq
+ \frac{\sqrt{1-\delta}}{\sigma_{\min}(B_\varsigma)},\label{eq:prec-approx-white}\\
+ \norm{P_\varsigma B_\varsigma-I}_2\leq\delta
+ &\Longrightarrow
+ \alpha_P\geq
+ \frac{1-\delta}{\sigma_{\min}(B_\varsigma)}.\label{eq:prec-approx-inverse}
+\end{align}
+Indeed, the first inequality gives
+$\sigma_{\min}(P_\varsigma B_\varsigma)\geq\sqrt{1-\delta}$, while the
+second gives $\sigma_{\min}(P_\varsigma B_\varsigma)\geq1-\delta$; the same
+singular-vector argument then applies.
+Constant-error approximate whitening or inversion supplied through such an
+exact factor encoding therefore has $\alpha_P=\Omega(N)$.  More generally, if
+$\beta=\norm{P_\varsigma S_\varsigma P_\varsigma^*}_2$ and the congruence
+has condition at most $K$, the scale-invariant statement is
+\begin{equation}
+ \norm{P_\varsigma}_2\sqrt{K/\beta}
+ \geq\sigma_{\min}(B_\varsigma)^{-1}.          \label{eq:prec-scale-invariant}
+\end{equation}
+This normalization is essential: scalar rescaling defeats an unnormalized
+statement.
+For a left factor normalized by
+$\sigma(P_\varsigma B_\varsigma)\subseteq[1/K,1]$ and supplied through an
+exact $(\alpha_P,a_{\rm anc},0)$ block encoding, the same argument gives
+\begin{equation}
+ \alpha_PK\geq\norm{P_\varsigma}_2K>\frac{16N}{\pi}.       \label{eq:prec-left-frontier}
+\end{equation}
+
+The factor norm still does not price compilation from raw signs.  Define
+\begin{equation}
+ F_\varsigma=\diag(B_\varsigma^{-1},B_+^{-1}),\quad
+ G_\varsigma=\diag(B_\varsigma,B_+),\quad
+ \ket r=\frac{\ket{0,e_0}+\ket{1,e_0}}{\sqrt2}.            \label{eq:prec-FG}
+\end{equation}
+By \eqref{eq:prec-factor-inverse},
+\begin{equation}
+ F_\varsigma\ket r
+ =\frac1{\sqrt2}\bigl((H_i\tau_i)_i\oplus(H_i)_i\bigr),
+ \qquad \norm{F_\varsigma r}_2=\left(\sum_iH_i^2\right)^{1/2}=\Theta(N).
+ \label{eq:prec-inverse-state}
+\end{equation}
+Pair the signed and unsigned coordinates and measure their side qubit in the
+$X$ basis on the $16N$ plateau-copy nodes.  Its parity-signed expectation is
+\begin{equation}
+ \frac{16NH^2}{\sum_iH_i^2}
+ >\frac{16N}{17N+4/3}>\frac9{10}.             \label{eq:prec-inverse-bias}
+\end{equation}
+
+\begin{theorem}[Reusable inverse access--normalization tradeoff]
+\label{thm:prec-inverse-access}
+Suppose an offline stage makes $s$ raw sign queries and produces a reusable
+exact $(\alpha,a,0)$ block encoding of $\widetilde F_\varsigma$.  One call,
+its inverse, or a controlled call makes at most $q$ further raw queries.
+If, for fixed $\delta\leq1/20$,
+\begin{equation}
+ \norm{\widetilde F_\varsigma G_\varsigma-I}_2\leq\delta, \label{eq:prec-inverse-promise}
+\end{equation}
+then
+\begin{equation}
+ \boxed{s+O(q\alpha/N)=\Omega(N)},\qquad
+ \boxed{Ns+q\alpha=\Omega(N^2)}.             \label{eq:prec-inverse-product}
+\end{equation}
+The constants hidden in $O$ and $\Omega$ are absolute.
+\end{theorem}
+
+\begin{proof}
+Since $G_\varsigma F_\varsigma=I$,
+\[
+ \norm{(\widetilde F_\varsigma-F_\varsigma)r}_2
+ \leq\delta\norm{F_\varsigma r}_2.
+\]
+Thus the normalized approximate-inverse state retains a constant parity bias
+under the decoder in \eqref{eq:prec-inverse-bias}, and
+$\norm{\widetilde F_\varsigma r}_2\geq(1-\delta)\Theta(N)$.
+Fixed-point amplitude amplification prepares it with constant success using
+$O(\alpha/N)$ block-encoding calls.  Including setup, the resulting parity
+algorithm uses $s+O(q\alpha/N)$ raw queries.  Quantum parity needs
+$\Omega(N)$ queries \cite{beals2001-quantum-lower-bounds-by-polynomials},
+proving the first inequality; multiplication by $N$
+gives the second.  Equation~\eqref{eq:prec-approx-inverse} also gives
+$\alpha=\Omega(N)$, so the amplification count is never subconstant.
+\end{proof}
+
+Three no-go qualifications delimit these statements.  First, a
+preconditioned product supplied directly can be the identity:
+$P_\varsigma=B_\varsigma^{-1}$ gives $P_\varsigma B_\varsigma=I$, and exact
+Schur whitening gives $P_\varsigma S_\varsigma P_\varsigma^*=I$.  No lower
+bound on the product's normalization and condition alone is possible.
+Second, applying $D_\tau$ is not free.  Any operator-norm-$<1/3$
+implementation needs $\Omega(N)$ raw queries: apply it to
+$(\ket0+\ket M)/\sqrt2$ and measure in the
+$(\ket0\pm\ket M)/\sqrt2$ basis to recover endpoint parity.  Third, the
+factor-independent conservation law needs the hard input/output contract.
+Consider specifically the plateau solve
+$G_\varsigma x=r$ from \eqref{eq:prec-FG}, and require an output state within
+trace distance $1/20$ of
+$F_\varsigma\ket r/\norm{F_\varsigma r}_2$.  For any such end-to-end
+preconditioned implementation, compose its output with the fixed $X$-basis
+decoder of \eqref{eq:prec-inverse-bias}.  The reduction gives
+\begin{equation}
+ q_{\rm set}+q_{\rm rhs}+q_{\rm rec}+m q_{\rm BE}=\Omega(N),
+ \label{eq:prec-end-to-end-conservation}
+\end{equation}
+where $m$ is the number of solver calls, $q_{\rm BE}$ is the raw cost per
+call, the solve phase makes no other raw queries, and the other terms charge
+setup, transformed-RHS preparation, and recovery.  Indeed,
+composing all phases with that decoder gives a bounded-error parity algorithm,
+so their total raw-query cost is $\Omega(N)$.  Without this particular
+RHS/output guarantee, no such law is claimed; a public solution may carry no
+hidden information.  An orthogonal factor rotation can move parity among the
+charged phases.  The statement is for the pinned plateau block, not for every
+unrestricted full-KKT preconditioner.
+
+\subsection{Congruence condition versus physical-state recovery}
+\label{sec:preconditioning-congruence}
+
+A second frontier arises even when the preconditioner is an elementary
+active--inactive scaling.  Let the fixed Euclidean space split orthogonally as
+$\R^r=U\oplus K$, with projectors $Q$ and $R$, and suppose
+\begin{equation}
+ H_\mu=\mu^{-1}C_\mu+\mu D_\mu,\qquad 0<\mu\leq\mu_0.       \label{eq:prec-congruence-H}
+\end{equation}
+Assume $C_\mu=QC_\mu Q$ and $C_\mu|_U\to C\succ0$;
+$D_\mu\succeq0$ is uniformly bounded;
+$D_{KK,\mu}\to D_{KK}\succ0$; and all other blocks converge.  For a fixed
+nonzero $f\in U$, put
+\begin{equation}
+ p=C^{-1}f,\qquad g=D_{KK}^{-1}D_{KU}p,                    \label{eq:prec-pg}
+\end{equation}
+and assume the nontrivial coupling $g\ne0$.  These are fixed-instance
+strict-complementarity asymptotics, not uniform claims in a growing
+dimension.
+
+For $0\leq\gamma\leq1$, define
+\begin{equation}
+ T_{\mu,\gamma}=\mu^{\gamma/2}Q+\mu^{-\gamma/2}R,\quad
+ G_{\mu,\gamma}=T_{\mu,\gamma}H_\mu T_{\mu,\gamma},\quad
+ \eta_\mu=H_\mu^{-1}f,\quad z_{\mu,\gamma}=T_{\mu,\gamma}^{-1}\eta_\mu.
+ \label{eq:prec-power-congruence}
+\end{equation}
+Because $f\in U$, $T_{\mu,\gamma}f=\mu^{\gamma/2}f$; the normalized
+transformed RHS is exactly the original RHS state.  The tradeoff below is
+therefore a condition--recovery effect, not a loading effect.
+The normalized contraction that recovers physical coordinates is
+\begin{equation}
+ \mathsf R_{\mu,\gamma}=T_{\mu,\gamma}/\norm{T_{\mu,\gamma}}_2
+ =\mu^\gamma Q+R,\qquad
+ \Phi_{\mu,\gamma}(w)=
+ \frac{\mathsf R_{\mu,\gamma}w}{\norm{\mathsf R_{\mu,\gamma}w}_2}.
+ \label{eq:prec-recovery-map}
+\end{equation}
+For a unit $w$, measure its local normalized-state sensitivity by
+\begin{equation}
+ \chi_{\mu,\gamma}(w)=
+ \left\|D\Phi_{\mu,\gamma}(w)|_{w^\perp}\right\|_{2\to2}.
+ \label{eq:prec-recovery-sensitivity}
+\end{equation}
+
+\begin{theorem}[Power congruence frontier]
+\label{thm:prec-congruence-frontier}
+Under the preceding assumptions, for each fixed $\gamma\in[0,1]$ as
+$\mu\downarrow0$,
+\begin{align}
+ \kappa_2(G_{\mu,\gamma})
+ &=\Theta(\mu^{-2(1-\gamma)}),                         \label{eq:prec-congruence-kappa}\\
+ \eta_\mu&=\mu\binom{p}{-g}+o(\mu),                    \label{eq:prec-physical-expansion}\\
+ z_{\mu,\gamma}&=
+ \binom{\mu^{1-\gamma/2}(p+o(1))}
+       {-\mu^{1+\gamma/2}(g+o(1))}.                    \label{eq:prec-scaled-expansion}
+\end{align}
+Writing $\widehat z=z/\norm z_2$, exact normalized recovery holds and direct
+postselection has
+\begin{equation}
+ \Phi_{\mu,\gamma}(\widehat z)
+ =\frac{\eta_\mu}{\norm{\eta_\mu}_2},\qquad
+ P_{\rm rec}=\norm{\mathsf R_{\mu,\gamma}\widehat z}_2^2
+ =\Theta(\mu^{2\gamma}),                                \label{eq:prec-recovery-probability}
+\end{equation}
+while
+\begin{equation}
+ \chi_{\mu,\gamma}(\widehat z)=\Theta(\mu^{-\gamma}).   \label{eq:prec-recovery-chi}
+\end{equation}
+Consequently
+\begin{equation}
+ \boxed{\sqrt{\kappa_2(G_{\mu,\gamma})}\,
+ \chi_{\mu,\gamma}(\widehat z)=\Theta(1/\mu)},
+ \qquad
+ \sqrt{\kappa_2(G_{\mu,\gamma})}P_{\rm rec}^{-1/2}
+ =\Theta(1/\mu).                                         \label{eq:prec-congruence-product}
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+Set $a_\mu=\mu^{-(1-\gamma)}$ and
+$b_\mu=\mu^{1-\gamma}=a_\mu^{-1}$.  In $U\oplus K$ blocks,
+\begin{equation}
+ G_{\mu,\gamma}=
+ \begin{pmatrix}
+ a_\mu C_\mu+\mu^{1+\gamma}D_{UU,\mu}&\mu D_{UK,\mu}\\
+ \mu D_{KU,\mu}&b_\mu D_{KK,\mu}
+ \end{pmatrix}.                                         \label{eq:prec-congruence-blocks}
+\end{equation}
+The upper-left block $A_\mu$ is $\Theta(a_\mu)I_U$, and its Schur
+complement is
+\[
+ b_\mu D_{KK,\mu}-\mu^2D_{KU,\mu}A_\mu^{-1}D_{UK,\mu}
+ =\Theta(b_\mu)I_K.
+\]
+The elimination factor has off-diagonal norm
+$O(\mu b_\mu)=o(1)$.  A uniformly conditioned near-identity congruence
+therefore reduces \eqref{eq:prec-congruence-blocks} to blocks of sizes
+$\Theta(a_\mu)$ and $\Theta(b_\mu)$, proving
+\eqref{eq:prec-congruence-kappa}.
+
+The $K$ block of $H_\mu\eta_\mu=f$ gives exactly
+\[
+ \eta_{K,\mu}=-D_{KK,\mu}^{-1}D_{KU,\mu}\eta_{U,\mu}.
+\]
+Substitution in the $U$ block gives
+\[
+ [\mu^{-1}C_\mu+\mu E_\mu]\eta_{U,\mu}=f,
+ \quad
+ E_\mu=D_{UU,\mu}-D_{UK,\mu}D_{KK,\mu}^{-1}D_{KU,\mu},
+\]
+where $E_\mu$ is bounded.  Hence
+$\eta_{U,\mu}=\mu(C_\mu+\mu^2E_\mu)^{-1}f=\mu(p+o(1))$,
+which proves \eqref{eq:prec-physical-expansion}; applying $T^{-1}$ proves
+\eqref{eq:prec-scaled-expansion}.
+
+Because $\mathsf Rz=\mu^{\gamma/2}\eta$, normalized recovery is exact.
+The two expansions give
+\[
+ \norm{\mathsf R\widehat z}_2
+ =\mu^\gamma
+ \frac{(\norm p_2^2+\norm g_2^2+o(1))^{1/2}}
+      {(\norm p_2^2+\mu^{2\gamma}\norm g_2^2+o(1))^{1/2}}
+ =\Theta(\mu^\gamma),
+\]
+proving \eqref{eq:prec-recovery-probability}.  Differentiation gives, with
+$\widehat\eta=\Phi(w)$,
+\begin{equation}
+ \chi_{\mu,\gamma}(w)=
+ \frac{\norm{(I-\widehat\eta\widehat\eta^T)
+ \mathsf R_{\mu,\gamma}(I-ww^T)}_2}
+      {\norm{\mathsf R_{\mu,\gamma}w}_2}.                \label{eq:prec-chi-formula}
+\end{equation}
+This is $O(\mu^{-\gamma})$ at $w=\widehat z$.  For $\gamma>0$, project
+$g/\norm g$ onto $\widehat z^\perp$.  The resulting unit tangent is
+$g/\norm g+o(1)$ in $K$, while the recovered state tends to
+$(p,-g)/(\norm p^2+\norm g^2)^{1/2}$.  Since $p\ne0$, the numerator in
+\eqref{eq:prec-chi-formula} is bounded below by
+$\norm p/(\norm p^2+\norm g^2)^{1/2}>0$.  This proves the matching lower
+bound.  For $\gamma=0$, $\mathsf R=I$ and $\chi=1$.  Multiplying the
+estimates proves \eqref{eq:prec-congruence-product}.
+\end{proof}
+
+The same two-sparse LP witnesses every exponent.  Consider
+\begin{equation}
+ \min_{x\geq0}x_2+x_3,\qquad
+ x_1+x_2=1,\quad x_2-x_3=0,                               \label{eq:prec-small-witness}
+\end{equation}
+so
+$A=\left(\begin{smallmatrix}1&1&0\\0&1&-1\end{smallmatrix}\right)$,
+$b=e_1$, and $c=(0,1,1)^T$.  Its unique optimum is $(1,0,0)$.  Along the
+central path $x_2=x_3=t_\mu$, $x_1=1-t_\mu$, with
+$t_\mu=\mu+O(\mu^2)$, and
+\begin{equation}
+ H_\mu=A(XS^{-1})A^T
+ =\frac{(1-t_\mu)^2}{\mu}
+ \begin{pmatrix}1&0\\0&0\end{pmatrix}
+ +\frac{t_\mu^2}{\mu}
+ \begin{pmatrix}1&1\\1&2\end{pmatrix}.                 \label{eq:prec-witness-normal}
+\end{equation}
+Indeed, dual feasibility and complementarity give equal inactive slacks
+$q_\mu=1+\mu/[2(1-t_\mu)]$ and $t_\mu q_\mu=\mu$, which yields the
+expansion.  For $U=\operatorname{span}\{e_1\}$ and
+$K=\operatorname{span}\{e_2\}$, the limiting blocks in
+\eqref{eq:prec-congruence-H} are $C=e_1e_1^T$ and
+$D=\left(\begin{smallmatrix}1&1\\1&2\end{smallmatrix}\right)$.  Thus
+$p=1$, $g=1/2$, and $H_\mu^{-1}b=\mu(1,-1/2)^T+o(\mu)$.
+This fixed two-row, three-variable LP therefore realizes all parts of
+\cref{thm:prec-congruence-frontier}; at $\gamma=1$ its scaled condition has
+a finite positive limit and its recovery amplitude is asymptotic to
+$\sqrt{5/4}\,\mu$.
+
+The power family is also the complete order-optimal interpolation within all
+scalar block-diagonal SPD congruences.  Let
+\begin{equation}
+ T_\mu=t_U(\mu)Q+t_K(\mu)R,\qquad
+ r_\mu=t_U/t_K,\quad
+ M_\mu=\max\{r_\mu/\mu,\mu/r_\mu\},\quad
+ K_\mu=\max\{r_\mu,r_\mu^{-1}\}.                         \label{eq:prec-general-scalars}
+\end{equation}
+Put
+\begin{equation}
+ \widetilde G_\mu=T_\mu H_\mu T_\mu,\qquad
+ \widetilde z_\mu=T_\mu^{-1}\eta_\mu,\qquad
+ \widetilde{\mathsf R}_\mu=T_\mu/\norm{T_\mu}_2,\qquad
+ \widetilde\Phi_\mu(w)=
+ \frac{\widetilde{\mathsf R}_\mu w}
+      {\norm{\widetilde{\mathsf R}_\mu w}_2}.            \label{eq:prec-general-recovery}
+\end{equation}
+Define $\widetilde P_{\rm rec}$ by applying the squared norm in
+\eqref{eq:prec-recovery-probability} to
+$\widetilde{\mathsf R}_\mu$ and $\widehat{\widetilde z}_\mu$, and define
+$\widetilde\chi_\mu$ by \eqref{eq:prec-recovery-sensitivity} with
+$\widetilde\Phi_\mu$.
+
+\begin{theorem}[General scalar-block frontier]
+\label{thm:prec-general-scalar-frontier}
+Uniformly over all positive scalar functions $t_U,t_K$,
+\begin{equation}
+ \sqrt{\kappa_2(\widetilde G_\mu)}=\Theta(M_\mu),\quad
+ \widetilde P_{\rm rec}^{-1/2}=\Theta(K_\mu),\quad
+ \widetilde\chi_\mu=\Theta(K_\mu).                      \label{eq:prec-general-frontier}
+\end{equation}
+Consequently
+\begin{equation}
+ \sqrt{\kappa_2(\widetilde G_\mu)}\,\widetilde\chi_\mu
+ =\Theta(M_\mu K_\mu)\geq c/\mu.                       \label{eq:prec-general-product}
+\end{equation}
+The same holds with $\widetilde P_{\rm rec}^{-1/2}$ in place of
+$\widetilde\chi_\mu$.  Equality in order,
+$M_\mu K_\mu=\Theta(1/\mu)$, holds exactly for the maximal class
+\begin{equation}
+ r_\mu=\Omega(\mu),\qquad r_\mu=O(1).                    \label{eq:prec-equality-class}
+\end{equation}
+More explicitly,
+\begin{equation}
+ M_\mu K_\mu=
+ \begin{cases}
+  \mu/r_\mu^2,&r_\mu<\mu,\\
+  1/\mu,&\mu\leq r_\mu\leq1,\\
+  r_\mu^2/\mu,&r_\mu>1.
+ \end{cases}                                             \label{eq:prec-three-cases}
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+The assumptions imply uniform spectral equivalence
+\begin{equation}
+ c_0(\mu^{-1}Q+\mu R)\preceq H_\mu
+ \preceq C_0(\mu^{-1}Q+\mu R).                           \label{eq:prec-spectral-equivalence}
+\end{equation}
+For the lower bound, write a vector as $u+k$.  Fixed $c,d,M>0$ give
+\[
+ (u+k)^TH_\mu(u+k)
+ \geq(c/\mu-2M^2\mu/d)\norm u^2+(d\mu/2)\norm k^2,
+\]
+after Young's inequality; for small $\mu$ this proves the lower half of
+\eqref{eq:prec-spectral-equivalence}, and boundedness proves the upper half.
+Congruence by $T_\mu$ shows that the two spectral scales are
+$t_U^2/\mu$ and $\mu t_K^2$, proving the condition estimate in
+\eqref{eq:prec-general-frontier}.
+
+Equation~\eqref{eq:prec-physical-expansion} gives
+$\norm{\eta_{U,\mu}}=\Theta(\mu)$ and
+$\norm{\eta_{K,\mu}}=\Theta(\mu)$.  Therefore
+\[
+ \norm{\widetilde{\mathsf R}_\mu\widehat{\widetilde z}_\mu}
+ =\frac{\norm{\eta_\mu}}
+ {\max\{t_U,t_K\}
+  \sqrt{\norm{\eta_{U,\mu}}^2/t_U^2+
+        \norm{\eta_{K,\mu}}^2/t_K^2}}
+ =\Theta(K_\mu^{-1}).
+\]
+This proves the recovery-probability claim.  In the plane spanned by the
+normalized $U$ and $K$ components, differentiating the output angle of
+$\diag(t_U,t_K)$ gives tangent gain
+\[
+ \frac{r_\mu^{-1}\norm{\eta_{U,\mu}}^2+
+       r_\mu\norm{\eta_{K,\mu}}^2}
+      {\norm{\eta_{U,\mu}}^2+\norm{\eta_{K,\mu}}^2}
+ =\Theta(K_\mu).
+\]
+This is a lower bound on $\widetilde\chi_\mu$; differentiation as in
+\eqref{eq:prec-chi-formula} gives the matching upper bound.  The elementary
+three-case calculation \eqref{eq:prec-three-cases} proves the product and
+the equality class.
+\end{proof}
+
+This is not a universal preconditioning lower bound.  It excludes arbitrary
+left preconditioners, input-dependent changes mixing $U$ and $K$, direct
+preparation of the physical state, variable-time recovery, and algorithms
+that request only an observable.  It also charges neither construction of
+$Q$ nor block-encoding normalization.  If $g=0$, the recovery conclusion can
+fail.  In particular, the state-preserving left equilibration in
+\cref{thm:stable-split-equilibration} lies outside this congruence-recovery
+contract and is a genuine positive escape.  The theorem is therefore a sharp
+structural lemma for a specified family, realized by
+\eqref{eq:prec-small-witness}, rather than a claim against all
+preconditioners.
+
+\subsection{The parity preconditioner dichotomy}
+\label{sec:preconditioning-parity}
+
+The parity LP gives a complementary dichotomy.  Its reduced primal Hessian is
+condition one, but its equality normal matrix is a signed grounded-tree
+Laplacian.  Fixed preconditioners cannot serve all signings, whereas a perfect
+data-dependent sparse factor is locally trivial.  The global information then
+appears in factor application, transformed-RHS preparation, or recovery.
+
+The minimax claim already holds on a path.  Let
+\begin{equation}
+ B=\begin{pmatrix}
+ 1\\-1&1\\&-1&1\\&&\ddots&\ddots
+ \end{pmatrix},\qquad C=BB^T,\qquad
+ R=\diag(1,-1,1,-1,\ldots)                               \label{eq:prec-path-pair}
+\end{equation}
+for $m\geq1$.  Both $C$ and $RCR$ are legal sign inputs.
+
+\begin{theorem}[Minimax fixed-preconditioner bound]
+\label{thm:prec-fixed-minimax}
+For SPD matrices write $\kappa=\lambda_{\max}/\lambda_{\min}$.
+For every input-independent SPD matrix $M$,
+\begin{equation}
+ \max\left\{
+ \kappa(M^{-1/2}CM^{-1/2}),
+ \kappa(M^{-1/2}RCRM^{-1/2})
+ \right\}\geq\frac{4m^2-1}{3}\geq m^2.                  \label{eq:prec-minimax}
+\end{equation}
+The identity gives condition number at most $4m^2$ for either signing, so it
+is minimax optimal in order.  The statement allows dense $M$ and holds more
+generally for every fixed invertible factor $P$, with the two matrices
+$P^TCP$ and $P^TRCRP$.  The bound $(4m^2-1)/3$ is a witness lower bound,
+not a claim of the exact minimax value.  It strengthens the former
+$m^2/4$ bound for $m\geq4$.
+\end{theorem}
+
+\begin{proof}
+For SPD $A_0,A_1,M$, generalized Rayleigh quotients give
+\begin{equation}
+ \kappa(A_0^{-1/2}A_1A_0^{-1/2})
+ \leq\kappa(M^{-1/2}A_0M^{-1/2})
+       \kappa(M^{-1/2}A_1M^{-1/2}).                       \label{eq:prec-simultaneous}
+\end{equation}
+Indeed, bound the numerator and denominator of
+$x^TA_1x/(x^TA_0x)$ by the extremal eigenvalues in $M$ coordinates; the
+independent scales cancel in the quotient of extrema.
+
+For $r=(m,m-1,\ldots,1)^T$,
+\[
+ x^TCx=\sum_{j=0}^{m-2}(x_j-x_{j+1})^2+x_{m-1}^2,
+ \qquad r^TCr=m.
+\]
+Summing the alternating witness exactly gives
+\[
+ r^TRCRr=\sum_{k=1}^m(2k-1)^2=\frac{m(4m^2-1)}3.
+\]
+Put $t=(4m^2-1)/3$.  The generalized quotient is $t$ at $r$ and
+$1/t$ at $Rr$, so
+$\kappa(C^{-1/2}RCRC^{-1/2})\geq t^2$.
+Apply \eqref{eq:prec-simultaneous} with $A_0=C$ and $A_1=RCR$; one of its
+two factors must be at least $t$.  The same argument in coordinates
+$P^{-1}r$ and $P^{-1}Rr$ proves the assertion for any invertible $P$,
+without a polar-decomposition assumption.
+
+For the upper bound, write $d_i=x_i-x_{i+1}$ for $i<m-1$ and
+$d_{m-1}=x_{m-1}$.  Then $x_i=\sum_{j=i}^{m-1}d_j$ and
+$x^TCx=\sum_jd_j^2$.  Cauchy--Schwarz gives
+$\norm{x}_2^2\leq m^2x^TCx$, while
+$(a-b)^2\leq2a^2+2b^2$ gives $x^TCx\leq4\norm{x}_2^2$.
+Thus $\kappa(C)\leq4m^2$.  Since $R$ is orthogonal, the same bound
+holds for $RCR$; more generally every signed path is an orthogonal
+diagonal conjugate of $C$.
+\end{proof}
+
+The fixed-preconditioner result is formalized in Lean, including the
+actual incidence matrices, their positive definiteness, extremal-eigenvalue
+condition numbers, the simultaneous-preconditioning inequality, the exact
+witness ratio, and the identity upper bound for every edge signing.
+The development also proves the arbitrary-factor statement directly and
+identifies the SPD specialization with the positive inverse square root.
+It does not formalize the data-dependent factor or quantum-query results
+that follow.  The repository's \texttt{formal/PRECONDITIONER.md} maps these
+claims to the proofs and records the verification commands.
+
+For data-dependent preconditioning, let $D_\varsigma$ be the square grounded
+signed incidence matrix of the chain-plus-copy tree: its root row is $e_0^T$
+and the row of a nonroot node $j$ is
+$e_j^T-\tau_je_{\pi(j)}^T$, where $\tau_j$ is its edge sign.  With pair
+variables the equality matrix is
+\begin{equation}
+ A_\varsigma=D_\varsigma[I,-I],\qquad
+ C_\varsigma=D_\varsigma D_\varsigma^T.                  \label{eq:prec-tree-normal}
+\end{equation}
+Every row of $D_\varsigma$ has at most two nonzeros, each determined by one
+local sign, yet
+\begin{equation}
+ D_\varsigma^{-1}C_\varsigma D_\varsigma^{-T}=I,\qquad
+ D_\varsigma^{-1}e_0=(p_j)_j,                             \label{eq:prec-perfect-local}
+\end{equation}
+where $p_j$ is the root-to-$j$ sign product.  Set
+$R_\varsigma=\diag(p_j)$, and let $D_+$ be the unsigned grounded incidence
+matrix on the same rooted tree.  The switching identity is
+$D_\varsigma=R_\varsigma D_+R_\varsigma$.  Thus construction of a sparse
+perfect preconditioner is not hard; applying its inverse exposes all prefixes.
+This distinction is the classical requirement that a useful preconditioner be
+cheap to apply, expressed here in support-theory language
+\cite{boman2003-support-theory-for-preconditioning}.
+
+The right-hand side $e_0$ in \eqref{eq:prec-perfect-local} occurs in an actual
+Newton equation.  At the infeasible-start point
+$x=s=\mathbf1$, $y=0$, $\mu=1$ for the pair LP with $c=\mathbf1$ and
+$b=e_0$, the point is centered and dual feasible, and $A_\varsigma\mathbf1=0$.
+With the residual convention of \eqref{eq:newton-residuals}, any centering
+target $0<\sigma_c\leq1$ gives
+\begin{equation}
+ A_\varsigma\Delta x=e_0,\quad
+ A_\varsigma^T\Delta y+\Delta s=0,\quad
+ \Delta x+\Delta s=(\sigma_c-1)\mathbf1,\quad
+ A_\varsigma A_\varsigma^T\Delta y=e_0.                  \label{eq:prec-actual-newton}
+\end{equation}
+Since $A_\varsigma A_\varsigma^T=2D_\varsigma D_\varsigma^T$, the signed
+incidence congruence transforms this exact Newton RHS into
+$D_\varsigma^{-1}e_0$ up to a public scalar.
+
+For the state lower bound, take $N\geq2$ and attach two isomorphic complete
+copy trees, one to the root and one to the endpoint of the $N$-edge hidden
+spine.  Each has $M$ leaves and $J=2M-2$ new nodes, where
+\begin{equation}
+ M=2^{\lceil\log_2(16(N+1))\rceil}.                       \label{eq:prec-two-tree-size}
+\end{equation}
+Here $M$ and $m=N+1$ below are local to this amplified-tree construction and
+are unrelated to the plateau length $M$ and path dimension $m$ used earlier.
+All new edges have positive sign; write $\widehat D_\varsigma$ for this
+grounded incidence factor and define
+\begin{equation}
+ \widehat A_\varsigma=\widehat D_\varsigma[I,-I],\qquad
+ \widehat C_\varsigma=\widehat D_\varsigma\widehat D_\varsigma^T.
+ \label{eq:prec-amplified-normal}
+\end{equation}
+At the same infeasible-start point $x=s=\mathbf1$, $y=0$, $\mu=1$, now for
+the amplified pair LP with $c=\mathbf1$ and $b=e_0$, the Newton equations are
+\begin{equation}
+ \widehat A_\varsigma\Delta x=e_0,\quad
+ \widehat A_\varsigma^T\Delta y+\Delta s=0,\quad
+ \Delta x+\Delta s=(\sigma_c-1)\mathbf1,\quad
+ \widehat A_\varsigma\widehat A_\varsigma^T\Delta y=e_0.
+ \label{eq:prec-amplified-newton}
+\end{equation}
+Thus the signed-incidence congruence maps this actual amplified Newton RHS to
+$\widehat D_\varsigma^{-1}e_0$ up to a public scalar.
+
+The weighted factor below is also the exact local factor away from the start.
+At any positive interior point let
+$\Theta=XS^{-1}=\diag(\Theta_+,\Theta_-)$, where
+$\Theta_\pm=\diag(\theta_j^\pm)_j$, and set
+\begin{equation}
+ \Omega=\diag(\omega_j)_j,\qquad
+ \omega_j=\theta^+_j+\theta^-_j>0.                       \label{eq:prec-local-omega}
+\end{equation}
+Then
+\begin{equation}
+ \widehat A_\varsigma\Theta\widehat A_\varsigma^T
+ =\widehat D_\varsigma\Omega\widehat D_\varsigma^T
+ =L_\varsigma L_\varsigma^T,\qquad
+ L_\varsigma:=\widehat D_\varsigma\Omega^{1/2}.         \label{eq:prec-local-factor}
+\end{equation}
+Here $g$ below is the corresponding eliminated Newton RHS.  In particular,
+$4/5\leq x_i,s_i\leq6/5$ implies
+$4/3\leq\omega_j\leq3$, hence
+$\Gamma:=\max_j\omega_j/\min_j\omega_j\leq9/4<4$.
+
+\begin{theorem}[Factor-specific Newton-RHS hardness]
+\label{thm:prec-factor-rhs-hardness}
+Every unconditional algorithm that, on each sign input, outputs a state within
+trace distance $1/20$ of
+\begin{equation}
+ \ket{z_\varsigma}=
+ \frac{\widehat D_\varsigma^{-1}e_0}
+      {\norm{\widehat D_\varsigma^{-1}e_0}_2}             \label{eq:prec-prefix-state}
+\end{equation}
+makes $\Omega(N)$ raw coefficient queries.
+
+The conclusion remains true for the weighted nearby factor $L_\varsigma$ in
+\eqref{eq:prec-local-factor} and eliminated RHS $g$ whenever
+\begin{equation}
+ \frac{\max_j\omega_j}{\min_j\omega_j}\leq4,\qquad
+ \norm{g-e_0}_1\leq\frac1{100};                           \label{eq:prec-l1-robust}
+\end{equation}
+the target is the normalized state proportional to
+$\Omega^{-1/2}\widehat D_\varsigma^{-1}g$.  If $g$ or $\Omega$ is
+input-dependent, all raw queries used to construct and access it are included.
+Thus the theorem applies at any nearby central iterate satisfying these two
+promises.  Freely supplied side oracles whose numerical values themselves
+encode parity are outside the theorem.
+\end{theorem}
+
+\begin{proof}
+In the exact case, the prefix vector is $+1$ on every node of the root copy
+tree and endpoint parity $p_N$ on every node of the endpoint copy tree.  Pair
+corresponding nodes and measure their side qubit in the $X$ basis.  If
+$m=N+1$, then $J\geq31m$ and the probability of a paired node is
+\begin{equation}
+ \frac{2J}{m+2J}>\frac{62}{63}.                           \label{eq:prec-copy-mass}
+\end{equation}
+Conditional on that event the measurement returns $p_N$ exactly; outputting a
+fair bit otherwise succeeds with probability greater than
+$1/2+31/63=125/126$.  Trace error $1/20$ leaves success above $2/3$, so the
+fixed decoder computes parity and requires $\Omega(N)$ queries.
+
+For \eqref{eq:prec-l1-robust}, first take $g=e_0$ and put
+$\Gamma=\max\omega/\min\omega\leq4$.  Paired nodes have squared mass at
+least
+\[
+ \alpha\geq\frac{2J}{2J+\Gamma m}\geq\frac{31}{33}.
+\]
+The amplitudes of a corresponding pair are $a$ and $p_Nb$ with
+$a/b\in[1/2,2]$.  The $X$ measurement is correct with probability
+$1/2+ab/(a^2+b^2)\geq9/10$.  The full ideal success is therefore at least
+$1/2+(2/5)(31/33)=289/330$.
+
+For $\delta=g-e_0$, every coordinate of
+$\widehat D_\varsigma^{-1}\delta$ is a signed ancestor sum, so, if $P$ is
+the number of tree nodes,
+\[
+ \norm{\widehat D_\varsigma^{-1}\delta}_2
+ \leq\sqrt P\norm\delta_1,
+ \qquad
+ \frac{\norm{\Omega^{-1/2}\widehat D_\varsigma^{-1}\delta}_2}
+ {\norm{\Omega^{-1/2}\widehat D_\varsigma^{-1}e_0}_2}
+ \leq\sqrt\Gamma\norm\delta_1\leq\frac1{50}.
+\]
+The corresponding normalized pure states are at Euclidean distance at most
+$1/25$.  Including trace error $1/20$ changes outcome probabilities by at
+most $9/100$; subtracting this from $289/330$ leaves success above $2/3$.
+Parity again proves the claim.
+\end{proof}
+
+The $\ell_1$ hypothesis is essential to this proof.  On the signed spine set
+$\widetilde d_j=p_j(1-j/N)$, keep the root copy tree at value one, and set the
+endpoint copy tree to zero.  Then
+\begin{equation}
+ \norm{\widehat D_\varsigma\widetilde d-e_0}_2=N^{-1/2},  \label{eq:prec-l2-failure}
+\end{equation}
+although the amplified endpoint has vanished and $\widetilde d$ stays a
+constant relative distance from the prefix vector.  Thus even a vanishing
+$\ell_2$ feasibility residual does not imply the state closeness used above;
+\eqref{eq:prec-l2-failure} is a failure of this proof route, not a no-go for
+every possible $\ell_2$-robust reduction.
+
+Nor is transformed-RHS hardness invariant under the factor.  On the amplified
+tree, let $\widehat R_\varsigma=\diag(p_j)$ be the prefix gauge and let
+$\widehat D_+$ be the unsigned grounded incidence matrix.  Then
+$\widehat D_\varsigma=\widehat R_\varsigma\widehat D_+
+\widehat R_\varsigma$, and the equally perfect factor
+\begin{equation}
+ \widehat P_\varsigma=\widehat D_+^{-1}\widehat R_\varsigma
+ =\widehat R_\varsigma\widehat D_\varsigma^{-1}
+ \label{eq:prec-orthogonal-loophole}
+\end{equation}
+satisfies
+\begin{equation}
+ \widehat P_\varsigma\widehat C_\varsigma\widehat P_\varsigma^T=I,
+ \qquad
+ \widehat P_\varsigma e_0=\widehat D_+^{-1}e_0=\mathbf1.
+ \label{eq:prec-easy-rhs}
+\end{equation}
+The RHS is now input independent.  Recovery uses
+$\widehat P_\varsigma^T=\widehat R_\varsigma\widehat D_+^{-T}$, so the
+parity cost has moved to factor application or original-coordinate recovery.
+This orthogonal-factor
+loophole is why \cref{thm:prec-factor-rhs-hardness} is deliberately
+factor-specific.
+
+The invariant statement is end to end.  Specialize
+\eqref{eq:prec-amplified-newton} to $\sigma_c=1$ and take the full step.  With
+$p=\widehat D_\varsigma^{-1}e_0$, the unique minimum-norm direction and its
+update are
+\begin{equation}
+ \Delta x=\tfrac12(p,-p),\qquad \Delta s=-\Delta x,\qquad
+ x^+=\mathbf1+\Delta x.                                  \label{eq:prec-hard-update}
+\end{equation}
+Every pair of $x^+$ is $(3/2,1/2)$ or its swap, and
+$X^+s^+=(3/4)\mathbf1$; this is the exact feasible center at $\mu=3/4$.
+The endpoint copy tree occupies more than $15/32$ of all pairs.  Conditional
+on measuring such a pair, the computational-basis coordinate identifies
+$p_N$ with probability $9/10$.  Returning a fair bit otherwise gives ideal
+success greater than $1/2+(2/5)(15/32)=11/16$, and trace error $1/100$
+leaves success above $2/3$.
+
+\begin{theorem}[Preconditioner-oracle accounting]
+\label{thm:prec-parity-ledger}
+Let $P_\varsigma$ be any possibly data-dependent invertible factor for the
+normal equation in \eqref{eq:prec-amplified-newton}, with no sparsity or locality
+assumption, and let an end-to-end Newton procedure output a state within trace
+distance $1/100$ of the normalized $x^+$ in
+\eqref{eq:prec-hard-update}.  Partition all raw coefficient queries into
+setup, transformed-RHS preparation, iterative solve, and original-coordinate
+recovery/update.  Then
+\begin{equation}
+ \boxed{Q_{\rm set}+Q_{\rm rhs}+Q_{\rm solve}+Q_{\rm rec}=\Omega(N).}
+ \label{eq:prec-parity-ledger}
+\end{equation}
+If the preconditioned system has condition at most $K$ and the solve phase's
+only raw queries occur inside at most $T(K,\epsilon)$ calls to its
+preconditioned oracles, each costing at most $q_{\rm on}$ raw queries, then
+\begin{equation}
+ Q_{\rm set}+Q_{\rm rhs}+T(K,\epsilon)q_{\rm on}+Q_{\rm rec}=\Omega(N).
+ \label{eq:prec-condition-ledger}
+\end{equation}
+In particular, for
+$T(K,\epsilon)=\widetilde O(K\log(1/\epsilon))$ and hidden polylogarithmic
+factor $L(N,\epsilon)$,
+\begin{equation}
+ Q+O(Kq_{\rm on}L(N,\epsilon))=\Omega(N),\qquad
+ Q:=Q_{\rm set}+Q_{\rm rhs}+Q_{\rm rec}.                 \label{eq:prec-condition-corollary}
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+All four phases together form one coefficient-query algorithm.  Compose its
+output with the fixed decoder following \eqref{eq:prec-hard-update}; this
+computes parity of the $N$ hidden spine signs with bounded error.  Each LP
+coefficient query is simulated by $O(1)$ sign queries, proving
+\eqref{eq:prec-parity-ledger}.  Under the oracle-only solve hypothesis,
+$Q_{\rm solve}\leq T(K,\epsilon)q_{\rm on}$, which gives
+\eqref{eq:prec-condition-ledger}, and substitution of the stated solver call
+bound gives \eqref{eq:prec-condition-corollary}.
+\end{proof}
+
+A hybrid solver that also queries raw data directly remains covered by
+\eqref{eq:prec-parity-ledger}, where such queries stay in $Q_{\rm solve}$.
+
+The ledger is tight and is not a quantum--classical separation.  A classical
+algorithm reads the $N$ signs, computes every prefix, and stores the gauge in
+$\Theta(N)$ queries and work.  Ladner--Fischer prefix scan reduces parallel
+depth to $O(\log N)$ with $O(N)$ bounded-fan-in work
+\cite{ladner1980-parallel-prefix-computation}.  Caching then removes further
+hidden-sign queries, but it does not make the unsigned triangular operations
+free: applying $\widehat D_+^{-1}$ or $\widehat D_+^{-T}$ still takes
+$\Theta(N)$ work and $O(\log N)$ parallel depth by prefix or subtree
+aggregation.  Multiplication by the cached diagonal gauge is local.  Quantum
+parity changes only the constant in the query count.  The right referee-level
+interpretation is therefore a
+lemma/counterexample suite: \cref{thm:prec-fixed-minimax} is a finite-dimensional
+minimax lower bound, \cref{thm:prec-factor-rhs-hardness} locates cost for a canonical factor,
+and \cref{thm:prec-parity-ledger} records how another factor can relocate it.
+It is not a standalone universal preconditioning lower bound.  Contemporary
+preconditioned QIPM analyses that assume prepared transformed data are
+consistent with this conclusion; reducing those oracles to raw LP access is a
+separate charged step \cite{zeguan2026-preconditioned-inexact-infeasible-quantum-interi}.
+
+\subsection{Newton-state output is not an iterate oracle}
+\label{sec:preconditioning-state-interface}
+
+We now change oracle models.  Let $v\in\R_{>0}^n$, let its known norm be
+$r_v=\norm v_2$, and grant controlled state-preparation access
+\begin{equation}
+ U_v\ket0=\ket{\widehat v}=\frac1{r_v}\sum_{j=1}^nv_j\ket j,
+ \label{eq:prec-state-oracle}
+\end{equation}
+together with $U_v^\dagger$ and a fixed real phase.  This is precisely
+\cref{def:state-preparation-access}; it is stronger than receiving copies but
+distinct from coordinate-value, raw-coefficient, QRAM, or already compiled
+diagonal access.  Those interfaces are not generally ordered by strength.
+The next results count calls to $U_v,U_v^\dagger$, not raw LP queries.
+
+\begin{theorem}[State-to-diagonal normalization--query product]
+\label{thm:prec-state-diagonal}
+Suppose a controlled circuit $W_v$, using $q$ calls to
+$U_v,U_v^\dagger$, is an $(\alpha,a,1/8)$ block encoding of
+$\diag(v)$.  If the reported normalization satisfies the uniform known bound
+$\alpha\leq A$, where $A\geq1$, then in the worst case
+\begin{equation}
+ \boxed{qA=\Omega(\sqrt n)}.                              \label{eq:prec-qA}
+\end{equation}
+The product is tight in order on the hard near-uniform family.
+\end{theorem}
+
+\begin{proof}
+For $n\geq10$, take the positive equal-norm pair
+\begin{equation}
+ v^{(0)}=(1,\ldots,1),\qquad
+ v^{(1)}=(2,\beta,\ldots,\beta),\qquad
+ \beta=\sqrt{\frac{n-4}{n-1}}.                           \label{eq:prec-state-pair}
+\end{equation}
+Both norms are $\sqrt n$, and
+\begin{equation}
+ \frac1{\sqrt n}\leq
+ \norm{v^{(0)}/\sqrt n-v^{(1)}/\sqrt n}_2
+ \leq\sqrt{2/n}.                                        \label{eq:prec-close-states}
+\end{equation}
+Choose unitary extensions $U_0,U_1$ related by the minimum planar rotation
+between the prepared states.  Then
+$\norm{U_0-U_1}_2=\Theta(n^{-1/2})$, so the hybrid argument requires
+$\Omega(\sqrt n)$ oracle calls for constant-bias distinction.
+
+On the other hand, $O(A)$ controlled calls to $W_v$ estimate
+$\operatorname{Re}\bra{0^a,1}W_v\ket{0^a,1}$ to additive error $1/(16A)$.
+Multiplication by the reported $\alpha$ contributes error at most $1/16$,
+and block-encoding error contributes at most $1/8$.  The first diagonal entry
+is therefore known within $1/4$, distinguishing one from two.  The composed
+distinguisher uses $O(qA)$ original oracle calls, proving
+\eqref{eq:prec-qA}.
+
+Rattew and Rebentrost give an exact constant-query block encoding of
+$\diag(v/r_v)$ from $U_v$ \cite{rattew2023-non-linear-transformations-of-quantum}.
+As an encoding of $\diag(v)$ it has normalization $r_v=\sqrt n$ on
+\eqref{eq:prec-state-pair}, attaining the product in order.  This is
+worst-case tightness, not a per-vector lower bound for every structured
+preparation circuit.
+\end{proof}
+
+With copy-only access, the pair in \eqref{eq:prec-state-pair} requires
+$\Omega(n)$ copies: one-copy overlap is $1-\Theta(1/n)$, so only
+$k=\Omega(n)$ copies have constant trace distance.  Thus inverse access in
+\cref{def:state-preparation-access} changes the exponent but does not erase
+the interface cost.
+
+The same obstruction sharpens near a strictly complementary endpoint.  Let
+$n=2m$, $m\geq5$, $0<\mu\leq1$, and define
+\begin{equation}
+ \beta=\sqrt{\frac{m-4}{m-1}},\quad
+ v=(2,\beta\mathbf1_{m-1}),\quad
+ r=(m-1)(1-\beta)=\frac3{1+\beta},\quad
+ z=2(r,\mathbf1_{m-1}).                                  \label{eq:prec-central-pair}
+\end{equation}
+For the one-sparse LP
+\begin{equation}
+ A=[I_m\;0],\qquad b=\mathbf1_m,\qquad c=(z,\mathbf1_m), \label{eq:prec-central-lp}
+\end{equation}
+take the common $x=(\mathbf1_m,\mu\mathbf1_m)$ and
+\begin{align}
+ s^{(0)}&=(\mu\mathbf1_m,\mathbf1_m),&
+ y^{(0)}&=z-\mu\mathbf1_m,\nonumber\\
+ s^{(1)}&=(\mu v,\mathbf1_m),&
+ y^{(1)}&=z-\mu v.                                      \label{eq:prec-central-triples}
+\end{align}
+Both triples are feasible.  Since $\norm v=\norm{\mathbf1_m}$ and
+$z^T(v-\mathbf1_m)=0$, the corresponding slack norms and dual norms agree.
+
+\begin{theorem}[Strict-complementarity state-access barrier]
+\label{thm:prec-centrality-state}
+In controlled state-preparation access to the slack and dual states in
+\eqref{eq:prec-central-triples}, distinguishing
+\begin{equation}
+ \norm{Xs-\bar\mu\mathbf1}_2\leq\bar\mu/4
+ \quad\text{from}\quad
+ \norm{Xs-\bar\mu\mathbf1}_2\geq3\bar\mu/4              \label{eq:prec-centrality-promise}
+\end{equation}
+requires
+\begin{equation}
+ \boxed{\Omega(\sqrt n/\mu)}                             \label{eq:prec-centrality-lb}
+\end{equation}
+total controlled preparation/inverse calls.  With copy-only access the bound
+is $\Omega(n/\mu^2)$.  The result holds although both triples approach the
+same strictly complementary optimum.  The fixed LP data, the common $x$, all
+vector norms, positivity, and the real phase conventions are free.
+\end{theorem}
+
+\begin{proof}
+The zero triple is exactly centered with $\bar\mu_0=\mu$.  For the other,
+$\bar\mu_1<\mu$ while the first complementarity product is $2\mu$, so
+\begin{equation}
+ \norm{Xs^{(1)}-\bar\mu_1\mathbf1}_2>\mu>\bar\mu_1.       \label{eq:prec-central-gap}
+\end{equation}
+The normalized slack-state distance is $\Theta(\mu/\sqrt n)$.  The duals
+differ by the same unnormalized vector $\mu(v-\mathbf1_m)$ and have common
+norm $\Omega(\sqrt m)$, so their normalized-state distance is also
+$O(\mu/\sqrt n)$.  Choose close minimum-rotation extensions for both
+oracles.  A hybrid over queries to either oracle gives
+\eqref{eq:prec-centrality-lb}.  For independent copies, fidelity
+multiplicativity gives the square of this dependence.  Finally both triples
+converge to
+$((\mathbf1_m,0),z,(0,\mathbf1_m))$, proving strict complementarity.
+\end{proof}
+
+The triples can also be generated by a sparse LP's objective-state oracle.
+Put $d=v-\mathbf1_m$,
+$z_0=2(r,\mathbf1_{m-1})$, and $z_\mu=z_0-(\mu/2)d$.  Then
+\begin{equation}
+ z_0^Td=0,\qquad \mathbf1^Td=1-r,\qquad 1\leq\norm d_2^2\leq2.
+ \label{eq:prec-input-identities}
+\end{equation}
+\begin{theorem}[Input-generated state-only barrier]
+\label{thm:prec-input-generated}
+Use the common one-sparse $A=[I_m\;0]$, $b=\mathbf1_m$, and objectives
+\begin{equation}
+ c^{(0)}=(z_\mu,\mathbf1_m),\qquad
+ c^{(1)}=(z_\mu+\mu d,\mathbf1_m).                       \label{eq:prec-input-objectives}
+\end{equation}
+Let the only input-dependent access be a controlled clean preparation of the
+normalized objective and its inverse; the common norm, $A$, and $b$ are free.
+Distinguishing the inputs, certifying which one is centered at the common pair
+$x=(\mathbf1_m,\mu\mathbf1_m)$,
+$y=z_\mu-\mu\mathbf1_m$, or estimating the optimum to additive error
+$\mu/8$, needs $\Omega(\sqrt n/\mu)$ controlled oracle calls.  Copy-only
+access needs $\Omega(n/\mu^2)$ copies.
+
+Moreover, multiply both objectives symmetrically by $n$, take
+$b=\mathbf1_m/6$, and use
+\[
+ \widetilde c^{(0)}=n(z_0-\tfrac\mu2d,\mathbf1_m),\qquad
+ \widetilde c^{(1)}=n(z_0+\tfrac\mu2d,\mathbf1_m).
+\]
+The normalized objective oracles do not change, the value gap obeys
+\begin{equation}
+ |\operatorname{OPT}_1-\operatorname{OPT}_0|
+ =\frac{n\mu}{6}(r-1)\geq\frac{n\mu}{12},                \label{eq:prec-value-gap}
+\end{equation}
+and additive value accuracy $n\mu/48$ has the same query lower bound.  This
+is a fixed fraction of the centered total duality gap $n\mu$; here
+$n=\nu$ is the canonical LP barrier parameter of \cref{sec:prelim-conic}.
+\end{theorem}
+
+\begin{proof}
+The objective norms agree because
+$2\mu z_\mu^Td+\mu^2\norm d^2=0$, and their normalized-state distance is
+$\Theta(\mu/\sqrt n)$.  Minimum-rotation objective-state oracles therefore
+require $\Omega(\sqrt n/\mu)$ calls to distinguish; fidelity
+multiplicativity gives $\Omega(n/\mu^2)$ copies.  The displayed common pair
+is centered for input zero and violates \eqref{eq:prec-centrality-promise}
+for input one.  Every feasible point has first block $\mathbf1_m$ and its
+positive-cost second block vanishes at optimum, so the original value gap is
+$\mu|\mathbf1^Td|\geq\mu/2$.  Additive error $\mu/8$ distinguishes the
+inputs.
+
+For the scaled claim, the common point
+\[
+ \widetilde x=(\mathbf1_m/6,(\mu/n)\mathbf1_m),\qquad
+ \widetilde y=n(z_0-\tfrac\mu2d)-6\mu\mathbf1_m
+\]
+has every complementarity product equal to $\mu$ for input zero; input one
+remains positive because $n(1-\beta)\leq5<6$ and lies outside every fixed
+$N_2$ neighborhood of radius below one.  Its centered total duality gap is
+$n\mu$.  Feasibility fixes the first primal block to $\mathbf1_m/6$, which
+gives \eqref{eq:prec-value-gap}; accuracy $n\mu/48$ distinguishes the inputs.
+The inverse-$\mu$ factor is therefore not caused by demanding accuracy finer
+than the centered duality-gap scale.
+\end{proof}
+
+This input-generated theorem has a sharp boundary.  A binary coefficient-value
+oracle exposes the known exceptional coordinate, whose values differ by
+$\Theta(\mu)$, in one query at sufficient requested precision.  Distinct
+value-register strings are not close unitaries merely because the encoded
+reals are close.  Likewise, the naturally normalized Newton diagonals for the
+two inputs differ by a constant in their first entry, so a freely supplied
+Newton block encoding distinguishes them in $O(1)$ calls.  The
+$\Omega(\sqrt n/\mu)$ theorem is therefore an end-to-end result only for the
+state-only objective/update interface; it does not lift to raw exact-value or
+precompiled-Newton access.
+
+State access also obstructs fraction-to-boundary line search.
+
+\begin{corollary}[Fraction-to-boundary]
+\label{cor:prec-fraction-boundary}
+For $n\geq4$, let $x=\mathbf1_n$ and compare the equal-norm directions
+\[
+ \delta^{(0)}=-\tfrac12\mathbf1_n,\qquad
+ \delta^{(1)}=(-1,-\gamma,\ldots,-\gamma),\qquad
+ \gamma=\tfrac12\sqrt{\frac{n-4}{n-1}}.
+\]
+Their maximal positive steps are two and one, while their normalized states
+are $\Theta(n^{-1/2})$ apart.  A state-only rule that is never larger than one
+on the second input but is at least $3/2$ on the first needs
+$\Omega(\sqrt n)$ controlled state-preparation calls.
+\end{corollary}
+
+\begin{proof}
+Choose the two preparation unitaries as minimum rotations.  Any valid output
+distinguishes them with constant bias, while a $Q$-query hybrid has distance
+$O(Q/\sqrt n)$.  Thus $Q=\Omega(\sqrt n)$.
+\end{proof}
+
+The next theorem rules out bypassing diagonal compilation by directly solving
+the following easy system.  For $n\geq4$, fix $0<\eta\leq1/4$ and define
+\begin{equation}
+ v^{(0)}=\mathbf1_n,\qquad
+ v^{(1)}=(1+\eta,\beta_\eta,\ldots,\beta_\eta),\qquad
+ \beta_\eta=\sqrt{1-\frac{2\eta+\eta^2}{n-1}}.           \label{eq:prec-transition-pair}
+\end{equation}
+Both norms equal $\sqrt n$, and their normalized distance $d_\eta$ satisfies
+\begin{equation}
+ \frac\eta{\sqrt n}\leq d_\eta\leq\frac{2\eta}{\sqrt n}. \label{eq:prec-transition-distance}
+\end{equation}
+Let $D_b=\diag(v^{(b)})$,
+$r=(e_1+e_2)/\sqrt2$, and
+$\ket{z_b}=D_b^{-1}r/\norm{D_b^{-1}r}_2$.  These systems are one-sparse and
+$\kappa(D_b)<2$.
+
+\begin{theorem}[State to next solve]
+\label{thm:prec-state-next-solve}
+Give an algorithm controlled access to the minimum-rotation preparations
+$U_b,U_b^\dagger$ of the vectors in \eqref{eq:prec-transition-pair}.  If its
+output $\rho_b$ satisfies
+\begin{equation}
+ \Dtr(\rho_b,\ket{z_b}\!\bra{z_b})\leq\eta/12            \label{eq:prec-next-solve-error}
+\end{equation}
+for both inputs, then it uses $\Omega(\sqrt n)$ oracle calls.  With copy-only
+iterate access it needs $\Omega(n)$ copies.  In particular, fixed
+$\eta=1/4$ is a constant-accuracy lower bound for a condition-below-two
+system.
+\end{theorem}
+
+\begin{proof}
+For $b=0$, measuring coordinate one in $\ket{z_b}$ has probability $1/2$.
+For $b=1$, put $q=\beta_\eta/(1+\eta)$.  The probability is
+$q^2/(1+q^2)$, and
+\begin{equation}
+ \frac12-\frac{q^2}{1+q^2}
+ \geq\frac12-\frac1{1+(1+\eta)^2}\geq\frac\eta3.         \label{eq:prec-solution-separation}
+\end{equation}
+Contractivity and \eqref{eq:prec-next-solve-error} therefore make the two
+algorithm outputs at least $\eta/6$ apart in trace distance.  A $Q$-query
+hybrid is at most $Qd_\eta\leq2Q\eta/\sqrt n$ apart, whence
+$Q\geq\sqrt n/12$.  For $k$ copies the input trace distance is at most
+$\sqrt{k}d_\eta=O(\sqrt{k}\eta/\sqrt n)$, forcing $k=\Omega(n)$.
+\end{proof}
+
+The Hermitian dilation
+$\left(\begin{smallmatrix}0&D_b\\D_b&0\end{smallmatrix}\right)$ has the
+same sparsity and condition number, so this is also a standard Hermitian QLS
+instance.  It does not contradict a polylogarithmic-dimensional QLS
+algorithm: such an algorithm assumes the matrix oracle that this theorem
+requires one to construct or bypass from the iterate state.
+
+Per-round costs add only under an explicit fresh-oracle contract.  At round
+$t=1,\ldots,T$, after earlier outputs are committed, an adversary chooses a
+fresh bit $b_t$ independent of the current workspace and supplies only a new
+minimum-rotation pair $U_{t,b_t},U_{t,b_t}^\dagger$ for
+\eqref{eq:prec-transition-pair}; future oracles are unavailable.  Before the
+next round, the algorithm must either satisfy
+\eqref{eq:prec-next-solve-error}, or, after $S_t$ setup queries, expose a
+reusable controlled $(\alpha_t,a,\eta/8)$ block encoding of $D_{b_t}$ with
+$\alpha_t\leq A_t$.  One invocation may use another $q_t$ state-oracle calls.
+
+\begin{theorem}[Online fresh-oracle direct sum]
+\label{thm:prec-online-direct-sum}
+In the preceding interface, every fixed worst-case per-round budget satisfies
+\begin{equation}
+ \sum_{t=1}^TQ_t=\Omega(T\sqrt n)                         \label{eq:prec-online-solves}
+\end{equation}
+for next-solution-state outputs, and
+\begin{equation}
+ \boxed{\sum_{t=1}^T(\eta S_t+q_tA_t)=\Omega(T\sqrt n)}  \label{eq:prec-online-compilers}
+\end{equation}
+for reusable diagonal compilers.  For fixed short-step $\eta$, the latter is
+equivalently $\sum_t(S_t+q_tA_t)=\Omega(T\sqrt n)$.
+\end{theorem}
+
+\begin{proof}
+Condition on the complete workspace and transcript at the start of round
+$t$.  Freshness makes that side information independent of $b_t$, so it is a
+fixed ancilla in \cref{thm:prec-state-next-solve}, which gives
+$Q_t=\Omega(\sqrt n)$.  For a compiler, run setup once and estimate the first
+encoded entry to $O(\eta/A_t)$ using $O(A_t/\eta)$ invocations.  This
+distinguisher makes $S_t+O(q_tA_t/\eta)$ state-oracle calls, but the close
+input oracles require $\Omega(\sqrt n/\eta)$ calls.  Hence
+$\eta S_t+q_tA_t=\Omega(\sqrt n)$ in each conditioned round.  Summation
+proves both claims.
+\end{proof}
+
+The full oracle ledger in \cref{thm:prec-online-direct-sum} is load-bearing:
+\begin{itemize}[leftmargin=*]
+ \item The atomic charged operations are controlled calls to the current
+ $U_{t,b_t}$ and its inverse.  Gate complexity is not lower-bounded.
+ \item The common norm $\sqrt n$, the two vector formulas, $r$, and the round
+ number are free; only $b_t$ is hidden.
+ \item No coordinate-value, QRAM, objective-coefficient, or compiled matrix
+ oracle is available.  Each could reveal the exceptional coordinate in one
+ query.
+ \item The complete off-zero action is promised: the adversary may choose the
+ close minimum-rotation completions.  Specifying only $U\ket0$ would not
+ define a query lower bound.
+ \item One-time setup and reusable advice are charged through $S_t$, while
+ per-invocation use is charged through $q_t$.  Advice consumed by calls must
+ be prepared in sufficient quantity and cannot be cloned for free.
+ \item The required output is committed before the next fresh oracle arrives;
+ this causality makes the conditional bounds additive.
+\end{itemize}
+A heralded compiler with success probability bounded below obeys the same
+ledger after charging repetitions.  An unheralded constant failure
+probability is not covered when $\eta\to0$, because it can exceed the target
+states' $\Theta(\eta)$ separation.
+
+The hard stream remains positive and obeys a coordinatewise short-update
+promise: $|v_i^{(b_{t+1})}-v_i^{(b_t)}|\leq\eta v_i^{(b_t)}$.  Thus
+positivity and short relative motion do not defeat the online theorem.  They
+also do not turn it into a fixed-instance QIPM iteration bound.  The exact
+obstructions are:
+\begin{enumerate}[leftmargin=*]
+ \item \emph{Freshness is stronger than a fixed optimization instance.}
+ Every QIPM iterate is determined by one static input and prior computation;
+ no independent oracle normally arrives after each output.
+ \item \emph{One-vector worst-case hardness is not automatically a direct
+ sum.}  If every iterate depends on one bit, learning it once makes every
+ later diagonal easy.
+ \item \emph{Circuit generation must be expanded to atomic queries.}  A
+ circuit for $U_{x_{t+1}}$ may call $U_{x_t}$, which contains the prior
+ history.  Unit-cost treatment hides inlining, while charging both as
+ independent primitives double-counts it.
+ \item \emph{Off-zero leakage is model dependent.}  The hybrid chooses close
+ extensions, whereas a concrete solver circuit may reveal coordinate or
+ trajectory data away from $\ket0$.  Its entire oracle action must be fixed.
+ \item \emph{All-round coherent access changes the direct-sum problem.}  If a
+ single multiplexed query reaches every time-indexed oracle, the causal proof
+ fails and a separate coherent direct-sum theorem is needed.
+ \item \emph{The QIPM equations may permit a bypass.}  The diagonal systems
+ above have not been embedded as consecutive Newton systems of one fixed
+ sparse LP; cancellation, scale-free formulations, or history-state methods
+ might avoid separate compilation.
+ \item \emph{The output contract matters.}  An architecture that exposes a
+ reusable diagonal or a Newton state every round meets the theorem's
+ contract.  An algorithm that proves its step analytically and emits only one
+ final observable need not.
+\end{enumerate}
+Therefore a fixed-LP $\Omega(T\sqrt n)$ result would require $T$ independent
+hard pieces in one sparse instance, a trajectory that reveals them one by
+one, and a direct-sum theorem against the static input oracle.  None is proved
+here.
+
+Finally, coherent update errors accumulate.  If
+\begin{equation}
+ \norm{\ket{\widetilde v}-\ket{v/r_v}}_2\leq\xi,\qquad
+ |\widetilde r_v-r_v|\leq\delta_r,                        \label{eq:prec-update-input-error}
+\end{equation}
+amplitude-to-diagonal lifting has absolute operator error at most
+$\delta_r+\widetilde r_v\xi$.  For coherent LCU updates
+$X_{t+1}=X_t+h_t\Delta_t$, let
+$E_t:=\norm{\widetilde X_t-X_t}_2$ be the accumulated absolute operator error
+before update $t$.  If the step lengths and LCU arithmetic are exact and the
+only new error is the lifted direction error, the operator-norm triangle
+inequality gives
+\begin{equation}
+ E_{t+1}\leq E_t+|h_t|
+ (\delta_{r,t}+\widetilde r_t\xi_t),\qquad
+ E_T\leq E_0+\sum_{t<T}|h_t|
+ (\delta_{r,t}+\widetilde r_t\xi_t).                     \label{eq:prec-update-error-ledger}
+\end{equation}
+Rounding, imperfect LCU coefficients, or postselection errors must be added as
+separate terms.
+Late-path centrality therefore constrains the cumulative weighted error, not
+only each local preparation.  Literal circuit reuse nests as well.  Let $C_t$
+be the cost of the current iterate-preparation circuit, let $Q_t$ be the
+number of its calls made by the next direction circuit, and let $G_t$ be all
+nonrecursive work in that update.  With literal inlining, additive uniform
+gate/query costs, and no sharing or memoization, the exact accounting is
+\begin{equation}
+ C_{t+1}=G_t+(1+Q_t)C_t.                                 \label{eq:prec-circuit-accounting}
+\end{equation}
+This identity is for literal composition, not a universal lower bound against
+direct structured or history-state oracles.
+
+\subsection{Lazy central oracles and the caching ceiling}
+\label{sec:preconditioning-lazy}
+
+Changing all diagonal weights does not imply that they must all be rewritten.
+The following fixed sparse LP makes this failure explicit.  For $K$ disjoint
+blocks of length $L$, let
+$d_{a,i}=u_{a,i}-v_{a,i}$ and impose
+\begin{equation}
+ d_{a,0}=1,\qquad
+ d_{a,i}-\varsigma_{a,i}d_{a,i-1}=0\quad(1\leq i\leq L),  \label{eq:prec-lazy-paths}
+\end{equation}
+with all $u,v\geq0$.  Minimize
+\begin{equation}
+ \sum_{a=1}^K\left[
+  \sum_{i=0}^L(u_{a,i}+v_{a,i})
+  +\alpha(u_{a,L}-v_{a,L})\right],\qquad 0<\alpha<1.       \label{eq:prec-lazy-objective}
+\end{equation}
+Rows and columns have constant sparsity and the instance size is
+$\Theta(KL)$.  With
+\begin{equation}
+ p_{a,0}=1,\qquad p_{a,i}=\prod_{j=1}^i\varsigma_{a,j},\qquad
+ q(\mu)=\mu+\sqrt{\mu^2+1},                              \label{eq:prec-lazy-prefix}
+\end{equation}
+the primal central path is exactly
+\begin{equation}
+ (u_{a,i}(\mu),v_{a,i}(\mu))
+ =\left(\frac{q(\mu)+p_{a,i}}2,
+         \frac{q(\mu)-p_{a,i}}2\right).                  \label{eq:prec-lazy-factorization}
+\end{equation}
+Indeed feasibility fixes the difference $p_{a,i}$; differentiating the
+one-dimensional pair barrier gives the common sum $q(\mu)$.  In the fixed
+orthonormal null basis
+$(e_{u_{a,i}}+e_{v_{a,i}})/\sqrt2$, the reduced log-barrier Hessian
+$W^\top X^{-2}W$ is the scalar
+\[
+ 2[(q(\mu)+1)^{-2}+(q(\mu)-1)^{-2}]I,
+\]
+so it has condition one throughout the trajectory.  All changing numerical
+information is the public scalar $q(\mu)$; all hidden structural information
+is the static prefix table.
+
+Give reversible raw access to bits
+$\varsigma_{a,i}=(-1)^{b_{a,i}}$.  An endpoint central lookup at block $a$
+returns \eqref{eq:prec-lazy-factorization} for $i=L$ and therefore reveals
+$P_a=p_{a,L}$, even with coordinate error strictly below $1/2$.
+
+\begin{theorem}[Lazy endpoint lookup]
+\label{thm:prec-lazy-lookup}
+One exact coherent endpoint lookup, or one whose decoded sign is correct with
+probability at least $2/3$, needs $\Omega(L)$ raw queries in the worst case,
+even when the block index is in superposition.  The bound is tight.
+\end{theorem}
+
+\begin{proof}
+Fix the block register to any basis value $a$ and fix all other blocks.
+Decoding the returned pair computes parity of the remaining $L$ bits, which
+has bounded-error quantum query complexity $\Omega(L)$.  Conversely, the
+exact quantum parity algorithm computes the selected block's parity in
+$O(L)$ queries while carrying $a$ coherently as a spectator; reversible
+arithmetic then combines it with $q(\mu)$.  The same circuit works in
+superposition over $a$.
+\end{proof}
+
+Call a resource an exact reusable endpoint oracle if, once constructed, a
+fixed processor can obtain every one of the $K$ endpoint values without
+further raw queries, and the resource survives or otherwise supports those
+$K$ invocations.
+
+\begin{theorem}[Reusable endpoint preprocessing]
+\label{thm:prec-reusable-endpoints}
+Constructing an exact reusable endpoint oracle needs at least
+\begin{equation}
+ \boxed{\left\lceil\frac{KL}{2}\right\rceil}             \label{eq:prec-reusable-cost}
+\end{equation}
+raw queries.  A bounded-error resource also needs $\Omega(KL)$ queries when
+all $K$ successive answers are jointly correct with probability at least
+$2/3$ on every input.
+\end{theorem}
+
+\begin{proof}
+After preprocessing, invoke the resource on every block and multiply the
+decoded signs.  The result is
+\[
+ \prod_{a=1}^KP_a=(-1)^{\bigoplus_{a=1}^K\bigoplus_{i=1}^Lb_{a,i}},
+\]
+the parity of all $KL$ raw bits.  Exact quantum parity requires
+$\lceil KL/2\rceil$ queries, and bounded-error parity requires $\Omega(KL)$.
+The proof permits entangled program states and implicit formulas; reusability,
+not classical table materialization, is the decisive promise.
+\end{proof}
+
+\begin{theorem}[Explicit-coordinate trajectory service]
+\label{thm:prec-lazy-trajectory}
+Fix arbitrary parameters $\mu_1,\ldots,\mu_K>0$.  A service that at stage
+$a$ returns the classical endpoint pair of block $a$ at $\mu_a$, with both
+coordinate errors below $1/2$ and all answers jointly correct with probability
+at least $2/3$ on every input, uses
+\begin{equation}
+ \boxed{\Omega(KL)}                                      \label{eq:prec-trajectory-cost}
+\end{equation}
+total raw queries across preprocessing and all stages.  Thus its amortized
+cost is $\Omega(L)$.
+\end{theorem}
+
+\begin{proof}
+Each returned pair reveals the independent $P_a$.  Multiplying the $K$
+answers computes parity of all $KL$ input bits, so bounded-error quantum
+parity proves \eqref{eq:prec-trajectory-cost}.
+\end{proof}
+
+Theorem~\ref{thm:prec-lazy-trajectory} is a lower bound for an explicit-cell
+service contract, not for every QIPM.  Quantum cell-probe lower bounds likewise
+require a specified storage-and-probe model and do not transfer automatically
+to an analytic central path \cite{sen2001-lower-bounds-quantum-cell-probe}.
+There is no unconditional per-IPM-iteration refresh theorem here, for five
+separate reasons:
+\begin{enumerate}[leftmargin=*]
+ \item A fixed LP has no fresh per-iteration information.  Once all $KL$
+ bits have been processed, unrestricted persistent memory can amortize that
+ setup over arbitrarily many iterations.
+ \item The path parameter may be low dimensional.  In
+ \eqref{eq:prec-lazy-factorization} every changing coordinate is generated by
+ one scalar $q(\mu)$, so a stored structural oracle needs only $O(1)$ extra
+ arithmetic when $\mu$ changes.
+ \item Cell-probe lower bounds need a query contract.  An IPM follows an
+ analytic, algorithm-chosen trajectory rather than an adversarial sequence of
+ cell updates and requests; \cref{thm:prec-lazy-trajectory} applies only
+ after the distinct endpoint outputs are required.
+ \item Coherent lookup defeats a naive block direct sum.  One $O(L)$ circuit
+ evaluates the selected block in superposition.  A factor $K$ requires a
+ classical-output contract or a suitable direct-product theorem.
+ \item A normalized state is weaker than a data structure.  It need not
+ support reusable random access to every coordinate; assuming that it does
+ silently adds tomography or QRAM construction.
+\end{enumerate}
+This is the same caching ceiling as \eqref{eq:total-query-ledger} and the
+static ledger following \cref{thm:lp-gain-plateau}: caching all signs can make
+later raw-query cost vanish.  A genuine refresh lower bound would require a
+memory cap, mandatory coordinate monitoring, nonshareable independent
+invocations, or a proven online-hard fixed-LP trajectory.  Sparsity and
+changing diagonal weights alone provide none of these.
+
+\subsection{Synthesis}
+\label{sec:preconditioning-synthesis}
+
+Across all five interfaces, the invariant is a product or a ledger.  Separate
+exact factor access gives $\alpha_P\sqrt K=\Omega(N)$ and, with reusable
+compilation, $Ns+q\alpha=\Omega(N^2)$.  Scalar congruence obeys
+$\sqrt\kappa\,\chi\geq c/\mu$; equality in order holds exactly for the
+maximal class $r_\mu=\Omega(\mu)$ and $r_\mu=O(1)$.  The parity instance
+preserves the total setup--RHS--solve--recovery cost even when a perfect factor
+makes one phase trivial.  State preparation obeys $qA=\Omega(\sqrt n)$, and its iterative
+version becomes additive only under a fresh-oracle contract.  Lazy evaluation
+then shows why static preprocessing can defeat any unqualified per-iteration
+claim.
+
+These are access-model obstructions, not a verdict against preconditioning or
+state reuse.  The positive modules in \cref{sec:positive-modules} are designed
+to respect the same ledgers: they directly assemble favorable operators,
+identify which projectors or cached structures are charged, and state what
+output interface is actually produced.

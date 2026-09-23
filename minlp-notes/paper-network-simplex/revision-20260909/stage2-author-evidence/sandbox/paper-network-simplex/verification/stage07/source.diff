@@ -1,0 +1,640 @@
+--- stage06-accepted/main.tex
++++ stage07/main.tex
+@@ -5,6 +5,8 @@
+ \usepackage[margin=1in]{geometry}
+ \usepackage{amsmath,amssymb,amsthm,mathtools}
+ \usepackage{booktabs,array}
++\usepackage{tikz}
++\usepackage{flafter}
+ \usepackage{enumitem}
+ \usepackage[numbers,sort&compress]{natbib}
+ \usepackage{microtype}
+@@ -39,37 +41,29 @@
+ \begin{document}
+ \maketitle
+ \begin{abstract}
+-We study the convex hull of selected bilinear products between a bounded
+-equality-constrained network flow and a simplex vector. The network and the
+-retained product coordinates provide two distinct sources of structure:
+-circulations factor across undirected blocks, and each block need retain only
+-the simplex states observed there. We develop exact formulations and
+-original-coordinate descriptions from these reductions, and examine the
+-limits of small-coefficient descriptions. The starting point is classical
+-simplex-vertex disaggregation; the structural question is how much of that
+-formulation is needed for a sparse set of products.
++We study the convex hull of selected products between a bounded
++equality-constrained network flow and a simplex vector. Starting from known
++simplex disaggregation, we give an observation-sensitive formulation whose
++additional coordinates are counted exactly by the cycle ranks of unobserved
++subgraphs, with unit flow and product coefficients. Forest complements remove
++all additional coordinates. For bounded block cycle rank we develop finite
++support libraries for exact separation and compact recovery without online
++linear programming; a $K_4$ with five observed products already forces a
++product-coefficient ratio of two. A complementary result holds on arbitrarily long
++chains of parallel arc pairs with one bypass: unit flow/product descriptions
++exist whenever at most three simplex labels are observed, and four labels can
++force a coefficient ratio of two. After local checks and bound grouping,
++two observed labels need five profile tests; three use 16 positive circuits
++and flow-balance repairs. Sparse
++Fibonacci constructions give exponential coefficient ratios on simple
++series--parallel graphs of maximum degree three. A coordinate-section transfer
++of transportation universality gives unrestricted ratios with only two labels
++on general networks. Exact implementations and strengthened numerical LP
++comparisons show substantial model-size reductions, while global state merging
++and native flow bounds remove some apparent runtime advantages.
+ \end{abstract}
+ 
+-\section{Introduction}\label{sec:introduction}
+-Network models often combine continuous routing decisions with a choice among
+-mutually exclusive services or operating modes. A route-specific adjustment
+-to the cost of a service gives a product of an arc flow and a service weight.
+-Only a small fraction of the possible route--service pairs may occur in the
+-model. Convexifying each product independently discards restrictions linking
+-flows through the network and linking service weights through the simplex.
+-An exact joint hull retains these restrictions, but its standard extended
+-formulation introduces a copy of every arc flow for every simplex vertex.
+-
+-This paper studies the structure of that joint hull when only selected
+-products are retained. We distinguish the size of an extended formulation
+-from the coefficients and separation cost of an original-coordinate
+-description. We also distinguish equality-constrained flow models from
+-network models with balance inequalities: adding slack arcs to convert the
+-latter to the former can change the graph structure on which a specialized
+-result depends. The elementary foundations below make the state and graph
+-decompositions explicit, including degenerate capacities and zero simplex
+-weights.
+-
++\input{sections/00-introduction}
+ \input{sections/01-foundations}
+ \input{sections/02-compression}
+ \input{sections/03-structured-oracles}
+@@ -78,6 +72,7 @@
+ \input{sections/06-series-parallel}
+ \input{sections/07-fixed-state-chains}
+ \input{sections/08-computation}
++\input{sections/09-conclusion}
+ 
+ \bibliographystyle{plainnat}
+ \bibliography{references}
+--- stage06-accepted/references.bib
++++ stage07/references.bib
+@@ -141,3 +141,21 @@
+   doi = {10.1007/s12532-017-0130-5},
+   url = {https://highs.dev/}
+ }
++@article{Fiorini2006,
++  author = {Fiorini, Samuel},
++  title = {How to recycle your facets},
++  journal = {Discrete Optimization}, year = {2006},
++  volume = {3}, number = {2}, pages = {136--153},
++  doi = {10.1016/j.disopt.2005.10.007},
++  url = {https://samuel.fiorini.web.ulb.be/papers/howto_rev.pdf}
++}
++@incollection{HoffmanKruskal1956,
++  author = {Hoffman, Alan J. and Kruskal, Joseph B.},
++  title = {Integral Boundary Points of Convex Polyhedra},
++  booktitle = {Linear Inequalities and Related Systems},
++  editor = {Kuhn, Harold W. and Tucker, Albert W.},
++  publisher = {Princeton University Press},
++  series = {Annals of Mathematics Studies}, volume = {38},
++  year = {1956}, pages = {223--246},
++  url = {https://www.cs.umd.edu/~gasarch/BLOGPAPERS/kruskalhoffman.pdf}
++}
+--- stage06-accepted/README.md
++++ stage07/README.md
+@@ -1,97 +1,80 @@
+ # Sparse convex hulls for network flows coupled to a simplex
+ 
+-The manuscript source is [main.tex](main.tex). Build it from this directory:
++Read the [paper PDF](main.pdf) or [LaTeX source](main.tex). The manuscript covers
++observation-sensitive formulations, exact structural separators and recovery,
++sharp coefficient boundaries, implementations, and reproducible synthetic
++comparisons. Author and affiliation metadata are left empty for the owner.
++
++Build from this directory with TeX Live (including TikZ) and BibTeX:
+ 
+ ```sh
+ latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex
+ ```
+ 
+-The generated paper is `main.pdf`. The source uses the standard `article`
+-class, BibTeX, and packages supplied by TeX Live. Author metadata is left empty
+-for the repository owner to supply; no authorship or affiliation is inferred.
++The [source coverage map](process/coverage.md) connects repository results to
++manuscript statements. [PROCESS.md](PROCESS.md) records acceptance and the
++required five independent reviews of each stage and of the complete manuscript.
++Internal acceptance is distinct from journal peer review or proof of priority.
+ 
+-[PROCESS.md](PROCESS.md) records the required staged author and five-reviewer
+-protocol. Stage-specific source coverage, reviews, corrections, and checks are
+-retained under `process/` and `verification/`. The process record identifies
+-which stages have been accepted; the current compiled file is not a claim that
+-the entire writing process has finished.
++## Main results and where to find them
+ 
+-Notation is defined in [the foundations](sections/01-foundations.tex):
+-`D=(V,E)` is the directed multigraph, `A` uses incoming minus outgoing,
+-`P` is the bounded equality-flow polytope, `O` is the observation set, `H` is
+-the sparse original-coordinate hull, `lambda_0` is the global residual state,
+-and `*_B` is a block-local merger. `r_B` is ambient block cycle rank and `a_B`
+-counts observed labels even if their candidate weights vanish.
++| Topic | Manuscript source |
++|---|---|
++| Model, precise predecessors, known disaggregation, integral-flow hull equality, block gluing | [Foundations](sections/01-foundations.tex) |
++| Exact residual-coordinate count from unobserved cycle ranks, forest complements, minimum individual-coordinate completion | [Compression](sections/02-compression.tex) |
++| Cycle/theta unit cuts and recovery; parallel-path transportation separator | [Structured oracles](sections/03-structured-oracles.tex) |
++| Bounded-rank separation and finite-basis recovery; sharp two-label, five-product K4 | [Bounded rank](sections/04-bounded-rank.tex) |
++| Sparse coordinate-section universality and unrestricted coefficient ratios with two labels | [Universality](sections/05-universality.tex) |
++| Sparse Fibonacci coefficient growth and simple maximum-degree-three realization | [Series–parallel obstructions](sections/06-series-parallel.tex) |
++| Five tests for two observed labels; 16 circuits and unit coefficients for three; failure at four | [Flat chains](sections/07-fixed-state-chains.tex) |
++| Implemented scope, exact/numerical evidence, strengthened comparisons, transportation interpretation | [Computation](sections/08-computation.tex) |
+ 
+-Later stages will add separate section files through `main.tex`, preserving
+-this notation and the labels of the foundation results. Existing research
+-notes and code remain in their original repository locations; they are not
+-replaced by this manuscript.
++The residual-coordinate count concerns the supplied formulation, not minimum
++extension complexity. Coefficient bounds apply to flow/product coordinates in
++the stated rational row scaling. The compact at-most-m+1 decomposition uses
++continuous graph points; the classical integral-flow hull equality does not
++preserve that count for integral decomposition points.
+ 
+-[The compression section](sections/02-compression.tex) gives both cycle and
+-observation-sensitive formulations, a forest-complement original-coordinate
+-hull, and exact recovery. Its new worked example and fixed-coordinate
+-preprocessing checks can be run with:
++## Code and verification
++
++[Exact oracle instructions](../code/network_simplex/README.md), the
++[flat-chain API](../code/network_simplex/FLAT_CHAIN.md), and
++[compressed-formulation instructions](../code/network_simplex_compressed/README.md)
++describe supported models and outputs. Exact cuts and decompositions are
++rational certificates. Floating-point LP feasibility and the general API's
++`numerically_feasible` status are not exact membership certificates. The
++bounded-rank libraries are verification prototypes, not a production oracle
++for every general graph.
++
++Run the principal regression suite from this directory:
++
++```sh
++PYTHONPATH=../code python -m unittest network_simplex.test_separator \
++  network_simplex.test_flat_chain \
++  network_simplex_benchmarks.test_strong_baselines -v
++```
++
++The following standalone checks cover manuscript constructions and exact
++recovery. Some require SymPy, NumPy, and SciPy; the individual files distinguish
++exact arithmetic from numerical LP comparisons.
+ 
+ ```sh
+ python verification/stage02-exact.py
++python verification/stage03-exact.py
++python verification/stage04-recovery.py
++python verification/stage05-padding.py
++python verification/stage05-profile.py
++python verification/stage07/integral-hull.py
+ ```
+ 
+-This check uses SymPy and exact rational arithmetic. The existing independent
+-observation-rank audit is `../code/network_simplex_review/verify_observed_rank.py`.
++[Stage 7 validation](verification/stage07-validation.json) records source hashes,
++checks, the source diff from the preceding accepted manuscript, and the build.
++Earlier stage evidence, independent reviewer programs, and accepted correction
++records remain under `verification/` and `process/`.
+ 
+-[The structured-oracle section](sections/03-structured-oracles.tex) develops
+-the cycle/theta support tests, exact compact recovery, and parallel-path
+-transportation cuts. Its standalone exact checks use only Python's standard
+-library:
++## Reproduce the comparisons
+ 
+-```sh
+-python verification/stage03-exact.py
+-```
+-
+-The checks enumerate theta vertices and small bounded transportation matrices,
+-verify the cut minimization identity, and check the joint-state example.
+-
+-[The bounded-rank section](sections/04-bounded-rank.tex) gives complete finite
+-separation libraries, rank-dependent coefficient bounds, exact finite-basis
+-recovery, and sharp K4 examples. The recovery check uses the existing support
+-library builder (NumPy/SciPy are imported by that module), but calls no LP:
+-
+-```sh
+-python verification/stage04-recovery.py
+-```
+-
+-Every recovered state is checked exactly, as are the original-flow witnesses
+-and negative support certificates for the five-product K4 section.
+-
+-[Universality](sections/05-universality.tex) transfers the classical slim
+-transportation representation into a sparse coordinate section. The
+-[series--parallel construction](sections/06-series-parallel.tex) proves
+-exponential facet-coefficient ratios with a sparse observation set, including
+-a simple graph of maximum degree three. The
+-[fixed-state chain section](sections/07-fixed-state-chains.tex) gives exact
+-profile elimination and recovery, a five-test oracle with two explicit
+-states, and a sharp unit-coefficient guarantee through three explicit states.
+-These last refinements were developed during the manuscript work.
+-
+-```sh
+-python verification/stage05-padding.py
+-python verification/stage05-profile.py
+-```
+-
+-The padding check uses exact standard-library arithmetic. The profile check
+-uses SymPy for exact circuit and inverse-basis calculations and NumPy/SciPy
+-for separately labeled numerical state-flow LP comparisons. It checks exact
+-recovered flows, all affine branches for one and two explicit states,
+-coefficient extrema and the exceptional bypass repairs for three states,
+-zero weights, and lower-dimensional profiles. It imports no existing
+-repository oracle implementation. Neither script implements or purports to
+-reprove the cited transportation universality construction computationally.
+-
+-[The computation section](sections/08-computation.tex) documents the implemented
+-scope, exact-versus-numerical certificates, strengthened LP baselines, repeated
+-synthetic experiments, and a two-supplier transportation interpretation. Its
+-tables are generated directly from the retained five-run JSON:
++Run from this directory:
+ 
+ ```sh
+ PYTHONPATH=../code python -m network_simplex_benchmarks.paper_stage06 \
+@@ -99,32 +82,34 @@
+ python verification/stage06-tables.py
+ ```
+ 
+-Run these from the manuscript directory. The default study includes both
+-boundary and interior flat-chain weights, globally unused labels, an ablation
+-where every global label is observed, and one coupled aggregate budget.
+-The stronger LP baselines overturn the earlier boundary-face long-chain
+-speedup. Global merging explains much of the earlier many-label gain, while
+-the all-labels-observed control demonstrates additional local compression.
+-All timing ranges and audit distinctions remain in the raw data.
++[Benchmark instructions](../code/network_simplex_benchmarks/README.md) give the
++methods, dependencies, controls, and an optimization-only rerun command.
++[Raw results](verification/stage06-benchmarks.json) retain objectives, side rows,
++versions, warmups, five rotated measurements, timing summaries, and separate
++audits. Optimization and membership measurements were collected separately;
++current optimization records use native fixed-weight state-flow bounds.
++Tables are generated from these records and check complete case keys, method
++coverage, rotations, and every stored timing summary.
+ 
+-The current full/global optimization baselines substitute fixed simplex weights
+-before assembly, using only positive state flows and native scaled bounds.
+-The three optimization cases were remeasured after this correction; membership
+-and cold-library measurements remain unchanged. The original measurements and
+-sources are retained in `verification/stage06-corrections/round1-archive/`.
+-The table generator checks distinct complete case keys, optimization order,
+-expected method coverage, and all stored timing summaries. The correction
+-record includes the command for the optimization-only rerun.
++The strongest globally merged LP is often fastest. In the control where all
++labels are globally observed but each block sees few, local compression reduces
++7,215 state-flow variables to 495 total variables and observed elimination to
++367. Initial compression is faster than elimination on that control. Stronger
++LPs also overturn earlier boundary-face long-chain speedups. All experiments
++are synthetic and run on a shared host; no universal runtime or industrial
++performance claim follows.
+ 
+-The current exact flat oracle stores a compact default for unused labels,
+-uses no library at two observed labels, and returns unit flow/product cuts
+-through three observed labels. Its research predecessor is retained in
+-`verification/reference/stage06/`. See
+-[benchmark instructions](../code/network_simplex_benchmarks/README.md) and
+-[the updated exact-oracle API](../code/network_simplex/FLAT_CHAIN.md).
++## Historical records
+ 
+-```sh
+-PYTHONPATH=../code python -m unittest network_simplex.test_separator \
+-  network_simplex.test_flat_chain \
+-  network_simplex_benchmarks.test_strong_baselines -v
+-```
++The [old paper-readiness record](../notes/network-simplex-paper-readiness.md)
++and [continuation record](../notes/network-simplex-reopened-status.md) are
++superseded research closeouts. Their original 41-circuit descriptions, earlier
++K4 examples, timings, and default-method assessments remain useful provenance,
++but the manuscript contains the sharper observed-label results and stronger
++baseline comparisons. The older fixed-state theorem is retained in
++[the result note](../results/network-simplex-flat-chain-fixed-states.md).
++
++[Pre-upgrade source copies](verification/reference/stage06/README.md) preserve
++the unreduced flat oracle. [The first computational archive](verification/stage06-corrections/round1-archive/)
++retains earlier sources and measurements. These are reproducible historical
++references, not additional production APIs or current performance conclusions.
+--- stage06-accepted/sections/00-introduction.tex
++++ stage07/sections/00-introduction.tex
+@@ -0,0 +1,139 @@
++\section{Introduction}\label{sec:introduction}
++Network models often combine routing decisions with a choice among services
++or operating modes. A route-specific adjustment to a service cost gives a
++product of an arc flow and a service weight. Only a small fraction of the
++possible route--service pairs may occur. Convexifying each product separately
++discards restrictions imposed jointly by flow conservation and the common
++simplex. The exact joint hull is available through classical simplex-vertex
++disaggregation, but its usual formulation copies every arc for every state.
++The question studied here is how the network and the retained products can
++reduce that expansion, and when the resulting hull admits simple inequalities
++in the original coordinates.
++
++We consider a bounded equality-flow polytope
++$P=\{x:Ax=b,\ 0\le x\le u\}$ on a directed multigraph and a vector
++$y\ge0$ with $\sum_jy_j\le1$. Only products $z_{ej}=x_e y_j$ in a
++specified set $\Obs$ are retained. Let $H$ be their joint convex hull.
++Equality conservation is essential to the circulation arguments. Converting
++balance inequalities to equalities with slack arcs is possible, but the graph
++assumptions must then be checked on the transformed network. The general
++network and block results permit arbitrary arc orientations, parallel arcs,
++loops, zero simplex weights, and capacity degeneracy. The flat-chain results
++use the specified directed unit-data topology, with arbitrary observations
++and zero weights allowed.
++
++The main reductions use two kinds of information. Circulations separate across
++the cyclic blocks of the underlying undirected graph. Within each block,
++states with no observed product can be merged exactly. More strongly, the
++remaining freedom of an observed state consists precisely of circulations
++supported on its unobserved arcs. Thus a graph with many cycles can still
++have no missing state coordinates when its observations meet every cycle.
++Conversely, a long chain can retain a small shared state profile even though
++its cycle rank grows with its length.
++
++Our contributions are organized around these two reductions and their limits.
++\begin{enumerate}[leftmargin=*,itemsep=5pt]
++\item \emph{Observation-sensitive formulations on arbitrary graphs.}
++For a cyclic block $B$ and a label $j$ observed there, let $\rho_{Bj}$
++be the cycle rank of the subgraph formed by arcs without an observation in
++state $j$, including its isolated vertices when counting components.
++The construction in \cref{thm:observed-compression} uses exactly
++$\sum_{B,j}\rho_{Bj}$ additional coordinates, with unit flow, product,
++and auxiliary coefficients in a specified rational row scaling.
++This is the residual-coordinate count of the construction; it is not a
++minimum over all extended formulations. Forest complements give a direct
++original-coordinate hull. The same count is the minimum number of additional
++\emph{individual products} needed to reconstruct each state on the ambient
++circulation space, a narrower completion statement.
++
++\item \emph{Explicit separation and recovery from graph structure.}
++Cycles and theta blocks admit interval and six-support descriptions with
++unit flow/product coefficients. Any number of parallel paths admits a
++transportation cut description and a flow separator. For arbitrary blocks
++of maximum cycle rank $r$, finite support libraries give exact separation
++in $2^{O(r^2)}N$ rational arithmetic operations and compact recovery in
++$2^{O(r^3)}N$, where $N=|V|+|E|+m+|\Obs|$, after observation grouping.
++Neither procedure calls an online LP. The coefficient bound is
++$H_r$ from \eqref{eq:rank-coefficient-bound}; in particular $H_3=2$ is
++sharp on a unit-capacity $K_4$ with two explicit labels and five products.
++The recovery parameter bound is deliberately distinguished from the smaller
++separation bound.
++
++\item \emph{A sharp observed-label threshold on flat chains.}
++On a chain of parallel arc pairs with one bypass, the full shared profile
++can be eliminated using a finite library depending only on the number $a$
++of labels observed anywhere on the chain. After local checks and bound
++grouping, at most two observed labels need five profile tests and explicit
++interval recovery. Three labels use
++16 positive circuits; two exceptional bypass coefficients can be repaired
++using one flow-balance equation. Consequently every observation pattern
++with $a\le3$ has a unit flow/product description, whereas a five-vertex,
++nine-arc example with four observed labels does not. This threshold is
++independent of the number of unused simplex coordinates and of chain length.
++
++\item \emph{Coefficient obstructions in sparse original coordinates.}
++A Fibonacci family forces exponentially growing product-coefficient ratios
++on series--parallel networks with only linearly many observed products;
++the obstruction persists on simple graphs of maximum degree three.
++For unrestricted networks, a coordinate-section transfer of classical
++three-way transportation universality gives arbitrary coefficient ratios
++already with two explicit labels and unit network data. Its large
++coefficient magnitudes coexist with polynomial encoding and polynomial-size
++extended formulations. The coordinate-section proofs retain the relevant
++products as actual coordinates of the sparse hull, rather than relying on
++projection from a larger product space.
++\end{enumerate}
++
++\begin{table}[tb]\centering\small
++\caption{Structural scope of the positive results. A unit coefficient is in
++$\{0,\pm1\}$ on flow and product coordinates; simplex coefficients may contain
++the rational network data. Bounds use the stated row scaling, before any
++clearing of simplex denominators.}\label{tab:structural-scope}
++\begin{tabular}{>{\raggedright\arraybackslash}p{.25\linewidth}
++                >{\raggedright\arraybackslash}p{.44\linewidth}
++                >{\raggedright\arraybackslash}p{.20\linewidth}}\toprule
++Structure & Exact representation or procedure & Main locator\\\midrule
++Arbitrary equality-flow graph & Observation-sensitive EF with
++$\sum_{B,j}\rho_{Bj}$ additional coordinates & \Cref{thm:observed-compression}\\[3pt]
++Unobserved arcs form forests in each observed block/state & Unit
++original-coordinate formulation & \Cref{cor:forest-hull}\\[3pt]
++Cycle or theta blocks & Unit interval/support cuts; compact recovery &
++\Cref{thm:theta-hull,prop:theta-recovery}\\[3pt]
++Parallel-path blocks & Complete subset cuts; transportation-flow separator &
++\Cref{thm:parallel-hull}\\[3pt]
++Block cycle rank at most $r$ & Coefficients bounded by $H_r$;
++finite support and recovery libraries & \Cref{thm:bounded-rank,thm:rank-recovery}\\[3pt]
++Flat chain, $a$ observed labels & Fixed-$a$ profile oracle; unit coefficients
++for $a\le3$, sharp at four & \Cref{cor:chain-observed-labels}\\\bottomrule
++\end{tabular}
++\end{table}
++
++These results refine established convexification methods. Simplex
++disaggregation, shared-simplex gluing, reduced reformulation--linearization,
++transportation projections, and normal-fan refinements supply the underlying
++mechanisms. \Cref{subsec:prior-work} gives precise comparisons, especially
++with the network convexification of \citet{KhademniaDavarnia2025}.
++The claims concern the particular sparse formulations, complete structural
++oracles, and coefficient boundaries established here.
++
++Exact rational implementations and numerical LP formulations make the
++distinction between these outputs concrete. The experiments compare with
++full disaggregation, global removal of unused labels, native fixed-weight
++state-flow LPs, and elementary one-flow or independent-network reductions
++where applicable. The strongest globally merged LP is often fastest.
++When every label is observed somewhere but each block sees few labels,
++local compression still reduces 7,215 state-flow variables to 495 total
++variables, or 367 after observed elimination. In that synthetic control,
++initial compression reduces the median total time from about 30 to 10
++milliseconds; elimination gives the smallest model but takes longer.
++The dedicated exact oracle also loses to a simple LP on some long-chain
++queries. These results support model-size and certificate benefits without
++a universal runtime claim.
++
++\Cref{sec:foundations,sec:blocks} establish the model and known disaggregation
++and gluing facts. \Cref{sec:compression,sec:structured-oracles,sec:bounded-rank}
++develop observation-sensitive formulations and graph-structured oracles.
++\Cref{sec:universality,sec:sp-growth} prove the coefficient obstructions,
++and \cref{sec:fixed-chains} gives the complementary fixed-label chain results.
++\Cref{sec:computation} reports implementations, verification, experiments,
++and a two-supplier service-transportation interpretation.
+--- stage06-accepted/sections/01-foundations.tex
++++ stage07/sections/01-foundations.tex
+@@ -99,7 +99,12 @@
+ transportation universality is established by \citet{DeLoeraOnn2006}, and
+ large coefficients in general $0/1$ polytopes are classical
+ \citep{AlonVu1997}. A restricted network realization must therefore be
+-specified as part of a coefficient result. Moreover, the integrality of
++specified as part of a coefficient result. \citet{Fiorini2006} gives a
++general transfer of $0/1$-polytope facets to acyclic-subgraph facets.
++Our transfer instead preserves selected bilinear coordinates in sections
++of continuous network--simplex hulls; neither facet transfer nor large
++coefficients in graph polytopes is a new phenomenon in itself.
++Moreover, the integrality of
+ \emph{aggregate} flows on two-terminal series--parallel networks does not
+ give a hull description in selected state-flow coordinates.
+ \citet[Remark~1]{AlmoghrabiSkutellaWarode2026} explicitly distinguish
+@@ -158,6 +163,43 @@
+        \Bigl(1-\sum_{j=1}^m y_j\Bigr)u.
+ \end{equation}
+ These bounds cannot in general be discarded.
++
++\begin{corollary}[Integral arc flows give the same hull]\label{cor:integral-flows}
++If $b$ and $u$ are integral, then
++\[
++ \Hull=\conv\{(x,y,z)\in S:x\in\Z^E\}.
++\]
++\end{corollary}
++\begin{proof}
++The bounded flow polytope $\Flow$ is integral, a classical consequence of
++network total unimodularity \citep{HoffmanKruskal1956}. Here is a direct
++verification covering multigraphs. At a nonintegral feasible flow, consider
++the arcs whose values are nonintegral. If there is no loop, each incident
++vertex has degree at least two in this subgraph: a vertex with just one
++such arc would equate a noninteger plus integers to an integer in its
++balance equation. A nonempty subgraph therefore contains a loop or an
++undirected cycle. The signed
++circulation on that cycle can be added and subtracted in sufficiently small
++amounts while preserving the bounds, because each of its arc values is
++strictly between its integral bounds. Thus the flow is not a vertex.
++All vertices of $\Flow$ are integral, and boundedness expresses every
++flow as a convex combination of them.
++
++For a point of $\Hull$, apply \cref{prop:disaggregation}. Decompose each
++positive-weight normalized flow into integral vertices of $\Flow$ and
++pair those vertices with its fixed simplex vertex. At a fixed simplex
++vertex, all selected products are linear in the flow, so these refined
++graph points have the required weighted average. This proves the inclusion
++in the displayed right-hand side; the reverse inclusion follows from its
++containment in $\conv S$. If $\Flow$ is empty both sides are empty.
++\end{proof}
++
++The corollary is a hull equality, not an integral decomposition-size bound.
++Refining a normalized state flow can require several integral vertices,
++so the at-most-$m+1$ bound in \cref{prop:disaggregation} applies to
++continuous graph points. Already when $m=0$, a fractional flow cannot be
++represented by a single integral point. Nor does the corollary assert
++integrality of fractional coordinate sections of $\Hull$.
+ 
+ \section{Independent blocks and locally merged states}\label{sec:blocks}
+ 
+--- stage06-accepted/sections/06-series-parallel.tex
++++ stage07/sections/06-series-parallel.tex
+@@ -17,6 +17,10 @@
+ The vector $w$ is the \emph{shared branch profile}. Its total is
+ $\sum_jw_j=1-x_h$. Keeping only this total can lose essential
+ compatibility between the serial gadgets.
++
++\input{figures/flat-chain}
++\Cref{fig:flat-chain} illustrates the common profile on $G_4$, which also
++supports the coefficient-two example below.
+ 
+ \subsection{A balanced-incidence construction}
+ 
+--- stage06-accepted/sections/07-fixed-state-chains.tex
++++ stage07/sections/07-fixed-state-chains.tex
+@@ -1,4 +1,4 @@
+-\section{Exact hulls for chains with few states}\label{sec:fixed-chains}
++\section{Exact hulls for chains with few observed labels}\label{sec:fixed-chains}
+ 
+ For the same graph $G_L$, arbitrary observations on either gadget arc
+ and on the bypass admit a small common-profile description. Eliminating
+--- stage06-accepted/sections/08-computation.tex
++++ stage07/sections/08-computation.tex
+@@ -298,7 +298,10 @@
+ 
+ \subsection{A two-supplier service-transportation interpretation}
+ 
+-A concrete modeling use is a transportation network with two suppliers
++The service-conflict transportation model of
++\citet[Section~4.2]{KhademniaDavarnia2025} motivates the following
++two-supplier specialization with a common simplex.
++Consider a transportation network with two suppliers
+ $s_1,s_2$ and demand nodes $v_1,\ldots,v_k$, with arcs from both suppliers
+ to every demand node. Let supplies be $S_1,S_2$, demands $D_i$, and
+ arc capacities $u_{\ell i}$. The flow equations are
+@@ -334,14 +337,15 @@
+ \subsection{Reproduction}
+ 
+ The accompanying repository includes the exact interfaces, independent
+-verification programs, unchanged historical results, and a pre-upgrade
+-source snapshot. The optimization comparisons were rerun after replacing the
+-variable-weight LP baseline by the fixed-weight construction above. All three
+-optimization cases retained their original objectives, weights, and additional
+-rows; each method received a fresh audited warmup and five rotated runs.
+-Membership and cold-library measurements were retained unchanged. The original
+-measurements and sources are preserved in a hashed round-1 archive, and the
+-correction record supplies a command for this optimization-only rerun.
++verification programs, historical results, and retained source snapshots.
++Optimization and membership measurements were collected separately. The
++reported optimization records use the native fixed-weight construction above;
++all methods on each of its three cases use the same objectives, weights, and
++additional rows, with an audited warmup and five rotated runs. Membership and
++cold-library records retain their separately recorded measurements. Earlier
++baselines and measurements are preserved with hashes for comparison; the
++reproducibility documentation identifies the commands for the complete study
++and the optimization-only run.
+ The complete measurement command, run from the repository root, is
+ \begin{verbatim}
+ PYTHONPATH=code python -m network_simplex_benchmarks.paper_stage06 \
+--- stage06-accepted/sections/09-conclusion.tex
++++ stage07/sections/09-conclusion.tex
+@@ -0,0 +1,31 @@
++\section{Conclusion}\label{sec:conclusion}
++Sparse network--simplex convexification depends on which state information
++survives the observations. On an arbitrary equality-flow graph, the cycle
++rank of each unobserved subgraph gives the exact residual-coordinate count
++of the observation-sensitive construction. Forest complements remove all
++such coordinates. At bounded block rank, finite normal libraries also
++permit original-coordinate separation and constructive recovery, including
++degenerate state domains.
++
++The coefficient results give complementary boundaries. Rank three already
++requires coefficient two on a five-product $K_4$ example. A flat chain,
++despite its unbounded cycle rank, admits unit flow/product coefficients
++whenever at most three labels are observed, and four observed labels can
++force a ratio of two. With growing label count, Fibonacci ratios occur on
++simple series--parallel graphs of maximum degree three. With unrestricted
++graphs, even two labels permit unbounded ratios.
++Thus neither small treewidth alone nor a small number of labels alone
++implies a uniform coefficient bound for the full class. These obstructions
++concern original-coordinate descriptions and do not imply difficult
++separation or large extension complexity.
++
++For implementation, global state merging and native flow bounds are essential
++baselines. They often make a conventional LP the fastest option. Local cycle
++and observation reductions can yield further substantial size savings, while
++specialized rational oracles provide exact cuts and compact decompositions
++that a numerical feasibility status does not supply. The retained code,
++raw measurements, and independent checks make both the advantages and the
++negative runtime findings reproducible. The complete results apply to the
++stated component hull; adding external coupling constraints gives a valid
++relaxation and requires its own convexification analysis if an exact hull
++of the enlarged model is sought.
+--- stage06-accepted/figures/flat-chain.tex
++++ stage07/figures/flat-chain.tex
+@@ -0,0 +1,20 @@
++\begin{figure}[htbp]\centering
++\begin{tikzpicture}[>=stealth,vertex/.style={circle,fill=black,inner sep=1.8pt},
++                   every node/.style={font=\small}]
++\foreach \i in {0,...,4}{
++  \node[vertex,label=above:{$v_\i$}] (v\i) at (2.3*\i,0) {};
++}
++\foreach \i [evaluate=\i as \prev using int(\i-1)] in {1,...,4}{
++  \draw[->] (v\prev) to[bend left=26] node[above] {$a_\i$} (v\i);
++  \draw[->] (v\prev) to[bend right=26] node[below] {$b_\i$} (v\i);
++}
++\draw[->] (v0) .. controls (1,-2.0) and (8.2,-2.0) ..
++  node[below] {$h:\ f_h^j=\lambda_j-w_j$} (v4);
++\node at (4.6,1.15) {$f_{a_i}^j+f_{b_i}^j=w_j\quad\text{for every }i$};
++\end{tikzpicture}
++\caption{The flat chain $G_4$. Each serial pair carries the same statewise
++branch flow $w_j$; the bypass carries the remainder. All capacities and the
++source--sink flow value are one. Independent scalar totals at the four pairs
++do not retain the common vector of state flows. The general $G_L$ extends
++the same pattern to $L$ pairs.}\label{fig:flat-chain}
++\end{figure}

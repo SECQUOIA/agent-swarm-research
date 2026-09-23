@@ -1,0 +1,13 @@
+# Coordinator development for stage 6b
+
+A fresh topic scan found notes/research-20260922-span-three-many.md and its review. They contain a proved directional facet bound, an essential-ellipsoid family, and a proposed general-cone analogue of BD's two-aggregation theorem as a possible route to an improved upper bound. The following construction disproves that two-aggregation analogue. It does not disprove the separately conjectural 2k-2 bound.
+
+For m>=3 and distinct 0<a_i<1, start from f_i=a_i x1²+(1-a_i²)rho-1, rho=sum_{j>=2}x_j². Add g1=-x1² and g2=-rho. In the three-dimensional diagonal span, the coefficient cone K has precisely k=m+2 extreme rays. Each original ray stays extreme by its boundary witness, at which all other rows, including both added rows, are strictly negative. Each added negative coordinate ray is extreme because every original generator has constant coordinate -1 and the added generators have constant coordinate zero.
+
+The exact identity Q_i+a_i G1+(1-a_i²)G2=-E_t places the negative constant basis matrix in K. Together with G1 and G2 it gives -PSD_L contained in K. The original ellipsoid intersection E is open convex. The augmented strict set deletes the two proper coordinate subspaces x1=0 and rho=0. For any x in E, a sufficiently small generic direction gives x+d and x-d in E and outside both subspaces. Their midpoint is x. Thus its ordinary hull equals E. The weak set is exactly the original compact ellipsoid intersection and is regular and has no points at infinity.
+
+The original boundary witnesses still force all m ellipsoid aggregation rays in every exact strict description and in every finite weak description. Those m rays suffice. Hence the exact count is m=k-2 and is arbitrarily large even in the complementary cone case under the closed regularity/infinity hypotheses. No change of coefficient basis can turn this many-ray cone into the three-generator orthant without changing the problem.
+
+The coordinator ran a targeted standard-library Fraction heredoc for m=3,...,15. All 1,235 pairwise witness identities passed, together with both added-row strict signs and the displayed negative constant generator identity. These finite checks supplement the universal algebraic and midpoint arguments; they do not prove the general optimal upper bound.
+
+The assigned author must independently develop and verify this argument, then five independent manuscript reviewers must assess it. Do not promote a general 2k-2 result without a proof, or claim the elementary construction is a new topological theorem. The existing 2k bound is the complete unconditional theorem used in the manuscript; the directional improvement and explicit failure of the two-bound have precisely scoped hypotheses.

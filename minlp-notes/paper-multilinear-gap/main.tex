@@ -1,0 +1,757 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern,amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype,booktabs,array,longtable}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{xurl}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\hypersetup{pdftitle={Sharp gaps for positive multilinear relaxations},
+ pdfsubject={A counterexample to the Luedtke--Namazifar--Linderoth conjecture and Lean verification}}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+\DeclareMathOperator{\vex}{vex}
+\DeclareMathOperator{\cav}{cav}
+\DeclareMathOperator{\conv}{conv}
+\newcommand{\E}{\mathbb E}
+\newcommand{\Prb}{\mathbb P}
+\newcommand{\R}{\mathbb R}
+\newcommand{\ind}{\mathbf 1}
+\newcommand{\laws}{\mathcal P}
+\newcommand{\leanfile}[2]{\href{formal/Formal/#1.lean}{\texttt{#2}}}
+\title{Sharp gaps for positive multilinear relaxations}
+\author{}
+\date{}
+\begin{document}
+\maketitle
+\begin{abstract}
+Luedtke, Namazifar, and Linderoth conjectured that, for positive-coefficient
+multilinear functions on nonnegative boxes, the term-by-term relaxation gap
+is within a universal constant of the convex-hull gap. We give a sparse
+unit-coefficient family that disproves this conjecture. Its prescribed
+point is strictly interior, its termwise gap is $L$, and its exact hull
+gap is $s+(L-s)2^{-s}$ for an explicitly specified cutoff $s$.
+A finite inequality and an attaining probability law prove the formula.
+We also determine the sharp leading growth of the worst ratio:
+$R(d)\sim\ln d/\ln\ln d$ in maximum degree and
+$C(n)\sim\ln n/\ln\ln n$ in ambient dimension. The universal upper bound
+uses one distribution for all terms and extends to the original termwise
+relaxation on every finite nonnegative box. The accompanying standalone
+Lean project verifies the disproof, exact hull-gap formula, and both
+leading-constant-one limits. A claim-to-declaration guide and reproduction
+instructions accompany the proofs.
+\end{abstract}
+
+\section{The conjecture and the gap being compared}
+Let $B=\prod_{i=1}^n[\ell_i,u_i]$ be a finite box with
+$0\le\ell_i\le u_i$. Consider a specified multilinear polynomial
+\begin{equation}\label{eq:polynomial}
+ f(x)=\sum_{e\in E}a_e m_e(x),\qquad m_e(x)=\prod_{i\in e}x_i,
+ \qquad a_e\ge0,
+\end{equation}
+where $E$ is a set of distinct subsets of $[n]$. Zero coefficients can be
+deleted; thus the positive-coefficient class is included. Empty supports
+and singleton supports are allowed and contribute only affine terms.
+For a continuous function $g$ on $B$, write $\vex_B g$ for its greatest
+convex underestimator and $\cav_B g$ for its least concave overestimator.
+Define
+\begin{align}
+ H_B(f;x)&=\cav_B f(x)-\vex_B f(x),\label{eq:hull-gap}\\
+ T_B(f;x)&=\sum_{e\in E}
+       [\cav_B(a_em_e)(x)-\vex_B(a_em_e)(x)].\label{eq:term-gap}
+\end{align}
+The first quantity is the vertical width of the convex hull of the graph
+of $f$. The second gives each original monomial its exact graph hull
+separately. Always $0\le H_B\le T_B$. We form $T_B/H_B$ only when $H_B>0$.
+
+Conjecture~4.1 of \citet[p.~349]{Luedtke2012} proposes a constant upper
+bound on this ratio, uniform over positive multilinear functions on
+nonnegative boxes. The same statement is Conjecture~1 on printed page~22
+of the linked author manuscript. The uniformity includes varying degree
+and dimension. The construction below stays on unit cubes and uses
+coefficient one for every included term.
+
+The source distinguishes exact termwise envelopes from recursive
+McCormick relaxations of higher-degree products on general boxes.
+Our upper bounds concern \eqref{eq:term-gap}. They do not assert the same
+bounds for every recursive formulation on a positive box. The mixed-sign
+bilinear gap results of \citet{Boland2017} address a different coefficient
+class. A pointwise width ratio also does not by itself give an
+approximation ratio for a constrained optimization problem or an algorithm
+for evaluating a convex envelope.
+
+For $d\ge2$, let $R(d)$ be the supremum of $T_B/H_B$ over
+\eqref{eq:polynomial} of maximum degree at most $d$, arbitrary finite
+dimension, all such boxes, and all points with positive hull gap.
+Let $C(n)$ be the analogous supremum over exactly $n$ ambient coordinates,
+with no separate degree restriction. Unused coordinates and boundary
+points are permitted. Fixed coordinates ($\ell_i=u_i$) are permitted in
+both definitions. Constants can be handled without division by a zero gap.
+
+The paper proceeds from an elementary disproof to the exact finite gap
+and then to the sharp replacement. Appendix~\ref{app:coupling} gives the
+complete common-coupling upper argument. Appendix~\ref{app:lean} connects
+the statements to the bundled Lean declarations. All mathematical
+ingredients needed for the argument are proved below; the bibliography
+identifies the conjecture and its immediate context.
+
+\section{Graph hulls and probability laws}\label{sec:foundations}
+We omit the subscript $B$ on a unit cube. A polynomial is multilinear
+when it is affine in each coordinate separately.
+
+\begin{lemma}[Vertex laws]\label{lem:vertices}
+For a multilinear $g$ on a finite box $B$, let $\laws_B(x)$ be the
+probability laws on its vertices having mean $x$. Then
+\[
+ \vex_B g(x)=\min_{P\in\laws_B(x)}\E_Pg(X),\qquad
+ \cav_B g(x)=\max_{P\in\laws_B(x)}\E_Pg(X).
+\]
+Both extrema are attained, and these are the endpoints of the vertical
+slice of the original continuous graph hull.
+\end{lemma}
+\begin{proof}
+Round each nonfixed coordinate of a point $z\in B$ independently to its
+two endpoints, preserving its mean. Repeated use of separate affinity
+gives $\E X=z$ and $\E g(X)=g(z)$. A fixed coordinate stays fixed.
+Thus every continuous graph point lies in the convex hull of the vertex
+graph. The reverse hull inclusion is immediate. A convex combination of
+vertex graph points is exactly a vertex law with its mean and expected
+function value. Laws with a specified mean form a nonempty compact
+polytope; hence minimizing and maximizing the expected value attain the
+two endpoints.
+\end{proof}
+
+\begin{lemma}[Individual envelopes and a common upper law]\label{lem:monomial}
+For a nonempty support $e$ on the unit cube,
+\begin{equation}\label{eq:monomial}
+ \cav m_e(x)=\min_{i\in e}x_i,
+ \qquad \vex m_e(x)=\max\left(0,\sum_{i\in e}x_i-|e|+1\right).
+\end{equation}
+A single law attains the upper envelope of every monomial simultaneously.
+Consequently, $\cav f(x)=\sum_e a_e\cav m_e(x)$ when $a_e\ge0$.
+\end{lemma}
+\begin{proof}
+On a binary vertex, a monomial indicates simultaneous success of all its
+coordinates. The joint-success probability is at most the smallest
+success marginal and at least one minus the sum of the failure marginals,
+or zero if that is larger. For the upper bound, take one uniform
+$U\in[0,1]$ and set $X_i=\ind\{U\le x_i\}$ for every coordinate.
+This attains all upper bounds at once.
+
+For the lower bound for one support, place intervals of lengths $1-x_i$
+consecutively on a circle of circumference one. Their union has length
+$\min(1,\sum_{i\in e}(1-x_i))$: before one full turn the intervals are
+disjoint up to endpoints, and after a full turn they cover the circle.
+Let each interval be the corresponding failure event. This realizes
+the claimed joint-success probability. Sample unused coordinates with
+their prescribed means to complete the law. Nonnegative coefficients
+allow the common upper equalities to be summed. A constant term is
+immediate.
+\end{proof}
+
+These elementary envelope facts are also part of the classical
+multilinear relaxation theory discussed in \citet{Luedtke2012}. The
+essential distinction is that each term can have its own minimizing law
+in $T$, while the convex envelope of the sum requires one law for all
+terms together.
+
+\section{A sparse family with unbounded ratio}\label{sec:disproof}
+Fix an integer $L\ge2$ and put $m=2^L$. Use leaves $z_0,\ldots,z_{m-1}$
+and anchors $a_1,\ldots,a_L$. At level $j$, partition the leaf indices
+into consecutive blocks
+\[
+ \mathcal B_j=\bigl\{\{b2^{L-j},\ldots,(b+1)2^{L-j}-1\}:
+                       0\le b<2^j\bigr\}.
+\]
+The partitions are nested. Define the polynomial and evaluation point by
+\begin{equation}\label{eq:family}
+ f_L(a,z)=\sum_{j=1}^L\sum_{B\in\mathcal B_j}a_j\prod_{i\in B}z_i,
+ \qquad a_j=2^{-j},\quad z_i=1-2^{-L}.
+\end{equation}
+We write $T_L$ and $H_L$ for its two gaps at this point. Each support is
+distinguished by its anchor and its block, so all coefficients are one
+on distinct squarefree supports. The number of variables, number of
+monomials, maximum degree, and number of variable occurrences are
+\begin{equation}\label{eq:sizes}
+ n_L=2^L+L,\quad |E_L|=2^{L+1}-2,\quad
+ d_L=2^{L-1}+1,\quad
+ \sum_{e\in E_L}|e|=L2^L+2^{L+1}-2.
+\end{equation}
+The counts follow by summing $2^j$ terms of size $2^{L-j}+1$ at each
+level. Every prescribed coordinate lies strictly between zero and one.
+
+\begin{lemma}[Termwise gap and failure representation]\label{lem:family-gap}
+For the family \eqref{eq:family}, $T_L=L$, the upper envelope is $L$,
+and $H_L>0$. Under any binary law with the prescribed means, let $A_j$
+be the anchor, $R$ the number of failed leaves, and $N_j$ the number of
+level-$j$ blocks containing a failed leaf. Then
+\begin{equation}\label{eq:failure-representation}
+ \E R=1,\quad \E A_j=2^{-j},\quad
+ H_L=\max_P\E_P\sum_{j=1}^L A_jN_j,
+ \qquad N_j\le\min(2^j,R).
+\end{equation}
+The maximum ranges over all binary laws with all original coordinate
+means, without independence assumptions.
+\end{lemma}
+\begin{proof}
+At level $j$, a support has $k_j=2^{L-j}$ leaves and one anchor. Its
+lower envelope is $\max(0,2^{-j}-k_j2^{-L})=0$, and its upper envelope
+is $2^{-j}$. There are $2^j$ such terms. Lemma~\ref{lem:monomial}
+therefore gives $T_L=\cav f_L=L$. The value at the original point is
+\[
+ f_L(a,z)=\sum_{j=1}^L(1-2^{-L})^{2^{L-j}}<L.
+\]
+Since $\vex f_L\le f_L$, the hull gap is positive.
+
+The expected number of failures is $m2^{-L}=1$. At every binary vertex,
+$f_L=\sum_j A_j(2^j-N_j)$. Taking expectations gives
+$\E f_L=L-\E\sum_j A_jN_j$. Apply Lemma~\ref{lem:vertices} to minimize
+$\E f_L$. Finally, the blocks of each partition are disjoint, so each
+hit block needs a different failed leaf.
+\end{proof}
+
+The next bound applies directly to every law in
+\eqref{eq:failure-representation}. It requires only a finite sum.
+
+\begin{lemma}[A finite cap certificate]\label{lem:cap}
+For $r\ge0$, $A_j\in\{0,1\}$, and integers $0\le s\le L$,
+\begin{equation}\label{eq:cap}
+ \sum_{j=1}^L A_j\min(2^j,r)
+ \le sr+\sum_{j=s+1}^L A_j2^{j-s}.
+\end{equation}
+Consequently,
+\begin{equation}\label{eq:finite-hull-bound}
+ H_L\le s+(L-s)2^{-s}\qquad(0\le s\le L).
+\end{equation}
+\end{lemma}
+\begin{proof}
+Put $c_j=\min(2^j,r)$. For $j>s$,
+\[
+ A_jc_j\le c_j-c_{j-s}+A_j2^{j-s}.
+\]
+If $A_j=0$ this uses $c_j\ge c_{j-s}$; if $A_j=1$ it uses
+$c_{j-s}\le2^{j-s}$. Bound the first $s$ selected caps by $c_j$ and
+sum. The cap differences telescope to
+$\sum_{j=L-s+1}^L c_j\le sr$, proving \eqref{eq:cap}.
+Now use $N_j\le\min(2^j,R)$ and take expectations. Each term in the
+last sum has expectation $2^{j-s}2^{-j}=2^{-s}$, and $\E R=1$.
+\end{proof}
+
+\begin{theorem}[Disproof of the uniform-constant conjecture]\label{thm:disproof}
+For every real $K$ there is a unit-coefficient multilinear polynomial on
+a unit cube, at a strictly interior point with positive hull gap, for
+which $T/H>K$. In particular, the Luedtke--Namazifar--Linderoth
+uniform-constant conjecture is false.
+\end{theorem}
+\begin{proof}
+Choose $s=\lceil\log_2 L\rceil$ in \eqref{eq:finite-hull-bound};
+then $s\le L$ and $(L-s)2^{-s}\le1$. Hence
+\[
+ \frac{T_L}{H_L}\ge\frac{L}{\lceil\log_2 L\rceil+1}\longrightarrow\infty.
+\]
+All coefficient, support, interiority, and positive-denominator
+conditions were checked in \eqref{eq:family} and
+Lemma~\ref{lem:family-gap}. A unit cube is an admissible nonnegative box.
+\end{proof}
+
+The degree grows with $L$. This theorem is consistent with finite
+degree-dependent bounds, whose sharp growth is determined below. A
+single example exceeding a particular numerical ratio would not suffice
+to disprove the existence of every universal constant; the family does.
+
+\section{The exact hull gap and an attaining law}\label{sec:exact}
+The finite bound is attained at a suitable cutoff. Define
+\[
+ B_q=(L-q+2)2^{-q}\qquad(1\le q\le L).
+\]
+This sequence decreases strictly, with $B_1\ge1\ge B_L$.
+There is therefore an integer $1\le s<L$ such that
+\begin{equation}\label{eq:cutoff}
+ B_{s+1}\le1\le B_s,
+ \quad\text{or equivalently}\quad
+ (L-s+1)2^{-(s+1)}\le1\le(L-s+2)2^{-s}.
+\end{equation}
+
+\begin{theorem}[Exact finite gap]\label{thm:exact}
+For every $L\ge2$ and every cutoff $s$ satisfying \eqref{eq:cutoff},
+\begin{equation}\label{eq:exact}
+ T_L=L,\qquad H_L=s+(L-s)2^{-s}.
+\end{equation}
+Both envelope endpoints are attained. Either valid adjacent cutoff at
+an equality in \eqref{eq:cutoff} gives the same value.
+\end{theorem}
+\begin{proof}
+The upper bound for $H_L$ is Lemma~\ref{lem:cap}. To attain it, first
+choose $l\in\{0,\ldots,L\}$ with probabilities
+\begin{equation}\label{eq:threshold-weights}
+ w_l=\begin{cases}2^{-l-1},&l<L,\\2^{-L},&l=L.\end{cases}
+\end{equation}
+Set $A_j=\ind\{j\le l\}$. Summing the geometric tail gives
+$\Prb(A_j=1)=2^{-j}$. For a cutoff $q\in\{s,s+1\}$, prescribe
+\begin{equation}\label{eq:failure-cutoff}
+ R_l^{(q)}=\begin{cases}0,&l<q,\\2^{l-q+1},&l\ge q.\end{cases}
+\end{equation}
+The failure count is at most $2^L$, since $q\ge1$. A direct sum gives
+\[
+ \E R^{(q)}=(L-q)2^{-q}+2^{1-q}=B_q.
+\]
+Independently of $l$, mix the two choices of $q$ with weights
+\begin{equation}\label{eq:cutoff-mix}
+ \theta=\frac{1-B_{s+1}}{B_s-B_{s+1}},\qquad
+ 1-\theta=\frac{B_s-1}{B_s-B_{s+1}}.
+\end{equation}
+They lie in $[0,1]$ and make the mixed failure count have mean one.
+
+We next realize the block hits and each individual leaf mean. If the
+chosen failure count is zero, let every leaf succeed. If it is
+$R=2^r$, choose a uniform residue $t$ modulo $2^{L-r}$ and fail exactly
+the leaves whose indices are congruent to $t$ modulo $2^{L-r}$.
+This gives $2^r$ failed leaves and conditional failure probability
+$R/2^L$ for every leaf. At level $j$, a block has length $2^{L-j}$.
+If $j\le r$, each block contains a failure, so the number hit is $2^j$.
+If $j>r$, the spacing between failures exceeds the block length, and
+the $2^r$ failures hit different blocks. In both cases,
+\begin{equation}\label{eq:all-hits}
+ N_j=\min(2^j,R)
+\end{equation}
+simultaneously for all levels. Averaging $R/2^L$ over the mixed law
+gives failure probability $2^{-L}$ for each leaf. Thus the entire law
+has the original prescribed means.
+
+It remains to check the attained objective. For the nested anchors put
+$S_l(R)=\sum_{j=1}^l\min(2^j,R)$. For $l>s$ and either
+$R=2^{l-s}$ or $R=2^{l-s+1}$,
+\[
+ S_l(R)=sR+2^{l-s+1}-2
+       =sR+\sum_{j=s+1}^l2^{j-s}.
+\]
+Indeed, cap the first $l-s$ terms at $2^j$ and the last $s$ at $R$;
+the two endpoint choices both give equality. These are exactly the
+failure counts in \eqref{eq:failure-cutoff}. For $l=s$ they are $0$
+and $2$, both satisfying $S_s(R)=sR$; for $l<s$ they are both zero.
+Therefore \eqref{eq:cap} is an equality in every state of the mixed law.
+Taking expectations and using \eqref{eq:all-hits} gives
+$\E\sum_j A_jN_j=s+(L-s)2^{-s}$. This attains the maximum in
+\eqref{eq:failure-representation}, and hence attains the lower envelope
+$L-H_L$. The common upper law attains $L$.
+
+Finally, the formulas at $s$ and $s+1$ differ by $B_{s+1}-1$, so they
+agree whenever both adjacent choices are valid.
+\end{proof}
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{rrrr}
+\toprule
+$L$ & A valid $s$ & $H_L$ & $T_L/H_L$\\
+\midrule
+2 & 1 & $3/2$ & $4/3$\\
+8 & 2 & $7/2$ & $16/7$\\
+16 & 3 & $37/8$ & $128/37$\\
+64 & 5 & $219/32$ & $2048/219$\\
+\bottomrule
+\end{tabular}
+\caption{Exact instances of Theorem~\ref{thm:exact}. These values
+illustrate the formula; the universally quantified proof establishes
+unboundedness.}\label{tab:examples}
+\end{table}
+
+The cutoff also explains the growth. From $2^s\le L-s+2\le L+1$,
+$s\le\log_2(L+1)$. The other cutoff inequality gives
+$2^{s+1}\ge L-s+1$, which, together with this upper bound, yields
+$s=\log_2 L+O(1)$. Moreover,
+\[
+ 0\le (L-s)2^{-s}\le 2\frac{L-s}{L-s+1}<2.
+\]
+Consequently,
+\begin{equation}\label{eq:family-asymptotic}
+ H_L=\log_2 L+O(1),\qquad
+ \frac{T_L}{H_L}\sim\frac{L}{\log_2 L}.
+\end{equation}
+Nesting of the partitions was used for simultaneous attainment in
+\eqref{eq:all-hits}. The finite bound and disproof themselves only need
+the specified equal block sizes and disjointness within each level.
+
+\section{The sharp replacement}\label{sec:sharp}
+The construction gives the sharp leading scale for both degree and
+dimension. Here and below $\ln$ denotes the natural logarithm.
+
+\begin{theorem}[Sharp degree and dimension growth]\label{thm:sharp}
+For the suprema defined in Section~1,
+\begin{equation}\label{eq:sharp}
+ R(d)\sim\frac{\ln d}{\ln\ln d},\qquad
+ C(n)\sim\frac{\ln n}{\ln\ln n}.
+\end{equation}
+Both limits hold along all positive integer allowances tending to
+infinity, with leading constant one, over all finite nonnegative boxes.
+\end{theorem}
+
+We state the explicit bound used for the upper half. It matches the
+finite harmonic certificate in the accompanying Lean proof.
+
+\begin{theorem}[A common-coupling finite bound]\label{thm:finite-upper}
+Let $d\ge2$, $c_0=1-e^{-1}$, and define
+\begin{align}
+ \Lambda&=\max\{e^6,1+\ln d\},& b&=\ln\Lambda,& A&=\Lambda/b^2,
+       \label{eq:upper-parameters}\\
+ h&=\frac{1-1/b}{1+1/b^2}\,
+          \frac{b-3\ln b}{\Lambda},&
+ Z&=\frac1h+A+\frac2{c_0}.\label{eq:upper-constant}
+\end{align}
+Then $h>0$ and $T_B(f;x)\le ZH_B(f;x)$ for every positive multilinear
+polynomial of degree at most $d$ on a finite nonnegative box, including
+points of zero hull gap. On a unit cube the bound is witnessed by a
+single law depending only on the complete marginal vector and $d$,
+independently of the supports and coefficients.
+\end{theorem}
+
+Appendix~\ref{app:coupling} proves this theorem. The finite constant is
+chosen to give the sharp leading term; no optimality of $Z$ at a fixed
+degree is asserted.
+
+\begin{proof}[Proof of Theorem~\ref{thm:sharp}]
+For the upper bound, $b\to\infty$ and
+\[
+ \frac{h}{b/\Lambda}
+   =\frac{1-1/b}{1+1/b^2}\left(1-\frac{3\ln b}{b}\right)
+      \longrightarrow1.
+\]
+Thus $1/h\sim\Lambda/\ln\Lambda$, while
+$A/(\Lambda/\ln\Lambda)=1/b\to0$ and the constant $2/c_0$ is
+negligible. Eventually $\Lambda=1+\ln d$, so Theorem~\ref{thm:finite-upper}
+gives
+\[
+ R(d)\le(1+o(1))\frac{\ln d}{\ln\ln d}.
+\]
+Every support in $n$ coordinates has size at most $n$, so $C(n)\le R(n)$.
+
+For a common lower argument, take an integer $N\ge8$ and
+$L=\lfloor\log_2N\rfloor-1$. Then $L\ge2$ and
+$n_L=2^L+L\le2^{L+1}\le N$. The family therefore fits degree allowance
+$N$. It also fits exactly $N$ coordinates after adding unused variables
+with arbitrary fixed cube means, for instance $1/2$. Projection of any
+law on the added coordinates gives an old law, and any old law extends
+by independent added coordinates. Both gaps are therefore unchanged.
+By \eqref{eq:family-asymptotic}, both $R(N)$ and $C(N)$ are at least
+\[
+ \frac{T_L}{H_L}\sim\frac{L}{\log_2L}
+     \sim\frac{\ln N}{\ln\ln N}.
+\]
+This construction works for every $N\ge8$. Together with the upper
+bounds it proves both limits. In particular, the relevant ratio sets
+are nonempty and bounded above before taking their suprema.
+\end{proof}
+
+The conjectured constant is therefore replaced by a slowly growing
+degree- or dimension-dependent factor. The lower family has fewer than
+$2n_L$ terms and $O(n_L\log n_L)$ variable occurrences. These elementary
+size consequences do not claim an efficient algorithm for constructing
+or evaluating a general convex envelope.
+
+\appendix
+\section{The common-coupling upper bound}\label{app:coupling}
+We give all details needed for Theorem~\ref{thm:finite-upper}. The
+parameters and the rational union estimate below follow the formal
+proof, so no optimized fixed-point or second-order certificate is needed.
+
+\subsection{Deficiencies and the easy terms}
+Discard constant and affine terms, which have zero width and do not
+change $H$. For a remaining support $e$, choose an anchor $i_e$ of
+minimum mean and write
+\begin{equation}\label{eq:deficiency}
+ u_e=x_{i_e},\quad p_j=1-x_j\ (j\ne i_e),\quad
+ t_e=\min\left(u_e,\sum_{j\in e\setminus\{i_e\}}p_j\right),\quad
+ D_e(X)=X_{i_e}-\prod_{i\in e}X_i.
+\end{equation}
+For binary $X$, $D_e$ is the nonnegative indicator that the anchor
+succeeds and at least one other coordinate fails. Lemmas~\ref{lem:vertices}
+and~\ref{lem:monomial} imply
+\begin{equation}\label{eq:deficiency-gap}
+ T(f;x)=\sum_e a_et_e,\qquad
+ H(f;x)=\max_{P\in\laws(x)}\sum_e a_e\E_PD_e.
+\end{equation}
+Thus a law satisfying $\E D_e\ge t_e/Z$ for every support bounds the
+ratio after summing with nonnegative coefficients. The law must be
+chosen once for the entire vector $x$.
+
+Call a coordinate low if $x_i\le1/2$ and high otherwise. Independent
+Bernoulli rounding gives
+\[
+ \E D_e=u_e\left(1-\prod_{j\in e\setminus\{i_e\}}(1-p_j)\right).
+\]
+If there are at least two low coordinates in the support, a nonanchor
+has $p_j\ge1/2$, so the deficiency is at least $u_e/2\ge t_e/2$.
+If there are no low coordinates, let $S=\sum_jp_j$. The elementary
+inequality $1-p\le e^{-p}$ gives
+\[
+ \E D_e\ge u_e(1-e^{-S})\ge c_0u_e\min(1,S)\ge c_0t_e/2.
+\]
+For the middle inequality, use concavity of $1-e^{-S}$ on $[0,1]$
+and monotonicity after $1$. For the last, if $S\le1$ use $u_e>1/2$;
+otherwise use $t_e\le u_e$. Independence therefore captures at least
+$c_0t_e/2$ in these two cases. Terms of zero gap need no division and
+satisfy the desired inequality under every law.
+
+\subsection{Two laws for the one-low case}
+Put $M=e^{\Lambda-1}\ge d$, so $1+\ln M=\Lambda$. Each of the next two
+laws draws one uniform $U\in(0,1)$ and sets every low coordinate to
+$X_i=\ind\{U\le x_i\}$.
+
+In the threshold law, a high coordinate with failure mean $p=1-x_i$
+fails exactly when $U\le p$. All means are preserved. For a one-low
+support with low-anchor mean $u$, this law gives deficiency
+\begin{equation}\label{eq:threshold-gain}
+ \min\left(u,\max_jp_j\right).
+\end{equation}
+
+In the harmonic law, a high coordinate with $p=0$ never fails. For
+$p>0$, put
+\begin{equation}\label{eq:harmonic-density}
+ h_p=\min(Mp,1),\quad a_p=1+\ln(h_p/p),\quad
+ q_p(t)=\frac{\min(1,p/t)}{a_p}\ind\{t\le h_p\}
+       \quad(0<t<1).
+\end{equation}
+Conditional on $U=t$, high coordinates fail independently with
+probabilities $q_p(t)$. Since $p\le h_p$ and $1\le a_p\le\Lambda$,
+these probabilities belong to $[0,1]$. They are measurable and
+\begin{equation}\label{eq:density-integral}
+ \int_0^1q_p(t)\,dt
+ =\frac{p+p\ln(h_p/p)}{a_p}=p.
+\end{equation}
+Hence every high coordinate also has the prescribed mean. Values at
+the endpoints of the integral have no effect. The finite binary law
+can equivalently be defined by integrating the conditional probability
+of each binary vertex; finite sums commute with the integral.
+
+For a one-low support its anchor is the low coordinate. Conditional
+on $U=t\le u$, the probability of a nonanchor failure is
+$1-\prod_j(1-q_{p_j}(t))$. Its harmonic deficiency is therefore
+\begin{equation}\label{eq:harmonic-deficiency}
+ \int_0^u\left[1-\prod_j(1-q_{p_j}(t))\right]dt.
+\end{equation}
+Both laws are defined using the complete marginal vector, without
+reference to a support or its coefficient.
+
+\subsection{The harmonic window and the mixture}
+First, for independent events of probabilities $q_j\in[0,1]$ and
+$S=\sum_jq_j$,
+\begin{equation}\label{eq:rational-union}
+ 1-\prod_j(1-q_j)\ge\frac{S}{1+S}.
+\end{equation}
+Indeed, $\prod_j(1+q_j)\ge1+S$ and
+$\prod_j(1-q_j)\prod_j(1+q_j)=\prod_j(1-q_j^2)\le1$.
+Multiply the first inequality by the nonnegative failure-complement
+product and rearrange. The right side is increasing in $S\ge0$.
+
+Let $\beta=1/b$, with $b,A,h$ as in
+\eqref{eq:upper-parameters}--\eqref{eq:upper-constant}. We have $b\ge6$,
+and $b-3\ln b>0$: it is positive at $6$ (since $e^2>6$) and its
+derivative is $1-3/b>0$ thereafter. Thus $h>0$ and
+\[
+ \ln(\beta A)=b-3\ln b>0,\qquad \beta A>1,\qquad A>1.
+\]
+For a one-low term with $t_e>0$, if some $p_j\ge t_e/A$, then
+\eqref{eq:threshold-gain} is at least $t_e/A$, since $t_e\le u$.
+Otherwise every $p_j<t_e/A$. Consider the nonempty window
+\begin{equation}\label{eq:window}
+ t_e/A\le t\le\beta t_e\le u.
+\end{equation}
+All $p_j\le t$ there. Call a coordinate active when $t\le Mp_j$.
+Since $t\le1$, this is the same as $t\le h_{p_j}$. Every inactive
+coordinate has $p_j<t/M$, and there are at most $d-1\le M$ coordinates
+in the nonanchor support. The total inactive failure mass is at most
+$t$, so the active mass is at least
+\[
+ \sum_jp_j-t\ge t_e-t\ge(1-\beta)t_e.
+\]
+On active coordinates, \eqref{eq:harmonic-density} gives
+$q_{p_j}(t)\ge p_j/(\Lambda t)$. Consequently,
+\[
+ \sum_jq_{p_j}(t)\ge z(t):=\frac{(1-\beta)t_e}{\Lambda t},
+ \qquad 0\le z(t)\le\frac A\Lambda=\frac1{b^2}.
+\]
+Using \eqref{eq:rational-union}, the conditional union probability is
+at least $z(t)/(1+z(t))\ge z(t)/(1+1/b^2)$. Integrate over
+\eqref{eq:window}, using nonnegativity outside that window, to obtain
+\begin{align*}
+ \E_{\mathrm{harm}}D_e
+ &\ge\frac{1-\beta}{1+1/b^2}\frac{t_e}{\Lambda}
+              \ln(\beta A)\\
+ &=\frac{1-1/b}{1+1/b^2}\frac{b-3\ln b}{\Lambda}\,t_e
+   =ht_e.
+\end{align*}
+The integrands are bounded measurable functions on a finite interval,
+and the reciprocal integration window stays strictly above zero.
+
+Mix the harmonic, threshold, and independent laws with weights
+\begin{equation}\label{eq:three-mixture}
+ \frac{1/h}{Z},\qquad\frac A Z,\qquad\frac{2/c_0}{Z},
+ \qquad Z=1/h+A+2/c_0.
+\end{equation}
+These positive weights sum to one and preserve every coordinate mean.
+Each positive-gap term receives at least $t_e/Z$ from one of the three
+components. All other components contribute nonnegative deficiencies.
+Summing \eqref{eq:deficiency-gap} proves $T\le ZH$ on the cube,
+including at zero hull gap. This proves the cube part of
+Theorem~\ref{thm:finite-upper}.
+
+\subsection{Transfer to original terms on a nonnegative box}
+For each coordinate substitute
+$x_i=\ell_i+(u_i-\ell_i)y_i$ with $0\le y_i\le1$, and let
+$\widetilde f(y)=f(x)$. Expanding original monomials gives nonnegative
+coefficients and does not increase degree.
+
+First suppose all coordinates are nonfixed. The substitution is an
+affine bijection, so it maps graph hulls and preserves their vertical
+widths:
+\begin{equation}\label{eq:box-transfer}
+ H_B(f;x)=H(\widetilde f;y),\qquad
+ T_B(f;x)\le T(\widetilde f;y).
+\end{equation}
+For the second inequality, an original term becomes a sum of expanded
+monomials. The sum of their convex envelopes is a convex underestimator
+of that term; the sum of their concave envelopes is a concave
+overestimator. Thus the original term's width is at most the sum of
+the expanded widths. Sum this inequality over the original terms.
+If expansion produces the same support more than once, combining its
+nonnegative coefficients leaves that sum of widths unchanged, because
+envelopes scale linearly by a nonnegative constant.
+
+If a coordinate is fixed, restrict the original box to its nonfixed
+coordinates. In the expanded function the fixed coordinate has zero
+width and its new cube coordinate is unused. Projecting or extending
+laws on unused coordinates preserves every attainable expectation, as
+in the proof of Theorem~\ref{thm:sharp}. Thus both the full-hull equality
+and the original-term inequality in \eqref{eq:box-transfer} still hold.
+If all coordinates are fixed, every gap is zero. Applying the cube
+bound to $\widetilde f$ now proves
+$T_B(f;x)\le T(\widetilde f;y)\le ZH(\widetilde f;y)=ZH_B(f;x)$,
+completing Theorem~\ref{thm:finite-upper}.
+
+\section{Formal statements and reproduction}\label{app:lean}
+The accompanying \href{formal/README.md}{\texttt{formal/}} directory
+is a standalone Lake project pinned to Lean~4.33.1 and
+Mathlib~v4.33.1, with exact dependency revisions in
+\texttt{lake-manifest.json}. No parent repository files are needed.
+The 48 proof modules consist of 41 multilinear modules and seven shared
+modules for finite laws, graph hulls, and individual envelopes. The
+shared namespace \texttt{CubicGap} is inherited from their original
+location; its bundled files are general infrastructure, and no cubic
+counterexample modules are included.
+
+The following source links are relative to this PDF. They work when the
+PDF and the accompanying folder are kept together and the viewer permits
+local links. File paths and declaration names also appear in
+\href{formal/COVERAGE.md}{\texttt{formal/COVERAGE.md}} for viewers that
+disable such links. No hosted verification service is required.
+
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{.30\textwidth}>{\raggedright\arraybackslash}p{.65\textwidth}@{}}
+\toprule
+Paper claim & Lean file and principal declarations\\
+\midrule
+\endhead
+Lemma~\ref{lem:vertices}, continuous cube hull &
+\leanfile{CubicGap/Hull}{Hull.lean}: \texttt{mem\_cubeGraph\_hull\_iff}.\\[4pt]
+Lemma~\ref{lem:family-gap}, $T_L=L$ and $H_L>0$ &
+\leanfile{MultilinearGap/Termwise}{Termwise.lean}: \texttt{termwiseGap\_eq};
+\leanfile{MultilinearGap/Results}{Results.lean}: \texttt{hullGap\_positive}.\\[4pt]
+Lemma~\ref{lem:cap} &
+\leanfile{MultilinearGap/ExactUpper}{ExactUpper.lean}:
+\texttt{dyadic\_exact\_pointwise}, \texttt{hullGap\_exact\_upper\_bound}.\\[4pt]
+Theorem~\ref{thm:disproof} &
+\leanfile{MultilinearGap/Results}{Results.lean}:
+\texttt{unbounded\_gap\_ratio},
+\texttt{no\_uniform\_positive\_multilinear\_bound}.\\[4pt]
+Theorem~\ref{thm:exact} &
+\leanfile{MultilinearGap/ExactResults}{ExactResults.lean}:
+\texttt{polynomial\_exact\_minimum},
+\texttt{hullGap\_exact}, \texttt{exists\_hullGap\_exact}.\\[4pt]
+Theorem~\ref{thm:finite-upper}, cube &
+\leanfile{MultilinearGap/SharpUpper}{SharpUpper.lean}:
+\texttt{sharpLaw\_hasMeans}, \texttt{sharp\_cube\_gap\_bound}.\\[4pt]
+Theorem~\ref{thm:finite-upper}, original boxes &
+\leanfile{MultilinearGap/BoxTransfer}{BoxTransfer.lean}:
+\texttt{degree\_gap\_bound\_on\_box}.\\[4pt]
+Theorem~\ref{thm:sharp} &
+\leanfile{MultilinearGap/SharpAsymptotics}{SharpAsymptotics.lean}:
+\texttt{sharp\_positive\_growth}.\\
+\bottomrule
+\end{longtable}
+
+All multilinear declarations in the table belong to namespace
+\texttt{MultilinearGap}. The shared hull declarations belong to
+\texttt{CubicGap}. The final asymptotic theorem states the two normalized
+limits for the actual all-box degree and exactly-$n$-coordinate suprema.
+It is not a theorem merely along the dyadic family.
+
+The formal disproof endpoint uses the elementary weaker estimate
+$H_L\le s+2L/2^s$ and an arithmetic parameter choice, independently of
+the exact formula. This paper uses the sharper finite certificate,
+which is also verified, to shorten the written disproof. Similarly,
+the formal asymptotic lower argument uses the verified estimate
+$H_L\le\log_2 L+3$ and does not depend on the exact attaining law.
+The conclusions agree; these are alternative proof routes within the
+same bundle.
+
+The completion modules also verify the paper's supporting mathematical
+claims.
+
+\leanfile{MultilinearGap/Attainment}{Attainment.lean} proves general
+endpoint attainment, and
+\leanfile{MultilinearGap/EnvelopeFunctions}{EnvelopeFunctions.lean}
+identifies those endpoints with the greatest convex underestimator and
+least concave overestimator on both cubes and boxes.
+\leanfile{MultilinearGap/MonomialEnvelope}{MonomialEnvelope.lean}
+proves the full individual lower-envelope identity in
+Lemma~\ref{lem:monomial}, including an attaining law preserving all ambient
+means.
+
+The module \leanfile{MultilinearGap/PaperFoundations}{PaperFoundations.lean}
+checks original-box coefficient scaling and $0\le H_B\le T_B$.
+
+\leanfile{MultilinearGap/ExactSize}{ExactSize.lean} proves all four size
+identities in \eqref{eq:sizes}, with the coordinate count inherited from
+\texttt{FamilySize.lean}, and the stated sparsity bounds.
+\leanfile{MultilinearGap/ExactAsymptotics}{ExactAsymptotics.lean} proves
+$|H_L-\log_2L|\le3$ for $L\ge2$ and the actual family ratio limit in
+\eqref{eq:family-asymptotic}.
+\leanfile{MultilinearGap/Examples}{Examples.lean} proves all four rows of
+Table~\ref{tab:examples} as equalities about the actual graph hull.
+
+With Elan, Git, and Python~3 installed and the pinned toolchain on
+\texttt{PATH}, run from \texttt{formal/}:
+\begin{verbatim}
+lake exe cache get
+bash scripts/verify.sh
+\end{verbatim}
+The first command obtains the pinned dependency cache. The script checks
+that every proof module is imported, builds with warnings treated as
+failures, audits all bundled declarations (including private helpers)
+for transitive axiom dependencies, and replays the compiled project
+declarations through Lean's kernel. Only \texttt{propext},
+\texttt{Classical.choice}, and \texttt{Quot.sound} are permitted.
+Unfinished proofs, custom axioms, and native-computation axioms are
+rejected. No external optimization solver or sampled numerical result
+is a trusted proof step.
+
+The replay uses the installed Lean kernel and compiled dependencies;
+it is not a separate kernel implementation and does not replay all
+of Mathlib from scratch. The mathematical interpretation also depends
+on matching the formal definitions to the statements above. The
+\href{formal/VERIFICATION.md}{verification record} specifies the actual
+local checks and their scope. Internal agent reviews of the antecedent
+proofs do not constitute external peer review or establish publication
+priority. This note makes no exhaustive priority claim.
+
+The formal scope is the disproof, exact family gap and attainment, the
+finite bound \eqref{eq:upper-constant}, and the sharp leading limits.
+It does not include optimized fixed-point or Lambert $W$ formulas,
+second-order asymptotics, coefficient removal, or homogenization.
+Those results are not needed for any theorem stated here.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+\end{document}

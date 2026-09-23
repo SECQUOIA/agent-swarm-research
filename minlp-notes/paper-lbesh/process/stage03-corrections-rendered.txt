@@ -1,0 +1,1898 @@
+ Radial and point separation for perspective outer approximation
+            of convex generalized disjunctive programs
+                                     Anonymous manuscript
+
+
+1    Introduction
+Generalized disjunctive programming (GDP) represents discrete alternatives by logical statements
+and associates each alternative with a set of algebraic constraints. In a convex minimization GDP,
+the objective and inequality functions are convex and equality constraints are affine, both globally
+and within each alternative; the union of alternatives is generally nonconvex. This structure is
+useful for process selection and design because constraints belonging to an inactive alternative need
+not constrain the selected process. Logic-based outer approximation exploits that distinction when
+constructing mixed-integer linear masters and continuous subproblems [25].
+    For a bounded convex disjunction, a hull formulation distributes the original variables among
+alternatives and scales each copy by its selection weight. Convex nonlinear rows then admit per-
+spective representations. An outer approximation can enforce these rows through affine perspective
+cuts [3, 10]. The choice of the point at which to construct a cut remains consequential even when
+the formulation and the family of valid inequalities are fixed. A point tangent uses the current
+violated point. A radial supporting cut first searches the segment from a strict interior anchor to
+that point, then linearizes at the boundary. The latter incurs extra function evaluations but can
+remove a different portion of the current relaxation.
+    This paper studies a specific computational question: does that additional separation work repay
+its cost in a GDP solver? We compare the extended supporting hyperplane (ESH) policy with
+the extended cutting plane (ECP) policy in one implementation, holding the master construction,
+initialization, incumbent recovery, validation rules, and solver settings fixed within each pair. We
+retain both hull and big-M masters and both single-tree and repeated-master execution. The name
+logic-based ESH (LB-ESH) describes the implementation’s use of the original disjunct structure; it
+does not denote a new family of inequalities. The tested solver uses nonlinear programming (NLP)
+both to seek interior anchors and to recover feasible incumbents at integer selections.
+    Our contribution is the controlled comparison, its explanatory diagnostics, and the explicit
+mathematical and numerical conditions needed to interpret it. First, we give a self-contained account
+of cut validity and fixed-residual separation, including zero selection weights, approximate boundary
+points, small-weight omission, and the distinction between a valid relaxation bound and an objective-
+gap certificate. We derive a residual-calibrated fractional rule and a per-disjunction geometric
+repair bound, and give counterexamples to general cut dominance and to a linear objective-error
+inference after intersecting disjunctions with global constraints. These results clarify the method’s
+scope; we do not assert priority for the underlying convexity and compactness arguments. The
+residual-calibrated rule is analyzed separately from the fixed weight cutoff used in the experiments.
+    Second, an executable oracle diagnostic isolates dependence on equivalent constraint representa-
+tions and measures the function evaluations required by radial searches. Third, the computational
+study combines 51 related generated controls, of which 33 are held out from the pilot split, with 27
+external models, two additional schedules for the held-out single-tree comparisons, pilot ablations,
+
+                                                 1
+and independent conic references. Every supplied incumbent is checked against the original model.
+Failed interfaces, invalid witnesses, and open gaps remain in their declared cohorts. Supplementary
+tolerance and initialization studies are reported separately from the original runs.
+    The results support a limited practical benefit. On the held-out controls, single-tree ESH meets
+the numerical solve criterion on all 33 instances with either formulation; ECP does so on 32 with hull
+and 31 with big-M . Common-solved shifted geometric mean wall times favor ESH by approximately
+4–6% in the single-tree comparisons across the three schedules. ESH has lower arithmetic mean
+cut counts and LP iteration counts on the matched cohorts, but its recorded cut-generation time
+is substantially greater. Formulation and tree policy have larger measured timing effects. The
+external models give equal ESH and ECP accepted solve counts in every matched configuration, and
+exact conic formulations provide a strong alternative where available. Disabling integer-point NLP
+recovery reduces accepted outcomes from 69 of 72 pilot runs to one of 72, exposing an important
+limitation of this implementation.
+    The matched design also limits the interpretation. ECP shares interior initialization even though
+point tangents do not require it; the comparison therefore measures a policy change inside this solver,
+rather than independently optimized implementations. The controls share model structures and
+parameters, and repetition changes scheduling but retains the solver seed. Reported solves satisfy
+stated numerical feasibility and gap tests, rather than exact-arithmetic certificates. Within these
+limits, the study provides evidence for a concrete solver-design decision and documents circumstances
+in which the extra radial work is not rewarded.
+
+
+2     Relationship to prior work
+2.1   Logic-based outer approximation and perspective cuts
+The extended hull construction belongs to disjunctive programming [1]; its convex nonlinear
+counterparts use perspective functions to represent bounded unions of convex sets [4, 13]. Hull
+formulations of separate disjunctions are then intersected with global constraints and logic. That
+intersection need not be the convex hull of the complete GDP feasible set. This distinction matters
+when describing the relaxation targeted by our separation routines.
+    Logic-based outer approximation already combines selected-structure NLP subproblems with a
+linearized disjunctive master [25]. Omitting inactive nonlinear constraints from those subproblems,
+retaining logical structure, and applying a hull transform to affine approximations are inherited
+ingredients. Our radial policy chooses additional linearization points without solving an optimization
+problem at each point, but the complete tested algorithm still uses NLP subproblems.
+    Frangioni and Gentile [10] derive perspective cuts for convex on/off mixed-integer programs. For
+a differentiable convex row g(x) ≤ 0, a tangent at z gives
+
+                                 ∇g(z)T v + g(z) − ∇g(z)T z λ ≤ 0,
+                                                              
+                                                                                                    (1)
+
+where v is a disaggregated variable and λ its selection weight. For positive λ, this is precisely a
+linearization of λg(v/λ). Bestuzheva et al. [3] establish the same equivalence through affine cut
+extension and study perspective cuts in a general-purpose solver, including extensions based on
+valid nonconvex estimators. Accordingly, constructing coefficients in original-variable space and
+attaching an indicator does not itself distinguish a new cut family. Our hull ECP and ESH variants
+choose different z in (1); the big-M variants deactivate tangents in the original variables using valid
+big-M coefficients.
+
+
+
+                                                  2
+2.2   Radial supporting planes and disjunctive strengthening
+The point-tangent comparison follows the ECP tradition for convex mixed-integer nonlinear program-
+ming [27]. Veinott [26] already selects supporting points by intersecting the boundary with a segment
+from a fixed interior point to the current exterior relaxation solution. Kronqvist et al. [19] develop
+ESH for convex mixed-integer nonlinear programming, using interior points, boundary searches, and
+an initial LP phase before mixed-integer refinement. Serrano et al. [23] place this construction in
+the earlier supporting-hyperplane tradition and show its relationship to Kelley’s method applied to
+a gauge representation. Their result explains why a change in constraint representation can change
+point tangents while preserving the underlying feasible-set geometry. Our representation diagnostic
+makes a restricted version of that mechanism explicit and executable. It is not a new geometric
+foundation for ESH.
+    The SHOT implementation of Lundell et al. [20] is a close algorithmic precedent: it combines
+ESH and ECP separation with fixed-integer NLP heuristics, supports both single-tree callbacks
+and repeated-master execution, and falls back to ECP when no strict interior point is available.
+Its experiments include comparisons of tree policies. Our study retains GDP term structure and
+isolates radial versus point separation under matched settings within one GDP solver. SHOT also
+appears among our reformulation-based baselines; that comparison is distinct from the matched
+policy experiment.
+    The closest disjunctive ESH precedent is Kronqvist and Misener [18]. Their strengthening
+procedure holds a cut normal fixed and solves separate convex optimization problems to obtain
+coefficients for the terms of a disjunction. They integrate these inequalities with ESH and compare
+against hull formulations while avoiding direct nonlinear perspective evaluation. Our hull variant
+instead maintains disaggregated variables and constructs term-specific tangents by line search in the
+original bounded domains. The normals may differ among terms, and the same radial tangent policy
+is also used with our original-variable big-M master. This is a difference in separation procedure
+and master representation, not a demonstrated dominance relation. In particular, combining ESH
+with disjunctions or avoiding nonlinear perspective division cannot serve as a novelty claim for this
+paper.
+    Trespalacios and Grossmann [24] construct cuts from a hull formulation strengthened by basic
+steps and project the resulting information into a big-M model. Their separation uses optimization
+over a strengthened relaxation. Basic steps can incorporate interactions among disjunctions that
+are absent from separate-disjunction hulls. Our individual-row separation has a different work
+requirement and targets a different relaxation; it does not replace or subsume that method. No
+empirical comparison with their strengthening procedure is reported here.
+
+2.3   Exact conic formulations and conic outer approximation
+A nonquadratic expression does not establish that an exact conic hull is unavailable. Bernal Neira
+and Grossmann [2] formulate convex GDP alternatives with cones and obtain perspective-free
+hull representations under their stated assumptions. Their scope includes nonlinearities beyond
+quadratics. For quadratic rows, the revised manuscript of Gusev and Bernal Neira [15], specifically
+version 2 dated 17 March 2026, presents the conic exact hull reformulation (CEHR). For a row
+g(x) = xT Qx + cT x + d ≤ 0 with Q ⪰ 0, a nonnegative auxiliary variable t gives the lifted constraints
+
+                            v T Qv ≤ tλ,     t + cT v + dλ ≤ 0,     t ≥ 0,                          (2)
+
+together with scaled bounds and 0 ≤ λ ≤ 1. This has the same closed bounded-domain perspective
+target as the complete family of tangent cuts for the corresponding quadratic row. Comparing a
+
+                                                  3
+finite outer approximation against a weaker algebraic alternative would therefore be insufficient; our
+quadratic comparison uses the exact conic formulation.
+     Coey et al. [6] develop outer approximation with conic certificates, including numerical tolerance
+issues and both iterative and solver-driven implementations. Their study distinguishes separation-
+only variants from algorithms using continuous conic subproblems. Thus affine master refinement,
+optional continuous optimization oracles, and single-tree integration are established algorithmic
+choices. The cone references in our study check supported hull roots and small fixed-assignment
+problems, and the quadratic conic baseline supplies a direct computational alternative. They do not
+constitute a complete comparison against a general conic outer-approximation solver.
+
+2.4    Scope of the contribution
+The literature establishes the constituent cut families and algorithmic ideas. Our original empirical
+result is the measured radial-versus-point tradeoff under matched GDP policies, together with its
+dependence on formulation, tree execution, incumbent recovery, and model scope. The accompanying
+proofs and diagnostic constructions make the interpretation checkable without claiming a new general
+convergence theory, a stronger limiting hull, or a uniformly stronger separator. A supporting plane
+can cut a different region from a point tangent without dominating it.
+    Recent related work also limits broad claims of a new GDP solution paradigm. Nguyen and
+Pulsipher [21] extend logic-based and cutting-plane approaches to infinite-dimensional GDP, a
+different problem class. Current discopt documentation describes algebraic ESH with interior-point
+root searches and a separate GDP reformulation choice [9]. This is relevant implementation context,
+rather than peer-reviewed priority or an executed baseline in our study. It motivates keeping the
+claim specific to the present comparison. We make no claim that this is the first possible combination
+of GDP structure and radial separation, and the search for related work does not prove the absence
+of an equivalent implementation.
+
+
+3     Model and affine perspective cuts
+3.1    Problem class and relaxation target
+Let I be a finite set of disjunctions and Ki the finite set of alternatives in disjunction i. The original
+algebraic variables are x ∈ C = [xL , xU ] ⊂ Rn , with finite bounds; a subset xJ is integer. These
+original integer variables are distinct from the binary selection indicators yik . Write m = i |Ki |.
+                                                                                                  P
+
+We consider the minimization GDP
+
+        min     cT x + dT y,                                                                           (3a)
+         s.t.   (x, y) ∈ A,       hℓ (x, y) ≤ 0   (ℓ ∈ H),                                             (3b)
+                                                              xJ ∈ Z|J| ,
+                 X
+                       yik = 1   (i ∈ I),     y ∈ {0, 1}m ,                                            (3c)
+                k∈Ki
+                yik = 1 =⇒ x ∈ Sik ,          Sik = {x ∈ C : Bik x ≤ bik , gikj (x) ≤ 0 (j ∈ Jik )}.   (3d)
+
+The global row set H and every term row set Jik are finite. Here A is the intersection of C × [0, 1]m
+with global affine constraints, including any linear encoding of the permitted indicator logic. Affine
+equalities can be written as pairs of inequalities. Each Sik is a continuous convex set: original
+integrality is imposed separately and is not convexified inside a term. A nonlinear objective can
+be lifted as described below. Maximization of a concave objective is converted to minimization by
+changing its sign.
+
+                                                      4
+    All nonlinear functions are finite, convex and continuously differentiable on an open convex
+neighborhood of their respective boxes: C for term rows, and C × [0, 1]m for global rows. The results
+need only bounded chosen gradients and valid supporting inequalities, but the implementation uses
+derivatives. Fixed coordinates can be eliminated. This neighborhood assumption avoids assuming
+that a Lipschitz constant restricted to a lower-dimensional box bounds every component of an
+ambient gradient. Convexity and differentiability are input assumptions, not properties certified by
+the software. Native selection indicators do not occur in disjunct constraint bodies in the supported
+implementation; global logical couplings remain allowed.
+    For the hull master, introduce continuous copies νik ∈ Rn and weights λik = yik , with
+                            X                                       X
+                       x=          νik ,                                   λik = 1,         λik ≥ 0,   (4a)
+                            k∈Ki                                    k∈Ki
+                       L                   U
+                  λik x ≤ νik ≤ λik x ,                               Bik νik ≤ bik λik .              (4b)
+
+At positive weight, pik = νik /λik belongs to C; at zero weight, νik = 0. If the indicators are
+integral, the selected copy equals x and every other copy vanishes. The notation uses a full copy
+of x to simplify the presentation. The implementation copies only the coordinates appearing in
+a disjunction, taking their union over its alternatives. Omitted coordinates have only their box
+restriction inside those alternatives, so they can always be extended as νik,j = λik xj ; the projected
+formulation is the same.
+
+3.2   Validity, closure, and completeness
+For a generic convex row g(x) ≤ 0 and z ∈ C, define
+
+                      az = ∇g(z),              bz = g(z) − aTz z,       ℓz (x) = aTz x + bz .           (5)
+
+Convexity gives ℓz (x) ≤ g(x) on C. Its affine perspective cut is
+
+                                                  aTz ν + bz λ ≤ 0.                                     (6)
+
+An ECP cut takes z = p = ν/λ. An ESH cut takes z on the boundary between a strict interior
+anchor and p. Both belong to the established perspective cut family [3, 10]; only the sampling point
+changes.
+
+Proposition 3.1 (Bounded perspective identity). On T = {(ν, λ) : 0 ≤ λ ≤ 1, λxL ≤ ν ≤ λxU },
+set
+                      G(ν, λ) = λg(ν/λ) (λ > 0),      G(0, 0) = 0.
+Then G is convex and continuous on T . At (λ0 z, λ0 ), λ0 > 0, its affine tangent is the left side of
+(6). Moreover, the complete family of cuts (6), z ∈ C, is equivalent on T to G ≤ 0.
+
+Proof. For two positive-weight points, divide their weighted combination by its combined weight
+and apply convexity of g with the resulting nonnegative normalized weights. Multiplication by the
+combined weight proves convexity of G. A zero-weight point contributes the zero vector and extends
+the same argument. Since g is bounded on C, |G(ν, λ)| ≤ λ maxC |g|, proving continuity at the only
+zero-weight point. Ordinary continuity proves the remainder. Differentiation gives ∇ν G = az and
+∂λ G = g(z) − aTz z = bz . Its tangent constant is zero because G(λ0 z, λ0 ) = aTz λ0 z + bz λ0 . Finally,
+g(p) = supz∈C ℓz (p): convexity gives the upper bound on every tangent and z = p attains equality.
+Multiply this identity by λ > 0; at (0, 0) every cut and G ≤ 0 hold.
+
+
+                                                          5
+     The word “closed” here refers to the bounded-domain perspective function, equivalently extended
+by +∞ outside T . It does not invoke an unrestricted recession domain. For a nonempty term S, the
+origin is in the closure of its positive-weight feasible lift: fix p ∈ S and let (λp, λ) → (0, 0). If S = ∅,
+that positive-weight feasible lift and its closure are empty, but the perspective-inequality system
+still permits the inactive origin. This is intentional: an infeasible alternative must be usable with
+weight zero while another alternative is selected. A positive constant infeasible row, for example,
+forces its weight to zero rather than rendering the entire GDP infeasible.
+
+Proposition 3.2 (Hull of a separate disjunction). Let Pik be any convex sets with Sik ⊆ Pik ⊆ C.
+Enforce membership νik /λik ∈ Pik at positive weight and the inactive origin at zero weight, together
+                                                                                         S
+with the aggregation and weight equations in (4). The projection onto x is conv( k Pik ). In
+particular, finitely many affine tangents give the exact hull of the corresponding bounded polyhedral
+outer approximations. All tangents give the hull of the original continuous term sets.
+
+Proof. Every feasible lifted point satisfies x = k:λik >0 λik pik with pik ∈ Pik , a convex combination
+                                                     P
+
+of union points. Conversely, take a finite convex combination of union points, group its terms by
+alternative, and let λik be the total coefficient in group k. Convexity of Pik places the normalized
+combination in that group inside Pik whenever λik > 0. Set νik to its unnormalized combination
+and set empty groups to the inactive origin. This satisfies the lift. If every Pik is empty, neither
+side contains a point. The last assertion follows from proposition 3.1, including the affine rows.
+
+   The all-tangents statement is an infinite-family characterization; it does not claim that a finite run
+generates the exact nonlinear hull. The complete relaxation H used below retains the lifted variables,
+global affine and convex constraints, indicator logic with y ∈ [0, 1]m , and all bounded perspective
+rows, while relaxing xJ integrality. It intersects the separate-disjunction hull formulations; it is
+generally weaker than the convex hull of all GDP feasible points. Logic can further restrict its lifted
+weights. Neither proposition 3.2 nor the subsequent separation results assert the integer hull or
+account for all interactions between disjunctions.
+   For comparison, the big-M master deactivates each term tangent in original variables:
+
+                           ℓz (x) ≤ Mz (1 − yik ),       Mz = max{0, max ℓz (x)}.                       (7)
+                                                                      x∈C
+
+The box maximum is obtained by taking the maximizing endpoint for each nonzero coefficient. This
+finite coefficient makes the inequality redundant when yik = 0 and valid when yik = 1; the same
+construction applies to affine term rows. Any larger valid finite coefficient also preserves validity.
+This is a different fractional relaxation, with no corresponding claim that all its tangents recover H.
+
+3.3    A bounded objective epigraph
+Compactness below must cover every algebraic coordinate, including an artificial epigraph. Suppose
+a continuously differentiable convex objective f (x) is replaced by f (x) − t ≤ 0 and objective t + dT y,
+with t having no other role. A bounded x alone does not bound t. If the nonlinear objective also
+depends on indicators, the same argument applies on C × [0, 1]m before reimposing integrality.
+
+Proposition 3.3 (Optimization-equivalent compact epigraph). For x0 ∈ C, let
+
+              mf = min{f (x0 ) + ∇f (x0 )T (x − x0 )},          Mf ≥ max f (x),     Mf < ∞.
+                     x∈C                                              x∈C
+
+Adding mf ≤ t ≤ Mf preserves an optimal lift for every original feasible x, hence preserves the
+GDP optimum. For a valid gradient bound Lf , one may use Mf = f (x0 ) + Lf diam(C).
+
+                                                         6
+Proof. The tangent inequality implies mf ≤ f (x) throughout C, and the definition of Mf gives the
+other bound. Each original feasible x therefore has the lift t = f (x) in the proposed interval. Any
+feasible lift with t > f (x) can be reduced to that value without affecting another constraint and
+without worsening the objective. The gradient bound implies f (x) − f (x0 ) ≤ Lf ∥x − x0 ∥, proving
+the stated choice of Mf .
+    A validated exactly feasible incumbent and a total-objective cutoff can instead bound t above
+when the indicator cost is bounded. That alternative supplies no bound before such an incumbent
+exists. A lower-bounded LP optimum does not establish boundedness of arbitrary callback candidates.
+The prototype adds an epigraph and initial tangents but does not automatically impose the bounds
+in proposition 3.3; thus the compact-domain theorems are conditional for such inputs. Numerical
+incumbents always use the recomputed original objective, not a possibly understated epigraph
+value.
+
+
+4     What separation guarantees
+The following results specify what can be inferred from successful separation and what cannot.
+They concern exact arithmetic and retained valid cuts unless stated otherwise. They are supporting
+derivations for the comparison, not a claim of a new general convergence framework. Their
+compactness arguments do not provide useful polynomial runtime bounds.
+
+4.1   Uniform margins for the two policies
+For one row g on its compact convex box Cr , write
+        Dr = diam(Cr ),     Rr = max ∥x∥2 ,     Fr = max |g(x)|,      ∥∇g(x)∥2 ≤ Lr     (x ∈ Cr ).
+                                  x∈Cr                   x∈Cr
+
+For a term row, Cr = C; for a global row, Cr = C × [0, 1]m . Enlarged boxes include any bounded
+epigraph. Indices are suppressed when treating one row. A zero-diameter domain or a row with
+L = 0 is checked directly. In the latter case the row is constant on the domain and a positive value
+eliminates its term, or proves global infeasibility.
+Lemma 4.1 (Separation and normal bounds). Let g(p) = v > 0, p ∈ Cr , L, D > 0. The ECP
+tangent violates its inequality at p by v. Suppose also that a fixed anchor x̄ ∈ Cr satisfies g(x̄) ≤ −δ
+for δ > 0. Let z = x̄ + s(p − x̄), 0 < s < 1, satisfy g(z) = 0. Then the ESH tangent satisfies
+                                                  δv
+                                              ℓz (p) ≥
+                                                     .                                               (8)
+                                                 LD
+Every tangent normal has ∥az ∥2 ≤ L, and every perspective-cut normal has
+                                                       q
+                                ∥(az , bz )∥2 ≤ K :=       L2 + (F + LR)2 .                          (9)
+Proof. For ECP, ℓp (p) = g(p) = v. Existence of s ∈ (0, 1) follows by continuity from the negative
+anchor value and positive exterior value. The supporting inequality at x̄ yields
+                               −δ ≥ g(x̄) ≥ aTz (x̄ − z) = −saTz (p − x̄),
+so aTz (p − x̄) ≥ δ/s. The gradient bound, integrated along the segment, gives v = g(p) − g(z) ≤
+L∥p − z∥2 ≤ LD(1 − s). Consequently
+                   ℓz (p) = aTz (p − z) = (1 − s)aTz (p − x̄) ≥ (1 − s)δ/s ≥ δv/(LD).
+Finally, |bz | ≤ |g(z)| + ∥az ∥2 ∥z∥2 ≤ F + LR, proving (9).
+
+                                                    7
+    The anchor may differ by row; a shared anchor is an implementation convenience. Its actual row
+value, not an auxiliary NLP termination code, must establish the strict margin. ECP supplies a
+fallback when such an anchor is unavailable, without any Slater assumption. The proof also works
+for bounded chosen subgradients when the row is Lipschitz on the box: the supporting inequality at
+the anchor holds for every chosen subgradient, so a special directional-derivative-maximizing choice
+is unnecessary. This extension is not implemented.
+
+4.2   Integral candidates and objective bounds
+Theorem 4.2 (Finite fixed-residual rejection). Fix ε > 0. Suppose master candidates satisfy
+all bounds, affine constraints, indicator logic, integrality, and previously retained cuts. Whenever
+a global or selected-term nonlinear row exceeds ε, generate an ECP cut, or an ESH cut with a
+row-specific fixed positive anchor margin, for at least one such row. Retain every generated cut. Only
+finitely many such rejection iterations are possible. Thus an iteration process that keeps producing
+candidates either finds one with every relevant nonlinear row at most ε or exhausts its master
+candidates. This applies to both hull and valid finite-big-M masters.
+Proof. Assign each rejected candidate to a row for which a cut was generated. For a fixed nonconstant
+term row, restrict attention to the subsequence assigned to that row. Its term is active at all these
+candidates. If p generated a cut and q is a later candidate in this subsequence, the retained cut gives
+ℓz (q) ≤ 0, whereas lemma 4.1 gives ℓz (p) > ε for ECP or ℓz (p) > εδ/(LD) for ESH. Cauchy–Schwarz
+and ∥az ∥2 ≤ L imply respectively
+
+                               ∥p − q∥2 > ε/L or ∥p − q∥2 > εδ/(L2 D).
+
+When the term is selected, its hull copy equals x and its big-M deactivation vanishes, so this
+argument is valid in either master. A global row has the same argument in (x, y) coordinates without
+an activity condition. Each compact box can be covered by finitely many balls whose diameters are
+smaller than the appropriate positive distance; at most one point of the subsequence lies in each
+ball. There are finitely many rows. Constant positive rows eliminate their term or the global master
+after one cut. Summing the finite rowwise bounds proves the assertion.
+
+    The theorem does not require optimal master candidates, a globally solved NLP, or feasibility
+of inactive alternatives. It bounds nonlinear rejections, not all possible iterations of an algorithm
+trying to close an objective gap. In exact arithmetic, a valid outer approximation has optimum
+at most the GDP optimum. For an inexact master solve, the solver’s valid minimization bound,
+rather than its incumbent objective, supplies the lower bound B. A residual-feasible point is not
+necessarily exactly feasible and does not automatically supply an upper bound on the exact problem.
+An independently validated exactly feasible point of objective U together with U − B ≤ η establishes
+feasible η-optimality; exact optimality requires zero gap. Fixed-residual separation alone guarantees
+neither an exact incumbent nor closure of this gap.
+
+4.3   Fractional residuals and small selection weights
+For each lifted term row define
+                               (
+                                   λ[g(ν/λ)]+ ,   λ > 0,
+                   r(ν, λ) =                                         [a]+ = max{a, 0}.            (10)
+                                   0,             (ν, λ) = (0, 0),
+
+This is continuous on the scaled bounded domain: 0 ≤ r ≤ λF controls its limit at zero weight. A
+small unscaled row residual and a small weighted perspective residual are different criteria.
+
+                                                        8
+Theorem 4.3 (Residual-calibrated fractional separation). Fix εp > 0 and a positive global-row
+tolerance. At every fractional hull candidate satisfying all previously retained cuts, separate at
+least one term row with r > εp , or a global row exceeding its tolerance, using ECP or ESH as in
+lemma 4.1. Retain all cuts. There are finitely many unsuccessful separation iterations before every
+residual meets its tolerance or no relaxation candidate exists.
+Proof. For a term row with r > εp , its ECP transformed violation is exactly λg(p) = r > εp . Its
+ESH transformed violation is at least rδ/(LD) > εp δ/(LD). The coefficient norm is bounded
+independently of λ by (9). Thus a later block satisfying that cut is separated from its generating
+block in (ν, λ) by more than εp /K or εp δ/(LDK). These blocks range over a compact scaled box.
+Apply the finite-cover argument row by row, adding the global-row argument in theorem 4.2. A
+positive constant term row gives gλ ≤ 0 and needs at most one cut.
+
+   Let Ur ≥ maxp∈C [gr (p)]+ be a valid finite row bound. It is safe to skip the row without
+computing p whenever
+                                          λUr ≤ εp .                                     (11)
+Indeed r ≤ λUr ; if Ur = 0 the row is always satisfied, and otherwise every block requiring separation
+has λ > εp /Ur . A conservative Ur can follow from interval bounds or a gradient bound and a
+reference value. Tight bounds need not be cheap. This rule both justifies omission and places a
+positive lower bound on denominators that actually require evaluation.
+    The frozen implementation instead skips λ ≤ τ and tests gr (p) ≤ ε on the remaining blocks. If
+that complete test succeeds, then
+                                         rr ≤ max{ε, τ Ur }.                                      (12)
+For checked blocks use λ ≤ 1; for skipped ones use λ ≤ τ . Consequently a fixed cutoff has no
+prescribed small absolute residual guarantee without Ur . At fixed τ > 0, cutting checked rows with
+unscaled violation above ε still gives a finite retained-cut packing argument, since their transformed
+margins exceed τ ε for ECP, or τ εδ/(LD) for ESH. This termination fact does not improve (12).
+Row rescaling changes all these residuals, tolerances, and Ur .
+    The residual-calibrated policy (11) is a theoretical alternative, not an implemented experimental
+setting. An intermediate LP objective remains a valid relaxation lower bound under exact valid cuts,
+but a stall or cap provides no completed residual test. In a fractional big-M master the deactivation
+term may absorb a tangent’s entire violation, so theorem 4.3 is not a big-M residual theorem.
+
+4.4    Geometric repair and the limit of an objective inference
+Proposition 4.4 (Repair within one disjunction). Suppose each retained term is nonempty and
+has an anchor x̄ik satisfying its box and affine rows and all its nonlinear rows with common margin
+δik > 0. If pik satisfies that term’s box and affine rows, let vik = maxj∈Jik [gikj (pik )]+ (zero for an
+empty row set). Then
+                     δik pik + vik x̄ik                                     Dvik
+             qik =                      ∈ Sik ,         ∥qik − pik ∥2 ≤             ,   D = diam(C).           (13)
+                         δik + vik                                        δik + vik
+For a hull point whose checked blocks λik > τ have vik ≤ ε,
+                                                  !                                      
+                                       [                          Xλik ε       X
+                       dist x, conv         Sik       ≤ D                 +        λik  .                    (14)
+                                        k                 k:λ >τ
+                                                                 δik +   ε   k:λ ≤τ
+                                                                  ik               ik
+
+                                                                                               P
+If instead every row has weighted residual at most εp , the distance is at most D                k εp /δik .
+
+
+                                                              9
+Proof. Convexity bounds each row at qik by (δik vik − vik δik )/(δik + vik ) = 0. The box and affine
+rows are preserved by a convex combination. Also qik − pik = vik (x̄ik − pik )/(δik + vik ), giving (13).
+For every unchecked positive-weight term choose any feasible qik ; its displacement is at most D.
+                            P
+The convex combination k λik qik lies in the union hull, and the triangle inequality proves (14).
+Zero-weight terms contribute nothing and need no pik . Under the weighted-residual hypothesis,
+λik vik = maxj rikj ≤ εp , and λik vik /(δik + vik ) ≤ εp /δik . Summing gives the final bound.
+
+    These are distances to one disjunction’s hull. Repairs for different disjunctions need not agree,
+nor satisfy the global constraints or coupled logic. Empty terms must be removed for this proposition
+or assigned zero weight; the earlier cut-validity results did not need this nonemptiness condition.
+
+Example 4.5 (No linear intersection error bound from term interiors). On 0 ≤ x, y ≤ 1, impose a
+single-term constraint x2 − y ≤ 0, a global row y ≤ 0, and minimize −x. The term has anchor (0, 1)
+and nonlinear margin one. The exact feasible point is (0, 0) and its objective is zero. For 0 < ε ≤ 1,
+           √
+the point ( ε, 0) satisfies the global row exactly and the term with residual ε, but its objective
+                    √                           √
+underestimation is ε. For every fixed K > 0, ε > Kε when 0 < ε < 1/K 2 . Thus separate-term
+Slater margins cannot imply a uniform O(ε) objective-error bound for their intersection with global
+constraints. Duplicating the alternative gives the same example with a two-term disjunction. A
+joint metric error bound or other joint regularity would be an additional assumption.
+
+Proposition 4.6 (Convergence in value without a rate). Let a sequence of lifted candidates contained
+in one common compact domain satisfy the affine hull system and relaxed global logic. Suppose all
+global positive residuals and weighted perspective residuals tend to zero. If each candidate minimizes
+a valid outer relaxation of H, its objective tends to the optimum vH . The conclusion also holds
+when candidate suboptimality tends to zero. If instead the candidates retain integral indicators and
+original integer coordinates and optimize valid outer relaxations of the GDP, the corresponding
+assertion holds for the GDP optimum.
+
+Proof. Continuity of all residuals, including (10) at zero weight, makes every cluster point feasible
+for H. Compactness supplies cluster points. Every relaxation optimum is at most vH ; therefore
+candidate values are at most vH + o(1). Every convergent candidate subsequence has limiting
+objective at least vH . If the full objective sequence did not converge to vH , a subsequence bounded
+away from it would, by compactness, contain a convergent subsequence contradicting these two
+bounds. In the integral case, replace vH by the GDP optimum in the upper-bound argument. The
+bounded integer-coordinate set is closed, so every cluster point retains integrality and the lifted
+constraints enforce the original selected terms; its objective is therefore at least the GDP optimum.
+If the target feasible set is empty, no such compact sequence with vanishing residuals can exist.
+
+    This is a limiting statement, not finite exact convergence or a convergence rate. A fixed residual
+or fixed positive weight cutoff alone does not provide its hypotheses.
+
+4.5   Single-tree execution requires an oracle contract
+Theorem 4.7 (Conditional single-tree residual conclusion). Assume the compact-domain conditions
+above and the following exact-arithmetic solver contracts.
+
+  1. The finite MILP master is solved completely in the absence of resource limits. Every old
+     lazy cut is enforced for final feasibility. At callbacks violating an old cut, an existing cut is
+     re-enforced without adding fresh cuts. Each such old-cut resolution episode finishes in finite
+     time. Fresh nonlinear rejection iterations occur only at candidates satisfying all old cuts.
+
+
+                                                   10
+   2. Every potentially accepted integer candidate is tested against the original global and selected-
+      term rows. A row above a fixed positive residual tolerance produces a valid rejecting cut with
+      the uniform margin in lemma 4.1. Inability to obtain such a cut is a failure, not acceptance.
+
+   3. Any heuristic NLP point proposed as an exactly feasible incumbent is independently validated
+      against bounds, affine and nonlinear rows, fixed values, integrality, logic, and the original
+      objective. Failed NLP solves do not exclude an assignment without a separate valid infeasibility
+      proof.
+
+   4. Fractional cutting is disabled, capped at finitely many cuts, or obeys a retained-cut uniform-
+      margin condition such as theorem 4.3 or its fixed-positive-cutoff variant. Other optional
+      refinement also contributes only finitely many cuts.
+
+Then only finitely many distinct nonlinear integer rejection iterations and permitted fractional cut
+iterations occur. Under the complete-master-solver contract, the algorithm eventually establishes
+master infeasibility or produces an integer point meeting the nonlinear residual tolerance. An exactly
+feasible incumbent U and a valid master bound B additionally establish feasible η-optimality whenever
+U − B ≤ η.
+
+Proof. Contract 1 places fresh integer rejection candidates under theorem 4.2; their number is finite.
+Contract 4 bounds fractional and other refinement. Old-cut repetitions finish in finite time by
+contract 1. After finitely many additions, the complete finite MILP solve either has no feasible
+candidate or processes an integer candidate that cannot be rejected above the prescribed residual
+tolerance. Contract 2 supplies the residual conclusion. Under exact cut validity, master infeasibility
+proves GDP infeasibility. Contracts 1 and 3 supply valid B and U for the stated objective inequality.
+That inequality, rather than final master status alone, establishes the objective conclusion.
+
+    These are substantive conditions on solver behavior, not consequences of choosing a callback API.
+A solver may present a callback candidate violating an earlier lazy cut; generating additional cuts at
+that point does not by itself justify packing it as a new separated point. Unlimited repeated user cuts,
+especially after solver purging, are likewise outside the proof. The frozen numerical implementation
+is not asserted to satisfy this exact termination contract. Feasibility within numerical tolerance
+must retain that qualification even if the numerical master gap closes.
+
+4.6    Approximate roots and finite arithmetic
+An exact tangent at an approximate boundary point remains valid provided its full constant
+g(z) − ∇g(z)T z is retained. It need not pass through z. Deleting g(z) can invalidate the cut: for
+g(x) = x2 − 1 and z = 1/2, the artificial boundary tangent becomes x ≤ 1/2 and excludes feasible
+x = 1. The true tangent is x ≤ 5/4 and remains valid. Validity alone does not establish useful
+separation. A robust oracle should check the transformed cut’s actual violation, fall back to ECP if
+needed, and report failure if neither cut reliably rejects the candidate.
+
+Proposition 4.8 (A sufficient certified arithmetic scheme). On a compact candidate domain, let
+the exact valid cut be q T w ≤ d. Suppose computed coefficients satisfy the certified bound
+
+                      |(qeT w − d)
+                                e − (q T w − d)| ≤ E     for every domain point w.
+
+Then qeT w ≤ de+ E is valid. If the exact generating violation is at least κ, its violation of this relaxed
+computed cut is at least κ − 2E. If later candidates can violate stored cuts by at most ρ, uniform
+bounds κ > 2E + ρ and ∥qe∥2 ≤ K  f with Kf > 0 give a minimum separation distance (κ − 2E − ρ)/K.        f
+
+
+                                                    11
+Proof. At every point satisfying the exact cut, the computed left-minus-right expression is at most
+E, proving validity after relaxation. At its generating point, that expression is at least κ − E,
+hence at least κ − 2E after relaxation. At a later accepted point it is at most ρ. Subtract the
+two inequalities and apply Cauchy–Schwarz to obtain the distance bound. The same finite-cover
+arguments then apply.
+
+    For example, certified coefficient errors |qej − qj | ≤ ej and |de − d| ≤ ed , with |wj | ≤ Wj , give
+           P
+E = ed + j ej Wj . Nonlinear evaluation errors also need bounds before a residual test becomes
+certified. Ordinary double-precision gradients, NLP statuses and MILP bounds do not supply these
+enclosures. The numerical study instead reports explicitly defined residual and gap tests.
+
+
+5     Algorithm and numerical implementation
+The implementation exposes two cut policies (ESH and ECP), two master formulations (hull and
+big-M ), and two execution modes (single-tree and repeated-master, termed multi-tree). These
+choices form the matched experimental comparisons. The following description concerns the frozen
+implementation used in the study. Its numerical safeguards and finite stopping rules are distinguished
+from the sufficient exact-arithmetic contracts of section 4.
+
+5.1   Initialization and the common separation routine
+The extractor retains the original GDP rows and their term membership, converts the objective to
+minimization, and introduces an epigraph for a nonlinear objective. Affine bound propagation uses
+global rows and unions of branchwise bound deductions. LP optimization over global affine rows
+attempts to recover missing bounds required by a formulation. These are floating-point preprocessing
+operations. The master refuses a required unbounded hull copy or a big-M coefficient that cannot
+be calculated finitely. In particular, a nominal default big-M option is not used as a substitute for a
+missing valid row bound in the reviewed construction.
+     Both policies run the same interior initialization. For each term’s nonlinear row collection, and
+separately for global nonepigraph nonlinear rows, an auxiliary NLP minimizes a common slack s
+subject to gj (x) ≤ s, relevant affine rows, and variable bounds. Original integer coordinates are
+continuous in this auxiliary problem. Otherwise unbounded coordinates receive an artificial finite
+search box around their starting values (scale 103 ), and the common slack has lower bound −106 .
+These restrictions aid anchor search only; they do not become original-model or master bounds and
+do not establish the compactness premise of the theory. The implementation tries up to four starts,
+with deterministic restarts, and retains a candidate anchor if the loaded slack is below −10−6 . This
+is only a candidate for radial use: the separator checks the actual value of the particular row at
+that anchor, requiring it to be below −10−9 . Failure to obtain a usable anchor invokes ECP and
+never proves term infeasibility. The epigraph row uses ECP because it is excluded from the anchor
+NLP. Keeping interior initialization in ECP isolates the subsequent cut-policy change but imposes
+work an independently designed ECP solver need not perform.
+     Initial point tangents are added for every nonlinear row, using anchor coordinates when available
+and otherwise bounded starting values. Invalid or nonfinite evaluations trigger a bounded determin-
+istic search for a finite starting tangent (at most 31 attempts per row), followed by an error if none
+is found. All later tangents retain the full affine constant in (5).
+
+      Common separation routine at (x, y, ν) and cutoff τ .
+
+
+
+                                                   12
+        1. Test global nonlinear rows at (x, y). For each term with yik > τ , test its rows at
+           pik = νik /yik in the hull master, or at x in the big-M master.
+        2. For every tested row with value exceeding min{cut_tol, feas_tol}, use its point
+           tangent for ECP. For ESH, if an anchor contains all row variables and its row value
+           is below −10−9 , bisect that row along the anchor–candidate segment. Stop after at
+           most 60 bisections or once the parameter bracket has width below 10−10 . Linearize
+           at the exterior bracket endpoint.
+        3. Use the radial tangent if its coefficients are finite and its untransformed violation
+           at the test point exceeds 0.1 cut_tol; otherwise use a point tangent. Nonfinite
+           candidate row values or fallback coefficients raise an evaluation error.
+        4. Transform each term tangent using (6) or (7), and submit it as an ordinary master
+           constraint, an integer-candidate lazy constraint, or a fractional user cut according
+           to the caller.
+
+The line search is rowwise, rather than a single root search on the maximum of all rows. The
+exact boundary target belongs to the boundary of that row’s sublevel set and need not belong to
+the boundary, or even the feasible set, of the full multirow disjunct. The implemented bisection
+instead linearizes at an approximate exterior bracket endpoint. Term structure determines the
+row tags, anchors and cut transformation; it does not turn the line search into projection onto
+the whole term. No optimization problem is solved within this cut routine. The default values
+of cut_tol and feas_tol are both 10−6 . Checking the untransformed radial violation is weaker
+than the certified transformed-margin requirement in section 4.6, particularly at small weights. The
+fallback checks coefficient finiteness but supplies no certified rounding-error bound. Anchor values,
+intermediate bisection values, and the scalar radial tangent violation have no separate finiteness
+guard; returned nonfinite values therefore pass through ordinary comparisons. Thrown evaluation
+exceptions propagate. Thus this routine implements a practical numerical policy, not the certified
+scheme in proposition 4.8.
+     Hull normalization also has a domain qualification. In exact arithmetic the scaled bounds imply
+νik /yik ∈ C. Numerically, a scaled-bound error can be amplified by division by a small positive
+weight. The frozen routine neither projects the normalized point onto C nor separately verifies its
+domain membership. Finite row values and derivatives at a point outside the assumed convexity
+domain do not establish a valid supporting inequality. The exact validity results require in-domain
+evaluation points; this numerical premise is not certified by the routine. This is a potential numerical
+risk, not an observed failure of the reported experiments.
+
+5.2   LP initialization and the two tree policies
+      Common LP phase.
+        1. Relax all master integer variables, including original integer coordinates and GDP
+           indicators. Solve the current LP with the remaining time budget.
+        2. When the LP is optimal, retain the best attained objective as the initial LP bound.
+           At any usable LP solution, record the maximum numerical weighted perspective
+           residual over all positive-weight hull blocks, including those below the separation
+           cutoff.
+        3. Call the separation routine with its default τ = 10−6 . Repeat after adding cuts
+           unless the routine adds none, a resource/status limit occurs, or the objective
+           stagnates.
+
+                                                  13
+        4. Restore integrality and proceed to the selected mixed-integer execution mode.
+
+The default LP cap is 200 iterations. Stagnation is detected after at least six cut-producing solves
+when the newest objective differs from the one five iterations earlier by at most 10−5 (1 + |vLP |).
+The recorded exit distinguishes no separating cuts, stagnation, iteration limit, time limit and master
+status. A no-cut exit is only a completed test of the rows visited under the numerical cutoff; a
+stagnation or limit exit does not provide even that assertion. The residual diagnostic is absent for
+big-M and is reported as infinite if a required evaluation is undefined. The retained LP bound is
+still the best optimal LP value reached even if cuts were added after its solve. It is a numerical
+solver bound, not an interval certificate.
+
+     Multi-tree mode.
+
+        1. Solve the current MILP with the remaining time budget. Read its objective bound
+           as the minimization lower bound B; do not use the master incumbent objective for
+           that purpose after an incomplete solve.
+        2. Separate its integer candidate using the common routine. If integer-point NLP
+           recovery is enabled, fix its integer assignment and solve the selected continuous
+           subproblem. Validate any recovered point, update the incumbent U when it
+           improves, and add tangents at the recovered point for global and selected-term
+           rows.
+        3. If separation added no cuts, independently validate the master point as a possible
+           original-model incumbent. A relaxed epigraph objective alone cannot establish that
+           incumbent.
+        4. Stop when the numerical gap criterion holds or a resource/status condition occurs.
+           If no cut was added and no incumbent exists, report a stall. Otherwise repeat with
+           the accumulated master.
+
+The default cap is 500 MILP iterations. Previously added ordinary cuts remain in the master. A
+merely tolerance-feasible incumbent is not used to add an objective cutoff in this mode. Failure
+to recover a point from an NLP does not create an infeasibility cut or a no-good cut for that
+assignment.
+
+     Single-tree mode.
+
+        1. Start one MILP branch-and-cut solve with lazy constraints enabled and the remain-
+           ing time budget.
+        2. At every integer-solution callback, run separation and submit its cuts as lazy
+           constraints. If no cut is generated, independently validate the original point before
+           recording an incumbent.
+        3. When enabled, perform integer-point NLP recovery at that callback. Validate an
+           improving result and submit it as a heuristic solution, setting hull copies to the
+           recovered x in selected terms and zero in inactive terms.
+        4. If optional fractional user cuts are enabled, separate optimal node relaxations at
+           the root and at node counts divisible by 50, using τ = 0.05. Submit those cuts as
+           user cuts.
+        5. On solver return, validate any final master incumbent, obtain the master bound,
+           and apply the numerical incumbent/gap/status rules below.
+
+                                                 14
+The main study enables integer-point NLP recovery at every integer callback and disables fractional
+user cuts. The source also offers an adaptive recovery option, but that option is not the main
+experimental policy. NLP-solution tangents are explicitly added in multi-tree mode; the single-
+tree NLP path instead submits the validated heuristic point and relies on callback separation.
+Optional fractional cuts are an ablation, use a larger fixed cutoff than the LP phase, and have
+no explicit finite total cut cap. The implementation does not add an external mechanism that
+verifies old-lazy-cut satisfaction before generating fresh cuts. The corresponding solver properties in
+theorem 4.7 are therefore assumptions for the theoretical algorithm, not proven properties of this
+callback implementation.
+
+5.3   NLP recovery, validation, and failure states
+The recovery NLP fixes all original integer variables and indicators to the current rounded assignment,
+deactivates inactive disjuncts, and solves the continuous selected model on a clone. Fixed original
+variables are preserved when preparing its start. Validated results are cached by integer assignment;
+repeated failures can also be cached to avoid indefinite retries. An NLP return code is never
+sufficient for incumbent acceptance. A failed or locally infeasible NLP return is not a proof that the
+assignment has no feasible point.
+    Before acceptance, the internal validator requires finite original variable values, normalizes integer
+values only when they are within feas_tol of an integer, and restores fixed values only within that
+same tolerance. It then checks variable bounds, global affine and nonlinear rows, exclusive selection
+and selected-term rows on this normalized point. Indicator logic is included among the global affine
+rows. It reevaluates the original objective on that point and resets any artificial epigraph to the
+resulting minimization value. Inactive-term constraints are not required. The stored incumbent
+and final model writeback use the same normalized values. A feasible point need not be an optimal
+NLP solution to improve the incumbent.
+    For the main settings, internal acceptance allows maximum absolute original-row and bound
+violation 10−6 . With internal minimization incumbent U and bound B, the implementation reports
+a closed numerical gap only when both are finite and
+
+                                      |U − B| ≤ 10−6 + 10−4 |U |.                                    (15)
+
+The symmetric test permits small numerical bound inconsistency and rejects large inconsistency; it is
+not the exact upper/lower-bound inequality of theorem 4.7. The benchmark independently rechecks
+the original witness with a scale-dependent feasibility tolerance and a separate gap formula, specified
+in the experimental design below. Consequently raw solver status and an accepted experimental
+solve are separate quantities.
+    An internal optimal status means a numerically accepted incumbent and a closed numerical
+gap under (15). Results explicitly record rigorous_certificate=False, the feasibility tolerance,
+and the maximum incumbent residual. Time limits, iteration limits, stalls, cutoffs, and other master
+statuses remain distinguishable. Callback exceptions terminate the solve with numerical_error
+and preserve the exception detail. Evaluation errors outside callbacks can propagate as failed runs.
+A solver infeasibility report after an accepted incumbent is treated as a numerical inconsistency, not
+as a successful infeasibility proof. Ambiguous master termination is not silently relabeled infeasible.
+
+5.4   Supported scope and accounting
+The reviewed input scope consists of flat exclusive disjunctions with convex differentiable inequality
+rows and adequate finite bounds for the selected formulation. Unsupported structures are refused:
+
+                                                   15
+nonexclusive disjunctions, nested or multiply assigned disjuncts, active orphan disjuncts, objectives
+inside disjuncts, SOS constraints, nonlinear equalities, two-sided nonlinear rows, and nonfixed
+native GDP indicators inside disjunct bodies. Constant contradictory rows are retained so that
+an infeasible term can be excluded without excluding its alternatives. Declared variables remain
+subject to their bounds even if absent from all expressions. Successful extraction does not certify
+convexity, smoothness or safe evaluation throughout the box; these remain modeling obligations.
+The external-model analysis therefore distinguishes smooth supported expressions from norm and
+domain-sensitive cases.
+    The time budget includes construction and preprocessing. Remaining time is passed to MILP/LP
+solves and, for the default Ipopt interface, as an NLP CPU-time limit. These limits do not guarantee
+hard wall-clock preemption; the experimental process wrapper supplies a separate wall limit. Interior
+initialization, reduced NLP work, cut generation and total wall time are recorded separately. In
+single-tree mode the MILP solve timer includes callbacks and therefore overlaps NLP and separation
+timers. Such times cannot be summed as disjoint costs. NLP recovery disabled means no integer-
+point recovery NLPs; the common interior NLP initialization remains. This distinction is essential
+for interpreting that ablation.
+
+
+6     Representation and cut-geometry diagnostics
+A point tangent depends on the algebraic representation of a feasible set. A radial boundary
+construction has a restricted invariance when its anchor is held fixed. The relationship between
+ESH and cutting planes for gauge reformulations is already established [23]; the results here isolate
+consequences that can be checked by the actual separator without a full GDP solve.
+
+6.1   Equivalent rows and fixed-anchor invariance
+Proposition 6.1 (Boundary halfspace invariance). Let g be convex and differentiable on a neighbor-
+hood of its box, and let ϕ be convex, differentiable and strictly increasing on an interval containing
+the values of g, with ϕ(0) = 0 and ϕ′ (0) > 0. The row gb = ϕ ◦ g ≤ 0 defines the same feasible
+set and is convex. For a fixed strict anchor and exterior point, exact rowwise ESH gives the same
+halfspace for g and gb, including after the hull transform. At an exterior point p with v = g(p) > 0
+and ϕ′ (v) > 0, the ECP inequality for gb is
+
+                                                           ϕ(v)
+                                      ∇g(p)T (x − p) ≤ −          ,                              (16)
+                                                           ϕ′ (v)
+
+instead of the right side −v for g.
+
+Proof. Strict monotonicity and ϕ(0) = 0 preserve the signs of all row values. Convexity of g,
+monotonicity of ϕ and convexity of ϕ, in that order, prove convexity of the composition. The common
+segment has the same boundary point z for both rows. At it, ∇gb(z) = ϕ′ (0)∇g(z) and both row values
+vanish. The affine coefficients, including the homogeneous perspective coefficients, are therefore
+multiplied by the same positive factor. At p, the chain rule gives tangent ϕ(v)+ϕ′ (v)∇g(p)T (x−p) ≤
+0; division by ϕ′ (v) > 0 proves (16).
+
+    A positive linear ϕ preserves point tangents too, but a general convex increasing transformation
+does not. Convexity implies ϕ(v) ≤ vϕ′ (v) for v > 0, so under this transformation the ECP inequality
+at the same exterior point is no stronger than the original one. This does not compare subsequent
+master trajectories or runtime. The proposition requires the same anchor: the auxiliary interior
+
+
+                                                 16
+optimization itself can respond to a changed representation. It also requires exact boundary roots.
+Approximate root tolerances, row scaling and finite arithmetic need not preserve the halfspace.
+
+6.2   A scalar recurrence and its interpretation
+Proposition 6.2 (An arbitrarily long point-tangent transient). For a ≥ 2, consider
+                      min{−x : 0 ≤ x ≤ 2,      ga (x) = exp(a(x − 1)) − 1 ≤ 0}.                  (17)
+Every instance has feasible interval [0, 1], optimum −1, and strict anchor zero. Starting from the
+box alone, or the box plus a tangent at zero, the first master optimum is p0 = 2. One exact ESH cut
+gives x ≤ 1. With exact ECP and all cuts retained, successive master optima satisfy
+                                       1 − exp[−a(pk − 1)]
+                           pk+1 = pk −                     ,     pk > 1.                      (18)
+                                                a
+For any fixed 0 < η < 1, reaching pk ≤ 1 + η requires k > a(1 − η) cuts. Nevertheless pk ↓ 1.
+Proof. The anchor tangent gives x ≤ (ea − 1)/a, whose right side exceeds two for a ≥ 2: e2 > 5,
+and the derivative of ea − 1 − 2a is positive for a ≥ 2. It thus leaves the box optimum unchanged.
+The segment from zero to any p > 1 meets the unique boundary at z = 1, where ga′ (1) = a > 0;
+ESH gives a(x − 1) ≤ 0. The ECP tangent at pk yields
+                                      ga (pk )        1 − exp[−a(pk − 1)]
+                           x ≤ pk −    ′
+                                               = pk −                     .
+                                      ga (pk )                 a
+For u > 0, 0 < 1 − e−u < u. Therefore this new bound is strictly between one and pk , and all
+older upper bounds are weaker. This proves the recurrence for the actual master optima, rather
+than merely for a proposed iteration. Each decrease is strictly less than 1/a, so 2 − pk < k/a. If
+pk ≤ 1 + η, then 1 − η ≤ 2 − pk < k/a, proving the lower bound. Monotonicity and the lower bound
+one give a limit p∗ ≥ 1; if p∗ > 1, continuity in the recurrence gives a strictly positive limiting
+decrement, a contradiction.
+   Equation (18) is precisely Newton’s method for the equation ga (x) = 0, started from the exterior
+point. The example exhibits a representation-dependent initial transient, not a failure of asymptotic
+Newton convergence: with ek = pk − 1 → 0, Taylor expansion gives
+                                 ek+1 = a2 e2k + O(e3k )   for fixed a.
+This elementary mechanism is not GDP-specific. Nor is the iteration lower bound a runtime
+lower bound: ESH spends additional row evaluations on its boundary search. Large a creates
+conditioning and overflow concerns in finite arithmetic. A transformed function-residual tolerance
+is not a common geometric accuracy criterion across a; a numerical diagnostic should instead use
+max{0, pk − 1}, which is also the objective error here, and count evaluations.
+
+6.3   Centered geometry and explicit non-dominance
+For the centered ellipsoid row q(x) = xT Qx − 1, Q ≻ 0, take anchor zero and p = rQ−1/2 u with
+r > 1 and ∥u∥2 = 1. The boundary is z = Q−1/2 u. ESH gives z T Qx ≤ 1, whereas ECP gives
+                                         r2 + 1       (r − 1)2
+                                z T Qx ≤        =1+              > 1.
+                                           2r             2r
+Thus ESH dominates for this centered geometry. A convex increasing representation change as in
+proposition 6.1 preserves the ESH halfspace and weakens or preserves the exterior-point tangent.
+This accounts for the selected centered diagnostic cases; it is not a general dominance statement.
+
+                                                  17
+Example 6.3 (Neither policy generally dominates). Let g(x1 , x2 ) = x21 +x22 −1 on [−2, 2]2 , p = (2, 0)
+and x̄ = (0, 9/10). ECP gives x1 ≤ 5/4. Solving the segment-circle intersection yields
+                                  √
+                          162 + 20 157            9     9
+                     z1 =              ,    z2 =     − z1 ,        z12 + z22 = 1,
+                               481                10 20
+and ESH gives z1 x1 + z2 x2 ≤ 1. Direct bounds on the square root give 0.85 < z1 < 0.87 and 0.50 <
+z2 < 0.52. The point (1.2, 1) satisfies ECP, but its ESH left side exceeds 1.2(0.85) + 0.50 = 1.52 > 1.
+The point (1.3, −2) violates ECP, but its ESH left side is less than 1.3(0.87) − 2(0.50) = 0.131 < 1.
+Both witnesses belong to the common box. Consequently neither halfspace contains the other. They
+are witnesses about the outer approximations, not feasible disk points. Setting λ = 1 transfers this
+non-dominance to the perspective cuts.
+
+   These examples explain why cut count, cut depth at one candidate and total solver benefit must
+be measured separately. They justify a controlled experiment without assuming which policy must
+win.
+
+6.4   Evaluation of the frozen separator
+A solver-free experiment invokes the actual frozen LBESH._esh_cuts routine with counted analytic
+value/gradient wrappers and the actual nonlinear-row container. It evaluates the cut algorithm,
+not the Pyomo/SymPy expression compiler. Exponential wrappers use expm1 for stable evaluation.
+The anchor is prescribed, no GDP or optimization subproblem is solved, and every ESH call is
+checked to exclude ECP fallback. Both cut and feasibility tolerances are 10−12 ; bisection stops at a
+parameter-bracket width below 10−10 .
+     For the scalar example, the initial master is the box alone for every representation, including
+a = 1. The base row x − 1 is also passed through the separator; a real model extractor would
+instead recognize it as affine. After each cut its floating-point coefficients update the scalar upper
+bound by direct division. All cases stop at the common geometric criterion (x − 1)+ ≤ 10−8 , rather
+than a representation-dependent function residual. Table 17 and figure 1 show the complete design.
+ECP uses 1, 5, 6, 8, 12, 20 and 36 cuts for the base row and a = 1, 2, 4, 8, 16, 32; ESH uses one
+throughout. Each ECP cut requires two value calls and one gradient; each ESH cut requires 37
+values and one gradient, including 34 bisection evaluations and one value each at the candidate,
+anchor and tangent point. Bisection does not stop early at an exact zero. Thus ESH uses more
+total value calls through a = 8, despite using fewer cuts. Scalar ESH bounds equal one at recorded
+precision; ECP’s largest terminal geometric error is 2.56 · 10−11 and recurrence disagreement is at
+most 2.23 · 10−16 .
+     The two-dimensional design uses Q = I or diag(1, 4), anchor zero, and p = rQ−1/2 (cos θ, sin θ)
+with r ∈ {1.25, 1.75} and θ = 2πk/16, k = 0, . . . , 15. Both policies are tested on the base row
+q(x) = xT Qx − 1 and the six transformed rows exp(aq(x)) − 1 with a ∈ {1, 2, 4, 8, 16, 32}, giving
+2 · 2 · 16 · 7 · 2 = 896 individual cuts. Every point lies in [−2, 2]2 . After unit-normal scaling, ESH
+support constants differ from the analytic supporting constants by at most 4.45 · 10−16 ; normal
+errors are below 10−12 . ECP constants differ from their own analytic ECP constants by less than
+10−9 ; these constants generally differ from the                                              T
+                                             p ellipsoid’s supporting constants. Each cut n x + c ≤ 0
+passes the analytic ellipsoid support check nT Q−1 n + c ≤ 10−10 . These floating-point comparisons
+do not constitute interval certificates.
+     At the disk point (1.75, 0), ESH depth is 0.75 for every representation; ECP depth falls from
+0.589286 for the base row to 0.008929 for a = 32. This invariance is numerical evidence for this fixed
+centered geometry, where the two normals are parallel. The off-center control from the preceding
+
+
+                                                  18
+                              35          ECP                                                                        70          ECP
+                                          ESH                                                                                    ESH
+Cuts to geometric tolerance
+
+
+                              30                                                                                     60
+
+
+
+
+                                                                                        Total function evaluations
+                              25                                                                                     50
+
+                              20                                                                                     40
+
+                              15                                                                                     30
+
+                              10                                                                                     20
+
+                              5                                                                                      10
+
+                              0                                                                                      0
+                                   Base         1    2        4         8    16   32                                      Base         1    2        4         8    16   32
+                                                    Equivalent-row scale a                                                                 Equivalent-row scale a
+
+
+
+Figure 1: Scalar representation diagnostic using the frozen separator. Fewer cuts do not imply fewer
+function evaluations. The design fixes the anchor and uses the same geometric stopping tolerance
+for every equivalent row.
+
+
+subsection yields ESH depth 0.715590 versus ECP’s 0.75, and reproduces both non-containment
+witnesses. It prevents the centered examples from suggesting uniform cut dominance.
+    Nine timing samples are retained for every scalar sequence and two-dimensional cut. Scalar
+median times range approximately 41–85 microseconds for ESH and 10–533 microseconds for ECP
+across representations. They exclude imports and creation of the counted function and oracle objects,
+but include oracle calls, per-call row/container construction and Python bookkeeping. At these
+durations, concurrent work and measurement overhead preclude a robust speed interpretation. There
+are no MILP, NLP or anchor-computation costs here. The diagnostic establishes a representation-
+sensitive mechanism and its oracle cost; it does not show that this mechanism explains every GDP
+outcome.
+
+
+7                                  Experimental design
+The primary question is whether radial separation repays its additional oracle work when the
+formulation, initialization, incumbent recovery and tree management are held fixed. We therefore
+compare ESH with ECP inside one implementation. Comparisons with other solvers, exact cone
+reformulations and pilot ablations provide context; they do not isolate the separator choice.
+
+7.1                                 Models, split and chronology
+The controlled suite contains 51 GDPs: 45 two-product technology-allocation models using five cost
+laws, and six coupled-region models using sums of exponentials. The cost laws are exponential,
+negative logarithmic, reciprocal, quadratic and trigonometric. All have nonlinear disjunct constraints.
+Small, medium and large denote n = 3, 8, 16 units, respectively, with three alternatives per unit. The
+allocation models have 3n continuous variables and 3n binary indicators; region models have 2n + 1
+continuous variables and 3n indicators. These are synthetic controls, not calibrated applications.
+Appendix A gives the complete model equations, parameter laws, witnesses and convexity proofs.
+    Seed 104729 supplies the 18 pilot controls. Allocation seeds 130363 and 155921 and region
+seed 130363 supply the 33 held-out controls. There is no rejection sampling or selection by solver
+outcome. Allocation coefficients coincide across cost laws at a given seed, and unit parameters
+
+
+                                                                                       19
+share prefixes across sizes. Consequently, family, seed and size observations are related. We report
+descriptive paired comparisons and all family/size strata, without independence-based tests or
+confidence intervals.
+    The original 42 controls have supplied standard-cone formulations. The nine trigonometric
+controls were added before the main study because the original design did not test a function
+outside the supplied cone translators; their parameters and settings were fixed without observing
+their performance. This is a statement about the supplied translators, not impossibility of a conic
+representation. A preliminary continuous-reference pass evaluated all 42 supported roots before the
+source freeze. Aggregate status, residual and timing information was inspected, without tuning the
+algorithm or instances to held-out objectives. Thus “held out” means predeclared and untuned, not
+completely unexamined. Reported references come from a separate, fingerprinted post-freeze pass;
+the preliminary pass remains archived.
+    The external set is the complete registry of 27 historical models drawn from GDPlib and Pyomo’s
+GDP examples [11, 22]. It includes batch processing, positioning, circle selection, constrained layout,
+farm layout and small literature examples. Related data and distance-metric variants remain
+separate runs but are not independent applications. Eighteen models have nonlinear disjunct rows,
+all quadratic; the remaining nonquadratic expressions occur globally. Thus this external set does
+not test general nonquadratic disjunct geometry. Its expression-based scope classification is given in
+appendix A.4; in particular, all six norm-objective layout cases form a nonsmooth stress stratum,
+including those that solve successfully.
+
+7.2   Methods and effective settings
+The primary Cartesian schedule has 13 methods on 51 instances (663 runs). Eight configurations
+cross ESH/ECP, hull/big-M and single/multiple trees, using the implementation of section 5. Both
+separators share interior initialization and reduced NLP recovery. This deliberately matched ECP
+baseline is not an independently optimized implementation that omits interiors. The default
+fractional LP cutoff is 10−6 ; optional node user cuts use 0.05. Neither is the residual-calibrated
+policy proved in section 4.
+    The other methods are GDPopt LOA [5], SHOT big-M, SHOT declared-convex ε-hull [20],
+Gurobi big-M [14], and SCIP big-M [16]. Pyomo’s standard big-M and hull transformations are used
+for these reformulation baselines. The SHOT hull baseline uses Pyomo’s default ε = 10−4 perspective
+approximation, with disaggregated initial values ν = λx to avoid artificial inactive-branch domain
+errors. It is not the exact closed-cone hull. The declared-convex SHOT option is restricted to the
+analytically verified generated models. All SHOT runs use Gurobi for the MIP subsolver, integer
+tolerance 10−8 , linear feasibility tolerance 10−6 , nonlinear feasibility tolerance 10−8 , and disable
+trust in cached linear constraint values. These settings were chosen during pilots. The legacy
+schedule replaces SHOT ε-hull by the supported exact conic adapter, again giving 13 methods and
+351 runs. Default SHOT convexity classification remains in effect for the legacy big-M runs.
+    GDPopt and the prototype use Ipopt [17] for NLPs and Gurobi for MIPs. Overall gap targets
+are relative 10−4 and absolute 10−6 where exposed by the benchmark interface; GDPopt additionally
+uses bound tolerance 10−6 . At these study tolerances, the prototype’s inner Gurobi master uses the
+tighter settings MIPGap= 10−6 and MIPGapAbs= 10−8 , shared within each ESH/ECP pair. All native
+options, mapped statuses and raw bounds are retained. The exact quadratic mixed-integer hull
+baseline uses Gurobi with NonConvex=0 and both FeasibilityTol and IntFeasTol set to 10−8 ;
+appendix A.3 gives its formulation and supported scope. It is run on all nine quadratic controls and
+supported external models. The separate CVXPY/Clarabel reference [8, 12] solves continuous hull
+roots and exhaustive small fixed assignments, not general mixed-integer exponential-cone problems.
+
+
+                                                  20
+Each reference solve uses one thread, a 300-second limit, at most 300 iterations, and absolute-gap,
+relative-gap and feasibility targets of 10−9 . These reference limits differ from the benchmark limits
+below.
+    The environment is Python 3.13.11, Pyomo 6.10.1, gurobipy/Gurobi 13.0.3 and Ipopt 3.14.20.
+GAMS 54.3.1 supplies Gurobi 13.0.2, SCIP 10.0.3 and SHOT 1.1 (commit a81275b4); GAMS/SCIP’s
+internal Ipopt is 3.14.19. The separately pinned reference environment uses CVXPY 1.7.3 and
+Clarabel 0.11.1. Historical solver logs identify an Intel Xeon w5-2565X under WSL2 Linux, with 36
+logical CPUs and approximately 30 GiB memory. Runs use one solver thread and one BLAS/OpenMP
+thread, with at most six concurrent experiment workers; other machine work was present. Each
+benchmark run has a 120-second solver limit and a 150-second whole-process cap. End-to-end wall
+time includes interpreter startup, construction, preprocessing, interior solves and optimization.
+    Primary job order uses seed 20260919. Two complete repetitions of the four single-tree configu-
+rations on all 33 held-out controls use order seeds 20260920 and 20260921 (264 additional runs).
+Solver search seeds are unchanged. Repetitions therefore measure scheduling/runtime variation on
+the same instances, not search-seed robustness. Separate fixed schedules contain nine quadratic
+cone runs, 351 external runs and 144 pilot ablations. The ablations cross all 18 pilots and four
+single-tree configurations with either disabled integer-point NLP recovery or enabled fractional
+user cuts. Two outcome-triggered follow-ups add nine trigonometric tolerance runs and 24 legacy
+initialization runs; their declarations and results remain separate. The complete benchmark has
+663 + 264 + 9 + 351 + 144 + 9 + 24 = 1464 records. References add 42 continuous roots and
+14 · 27 = 378 fixed assignments, or 420 solver calls. No repeat or follow-up replaces an original
+outcome.
+
+7.3   Acceptance, audit and summaries
+A saved point is evaluated on a fresh original GDP, independently of the solver’s transformed model.
+All original numerical variables must be supplied and finite, including otherwise unused variables.
+Variable bounds, fixed values, active global and selected disjunct rows, integrality, exclusive selection,
+Boolean consistency and logical constraints are checked. A scalar row b ≤ β passes when
+
+                               (b − β)+ ≤ 10−6 + 10−7 max{1, |b|, |β|};
+
+lower bounds use (β − b)+ and equalities require both directions. The same scaled rule applies to
+variable bounds, with the variable value in place of b. Integer distance to the nearest integer must
+not exceed 10−6 . The original objective is recomputed and checked against a supplied reported
+objective using the checker tolerance.
+    An accepted numerical solve requires completed worker output, a valid primal witness, a finite
+usable solver-reported global bound, and gap
+
+                              |f (x) − B| ≤ 10−6 + 10−4 max{1, |f (x)|},                             (19)
+
+with the bound in the correct objective sense. Bounds and infeasibility reports are also compared
+against every validated witness for the same instance across methods, repetitions and feasible
+reference assignments. Define the objective comparison tolerance at a witness objective w by
+
+                                   T (w) = 10−6 + 10−4 max{1, |w|}.                                  (20)
+
+For minimization, a bound contradicts that witness if B > w + T (w); for maximization, if B <
+w − T (w). An infeasibility report contradicts the existence of any validated feasible witness. Either
+contradiction disqualifies an outcome. For GAMS, the unchanged interface uses finite native OBJEST
+
+                                                   21
+and accepted global-status codes; missing bounds remain missing. An “optimal” status alone never
+establishes acceptance. These checks are numerical evidence, not exact arithmetic certificates.
+    The final audit checks all saved schedules, unique method–instance pairs, frozen executable/model
+hashes and environment fingerprints, then re-evaluates supplied witnesses. A separately implemented
+arithmetic audit, which does not import the study analyzer, reconciles all 1464 benchmark records
+and 6122 exported analysis fields. It reuses the original-model checker for fresh feasibility evaluation;
+this is independent aggregation, not an independent second feasibility implementation. All 174
+feasible fixed-assignment reference witnesses pass fresh checks, and no cross-witness bound/status
+contradiction is found. Invalid witnesses, exceptions, missing witnesses, unsupported inputs and
+timeouts remain visible.
+    For a cohort C with wall times ti , we use the one-second shifted geometric mean
+                                                                     !
+                                                −1
+                                                     X
+                               S(C) = exp |C|              log(1 + ti ) − 1.
+                                                     i∈C
+
+Paired ratios divide the two shifted means on exactly the same common-solved instances. They are
+conditional timing comparisons, not failure-penalized speedups. The full-schedule PAR10 arithmetic
+mean assigns min(ti , 150) seconds to accepted solves and 1500 seconds to every unaccepted result. A
+single failure therefore contributes 1500/33 ≈ 45.45 seconds to a held-out mean. Every table states
+its denominator. Work means and medians use the same paired cohorts; overlapping component
+times are never added. The paper-local regeneration script derives tables and figures from immutable
+per-record data, while the full research bundle retains witnesses, native logs and frozen sources.
+
+
+8     Computational results
+8.1    The matched comparison and its scale
+ESH gives a modest, repeatable advantage on the generated held-out controls. With either formula-
+tion, single-tree ESH solves all 33; ECP solves 32 with hull and 31 with big-M. Table 1 includes
+pilots and every baseline, while table 2 isolates timing on matched common-solved cohorts. In
+the primary run, ESH’s shifted mean is approximately 4–11% lower across the four pairs. These
+conditional differences are much smaller than the PAR10 differences, which are dominated by one or
+two additional failures. The corresponding pilot timing ratios are 0.994, 0.970, 0.971 and 0.927 on
+17, 17, 17 and 16 common solves. These pilot results are context, not independent confirmation.
+    Of 663 primary records, 550 are accepted, 106 have valid witnesses but open or unusable gaps,
+six have invalid witnesses, and one reaches the process cap. Although 603 mapped statuses read
+“optimal,” only the numerical acceptance gate determines solved counts. All unaccepted prototype
+results have valid witnesses and open gaps at the solver time limit. The six invalid primary witnesses
+are Gurobi big-M on all medium and large trigonometric controls; their maximum original cost-row
+violation is approximately 8.07 · 10−6 against a 1.1 · 10−6 row tolerance. The single process timeout
+is a pilot SCIP run. No record is dropped.
+    Across all 51 controls, ESH has five accepted-status advantages and no opposite difference: hull
+single on the pilot large logsumexp and held-out large log seed 130363; big-M single on both held-out
+large log instances; and big-M multi on the pilot large log instance. These are five method–instance
+outcomes on four instances. ESH’s accepted wall times range from 56.44 to 113.67 seconds in those
+comparisons, versus ECP at about 120.8 seconds. The complete paired list appears in table 5;
+finishes near the budget should be understood as such.
+    The two further held-out repetitions preserve the accepted category of every one of the 132 single-
+tree method–instance pairs. On fixed common cohorts across all three runs, hull ESH/ECP timing
+
+                                                   22
+Table 1: Accepted numerical solves on generated controls and full held-out PAR10 means (seconds).
+Every unaccepted result incurs 1500 seconds.
+             Method                  Held out /33    Pilot /18     All /51   Held-out PAR10
+             ESH hull single                   33           18         51               6.06
+             ECP hull single                   32           17         49              50.79
+             ESH hull multi                    30           17         47             140.43
+             ECP hull multi                    30           17         47             141.22
+             ESH big-M single                  33           17         50              11.16
+             ECP big-M single                  31           17         48              97.72
+             ESH big-M multi                   29           17         46             188.64
+             ECP big-M multi                   29           16         45             190.38
+             GDPopt LOA                        11            6         17            1000.87
+             SHOT big-M                        22           11         33             514.34
+             SHOT ε-hull (convex)              24           14         38             414.72
+             Gurobi big-M                      24           15         39             420.20
+             SCIP big-M                        25           15         40             372.16
+
+
+Table 2: Primary held-out timing on identical common-solved cohorts, out of 33 scheduled instances
+per method. Times are shifted geometric means; ratio is ESH/ECP.
+                  Pair           Common      ESH (s)     ECP (s)    Ratio    ESH faster
+                  Hull single           32     3.040       3.233     0.941          22
+                  Hull multi            30     2.874       3.009     0.955          20
+                  Big-M single          31     4.294       4.484     0.957          18
+                  Big-M multi           29     4.991       5.591     0.893          21
+
+
+ratios are 0.941, 0.951, 0.941 (32 cases), and big-M ratios are 0.957, 0.946, 0.938 (31 cases). Thus the
+4–6% aggregate direction persists across schedules. Median within-instance maximum/minimum
+time ratios are 1.063 and 1.066 for ESH and ECP hull, and 1.057 and 1.059 for big-M; the largest
+individual ratio is 1.239. This variability matters when judging small differences. These are
+descriptive ranges under unchanged search seeds; multi-tree and external runs were not repeated.
+Tables 6 and 7 preserve each repetition separately.
+    The family and size contrasts in table 8 show near-ties on quadratic controls and some reversals,
+including a primary hull-single ratio of 1.016 for trig. Larger apparent savings occur in several
+nonquadratic and large strata, but those strata are small and the large common-solved cohorts omit
+more failures. These results do not identify nonquadraticity or size as a cause. Formulation and tree
+contrasts are larger: hull/big-M ratios range from 0.468 to 0.652, and single/multiple-tree ratios
+from 0.676 to 0.893, on their respective matched cohorts (table 9). The formulation and execution
+architecture therefore account for substantial measured differences beyond the separator choice.
+Different cohort memberships prevent an additive decomposition of these effects.
+
+8.2   Less outer work, more separation work
+Table 3 reports arithmetic means on exactly the common-solved cohorts of table 2. ESH generates
+approximately 6–18% fewer cuts and uses fewer LP iterations, reduced NLP solves and nodes in
+those means. Its mean total cut-generation time per run, however, is 5.5–6.6 times ECP’s (figure 2).
+This ratio is not a per-cut cost ratio. The resulting wall-time benefit is modest because the separator
+is only one part of the solve.
+
+
+                                                    23
+Table 3: Paired work: arithmetic mean ESH / ECP on the common-solved held-out cohorts. Times
+overlap and are not an additive decomposition.
+                                                   Pair; common                    Cuts          LP iter.         NLP solves                  Nodes       Cut time (s)
+                                                   Hull single; 32        877.9 / 940.0     41.1 / 45.5       16.09 / 20.88            231.3 / 291.7   0.1501 / 0.0226
+                                                   Hull multi; 30         477.9 / 507.6     35.1 / 38.5         5.93 / 6.50          1026.9 / 1279.0   0.0638 / 0.0098
+                                                   Big-M single; 31     1268.3 / 1419.7     44.0 / 58.0       24.94 / 28.97            592.7 / 652.9   0.2130 / 0.0348
+                                                   Big-M multi; 29        632.7 / 773.6     37.9 / 51.4       11.55 / 12.48          4253.9 / 4998.1   0.0888 / 0.0162
+
+
+                                                                      Matched wall time                                                       Cost of cut generation
+Held out; common solved: 32, 30, 31, 29
+
+
+
+
+                                           Hull single                                              0.941          Hull single                                                 6.632
+
+
+
+
+                                            Hull multi                                               0.955          Hull multi                                                6.505
+
+
+
+
+                                          Big-M single                                               0.957        Big-M single                                              6.129
+
+
+
+
+                                          Big-M multi                                             0.893           Big-M multi                                        5.480
+
+
+
+                                                     0.0     0.2        0.4      0.6       0.8       1.0                         0     1     2      3       4     5     6           7
+                                                                      ESH / ECP shifted mean                                                  ESH / ECP arithmetic mean
+
+
+
+Figure 2: The measured tradeoff on the same primary held-out cohorts. Left: ratio of shifted mean
+total wall time. Right: ratio of arithmetic mean total cut-generation time per run. The two panels
+deliberately use different statistics and scales; neither is a per-cut comparison.
+
+
+    The means do not describe uniform or typical-case search savings. Hull-single median nodes are
+9 for ESH versus 8 for ECP, median reduced NLP counts 4.5 versus 4, and median master times
+0.336 versus 0.290 seconds. Hull-multi median nodes likewise reverse (14.5 versus 13.5), with median
+NLP counts tied at two. Cut and LP-iteration medians favor ESH in all four pairs; table 10 gives
+all paired medians. The mean node/NLP reductions concentrate in harder cases, and the aggregate
+telemetry alone does not establish a causal explanation.
+    Interior NLP counts coincide within each pair, with mean counts 19.41, 17.97, 18.97 and 17.45
+in the table’s order; their mean times lie between about 0.86 and 0.94 seconds. ECP shares this
+initialization cost by design. Single-tree master time includes callback NLP and cut work, so
+component times must not be summed. GDP root-search function counts were not recorded; the
+separate diagnostic counts in section 6.4 cannot be imputed to these runs.
+    All 33 held-out ESH hull LP phases end with the recorded reason stalled; ECP hull has
+30 stalled and three no_separating_cuts exits, identically for both tree modes. Maximum final
+perspective residuals are approximately 1.20 · 10−5 for ESH and 6.21 · 10−6 for ECP. Each big-M
+configuration has 32 stalled LP phases and one iteration-limit exit; a perspective-residual certificate
+is inapplicable to that formulation. These LP exits establish neither hull feasibility nor equality
+with an exact cone relaxation.
+
+8.3                                            Conic alternatives and numerical references
+The exact quadratic mixed-integer hull solves all nine quadratic controls. Its all-nine shifted mean
+wall time is 0.455 seconds, compared with 2.280 for ESH hull single and 2.272 for ECP hull single; all
+prototype configurations solve these same nine cases. The held-out six-case means are 0.449, 2.282
+
+
+                                                                                                             24
+and 2.283 seconds, respectively. Table 11 reports every configuration. The supplied exact conic
+formulation is approximately five times faster than hull single here. This is a useful negative control:
+favorable comparisons with generic formulations in table 1 do not extend to the best supported
+conic alternative tested. No general superiority over quadratic GDPs is inferred.
+   For the separate continuous-cone comparison, 40 of the 42 supported roots have optimal status.
+The remaining two have inaccurate optimal status. Define
+                                                 Bcone − BLP
+                                          ∆=                     ,
+                                                max{1, |fcone |}
+
+where Bcone is the numerical cone dual estimate, fcone its primal objective, and BLP the initial
+hull LP bound. All 40 optimal-status differences are positive. Their medians are 1.10 · 10−6 (ESH)
+and 1.07 · 10−6 (ECP); 39 of 40 have magnitude at most 10−4 for each separator. The maxima,
+1.32 · 10−4 and 2.78 · 10−4 , both occur on the pilot large logsumexp instance (table 14). Single-
+and multiple-tree initial LP bounds coincide and are counted only once. The target is the same
+intersection of individual hulls, not a big-M relaxation. These floating-point comparisons support
+numerical consistency, without certifying the duals, proving hull equality or ranking all final LP
+bounds.
+    The two inaccurate-status roots remain separate: pilot medium log has primal/dual residuals
+5.83 · 10−10 /2.63 · 10−9 and absolute cone gap 1.67 · 10−7 ; pilot large reciprocal has 7.20 · 10−11 /8.82 ·
+10−10 and gap 1.92 · 10−7 . Their comparisons remain in the data but do not enter the 40-root
+precision summary. Even an optimal-status cone dual remains an uncertified numerical estimate.
+    Each of the 14 supported small instances has all 27 assignments enumerated. Of 378 solves,
+174 report optimal with feasible witnesses and 204 report infeasible; none is unresolved. Fresh
+original-model checks accept all 174 witnesses. Every one of the 182 accepted primary outcomes on
+these 14 instances satisfies |f − fref | ≤ T (fref ), where fref is the best enumeration witness objective
+and T is defined in (20); the largest discrepancy consumes about 1.32% of that tolerance. This
+is support from a separate formulation and solver, not an exact infeasibility certificate for the
+remaining assignments or an exact optimum certificate.
+
+8.4    External scope and interface effects
+The 351 original external records contain 239 accepted solves, 38 feasible open/unusable gaps, four
+invalid witnesses, 61 errors, seven missing witnesses and two unsupported cone inputs. Table 4 keeps
+all of them in the scheduled denominator. ESH and ECP have identical accepted counts in every
+matched external configuration. Excluding all six norm-objective stress cases by expression type
+gives common-solved ESH/ECP ratios of 1.015, 0.969, 1.010 and 0.969 for hull single, hull multi,
+big-M single and big-M multi, respectively (table 12). Small timing differences change direction
+with tree mode in this unrepeated experiment. The generated accepted-count advantage does not
+transfer to this external set.
+    Four norm cases, CLay0204.l2, CLay0205.l2, CLay0304.l2 and CLay0305.l2, trigger nonfinite-
+gradient errors in all prototype configurations. The two successful norm cases remain in the same
+stress stratum. GDPopt has Ipopt failures on all six norm cases and subproblem-status errors
+on both batch models. These errors establish neither original-model infeasibility nor a general
+limitation of subgradient or conic methods.
+    All seven original farm inputs cause writer division-by-zero errors in each GAMS big-M interface
+(21 errors). All three GAMS methods also return incomplete batch-processing witnesses because
+the unused original variable storageTankSize_log[10] is undefined. The full-witness gate rejects
+
+
+                                                     25
+Table 4: Original external accepted counts, stratified by expression scope. The conic adapter
+supports 25/27 inputs; two exponential batch models are unsupported, not failed supported solves.
+Norm-objective cases are stress tests for the smooth oracle.
+                    Method             All /27   No norm /21    Norm /6    Errors
+                    ESH hull single         19             17          2       4
+                    ECP hull single         19             17          2       4
+                    ESH hull multi          20             18          2       4
+                    ECP hull multi          20             18          2       4
+                    ESH big-M single        20             18          2       4
+                    ECP big-M single        20             18          2       4
+                    ESH big-M multi         20             18          2       4
+                    ECP big-M multi         20             18          2       4
+                    GDPopt LOA              12             12          0       8
+                    SHOT big-M              16             12          4       7
+                    Gurobi big-M            12             12          0       7
+                    SCIP big-M              19             13          6       7
+                    Exact conic hull        22             17          5       0
+
+
+those three results. Consequently the original full-set timing penalties cannot be interpreted purely
+as solver-search performance.
+    The cone adapter solves 22 of its 25 supported inputs. Two farm cases retain open gaps,
+and CLay0204.l2 has an invalid original linear-distance witness despite an optimal status. On
+the 19 models in both the no-norm and conic-supported strata, all eight prototype/conic timing
+comparisons share 17 common solved instances. The conic shifted mean is 0.928 seconds versus
+2.225–3.255 seconds for the prototype configurations (ratios 0.285–0.417). This conditional timing
+advantage is not coverage dominance: the cone formulation leaves FLay05 open, although several
+prototype configurations solve it, and FLay06 remains open. Unsupported exponential cases and
+nonsmooth stress cases do not enter this supported-scope timing comparison.
+
+8.5   What the ablations establish
+Disabling integer-point NLP recovery reduces accepted outcomes from 69/72 to 1/72 on the four
+single-tree configurations and all 18 pilots (table 13). There are still 369 interior NLP solves per
+configuration across its 18 cases, so this is not an NLP-free algorithm. The 72 modified runs contain
+62 stalled statuses, nine time limits and one accepted solution, ESH hull on the pilot small log
+instance. Of the stalled runs, 53 have no accepted incumbent and nine have a valid incumbent with
+an open gap; all nine time limits lack an accepted incumbent. No returned witness is invalid and no
+interface error occurs. Fast early stalls are unsuccessful outcomes, not runtime improvements.
+    These results identify integer-point NLP recovery as practically important to this prototype. They
+do not prove that convex GDP solution mathematically requires NLP subproblems, or contradict
+the conditional finite-separation results. Retained states do not include every rejected candidate
+and cut history, so all stalls cannot be attributed to one tolerance or numerical mechanism. This
+negative result defines the measured method as NLP-assisted.
+    Enabling fractional user cuts leaves accepted counts unchanged. It does submit cuts: 1763
+and 1487 for ESH/ECP hull, and 16435 and 17864 for ESH/ECP big-M, across their respective
+18 pilots. Cuts occur on 17/18 ESH-hull instances and all instances for the other configurations.
+Common-solved user-cuts/default timing ratios are 1.000, 1.006, 1.006 and 1.016. These small
+differences provide no persuasive benefit in the unrepeated pilot comparison. They concern the
+
+                                                 26
+fixed node threshold 0.05, not the proposed residual-calibrated rule.
+
+8.6   Outcome-triggered baseline follow-ups
+Two separately declared follow-ups diagnose the original failures without replacing them. Tightening
+only Gurobi’s FeasibilityTol to 10−8 on all nine trigonometric controls gives nine valid original-
+model witnesses instead of three, and six accepted solves instead of three. All medium cases now
+close the gap; all large cases remain valid but open at the solver limit. Per-instance times change in
+both directions (table 15); this is not a general speedup claim.
+    The legacy follow-up changes only initial values on the seven farms and batch processing, for
+each GAMS solver: widths start at their existing positive affine lower bounds, and the unused
+trailing batch variable at its existing bound. Algebra, bounds, options and checking tolerances
+remain fixed. All 24 calls then return; 23 witnesses are valid and 11 are accepted (table 16). Gurobi
+contributes four solves, SCIP seven and SHOT zero. Gurobi’s remaining invalid witness is FLay05,
+with a nonoverlap-row residual about 7.94 · 10−6 against 1.1 · 10−6 .
+    Missing interface information still matters: the initialized batch Gurobi log reports objective
+679365.3263389, bound 679307.9309222 and gap 0.0084%, but GAMS exports OBJEST=NA. The
+unchanged gate therefore records an unusable gap. This is missing exported information despite a
+native closed-gap report, not evidence that Gurobi failed to close its gap. No log value is substituted
+after the fact. SHOT’s normal termination on several farms likewise does not establish a closed gap;
+native logs retain its default nonconvex classification and loose bounds. These follow-ups qualify
+the original baseline rankings while leaving the matched ESH/ECP comparison unchanged.
+
+
+References
+ [1] Egon Balas. Disjunctive programming: Properties of the convex hull of feasible points. Discrete
+     Applied Mathematics, 89(1–3):3–44, 1998. doi: 10.1016/S0166-218X(98)00136-X.
+
+ [2] David E. Bernal Neira and Ignacio E. Grossmann. Convex mixed-integer nonlinear programs
+     derived from generalized disjunctive programming using cones. Computational Optimization
+     and Applications, 88:251–312, 2024. doi: 10.1007/s10589-024-00557-9. URL https://arxiv.
+     org/abs/2109.09657.
+
+ [3] Ksenia Bestuzheva, Ambros Gleixner, and Stefan Vigerske. A computational study of per-
+     spective cuts. Mathematical Programming Computation, 15:703–731, 2023. doi: 10.1007/
+     s12532-023-00246-4. URL https://arxiv.org/abs/2103.09573.
+
+ [4] Sebastián Ceria and João L. C. Soares. Convex programming for disjunctive convex optimization.
+     Mathematical Programming, 86:595–614, 1999. doi: 10.1007/s101079900101.
+
+ [5] Qi Chen, Emma S. Johnson, John D. Siirola, and Ignacio E. Grossmann. Pyomo.GDP:
+     Disjunctive models in python. In Computer Aided Chemical Engineering, volume 44, pages
+     889–894. Elsevier, 2018. doi: 10.1016/B978-0-444-64241-7.50143-9. URL https://egon.cheme.
+     cmu.edu/Papers/Chen_Pyomo_GDP_PSE2018.pdf.
+
+ [6] Chris Coey, Miles Lubin, and Juan Pablo Vielma. Outer approximation with conic certificates
+     for mixed-integer convex problems. Mathematical Programming Computation, 12:249–293, 2020.
+     doi: 10.1007/s12532-020-00178-3. URL https://arxiv.org/abs/1808.05290.
+
+
+
+                                                  27
+ [7] CVXPY contributors. Solver features: Supported cones, 2026. URL https://www.cvxpy.org/
+     tutorial/solvers/index.html. Accessed 19 September 2026.
+
+ [8] Steven Diamond and Stephen Boyd. CVXPY: A Python-embedded modeling language for
+     convex optimization. Journal of Machine Learning Research, 17(83):1–5, 2016. URL https:
+     //arxiv.org/abs/1603.00943.
+
+ [9] discopt contributors. MIP-NLP decomposition. Software documentation, 2026. URL https:
+     //kitchingroup.cheme.cmu.edu/discopt/mip_nlp.html. Accessed 19 September 2026.
+
+[10] Antonio Frangioni and Claudio Gentile. Perspective cuts for a class of convex 0–1 mixed integer
+     programs. Mathematical Programming, 106(2):225–236, 2006. doi: 10.1007/s10107-005-0594-3.
+
+[11] GDPlib contributors. GDPlib: An open library of generalized disjunctive programming models.
+     Software and model sources, 2026. URL https://github.com/grossmann-group/gdplib.
+     Accessed 19 September 2026; exact local model sources are archived with the experiment.
+
+[12] Paul J. Goulart and Yuwen Chen. Clarabel: An interior-point solver for conic programs with
+     quadratic objectives. arXiv:2405.12762, 2024. URL https://arxiv.org/abs/2405.12762.
+
+[13] Ignacio E. Grossmann and Sangbum Lee. Generalized convex disjunctive programming:
+     Nonlinear convex hull relaxation. Computational Optimization and Applications, 26:83–100,
+     2003. doi: 10.1023/A:1025154322278.
+
+[14] Gurobi Optimization, LLC. Gurobi optimizer reference manual: Constraints, 2026.
+     URL https://docs.gurobi.com/projects/optimizer/en/current/concepts/modeling/
+     constraints.html. Accessed 19 September 2026.
+
+[15] Sergey Gusev and David E. Bernal Neira. Exact hull reformulation for quadratically constrained
+     generalized disjunctive programs. arXiv:2508.16093v2, 2026. URL https://arxiv.org/abs/
+     2508.16093v2. Version 2, revised 17 March 2026; first submitted in 2025.
+
+[16] Christopher Hojny et al. The SCIP optimization suite 10.0. arXiv:2511.18580, 2025. URL
+     https://arxiv.org/abs/2511.18580.
+
+[17] Ipopt contributors. Ipopt documentation, 2026. URL https://coin-or.github.io/Ipopt/.
+     Accessed 19 September 2026.
+
+[18] Jan Kronqvist and Ruth Misener. A disjunctive cut strengthening technique for convex MINLP.
+     Optimization and Engineering, 22:1315–1345, 2021. doi: 10.1007/s11081-020-09551-6.
+
+[19] Jan Kronqvist, Andreas Lundell, and Tapio Westerlund. The extended supporting hyperplane
+     algorithm for convex mixed-integer nonlinear programming. Journal of Global Optimization,
+     64:249–272, 2016. doi: 10.1007/s10898-015-0322-3.
+
+[20] Andreas Lundell, Jan Kronqvist, and Tapio Westerlund. The supporting hyperplane opti-
+     mization toolkit for convex MINLP. Journal of Global Optimization, 84:1–41, 2022. doi:
+     10.1007/s10898-022-01128-0.
+
+[21] Daniel Nguyen and Joshua L. Pulsipher. Solution methods for infinite-dimensional generalized
+     disjunctive programming. arXiv:2608.27707v1, 2026. URL https://arxiv.org/abs/2608.
+     27707v1.
+
+
+                                                28
+[22] Pyomo contributors. Pyomo generalized disjunctive programming examples. Software and model
+     sources, 2026. URL https://github.com/Pyomo/pyomo/tree/main/examples/gdp. Exact
+     tested local builders and their source provenance are archived with the experiment.
+
+[23] Felipe Serrano, Robert Schwarz, and Ambros Gleixner. On the relation between the extended
+     supporting hyperplane algorithm and Kelley’s cutting plane algorithm. Journal of Global
+     Optimization, 78:161–179, 2020. doi: 10.1007/s10898-020-00906-y. URL https://arxiv.org/
+     abs/1905.08157.
+
+[24] Francisco Trespalacios and Ignacio E. Grossmann. Cutting plane algorithm for convex gen-
+     eralized disjunctive programs. INFORMS Journal on Computing, 28(2):209–222, 2016. doi:
+     10.1287/ijoc.2015.0669.
+
+[25] Metin Türkay and Ignacio E. Grossmann. Logic-based MINLP algorithms for the optimal
+     synthesis of process networks. Computers & Chemical Engineering, 20(8):959–978, 1996. doi:
+     10.1016/0098-1354(95)00219-7.
+
+[26] Arthur F. Veinott, Jr. The supporting hyperplane method for unimodal programming. Opera-
+     tions Research, 15(1):147–152, 1967. doi: 10.1287/opre.15.1.147.
+
+[27] Tapio Westerlund and Frank Pettersson. An extended cutting plane method for solving convex
+     MINLP problems. Computers & Chemical Engineering, 19(Supplement 1):S131–S136, 1995.
+     doi: 10.1016/0098-1354(95)87027-X.
+
+
+
+A     Controlled models and reference formulations
+This appendix specifies the tested models independently of their implementation. Indices are
+i = 0, . . . , n−1, p ∈ {0, 1} and j ∈ {0, 1, 2}; neighbor indices are taken modulo n. Let yij be exclusive
+                     P
+mode indicators, j yij = 1. Each family/size/seed has identifier lbesh.FAMILY.SIZE.sSEED. Sizes
+and seeds are specified in section 7.
+
+A.1    Technology allocation
+Let Ui > 0, Di = 1.1Ui , weights wip > 0, cross coefficient ci > 0, mode fixed charges Fij ≥ 0,
+operating coefficients aij ≥ 0, capacity fractions κij and resource coefficients hip > 0. For j = 1, 2,
+define                                                                         
+                                           1
+                                           X
+                    Cij (xi ) = Ui aij        wip ϕ(xip /Di ) + ci ϕ((xi0 + xi1 )/(2Di )) .         (21)
+                                       p=0
+
+The five function laws and second derivatives are
+
+                Family       ϕ(z)                                 ϕ′′ (z)
+                exp          (e3z − 1)/(e1.5 − 1)                 9e3z /(e1.5 − 1)
+                log          − log(1 − z)/ log 2                  1/((1 − z)2 log 2)
+                reciprocal   (1 − z)−1 − 1                        2/(1 − z)3
+                quadratic    4z 2                                 8
+                trig         (1 − cos(1.5z))/(1 − cos(0.75))      2.25 cos(1.5z)/(1 − cos(0.75))
+
+
+
+
+                                                         29
+Every law has ϕ(0) = 0 and ϕ(1/2) = 1; normalization does not equalize curvature. Variables satisfy
+0 ≤ xip ≤ Ui and 0 ≤ ti ≤ Ti , where
+                                             Ti = 1.05 max Cij (Ui , Ui ).
+                                                             j=1,2
+
+The off mode imposes xi0 + xi1 ≤ 0 and ti = 0; operating mode j imposes xi0 + xi1 ≤ Ui κij and
+Cij (xi ) ≤ ti . The objective is      X        X
+                                   min     ti +   Ui Fij yij .
+                                                         i            i,j
+Define the explicit production witness x̄i0 = 0.28Ui , x̄i1 = 0.22Ui . The global rows are
+                          xi0 + xi1 ≤ Ui                                                      (i = 0, . . . , n − 1),
+                                X           X
+                                    xip ≥        x̄ip                                         (p = 0, 1),
+                                i            i
+                          X                       X
+                                hip xip ≤ 1.08           hip x̄ip ,
+                          i,p                      i,p
+        X  xi0 + 0.35xi+1,1 2                   X  x̄i0 + 0.35x̄i+1,1 2
+                                       ≤ 1.08                                      .
+          i
+                     Ui                             i
+                                                                       Ui
+There are n + 4 global rows, 6n disjunct rows, one nonlinear global row and 2n nonlinear disjunct
+rows.
+   For each seed a local Python random.Random(seed) stream generates unit data sequentially in
+the following order; each listed coordinate is a separate uniform draw:
+                            Parameter (draw order)                Interval or fixed value
+                            Ui                                    [0.8, 1.2]
+                            wi0 , wi1                             [0.75, 1.25]
+                            ci                                    [0.2, 0.5]
+                            (Fi0 , Fi1 , Fi2 )                    (0, [0.08, 0.12], [0.25, 0.35])
+                            (ai0 , ai1 , ai2 )                    (0, [1.05, 1.25], [0.65, 0.85])
+                            (κi0 , κi1 , κi2 )                    (0, [0.58, 0.68], 1)
+                            hi0 , hi1                             [0.7, 1.3]
+
+No draw is rejected. Standard operation has a smaller fixed charge and larger operating coefficient
+than efficient operation for every unit. Standard is cheaper at zero production, while efficient
+operation admits production beyond the standard capacity. Thus neither alternative can eliminate
+the other by those comparisons alone.
+    The entire individual-variable box, even before enforcing global capacity, puts all three arguments
+in (21) in [0, 10/11]. The log/reciprocal singularity is therefore separated by at least 1/11. For
+trig, 0 ≤ 1.5z ≤ 15/11 < π/2, so both the first derivative and the displayed second derivative are
+nonnegative, and the latter is strictly positive. All laws are nondecreasing on this interval, and
+convex and continuously differentiable on an open neighborhood of it. Positive affine compositions
+and sums preserve convexity; subtracting ti preserves it. Congestion is a sum of affine squares.
+Monotonicity proves that Ti accommodates the minimum epigraph cost everywhere in the box. This
+bound restricts redundant large epigraph values but excludes no optimal production decision.
+    Choose mode 1 everywhere, set x = x̄ and ti = Ci1 (x̄i ). Standard capacity exceeds 0.50Ui ,
+product demands hold at equality, both resource budgets have 8% slack, and the cost/box rows hold.
+This proves feasibility for every allowed draw independently of a solver. Finite variable bounds,
+continuity and the finite disjunctions imply a compact feasible set and attained finite optimum. The
+witness is a primal bound, not a known optimum.
+
+                                                                 30
+A.2    Coupled exponential regions
+Let centers cijp , positive scales αijp , radii Rij , coordinate prices bip and fixed charges Fij be given.
+Each mode imposes
+                                       1
+                                                      esαijp (xip −cijp ) ≤ Rij .
+                                       X      X
+                                                                                                        (22)
+                                       p=0 s∈{−1,1}
+
+The variables obey −2 ≤ xip ≤ 2, 0 ≤ t ≤ 9n; the objective is
+                                             X                         X
+                                       min         bip xip + 0.1t +          Fij yij .
+                                             i,p                       i,j
+
+                         i xi0 ≥ 0,      i xi1 ≥ 0.1n and
+                      P               P
+Global rows impose
+                       X                                       X
+                            (xi0 − 0.5xi+1,1 )2 ≤ t,                 (xip − xi+1,p )2 ≤ 0.55n.
+                        i                                      i,p
+
+The generator again uses a fresh random.Random(seed) stream. For each unit it first draws two
+perturbations in [−0.08, 0.08] for each of the three centers (−0.75, −0.35), (0.25, 0.70), (0.80, −0.45),
+in that order. It then draws the six scales in [1.7, 2.3], three radii in [4.8, 5.6], prices bi0 ∈ [0.8, 1.2]
+and bi1 ∈ [0.15, 0.35], and three fixed charges in [0.02, 0.08]. All draws are sequential uniform draws
+without rejection. There are four global rows (two nonlinear) and 3n nonlinear disjunct rows.
+    Each exponential has an affine argument; hence (22) is globally convex and smooth. Taking the
+logarithm of both sides gives an equivalent log-sum-exp sublevel set, although the implementation
+retains the sum-of-exponentials form. The other nonlinear rows are sums of affine squares. Each
+congestion difference is bounded in magnitude by three, proving the sufficient epigraph bound 9n.
+Select mode 1 and set each point to its corresponding center. Region left sides then equal 4 < 4.8;
+coordinates satisfy xi0 ≥ 0.17, xi1 ≥ 0.62, giving strict demand feasibility. Neighbor differences
+have magnitude at most 0.16, so variation is at most 2n(0.16)2 = 0.0512n < 0.55n. Setting t
+to the congestion value completes the witness. All rows are continuous on a finite box, proving
+boundedness and attainment as above. These invented positions and prices are geometry controls,
+not fitted facility-location data.
+
+A.3    Closed-cone representations
+The formulations here instantiate established conic perspective constructions [2, 4, 15]; they are not
+a new reformulation theorem. Let
+                                   Kexp = cl{(a, b, c) : b > 0, bea/b ≤ c}.
+Its zero-scale slice is b = 0, a ≤ 0, c ≥ 0 [7]. We also use
+                            ab ≥ c2 , a, b ≥ 0        ⇐⇒       ∥(2c, a − b)∥2 ≤ a + b.                  (23)
+Squaring the latter nonnegative sides yields 4c2 + (a − b)2 ≤ (a + b)2 and hence the equivalence.
+   For a weight y ≥ 0, copied normalized argument z and auxiliary epigraph q ≥ 0, the four
+supported allocation laws have the following perspective epigraphs:
+
+                      Law             Constraint
+                      exp             (3z, y, (e1.5 − 1)q + y) ∈ Kexp
+                      log             (− log(2)q, y, y − z) ∈ Kexp
+                      reciprocal      (q + y)(y − z) ≥ y 2 , with both factors nonnegative
+                      quadratic       qy ≥ 4z 2 , with q, y ≥ 0
+
+
+                                                          31
+For y > 0, division gives q ≥ yϕ(z/y) in every case; for reciprocal, for example, (q/y +1)(1−z/y) ≥ 1.
+Copied box bounds give 0 ≤ z ≤ (10/11)y, so z = 0 at y = 0 and positive-weight log/reciprocal
+inputs remain uniformly in their domains. Each auxiliary can be set to zero on an inactive branch.
+At zero weight some individual epigraph cones also allow positive q, but the copied aggregate cost
+row has zero right side and strictly positive coefficients, forcing all such auxiliaries to zero. Thus
+inactive branches project to the origin and impose no spurious restriction. Positive coefficients make
+separate epigraphs exact: they can meet a copied cost budget if and only if their minimal values do.
+Copies of both production coordinates and ti are made for every mode, including off; they sum to
+original variables and obey their original scaled boxes, capacity rows and off-mode t equality.
+    For a region-mode weight y and copied point u, use four cones
+                                                            X
+             (sαijp (up − cijp y), y, rps ) ∈ Kexp ,              rps ≤ Rij y,      −2y ≤ up ≤ 2y.
+                                                            p,s
+
+For y > 0 these recover the perspective of (22); at y = 0, copied coordinates vanish and nonnegative
+rps sum to at most zero, so all vanish. Global quadratic rows use (23) with one fixed nonnegative
+factor. Consequently continuous weights describe the intersection of each disjunction’s exact bounded
+convex hull and the global rows, and integral weights recover the original model. This is not generally
+the full GDP hull. For fixed-assignment references, only the selected y = 1 modes are retained;
+their analytic fixed-charge constant is added to primal and dual objectives. The translator reads
+generator coefficients, uses none of the prototype’s expression extraction/cuts, and supplies no trig
+translation.
+    The independent mixed-integer quadratic adapter instead reads model expression trees. For
+
+                                q(x) = xT Qx + aT x + c ≤ 0,               Q ⪰ 0,
+
+it introduces copies ν, weight λ and slack s with
+
+                         ν T Qν ≤ sλ,        s = −aT ν − cλ,             s ≥ 0,   λ ≥ 0.             (24)
+
+Positive weights recover λq(ν/λ) ≤ 0; zero weight forces ν = s = 0 through finite scaled bounds and
+the slack equality. Factoring Q = AT A gives a rotated second-order cone, recognized by Gurobi
+[14]. Explicit nonnegative affine-square sums are preserved: for k wk (Ak x + bk )2 + aT x + c, use
+                                                                      P
+
+zk = Ak ν + bk λ and k wk zk2 ≤ sλ. This avoids introducing apparent indefiniteness by expanding
+                      P
+
+rank-deficient squares. Other expanded quadratic matrices undergo a conservative exact-rational
+PSD check on the represented binary floating-point coefficients, without eigenvalue clipping or
+regularization. “Exact” describes the formulation, not floating-point coefficients, witnesses or solver
+certificates.
+    The adapter also handles global nonnegative weighted norm sums through SOC epigraphs, and
+a/d(x) with a > 0 and nonnegative affine denominator through a ≤ td, t, d ≥ 0. The product
+forces d > 0, preserving the domain even with a zero declared lower bound. A zero numerator
+requires a strictly positive declared denominator bound. These epigraphs are used only in convex
+monotone positions. Global exponential expressions, nonconvex quadratics, nonlinear equalities
+lacking supported convex orientations, missing copied-variable bounds, OR/nested/reused disjuncts,
+disjunct objectives, SOS and nonfixed GDP indicators inside disjunct rows are rejected. Each
+disjunction copies all variables occurring in any of its alternatives into every alternative; global-only
+variables need not be copied. Logical constraints use Pyomo’s logical-to-linear transform. The
+closed perspectives contain no epsilon parameter.
+
+
+
+                                                       32
+A.4    External-model scope
+The tested inputs are the archived local builders, not a claim of bitwise identity with a published
+formulation. Their source files and parameter data are fingerprinted. GDPlib and Pyomo distribute
+the model families [11, 22]; source docstrings trace batch processing to Ravemark and LOGMIP, posi-
+tioning to Duran–Grossmann and Gavish–Horsky–Srikanth, small batch to Kocis–Grossmann, circles
+to Lee–Grossmann, layouts to Sawaya, and the basic-step example to Papageorgiou–Trespalacios.
+Modified circles, alternate farms and the ℓ2 layout objective are explicitly model variants.
+    A structural audit of all 27 models orients every nonlinear inequality as convex on its effective
+domain. Quadratic rows have nonnegative diagonal quadratic terms, batch expressions are positive
+sums of affine exponentials, farm area constraints use positive constants divided by positive width,
+and the six norm objectives are positive sums of Euclidean norms. The latter are convex with
+bounded subgradients, but ordinary gradients are undefined at zero. They are not examples of
+unbounded norm gradients. All flat-XOR structure extractions succeed; this does not imply every
+smooth-oracle or compactness hypothesis holds.
+
+ Source family / identifiers                 Count      Class   Qualification
+ GDPlib batch_processing                          1     C       Missing cycle-time upper bounds; auto-
+                                                                matic epigraph unbounded.
+ GDPlib positioning, small_batch                  2     B       Smooth bounded original coordinates; au-
+                                                                tomatic epigraph unbounded.
+ Circles2D3, modified, Circles3D4                 3     B       Same epigraph qualification.
+ CLay0203/0204/0205/0303/0304/0305, l1            6     C       Respectively 6/12/20/6/12/20 distance aux-
+                                                                iliaries without upper bounds.
+ The same six CLay variants, l2                   6     C       Same auxiliaries, plus nonsmooth norm ob-
+                                                                jective and unbounded epigraph.
+ FLay02/03/03_alt_1/03_alt_2/04/05/06             7     A       Affine propagation gives compact boxes and
+                                                                positive widths.
+ basic_step                                       1     A       Finite box, smooth quadratic rows, affine
+                                                                objective.
+ ex1_Lee                                          1     B       Smooth bounded original coordinates; un-
+                                                                bounded epigraph.
+
+Class A denotes the analytic compact/smooth data of the extracted lift (eight models); B has
+compact smooth original coordinates but an unbounded automatic objective epigraph (six); C records
+further missing hypotheses (13). None certifies anchors, master behavior or termination. Section 4
+explains how one may justify bounded epigraphs mathematically; the frozen implementation does
+not install those bounds.
+    Farm widths initially have declared lower bound zero, but affine rows imply positive minima (1,
+1, 5, 1, 3, 1, 1 in the listed order), and affine enclosure rows imply finite bounds; extraction transfers
+these facts to the box. The original GAMS initialization failures concern the raw initial values,
+not a negative or zero width feasible under those affine rows. In batch processing, each positive
+term of a time-budget sum gives a finite cycle-time bound, but this tightening is absent from the
+frozen master box. Layout auxiliaries can be replaced by absolute coordinate differences without
+increasing their positive-weight objectives; coordinate-box-derived upper bounds therefore give an
+optimization-equivalent bounded formulation, but change the full feasible set and were not imposed
+here. Relaxed layouts can still place centers at coincident points, so feasible nonoverlap does not
+remove the nonsmooth-oracle issue.
+    The 21-model no-norm stratum excludes all six ℓ2 models; it does not assert all theorem
+assumptions. The cone adapter supports 25 models, excluding both exponential batch models, so
+
+                                                   33
+its intersection with the no-norm stratum has 19. These sets are fixed by expressions and adapter
+scope, independently of solver outcomes. The compact data list every full identifier.
+
+
+B     Detailed computational comparisons
+The following tables supplement the main comparisons without changing their cohorts. The file
+data/records.csv supplies every individual benchmark outcome, objective, bound, wall time and
+retained work metric for all 1464 runs, including failures. Full witness checks and native outputs are
+in the research bundle. data/table_values.json supplies the exact displayed table entries. Table
+values are regenerated from immutable records, not transcribed from narrative results.
+
+Table 5: Every primary accepted-status discrepancy between ESH and ECP. ESH solves; ECP
+retains a feasible open gap.
+                Instance suffix             Split                Pair    ESH (s)     ECP (s)
+                log.large.s130363           held out       Hull single     65.18      120.87
+                logsumexp.large.s104729     pilot          Hull single    101.46      120.83
+                log.large.s130363           held out     Big-M single     113.67      120.79
+                log.large.s155921           held out     Big-M single      56.44      120.83
+                log.large.s104729           pilot        Big-M multi      107.00      120.80
+
+
+
+Table 6: Three schedules, unchanged solver seed: accepted counts (out of 33) and full-cohort PAR10
+seconds for each repetition.
+                    Method                Solved: runs 1/2/3       PAR10: runs 1/2/3
+                    ESH hull single                 33/33/33        6.061/5.924/5.834
+                    ECP hull single                 32/32/32     50.791/50.628/50.630
+                    ESH big-M single                33/33/33     11.164/10.868/10.649
+                    ECP big-M single                31/31/31     97.723/97.543/97.530
+
+
+
+Table 7: Fixed common-solved cohorts across three repetitions: ESH/ECP shifted means in seconds,
+followed by their ratio.
+       Pair; fixed common    Run 1: ESH/ECP; ratio                       Run 2                  Run 3
+       Hull single; 32            3.040 / 3.233; 0.941    2.983 / 3.138; 0.951     2.911 / 3.095; 0.941
+       Big-M single; 31           4.294 / 4.484; 0.957    4.141 / 4.377; 0.946     4.107 / 4.380; 0.938
+
+
+
+
+                                                    34
+Table 8: Held-out ESH/ECP shifted wall-time ratios and common-solved counts in parentheses.
+Family scheduled counts are six except logsumexp (three); size scheduled counts are 11 each.
+                   Stratum       Hull single     Hull multi     Big-M single      Big-M multi
+                   exp            0.994 (6)        0.944 (6)        0.975 (6)            0.871 (6)
+                   log            0.883 (5)        0.950 (4)        0.972 (4)            0.872 (4)
+                   logsumexp      0.781 (3)        0.857 (2)        0.930 (3)            0.864 (2)
+                   quadratic      1.000 (6)        0.989 (6)        0.990 (6)            1.003 (6)
+                   reciprocal     0.922 (6)        0.937 (6)        0.894 (6)            0.866 (5)
+                   trig           1.016 (6)        0.998 (6)        0.982 (6)            0.860 (6)
+                   small         0.969 (11)       0.959 (11)       1.014 (11)           0.987 (11)
+                   medium        0.984 (11)       0.952 (11)       1.002 (11)           0.889 (11)
+                   large         0.877 (10)        0.951 (8)        0.865 (9)            0.789 (7)
+
+
+
+
+Table 9: Formulation and tree contrasts on matched held-out common-solved cohorts. Ratios are of
+shifted wall-time means, with common counts in parentheses; cohort membership differs by contrast.
+                   Contrast                 ESH ratio (common)           ECP ratio (common)
+                   Hull / big-M, single                    0.648 (33)                   0.652 (31)
+                   Hull / big-M, multi                     0.508 (29)                   0.468 (29)
+                   Single / multi, hull                    0.893 (30)                   0.866 (30)
+                   Single / multi, big-M                   0.736 (29)                   0.676 (29)
+
+
+
+
+Table 10: Paired medians, ESH / ECP, on the same common-solved cohorts as table 3. Node/NLP
+mean savings do not uniformly persist at the median.
+            Pair                   Cuts        LP iter.   NLP solves          Nodes       Master time (s)
+            Hull single    488.0 / 545.0   33.5 / 35.0      4.5 / 4.0       9.0 / 8.0       0.336 / 0.290
+            Hull multi     343.5 / 361.0   33.0 / 35.0      2.0 / 2.0     14.5 / 13.5       0.084 / 0.081
+            Big-M single   711.0 / 801.0   33.0 / 46.0    21.0 / 21.0   229.0 / 241.0       1.449 / 1.319
+            Big-M multi    462.0 / 591.0   30.0 / 45.0      9.0 / 9.0   757.0 / 840.0       0.930 / 1.363
+
+
+
+
+Table 11: Exact quadratic hull context: shifted wall-time means in seconds on complete common
+cohorts. All listed methods solve all nine quadratic controls.
+                           Method                  Held out (6)     All quadratic (9)
+                           Exact conic hull                0.449                  0.455
+                           ESH hull single                 2.282                  2.280
+                           ECP hull single                 2.283                  2.272
+                           ESH hull multi                  2.166                  2.157
+                           ECP hull multi                  2.191                  2.173
+                           ESH big-M single                3.830                  3.692
+                           ECP big-M single                3.868                  3.828
+                           ESH big-M multi                 4.240                  4.285
+                           ECP big-M multi                 4.225                  4.275
+
+
+
+                                                          35
+Table 12: External common-solved timing after excluding all norm-objective models by expression
+scope. Shifted means are seconds; ratios are ESH/ECP.
+                      Pair             Common /21              ESH (s)        ECP (s)     Ratio
+                      Hull single                    17             2.575        2.537     1.015
+                      Hull multi                     18             3.139        3.238     0.969
+                      Big-M single                   18             2.976        2.946     1.010
+                      Big-M multi                    18             2.267        2.341     0.969
+
+
+
+Table 13: Pilot ablations. The first three numeric columns give accepted solves out of 18. Time
+ratio is user-cuts/default on their common-solved cases (18, 17, 17, 17); cuts and cases refer to all
+18 user-cut runs. “No int. NLP” still includes interior NLP initialization.
+                 Method      Default   No int. NLP         User cuts        Time ratio    Cuts     Cases
+                 ESH hull        18                  1               18          1.000    1763          17
+                 ECP hull        17                  0               17          1.006    1487          18
+                 ESH big-M       17                  0               17          1.006   16435          18
+                 ECP big-M       17                  0               17          1.016   17864          18
+
+
+
+
+Table 14: Same-hull root diagnostic ∆ on 40 optimal-status cone references. Two inaccurate
+references remain separate. The numerical differences are not certified errors.
+                    Separator   Minimum          Median         Maximum           |∆| ≤ 10−4 /40
+                    ESH           1.43e-07       1.10e-06           1.32e-04                       39
+                    ECP           4.69e-08       1.07e-06           2.78e-04                       39
+
+
+
+Table 15: All nine original/tightened Gurobi trigonometric pairs. S: accepted numerical solve; I:
+invalid witness; F: feasible open gap. The follow-up sets only FeasibilityTol= 10−8 .
+                Size.seed            Original     Tightened           Original (s)       Tightened (s)
+                small.s104729                S                  S             1.267                1.724
+                small.s130363                S                  S            26.833                1.267
+                small.s155921                S                  S             1.318                1.670
+                medium.s104729               I                  S             5.677                4.980
+                medium.s130363               I                  S            10.843               14.960
+                medium.s155921               I                  S             8.338                3.775
+                large.s104729                I                  F           121.556              121.345
+                large.s130363                I                  F           121.532              121.297
+                large.s155921                I                  F           121.435              121.871
+
+
+
+Table 16: Legacy initial-value follow-up. The corresponding originals contain seven writer errors
+and one invalid incomplete witness per solver. “Open/missing gap” retains valid witnesses whose
+exported bounds do not close the declared gap.
+                 Method          Runs      Valid         Solved      Open/missing gap            Invalid
+                 Gurobi big-M          8         7             4                           3            1
+                 SCIP big-M            8         8             7                           1            0
+                 SHOT big-M            8         8             0                           8            0
+
+
+
+                                                          36
+Table 17: Full scalar representation diagnostic. Value and gradient columns give total calls to the
+counted analytic wrappers; ESH’s 37 values include 34 bisection evaluations.
+               Scale   ECP cuts   Values   Gradients   ESH cuts   Values   Gradients
+               Base           1        2          1           1      37           1
+               1              5       10          5           1      37           1
+               2              6       12          6           1      37           1
+               4              8       16          8           1      37           1
+               8             12       24         12           1      37           1
+               16            20       40         20           1      37           1
+               32            36       72         36           1      37           1
+
+
+
+
+                                                37
+

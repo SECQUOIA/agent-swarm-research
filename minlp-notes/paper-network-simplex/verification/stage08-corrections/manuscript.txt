@@ -1,0 +1,2520 @@
+       Sparse convex hulls for network flows coupled to a simplex
+
+
+
+                                                  Abstract
+          We study the convex hull of selected products between a bounded equality-constrained
+      network flow and a simplex vector. Starting from known simplex disaggregation, we give an
+      observation-sensitive formulation whose additional coordinates are counted exactly by the cycle
+      ranks of unobserved subgraphs, with unit flow and product coefficients. Forest complements
+      remove all additional coordinates. For bounded block cycle rank we develop finite support
+      libraries for exact separation and compact recovery without online linear programming; a K4
+      with five observed products already forces a product-coefficient ratio of two. A complementary
+      result holds on arbitrarily long chains of parallel arc pairs with one bypass: unit flow/product
+      descriptions exist whenever at most three simplex labels are observed, and four labels can
+      force a coefficient ratio of two. After local checks and bound grouping, two observed labels
+      need five profile tests; three use 16 positive circuits and flow-balance repairs. Sparse Fibonacci
+      constructions give exponential coefficient ratios on simple series–parallel graphs of maximum
+      degree three. A coordinate-section transfer of transportation universality gives unrestricted ratios
+      with only two labels on general networks. Exact implementations and strengthened numerical
+      LP comparisons show substantial model-size reductions, while global state merging and native
+      flow bounds remove some apparent runtime advantages.
+
+
+1    Introduction
+Network models often combine routing decisions with a choice among services or operating modes.
+A route-specific adjustment to a service cost gives a product of an arc flow and a service weight.
+Only a small fraction of the possible route–service pairs may occur. Convexifying each product
+separately discards restrictions imposed jointly by flow conservation and the common simplex. The
+exact joint hull is available through classical simplex-vertex disaggregation, but its usual formulation
+copies every arc for every state. The question studied here is how the network and the retained
+products can reduce that expansion, and when the resulting hull admits simple inequalities in the
+original coordinates.
+    We consider a bounded equality-flow polytope P = {x : Ax = b, 0 ≤ x ≤ u} on a directed
+multigraph and a vector y ≥ 0 with j yj ≤ 1. Only products zej = xe yj in a specified set O are
+                                        P
+
+retained. Let H be their joint convex hull. Equality conservation is essential to the circulation
+arguments. Converting balance inequalities to equalities with slack arcs is possible, but the graph
+assumptions must then be checked on the transformed network. The general network and block
+results permit arbitrary arc orientations, parallel arcs, loops, zero simplex weights, and capacity
+degeneracy. The flat-chain results use the specified directed unit-data topology, with arbitrary
+observations and zero weights allowed.
+    The main reductions use two kinds of information. Circulations separate across the cyclic blocks
+of the underlying undirected graph. Within each block, states with no observed product can be
+merged exactly. More strongly, the remaining freedom of an observed state consists precisely of
+circulations supported on its unobserved arcs. Thus a graph with many cycles can still have no
+
+
+                                                       1
+missing state coordinates when its observations meet every cycle. Conversely, a long chain can
+retain a small shared state profile even though its cycle rank grows with its length.
+    Our contributions are organized around these two reductions and their limits.
+1. Observation-sensitive formulations on arbitrary graphs. For a cyclic block B and a label j observed
+   there, let ρBj be the cycle rank of the subgraph formed by arcs without an observation in state j,
+   including its isolated vertices when counting components. The construction in theorem 4.4 uses
+            P
+   exactly B,j ρBj additional coordinates, with unit flow, product, and auxiliary coefficients in a
+   specified rational row scaling. This is the residual-coordinate count of the construction; it is not
+   a minimum over all extended formulations. Forest complements give a direct original-coordinate
+   hull. The same count is the minimum number of additional individual products needed to
+   reconstruct each state on the ambient circulation space, a narrower completion statement.
+
+2. Explicit separation and recovery from graph structure. Cycles and theta blocks admit interval and
+   six-support descriptions with unit flow/product coefficients. Any number of parallel paths admits
+   a transportation cut description and a flow separator. For arbitrary blocks of maximum cycle
+                                                                  2
+   rank r, finite support libraries give exact separation in 2O(r ) N rational arithmetic operations
+                                  3
+   and compact recovery in 2O(r ) N , where N = |V | + |E| + m + |O|, after observation grouping.
+   Neither procedure calls an online LP. The coefficient bound is Hr from (65); in particular H3 = 2
+   is sharp on a unit-capacity K4 with two explicit labels and five products. The recovery parameter
+   bound is deliberately distinguished from the smaller separation bound.
+
+3. A sharp observed-label threshold on flat chains. On a chain of parallel arc pairs with one bypass,
+   the full shared profile can be eliminated using a finite library depending only on the number a
+   of labels observed anywhere on the chain. After local checks and bound grouping, at most two
+   observed labels need five profile tests and explicit interval recovery. Three labels use 16 positive
+   circuits; two exceptional bypass coefficients can be repaired using one flow-balance equation.
+   Consequently every observation pattern with a ≤ 3 has a unit flow/product description, whereas
+   a five-vertex, nine-arc example with four observed labels does not. This threshold is independent
+   of the number of unused simplex coordinates and of chain length.
+
+4. Coefficient obstructions in sparse original coordinates. A Fibonacci family forces exponentially
+   growing product-coefficient ratios on series–parallel networks with only linearly many observed
+   products; the obstruction persists on simple graphs of maximum degree three. For unrestricted
+   networks, a coordinate-section transfer of classical three-way transportation universality gives
+   arbitrary coefficient ratios already with two explicit labels and unit network data. Its large coeffi-
+   cient magnitudes coexist with polynomial encoding and polynomial-size extended formulations.
+   The coordinate-section proofs retain the relevant products as actual coordinates of the sparse
+   hull, rather than relying on projection from a larger product space.
+    These results refine established convexification methods. Simplex disaggregation, shared-simplex
+gluing, reduced reformulation–linearization, transportation projections, and normal-fan refinements
+supply the underlying mechanisms. Section 2.2 gives precise comparisons, especially with the
+network convexification of Khademnia and Davarnia [14]. The claims concern the particular sparse
+formulations, complete structural oracles, and coefficient boundaries established here.
+    Exact rational implementations and numerical LP formulations make the distinction between
+these outputs concrete. The experiments compare with full disaggregation, global removal of
+unused labels, native fixed-weight state-flow LPs, and elementary one-flow or independent-network
+reductions where applicable. The strongest globally merged LP is often fastest. When every label is
+observed somewhere but each block sees few labels, local compression still reduces 7,215 state-flow
+
+                                                   2
+Table 1: Structural scope of the positive results. A unit coefficient is in {0, ±1} on flow and product
+coordinates; simplex coefficients may contain the rational network data. Bounds use the stated row
+scaling, before any clearing of simplex denominators.
+    Structure                    Exact representation or procedure                      Main locator
+                                                                P
+    Arbitrary equality-flow      Observation-sensitive EF with B,j ρBj                  Theorem 4.4
+    graph                        additional coordinates
+    Unobserved arcs form         Unit original-coordinate formulation                   Corollary 4.5
+    forests in each observed
+    block/state
+    Cycle or theta blocks        Unit interval/support cuts; compact recovery           Theorem 5.3
+                                                                                        and proposition 5.4
+    Parallel-path blocks         Complete subset cuts; transportation-flow              Theorem 5.6
+                                 separator
+    Block cycle rank at most r   Coefficients bounded by Hr ; finite support and        Theorems 6.5 and 6.6
+                                 recovery libraries
+    Flat chain, a observed       Fixed-a profile oracle; unit coefficients for a ≤ 3,   Corollary 9.7
+    labels                       sharp at four
+
+
+variables to 495 total variables, or 367 after observed elimination. In that synthetic control, initial
+compression reduces the median total time from about 30 to 10 milliseconds; elimination gives the
+smallest model but takes longer. The dedicated exact oracle also loses to a simple LP on some
+long-chain queries. These results support model-size and certificate benefits without a universal
+runtime claim.
+    Sections 2 and 3 establish the model and known disaggregation and gluing facts. Sections 4 to 6
+develop observation-sensitive formulations and graph-structured oracles. Sections 7 and 8 prove
+the coefficient obstructions, and section 9 gives the complementary fixed-label chain results. Sec-
+tion 10 reports implementations, verification, experiments, and a two-supplier service-transportation
+interpretation.
+
+
+2     Model, prior work, and disaggregation
+2.1    The sparse network–simplex hull
+Let D = (V, E) be a finite directed multigraph. Parallel arcs and self-loops are permitted. Its
+incidence matrix A ∈ {−1, 0, 1}V ×E has a −1 at the tail and a +1 at the head of a non-loop arc; a
+self-loop has a zero column. Thus Ax = b uses the convention incoming minus outgoing. For b ∈ QV
+and finite u ∈ QE + , set
+                               P = {x ∈ RE : Ax = b, 0 ≤ x ≤ u}.                               (1)
+Lower bounds can be handled by translating x and the corresponding product coordinates. Through-
+out, graph assumptions concern the graph in (1) after any such modeling transformations.
+   For an integer m ≥ 0, write [m] = {1, . . . , m} and
+                                 ⊤
+                 ∆m = {y ∈ Rm
+                            + : 1 y ≤ 1},            λj = yj (j ∈ [m]),         λ0 = 1 − 1⊤ y.                 (2)
+
+The states are the d = m + 1 vertices e0 = 0, e1 , . . . , em of ∆m ; ej is the jth unit vector when j ≥ 1.
+The residual state is state 0. An observation set O ⊆ E × [m] specifies the products retained as
+
+
+
+                                                       3
+original coordinates. We study
+
+                          S = {(x, y, z) : x ∈ P, y ∈ ∆m , zej = xe yj        ((e, j) ∈ O)},       (3)
+                         H = conv S.                                                               (4)
+
+An unobserved product is absent from z, even if it is introduced temporarily in an extended
+formulation. State 0 has no observed coordinates. We use conv ∅ = ∅. When m = 0, y and z are
+empty vectors and H = P .
+    The original coordinates are (x, y, z). An extended formulation is a linear system in these
+coordinates and additional continuous variables whose projection is H. A separation procedure
+must either certify membership or produce a linear inequality valid for all of H and strictly violated
+by the candidate. Unless specified otherwise, a facet is taken relative to the affine hull. A bound
+on integer coefficients presupposes a stated normalization; a ratio of two nonzero coefficients is
+invariant under scaling the inequality. Arithmetic-operation bounds are distinguished from bounds
+on rational encoding length.
+    For comparison, the usual independent product relaxation adds, for every (e, j) ∈ O, the four
+inequalities
+                   0 ≤ zej ,   zej ≤ ue yj ,  zej ≤ xe ,    zej ≥ xe − ue (1 − yj )                 (5)
+to x ∈ P and y ∈ ∆m . These are the McCormick inequalities for the box [0, ue ] × [0, 1] [17]. They
+need not describe the joint hull in (4).
+
+2.2      Relation to prior work
+The general convexification principle is established. Disjunctive hull formulations [3] apply after
+expanding the simplex into its vertices. Simultaneous convexification over a polytope times a simplex
+is developed by Davarnia et al. [5]. Khademnia and Davarnia [14] specialize this setting to network
+polytopes: their electronic companion, p. 1, equation (25), gives a full extended hull,1 and their
+aggregation-and-projection framework gives a complete original-space description in principle. Their
+explicit tree and forest constructions identify more structured inequality families; the forest recipe
+for multiple simplex coordinates should not be confused with the entire projection framework. Their
+general framework permits balance inequalities, and their Section 3 represents equality balances by
+pairs of opposite inequalities. Thus their network specialization includes (1); here we exploit its
+underlying equality circulation space. We use the published article and its electronic companion for
+equation and example numbering.
+    The shared-simplex gluing principle is also known. In particular, Davarnia [4, Proposition 2.6]
+proves that convexifying Cartesian components separately is exact when the components share the
+same simplex. The cited locator belongs to the dissertation, which is distinct from the 2017 journal
+article. Our block decomposition applies this principle to the independent circulation spaces of an
+equality-constrained network. We give a direct proof to make the treatment of sparse observations
+and zero weights explicit.
+    Several established methods explain the subsequent structural reductions. Reduced reformulation–
+linearization uses multiplied linear equations to remove common-factor products [16]. In networks,
+the remaining freedom can be identified with circulations supported on unobserved arcs. The network
+representation of Cayley hulls of Kis and Horváth [15] gives cut descriptions and transportation
+projections; their Sections 5.7 and 5.9 are close predecessors for the parallel-path construction.
+The lower-bound shift and transportation projection in their Section 5.9 (Proposition 22 and
+  1
+      The published electronic companion is available at this direct supplement link.
+
+
+
+                                                           4
+equations (30)–(31)) give the more direct comparison. The support geometry of Minkowski sums
+and edge-generated zonotope refinements is classical [11, 19]. These are ingredients of the graph-
+specific formulations and separation procedures, rather than new general convexification mechanisms.
+     Two further comparisons delimit coefficient obstructions. Three-way transportation universality
+is established by De Loera and Onn [6], and large coefficients in general 0/1 polytopes are classical
+[2]. A restricted network realization must therefore be specified as part of a coefficient result. Fiorini
+[8] gives a general transfer of 0/1-polytope facets to acyclic-subgraph facets. Our transfer instead
+preserves selected bilinear coordinates in sections of continuous network–simplex hulls; neither facet
+transfer nor large coefficients in graph polytopes is a new phenomenon in itself. Moreover, the
+integrality of aggregate flows on two-terminal series–parallel networks does not give a hull description
+in selected state-flow coordinates. Almoghrabi et al. [1, Remark 1] explicitly distinguish aggregate
+integrality from decomposability of the vector of individual commodity flows. Our observed products
+retain such individual-state information. Neither a sparse extended formulation nor polynomial
+separation precludes large numerical coefficients after projection.
+
+2.3    The known exact disaggregation
+For λ ≥ 0, define the scaled flow system
+                               P (λ) = {f ∈ RE : Af = λb, 0 ≤ f ≤ λu}.                                   (6)
+For λ > 0, this is λP ; at λ = 0 it is {0}, including when P is empty. Using (6) avoids assigning an
+ambiguous meaning to 0∅.
+Proposition 2.1 (Simplex-vertex disaggregation). A point (x, y, z) belongs to H if and only if
+y ∈ ∆m and there exist state flows f 0 , . . . , f m ∈ RE such that
+                                                       m
+                                                       X
+            f k ∈ P (λk )   (k ∈ {0, . . . , m}),            f k = x,        fej = zej   ((e, j) ∈ O).   (7)
+                                                       k=0
+
+The equivalence holds even if P is empty. If the system is feasible, it provides a convex decomposition
+into at most m + 1 points of S.
+Proof. For a point of S, set f k = λk x. This satisfies all displayed relations, since k λk = 1. The
+                                                                                                 P
+
+system is linear in (x, y, z, f ), so its projection is convex and contains H.
+    Conversely, suppose the system is feasible. If λk = 0, the finite upper bounds give f k = 0.
+For each positive weight let xk = f k /λk ∈ P and define the graph point pk = (xk , ek , z k ) by
+ k = xk (ek ) . Its weighted average has x coordinate P f k = x, y coordinate P λ ek = y, and
+zej      e    j                                                k                      k k
+                                      j     j
+observed product coordinate λj xe = fe = zej when λj > 0. If λj = 0, that observed coordinate is
+zero on both sides. Thus (x, y, z) = k:λk >0 λk pk ∈ H. There is at least one positive weight, so
+                                           P
+
+feasibility also implies P ̸= ∅. This proves the empty-set assertion.
+
+    The formulation has (m + 1)|E| state-flow variables before elimination. Its rational size is
+polynomial in the ordinary network and simplex input, so generic polynomial-time hull optimization
+and separation already follow from linear programming. The structural issue is avoiding this full
+state-by-arc expansion, or projecting it into useful original-coordinate inequalities. In particular,
+eliminating f 0 = x − m      j
+                     P
+                        j=1 f keeps the residual bounds
+                                                m
+                                                X                m
+                                                                  X      
+                                     0≤x−             fj ≤ 1 −          yj u.                            (8)
+                                                j=1               j=1
+
+These bounds cannot in general be discarded.
+
+                                                        5
+Corollary 2.2 (Integral arc flows give the same hull). If b and u are integral, then
+                                  H = conv{(x, y, z) ∈ S : x ∈ ZE }.
+Proof. The bounded flow polytope P is integral, a classical consequence of network total unimodu-
+larity [12]. Here is a direct verification covering multigraphs. At a nonintegral feasible flow, consider
+the arcs whose values are nonintegral. If there is no loop, each incident vertex has degree at least
+two in this subgraph: a vertex with just one such arc would equate a noninteger plus integers to an
+integer in its balance equation. A nonempty subgraph therefore contains a loop or an undirected
+cycle. The signed circulation on that cycle can be added and subtracted in sufficiently small amounts
+while preserving the bounds, because each of its arc values is strictly between its integral bounds.
+Thus the flow is not a vertex. All vertices of P are integral, and boundedness expresses every flow
+as a convex combination of them.
+    For a point of H, apply proposition 2.1. Decompose each positive-weight normalized flow into
+integral vertices of P and pair those vertices with its fixed simplex vertex. At a fixed simplex vertex,
+all selected products are linear in the flow, so these refined graph points have the required weighted
+average. This proves the inclusion in the displayed right-hand side; the reverse inclusion follows
+from its containment in conv S. If P is empty both sides are empty.
+
+    The corollary is a hull equality, not an integral decomposition-size bound. Refining a normalized
+state flow can require several integral vertices, so the at-most-m + 1 bound in proposition 2.1 applies
+to continuous graph points. Already when m = 0, a fractional flow cannot be represented by a
+single integral point. Nor does the corollary assert integrality of fractional coordinate sections of H.
+
+
+3     Independent blocks and locally merged states
+3.1   Circulation factorization
+All graph connectivity terminology below refers to the undirected multigraph underlying D. Isolated
+vertices impose only their balance equation. Let Ebr be the bridges. Let B be the cyclic blocks: the
+maximal biconnected edge blocks that contain a cycle, with each self-loop treated as its own block.
+A pair of parallel edges can form a cycle of length two. The sets Ebr and EB for B ∈ B partition E.
+The cycle rank of a connected block is
+                                        rB = |EB | − |VB | + 1.                                      (9)
+In particular, a loop has rank one. Rank refers to the ambient circulation space, even when capacities
+reduce the dimension of the feasible polytope.
+    The equation Av = b is solvable exactly when the entries of b sum to zero on every connected
+component. Necessity follows by summing the incidence rows in a component. For sufficiency,
+choose a spanning forest, set the nonforest coordinates to zero, and determine each tree-edge flow by
+the balance sum on one side of its fundamental cut, with the sign determined by the arc orientation.
+This satisfies every balance equation. This construction uses O(|V | + |E|) arithmetic operations,
+and for rational b produces a rational v of polynomial encoding length. The reference flow v need
+not obey its capacity bounds. If the component condition fails, P and H are empty.
+    Fix such a reference vector v. For each B, let AB be the incidence matrix restricted to columns
+in EB and rows in VB , and define
+                       KB = {h ∈ REB : AB h = 0, −vEB ≤ h ≤ uEB − vEB }.                            (10)
+Unlike P , this is a domain of circulation deviations; it need not contain the origin.
+
+                                                   6
+Lemma 3.1 (Block factorization). Every g ∈ ker A vanishes on Ebr and restricts to a circulation
+on each cyclic block. Conversely, combining arbitrary block circulations and zero bridge coordinates
+gives an element of ker A. Consequently, if every bridge satisfies 0 ≤ ve ≤ ue , the map
+
+                        xe = ve    (e ∈ Ebr ),    xEB = vEB + hB      (B ∈ B)                      (11)
+                            Q
+is an affine bijection from B∈B KB to P . If a bridge bound fails, P is empty. The product of an
+empty family of block domains is a singleton.
+
+Proof. Choose a spanning forest of the underlying multigraph, omitting loops. Each nonforest edge
+gives a signed fundamental-cycle circulation: use the unique forest path between its ends, or just the
+edge itself for a loop. These vectors form a basis of ker A. Indeed, subtracting from a circulation
+the combination that cancels all nonforest coordinates leaves a circulation supported on a forest,
+which is zero by successive leaf elimination.
+     Each fundamental cycle lies in a single cyclic block. Hence its vector is zero on every bridge,
+and on every block it is either zero or a circulation of that block. The basis expansion proves the
+first assertion. For the converse, extend each block circulation by zero to E. Its incidence is zero at
+every vertex, including articulation vertices, so their sum is a global circulation. The sum is direct
+because the block edge sets are disjoint. Applying this decomposition to x − v proves that Ax = b
+is equivalent to the circulation conditions and the fixed bridge coordinates in (11). The bounds
+then separate by edge block, giving precisely (10) and the bridge conditions.
+
+   In particular, an articulation vertex does not carry an additional coupling variable between
+block deviations. Its fixed net balance is already carried by v; every block deviation has zero
+net balance at that vertex separately. Any spanning tree in B gives a fundamental-cycle matrix
+CB ∈ {0, ±1}EB ×rB with chord rows equal to the identity. Thus hB = CB tB gives unique cycle
+coordinates tB ∈ RrB . These coordinates remain useful when KB is lower-dimensional.
+
+3.2   The state merger and its exact refinement
+For a nonempty convex set K, use the usual scalar multiplication αK = {αh : h ∈ K}, so 0K = {0}.
+For nonnegative scalars,
+                             α1 K + · · · + αq K = (α1 + · · · + αq )K.                     (12)
+If the total weight is positive, the inclusion from left to right follows by dividing by that weight and
+taking a convex combination; the reverse inclusion uses the same point of K in each summand. If
+the total is zero, both sides are {0}. An empty sum is also interpreted as {0}.
+    For each block define its observed labels and their count by
+
+                    JB = {j ∈ [m] : (e, j) ∈ O for some e ∈ EB },       aB = |JB |.                (13)
+
+This is a structural definition: a label in JB remains present when yj = 0. Let ∗B denote a local
+merged state, distinct from the global residual state 0, and set
+                                                                               X
+                  IB = JB ∪ {∗B },       λB,j = yj (j ∈ JB ),     λB,∗ = 1 −          yj .         (14)
+                                                                               j∈JB
+
+The merged state collects all labels absent from JB and state 0. Different blocks may merge different
+global states.
+
+
+
+
+                                                   7
+Theorem 3.2 (Exact blockwise state reduction). Assume P ̸= ∅. A point (x, y, z) belongs to H if
+and only if x ∈ P , y ∈ ∆m , every observed bridge satisfies
+
+                                   zej = ve yj        (e ∈ Ebr , (e, j) ∈ O),                       (15)
+
+and for every cyclic block B there exist vectors hB,k ∈ REB , k ∈ IB , satisfying
+
+                                   hB,k ∈ λB,k KB        (k ∈ IB ),                                 (16)
+                             X
+                                   hB,k = xEB − vEB ,                                               (17)
+                            k∈IB
+
+                                   hB,j
+                                    e   = zej − yj ve        ((e, j) ∈ O, e ∈ EB ).                 (18)
+
+The block conditions yield state flows in (7), and hence a decomposition into at most m + 1 graph
+points, by explicit proportional refinement.
+Proof. By lemma 3.1, every KB is nonempty. Start with state flows in (7). Their deviations
+g k = f k − λk v are circulations. On B, they satisfy gE
+                                                       k ∈ λ K : division proves this for positive
+                                                        B   k B
+weights, and both deviations and scaled domains are zero for zero weights. For j ∈ JB take
+          j
+hB,j = gE   B
+              , and sum the other deviations into hB,∗ . Identity (12) proves (16). Summing the
+deviations proves (17), and the observed coordinates give (18). On bridges the deviations vanish,
+proving (15).
+    Conversely, fix feasible local vectors. For each global state k and block B, if k ∈ JB , set
+gEB = hB,k . For the remaining states use
+  k
+
+                                            (
+                                    k           (λk /λB,∗ )hB,∗ ,   λB,∗ > 0,
+                                   gE B
+                                        =                                                           (19)
+                                                0,                  λB,∗ = 0.
+
+If the merged weight is zero, every constituent weight is zero as well. In every case gE      k ∈λ K ,
+                                                                                               B    k B
+                                                             k
+and the refined vectors sum to the block deviation. Put ge = 0 on bridges and combine blocks. The
+block factorization gives Ag k = 0. Then f k = λk v + g k satisfies Af k = λk b. Its capacity bounds hold
+on blocks by the scaled domains, and on bridges because P =        ̸ ∅ implies 0 ≤ ve ≤ ue . Equations
+                                                          P k
+(17) and (18), together with the bridge equations, give k f = x and all observed products. Apply
+proposition 2.1.
+
+    The domain condition (16) is itself linear:
+
+                       AB hB,k = 0,         −λB,k vEB ≤ hB,k ≤ λB,k (uEB − vEB ).                   (20)
+
+Finite bounds force hB,k = 0 at zero weight. No division by a variable is needed in the formulation;
+division appears only in the recovery proof at strictly positive weights. If JB = ∅, the block has
+one merged state of weight one and its conditions reduce to xEB − vEB ∈ KB , already enforced by
+x ∈ P . Thus unobserved blocks require no new variables or constraints.
+    The theorem is a constructive specialization of the known shared-simplex gluing principle. It
+does not introduce independent simplex vectors for different blocks: all use the same global y. It
+also does not merge observed state slices, whose domains can differ after the products are fixed.
+Example 3.3 (A common matrix is not sufficient for merging). Let M = (−1, 1, 2)⊤ , c1 =
+(0, 1, 100)⊤ , and c2 = (0, 100, 2)⊤ . Both polytopes Qi = {q ∈ R : M q ≤ ci } equal [0, 1]. For
+weights α1 = α2 = 1/2, the weighted Minkowski sum is still [0, 1], whereas the aggregated rows
+M q ≤ (c1 + c2 )/2 allow q = 2. The two upper bounds become q ≤ 101/2 and 2q ≤ 51. Thus
+
+                                                         8
+replacing state-specific systems by the sum of their right-hand sides is generally inexact, even for a
+common matrix and nonempty bounded domains. This is the standard reaggregation boundary
+discussed by Kis and Horváth [15, Section 2, equation (7)]. The sets in this example are identical, so
+the set identity (12) still holds. What fails is its replacement by addition of the different, redundant
+right-hand-side descriptions. In theorem 3.2, every state instead uses the single fixed representation
+(10), with its bounds scaled by the state weight as in (20). Adding these scaled bounds gives that
+same representation scaled by the total weight, so the set identity justifies the merged formulation.
+
+    Finally, these results concern the hull of (3). Intersecting H with additional linear side constraints
+yields a valid relaxation of the graph with those constraints, but need not give its exact convex hull.
+Such constraints can couple blocks or alter conditional state domains; exactness then requires a
+separate argument.
+
+
+4     Compression by cycles and observations
+This section compresses the exact block formulation in two steps. First, cycle coordinates replace
+arc coordinates and suppress long paths. Second, observations determine some cycle coordinates,
+leaving only cycles supported on unobserved arcs. We assume P ̸= ∅; if the original flow domain is
+empty, its hull is described by any inconsistent linear system.
+
+4.1    Fixed coordinates and reduced graphs
+The structural parameters can be applied after elementary exact preprocessing. This is useful when
+capacities force a nominal cycle to carry no freedom.
+
+Lemma 4.1 (Deleting fixed arcs). Let F ⊆ E and suppose xe = ce throughout P for every e ∈ F ,
+where c ∈ QF is known. Set R = E \ F , b′ = b − A:,F c, and
+
+                  P ′ = {xR : A:,R xR = b′ , 0 ≤ xR ≤ uR },       O′ = O ∩ (R × [m]).
+
+The hull for (P ′ , O′ ), together with xF = c and zej = ce yj for observed e ∈ F , is affinely isomorphic
+to H. If F contains every coordinate fixed throughout P , then
+
+                                      aff P ′ = {xR : A:,R xR = b′ }.                                (21)
+
+Proof. Feasible vectors of P restrict to P ′ . Conversely, adjoining c to a vector of P ′ satisfies the
+original balances and bounds, because 0 ≤ c ≤ uF . The same bijection at graph points adjoins the
+affine coordinates zej = ce yj , so it commutes with convexification.
+    For the last assertion, every remaining coordinate is nonconstant on P ′ . For each e ∈ R, choose
+two feasible vectors differing in coordinate e; their midpoint has 0 < xe < ue . Average these
+midpoints over e ∈ R. The resulting feasible vector is strictly inside every remaining bound. A
+sufficiently small relative neighborhood of that vector in the balance affine space therefore remains
+feasible, proving (21). If R is empty, both spaces are the same singleton and the assertion is
+immediate.
+
+    The lemma takes the fixed coordinates as input; it does not require a particular detection
+algorithm. Deleting them can split blocks or reduce their cycle ranks. Once all fixed coordinates
+are removed, the remaining cycle space is the direction space of the feasible affine hull. Conditional
+slices at a particular observation or zero state weight can still have smaller dimension.
+
+
+                                                    9
+4.2   Suppressing paths
+Fix a cyclic block B. Degrees in this subsection are degrees within the block, with loops counted
+twice. For rB ≥ 2, suppress maximal paths whose internal vertices have degree two, and give each
+resulting core edge an arbitrary orientation. A rank-one block is a single cycle; represent its entire
+cyclic traversal by one core loop. This includes two parallel edges and an original self-loop.
+    Write PB for the core edges, or equivalently the original paths, and kB = |PB |. For an original
+arc e on path p, let εe ∈ {−1, 1} compare its orientation with the chosen path traversal. A circulation
+has constant signed deviation on a path:
+                                               xe = ve + εe δp        (e ∈ p).                          (22)
+The reason is balance of the block circulation at each internal degree-two vertex. Balances at the
+unsuppressed vertices say precisely that δ is a circulation of the core. Arc bounds give the path
+interval
+                      Lp = max ℓe ,                                                    Up = min u′e ,   (23)
+                                  e∈p                                                            e∈p
+                                 (
+                                     [−ve , ue − ve ],   εe = 1,
+                 [ℓe , u′e ] =
+                                     [ve − ue , ve ],    εe = −1.
+All intervals are finite. Their joint feasibility follows from P ̸= ∅.
+    Suppression preserves cycle rank. If rB ≥ 2, the connected core has minimum degree at least
+three: otherwise the original block would have been a single cycle. If its vertex count is nB , then
+2kB ≥ 3nB and rB = kB − nB + 1, so
+                                          nB ≤ 2rB − 2,          kB ≤ 3rB − 3.                          (24)
+For rank one, kB = 1. In particular, kB ≤ 3rB in every case.
+   Choose a spanning tree of the core and let CbB ∈ {0, ±1}kB ×rB be its fundamental-cycle matrix,
+normalized to have identity chord rows. Its columns parametrize core circulations bijectively. Thus
+the feasible core domain is
+                                 TB = {t ∈ RrB : Lp ≤ (CbB t)p ≤ Up             (p ∈ PB )}.             (25)
+It is nonempty and bounded, including in lower-dimensional cases. Boundedness follows already
+from the chord rows. For later use, choose one original representative arc e(p) on each path and put
+                           sp (x) = εe(p) (xe(p) − ve(p) ),           qej = εe (zej − ve yj ).          (26)
+For x ∈ P , sp (x) is its core deviation. A separate observation qej is retained for every observed
+original arc, including multiple observations of one path.
+Theorem 4.2 (Cycle-coordinate extended hull). The hull H has an exact rational extended
+formulation with                      X
+                                         rB aB                                      (27)
+                                                         B∈B
+additional variables and
+                                                                                       
+                                                                     X
+                                 O |V | + |E| + m + |O| +                    rB (aB + 1)              (28)
+                                                                    B:aB >0
+
+rows, counting the original domain constraints. Coefficients of x, z, and additional variables can
+all be chosen from {0, ±1}. Coefficients of y and the right-hand sides may depend on the rational
+network data. All coefficient encoding lengths are polynomial in the input length.
+
+                                                            10
+Proof. Retain x ∈ P , y ∈ ∆m , and the bridge equations (15). For each B with aB > 0, introduce
+tB,j ∈ RrB for j ∈ JB and impose
+
+             yj Lp ≤ (CbB tB,j )p ≤ yj Up ,                                j ∈ JB , p ∈ PB ,          (29)
+                            B,j
+               qej = (CbB t       )p ,                                     (e, j) ∈ O, e ∈ p ⊆ EB ,   (30)
+                                   X
+           λB,∗ Lp ≤ sp (x) −             (CbB tB,j )p ≤ λB,∗ Up ,         p ∈ PB .                   (31)
+                                  j∈JB
+
+The aggregate deviation s(x) is a core circulation. Hence the middle quantity in (31) is a core
+circulation as well. These constraints are exactly theorem 3.2 in core coordinates, with the merged
+state eliminated by its sum equation. At a zero weight, the finite path bounds force every core
+path value to zero; the identity chord rows force the entire state vector to zero. Consequently the
+equivalence includes all simplex boundary strata. Blocks with aB = 0 add no constraints, as in the
+block theorem.
+    There are rB aB variables, 2kB (aB + 1) bound rows, and one equation per block observation.
+Bound (24) proves the row count. Every state variable has coefficient 0, 1, or −1. An observation row
+has one original product coordinate, and each residual row uses one original flow coordinate through
+sp (x); no sums of different cycle expressions for that flow coordinate are necessary. This proves the
+stated coefficient bound. Reference flows are sums of rational balances; path endpoints are selected
+signed capacity offsets. The remaining coefficients are sums of these data, with polynomial rational
+encoding length.
+
+4.3   Eliminating observed directions
+Define the observed and unobserved arcs for a block and label by
+
+                           OBj = {e ∈ EB : (e, j) ∈ O},              UBj = EB \ OBj .
+
+Let c(VB , UBj ) count all connected components of this unobserved undirected subgraph, including
+isolated vertices. Its cycle rank is
+
+                                         ρBj = |UBj | − |VB | + c(VB , UBj ).                         (32)
+
+Loops and parallel edges keep their usual multigraph meanings. In particular, each unobserved loop
+contributes one to the cycle rank.
+
+Lemma 4.3 (Unit minors for cycle elimination). A fundamental-cycle matrix with identity chord
+rows is totally unimodular. Let C be such a matrix, let D consist of d linearly independent rows,
+and choose d columns I such that B = D:,I is nonsingular. Write F for the complementary columns.
+Then, for every row c of C, the vectors
+
+                                         W = cI B −1 ,       R = cF − W D:,F                          (33)
+
+have entries in {0, ±1}.
+
+Proof. Delete one incidence row of the connected core and partition the reduced incidence matrix
+as [NT NQ ] into tree and chord columns. A tree basis has determinant ±1. Every square incidence
+minor is 0 or ±1: induction expands a column with at most one nonzero entry; if every column has
+two entries, they are opposite and the row sum is zero. Every minor of NT−1 NQ equals, up to sign,
+the determinant of a matrix obtained by replacing the corresponding tree columns by chord columns,
+
+                                                           11
+divided by det NT . This follows by multiplying the replacement matrix by NT−1 and expanding its
+unchanged identity columns. The replacement is a square incidence submatrix. Therefore −NT−1 NQ
+is totally unimodular. Appending identity chord rows preserves this property, proving the assertion
+for C. A core consisting of one loop has C = (1) directly.
+    In particular det B = ±1. Cramer’s rule applied to W B = cI expresses each entry of W
+as a selected-row replacement minor of C divided by det B. For a free column f , the bordered
+determinant identity gives                                 !
+                                                  B D:,f
+                                             det
+                                                  cI cf
+                                        Rf =                 .
+                                                  det B
+The numerator is a minor of C, or zero when its rows repeat. These formulas prove (33). Empty
+pivot or free sets have their usual zero-dimensional matrix interpretation.
+
+Theorem 4.4 (Observation-sensitive extended hull). There is an exact rational extended formulation
+for H with                               X X
+                                                   ρBj                                        (34)
+                                             B∈B j∈JB
+
+additional variables and the row bound (28). Coefficients of x, z, and additional variables belong to
+{0, ±1}; simplex coefficients and right-hand sides have polynomial rational encoding length. The
+variable count is an upper bound for this construction, not a lower bound for arbitrary extended
+formulations.
+Proof. Fix B and j ∈ JB , suppress their subscripts, and write C = CbB , r = rB . Choose a maximal
+independent set of observed path rows of C, giving D ∈ Rd×r . For each selected row choose one
+actual observed arc and use its value from (26), giving q ∈ Rd . The selected entries of q involve
+distinct original product variables. All other observations will remain as equations, including any
+repeated path values.
+    Choose pivot columns I and complementary columns F as in lemma 4.3. Retain g = tF ∈ Rr−d
+and eliminate the pivot coordinates by the reversible substitution
+                                        tI = B −1 (q − D:,F g).                                    (35)
+For every core path p with row cp define
+                             ϕpj = (cp,I B −1 )q + (cp,F − cp,I B −1 D:,F )g.                      (36)
+
+Replace (CbB tB,j )p by ϕpj in (29)–(31). Selected observation equations become identities and can be
+omitted; all other observation equations remain. Formula (35) proves equivalence in both directions,
+so no projection condition is lost.
+    By lemma 4.3, each selected product and retained variable has coefficient 0, 1, or −1 in every ϕpj .
+A nonselected observation adds a distinct product coordinate; it cannot add a second occurrence
+of a selected product. Different labels use disjoint product and auxiliary columns. The residual
+uses one original flow coordinate through sp (x). Thus collecting terms does not increase any x, z,
+or auxiliary coefficient beyond one in magnitude. Only coefficients of y collect reference-flow and
+interval data. Their encoding lengths remain polynomial. Elimination adds no rows.
+    It remains to identify r − d. Restrict a block circulation to OBj . The kernel is precisely the
+space of circulations supported on UBj , whose dimension is (32) by the incidence-rank formula. The
+core matrix parametrizes all block circulations, and observing any arc of a suppressed path fixes its
+signed path value. Therefore the rank of the restriction map is exactly the rank d of the observed
+core rows. Rank–nullity gives rB − d = ρBj , proving (34).
+
+                                                   12
+   For clarity, the final block inequalities are
+
+               yj Lp ≤ ϕpj ≤ yj Up ,                              j ∈ JB , p ∈ PB ,             (37)
+                 qej = ϕpj ,                                      (e, j) ∈ O, e ∈ p ⊆ EB ,      (38)
+                                  X
+             λB,∗ Lp ≤ sp (x) −          ϕpj ≤ λB,∗ Up ,          p ∈ PB .                      (39)
+                                  j∈JB
+
+The original flow and simplex domains and bridge observations remain part of the formulation. In
+particular, reconstructing state products by balance equations alone is insufficient: all displayed
+state and residual bounds must also be imposed.
+    The row counts do not bound matrix nonzeros when ranks grow. If N = |V | + |E| + m + |O|
+and OB = O ∩ (EB × [m]), both constructions have the explicit nonzero bound
+                                                                      
+                                             X 
+                                                 2                    
+                               O N +           rB (aB + 1) + rB |OB |  .                      (40)
+                                           B:aB >0
+
+Indeed, a reconstructed path has O(rB ) selected-product and auxiliary terms per label; there are
+O(rB ) paths and aB explicit labels. Each remaining observation also uses O(rB ) terms. Hence
+bounded maximum block rank gives size linear in the sparse input, even as m and the graph grow.
+The whole formulation need not be totally unimodular. The unit coefficient statements use the
+displayed rational row scaling; clearing denominators in the simplex coefficients can destroy that
+unit bound in a primitive integer normalization.
+
+4.4   Forest complements and product completion
+Corollary 4.5 (An original-coordinate hull on arbitrary graphs). Suppose (VB , UBj ) is a forest for
+every B and j ∈ JB . Then (37)–(39), the original domains, and the bridge equations describe H
+with no additional variables. They have unit flow and product coefficients and the row bound (28).
+Proof. An undirected multigraph is a forest exactly when its cycle rank is zero. Thus every ρBj in
+(34) vanishes. Apply theorem 4.4.
+
+   Equivalently, the observations for each locally observed label meet every cycle of its block.
+Entirely unobserved labels impose no condition: they are already included in the merged state.
+The condition is sufficient; it does not assert that remaining unobserved cycles prevent an original-
+coordinate description with unit coefficients.
+Proposition 4.6 (Minimum individual-coordinate completion). Fix B and j ∈ JB . Among
+additions of individual missing arc-product coordinates, exactly ρBj are necessary and sufficient to
+determine the full state circulation from the observed coordinates and linear balance equations on
+the ambient circulation space. A minimum choice consists of the nonforest edges of any spanning
+forest of (VB , UBj ). The additional variables in theorem 4.4 may instead be chosen to represent
+these individual missing products, with the same variable and row bounds and unit flow, product,
+and auxiliary coefficients.
+Proof. The existing restriction map has nullity ρBj . Each additional scalar coordinate can raise its
+rank by at most one, proving necessity. Let FBj be a spanning forest of the unobserved subgraph,
+including all its vertices. Add observations on UBj \ FBj , which has ρBj edges. The remaining
+unobserved graph is a forest, so the restriction kernel is zero by the proof of theorem 4.4. This
+proves sufficiency and the stated minimum.
+
+                                                      13
+    Apply corollary 4.5 to the completed observation set and regard the added product coordinates
+as auxiliary variables. Projection onto the original observations commutes with convexification, so
+this is an extended formulation for the original H. Completing labels only in JB does not introduce
+new labels. The added equations number B,j ρBj ≤ B rB aB , already absorbed by the row bound.
+                                          P           P
+
+The corollary’s coefficient property includes the added coordinates.
+
+    There is a direct interpretation of this completion. The block state flows satisfy AB f B,j =
+yj AB vEB , since their deviations are block circulations. Once the nonforest state products are known,
+sum these equations on either side of a cut formed by deleting a remaining forest edge from its
+component. That edge is the only unknown crossing edge, so its state product is an affine expression
+in the known state products and the state weight, with unit product coefficients. Component balance
+equations enforce consistency if the unobserved forest is disconnected. This is network elimination of
+the kind underlying reduced RLT: Liberti and Pantelides [16, Theorem 3.1 and Section 2] reconstruct
+common-factor products by multiplying full-row-rank linear equations and retaining products on
+suitable complementary coordinates. Here the extra information is the observation-complement
+graph criterion and its exact sparse simplex-hull consequence.
+    The minimum in proposition 4.6 concerns reconstruction by individual coordinates on the ambient
+linear space. It is neither an extension-complexity lower bound nor a claim about the number of
+coordinates needed on a capacity-degenerate slice. In particular, λj = 0 forces every state product
+to zero. The preprocessing in lemma 4.1 can remove fixed arcs before the parameters are computed,
+but it does not remove this conditional-slice distinction.
+    All formulations also give explicit recovery. From retained coordinates, recover each tB,j using
+(35), reconstruct path deviations by CbB tB,j , and subtract their sum from s(x) to recover the merged
+state. Expand deviations along the original paths using their signs. The proportional refinement (19)
+then supplies the global state flows and the at-most-m + 1-point decomposition from proposition 2.1.
+This recovery is exact rational arithmetic for rational input and a rational feasible extension; merely
+solving the formulation numerically does not provide an exact certificate.
+Example 4.7 (Three observations on a K4 block). Orient every edge of K4 from the smaller to the
+larger vertex and take unit capacities and unit flow from vertex 1 to vertex 4. Thus b = (−1, 0, 0, 1)⊤ .
+Use the reference flow v14 = 1 and zero on the other arcs. For one label j, observe 13, 14, and 24;
+the unobserved edges 12, 23, and 34 form a spanning tree. Writing q13 = z13,j , q14 = z14,j − yj , and
+q24 = z24,j , balance gives the remaining state deviations
+
+                h12 = −q13 − q14 ,      h23 = −q13 − q14 − q24 ,      h34 = −q14 − q24 .
+
+For example, nonnegativity of the reconstructed flow on 23 gives
+
+                                       z13,j + z14,j + z24,j ≤ yj .                                 (41)
+
+This cut is absent from independent product convexification. To see the gap, take m = 1, y1 = 1/2,
+z13,1 = z14,1 = z24,1 = 1/5, and let x average the four paths 1234, 124, 134, and 14 equally. Then
+x12 = x34 = 1/2 and the other four arc flows are 1/4. All three observed products satisfy (5), but
+the left side of (41) is 3/5 > 1/2. The complete hull requires all reconstructed bounds, including
+the residual bounds, not only this one cut.
+
+
+5    Explicit hulls and separation on structured blocks
+The extended formulations in section 4 apply to arbitrary graphs. On some block classes, their state
+coordinates can be projected out explicitly while preserving unit flow and product coefficients. We
+
+                                                   14
+first give a linear-arithmetic oracle for cycles and theta blocks, then a transportation oracle for any
+number of parallel paths. All graph classes refer to the underlying multigraph: orientations remain
+arbitrary, and different blocks may meet at articulation vertices. Bridges retain (15); independent
+loops use the scalar cycle formulas.
+
+5.1   Cycle and theta state domains
+A theta block consists of three internally vertex-disjoint paths between two terminals. Orient their
+traversals from the first terminal to the second. The three circulation deviations sum to zero, so
+write them as s, t, −s − t. Put h(s, t) = s + t and absorb the sign of the third path into σe : on the
+first two paths σe = εe , and on the third σe = −εe . Thus
+
+                        xe = ve + σe ηe (s, t),       ηe ∈ {s, t, h},   h = s + t.                 (42)
+
+The symbol h here is a linear coordinate form, not the number of states. Signed interval intersection
+as in (23) gives
+
+                     TB = {(s, t) : Ls ≤ s ≤ Us , Lt ≤ t ≤ Ut , Lh ≤ s + t ≤ Uh }.                 (43)
+
+A cycle has the analogous scalar form xe = ve + σe s and base interval [Ls , Us ]. Read the aggregate
+coordinates s(x), t(x) from one representative arc on each of the first two paths; then h(x) =
+s(x) + t(x). These representative arcs are distinct.
+    Fix a block and use its local states IB and weights from (14). Suppress B in the local formulas
+below, so λj = λB,j , including the merged state ∗. Define qeej = σe (zej − ve yj ) for observations in
+this block. Initialize and tighten each coordinate interval by
+                                                                                                     
+ℓηj = max {λj Lη } ∪ {qeej : (e, j) ∈ O, ηe = η} ,    uηj = min {λj Uη } ∪ {qeej : (e, j) ∈ O, ηe = η} .
+                                                                                                    (44)
+For ∗ there are no observations. Multiple observations on a path must agree: they all enter both
+endpoint lists. At zero weight the initial interval is the singleton zero, so feasibility forces every
+observed coordinate and every state deviation to be zero.
+   The cycle state domain is [ℓsj , usj ]. The theta state domain is
+
+                   Qj = {(s, t) : ℓsj ≤ s ≤ usj , ℓtj ≤ t ≤ utj , ℓhj ≤ s + t ≤ uhj }.             (45)
+
+By theorem 3.2, block membership asks whether the aggregate coordinate belongs to the Minkowski
+sum of these local state domains. This reduction holds at every simplex boundary and for lower-
+dimensional state domains.
+
+Lemma 5.1 (Theta feasibility and tight supports). The state domain Qj is nonempty if and only if
+
+                  ℓηj ≤ uηj   (η = s, t, h),      ℓsj + ℓtj ≤ uhj ,     ℓhj ≤ usj + utj .          (46)
+
+When it is nonempty, its attained minimum and maximum of each coordinate form are
+
+                        asj = max{ℓsj , ℓhj − utj }, bsj = min{usj , uhj − ℓtj },
+                        atj = max{ℓtj , ℓhj − usj }, btj = min{utj , uhj − ℓsj },                  (47)
+                        ahj = max{ℓhj , ℓsj + ℓtj }, bhj = min{uhj , usj + utj }.
+
+
+
+
+                                                      15
+Proof. The rectangle of individual coordinate intervals is nonempty exactly when its two intervals
+are nonempty. Its attainable sums fill [ℓsj + ℓtj , usj + utj ]. Requiring that interval to intersect
+the nonempty sum interval gives precisely (46). For a fixed s, a feasible t exists if and only if
+s ∈ [ℓsj , usj ] and s ∈ [ℓhj − utj , uhj − ℓtj ]. This proves both tight s bounds and their attainment.
+Interchanging s, t proves the next pair, and intersecting the two attainable sum intervals proves the
+last.
+
+Lemma 5.2 (Six supports suffice for planar sums). For any finite family of nonempty domains of
+the form (45), including segments and points,
+                                                                                               
+                    X                         X                     X                          
+                         Qj =       (s, t) :       aηj ≤ η(s, t) ≤       bηj     (η = s, t, h) .    (48)
+                                                                                               
+                     j                         j                     j
+
+The empty sum is the singleton zero, represented by six zero supports.
+Proof. Let N = {±(1, 0), ±(0, 1), ±(1, 1)}. Every edge of a two-dimensional Qj has a normal in
+N , because Qj is defined by inequalities with those normals. A one-dimensional Qj also has a
+direction perpendicular to a member of N : at a relative interior point of the segment, at least one
+defining inequality is tight and its boundary contains the segment. Otherwise that point would have
+a two-dimensional neighborhood in Qj .
+    For a linear objective with normal n, its maximizing face over a sum is the sum of its maximizing
+faces over the summands. Indeed, objective values add, and equality in the sum of the separate
+maximum values holds exactly when every summand attains its maximum. If the sum is two-
+dimensional, each exposed edge is therefore a sum of points and parallel segments, with at least
+one nontrivial segment. Its direction is a direction already occurring in a summand. Thus every
+edge normal of the sum lies in N , and its support values are the sums of those in lemma 5.1. These
+supports describe the polygon.
+    If the sum is a nontrivial segment, each nonpoint summand is a segment parallel to it. Its
+direction is one of the three permitted directions. The two normals perpendicular to that direction
+enforce its supporting line, and at least one of the other coordinate forms varies along that line. The
+lower and upper supports of that form give exactly the segment endpoints. If the sum is a point,
+the supports of s and t fix it. This proves the same six-inequality description in all dimensions.
+
+    The planar restriction matters. In higher dimension, an exposed facet can be a sum of lower-
+dimensional faces with different directions, so the preceding edge argument does not give a fixed list
+of facet normals. The support and normal-fan identities used here are classical [11]; the explicit
+formulas exploit these particular block domains.
+Theorem 5.3 (Cycle/theta original-coordinate hull). Suppose every cyclic block is a cycle or a theta
+block. The hull H is described by the original flow and simplex constraints, the bridge equations, the
+cycle conditions                                   X                X
+                        ℓsj ≤ usj (j ∈ IB ),           ℓsj ≤ s(x) ≤      usj ,                    (49)
+                                                           j∈IB                    j∈IB
+
+and, for every theta block, the local conditions (46) and six aggregate conditions
+                          X                                    X
+                                aηj ≤ η(s(x), t(x)) ≤              bηj         (η = s, t, h).       (50)
+                         j∈IB                               j∈IB
+
+All endpoints are evaluated by (44). These expressions define a finite family of linear inequalities
+with coefficients in {0, ±1} on x, z.
+
+                                                          16
+Proof. For intervals, nonemptiness is checked separately, and their Minkowski sum has the summed
+lower and upper endpoints. The theta case follows from lemmas 5.1 and 5.2. The exact equivalence
+with the global hull then follows from theorem 3.2.
+    Every lower endpoint in (44) is a maximum of affine functions, and every upper endpoint is
+a minimum. These properties also hold for the lower and upper supports in (47): for example,
+ℓhj − utj is a maximum of affine differences. Consequently each displayed condition can be written
+as a maximum of finitely many affine functions bounded above by zero. Requiring every affine
+branch to be at most zero is an equivalent finite linear description.
+    In a support branch, a state’s product contribution uses either one coordinate type or two
+distinct types. Hence each observed product occurs at most once. Different states have different
+product indices. A local same-type interval comparison either uses two distinct observations or
+cancels an identical one; other local comparisons use distinct types. The aggregate s(x), t(x) use
+separate representative arcs, and h(x) uses their sum. Thus every flow or product coefficient is
+0, 1, or −1. Simplex coefficients contain the network data. The assertion concerns this rational row
+scaling, with the normalization qualifications given after (40).
+
+5.2   A linear-arithmetic oracle and compact recovery
+If any condition in theorem 5.3 fails, select a maximizing affine branch of its convex piecewise-affine
+left side after moving all terms to one side. That branch is bounded above by zero at every hull
+point and has the same positive violation at the candidate. Thus endpoint and support comparisons
+produce a globally valid linear cut directly; they do not merely produce a local linear approximation.
+Ties may be resolved arbitrarily among active branches.
+    There are aB + 1 local states in block B, and B aB ≤ |O|. A constant number of endpoint
+                                                      P
+
+and support operations suffices for each cycle/theta state after its observations have been scanned.
+Checking the original domains and all block conditions therefore uses
+                                             O(|V | + |E| + m + |O|)                                       (51)
+rational arithmetic operations, given observation indices grouped by block and label. Graph blocks,
+paths, and reference flows can be preprocessed in linear time. Sorting an ungrouped observation
+list adds O(|O| log |O|) comparisons if required. These are arithmetic and comparison counts,
+not constant-bit-cost claims. All evaluated rational expressions and emitted cut coefficients have
+polynomial encoding length.
+Proposition 5.4 (Constructive cycle/theta recovery). For a rational hull point in the scope of
+theorem 5.3, a compact rational decomposition into at most m+1 graph points can be computed within
+(51), with the same grouping proviso. The compact representation stores the global weights, reference
+flow, one default coordinate per block, and exceptions for observed block/label pairs. Expanding all
+flow vectors can require Θ((m + 1)|E|) output entries.
+Proof. Order the local states in a theta block and precompute suffix sums of the six tight supports.
+Suppose the remaining aggregate is r = (rs , rt ), with rh = rs + rt , and the next state is i. Its
+permissible coordinate lies in Qi ∩ (r − j>i Qj ). By lemma 5.2, this is another theta polygon with
+                                         P
+
+intervals                                                        
+                                X                                    X           
+                max ℓηi , rη −         bηj       ≤ η ≤ min uηi , rη −         aηj       ,   η = s, t, h.   (52)
+                                                                                 
+                                 j>i                                    j>i
+It is nonempty because the remaining aggregate belongs to the remaining sum. In any nonempty
+theta polygon with interval endpoints ℓ, u, choose
+                           s = max{ℓs , ℓh − ut },             t = max{ℓt , ℓh − s}.                       (53)
+
+                                                         17
+By lemma 5.1, the chosen s lies between its tight bounds, in particular s ≤ us and s ≤ uh − ℓt .
+Both arguments defining t are at most ut because s ≥ ℓh − ut . The sum is at least ℓh ; if t = ℓt
+it is at most uh , and otherwise it equals ℓh . Thus the chosen point is feasible. Subtract it from
+r and continue. Empty suffixes use zero supports. The scalar interval construction is the same
+intersection-and-subtraction procedure in one dimension.
+     Normalize each positive-weight explicit state coordinate by its weight. Normalize a positive-
+weight merged coordinate by its total weight and store it as the block’s default for all constituent
+global states. If that weight is zero, the default is unused and may be the aggregate block coordinate,
+which is feasible because x ∈ P . An unobserved block also uses its aggregate coordinate as the
+default. The refinement proof of theorem 3.2 combines these coordinates into feasible global flows
+with weights λ0 , . . . , λm ; zero weights are omitted. The number of exceptions is at most |O|, and all
+operations and stored coordinates obey the claimed bound. Enumerating a dense flow for every
+positive state is a separate output cost.
+
+Example 5.5 (Separate state hulls miss a joint restriction). Consider three parallel arcs of unit
+capacity carrying unit total flow. Let their first two aggregate flows be Xs = Xt = 1/3, and let
+y1 = y2 = 1/3. Observe both first-two-arc products for both labels, and set all four to zero. For
+either label alone, the weighted state flow (0, 0, 1/3) and its complementary flow (1/3, 1/3, 0) give a
+feasible one-label hull decomposition. Thus the candidate belongs to the intersection of the two
+separately convexified one-label hulls.
+    Jointly, the two observed states would consume 2/3 of the third arc, whose aggregate flow is
+only 1/3. The violated joint inequality is
+
+                           zs1 + zt1 + zs2 + zt2 ≥ Xs + Xt − (1 − y1 − y2 ).                                  (54)
+
+Its violation is 1/3. It follows from the residual state’s upper bound on the sum of the first two
+flows, and is included in (50). The example illustrates the known joint disaggregation mechanism
+rather than a separate convexification principle.
+
+5.3   Any number of parallel paths
+Now suppose each cyclic block, apart from independent loops, consists of k ≥ 2 internally vertex-
+disjoint paths between two terminals. The number k is unrestricted. Orient all path traversals from
+the first terminal to the second, and use the signs εe of (22). The core domain is
+                                                                      k
+                                                                      X
+                                   Li ≤ δi ≤ Ui       (i ∈ [k]),            δi = 0.                           (55)
+                                                                      i=1
+
+Again write λj = λB,j for local states, including ∗. For each local state j ∈ IB , intersect its scaled
+path bounds with all observations on that path:
+                                                                                                         
+ ℓij = max {λj Li }∪{qej : (e, j) ∈ O, e ∈ i} ,             uij = min {λj Ui }∪{qej : (e, j) ∈ O, e ∈ i} . (56)
+
+Here qej uses (26), without the theta-specific sign change. Let δ̄i = si (x) be the aggregate path
+deviations. Exact block membership is equivalent to finding a matrix w = (wij ) such that
+                                       X                                    X
+               ℓij ≤ wij ≤ uij ,            wij = 0      (j ∈ IB ),              wij = δ̄i   (i ∈ [k]).       (57)
+                                        i                                    j
+
+This follows directly from theorem 3.2.
+
+                                                         18
+Theorem 5.6 (Complete parallel-path subset description). In this graph class, H is described by
+the original domains, bridge equations, scalar loop conditions, and the following conditions for every
+parallel-path block:                          X             X
+                        ℓij ≤ uij (i, j),         ℓij ≤ 0 ≤     uij (j ∈ IB ),                    (58)
+                                                              i                         i
+
+and, for every subset S ⊆ [k],
+                                                                                                     
+                                    X             X                 X                  X             
+                                          δ̄i ≤          min                  uij , −           ℓij       .                        (59)
+                                                                                                     
+                                    i∈S           j∈IB                  i∈S             i∈S
+                                                                                         /
+
+After expanding affine branches, this is a finite linear description whose coefficients on x, z lie in
+{0, ±1}, with the same rational-scaling qualification as theorem 5.3.
+
+Proof. The local conditions are necessary for (57). In a zero-sum column, the sum on S is bounded
+by its upper endpoints on S and by the negative lower endpoints on its complement. Summing over
+columns proves (59).
+    For sufficiency, shift all entries by their lower endpoints and define
+                                                                                            X                          X
+                gij = wij − ℓij ,     Cij = uij − ℓij ,                  ri = δ̄i −              ℓij ,        cj = −       ℓij .   (60)
+                                                                                            j                          i
+
+We seek a nonnegative matrix g ≤ C with row sums r and column sums c. The local conditions
+give Cij ≥ 0 and cj ≥ 0. For each i, apply (59) to [k] \ {i}. Since i δ̄i = 0, this gives
+                                                                   P
+
+                                                                                  
+                                           X            X                                      X
+                              −δ̄i ≤              min               uhj , −ℓij          ≤−                ℓij ,
+                                                                                  
+                                            j                h̸=i                                 j
+
+so ri ≥ 0 as well. Moreover R := i ri = j cj .
+                                      P             P
+
+    Build a directed network with a source, one node for each row, one node for each column,
+and a sink. Source-to-row capacities are ri , row-to-column capacities are Cij , and column-to-sink
+capacities are cj . A flow of value R saturates all source and sink arcs and yields exactly the desired
+matrix. Fixing the source-side row set S, the minimum cut over the side choices of column nodes
+has capacity                                          (          )
+                                          X             X                 X
+                                                ri +          min                 Cij , cj .                                       (61)
+                                          i∈S
+                                           /             j                i∈S
+
+Indeed, a sink-side column pays its incoming capacities from S, while a source-side column pays cj ;
+the choices are independent. This cut has capacity at least R if and only if
+                                                                        (                   )
+                                          X             X                   X
+                                                ri ≤          min                 Cij , cj .
+                                          i∈S            j                  i∈S
+        P
+Adding i∈S,j ℓij to both sides converts this inequality exactly into (59). Hence every cut has
+capacity at least R. The maximum-flow/minimum-cut theorem [9] gives the desired flow, including
+the case R = 0, when all targets vanish. Undo the shift to obtain (57), then refine local states and
+combine blocks by theorem 3.2.
+    The right side of (59) is a minimum of finitely many affine expressions: uij and −ℓij have this
+property, and it is preserved by sums and minima. Branch expansion therefore gives an equivalent
+finite linear family. In a branch for one state, either one upper endpoint from each path in S is used,
+
+                                                                    19
+or one negated lower endpoint from each complementary path is used. Each observation belongs
+to only one path and one state, so its coefficient has magnitude at most one. The local conditions
+have the same property, with possible cancellation of a repeated observation in a same-interval
+comparison. The aggregate left side uses distinct representative arcs. This proves the coefficient
+assertion.
+
+     For k = 3, the six nonempty proper subsets are the supports in (47), after setting (δ1 , δ2 , δ3 ) =
+(s, t, −h). The empty and full subsets are redundant under (58). For larger k, the subset family may
+be exponential. Its completeness comes from the transportation projection, not from an extension
+of the planar edge argument. This is an application of classical transportation feasibility [10]; the
+network-Cayley projection of Kis and Horváth [15, Sections 5.7 and 5.9] is a direct predecessor. The
+lower-bound shift and transportation cut projection are explicit in their Section 5.9 (Proposition 22
+and equations (30)–(31)).
+
+5.4    Separation by flow and reconstruction
+The theorem supplies an oracle without enumerating the subsets. Check the original domains, bridge
+equations, and local conditions first. If a shifted row target ri in (60) is negative, the valid condition
+                                                       X
+                                               δ̄i ≥        ℓij                                      (62)
+                                                        j
+
+separates the point; its validity was proved from the complementary subset above. Otherwise all
+transportation capacities and targets are nonnegative. Compute a maximum flow. Value R proves
+block membership and returns its state matrix. A smaller value gives a minimum cut; its source-side
+row set violates (59), because minimizing column sides can only decrease the cut capacity.
+    To return an original-coordinate linear inequality, select the active minimum alternatives and
+active affine endpoint expressions in the violated subset condition. Their sum is an affine majorant
+of its concave right side and agrees with it at the candidate. Hence the resulting affine upper bound
+is globally valid and strictly violated. Local violations and (62) are handled by their active affine
+branches in the same way.
+    For a block with kB paths and aB observed labels, the transportation network has
+
+                      kB + aB + 3 nodes,         kB (aB + 1) + kB + aB + 1 arcs.                     (63)
+
+Graph and endpoint preprocessing, target construction, and cut extraction use
+                                                                                    !
+                                                              X
+                              O |V | + |E| + m + |O| +                kB (aB + 1)                    (64)
+                                                                  B
+
+arithmetic operations after observation grouping, followed by one maximum flow computation per
+parallel-path block. A polynomial-time algorithm such as shortest augmenting paths [7] gives
+polynomial bit complexity for rational data. One way to see the encoding bound is to clear the
+finitely many capacity denominators with a common multiple; its encoding length is at most their
+summed encoding lengths. Flow updates then use integers bounded by the total capacity. An
+arbitrary augmenting-path rule is not needed for this complexity claim. When kB grows, (64) and
+the flow solves replace the linear cycle/theta bound.
+    The returned matrices provide exact rational block state deviations. Normalize positive-weight
+columns and store the normalized merged column as the default for its constituent global states.
+Zero-weight columns vanish by their original scaled path bounds, and no division by zero occurs.
+
+                                                       20
+Together with the reference flow and block paths, the resulting compact decomposition has storage
+of order (64); expanding every dense state-flow vector can still require Θ((m + 1)|E|) entries.
+    The cycle rank of a parallel-path block is kB − 1, so this theorem permits unbounded rank
+within a block. It does not cover every series–parallel block. In particular, several serial parallel
+gadgets inside one outer bypass can have interacting internal state profiles that are not represented
+by the single transportation matrix (57). The present results supply explicit structural oracles and
+unit-coefficient descriptions; generic polynomial separation already follows from proposition 2.1.
+
+
+6     Separation and coefficient bounds at bounded block rank
+The preceding unit-coefficient oracles rely on special block shapes. We now allow arbitrary blocks
+and bound their cycle ranks instead. The construction uses finite libraries determined by each
+block’s signed cycle normals. It has no online linear-programming subproblem. Its parameter
+dependence is large, so it provides a structural bound rather than a runtime advantage over the
+compressed formulations.
+   For s ≥ 1 define
+                       H1 = 1,       Hs = max{1, ⌊(s − 1)(s−1)/2 ⌋}     (s ≥ 2).                  (65)
+The first four values are 1, 1, 2, 5. Put r = maxB∈B rB . If there are no cyclic blocks, the flow and
+simplex domains and bridge equations already describe the hull, so no rank-dependent procedure is
+needed.
+
+6.1   A fixed normal matrix for every state
+Fix a cyclic block of rank s. Use original chord arcs as cycle coordinates, with the fundamental-cycle
+matrix C ∈ {0, ±1}EB ×s of lemma 3.1, so xEB = vEB + Cθ and the chord rows are the identity. Let
+A contain the distinct nonzero rows of C with both signs, and let M be the matrix with row set
+A. It is totally unimodular by lemma 4.3, has rank s, contains ±ei , and has at most 3s − 1 rows.
+Repeated normals are combined by defining
+                                                              
+              βa = min {ue − ve : Ce = a} ∪ {ve : −Ce = a} ,          T = {θ : M θ ≤ β}.          (66)
+The lists in this formula are nonempty by construction. Every arc in a cyclic block has a nonzero
+cycle row, since it lies on a cycle. Hence these inequalities include all arc bounds. The domain T is
+bounded and nonempty when P is nonempty.
+    For each local state j ∈ IB , write λj = λB,j and set
+   γaj = min ({λj βa } ∪ {zej − yj ve : Ce = a, (e, j) ∈ O} ∪ {−zej + yj ve : −Ce = a, (e, j) ∈ O}) .
+                                                                                                   (67)
+The observation lists are empty for the merged state. Each γaj is a concave piecewise-affine function
+of the original coordinates. Write
+                              Qj = {θ : M θ ≤ γj },      θ̄i = xei − vei ,                        (68)
+where ei is chord i. With the original domains and bridge equations enforced, theorem 3.2 reduces
+hull membership to                                          X
+                                Qj ̸= ∅ (j ∈ IB ),     θ̄ ∈    Qj                            (69)
+                                                              j∈IB
+
+for each block. At zero weight, the signed coordinate bounds in (67) force θ = 0, or reveal an
+inconsistent observation. Thus all subsequent statements include zero weights.
+
+                                                  21
+6.2   Finite local feasibility certificates
+Let K contain the primitive generators of the extreme rays of
+                                                 |A|
+                                     K = {q ∈ R+ : M ⊤ q = 0}.                                    (70)
+
+These are the positive circuits of the row configuration.
+Lemma 6.1 (Unit local certificates). Every q ∈ K is the indicator vector of a minimally dependent
+row set of size at most s + 1. Moreover,
+
+                                Qj ̸= ∅    ⇐⇒       q ⊤ γj ≥ 0   (q ∈ K).                         (71)
+
+A violated test yields an affine original-coordinate cut with unit product coefficients by selecting
+active branches in (67).
+Proof. For an extreme nonnegative dependence, the dependence space on its support must be
+one-dimensional. Otherwise a linearly independent dependence could perturb its strictly positive
+support in both directions while remaining nonnegative, contradicting extremality. No proper
+subset is dependent: such a dependence would provide the same perturbation unless it were a
+multiple of the original vector, which has full support. Hence the support has at most s + 1 rows. A
+cofactor formula on a full-rank set of columns of this minimally dependent row matrix expresses its
+primitive dependence by nonzero minors. Total unimodularity makes every nonzero coefficient ±1,
+and positivity makes them all 1.
+    Farkas’ lemma says M θ ≤ γj is feasible exactly when q ⊤ γj ≥ 0 for every q ∈ K. The pointed
+polyhedral cone K is generated by its extreme rays, proving (71). Enumerating row subsets of size
+at most s + 1 and retaining the one-dimensional positive minimal dependencies therefore constructs
+the entire finite library.
+    An observation occurs only in the two opposite row normals Ce and −Ce . If a minimal positive
+dependence uses both these normals, it is exactly that opposite pair. Selecting the same observation
+twice then cancels it. Otherwise each observation occurs at most once. Selecting active affine
+minima gives an affine upper bound on q ⊤ γj that equals its negative value at the candidate and is
+nonnegative on the hull. Its product coefficients are thus 0, ±1.
+
+6.3   Edge directions and a complete support library
+For each set of s − 1 independent rows of M , take one orientation of its primitive integer null vector
+and deduplicate. Call the resulting set D. For s = 1 set D = {1}.
+Lemma 6.2 (Uniform edge directions). Every direction d ∈ D satisfies
+
+                              d ∈ {0, ±1}s \ {0},        M d ∈ {0, ±1}|A| .                       (72)
+
+The set has at most (3s − 1)/2 elements and includes each coordinate direction. It contains every
+edge direction of every nonempty Qj , including lower-dimensional states.
+Proof. The cofactor null vector of s − 1 independent rows has entries 0, ±1 by total unimodularity,
+and at least one entry is nonzero. It is therefore already primitive. Its scalar product with another
+row is, up to sign, the full determinant obtained by adjoining that row, again 0, ±1. This proves
+(72) and the cardinality bound. Using all but one coordinate row gives each coordinate direction.
+    At a relative interior point of a one-dimensional face, the tight defining rows have rank s − 1.
+To justify this even without interior, their common nullspace is exactly the direction space of the
+
+                                                    22
+minimal face: all nontight inequalities remain slack under sufficiently small motions in that nullspace.
+Rows tight throughout Qj are included among them. Choosing s − 1 independent tight rows gives
+the asserted edge direction. Point states have no edges to check.
+
+   Form the central arrangement in objective space with hyperplanes d⊤ h = 0, d ∈ D. Let R
+contain both primitive orientations of the null vector of every s − 1 independent directions from
+D; for s = 1 use R = {−1, 1}. Extra directions in this list cause no difficulty. The coordinate
+hyperplanes occur, so every full-dimensional closed chamber is pointed. Every extreme ray of such a
+chamber is generated by a member of R, since its tight hyperplanes have rank s − 1. Cofactors and
+Hadamard’s determinant bound give
+                                          |hi | ≤ Hs        (h ∈ R).                               (73)
+Indeed each cofactor has order s − 1 and ternary entries; dividing by the greatest common divisor
+to make it primitive cannot increase it.
+Lemma 6.3 (Finite support characterization). For any finite family of nonempty bounded polytopes
+whose edge directions belong to D, membership in their sum is equivalent to
+                         h⊤ θ̄ ≤                                σj (h) = max h⊤ θ.
+                                   X
+                                       σj (h)    (h ∈ R),                                          (74)
+                                                                        θ∈Qj
+                                   j
+
+This includes lower-dimensional summands and sums. The empty sum has support zero on every
+ray and is the singleton zero.
+Proof. In the interior of a chamber, an objective is perpendicular to no possible edge. Its maximizing
+face in each summand is therefore a single vertex: a positive-dimensional face of a polytope has
+an edge. Along a line segment inside the chamber, the maximizing vertex cannot change without
+a nonunique maximizer at an intermediate objective. Thus each support function is linear on the
+chamber, and by continuity on its closure. Its sum is linear there as well. Every vector in a pointed
+polyhedral chamber is a nonnegative combination of its extreme-ray generators. The inequalities on
+R therefore imply the support inequality for every objective in every chamber closure, which covers
+all objective space. The support characterization of a nonempty compact convex set completes the
+proof. For the empty sum the same argument gives all inequalities h⊤ θ̄ ≤ 0, forcing zero.
+
+   This is the classical edge-direction/zonotope refinement argument [11, 18, 19]. Network-flow
+edge directions are also studied by Onn et al. [20]. The proof is included because uniformity over
+the state right-hand sides and lower-dimensional slices is essential here.
+
+6.4   Exact support formulas and bounded dual multipliers
+For h ∈ R, let B(h) contain every nonsingular s-row submatrix B of M for which
+                                                qB = B −⊤ h ≥ 0.                                   (75)
+Rows and components have the same chosen order; extending qB by zero gives a multiplier on all
+rows of M .
+Lemma 6.4 (Support bases and multiplier bound). For every nonempty state domain,
+                                                        ⊤
+                                          σj (h) = min qB γB,j .                                   (76)
+                                                     B∈B(h)
+
+The list B(h) is nonempty, and every retained multiplier is an integer satisfying
+                                                0 ≤ (qB )i ≤ Hs .                                  (77)
+
+                                                       23
+Proof. The support LP has dual min{q ⊤ γj : M ⊤ q = h, q ≥ 0}. Signed coordinate rows make
+it feasible for every h. The primal is nonempty and bounded, so duality gives a finite attained
+optimum. There is an optimal solution with linearly independent supporting columns of M ⊤ .
+Indeed, a dependence on a positive support permits both signs of a small feasible perturbation;
+at an optimum its objective change must be zero. Moving until a component vanishes reduces
+the support, and repetition yields independence. Extend those rows to a basis of Rs ; the added
+multipliers are zero. This proves (76), also for a degenerate or lower-dimensional primal.
+     Total unimodularity gives det B = ±1, so qB is integral. The stronger magnitude bound uses
+the defining directions of the ray rather than a triangle inequality on B −⊤ h. Choose independent
+d1 , . . . , ds−1 ∈ D whose primitive orthogonal vector is h. By (72), every Bdi is ternary, and these
+vectors remain independent. The integer vector B −⊤ h is orthogonal to them and primitive, because
+a unimodular transformation preserves primitive integer vectors. Their cofactor vector, divided by
+its common divisor, therefore equals B −⊤ h up to sign. Hadamard’s bound proves (77). Rank one is
+immediate.
+
+Theorem 6.5 (Bounded-rank separation and coefficients). For maximum cyclic block rank r, the
+sparse hull has a finite linear description whose flow and observed-product coefficients are integers
+of magnitude at most Hr . The sharper bound HrB applies to inequalities from block B. Simplex
+coefficients may contain rational network data; the bound is in the specified rational row scaling.
+    After observation grouping, exact membership and original-coordinate linear separation require
+                                         2
+                                    2O(r ) |V | + |E| + m + |O|
+                                                                
+                                                                                                  (78)
+
+rational arithmetic operations, including construction of finite block libraries. No online LP is
+required. Ungrouped observations may add O(|O| log |O|) sorting comparisons.
+
+Proof. Use the original domains and bridge equations, the local circuit tests (71), and the support
+tests (74), evaluating each support by (76). Their equivalence to (69) proves completeness. Each
+support expression is a minimum of affine functions, because its multipliers are nonnegative and its
+endpoints are affine minima. If a support test fails, choose a minimizing basis and active endpoint
+branches separately for each state. The resulting affine majorant agrees with the support sum at
+the candidate, so it is a valid violated cut.
+    A nonsingular row basis cannot contain opposite normals. An observation therefore appears
+at most once in a state’s selected support expression, with coefficient magnitude at most Hs by
+lemma 6.4. Product indices differ between states. The aggregate uses distinct original chord
+coordinates with coefficients hi , bounded by (73). Local circuit cuts have unit product coefficients,
+and the original domains and bridge equations have unit flow/product coefficients. Expanding all
+branches gives the asserted finite description. Adding or clearing rational simplex denominators is
+not part of this normalization.
+    There are at most 3s − 1 signed normals and (3s − 1)/2 edge directions. Enumerating their
+                                                                                          2
+subsets of size at most s + 1, all candidate support rays, and all normal bases takes 2O(s ) operations
+and storage. The product of the ray and basis counts has the same bound. All library integers and
+their encoding lengths depend only on s.
+    Fundamental cycles can be constructed in O(r|E|) graph/arithmetic operations. Repeated
+normals are combined in parameter-dependent work per arc, and each observation updates two
+                                                                      2
+endpoint entries. A block with aB observed labels then needs 2O(rB ) (aB + 1) arithmetic operations
+to initialize and check its local states and evaluate all supports. Since B aB ≤ |O| and there are
+                                                                           P
+
+at most |E| blocks, summing these bounds proves (78).
+
+
+
+                                                  24
+    Online operations are rational affine evaluations, comparisons, and sums with parameter-bounded
+integer multipliers. Their encoding lengths are polynomial in the total input/candidate encoding
+length and the library encoding length. The arithmetic bound does not charge unbounded integers
+as single-bit objects. It also does not assert that a universal library is computationally attractive at
+moderate rank: the parallel-path oracle can be preferable even when its block ranks are unbounded.
+
+6.5   Constructive recovery without an online LP
+The finite supports can also provide a direct constructive decomposition. The following method
+deliberately uses a larger parameter factor than separation.
+
+Theorem 6.6 (Finite-basis compact recovery). A rational hull point with maximum cyclic block
+rank r admits a compact rational decomposition into at most m + 1 graph points, computable without
+an online LP in
+                                        3
+                                    2O(r ) |V | + |E| + m + |O|
+                                                               
+                                                                                              (79)
+arithmetic operations, including parameter-dependent preprocessing and with the same observation-
+grouping proviso as theorem 6.5. The output and intermediate rational numbers have polynomial
+encoding length in the input/candidate and library encoding lengths. Dense state-flow output has the
+separate cost stated in proposition 5.4.
+
+Proof. Fix a block of rank s. Compute every state support on R as above, order the local states,
+                                   P
+and precompute suffix sums Si (h) = j>i σj (h). At step i, let t be the remaining aggregate, which
+                        P
+by induction belongs to j≥i Qj . The permissible next state vector is in the nonempty polytope
+
+                     Wi (t) = {θ : M θ ≤ γi ,   −h⊤ θ ≤ Si (h) − h⊤ t (h ∈ R)}.                    (80)
+
+By lemma 6.3, this is exactly Qi ∩ (t − j>i Qj ). It is bounded because it is contained in Qi . Even
+                                         P
+
+if lower-dimensional, a nonempty bounded polytope has a vertex, and its active defining normals at
+a vertex have full ambient rank: otherwise a nonzero null direction would allow small motions in
+both directions without violating any inequality.
+     The normal list N of (80) consists only of the rows of M and −R and is fixed before the
+candidate is given. Enumerate all nonsingular s-row submatrices of N and precompute their inverses.
+For each basis, solve its equations using the current right-hand side and test the resulting vector
+against every row of (80). At least one candidate is a feasible vertex by the preceding paragraph.
+Choose the first, subtract it from t, and continue. The last suffix is the singleton zero, so the
+construction ends with zero remaining aggregate. This proves exact state recovery without solving
+an online LP.
+                             2
+     The normal list has 2O(s ) rows. Its s-row basis enumeration, including all feasibility checks per
+                 3
+step, costs 2O(s ) arithmetic operations and storage. The earlier support computation is cheaper.
+There are aB + 1 local states per block, so summing the same sparse state-count bound as in
+theorem 6.5 proves (79).
+     For completeness, sequential division does not hide an exponential encoding cost in the number
+of states. The fixed normal entries are integers bounded by Hs . Every inverse basis is its integer
+adjugate divided by a nonzero integer determinant of parameter-bounded encoding length. All
+initial state endpoints and supports have a common rational denominator whose encoding length is
+polynomial in the input/candidate length and the library length. At each chosen step, a common
+denominator for the remaining aggregate need only be multiplied by that step’s basis determinant.
+After aB + 1 steps its encoding length has therefore grown additively by at most aB + 1 parameter-
+bounded terms. Numerators also have polynomial length: state points are within their finite
+
+                                                  25
+base bounds, remaining aggregates are sums of such points, and rejected basis candidates are
+obtained from these right-hand sides by fixed parameter-bounded matrices. This proves the claimed
+intermediate and output encoding bound.
+    Finally, normalize positive-weight explicit state coordinates and use the normalized merged state
+as the default for its constituent global labels. The zero-weight and unused-default conventions of
+proposition 5.4 apply unchanged. Expand through C and use theorem 3.2 to obtain graph points
+with the global simplex weights. A block coordinate has s entries, so defaults and observed-label
+exceptions give a compact representation within the stated bound.
+
+6.6    Coordinate sections and necessary coefficients
+We next state a coefficient-transfer observation that will also apply to the more general network
+constructions below. A coordinate plane fixes all original coordinates except two designated
+coordinates U, V ; it does not rescale or project additional free coordinates.
+
+Lemma 6.7 (Local section forces an ambient coefficient ratio). Let P be a polytope and L a
+coordinate plane with free coordinates U, V . Suppose that in an open neighborhood of a point (U0 , V0 ),
+the section P ∩ L is exactly
+
+                       αU + βV ≤ γ,         αU0 + βV0 = γ,        (α, β) ̸= (0, 0).                 (81)
+
+Every finite linear inequality description of P , together with valid affine equations, contains an
+inequality whose coefficients on U, V are a positive multiple of (α, β). In particular, a relative facet
+description contains such an inequality. Adding any equation valid on P to a facet representative
+cannot change those two coefficients.
+
+Proof. The section has two-dimensional interior near (U0 , V0 ). Consequently every valid affine
+equation restricts to an identity on L: its coefficients on U, V are zero, and its fixed-coordinate
+constant is zero. Restrict a finite inequality description to L. At the boundary point, at least one
+nonconstant restricted inequality must be active. Otherwise all nonconstant inequalities are strictly
+satisfied in a neighborhood, and constant inequalities cannot produce the asserted boundary. An
+active valid inequality must vanish on the local boundary line, because feasible points occur in both
+tangent directions. Its normal is therefore proportional to (α, β), and feasibility on the interior side
+makes the multiple positive. The argument applies to a finite relative facet description as well. The
+previously proved zero coefficients of valid equations establish representative invariance.
+
+6.7    Sharp rank-three examples with sparse observations
+Use vertices 0, 1, 2, 3 with every edge of K4 directed toward the larger vertex, order the arcs as
+(12, 13, 23, 01, 02, 03), and set every capacity to one. The tree is 01, 02, 03, with chord matrix
+                                                            
+                                            1  0 0
+                                           0  1 0
+                                                   
+                                           0  0 1
+                                        C=         .                                              (82)
+                                                   
+                                           1  1 0
+                                                   
+                                          −1 0  1
+                                            0 −1 −1
+
+The following construction uses only two explicit simplex variables and five observed products.
+Unlike the source–sink example in example 4.7, it has multiple supplies and demands.
+
+                                                   26
+   Take reference flow and balances
+
+              v = (1/2, 1/2, 1/2, 1/4, 1/2, 1/2),           b = Av = (−5/4, −3/4, 1/2, 3/2)⊤ .        (83)
+
+Fix y1 = y2 = 1/3, so the residual weight is also 1/3, and fix
+
+                  θ̄ = (1/6, 1/24, 1/8),        x̄ = (2/3, 13/24, 5/8, 11/24, 11/24, 1/3).            (84)
+
+Observe exactly
+                              O = {(12, 1), (13, 1), (02, 1), (23, 2), (01, 2)}.                      (85)
+Leave U = z12,1 and V = z13,1 free, and fix the other observations to z02,1 = z23,2 = 1/6 and
+z01,2 = 1/12. Put p = U − 1/6, q = V − 1/6. The observations give
+
+                                    θ1 = (p, q, p),       θ2 = s(1, −1, 0).                           (86)
+
+All state deviations on arcs other than 01 lie in [−1/6, 1/6]; the interval on 01 is [−1/12, 1/4]. In
+particular, the residual state obeys θ10 ≤ 1/6 and θ20 + θ30 ≤ 1/6. For h = (1, 1, 1), these bounds give
+h⊤ θ0 ≤ 1/3, while h⊤ θ2 = 0 and h⊤ θ̄ = 1/3. Every feasible point in the section therefore satisfies
+
+                                      2p + q ≥ 0,        2U + V ≥ 1/2.                                (87)
+
+   Conversely, suppose |p|, |q| < 1/96 and w = 2p + q ≥ 0. Choose
+
+                      s = q/2,        θ0 = (1/6 − p − q/2, 1/24 − q/2, 1/8 − p).                      (88)
+
+These vectors sum to (84). The first state’s arc deviations are (p, q, p, p + q, 0, −p − q), all within its
+scaled bounds. The second state’s arc deviations have magnitudes at most |q|/2 and are zero on 01.
+The residual arc deviations are
+
+       Cθ0 = (1/6 − w/2, 1/24 − q/2, 1/8 − p, 5/24 − p − q, −1/24 + q/2, −1/6 + w/2).                 (89)
+
+Here 0 ≤ w < 1/32. The first and last entries lie in their closed intervals [−1/6, 1/6]. The second,
+third, and fifth entries lie strictly inside those intervals. The fourth lies in (3/16, 11/48), contained
+in [−1/12, 1/4]. Thus all scaled bounds hold, as do the balances and observations. Disaggregation
+proves that the section is exactly the half-plane (87) in the asserted neighborhood.
+
+Corollary 6.8 (Rank-three sharpness with two simplex variables). The bound H3 = 2 in theorem 6.5
+cannot be replaced by one, even for a unit-capacity acyclic K4 with two explicit simplex variables and
+five observed products. Every finite original-coordinate description of this hull contains an inequality
+whose coefficients on U, V have ratio two.
+
+Proof. Apply lemma 6.7 with the local normal (−2, −1) at (U, V ) = (1/6, 1/6). An integer
+flow/product coefficient description with all magnitudes at most one cannot contain this ratio,
+whereas theorem 6.5 supplies a description with bound two.
+
+Remark 6.9 (A symmetric-reference variant). There is also a seven-observation construction with the
+same graph and C, the uniform reference v = (1/2, . . . , 1/2), and balances (−3/2, −1/2, 1/2, 3/2)⊤ .
+Use three explicit variables y1 = y2 = y3 = 1/4, aggregate cycle vector (1/8, 0, 1/8), and therefore
+aggregate flows (5/8, 1/2, 5/8, 5/8, 1/2, 3/8). Observe
+
+                          (12, 1), (13, 1), (02, 1), (12, 2), (03, 2), (23, 3), (01, 3),
+
+                                                       27
+fix all but U = z12,1 , V = z13,1 to 1/8, and put p = U − 1/8, q = V − 1/8. The explicit states are
+(p, q, p), t(0, 1, −1), and s(1, −1, 0); every state has |Cθj | ≤ 1/8. The residual support in direction
+(1, 1, 1) is at most 1/4, so 2p + q ≥ 0, or 2U + V ≥ 3/8, is necessary. For |p|, |q| < 1/32 and
+w = 2p + q ≥ 0, the choices
+
+                      t = −q/2,         s = q/2,         θ0 = (1/8 − w/2, 0, 1/8 − w/2)
+
+prove sufficiency locally. The first state’s arc deviations are (p, q, p, p + q, 0, −p − q), the two
+line-state magnitudes are less than 1/64, and the residual arc deviations are (a, 0, a, a, 0, −a) with
+5/64 < a = 1/8 − w/2 ≤ 1/8. This variant has completely symmetric state bounds. The five-product
+construction changes v01 and the associated balances b = Av, hence changes the flow domain itself.
+This modification makes the residual support face an edge instead of a point, allowing one fewer
+explicit line state. Changing only the reference within one fixed flow domain would merely translate
+its cycle-coordinate representation.
+    This necessity result concerns actual retained product coordinates and is invariant under adding
+the hull’s affine equations. It is stronger than finding a dual basis with multiplier two. The related
+example of Khademnia and Davarnia [14, Example 2] exhibits a projection-cone aggregation weight
+two on a different graph, with equality balances represented by pairs of opposite inequalities; it is
+an antecedent for weighted cancellation, but does not by itself give this equality-network facet-ratio
+conclusion.
+
+
+7    Coordinate sections and unrestricted coefficient growth
+The bounded-rank hypothesis cannot be removed from the coefficient bounds. We first transfer
+transportation universality into the original coordinates of a sparse bilinear hull. The underlying
+universality theorem is classical: De Loera and Onn [6, Theorem 1.1] represent every bounded rational
+standard-form polytope by a slim three-way transportation polytope, with a coordinate-erasing
+bijection. Their construction in Section 3.3, printed page 816, places the retained coordinates in the
+first layer: its injection is (i, j, k) 7→ ((i, j), (1, k), 1). Composing the coordinate injections in their
+construction therefore retains any specified original coordinates in that layer. Their Theorem 1.2 and
+discussion on pages 807–808 already establish bitransportation universality and its two-commodity
+network interpretation. The statement below concerns the further transfer to a sparse bilinear
+coordinate section, not universality of multicommodity networks itself.
+
+Theorem 7.1 (Sparse coordinate-section transfer). Let Q ⊆ Rp+ be a nonempty bounded rational
+polytope, given by a rational inequality description. In polynomial time one can construct an acyclic
+four-layer network, a sparse observation set with two explicit simplex variables, and a coordinate
+affine subspace fixing every original hull coordinate except p observed products, such that the hull
+section in these p coordinates is exactly Q. All arcs have the same positive integer capacity B, and
+the flow value is B. After dividing every flow and product coordinate by B, all capacities and the
+flow value are one and the section becomes Q/B.
+
+Proof. Introduce nonnegative slack variables for the inequalities of Q and clear equation denomi-
+nators. Since Q is bounded, its standard-form extension is bounded as well. Apply the preceding
+transportation theorem and its first-layer coordinate injection. Write the resulting table polytope as
+                                                                                             
+                                   3
+                                    X                    X                   X                
+                   T =       t≥0:         tijk = Uij ,        tijk = Vik ,       tijk = Wjk       ,    (90)
+                                                                                             
+                                    k=1                   j                  i
+
+
+                                                         28
+where i ∈ [r], j ∈ [c], and all margins are nonnegative integers. There are p distinct designated
+cells (i, j, 1) whose values range exactly over Q; erasing the other cells includes erasing the slack
+coordinates. Nonemptiness implies consistency of the margins.
+                               P        P
+    We may require Dk := i Vik = j Wjk > 0 for every layer. Indeed, append one row and
+one column, put all old–new cross-cell two-dimensional margins equal to zero, and put the new
+corner margin equal to three. Assign new row and column layer margins equal to one in each layer.
+Nonnegativity forces all cross entries to zero and each corner entry to one. This padding does not
+change any old cell and increases each Dk by one. In the following, r, c include the padding.
+    Put B = D1 + D2 + D3 and build the network
+
+                             s −→ ri −→ cj −→ t              (i ∈ [r], j ∈ [c]),
+
+with every indicated arc present, every capacity B, and net supply B at s and demand B at t.
+Observe labels 1 and 2 on every boundary arc sri , cj t. On interior arcs observe label 1 only at the
+p designated cells. Thus there are rc + r + c arcs and 2(r + c) + p observed products. Fix the
+coordinates
+                                                X                                  X
+           xri cj = Uij ,              xsri =        Vik ,               xcj t =       Wjk ,
+                                                 k                                 k
+              yk = Dk /B,             zsri ,k = Vik ,                  zcj t,k = Wjk      (k = 1, 2).
+
+These fix every original coordinate other than the designated interior products. The residual weight
+is D3 /B.
+    By proposition 2.1, a point of this section has three state flows. Their interior entries give a
+table satisfying (90): the aggregate interior flows give U , the two observed boundary layers give
+V, W for k = 1, 2, and subtraction from the aggregate gives the third layer. Conversely any table
+supplies the three state flows, including their boundary arcs. Every arc of a nonnegative flow of
+value Dk on this acyclic network has flow at most Dk ; for example, decompose it into directed
+source–sink paths by repeatedly subtracting a positive path flow. Hence the scaled capacity bounds
+fek ≤ (Dk /B)B hold. The designated products are precisely the designated table entries. This
+proves exactness without first forming a hull that retains all interior products and then asserting
+that its facets survive projection.
+    All transformations have polynomial output size and rational encoding length. The padding adds
+only one row and one column. Finally the invertible change x′ = x/B, z ′ = z/B, y ′ = y converts the
+network to unit capacities and unit flow value, and scales the free section coordinates by 1/B.
+
+Corollary 7.2 (Large coefficients with two simplex variables). For every integer M ≥ 2 there
+is a sparse bilinear hull on an acyclic unit-capacity unit-flow network, with m = 2, whose every
+finite original-coordinate inequality description contains an inequality with two observed-product
+coefficients in ratio M . This ratio is unchanged by adding affine-hull equations. The instances can be
+chosen to have encoding length polynomial in log M , with all numerical data in the original nonlinear
+model in {−1, 0, 1}. In particular, the magnitudes required in integer inequality descriptions are not
+polynomially bounded by the original input length.
+Proof. Apply theorem 7.1 to QM = {(U, V ) ≥ 0 : U + M V ≤ 1}. After normalization the free
+coordinate section is {(U, V ) ≥ 0 : U + M V ≤ 1/B}. At an interior point of its sloping edge
+the section is locally exactly one half-plane. Lemma 6.7 gives the ratio M , including invariance
+under affine-hull equations. Two nonzero integer coefficients in this ratio have maximum magnitude
+at least M . The transportation construction has polynomial size in the encoding length of QM ,
+which is O(log M ); normalization leaves only the incidence, unit capacities, unit balances, simplex
+
+                                                     29
+constraints, and selected bilinear equations in the original model. The rational constants fixing the
+section are not additional data of that model. Taking M = 2k proves the last assertion.
+
+    These hulls are 0/1 polytopes. A nonnegative unit flow on an acyclic network is a convex
+combination of path incidence vectors. Pairing each path with each simplex vertex gives 0/1 values
+of x, y, z, and proposition 2.1 shows that their convex hull is exactly the sparse hull. Fractional
+coordinate sections of a 0/1 polytope need not themselves be integral. Large coefficients for general
+0/1 polytopes and ill-conditioned 0/1 matrices are well-established phenomena; see, for example,
+Alon and Vu [2]. The restriction here is to selected flow–simplex products with only two explicit
+states. The lower bound concerns coefficient magnitudes; their bit lengths can remain polynomial.
+It does not imply separation hardness, large extension complexity, or a corresponding statement on
+planar networks.
+
+
+8     Sparse coefficient growth on series–parallel networks
+The preceding construction uses unrestricted bipartite layers. A more explicit obstruction occurs on
+a much narrower graph family, provided the number of simplex states is allowed to grow. For L ≥ 1,
+let GL have vertices v0 , . . . , vL , two arcs ai , bi : vi−1 → vi for each i ∈ [L], and a bypass h : v0 → vL .
+All capacities and the source–sink flow value are one. This is a directed two-terminal series–parallel
+graph: first put each pair in parallel, compose the pairs in series, and put their chain in parallel
+with h. In a disaggregation, conservation forces
+
+                     faji + fbji = wj   (i ∈ [L]),         fhj = λj − wj ,         0 ≤ wj ≤ λj .           (91)
+
+The vector w is the shared branch profile. Its total is j wj = 1 − xh . Keeping only this total can
+                                                                  P
+
+lose essential compatibility between the serial gadgets.
+
+                                             faji + fbji = wj   for every i
+                               a1                 a2               a3               a4
+                       v0               v1                 v2                 v3           v4
+
+                               b1                 b2               b3               b4
+
+
+                                                  h : fhj = λj − wj
+
+
+Figure 1: The flat chain G4 . Each serial pair carries the same statewise branch flow wj ; the bypass
+carries the remainder. All capacities and the source–sink flow value are one. Independent scalar
+totals at the four pairs do not retain the common vector of state flows. The general GL extends the
+same pattern to L pairs.
+
+    Figure 1 illustrates the common profile on G4 , which also supports the coefficient-two example
+below.
+
+8.1    A balanced-incidence construction
+Lemma 8.1 (Balanced incidence gives a coordinate-section edge). Let K ∈ {0, 1}N ×N be invertible,
+with every row nonempty and proper. Suppose α ∈ QN                      ⊤
+                                                 >0 and β > 0 satisfy K α = β1. On GN there
+
+
+
+
+                                                          30
+is a sparse observation pattern with m = N such that, for any two distinct rows r, s, a coordinate
+section has locally the edge
+
+                             αr (U − c) + αs (V − c) ≥ 0,           c = 1/(8N ).                     (92)
+
+Here U, V are individual observed products, one from each row; every other original coordinate is
+fixed. Consequently the hull has a relative facet with product-coefficient ratio αr /αs , invariant under
+affine-hull equations.
+
+Proof. Put a = 1/(2N ) and let Si = {j : Kij = 1}. Fix yj = 2a = 1/N for j ∈ [N ], so the residual
+state is zero. Observe (ai , j) precisely when j ∈
+                                                 / Si . Since each Si is proper, choose one such cell in
+row r and one in row s as U, V . Fix all other observations to c = a/4, and fix
+
+                    xh = 1/2,       xai = |Si |a + (N − |Si |)c,            xbi = 1/2 − xai .        (93)
+
+All these arc flows are strictly between zero and 1/2, except for the stated bypass value. Write
+δr = U − c, δs = V − c, and δi = 0 in other rows. Since each unobserved ai entry is at most its
+branch profile, every feasible state decomposition obeys
+
+                                  K(w − a1) ≥ −δ,               1⊤ w = 1/2.
+
+Multiplication by α⊤ proves α⊤ δ ≥ 0, which is (92).
+   We prove the converse in an open neighborhood of (U, V ) = (c, c). Put R = αr /αs , let τ be zero
+except for τs = Rδr + δs , and define
+
+                                 d′ = K −1 (−δ + τ ),           w = a1 + d′ .                        (94)
+
+On the proposed feasible side, τs ≥ 0. Also β1⊤ d′ = α⊤ (−δ + τ ) = 0, so the profile sums to 1/2.
+For example, with K∗ := ∥K −1 ∥∞ , the neighborhood
+                                                                a
+                                  |δr |, |δs | < ε :=
+                                                        16(1 + R)(1 + K∗ )
+
+ensures ∥d′ ∥∞ < a/16 and 0 ≤ τs < a/16. Indeed −δ + τ has only entries −δr and Rδr . Every
+observed value then lies strictly between zero and a/2, whereas each wj lies between 15a/16 and
+17a/16.
+    Initially set faji = wj for j ∈ Si and set the other entries to their prescribed observations. The
+aggregate of row i is xai + τi , by (94). In row s reduce one entry with j ∈ Ss by τs ; such a state
+exists and its entry remains nonnegative. All ai entries are now in [0, wj ] and have the required
+aggregates. Set fbji = wj − faji and fhj = 2a − wj . These are nonnegative, at most 2a, and satisfy
+every state balance, aggregate, and observation. The residual flow is zero. Disaggregation proves
+sufficiency, including points on the boundary line. The local section has two-dimensional interior, so
+lemma 6.7 gives the final claim.
+
+Example 8.2 (Five vertices and nine arcs). Take N = 4 and
+
+                      S1 = {1, 2, 3},   S2 = {1, 4},         S3 = {2, 4},     S4 = {3, 4}.
+
+The incidence matrix is invertible: its last three homogeneous row equations give d′1 = d′2 = d′3 = −d′4 ,
+and its first gives 3d′4 = 0. The balancing weights are (2, 1, 1, 1) with β = 3. There are seven
+observations on G4 , which has five vertices, nine arcs, and cycle rank five. With U = za1 ,4 and
+V = za2 ,2 , the section edge is 2U + V ≥ 3/32. Here xa1 = 13/32, xai = 5/16 for i = 2, 3, 4, xh = 1/2,
+
+                                                        31
+and each explicit weight is 1/4. More generally, use N = k + 1, S1 = [k], and Si+1 = {i, k + 1} for
+i ∈ [k], with k ≥ 3. The same kernel argument proves invertibility and the weights (k − 1, 1, . . . , 1)
+balance every column to k. This gives ratio M = k − 1, with M + 3 vertices, 2M + 5 arcs, M + 2
+explicit states, and 1 + M (M + 1) observations. The next construction attains exponential ratios
+with only linearly many observations.
+Remark 8.3 (Why separate scalar composition fails). In lemma 8.1, put U = c − η, V = c for
+sufficiently small η > 0. The joint section is infeasible because α⊤ δ = −αr η < 0. Nevertheless,
+each serial gadget is individually feasible with total branch flow 1/2 and the same prescribed state
+weights. In row r, start from the nominal profile a1 and move η of profile mass from a state outside
+Sr to a state in Sr . Keep the prescribed observed entries, and fill the entries in Sr to their new
+profiles. The observed row total decreases by η and the unobserved total increases by η, so the
+aggregate is unchanged. All bounds remain valid for small η, including if the donor is the free
+observed state. Every other gadget uses the nominal profile. Thus independently eliminating profiles
+and passing only their total between gadgets accepts this infeasible point. The missing information
+is a single common profile, not a scalar flow balance.
+
+8.2   A sparse Fibonacci family
+Theorem 8.4 (Exponential ratios on a flat series–parallel chain). For every q ≥ 3 there is an
+instance on G2q−1 with m = 2q − 1 and 5q − 4 observed products such that every finite original-
+coordinate inequality description contains product coefficients in ratio Fq , where F1 = F2 = 1 and
+Fi = Fi−1 + Fi−2 . The graph has 2q vertices, 4q − 1 arcs, and cycle rank 2q. It is planar and has
+treewidth two. The original sparse input has encoding length O(q log q) and only numerical data in
+{−1, 0, 1}.
+Proof. Put N = 2q − 1 and form a square 0/1 incidence matrix D. Its primary rows are P1 , . . . , Pq
+and its auxiliary rows are H0 , H3 , . . . , Hq . Its columns are the following subsets of the row set, in
+the displayed order:
+
+          {H0 , P1 }, {H0 , P2 };    {Hi , Pi }, {Hi , Pi−1 , Pi−2 }(3 ≤ i ≤ q);    {Pq , Pq−1 }.    (95)
+
+There are 2 + 2(q − 2) + 1 = N columns and 4 + 5(q − 2) + 2 = 5q − 4 ones. Each row has two
+or three ones and each column has two or three ones, so every row and column is nonempty and
+proper. Set γ = Fq+1 and
+
+                     αPi = Fi ,     αH0 = γ − 1,         αHi = γ − Fi     (3 ≤ i ≤ q).
+
+All weights are positive. The recurrence and the last column show D⊤ α = γ1.
+    To prove invertibility, suppose D⊤ η = 0. Subtracting the first pair of column equations gives
+ηP1 = ηP2 ; subtracting each subsequent pair gives ηPi = ηPi−1 + ηPi−2 . Thus ηPi = Fi ηP1 . The last
+column then gives Fq+1 ηP1 = 0. Every primary and auxiliary entry is zero.
+    We use the complement K = 11⊤ − D as the allowed-set matrix in lemma 8.1; consequently
+its observed cells are precisely the sparse ones of D. Put σ = 1⊤ α. Summing the weights gives
+σ = (q − 1)γ + 1, whence
+
+                           K ⊤ α = (σ − γ)1,       σ − γ = (q − 2)γ + 1 > 0.
+
+The complement is invertible. Indeed, if K ⊤ η = 0, then D⊤ η = (1⊤ η)1, so η = (1⊤ η)α/γ. Summing
+this identity and using σ > γ forces 1⊤ η = 0 and then η = 0. Its rows are nonempty and proper as
+required.
+
+                                                    32
+    Choose U in row Pq and the last column of (95), and V in row P1 and the first column. These
+cells are observed. The exact local section is
+                                Fq U + V ≥ (Fq + 1)c,       c = 1/(8N ).                             (96)
+The facet conclusion follows from lemma 8.1. The graph and observation counts follow from the
+definition of GN . Its underlying simple graph is a cycle. Explicit bags {v0 , vi , vi+1 } for 0 ≤ i < N ,
+in their natural path order, give a tree decomposition of width two; for N ≥ 3 the cycle requires
+that width. Parallel arcs do not affect treewidth or planarity. All graph, state, and observation lists
+have O(q) entries, with indices of O(log q) bits. The model itself uses only unit data; even the fixed
+section coordinates in (93) have O(log q) bits. Since Fq grows exponentially, the required integer
+coefficient magnitudes are superpolynomial in the input length, while their bit lengths need only
+grow linearly in q.
+    The matrix D itself also satisfies lemma 8.1 and gives the ratio Fq , by choosing any observed
+cell in each of rows Pq , P1 . That version uses N 2 − (5q − 4) observations. Passing to its invertible
+complement preserves the balancing weights and makes the observation set sparse.
+Corollary 8.5 (Simple graphs of maximum degree three). The same ratio Fq can be realized on a
+simple acyclic directed two-terminal series–parallel unit-flow network of maximum undirected degree
+three, with 6q − 3 vertices, 8q − 4 arcs, unchanged cycle rank 2q, and the same states and observed
+products.
+Proof. In GN , split each of the N − 1 internal joins into an incoming vertex and an outgoing vertex
+connected by a new forward arc. Subdivide each bi once. The resulting graph has 3N vertices
+and 4N arcs. The subdivisions remove the parallel pairs; terminals and split joins have degree
+three, and subdivision vertices have degree two. All arcs point forward. The construction remains
+two-terminal series–parallel and planar. Such graphs have treewidth at most two: inductively keep
+a bag containing the two terminals, join two such bags for parallel composition, and add the bag
+{s, v, t} for a series composition through v.
+    Every old flow has a unique extension: each connector carries the chain flow and each subdivided
+arc carries the old bi flow. Conversely contraction recovers the old flow. The new unit capacities are
+redundant because these are nonnegative unit flows on an acyclic network. The same statements
+hold separately for every state flow. All observed ai arcs remain unchanged. In the coordinate
+section, fix each connector to 1/2 and each new subdivision coordinate to the corresponding old
+aggregate. Thus precisely the same free (U, V ) section is obtained, and lemma 6.7 preserves its
+facet-ratio conclusion. Substituting N = 2q − 1 gives the counts.
+    The hulls in this section are again 0/1 polytopes, by the path argument following corollary 7.2.
+The obstruction does not conflict with integrality results for aggregate multiflows on series–parallel
+digraphs. Almoghrabi et al. [1, Remark 1] explicitly distinguish aggregate arc flows from the full
+commodity-flow vector. Here prescribed entries of that state vector carry the obstruction. The
+exponential construction lets both block cycle rank and the number of states grow; it does not
+disprove a bound at fixed state count. We next show that a fixed state count does control this flat
+topology.
+
+
+9    Exact hulls for chains with few observed labels
+For the same graph GL , arbitrary observations on either gadget arc and on the bypass admit a
+small common-profile description. Eliminating the residual profile coordinate sharpens the general
+determinant bound and gives a unit-coefficient original hull when m ≤ 3.
+
+                                                   33
+9.1    The complete shared-profile system
+First check x ∈ P , y ∈ ∆m , and z ≥ 0 on the observed coordinates. These conditions are part of
+every description below. Put t = 1 − xh , and index all d = m + 1 states by {0, . . . , m}. For each
+gadget i, partition the states into Ai , Bi , Ti , Ui : only ai is observed, only bi is observed, both are
+observed, or neither is observed, respectively. In particular 0 ∈ Ui . Write uij = zai ,j and vij = zbi ,j
+wherever present, and define                        X             X
+                                  Ri = xai −               uij +     vij .                            (97)
+                                                          j∈Ai ∪Ti          j∈Bi
+
+The use of Ti for a state class is unrelated to the table polytope T in section 7.
+
+Proposition 9.1 (Exact profile formulation). Subject to the preceding original-domain checks,
+(x, y, z) ∈ H if and only if there is w ∈ Rm+1 satisfying
+                                                                   X
+            0 ≤ wj ≤ λ j       (j ∈ {0, . . . , m}),                        wj = t,                                    (98)
+                                                             j∈{0,...,m}
+
+                                                          wj = λj − zh,j                              ((h, j) ∈ O),    (99)
+                                                          wj ≥ uij                                    (j ∈ Ai ),
+                                                          wj ≥ vij                                    (j ∈ Bi ),
+                                                          wj = uij + vij                              (j ∈ Ti ),      (100)
+                                             X                       X
+                                                    wj ≤ Ri ≤                wj                       (i ∈ [L]).      (101)
+                                             j∈Bi               j∈Bi ∪Ui
+
+Proof. Every state disaggregation supplies its profile through (91). Its observed entries give (99)–
+(100). In gadget i, the ai entries are uij in Ai ∪ Ti , are wj − vij in Bi , and are free in [0, wj ] in Ui .
+Thus their possible aggregate is exactly the interval
+                                                                                                         
+                       X              X                     X               X                    X
+                             uij +        (wj − vij ),             uij +        (wj − vij ) +         wj  .
+                     Ai ∪Ti           Bi                   Ai ∪Ti           Bi                   Ui
+
+Membership of xai in this interval is (101). Conversely these inequalities allow the free Ui entries
+to be chosen with the required sum, independently for each gadget. All entries lie in [0, wj ]: for a
+doubly observed state this follows from wj = uij + vij and the original nonnegativity check. Set
+every bi entry to wj − faji and the bypass entry to λj − wj . State capacities and balances hold, and
+xai + xbi = t supplies each bi aggregate. The bypass aggregate is j λj − t = xh . This is a complete
+                                                                  P
+
+disaggregation. If a weight is zero, its profile and all its entries are zero, so no positive-weight
+assumption has been used.
+
+   Eliminate the unobserved residual coordinate by w0 = t − m
+                                                                                  P
+                                                              j=1 wj , and write w
+                                                                                 b = (w1 , . . . , wm ).
+The residual bounds become
+                                 1⊤ wb ≤ t,    −1⊤ wb ≤ λ0 − t.                                   (102)
+Since 0 ∈ Ui , the endpoint rows become
+
+                                       1⊤  b ≤ Ri ,
+                                        Bi w                  1⊤      b ≤ t − Ri .
+                                                               Ai ∪Ti w                                               (103)
+
+All remaining rows have singleton normals ±ej . Thus each nonzero normal belongs to the fixed
+universe
+                     Nm = {1S : ∅ ̸= S ⊆ [m]} ∪ {−ej : j ∈ [m]} ∪ {−1}.                 (104)
+
+                                                              34
+Repeated normals represent different affine right-hand sides; keep the minimum of these right-hand
+sides at a query point. A zero normal gives a scalar inequality and must be checked separately. Every
+original flow or product has coefficient in {−1, 0, 1} in every individual right-hand side, including
+t − Ri .
+
+9.2   Finite circuits and constructive recovery
+Let ∆01
+     m be the maximum absolute determinant of a square 0/1 matrix of order at most m, including
+the empty determinant one. In particular ∆01     01        01            01             m/2 ) by
+                                          1 = ∆2 = 1, ∆3 = 2, and ∆m ≤ max(1, m
+Hadamard’s inequality.
+Theorem 9.2 (Fixed-state chain hull and recovery). For m ≥ 1, the sparse hull on GL has a
+finite original-coordinate description with integer flow and product coefficients of magnitude at
+most (m + 1)∆01            O(m2 ) preprocessing depending only on m, exact separation and state-flow
+                m . After 2
+recovery each require
+                                                               2
+                                      O(mL + |O| + m) + 2O(m )
+rational arithmetic operations. Recovery calls no online linear program. Rational encoding lengths
+remain polynomial in the input length. For m = 0, the hull is simply the original flow polytope.
+Proof. Form the reduced profile inequalities a⊤ w
+                                                b ≤ γa for the distinct present nonzero normals,
+where γa is the minimum of all right-hand sides with normal a. There are at most 2m + m such
+normals. The system is feasible exactly when all its nonnegative cancellation certificates have
+nonnegative right-hand side, by Farkas’ lemma. The cone of such certificates is
+                                                     X
+                                          {µ ≥ 0 :        µa a = 0}.
+                                                     a
+
+It is pointed. Each extreme ray has minimally dependent support, of size at most m + 1; otherwise a
+linear dependence within its support permits a small perturbation in both directions and contradicts
+extremality. Conversely every minimal positive dependence gives such an extreme ray. We call these
+supports, with their primitive positive integer weights, positive circuits.
+     For a support of size s, select s − 1 independent columns in its row matrix. The signed (s − 1)-row
+minors give a nonzero kernel vector and hence its circuit weights after a common sign change and
+division by the greatest common divisor. Each row is a 0/1 vector or its negative. Changing
+whole-row signs bounds every such minor by ∆01                                                        01
+                                                    m . Therefore every primitive weight is at most ∆m .
+The extreme rays generate the certificate cone, so the finitely many tests
+                   X
+                         µa γ a ≥ 0   for every positive circuit C of present normals             (105)
+                   a∈C
+
+are necessary and sufficient, together with the scalar zero-row checks. Each circuit is one in the full
+fixed universe (104).
+    Expanding (105) over all choices of an original row for each participating normal gives a finite
+affine description. Positivity of the weights makes this expansion exact: the weighted sum of
+minima is the minimum over independent choices. Each affine inequality sums at most m + 1 rows,
+with weights at most ∆01 m , and hence has the claimed original-coordinate coefficient bound. At an
+infeasible query it suffices to output the rows attaining the minima in one violated circuit. This
+produces a globally valid affine inequality, even though other rows may attain the minima at other
+points. The original-domain prechecks have unit coefficients as well.
+    Enumerate all supports of size at most m + 1 in the fixed universe, and use exact elimination to
+                                               2
+keep their positive circuits. There are 2O(m ) candidates. Constructing and grouping the profile
+
+                                                     35
+rows takes O(mL + |O| + m) arithmetic operations; the circuit tests then have parameter-only cost
+      2
+2O(m ) . For this count, preindex subset normals by bit masks and cache the singleton indices. A
+scan of each gadget builds its two subset masks and right-hand sides, while each local cell row uses
+a cached index; one need not copy an m-entry normal for every local row. The masks have O(m)
+bits, which is included in the polynomial bit-length qualification below.
+    For recovery, also precompute inverses of all nonsingular matrices formed by m distinct normals
+of Nm . At a feasible query enumerate those whose rows are present and solve their equalities
+against the corresponding grouped right-hand sides. Test each candidate against all the grouped
+inequalities, and keep the first feasible candidate. This succeeds: the profile polyhedron is nonempty
+and bounded by 0 ≤ wj ≤ λj , so has a vertex; at a vertex the active normals span Rm , even if
+the polyhedron is lower dimensional. If they failed to span, a sufficiently small displacement in
+a nonzero orthogonal direction and its negative would remain feasible, contradicting that it is a
+vertex. Thus the enumeration includes that vertex. Its number of candidates and all candidate tests
+                       2
+are bounded by 2O(m ) .
+                   Pm
+    Set w0 = t − j=1 wj . In each gadget, the remaining Ui entries must sum to Ri − Bi wj ∈
+                                                                                              P
+   P
+[0, Ui wj ]. Fill these entries in any fixed order, repeatedly taking the smaller of the remaining sum
+and wj . This takes O((m+1)L) arithmetic operations and gives the disaggregation in proposition 9.1.
+Divide positive-weight states by their weights to obtain at most m + 1 graph points, omitting zero
+states. Writing all state-arc entries has this same O((m + 1)L) output scale.
+    All bases have integer entries of magnitude at most one. Their inverses have cofactors bounded
+by ∆01                                                       01
+       m and nonzero integer determinants bounded by ∆m . Grouping selects input-derived affine
+right-hand sides; circuit tests and inverse-basis recovery therefore use numbers with polynomial
+encoding length. Greedy filling uses only additions, comparisons, and minima of these rational
+values. Normalization by positive rational weights preserves polynomial encoding length. The
+arithmetic parameter dependence is exponential, but no unbounded-precision unit-cost assumption
+is needed for the bit-length assertion.
+
+Remark 9.3 (The unreduced signed-subset library). Keeping all d = m + 1 profile coordinates yields
+normals {±1S : ∅ =   ̸ S ⊆ {0, . . . , m}}. The same proof gives the bound (d + 1)∆01                  O(d2 )
+                                                                                             d and 2
+parameter work. Its positive-circuit counts for d = 1, 2, 3 are respectively 1, 5, 41, with largest
+primitive weights 1, 1, 2. These are counts of the full signed-subset universe, not of the rows that
+necessarily occur in a particular instance. Eliminating the residual coordinate gives the smaller
+universe (104): for m = 1, 2, 3 it has 2, 6, 11 normals and 1, 5, 16 positive circuits, respectively, again
+with largest weights 1, 1, 2. The stated finite enumeration reproduces these counts exactly; they are
+not assumptions in the proof. In particular the 41-circuit library is unnecessary for a chain with
+two explicit states.
+
+9.3    Two explicit states: five tests and unit coefficients
+For m = 2, the reduced normal universe is just {±e1 , ±e2 , ±(e1 + e2 )}. After grouping, the profile
+region takes the form
+
+                       ℓ1 ≤ w1 ≤ u1 ,       ℓ2 ≤ w2 ≤ u2 ,      ℓs ≤ w1 + w2 ≤ us .                    (106)
+
+All six endpoint groups are present because of the explicit and residual weight bounds. This is the
+same three-direction geometry used in the theta oracle, but here the individual profile region itself
+describes all serial gadgets together.
+Theorem 9.4 (Unit coefficients and a five-test chain oracle). On GL with at most two explicit
+simplex variables and arbitrary observations, the sparse hull has a finite exact description with all
+
+                                                     36
+flow and product coefficients in {−1, 0, 1}. With two explicit variables, after the original-domain
+and zero-row checks, membership is equivalent to the five conditions
+
+                    ℓ1 ≤ u1 ,   ℓ2 ≤ u2 ,   ℓs ≤ us ,      ℓ1 + ℓ2 ≤ us ,     ℓs ≤ u1 + u2 .       (107)
+
+Exact separation and constructive decomposition take O(L + |O| + 1) rational arithmetic operations,
+with no circuit enumeration and no online linear program.
+
+Proof. The possible sum of two interval variables is [ℓ1 + ℓ2 , u1 + u2 ]. Thus (107) are exactly the
+conditions that both intervals are nonempty and this sum interval meets [ℓs , us ]. On a feasible query
+set
+                s∗ = max(ℓs , ℓ1 + ℓ2 ),  w1 = max(ℓ1 , s∗ − u2 ),      w2 = s∗ − w1 .
+The tests ensure s∗ ≤ min(us , u1 + u2 ), and these choices satisfy every bound in (106). Complete
+the flows by the greedy construction in theorem 9.2.
+   We must check original coefficients, since unit circuit weights alone would not exclude repeated
+occurrences of the same product. The five positive circuits are the three opposite pairs and
+
+                                    {e1 , e2 , −1},        {−e1 , −e2 , 1},                        (108)
+
+all with weights one. The following occurrence analysis applies to any affine row selected in each
+normal group. No circuit contains both −ej and +e3−j , or both +ej and +1.
+    For an ai product in an only-ai state j, its negative occurrences are in the local row −ej and the
+endpoint row +1Bi ; since j ∈ / Bi , the latter is either zero or +e3−j . Its only positive occurrence is
+in the other endpoint row +1Ai ∪Ti . Thus a circuit cannot select two negative occurrences. If state j
+is doubly observed, the positive local row +ej is also available. The other positive normal contains
+j, so is either the same normal +ej or +1; one row is selected per normal, and these two distinct
+normals do not occur together in a circuit. The negative occurrences remain as above. Hence every
+ai product has coefficient of magnitude at most one.
+    For a bi product in an only-bi state j, the negative occurrences are −ej and +1Ai ∪Ti , whose
+latter normal excludes j; the positive occurrence is the Bi endpoint. The same argument applies.
+A doubly observed bi product occurs only in the two opposite local singleton rows, with opposite
+signs, because Ri uses the observed ai entry in that state. A bypass product likewise occurs only in
+two opposite singleton rows. Each zero-row inequality separately has unit coefficients.
+    The coordinate xai occurs only in its two endpoint rows, once with each sign, and xbi occurs
+only in the original flow precheck. The shared coordinate xh needs an additional check. In a positive
+singleton row its coefficient is zero or −1, in a negative singleton row it is zero, in the positive
+full row it is zero or −1, and in the negative full row it is always +1. These statements follow by
+inspecting (102) and (103); for example a full Bi endpoint has zero xh coefficient, whereas a full
+Ai ∪ Ti endpoint has coefficient −1. For the first circuit in (108), two negative contributions from
+its positive singleton rows are offset by the compulsory +1 from the negative full row. All opposite
+pairs and the second circuit also have coefficient magnitude at most one. Consequently every affine
+branch of the five tests is a unit flow/product inequality, proving the claimed finite description.
+    For m = 1 the reduced system is an interval. Alternatively, embed it as the coordinate section
+y2 = 0 of the two-state instance with no observations in label 2. Disaggregation forces state 2
+to zero, so restriction of the established unit description is exact and preserves its flow/product
+coefficients. The case m = 0 is the original flow description. Grouping rows, checking the five tests,
+and filling the state flows have the asserted linear cost.
+
+
+
+                                                      37
+9.4    Three explicit states and a sharp state-count threshold
+The coefficient conclusion extends one state further. In this case some direct circuit sums have
+bypass-flow coefficient two, but a single original flow equation removes it. This is a valid change of
+an ambient inequality representative, in contrast to changing either free coefficient in the coordinate
+sections of lemma 6.7.
+
+Theorem 9.5 (Sharp unit-coefficient threshold for flat chains). For arbitrary observations on GL ,
+three explicit simplex variables still admit a finite exact original-coordinate description with unit flow
+and product coefficients. At most sixteen fixed positive-circuit tests, with the original-domain and
+zero-row checks, give exact separation and constructive recovery in O(L + |O| + 1) rational arithmetic
+operations. Four explicit variables already allow a hull with no such unit-coefficient description.
+
+Proof. For m = 3, the positive circuits of (104) have the following four forms. Each listed normal
+has weight one unless specified otherwise:
+
+                 {1S } ∪ {−ej : j ∈ S}                             (∅ ̸= S ⊆ [3]);                  (109)
+                 {−1} ∪ {1S : S ∈ π}                               (π a partition of [3]);          (110)
+                 {−1, −ei , ei + ej , ei + ek }                    ({i, j, k} = [3]);               (111)
+                 {−1, e1 + e2 , e1 + e3 , e2 + e3 },               weight two on − 1.               (112)
+
+Their numbers are 7, 5, 3, 1. Here is a direct completeness check. Without −1, a positive dependence
+decomposes into the dependencies of each positive subset on its negative singleton coordinates, so
+minimality leaves exactly (109). With −1, presence of +1 forces the opposite pair. Otherwise there
+are at most three other normals, by the circuit support bound. Two negative singleton normals
+would leave at most one positive proper subset, which cannot cover all three coordinates and also
+supply an excess in either negative singleton coordinate. With one negative singleton −ei , two
+positive subsets are necessary. The opposite singleton +ei is excluded by minimality. The coordinate
+equations then force the positive subsets to be {i, j} and {i, k}, giving (111). With no negative
+singleton, the positive subsets form a minimal uniformly weighted cover. If a singleton is present,
+overlapping pairs would force one of their other coordinates to exceed the common cover value, so
+the sets form a partition. With only pairs, all three pairs are needed, and their equal weights give
+(112). This also verifies positivity and minimality of the displayed list.
+    All positive-normal weights are one. No circuit contains both −ej and a positive subset normal
+excluding j, or both +ej and a different positive subset normal containing j. These facts follow
+immediately from the four forms. The occurrence argument in theorem 9.4 therefore proves that
+every product coefficient has magnitude at most one for every choice of affine branches. The only
+doubled circuit weight belongs to −1, whose right-hand side λ0 − t has no product coordinate. Each
+xai has at most its two opposite-signed endpoint occurrences, each with weight one, and no xbi
+occurs in a profile right-hand side.
+    It remains to handle xh . Negative singleton rows have coefficient zero; the negative full row has
+coefficient +1. A positive subset row has coefficient zero or −1. Thus circuits (109) and (111) have
+unit xh coefficients. In (110), the only exception is coefficient −2: the partition must consist of
+three singletons and all three chosen right-hand sides must be upper endpoints t − Ri . They belong
+to distinct gadgets, since each gadget supplies only one upper endpoint. Choose one of them. Its
+xai coefficient is −1, with no other contribution from that gadget. In the circuit inequality written
+as an affine expression at least zero, add the identically zero flow expression
+
+                                             xai + xbi + xh − 1.
+
+                                                       38
+The coefficients of xh , xai , xbi become −1, 0, 1.
+    In (112), the only exception is coefficient +2, occurring when all three positive pair rows have zero
+xh coefficient. A positive pair row can only come from a gadget endpoint, so these are three lower
+endpoints Ri from distinct gadgets. Choose one and subtract its flow expression xai + xbi + xh − 1.
+The three affected coefficients become 1, 0, −1. No other coefficient changes. These replacements
+preserve validity on the original flow domain and leave the violation at any query that passes the
+flow precheck unchanged. Hence every branch of the exact circuit description has a unit-coefficient
+representative.
+    The circuit and inverse-basis libraries now have fixed size. Theorem 9.2 supplies linear-cost
+separation and recovery, including zero weights and lower-dimensional profile regions. Finally
+example 8.2 has four explicit states and a local section normal (2, 1). By lemma 6.7, this ratio
+cannot be removed by any affine-hull equation, so no unit-coefficient description exists. Additional
+unused explicit variables can be fixed to zero if a counterexample with more than four is desired.
+Example 9.6 (Both bypass-coefficient repairs are needed). Take L = 3, xh = 1/2, and first let
+y1 = y2 = y3 = 1/3, xai = 2/5, xbi = 1/10. Observe only (ai , i), with all three products zero. The
+singleton-partition certificate is
+                    3
+                    X                                   3
+                                                        X             3
+                                                                      X
+                          (t − Ri ) + (λ0 − t) = 2t −         xai +         zai ,i + λ0 = −1/5.
+                    i=1                                 i=1           i=1
+It has xh coefficient −2; adding any selected gadget balance gives a unit-coefficient violated inequality.
+For the other repair, take y1 = y2 = y3 = 1/4, xai = 1/20, xbi = 9/20. Observe only bi products, on
+state pairs {1, 2}, {1, 3}, {2, 3} in gadgets 1, 2, 3, respectively, each with value 1/20. Now Ri = 3/20
+and the pair-triangle certificate is
+                                   R1 + R2 + R3 + 2(λ0 − t) = −1/20.
+Its xh coefficient is +2; subtracting a selected gadget balance gives the unit form. Both query points
+satisfy all original flow, simplex, and separate McCormick inequalities. The exact joint cuts detect
+the missing common profile.
+Corollary 9.7 (Only observed labels count). Let J = {j : (e, j) ∈ O for some e} and a = |J|. All
+fixed-state chain conclusions apply with a in place of m. In particular, at most three observed labels
+guarantee unit flow/product coefficients, regardless of the number of unobserved simplex labels; at
+most two observed labels permit the five-test oracle. General separation and compact recovery take
+                               2
+O((a + 1)L + |O| + m) + 2O(a ) rational arithmetic operations.
+Proof. Apply the exact state merger in theorem 3.2, retaining the labels in J and merging all others
+with the residual state. The merged weight is 1 − j∈J yj . Keep the original simplex constraints
+                                                      P
+
+on all m coordinates and apply the preceding theorems to this reduced state list. Substituting the
+merged weight changes no flow or product coefficient. The proportional refinement (19) recovers
+each unused label from the same normalized merged flow. It can be stored as one flow and its
+constituent weights, so the stated compact-recovery cost includes only O(m) additional bookkeeping.
+Writing every entry of all global state flows instead can require Θ((m + 1)|E|) output operations. If
+a = 0, the hull is simply P × ∆m and no profile elimination is needed.
+    These theorems are specific to a chain of parallel pairs with one bypass. A general nested
+series–parallel construction can require several interacting profiles. Neither the five-test result nor
+the fixed-state determinant bound above asserts a description for that larger class. Conversely,
+theorem 8.4 shows why a coefficient bound independent of the state count is impossible even on this
+flat family.
+
+                                                        39
+10     Implementation, verification, and computational comparisons
+The implementations serve two distinct purposes: constructing small numerical LPs and producing
+exact rational hull certificates. The experiments compare both with strengthened versions of classical
+disaggregation. They show large model-size savings, but also cases where a simpler LP is faster and
+cases where global state merging explains most of an apparent compression advantage.
+
+10.1    Implemented scope and certificate semantics
+Table 2 distinguishes the three usable interfaces from the bounded-rank verification code. The
+specialized separators use Python’s standard library and rational arithmetic throughout. They
+check original flow and simplex constraints, retain the original affine expressions of active bounds,
+and return a cut with strictly positive exact violation or a decomposition whose positive-weight
+normalized flows belong to P . The graph separator rejects unsupported blocks explicitly. The flat
+oracle merges unobserved labels, eliminates the residual profile, and uses the five-test formula when
+at most two labels are observed. At three labels it uses the 16 circuits and both flow-balance repairs
+of theorem 9.5 for separation. Recovery uses finite inverse bases at three or more observed labels.
+Its stored default is shared across unused global labels. Compatibility accessors can materialize
+the former dense state arrays, with the corresponding output cost. Tuple normal construction and
+hashing retain a dimension factor relative to the preindexed-mask operation count in theorem 9.2;
+apart from the constructor’s O(|O| log |O|) observation sorting, the implemented cost is linear in L
+at fixed observed-label count.
+    The general formulation stores exact rational coefficients, including the observed-coordinate
+substitutions, but calls a numerical LP solver. Its phase-I certificate routine rationalizes dual
+weights and, if necessary, repairs their supported kernel equations by exact elimination. A returned
+cut is accepted only after checking nonnegative weights, exact cancellation of every auxiliary
+coordinate, and strictly positive rational violation. The API distinguishes certified_outside,
+numerically_feasible, uncertified_outside, and solver_failure. The second status is not
+exact membership, and failure of exact multiplier recovery is not an infeasibility certificate. This is
+an implementation of classical Farkas projection, not a new generic separation theorem.
+    Code indices are zero based, with explicit states 0, . . . , m − 1 and residual state m; this is only
+an indexing change from the manuscript. The LP baseline generator uses outgoing-minus-incoming
+balances, and its adapter negates them before calling either production model. Float inputs to
+exact interfaces mean their decimal text. The optimization experiment uses a small-denominator
+reconstruction adapter, requires error below 10−7 and exact aggregate balances, and then checks
+the returned decomposition exactly. This adapter is suitable for the stated synthetic instances; it is
+not a general certified rational LP optimizer.
+    The verification suite compares against independently assembled full-state LPs and, for small
+graphs, directly enumerated path–simplex vertices. The updated flat tests include arbitrary
+observations and zero weights, both three-label repairs with exact global cut checks, the four-label
+ratio-two obstruction, and sparse observed labels among many original simplex coordinates. They
+also test an interior-residual point with zero explicit profile and positive residual branch flow: this
+rules out incorrectly reusing a basis construction that forces the explicit profile sum to the full
+branch flow. Separate tests check every new rank-three inverse basis. The unchanged independent
+flat audit verifies 192 exact decompositions and 708 exact violated cuts, with 233 numerical path-hull
+comparisons. The general compressed audit passes 600 objective comparisons, 758 membership
+comparisons, and 476 exactly checked Farkas cuts, each also tested by numerical full-hull support
+optimization. Its structural integration checks recover the coefficient ratios two, five, and twenty-one.
+
+
+                                                   40
+Table 2: Implemented scope. Exact assembly of an LP does not make its floating-point optimizer
+an exact certificate.
+  Component              Supported input                           Returned evidence
+  Parallel-path          Arbitrarily oriented multigraphs whose    Exact original-coordinate cut or
+  separator              cyclic blocks are parallel paths; loops   compact rational decomposition
+                         and bridges included
+  Flat-chain separator   Canonical unit-data GL , arbitrary        Exact cut or compact decomposition;
+                         observations; parameter is the number     unit flow/product coefficients through
+                         of observed labels                        three observed labels
+  General compressed     Arbitrary bounded equality-flow           Exact rational model; numerical LP
+  EF                     graphs; initial or                        solution; optionally an exactly checked
+                         observed-coordinate-eliminated            Farkas cut
+                         formulation
+  Bounded-rank           Supplied small signed-normal systems      Verification prototype for support and
+  libraries              and structural verification instances     recovery; not a complete production
+                                                                   general-graph oracle
+
+
+These finite checks support the code; the preceding proofs establish the general claims.
+
+10.2    Baselines that retain the elementary reductions
+For optimization with fixed weights, the full disaggregation uses only positive-weight state flows, block
+balances Af j = λj b, and native variable bounds 0 ≤ f j ≤ λj u. It eliminates x, z by substitution
+and adds the constant c⊤ y ȳ to the objective value. In additional original-coordinate rows, the fixed y
+contribution moves to the right-hand side. This is one joint LP and remains valid with the aggregate
+budget below. The global-merger baseline first groups labels observed nowhere into one default, then
+applies the same construction to its positive-weight states. With free weights, both interfaces retain
+every original y variable and its objective and constraint contributions. Both use sparse block and
+Kronecker assembly. They use no graph blocks, cycle coordinates, or observation rank elimination.
+Initial compression and observed elimination use the two variants of the general implementation,
+including their preprocessing costs.
+    For point membership, x, y, z are data and only state flows are LP variables. The historical full
+baseline already had this property. The strengthened baseline removes exactly zero-weight states,
+checks their observations, and assembles state balances and aggregate equations as sparse block
+matrices. It accepts solver statuses zero and two as numerical feasibility and infeasibility; other
+statuses are failures, not successful rejections.
+    An additional elementary baseline applies when precisely two states have positive weights λ, µ,
+with λ + µ = 1. After checking the original aggregate flow, write the state flows as f and x − f .
+The complete remaining feasibility system is
+
+                          Af = λb,         max{0, x − µu} ≤ f ≤ min{λu, x}.                           (113)
+
+An observation in the first state fixes fe = zej ; an observation in the second fixes fe = xe − zej .
+Intersect these fixed values with both bounds and with each other. The second state’s balance
+follows from Ax = b, so this one-flow network LP is exact as a formulation. One positive state
+requires only a direct check. In the numerical implementation the aggregate balance precheck uses
+tolerance 10−9 ; its LP answer is still numerical evidence. Exact input arithmetic identifies zero
+states and checks the intersected bounds.
+
+
+                                                    41
+    Fixed-weight linear optimization without additional coupling is also simpler than a joint LP
+suggests. If cje is the product-objective coefficient for (e, j), or zero when absent, and c0 = 0, then
+disaggregation gives
+
+                    min (c⊤      ⊤       ⊤       ⊤
+                                                                        λj min(cx + cj )⊤ v.
+                                                             X
+                          x x + cy ȳ + cz z) = cy ȳ +                                          (114)
+                  (x,ȳ,z)∈H                                               v∈P
+                                                          j∈{0,...,m}
+
+This follows by independently minimizing each positive-weight state flow; zero-weight terms vanish.
+Unobserved labels have identical costs and share one solve. We include this sequential network-LP
+baseline. With free weights and no side constraints, a simplex vertex suffices, so such stand-alone
+objectives should not be presented as intrinsically difficult coupled problems.
+
+10.3    Instances and measurement protocol
+All reported data are synthetic. The code uses SciPy [21] and its bundled HiGHS LP solver
+[13], with default highs options. The recorded versions are Python 3.12.14, NumPy 2.5.2, and
+SciPy 1.18.1, on x86-64 Linux under WSL2 with 36 visible logical CPUs. The bundled HiGHS
+version is 1.12.0. No affinity, host isolation, persistent model, or solver warm-start advantage is
+claimed. Each case has one recorded warmup followed by five runs with method order rotated.
+Each run rebuilds its model. Build and solver times are recorded separately, together with total
+times and all minimum/median/maximum values. Component medians need not add to the total
+median. Independent certificate audits occur outside the timed components and have their own
+recorded cost. Membership-only and decomposition-inclusive exact queries are separate workloads,
+not timings inferred by subtraction.
+    The principal sparse optimization instance has four articulation-linked blocks, each containing
+five internally disjoint paths of length two, with a bridge between successive blocks. It has 43 arcs
+and 128 explicit labels. Capacities are integers from two to eight, orientations vary, and balances
+are induced by the half-capacity reference flow. Each block observes three labels on three arcs each.
+The graph and label-generation seeds are fixed in the accompanying generator; the primary seed is
+33, and objective seed 1033 gives independent normal costs with standard deviation 0.15 on x, zero
+on y, and standard deviation one on observed z. Weights are fixed to 9/(10m).
+    The membership family uses four six-path blocks of length two, seed 41, 51 arcs, 36 observations,
+and m = 16, 128, 1024. Each explicit state has weight 1/(2m), leaving residual weight 1/2. In block
+B, state j perturbs path (j + B) mod 6 and the next path by opposite amounts (j mod 3 − 1)/4,
+with path orientation signs applied. The aggregate and observations are formed from this exact
+mixture around the half-capacity reference. These are feasible membership queries, not random
+rejection tests.
+    Two controls separate the mechanisms. First, an all-labels-observed instance has 16 three-path
+blocks, four disjoint labels per block, and one observation on the first arc of each path for each
+local label. All 64 labels occur somewhere, so global merging cannot help. It has 111 arcs and 192
+observations; graph seed 73 and objective seed 1073 are fixed, with nonzero y costs and weights
+9/640. Second, on the original 43-arc instance, choose the nonnegative resource indicator de = 1
+where an unconstrained optimum has xe above the reference value, and zero elsewhere. Put
+
+                               d⊤ x ≤ B,      B = 12 (d⊤ xopt + d⊤ xref ).
+
+The exact reconstructed unconstrained point violates this row, while the reference graph point
+satisfies it. Every formulation receives the same aggregate row. This compares equivalent relaxations
+H ∩ {d⊤ x ≤ B}; it does not assert that convexification commutes with adding a budget. The
+independent-state baseline (114) is inapplicable to this coupled control.
+
+                                                  42
+    Finally the flat family uses GL for L = 8, 32, 128, 512, observing (ai , 1) and (ai , 2) alternately.
+Boundary weights are (1/2, 1/2); interior weights are (1/3, 1/3), so the latter has three positive
+states. Feasible queries have xai = xbi = 1/4, xh = 1/2. Writing g = i − 1, the boundary observed
+value is 1/8 + (−1)g (g mod 3 − 1)/16; the interior value is 1/12 + (g mod 3 − 1)/48. Branch profiles
+1/4, 1/4 in the boundary case and 1/6, 1/6, 1/6 in the interior case give feasible completions: in the
+latter, split the remaining ai aggregate equally between the other two states. Infeasible queries
+use xai = 3/10, xbi = 1/5, xh = 1/2, and every observed product 3/10. All separate McCormick
+inequalities hold, but the two observed profiles would sum to at least 3/5 > 1/2.
+
+10.4    Size savings and runtime tradeoffs
+Table 3 shows that global merging accounts for much of the full-versus-compressed difference on the
+original sparse instance. Only 11 of its 128 labels are observed anywhere: the full formulation’s
+5,547 variables drop to 516 under global merging, then to 255 under initial compression and 222
+under observed elimination. Elimination removes 33 of 48 auxiliary coordinates. It saves rows and
+nonzeros but is slower overall than initial compression in this run: its extra symbolic work is not
+offset by a solver saving. The globally merged and initially compressed LPs have median total times
+of 4.25 and 4.82 milliseconds, respectively; global merging has the lower median despite its larger
+model, although the five-run timing ranges overlap. Comparing only with the full formulation would
+overstate the specifically graph-local benefit.
+    The McCormick optimum is −7.287862, compared with hull optimum −6.981917. The repeated
+single-cut loop requires 42 cuts and is slower than the compact LPs. Its final decomposition is
+checked exactly, and each warmup cut receives an independent numerical global support audit.
+The independent-network baseline also attains the same objective, but multiple solver calls have
+overhead; algebraic separability does not guarantee the fastest implementation.
+    Table 4 gives the analogous membership comparison. At 1,024 labels, global merging is faster
+than either general compressed variant and the exact separator on these instances. The full LP’s
+much larger positive-state system is unnecessary when almost all labels are unobserved. The exact
+separator supplies a rational constructive certificate when requested, which is a different output
+from numerical LP feasibility.
+    The all-labels-observed control in table 5 isolates a benefit that global merging cannot provide.
+Both full and global formulations have 7,215 variables; initial compression has 495, and observed
+elimination has 367 with no auxiliary variables. Initial compression is substantially faster here.
+The aggregate-budget control retains the same size ordering and has objective −6.538573. Global
+merging is also faster than initial compression on that control, with median totals of 4.33 and 5.84
+
+
+Table 3: The 43-arc, 128-label optimization case. Times are milliseconds; total reports median
+[minimum,maximum] over five runs. The network baseline reuses one matrix for sequential solves.
+Repeated-cut build/solve columns exclude its separately recorded separator and reconstruction
+work, which the total includes.
+              Method               Vars. Rows Nonzeros                  Total Build   Solve
+              Full                 5547   3612    11094    19.05 [17.81,23.05] 1.07 18.12
+              Global merge          516    336     1032        4.25 [3.41,5.01] 0.70   3.18
+              Initial compression   255    225      936        4.82 [4.70,5.62] 2.48   2.31
+              Observed elimination  222    192      839        6.45 [5.52,9.31] 4.11   2.47
+              Independent networks   43     28       86    22.02 [19.39,28.09] 0.37 21.64
+              Repeated cuts         207    179      630 292.22 [280.98,330.97] 14.78 100.57
+
+
+
+                                                   43
+Table 4: Feasible membership on the 51-arc, 36-observation family: median construction-plus-query
+milliseconds. The exact-separator column is membership without requested decomposition; the raw
+data separately record constructive queries and all timing ranges.
+               Labels       Full   Global merge     Initial   Eliminated   Exact separator
+                   16      7.42              5.35    6.21           7.65              5.93
+                  128     44.65              5.01    5.54           7.14              5.23
+                 1024   1580.67              9.29   16.16          16.25             13.68
+
+
+Table 5: Two controls: median total optimization milliseconds. Independent network optimization
+is inapplicable with the aggregate budget. Repeated cutting was measured on the original and
+budgeted instance, not on the all-labels-observed control.
+                 Case                 Full Global Initial Eliminated Networks       Cuts
+                 Aggregate budget 32.80       4.33 5.84            6.11         – 273.35
+                 All labels observed 30.36   30.38 10.16          18.39    129.00      –
+
+
+milliseconds. Both remain faster than repeated cutting on this coupled relaxation. The budget and
+the local-label control are small targeted comparisons, not evidence about industrial instances.
+    The stronger baselines change the long-chain interpretation (table 6). On the 512-gadget
+boundary face, both the positive-state block LP and the one-flow LP are faster than the reduced
+exact oracle. Thus the earlier construction-inclusive advantage over a Python row-by-row full builder
+that retained the zero residual state does not survive these elementary improvements. The old
+builder already treated original coordinates as data; the changes are zero-state removal and assembly,
+followed by the one-flow substitution. At that boundary point, the positive-state LP has 2,050
+variables and the one-flow LP has 1,025; the interior three-state LP has 3,075. On feasible interior
+queries the reduced oracle is faster at the largest length. Infeasible interior queries have similar
+medians and wide ranges: the full LP ranges from 16.08 to 45.27 milliseconds and the reduced oracle
+from 21.02 to 58.95 milliseconds. Five measurements on a shared host do not support a universal
+speed ordering.
+    The two-label oracle has no circuit-library setup. For comparison, the retained unreduced
+three-coordinate library takes 31.05 milliseconds to construct in the recorded cold call. The new
+three-observed-label library takes 10.78 milliseconds, with another 9.15 milliseconds for its inverse
+bases; these are separate from the two-label workload. Initial and observed-eliminated general
+models were remeasured on the eight flat cases at lengths eight and 32. They do not improve the
+total times over the dedicated exact oracle on those cases; their complete component and size data
+are retained. The earlier full-length compressed comparison is preserved as historical evidence,
+without using it to lead the current performance conclusions.
+    Rows in the tables exclude variable bounds. Nonzero and byte counts refer to input sparse
+matrices, not peak memory, solver factors, or Python rational objects. These measurements establish
+the behavior of the supplied code on the stated inputs. They neither compare optimized native
+implementations nor measure persistent callbacks in a larger optimizer.
+
+10.5    A two-supplier service-transportation interpretation
+The service-conflict transportation model of Khademnia and Davarnia [14, Section 4.2] motivates
+the following two-supplier specialization with a common simplex. Consider a transportation network
+with two suppliers s1 , s2 and demand nodes v1 , . . . , vk , with arcs from both suppliers to every
+
+                                                    44
+Table 6: Flat-chain membership: median construction-plus-query milliseconds. Boundary weights
+are (1/2, 1/2); interior weights are (1/3, 1/3). Full retains only positive states. The one-flow
+reduction applies only with two positive states. Exact columns exclude optional decomposition; all
+ranges and constructive workloads are retained in the data.
+            L        Weights    Point     Full   One-flow LP      Unreduced exact       Reduced exact
+             8       Boundary   In        2.09           1.60                    0.44            0.33
+             8       Boundary   Out       1.89           1.36                    0.49            0.37
+             8       Interior   In        2.53              –                    0.46            0.31
+             8       Interior   Out       2.90              –                    0.79            0.51
+            32       Boundary   In        3.09           2.12                    1.38            0.97
+            32       Boundary   Out       3.65           1.83                    1.53            1.07
+            32       Interior   In        3.46              –                    1.45            1.00
+            32       Interior   Out       2.48              –                    1.32            1.04
+           128       Boundary   In        4.95           4.41                    5.06            3.85
+           128       Boundary   Out       5.63           4.57                    6.23            4.03
+           128       Interior   In       10.39              –                    4.53            3.92
+           128       Interior   Out       4.12              –                    5.34            4.11
+           512       Boundary   In       14.36          12.90                   18.89           16.93
+           512       Boundary   Out      10.62           9.31                   20.37           15.74
+           512       Interior   In       41.04              –                   27.16           23.12
+           512       Interior   Out      39.18              –                   51.05           41.23
+
+
+demand node. Let supplies be S1 , S2 , demands Di , and arc capacities uℓi . The flow equations are
+             X
+                     xℓi = Sℓ   (ℓ = 1, 2),      x1i + x2i = Di    (i ∈ [k]),       0 ≤ xℓi ≤ uℓi .
+                 i
+
+Suppose a service or contract allocation y ∈ ∆m modifies the cost on selected route–service pairs.
+                                        P
+Its objective contribution has the form ((ℓ,i),j)∈O cℓi,j xℓi yj . Only pairs with a nonzero adjustment
+need product coordinates.
+    The underlying graph is a union of k internally disjoint length-two paths between the suppliers,
+even though the second arc on each path is traversed against its direction. It is therefore covered
+by theorem 5.6. Demand conservation means that a circulation increase on the first supplier’s arc
+is the opposite change on the second supplier’s arc. The path coordinates retain these identities,
+while the state transportation problem enforces compatibility of all selected service products. With
+three demand nodes the theta formulas apply directly. For larger k, an exact transportation cut
+or compact EF is available; the number of observed service labels, their path coverage, and any
+repeated observations determine the useful reduction.
+    This interpretation uses the common balance and capacity domain assumed throughout the
+paper. An outer resource budget or linking constraint can be added to the exact component hull to
+strengthen a relaxation, as in the budget experiment. The resulting intersection is not generally
+the convex hull of the additionally constrained product graph. This is a modeling illustration; the
+experiments above use synthetic networks.
+
+10.6    Reproduction
+The accompanying repository includes the exact interfaces, independent verification programs,
+historical results, and retained source snapshots. Optimization and membership measurements were
+collected separately. The reported optimization records use the native fixed-weight construction
+
+
+                                                       45
+above; all methods on each of its three cases use the same objectives, weights, and additional rows,
+with an audited warmup and five rotated runs. Membership and cold-library records retain their
+separately recorded measurements. Earlier baselines and measurements are preserved with hashes
+for comparison; the reproducibility documentation identifies the commands for the complete study
+and the optimization-only run. The complete measurement command, run from the repository root,
+is
+
+PYTHONPATH=code python -m network_simplex_benchmarks.paper_stage06 \
+  --output paper-network-simplex/verification/stage06-benchmarks.json
+python paper-network-simplex/verification/stage06-tables.py
+
+The table generator recomputes each reported minimum, median, and maximum from the raw
+five-run records and verifies the complete case grid. The versioned source, input definitions, objective
+vectors, additional rows, warmups, raw timing components, exact witness/cut audits, and numerical
+solver checks are identified by hashes in the validation manifest. The README files give the
+separate test and manuscript-build commands.
+
+
+11     Conclusion
+Sparse network–simplex convexification depends on which state information survives the observations.
+On an arbitrary equality-flow graph, the cycle rank of each unobserved subgraph gives the exact
+residual-coordinate count of the observation-sensitive construction. Forest complements remove all
+such coordinates. At bounded block rank, finite normal libraries also permit original-coordinate
+separation and constructive recovery, including degenerate state domains.
+    The coefficient results give complementary boundaries. Rank three already requires coefficient
+two on a five-product K4 example. A flat chain, despite its unbounded cycle rank, admits unit
+flow/product coefficients whenever at most three labels are observed, and four observed labels can
+force a ratio of two. With growing label count, Fibonacci ratios occur on simple series–parallel
+graphs of maximum degree three. With unrestricted graphs, even two labels permit unbounded
+ratios. Thus neither small treewidth alone nor a small number of labels alone implies a uniform
+coefficient bound for the full class. These obstructions concern original-coordinate descriptions and
+do not imply difficult separation or large extension complexity.
+    For implementation, global state merging and native flow bounds are essential baselines. They
+often make a conventional LP the fastest option. Local cycle and observation reductions can
+yield further substantial size savings, while specialized rational oracles provide exact cuts and
+compact decompositions that a numerical feasibility status does not supply. The retained code,
+raw measurements, and independent checks make both the advantages and the negative runtime
+findings reproducible. The complete results apply to the stated component hull; adding external
+coupling constraints gives a valid relaxation and requires its own convexification analysis if an exact
+hull of the enlarged model is sought.
+
+
+References
+ [1] Mohammed Majthoub Almoghrabi, Martin Skutella, and Philipp Warode. Integer and
+     unsplittable multiflows in series-parallel digraphs. Mathematical Programming, 2026.
+     doi: 10.1007/s10107-026-02392-8. URL https://link.springer.com/article/10.1007/
+     s10107-026-02392-8. Published online June 29, 2026.
+
+
+
+                                                  46
+ [2] Noga Alon and Van H. Vu. Anti-Hadamard matrices, coin weighing, threshold gates, and
+     indecomposable hypergraphs. Journal of Combinatorial Theory, Series A, 79(1):133–160,
+     1997. doi: 10.1006/jcta.1997.2780. URL https://web.math.princeton.edu/~nalon/PDFS/
+     av1.pdf.
+
+ [3] Egon Balas. Disjunctive programming: Properties of the convex hull of feasible points. Discrete
+     Applied Mathematics, 89(1–3):3–44, 1998. doi: 10.1016/S0166-218X(98)00136-X.
+
+ [4] Danial Davarnia. Convexification Techniques for Bilinear and Complementarity Constraints
+     with Application to Network Interdiction. PhD thesis, University of Florida, 2016. URL
+     https://ufdcimages.uflib.ufl.edu/UF/E0/05/02/79/00001/DAVARNIA_D.pdf.
+
+ [5] Danial Davarnia, Jean-Philippe P. Richard, and Mohit Tawarmalani. Simultaneous convexi-
+     fication of bilinear functions over polytopes with application to network interdiction. SIAM
+     Journal on Optimization, 27(3):1801–1833, 2017. doi: 10.1137/16M1066166.
+
+ [6] Jesús A. De Loera and Shmuel Onn. All linear and integer programs are slim 3-way
+     transportation programs. SIAM Journal on Optimization, 17(3):806–821, 2006. doi:
+     10.1137/040610623. URL https://www.math.ucdavis.edu/~deloera/researchsummary/
+     universalitytransportation.pdf.
+
+ [7] Jack Edmonds and Richard M. Karp. Theoretical improvements in algorithmic efficiency for net-
+     work flow problems. Journal of the ACM, 19(2):248–264, 1972. doi: 10.1145/321694.321699. URL
+     https://web.eecs.umich.edu/~pettie/matching/Edmonds-Karp-network-flow.pdf.
+
+ [8] Samuel Fiorini. How to recycle your facets. Discrete Optimization, 3(2):136–153, 2006. doi:
+     10.1016/j.disopt.2005.10.007. URL https://samuel.fiorini.web.ulb.be/papers/howto_
+     rev.pdf.
+
+ [9] L. R. Ford, Jr. and D. R. Fulkerson. Maximal flow through a network. Canadian Journal of
+     Mathematics, 8:399–404, 1956. doi: 10.4153/CJM-1956-045-5. URL https://www.cs.yale.
+     edu/homes/lans/readings/routing/ford-max_flow-1956.pdf.
+
+[10] L. R. Ford, Jr. and D. R. Fulkerson. Solving the transportation problem. Management Science,
+     3(1):24–32, 1956. doi: 10.1287/mnsc.3.1.24.
+
+[11] Peter Gritzmann and Bernd Sturmfels. Minkowski addition of polytopes: Computational
+     complexity and applications to Gröbner bases. SIAM Journal on Discrete Mathematics, 6(2):
+     246–269, 1993. doi: 10.1137/0406019.
+
+[12] Alan J. Hoffman and Joseph B. Kruskal. Integral boundary points of convex polyhedra. In
+     Harold W. Kuhn and Albert W. Tucker, editors, Linear Inequalities and Related Systems,
+     volume 38 of Annals of Mathematics Studies, pages 223–246. Princeton University Press, 1956.
+     URL https://www.cs.umd.edu/~gasarch/BLOGPAPERS/kruskalhoffman.pdf.
+
+[13] Qi Huangfu and J. A. Julian Hall. Parallelizing the dual revised simplex method. Mathematical
+     Programming Computation, 10(1):119–142, 2018. doi: 10.1007/s12532-017-0130-5. URL
+     https://highs.dev/.
+
+[14] Erfan Khademnia and Danial Davarnia. Convexification of bilinear terms over network polytopes.
+     Mathematics of Operations Research, 50(2):1019–1041, 2025. doi: 10.1287/moor.2023.0001.
+     URL https://par.nsf.gov/servlets/purl/10546393.
+
+                                                47
+[15] Tamás Kis and Markó Horváth. Ideal, non-extended formulations for disjunctive con-
+     straints admitting a network representation. Mathematical Programming, 194:831–869, 2022.
+     doi: 10.1007/s10107-021-01652-z. URL https://link.springer.com/article/10.1007/
+     s10107-021-01652-z.
+
+[16] Leo Liberti and Constantinos C. Pantelides. An exact reformulation algorithm for large
+     nonconvex NLPs involving bilinear terms. Journal of Global Optimization, 36:161–189, 2006.
+     doi: 10.1007/s10898-006-9005-4.
+
+[17] Garth P. McCormick. Computability of global solutions to factorable nonconvex programs:
+     Part I—convex underestimating problems. Mathematical Programming, 10:147–175, 1976. doi:
+     10.1007/BF01580665.
+
+[18] Michal Melamed and Shmuel Onn. Convex integer optimization by constantly many linear
+     counterparts. Linear Algebra and its Applications, 447:88–109, 2014. doi: 10.1016/j.laa.2014.01.
+     007. URL https://arxiv.org/abs/1208.5639v1. Open preprint (2012), by Shmuel Onn and
+     Michal Rozenblit.
+
+[19] Shmuel Onn and Uriel G. Rothblum. Convex combinatorial optimization. Discrete &
+     Computational Geometry, 32:549–566, 2004. doi: 10.1007/s00454-004-1138-y. URL https:
+     //arxiv.org/abs/math/0309083.
+
+[20] Shmuel Onn, Uriel G. Rothblum, and Yoav Tangir. Edge-directions of standard polyhedra
+     with applications to network flows. Journal of Global Optimization, 33:109–122, 2005. doi:
+     10.1007/s10898-004-4313-z.
+
+[21] Pauli Virtanen, Ralf Gommers, Travis E. Oliphant, et al. SciPy 1.0: Fundamental algorithms
+     for scientific computing in Python. Nature Methods, 17(3):261–272, 2020. doi: 10.1038/
+     s41592-019-0686-2. URL https://scipy.org/citing-scipy/.
+
+
+
+
+                                                 48
+

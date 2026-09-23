@@ -1,0 +1,60 @@
+# S3 author record: discrete and series-parallel boundaries
+
+Date: 2026-09-10. Status: authored and ready for five independent reviews; not accepted. Worktree: `/home/sgusev/repo/minlp-notes-potential-flow`, branch `paper-potential-flow`.
+
+## Deliverable and scope
+
+Replaced `complexity/sections/05-boundaries.tex` with a complete section organized around discrete pressure, finite secant comparison and hulls, fixed-nomination additive envelopes, rank-three arc hardness, universal graph characterization, growing-rank arithmetic/nomination limits, and inverse-design quantifiers. All nine promoted S3 results are covered in the updated coverage map. The manuscript uses accepted S1/S2 labels for physical-state uniqueness, block aggregation, exact fixed-rank arc optimization, pressure sensitivity, and the cactus Square-Root-Sum equivalence. No accepted section, macro file, main structure, Paper B source, or source-result file was changed. No appendix or commit was added. Initial uncommitted work was preserved.
+
+Added verified references for Dadush’s thesis, Chauffoureaux–Hasler 1990, Zemanian’s resistor-ratings article with explicitly qualified report-version locators, Robinius et al. 2019, and Cosme Llópez–Pous 2017. No new priority claim is made for confluence, envelope identity, convex optimization, or the Subset-Sum mechanism.
+
+## Sources read and proof work
+
+Read the nine required `results/` files in full, the linked short investigation notes (which mostly redirect to those results), both discrete pressure/arc literature audits, and relevant proof/scope passages in their first and second review notes. In particular, read the second reviews of discrete pressure, discrete arc, realization, secant comparison, exact probe-cactus arithmetic, and nomination transfer; both envelope reviews; and the characterization reviews. Historical reviews supplement the audit and are not treated as proof. Rechecked the underlying arguments directly as follows.
+
+- Derived all theta conservation equations and both independent potential identities. Checked the root range, the exact pressure peak, the integral subset gap, integer scaling, and the additional scaling that yields absolute-error-one pressure hardness. The earlier unscaled precision caveat is not mistakenly extended to scaled pressure. A common resistance scale never amplifies the arc-flow gaps.
+- Derived the full secant-adjoint identity without derivatives. Developed the direct affine-coordinate monotonicity proof suggested by the lead: when the changing basis vanishes at any state that state solves all parameter values; otherwise its sign is continuous and fixed, and the finite identity has a graph-fixed multiplier sign. This removes the redundant continuous-law smoothing proof, including its possible zero-derivative complications.
+- Proved the compact-family pointwise envelopes are strictly increasing and continuous, proved exact edgewise member attainment at the envelope state, and recorded the uniform-in-nomination identity with its nomination-dependent realizing member vector. Added an explicit nomination-continuity argument for general continuous fixed envelope laws. The cactus-pressure consequence uses the pressure identity, with no target-law subtraction.
+- Rechecked the fixed-rank hull algorithm and exact endpoint self-reduction. The verifier chooses only finite resistance indices; its nomination variables remain continuous in a rational box. Exact comparisons do not require a short rational physical state or a growing common number field.
+- Rechecked the cubic SOC lift, tree particular flow and fundamental-cycle coordinate bounds, rational function/gradient oracle, explicit sublevel inner ball and outer radius, and the energy-to-flow constant. The weak convex algorithm is justified in binary length using Dadush’s theorem and a global tangent continuation, not by invoking an arbitrary numerical SOCP solver. Re-derived the endpoint-selection residual and strong-monotonicity estimate at approximate zero flows.
+- Proved probe monotonicity directly from strict constitutive monotonicity and distinct nominations. Rechecked every probe orientation, old-network nomination shift, the resistance-independent short path, rational capacity threshold, strict yes/no gaps, and integer scaling. The rank-three theorem explicitly covers both existential strict and weak tests with their own complementary universal inequality conventions.
+- Rechecked all three K4 reference states, the negative-flow inverse comparison, and the rational gap. Proved the degree-three minor-to-subdivision fact via branch-tree medians. Used only the explicit quantitative restoration: the q=1 comparison flow has energy below six, extra-edge flow is at most `(18/R)^(1/3)`, induced subdivision nominations are balanced with total bound `14m`, and the target-error bound yields the stated polynomially encoded integer R. Qualitative limit restoration is unnecessary. Encoding scope is explicitly conditional on a selected subdivision; the graph iff itself is existential.
+- Rechecked both directions of the probe-cactus Square-Root-Sum equivalence, the positive threshold preprocessing, literal-family trivial triangle outputs, and equality at `x=1/2`. The reverse direction imports precisely the accepted cactus weak lower comparison. No strict/weak SRS conversion or arbitrary-SP upper bound is inferred.
+- Rechecked Thürauf’s actual source data and pressure theorem, then independently derived the additional SP arc probe and accuracy-bit gap. The source’s pressure subproblem excludes potential bounds; pendant exits and the main block rank are kept explicit. Neither NP membership nor strong hardness is asserted at growing rank.
+- Re-derived interval target-flow LP feasibility, finite resistance-index certificates, the one-cycle all-one target reduction, unit-capacity forcing, the exact deviation formula, and the convex-hull false-positive example. No global hull theorem is used to infer existential finite feasibility.
+
+## Primary literature locators and actual limits
+
+- `literature/papers/eppstein1992-parallel-recognition-of-series-parallel/fulltext.md`, p.9, Lemma 9 and its proof: the endpoints of an existing edge are valid two-terminal roots of a biconnected SP component. Applied only to the target block, not an arbitrary branching block tree.
+- `literature/papers/duffin1965-topology-of-series-parallel-networks/fulltext.md`, printed pp.306–307, Theorems 0 and 1; Section 5: classical confluence/current directions and nonlinear characteristic context.
+- Cosme Llópez–Pous official MFCS 2017 proceedings record and abstract, DOI `10.4230/LIPIcs.MFCS.2017.76`: equivalence of K4-minor exclusion and SP biconnected components, plus verified author/title/pages metadata. This convention is cited explicitly.
+- Dadush, *Integer Programming, Lattice Algorithms, and Deterministic Volume Estimation*, Georgia Tech 2012 thesis, open author PDF `https://homepages.cwi.nl/~dadush/papers/dadush-thesis.pdf`: title page and Theorem 2.5.9, printed p.48 (PDF page61), read directly after downloading to `/tmp/s3-dadush.pdf`. The theorem supplies a feasible rational point and additive value enclosure for a centered convex body with globally Lipschitz convex evaluation oracle. The first web fetch timed out; the ordinary public download succeeded. The lead independently checked the input-length convention in Section 2.5.
+- `literature/papers/thurauf2022-deciding-the-feasibility-of-a/fulltext.md`, p.7 problem (2), p.10 Figure 2/equation (3), pp.11–12 Lemma 4.3, p.24 Lemma 4.17. Independently extracted original PDF p.10 with `pdftotext -layout` because the stored prose extraction omitted displayed formulas. Confirmed `b_s` is an entry and `b_t` an exit; all maxima and rational threshold constants match. The universal no-case proof is the cited published result; the new proof establishes the arc transfer.
+- `literature/papers/hasler1990-monotonicity-in-nonlinear-resistive-circuits/fulltext.md`, pp.1 and 3–4: endpoint analysis motivation and Theorem 3 structural linear test; extensions to resistor parameters and observed-branch dependence are sketches. Only prose/paraphrase was added; the user-supplied PDF was not copied into the paper.
+- `literature/papers/zemanian1999-does-the-operating-point-of/fulltext.md`, pp.4–8 and 11–13: finite rated segments, series/parallel endpoint lemmas, Procedure8.1, and designated-branch recovery. The inspected artifact is CEAS TR736, April4 1996; manuscript locators explicitly name that version. The article’s journal metadata were confirmed by the lead through the DOI record.
+- `literature/papers/robinius2019-robust-optimal-discrete-arc-sizing/fulltext.md`, model discussion pp.6–7 and Theorem4.7 p.19: minimum-cost finite sizing subject to potential feasibility, crediting earlier Yates–Templeman–Boffey hardness. This differs from unrestricted adversarial pressure. No claim about the unread original 1984 reduction is made.
+- The verified contemporary metadata/scope for Thürauf–Grübel–Schmidt 2026 are taken from `completion-literature-screen.md` and cited with all authors: polynomially many NLPs for fixed-design robust-feasibility checking do not imply a polynomial full-design algorithm.
+
+Hasler–Wang 1993 nonlinear tolerance analysis remains unavailable for theorem-level comparison. The section explicitly avoids assigning priority to the envelope identity. Existing exact SRS status and source convention were accepted in S1 and are preserved. There is no missing mathematical proof relative to an asserted S3 theorem; external classical graph/convex algorithms and the credited Thürauf pressure theorem are identified with their needed hypotheses.
+
+## Focused verification
+
+Read the supporting implementations for the pressure gadget, arc probe, envelope/endpoint and energy checks, K4 obstruction, flow realization, SRS probe, nomination probe, and finite secant identity. Ran the following existing checks in `/home/sgusev/miniconda3/envs/minlp-notes/bin/python`; every process exited zero:
+
+| Check | Distinct evidence |
+| --- | --- |
+| `discrete_resistance_hardness_checks.py` | Exact symbolic identities; 1,976 scenarios, 14 yes and 34 no instances; graph ranks and integer scale. |
+| `discrete_arc_hardness_checks.py` | Five exact balances and 296 coupled physical scenarios; target thresholds, rank3 topology, integer scale. |
+| `series_parallel_arc_hulls_checks.py` | 2,160 electrical sign comparisons and 60 derivatives, including own-edge multiplier. |
+| `series_parallel_envelope_checks.py` | 3,840 endpoint scenarios, 24 extrema, 72 sign-based recoveries and 72 energy inequalities. |
+| `secant_comparison_checks.py` | 240 finite identities on SP and K4 graphs. |
+| `series_parallel_arc_obstruction_checks.py` | Three full K4 states and strict interior-versus-endpoint comparisons at 80 digits. |
+| `series_parallel_exact_arc_barrier_checks.py` | 48 full graph/state/threshold checks, 20 preprocessing cases, three exact equalities. |
+| `unbounded_rank_arc_probe_checks.py` | 24 explicit Partition yes witnesses at 110 digits. It does not verify universal no-instance hardness; that is the cited source theorem. |
+| `discrete_flow_realization_checks.py` | 1,300 scenarios, 44 exact target choices, seven interval-feasible but finite-infeasible instances. |
+
+These are regression and mechanism checks, not a certified implementation of the rational ellipsoid algorithm and not proofs of the universal statements. No redundant new test suite was added.
+
+Built Paper A only by importing `verification/build_and_check.py` and calling `build('complexity')`. Initial compilation exposed five layout overflows; revised only S3 display breaks and prose. Final `process/completion-s3-build.json` records current SHA256 input hashes and successful diagnostics: zero errors, undefined references, undefined citations, duplicate labels, or overfull boxes. Paper B was not built.
+
+Ready for the required five independent reviewer agents, lead adjudication, and a different correction agent. This record does not constitute acceptance.

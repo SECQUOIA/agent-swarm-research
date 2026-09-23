@@ -1,0 +1,40 @@
+# Stage 2, round 1 — independent reviewer 2
+
+**Verdict: accept with minor revisions. No major issue identified.**
+
+The chapter defines a coherent proposed experiment and a conditional research program. The wet concurrent/delayed pair identifies a total treatment-order effect; its dry counterparts test whether steam changes that effect. The Ar reference and absolute arm results prevent a zero interaction from being mistaken for absence of damage. Equal inlet dose is appropriately separated from equal uptake. The first-segment samples, common reset, actual washout checks, and persistent function assay address the main alternative explanations without promising a unique microscopic cause from the timing comparison alone.
+
+The proposed reset is sufficiently bounded for a research proposal. It seeks recovery of the retained carbonatable fraction under one qualified process-compatible treatment, requires evidence beyond an uptake plateau, and explicitly avoids interpreting failure as absolute irreversibility. It also acknowledges internally generated water and the possibility that washout erases the contrast. There is no need to perform the reset pilot or demonstrate steam damage before judging the proposal complete.
+
+The inventory plan is credible at proposal level: complete digestion, matrix-specific recovery, separate capture fractions, whole-system accounting, and an explicit uncertainty scale. The manuscript does not mistake a carbonate signal for total Li or ordinary EDX for Li coverage. A specific spatial instrument would be useful when that conditional branch becomes necessary, but the initial causal comparison does not require a fully developed redistribution mechanism.
+
+The prospective alternating-policy validation is a substantive addition. Continuous-history fits alone cannot establish transferability; the withheld schedule challenges the inventory-only model and requires useful-output prediction. Comparison with carrier-state and cycle-count descriptions connects that prediction to the claimed scientific value. The practical endpoint also correctly charges the complete operating block rather than using recovered peak yield.
+
+Originality is appropriately limited. Carbonate stabilization, coupled coating/carrier regeneration, and prevention versus incomplete delayed recovery all have close precedents. The chapter credits them and proposes a particular steam-purge compatibility boundary for the lower-loading LSF formulation, with recovery and process costs. That is a defensible new question. A benign-steam result would support a useful bounded compatibility conclusion, while closing the larger persistent-protection branch as the manuscript states.
+
+## Minor issues requiring clarification
+
+1. **Extend state-preservation qualification explicitly to the intermediate endpoints.** Locations: `manuscript/sections/02-cyclic-oxides.tex:74` and `manuscript/sections/02-cyclic-oxides.tex:78`; related evidence statement: `manuscript/evidence/stage2-cyclic.md:34`.
+
+   Line 74 promises that first-segment specimens locate changes that already exist during steam. Line 78 explicitly requires in situ measurements or validated quench/transfer after reset and after washout, but does not explicitly apply that protection to the first-segment and completed-exposure specimens. Those intermediate states may be more sensitive to gas switching, cooling, carbonation, and redistribution than the final reset state. An ex situ carbonate or spatial difference created during sampling would not locate the original change in the steam segment.
+
+   **Remedy:** apply the same in situ or validated quench/controlled-transfer requirement to all three sampled endpoints. Define a common termination procedure, document its time and gas history, and state that temporal attribution is withheld for any species or spatial observable not shown to survive that procedure. This extends the already proposed qualification; it does not require a new experimental branch or demonstration of damage before publication of the proposal.
+
+2. **State how carbonate carbon limits COx and coke attribution in the function assay.** Location: `manuscript/sections/02-cyclic-oxides.tex:82`, with gas measurements at line 78 and output reporting at line 110.
+
+   Direct ethylene measurement gives a sound primary function endpoint. However, the instruction to measure conversion, COx, and coke leaves their carbon-source interpretation implicit. The chapter itself expects carbonate decomposition and recarbonation; consequently, CO2 in an ethane or oxidation interval cannot automatically be assigned to ethane overoxidation or coke combustion. The close Chacko precedent explicitly discusses this problem: original PDF p.116, printed p.101, corrects COx output for carbonate capture/release and lists the assumptions and propagated errors. This does not invalidate the primary ethylene result, but it matters when interpreting whether a changed coating preserves selective oxygen delivery.
+
+   **Remedy:** distinguish measured total COx from hydrocarbon-derived COx, state that carbonate-carbon storage/release enters the cycle carbon balance, and qualify coke attribution accordingly. Use the measured capture/release and retained-carbonate information to bound the non-hydrocarbon contribution; where this cannot be resolved, report total COx and the attribution limit rather than a precise combustion selectivity or coke amount inferred solely from regeneration CO2. No isotope campaign is required for the direct ethylene-output decision.
+
+## Evidence checked and review limits
+
+- Followed the previously read `literature/AGENTS.md`. No library edits, chapter edits, other reviewers' reports, or communication with other reviewers.
+- Read the complete stage 2 chapter, evidence note, and added bibliography entries.
+- Reviewed the local Gao 2020 full text, especially the oxygen-capacity result, molten-coating interpretation, and CO2-inhibition discussion. The [open primary article](https://www.osti.gov/servlets/purl/1803998) supports those limited claims; the chapter avoids transferring the separate pure-salt conversion example to coated LSF.
+- Reviewed Brody 2022 methods, cycle schedule, steam-purge process-model description, Table 1 values, surface-analysis discussion, and conclusion in the local full text. The [open primary manuscript](https://www.osti.gov/servlets/purl/2001472) supports the distinction between experimental Ar operation and modeled steam purges. Its surface-analysis discussion also cautions about Fe 3p/Li 1s overlap, supporting the chapter's refusal to equate a surface carbonate signal with an absolute Li inventory.
+- Directly extracted Chacko's original PDF p.116, printed p.101. The [official dissertation](https://repository.lib.ncsu.edu/server/api/core/bitstreams/d3d70d4c-9eb1-472e-ae8d-f32d2aba4d7f/content) confirms both the carbon-accounting difficulty and the printed hydroxide-carbonation stoichiometric error corrected in the chapter.
+- Directly extracted Fereres 2018 original PDF p.7, printed p.125. The reported air-to-CO2 switch after 30 days at 640°C supports the stated prevention/incomplete-recovery precedent and its treatment-specific limits.
+- Consulted the Barckholtz local full text for the carbonate/hydroxide interpretation and the limits on transferring a mixed-melt result to the supported formulation.
+- Focused web searches for LSF/carbonate/steam returned the cited primary studies and the dissertation; no closer verified equal-dose timing study was identified. This is a scoped originality check, not a guarantee of exhaustive novelty.
+
+The equilibrium stoichiometry, approximate Li and gas-dose scales, productivity inequality, and illustrative throughput arithmetic are internally consistent. The proposed diagnostic conditions are clearly labeled as choices, not demonstrated damage conditions or quantitative process optima. The two clarifications above do not change the causal design or require new experiments beyond the qualifications already proposed.

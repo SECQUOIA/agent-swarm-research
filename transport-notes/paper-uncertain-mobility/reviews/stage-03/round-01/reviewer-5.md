@@ -1,0 +1,49 @@
+# Independent review: Stage 03, round 01, reviewer 5
+
+Reviewer: `paper_reviewer_5`. Date: 2026-09-07.
+
+**Verdict: no major issue found; correct one minor notation collision before acceptance.** In particular, I found no gap in the new sharp supercritical limit, including its measure relaxation, compactness, exact-budget recovery, and moment domination. This is a mathematical review of Stage 03, not a claim of exhaustive literature novelty verification.
+
+## Snapshot and independence
+
+The reviewed snapshot is `13abd3fbd62d1a6faf46617e4f678ed14ac22bacb42b8ff161f0ee27d67f0b00`. I verified every manifest hash against the current files and read the entire new section, handoff, and its accepted model/localization prerequisites. I did not consult the other reports or coordinator checks and did not delegate or edit manuscript source.
+
+## Independent checks of the established regimes
+
+**Convexity, shells, and graded trials.** The quotient supremum proves convexity for every positive `q`, including below one; it is not relying on convexity of `x^q`. The reflection and half-period transformations have the stated ensemble invariance. For the shell certificate, averaging the derivative penalty gives `m/(r ell)`, which balances the reaction term `r² ell³` at `ell∝(m/r³)^(1/4)`. Source squared divided by this energy, followed by parameter measure of order `r²`, yields `r^(2−5q/4)m^(−q/4)`. The fold bump independently gives `M^((2−3q)/7)`. I checked the small-mass condition for the disjoint critical shells.
+
+The root-side graded bound follows from locally freezing a lower mobility bound and lower quadratic rate. Its reciprocal-rate complement is smaller because `a_R/r^(6+alpha)` is bounded. The scaled quartic central interval and rootless reciprocal estimate cover the remaining parameters. Normalization of the three cutoff choices yields the stated orders. Independent symbolic simplification confirms the endpoint exponent `(8−5q)/(q+4)` and the subcritical dominating exponent `7q/[2(q+4)]`.
+
+**Sharp subcritical certificate.** A paired local test has source `2 I z_c`, and reference energy `2 Q_psi z_c`. The tangent inequality for the negative power produces the displayed derivative penalty and constant term. Integrating a local squared derivative over its moving root contributes `M^(−5/4)d_E^(−5/4)a^(−3/4)`. After multiplication by `z_c^(q−1)` and root density `|sin r|/4`, the spatial factor is constant: `M^(−1−q/4) Z_E^(1+q/4)/4`. The resulting kernel coefficient is exactly `(qT/Q_psi)K_(psi,E)`, so the total budget cancels the surplus reference term. The calculation applies to arbitrary competing mobility measures with a density, without needing convergence to a smooth shape. Partial nonnegative kernels at arc endpoints preserve the required upper bound. The upper graded design supplies an integrable envelope even in the interval `4/3≤q<8/5`, where the uniform-design envelope would fail.
+
+**Critical coefficient.** On retained distances `r≥M^b`, with `b<1/7`, the test width divided by root distance tends to zero. This controls both potential error and the derivative-kernel change of variables; the factor `Z_E` may diverge without invalidating the relative estimate. The four one-sided fold approaches give `4b log(1/M)`. For recovery, `R=(M/log(1/M))^(1/7)`, `a_R∼(7/4)R^7`, and retained distances `r≥R log(1/M)` produce uniformly expanding harmonic neighborhoods. The omitted root annuli cost only `a_R^(−2/5)log log(1/M)`, while the core and rootless side cost `a_R^(−2/5)`. They are lower order than the retained logarithm. The sharp critical coefficient follows with the stated factor of four.
+
+## Independent checks of the new supercritical theorem
+
+1. **Singular mass.** The derivative-flattening argument is valid for a singular measure, including a singular continuous one. Inner regularity permits the compact sets to be chosen within a Lebesgue-null carrier of its relevant mass. Their open neighborhoods can have both small Lebesgue measure and small absolutely continuous mobility mass. Since the original derivative has integral zero, the correction coefficient tends to zero. The corrected primitive stays compactly supported and converges uniformly to the original trial; its singular derivative cost vanishes, while the absolutely continuous derivative cost converges. Thus singular mass really has no effect under the stated smooth-test convention. No physical process for a measure coefficient is assumed.
+
+2. **Lower semicontinuity and attained local value.** Vague convergence tests the continuous compactly supported function `|v′|²`. The response is therefore a supremum of continuous functions of the measure, and Fatou gives the integrated lower bound. A fixed compact bump gives a positive lower bound for every measure of mass at most one. The positive graded profile has integrable parameter tails for `1<alpha<min(2,6−8/q)`, proving finiteness. The exact transformation `d_m(x)=m^(6/7)d(x/m^(1/7))` scales the response by `m^(−3/7)` and parameter integration by `m^(2/7)`. Consequently lost or singular mass in a minimizing vague limit would force a strictly larger value. This validates the assertion of at least one unit-mass density minimizer, without imposing regularity or closability on it.
+
+3. **Natural endpoints for rough positive profiles.** On each fixed interval the positive lower bound for `d` controls the ordinary derivative, and smooth derivatives are dense in `L²(d dx)`. The integral correction is continuous in that norm because `1/d` is integrable on the compact interval. This justifies the stated density construction. The potential gives a uniform source-tail bound. For the whole-line limiting function, the local Sobolev estimate gives a bounded representative since `alpha<2`; multiplying by a cutoff then has derivative error controlled by `R^(−2)||v||_infty²∫_(R<|x|<2R)d`. The remaining original energy tails vanish. Thus the weak limit is admissible in the minimal energy completion, closing the otherwise delicate Neumann upper bound.
+
+4. **Arbitrary-competitor localization.** With `ell=(M/b_0²)^(1/7)`, rescaled compact tests give the common scalar prefactor `b_0^(−2)ell^(−3)`. Rescaled mobility has total mass at most one across the two fold cells. Local vague lower semicontinuity, Fatou on disjoint bounded parameter windows, and then increasing those windows give the stated lower bound. I independently recalculated the curvature power `(3−8q)/7` and the final power of two `(11q−12)/7`. Equal limiting masses minimize the strictly convex decreasing allocation cost. Mass escaping the fold scale or becoming singular cannot evade the bound.
+
+5. **Exact-budget recovery and parameter tails.** Adding a small graded profile and then applying the exact mass rescaling increases the integrated cost by at most `(1+epsilon)^beta_q`. The exact sine coordinate makes the potential quartic and keeps its metric between one and `sqrt(2)` on an entire half-cell. Multiplying the mobility by that metric cancels the derivative metric. Its mass tends to the prescribed half-budget by dominated convergence; the final scalar renormalization changes responses by a relative factor tending to one. The natural-endpoint lemma supplies pointwise local recovery. The graded lower background supplies an integrable envelope over each complete parameter half, including ordinary roots away from the fold. Thus dominated convergence applies to the full moment, not just compact unfolding parameters. Sending the near-minimizer error and added-background fraction to zero completes the sharp upper bound.
+
+6. **Physical and scientific scope.** Each optimal scalar value grows faster than logarithm powers, so the accepted same-budget transfer applies with exactly the factor `chi^q`. The recovered compact-wall fields have positive backgrounds. The text correctly distinguishes asymptotically sharp sequences from fields merely achieving the right order: adding half a uniform budget preserves the order and disproves an unrestricted concentration claim. No uniqueness, explicit local profile, fabrication-cap result, or vanishing-bulk limit is asserted.
+
+## Finding
+
+### R5-01 — Minor: reuse of the equilibrium symbol Z
+
+**Location:** `sections/03-predetermined.tex`, lines 293–298, beginning “Explicitly, with”.
+
+**Reason:** The local calculation introduces `Z=∫|sin s|^(−alpha_q) ds`, although the model and notation ledger already reserve `Z=A+KP` for equilibrium normalization. The calculation is mathematically clear from its local definition, but the same paper subsequently uses the physical prefactor containing the equilibrium `Z`. Reusing an established global symbol for a different normalization is avoidable and conflicts with the notation convention established in Stage 00.
+
+**Remedy:** Rename this local normalization `Z_q` (or retain an explicitly indexed arc-normalization symbol) in its definition, the formula for `d_q`, and the following displayed integral. Preserve `Z=A+KP` throughout the manuscript.
+
+## Citation and build evidence
+
+I inspected [Buttazzo–Oudet–Velichkov, Proposition 4.1](https://arxiv.org/pdf/1506.00141). Its measure-valued reinforcement compactness and semicontinuity framework supports the attribution made here. The manuscript correctly supplies its own additional arguments for the unbounded folded-potential domain and integrated moments. Broader novelty comparison remains a Stage 07 task.
+
+A fresh build in a temporary output directory used `latexmk -pdf -interaction=nonstopmode -halt-on-error -file-line-error -outdir=<temporary directory> main.tex`. It exited with status 0, produced 25 pages, and left no warning, overfull-box, or underfull-box notice in the final log. Symbolic checks of four independently derived scaling identities all simplified to zero. No numerical optimizer is claimed or required to establish this stage's exact variational constant.

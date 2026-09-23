@@ -1,0 +1,9 @@
+# Stage 3 acceptance
+
+Accepted after one round of five independent reviews, primary-agent adjudication, and correction of every valid minor finding by a separate agent. All five reviewers found no major mathematical issue. Reports, exact independent checks, adjudication, and the correction handoff are preserved in this directory and `verification/`.
+
+The primary agent read both new sections in full and audited their mathematical dependencies; see `stage03-root-reading.md`. The reviewed results include both mode-removal branches, elementary and seeded bounds and their asymptotics, all-light rounding, the exact equal-mass instance band, the useful analytic predecessors, the conditional general exclusion identity, and the exact single chronological chamber. The last result does not prove a general five-block reach theorem. No proved claim depends on that open question.
+
+I inspected all correction changes and reran the exact chamber verifier successfully. Independently comparing the reviewed certificate with the corrected one confirmed identical row multisets, primal, objective, event permutation, and exact total dual multiplier for each canonical sparse row. Canonical sorting removes the implementation-dependent row order without changing the mathematical proof. The revised checker also validates the same indexed certificate after reversed and shuffled row generation. Historical reference sources and frozen review files remain unchanged. The full stage suite passes, and the final 32-page LaTeX build has no warnings, unresolved references, or overfull/underfull boxes. I also inspected the stage 3 layout contact sheet.
+
+All three valid minor findings are resolved: internal-process wording, deterministic certificate row indexing, and accurate build-log availability. No major issue arose during correction, so the user's process does not require a repeat five-reviewer round. The accepted state is frozen as `stage03-accepted`. Stage 4 may now begin.

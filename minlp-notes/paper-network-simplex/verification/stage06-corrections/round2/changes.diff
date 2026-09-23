@@ -1,0 +1,131 @@
+--- reviewed-round2/code/network_simplex_benchmarks/strong_baselines.py
++++ corrected/code/network_simplex_benchmarks/strong_baselines.py
+@@ -72,11 +72,22 @@
+         ub = vstack(rows, format='csr') if rows else csr_matrix((0, q*E))
+         bounds = np.column_stack((np.zeros(q*E), np.kron(weights, u)))
+         assembled = perf_counter()
+-        result = linprog(c, A_eq=eq, b_eq=rhs_eq,
+-                         A_ub=ub if rows else None, b_ub=rhs_ub if rows else None,
+-                         bounds=bounds, method='highs')
++        if E == 0:
++            # SciPy rejects an empty objective. Check the constant model with
++            # the same numerical precheck tolerance used by membership_ef.
++            if not np.all(np.isfinite(rhs_eq)) or not np.all(np.isfinite(rhs_ub)):
++                raise ValueError("Constant model right-hand sides must be finite")
++            feasible = bool(np.all(np.abs(rhs_eq) <= 1e-9) and
++                            np.all(np.asarray(rhs_ub) >= -1e-9))
++            result = OptimizeResult(success=feasible, status=0 if feasible else 2,
++                message='Constant model checked at numerical tolerance 1e-9',
++                x=np.empty(0) if feasible else None, fun=0. if feasible else None)
++        else:
++            result = linprog(c, A_eq=eq, b_eq=rhs_eq,
++                             A_ub=ub if rows else None, b_ub=rhs_ub if rows else None,
++                             bounds=bounds, method='highs')
+         _finish(result, started, assembled, (eq, ub), q*E, states=q, merged=merge,
+-                reduction='fixed-positive-state-blocks')
++                reduction='fixed-empty-flow-check' if E == 0 else 'fixed-positive-state-blocks')
+         if result.success:
+             flows = result.x.reshape(q, E)
+             result.fun += float(objective[E:E+m]@yf)
+--- reviewed-round2/code/network_simplex_benchmarks/test_strong_baselines.py
++++ corrected/code/network_simplex_benchmarks/test_strong_baselines.py
+@@ -144,6 +144,44 @@
+         self.assertEqual(result.status, 2)
+         self.assertEqual(result.model_stats['variables'], 0)
+ 
++    def test_fixed_weight_zero_arc_constant_problem(self):
++        for m in (0, 2):
++            weights = [F(1, 3)]*m
++            objective = np.arange(1, m+1, dtype=float)
++            row = np.ones(m)
++            value = float(sum(weights))
++            for merge in (False, True):
++                for balance, rhs, expected in (([0., 0.], value, 0),
++                                               ([1., -1.], value, 2),
++                                               ([0., 0.], value-1., 2)):
++                    instance = Instance([], np.asarray(balance), m, [], np.empty(0))
++                    with patch('network_simplex_benchmarks.strong_baselines.linprog',
++                               side_effect=AssertionError('Constant problem must not call linprog')):
++                        result = optimize_ef(instance, objective, weights, merge=merge,
++                                             extra_rows=[(row, rhs)])
++                    self.assertEqual(result.status, expected)
++                    self.assertEqual(result.success, expected == 0)
++                    self.assertEqual(result.model_stats['variables'], 0)
++                    self.assertEqual(result.model_stats['nonzeros'], 0)
++                    self.assertEqual(result.model_stats['reduction'], 'fixed-empty-flow-check')
++                    self.assertGreaterEqual(result.assembly_seconds, 0)
++                    self.assertGreaterEqual(result.solve_seconds, 0)
++                    if expected == 0:
++                        np.testing.assert_array_equal(result.original_point, np.asarray(weights, float))
++                        self.assertEqual(result.x.size, 0)
++                        self.assertAlmostEqual(result.fun, float(objective@np.asarray(weights, float)))
++                    else:
++                        self.assertFalse(hasattr(result, 'original_point'))
++                # The direct branch is numerical, and invalid constants must
++                # not be reported as mathematical infeasibility.
++                instance = Instance([], np.zeros(1), m, [], np.empty(0))
++                result = optimize_ef(instance, objective, weights, merge=merge,
++                                     extra_rows=[(row, value-5e-10)])
++                self.assertEqual(result.status, 0)
++                with self.assertRaises(ValueError):
++                    optimize_ef(instance, objective, weights, merge=merge,
++                                extra_rows=[(row, np.nan)])
++
+     def test_solver_failures_are_never_called_infeasible(self):
+         a, _ = self.instance(1)
+         with patch('network_simplex_benchmarks.strong_baselines.linprog', return_value=OptimizeResult(status=4, success=False, message='injected failure')):
+--- reviewed-round2/paper-network-simplex/process/stage06-corrections.md
++++ corrected/paper-network-simplex/process/stage06-corrections.md
+@@ -1,8 +1,8 @@
+ # Stage 6 corrections after round 1
+ 
+-Status: all accepted corrections implemented and checked by the separate
+-correction agent. The major finding requires a fresh five-reviewer round;
+-this record does not accept Stage 6 or authorize moving to Stage 7.
++Status: the five round-2 reviews found no major issue. Their one accepted minor
++regression is now corrected and checked, as documented below. Root inspection
++and Stage 6 acceptance remain pending; this record does not start Stage 7.
+ 
+ ## Preservation before correction
+ 
+@@ -101,3 +101,40 @@
+ than the manuscript directory and failed before `latexmk` ran; it was corrected
+ and the clean build was rerun successfully. No code or numerical failure was
+ hidden by that command-path correction.
++
++## Round 2: zero-arc fixed-weight regression
++
++Reviewers 2 and 3 independently identified the same minor issue
++(`R2-S6R2-01` / `S06-R2-R3-01`): with no arcs, the fixed-weight formulation
++has no flow columns, and SciPy rejects an empty objective. The root accepted
++this issue after reading all five reports; no major issue remained.
++
++The separate correction agent preserved the reviewed baseline source, tests,
++correction record, and validation records with hashes under
++`verification/stage06-corrections/round2/reviewed-source/`. All 100 current
++round-2 dependency hashes were verified before this local edit.
++
++`optimize_ef` now checks the zero-column constant model directly. It tests the
++scaled balance right-hand sides and substituted constant inequalities at
++numerical tolerance `1e-9`, consistent with the existing membership precheck.
++Nonfinite constant RHS values raise `ValueError`. A feasible result has empty
++internal flow coordinates, the complete original fixed y vector, and the
++original objective constant; an infeasible result has status 2 and no purported
++original solution. Metadata records zero variables/nonzeros and identifies the
++direct check. No call to `linprog` occurs on this branch. Ordinary nonempty-flow
++LP execution and solver-failure handling are unchanged.
++
++The combined suite now passes **23 tests**. The focused new test checks feasible
++constant problems, inconsistent balances, and infeasible y-only rows in both
++merge modes, for `m=0` and `m=2`. It verifies original points, objective values,
++empty internal solutions, metadata, timing fields, and absence of solver calls.
++It also confirms the stated tolerance behavior and rejects nonfinite constants.
++The prior fixed/free-weight, coupled-row, and injected-solver-failure tests pass.
++
++No measured case has zero arcs. No benchmark was rerun, no measurement changed,
++and no manuscript source or generated table changed. The existing PDF and its
++hash are unchanged, so another LaTeX build is unnecessary. The round-2 source
++diff, test log, preserved source identities, and validation record are under
++`verification/stage06-corrections/round2/`; the current Stage 6 manifest has been
++refreshed. As adjudicated by the root, this minor repair alone does not require
++a third five-reviewer round.

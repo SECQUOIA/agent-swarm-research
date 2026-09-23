@@ -1,0 +1,12 @@
+import Mathlib
+#check AbsoluteValue.abs
+#check Matrix.det_le
+#check Int.natAbs_le
+#check Int.natCast_natAbs
+#check Nat.lt_size_self
+#check Nat.pow_le_pow_left
+#check Matrix.adjugate_apply
+#check Int.cast_natAbs
+#check Nat.pow_lt_pow_right
+#check Int.castRingHom
+#check RingHom.map_adjugate

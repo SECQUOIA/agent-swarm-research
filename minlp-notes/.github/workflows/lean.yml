@@ -1,0 +1,45 @@
+name: Lean verification
+
+on:
+  push:
+    paths: ['formal/**', 'code/potential_flow_mpd/envelope_certificate_example.json', '.github/workflows/lean.yml']
+  pull_request:
+    paths: ['formal/**', 'code/potential_flow_mpd/envelope_certificate_example.json', '.github/workflows/lean.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      LEAN_NUM_THREADS: '1'
+    steps:
+      - name: Free disk space for Lean and Mathlib
+        run: |
+          df -h /
+          # These preinstalled SDKs are unused by this Lean-only hosted job.
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet
+          df -h /
+      - uses: actions/checkout@v5
+      - uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: formal
+          build: 'true'
+          build-args: '--wfail'
+          use-mathlib-cache: 'true'
+          leanchecker: 'true'
+          leanchecker-args: 'Formal'
+      - name: Audit all project axioms
+        working-directory: formal
+        run: lake env lean Verify.lean
+      - name: Check proof-module coverage
+        working-directory: formal
+        run: python3 scripts/check_imports.py
+      - name: Check saved potential-flow certificate data
+        working-directory: formal
+        run: python3 topics/03-potential-flow/generate_example.py --check
+      - name: Check cubic certificate generation
+        working-directory: formal
+        run: python3 topics/04-cubic-gaps/generate_large_finite.py --check

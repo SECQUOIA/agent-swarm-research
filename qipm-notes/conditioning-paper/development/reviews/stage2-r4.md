@@ -1,0 +1,35 @@
+# Stage 2 independent review — reviewer 4
+
+**Decision: no major or minor issues identified in the submitted Stage 2 scope.** The geometric theorem package is mathematically coherent and the proofs close the candidate obligations identified during planning. This is an independent mathematical review, not a guarantee against all possible future criticism.
+
+## Material reviewed
+
+I read all of `sections/02-setup.tex`, `sections/03-geometry.tex`, `sections/04-widths.tex`, `macros.tex`, the current main document, the Stage 2 author notes, and the relevant Stage 1 source/claim audit. I checked the arguments below from the stated barrier definition, rather than accepting the author report as proof. `make -C conditioning-paper` succeeds; the current log has no warning, undefined-reference, or overfull-box matches. The planned later sections and provisional abstract are outside this review's scope.
+
+## Independent mathematical checks
+
+1. **Definitions and coercivity.** All differential inequalities live in the fixed affine tangent metric; a positive-definite tangent Hessian makes the local dual norm and condition number well defined. Compactness together with boundary divergence makes bounded barrier sublevels relatively compact in the interior. The supporting affine lower bound justifies this argument even if the barrier itself takes negative values. Existence and uniqueness of both analytic and central points therefore follow.
+
+2. **Dikin containment and semiboundedness.** The reciprocal-square-root Hessian differential inequality follows directly from self-concordance. If the first exit occurred before unit local distance, integrating the resulting finite second-derivative bound twice would contradict boundary divergence. Closing the ellipsoid uses closedness of P. For semiboundedness, the positive line derivative satisfies the stated Riccati differential inequality. Integrating its reciprocal and approaching the endpoint proves the bound also for boundary y. Optimizing the objective over the closed Dikin ellipsoid correctly yields the dual-norm support inequality at every interior point.
+
+3. **Gap parameterization.** Differentiating centrality gives the positive derivative with the factor μ⁻². The analytic-center limit as μ tends to infinity and the zero-gap limit as μ tends to zero justify the full attained interval. The integration sign is correct: `(1/g)' >= -1/μ²` gives `1/g(μ) <= 1/a_F + 1/μ`, hence the displayed lower gap bound. The conclusion `g=Θ(μ)` is instancewise for each fixed barrier, as stated.
+
+4. **Approximate one-sided containment.** Normalize the line by the local norm at x. The hypothesis becomes φ′(0)≥−ρ, and self-concordance gives φ′(t)≥t/(1+t)−ρ. The selected t₀ makes this positive. If the endpoint occurs before t₀, the conclusion is immediate; otherwise semiboundedness at the interior point t₀ gives the claimed constant after substitution. There is no use of an undefined boundary derivative. For sublevel points, the centrality-residual term has the correct sign and is controlled in the tangent dual norm.
+
+5. **Difference body and Loewner directions.** Choosing the downhill sign of any closed Dikin displacement puts it in the sublevel difference body; symmetry restores the original sign. Subtracting two contained sublevel points produces the factor 2C in the opposite inclusion. The resulting ellipsoid inclusion is correctly converted to `H_G <= 4 C_G² H_F`; the reverse direction uses C_F. Taking extreme eigenvalue ratios gives exactly the stated factor `16 C_F² C_G²`.
+
+6. **Aspect ratio and spectral edges.** The outer radius of K_g is D(g), not twice D(g). Its centered inradius is the minimum support function because K_g is closed, convex, symmetric, and contains zero in its interior. Both aspect-ratio bounds follow from the ellipsoid sandwich with the displayed factors. The sharper ℓ-based minimum-eigenvalue bounds use a feasible signed unit Dikin displacement and a maximally distant sublevel point, respectively. The largest-eigenvalue lower bound follows from objective support. Contracting a fixed interior ball toward an optimizer produces the factor `2rg/Δ` in the difference body and gives the upper edge with the correct squared constant.
+
+7. **Uniformity.** At the analytic center, applying exact asymmetric containment to the objective maximizer proves `Δ-a_F <= C_ν a_F`. This justifies the shared gap interval for bounded-parameter barrier families; it does not assume the centers exist before establishing their attained range. The approximate estimates are uniform only with residual bounded away from one. Conversion of a power law from gap to μ correctly uses the fixed-barrier gap comparison.
+
+8. **Canonical specialization and localization.** Strict feasibility identifies the equality tangent space and supplies central dual multipliers. Positivity of the slacks, complementarity, and pairing with a fixed strict point give the stated finite slack bound without a nondegeneracy assumption. The compact-sublevel extension requires an attained optimum and a positive compact sublevel; interpolation from an optimum to an interior point produces the needed ball. All pointwise proofs survive with the chosen level replacing Δ, including bounded directed exits. The proposition correctly refrains from extending global central-path existence to this setting.
+
+9. **Full spectrum.** The radial function is positive, continuous, and uniformly bounded away from zero, so the reciprocal minimax manipulations are valid. The two Courant–Fischer formulas match increasing eigenvalue order. The intersection-dimension argument gives the asserted relation between the two profiles. Their endpoint values agree with circumradius and inradius. For directed exits, a fixed ball about x bounds all times below, compactness bounds them above, and the orientation convention yields the exact first-profile equality with ℓ(x). No continuity is assumed where the sign convention can break it.
+
+## Scientific scope and exposition
+
+The manuscript states fixed-metric and unscaled-Hessian conventions before using them. It distinguishes primal gap from primal–dual gap, exact from approximate centrality, and scalar conditioning from full Loewner comparison. The explanation of radial extent versus supporting-hyperplane width avoids conflating two different directional functions.
+
+The source positioning is appropriately restrained. The identical gap conversion is attributed to Peña; the containment/Hessian geometric antecedent is explicitly attributed to Xiong–Freund; generic inverse-square upper bounds are not promoted as new. The sharper containment constant has a self-contained proof, so the indirectly supplied Nesterov theorem locator is not a hidden proof dependency. The final priority assessment remains assigned to the complete-manuscript literature review.
+
+No correction is requested for this stage on the basis of this review. Proceed to the classifications/examples stage after the coordinating author evaluates all five reports.

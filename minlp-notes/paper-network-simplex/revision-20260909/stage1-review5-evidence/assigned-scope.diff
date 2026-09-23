@@ -1,0 +1,500 @@
+--- baseline/main.tex
++++ stage1/main.tex
+@@ -42,25 +42,27 @@
+ \maketitle
+ \begin{abstract}
+ We study the convex hull of selected products between a bounded
+-equality-constrained network flow and a simplex vector. Starting from known
+-simplex disaggregation, we give an observation-sensitive formulation whose
+-additional coordinates are counted exactly by the cycle ranks of unobserved
+-subgraphs, with unit flow and product coefficients. Forest complements remove
+-all additional coordinates. For bounded block cycle rank we develop finite
+-support libraries for exact separation and compact recovery without online
+-linear programming; a $K_4$ with five observed products already forces a
+-product-coefficient ratio of two. A complementary result holds on arbitrarily long
+-chains of parallel arc pairs with one bypass: unit flow/product descriptions
+-exist whenever at most three simplex labels are observed, and four labels can
+-force a coefficient ratio of two. After local checks and bound grouping,
+-two observed labels need five profile tests; three use 16 positive circuits
+-and flow-balance repairs. Sparse
+-Fibonacci constructions give exponential coefficient ratios on simple
+-series--parallel graphs of maximum degree three. A coordinate-section transfer
+-of transportation universality gives unrestricted ratios with only two labels
+-on general networks. Exact implementations and strengthened numerical LP
+-comparisons show substantial model-size reductions, while global state merging
+-and native flow bounds remove some apparent runtime advantages.
++equality-constrained network flow and a simplex vector. Classical
++disaggregation gives a polynomial-size exact formulation, but copies the
++network for every simplex state. We determine how observations and graph
++structure reduce that expansion and control inequalities in the original
++coordinates. An exact formulation retains one additional coordinate for each
++independent cycle in each unobserved subgraph for a label observed in a block, with unit flow,
++product, and auxiliary coefficients. Forest complements therefore require
++no additional coordinates. Bounded block cycle rank yields finite libraries
++for exact separation and recovery without online linear programming, together
++with a rank-dependent coefficient bound that is sharp at rank three.
++On arbitrarily long chains of parallel arc pairs with one bypass, every
++observation pattern using at most three simplex labels admits unit flow
++and product coefficients; four labels can force a coefficient ratio of two.
++Fibonacci constructions give exponential product-coefficient ratios on
++simple series--parallel graphs of maximum degree three. A transfer of
++transportation universality preserves selected product coordinates and gives
++unbounded ratios with two labels on general networks. These obstructions
++delimit simple original-coordinate descriptions despite small extended
++formulations. Exact implementations and numerical LP comparisons demonstrate
++substantial formulation-size reductions, while conventional formulations
++with unused states merged are often faster.
+ \end{abstract}
+ 
+ \input{sections/00-introduction}
+--- baseline/sections/00-introduction.tex
++++ stage1/sections/00-introduction.tex
+@@ -10,79 +10,100 @@
+ reduce that expansion, and when the resulting hull admits simple inequalities
+ in the original coordinates.
+ 
++The general convex hull is already understood through disjunctive
++formulations and the simultaneous convexification framework of
++\citet{DavarniaRichardTawarmalani2017}. Its closest network specialization,
++\citet{KhademniaDavarnia2025}, provides a complete aggregation-and-projection
++framework and explicit tree and forest inequalities. Our aim is to identify
++what the equality-flow structure and the pattern of retained products imply
++\emph{within} that known hull: how many state coordinates a constructive
++formulation retains, when a complete separator can use a finite structural
++library, and when nonunit product coefficients are unavoidable.
++
+ We consider a bounded equality-flow polytope
+ $P=\{x:Ax=b,\ 0\le x\le u\}$ on a directed multigraph and a vector
+ $y\ge0$ with $\sum_jy_j\le1$. Only products $z_{ej}=x_e y_j$ in a
+-specified set $\Obs$ are retained. Let $H$ be their joint convex hull.
+-Equality conservation is essential to the circulation arguments. Converting
+-balance inequalities to equalities with slack arcs is possible, but the graph
+-assumptions must then be checked on the transformed network. The general
+-network and block results permit arbitrary arc orientations, parallel arcs,
+-loops, zero simplex weights, and capacity degeneracy. The flat-chain results
+-use the specified directed unit-data topology, with arbitrary observations
+-and zero weights allowed.
++specified set $\Obs$ are retained. We call these retained product coordinates \emph{observations}
++and their joint convex hull $H$. A simplex label is an index $j$;
++the unused weight $1-\sum_jy_j$ forms an additional residual state.
++The original coordinates are the flows $x$, the weights $y$, and the retained
++products $z$.
+ 
+-The main reductions use two kinds of information. Circulations separate across
+-the cyclic blocks of the underlying undirected graph. Within each block,
+-states with no observed product can be merged exactly. More strongly, the
+-remaining freedom of an observed state consists precisely of circulations
+-supported on its unobserved arcs. Thus a graph with many cycles can still
+-have no missing state coordinates when its observations meet every cycle.
+-Conversely, a long chain can retain a small shared state profile even though
+-its cycle rank grows with its length.
++The key distinction is between network size and unobserved circulation
++freedom. Circulations separate across the cyclic blocks of the underlying
++undirected graph, and labels absent from a block can be merged there. Within
++an observed label, a remaining circulation must be supported entirely on
++unobserved arcs. For example, on a cycle, one observed arc determines the
++whole state circulation. More generally, if the unobserved arcs form a forest
++for each block and observed label, no additional state coordinates are
++needed, even when the network itself has many cycles. A complementary
++reduction applies to a chain of parallel arc pairs with one bypass: all
++serial components share a vector of state flows whose dimension depends on
++the number of observed labels, rather than on chain length.
+ 
+-Our contributions are organized around these two reductions and their limits.
++These reductions have two uses. They give exact formulations whose size
++reflects the information actually present in the model. They also make it
++possible to classify when eliminating state variables preserves simple
++inequalities. The latter issue is not settled by total unimodularity of a
++single network: sharing aggregate flows among several states and retaining
++only selected products changes the projected geometry. Our positive and
++negative results locate concrete boundaries for unit coefficients, meaning
++coefficients in $\{0,\pm1\}$ on flows and products. Simplex coefficients may
++depend on the rational network data.
++
++Our main results are as follows.
+ \begin{enumerate}[leftmargin=*,itemsep=5pt]
+-\item \emph{Observation-sensitive formulations on arbitrary graphs.}
++\item \emph{An observation-sensitive exact formulation.}
+ For a cyclic block $B$ and a label $j$ observed there, let $\rho_{Bj}$
+-be the cycle rank of the subgraph formed by arcs without an observation in
+-state $j$, including its isolated vertices when counting components.
+-The construction in \cref{thm:observed-compression} uses exactly
+-$\sum_{B,j}\rho_{Bj}$ additional coordinates, with unit flow, product,
++be the cycle rank of its unobserved subgraph.
++\Cref{thm:observed-compression} gives a formulation with exactly
++$\sum_{B,j}\rho_{Bj}$ additional coordinates and unit flow, product,
+ and auxiliary coefficients in a specified rational row scaling.
+-This is the residual-coordinate count of the construction; it is not a
+-minimum over all extended formulations. Forest complements give a direct
+-original-coordinate hull. The same count is the minimum number of additional
+-\emph{individual products} needed to reconstruct each state on the ambient
+-circulation space, a narrower completion statement.
++This identifies the residual freedom of an explicit construction; it is
++not a minimum over all extended formulations. The same number is the
++minimum number of additional \emph{individual products} needed to recover
++all state products on the ambient circulation space. The contribution is
++the graph-based formulation and its coefficient control, building on
++standard elimination by multiplied balance equations.
+ 
+-\item \emph{Explicit separation and recovery from graph structure.}
+-Cycles and theta blocks admit interval and six-support descriptions with
+-unit flow/product coefficients. Any number of parallel paths admits a
+-transportation cut description and a flow separator. For arbitrary blocks
+-of maximum cycle rank $r$, finite support libraries give exact separation
+-in $2^{O(r^2)}N$ rational arithmetic operations and compact recovery in
+-$2^{O(r^3)}N$, where $N=|V|+|E|+m+|\Obs|$, after observation grouping.
+-Neither procedure calls an online LP. The coefficient bound is
+-$H_r$ from \eqref{eq:rank-coefficient-bound}; in particular $H_3=2$ is
+-sharp on a unit-capacity $K_4$ with two explicit labels and five products.
+-The recovery parameter bound is deliberately distinguished from the smaller
+-separation bound.
++\item \emph{Complete structural separation and recovery procedures.}
++For blocks of maximum cycle rank $r$, finite libraries give exact
++separation in $2^{O(r^2)}N$ rational arithmetic operations and compact
++recovery in $2^{O(r^3)}N$, where
++$N=|V|+|E|+m+|\Obs|$, after observation grouping. Neither procedure
++calls an online LP. Cycles, theta blocks, and parallel-path blocks admit
++simpler interval, support, and transportation-cut descriptions.
++A separate finite-library construction applies to flat chains with a fixed
++number of observed labels, despite their unbounded cycle rank.
++These procedures provide either a valid separating inequality or a
++constructive decomposition in the known exact hull; their contribution is
++the specified structural bounds and explicit certificates, rather than
++polynomial-time separation itself.
+ 
+-\item \emph{A sharp observed-label threshold on flat chains.}
+-On a chain of parallel arc pairs with one bypass, the full shared profile
+-can be eliminated using a finite library depending only on the number $a$
+-of labels observed anywhere on the chain. After local checks and bound
+-grouping, at most two observed labels need five profile tests and explicit
+-interval recovery. Three labels use
+-16 positive circuits; two exceptional bypass coefficients can be repaired
+-using one flow-balance equation. Consequently every observation pattern
+-with $a\le3$ has a unit flow/product description, whereas a five-vertex,
+-nine-arc example with four observed labels does not. This threshold is
+-independent of the number of unused simplex coordinates and of chain length.
++\item \emph{Sharp boundaries and sparse obstructions for coefficients.}
++The bounded-rank description has coefficient bound $H_r$ from
++\eqref{eq:rank-coefficient-bound}; $H_3=2$ is attained by a unit-capacity
++$K_4$ with two explicit labels and five products.
++On a flat chain, every observation pattern with at most three observed
++labels admits a unit flow/product description, and four labels can force
++a ratio of two. With growing label count, Fibonacci ratios occur on simple
++series--parallel graphs of maximum degree three with only linearly many
++observed products. On unrestricted networks, a coordinate-section transfer
++of transportation universality gives arbitrary product-coefficient ratios
++with two explicit labels and unit network data. These lower bounds concern
++actual retained products and persist under addition of affine-hull
++equations; they do not follow merely from finding a nonunit aggregation
++multiplier or projecting a facet of a larger product space.
++\end{enumerate}
+ 
+-\item \emph{Coefficient obstructions in sparse original coordinates.}
+-A Fibonacci family forces exponentially growing product-coefficient ratios
+-on series--parallel networks with only linearly many observed products;
+-the obstruction persists on simple graphs of maximum degree three.
+-For unrestricted networks, a coordinate-section transfer of classical
+-three-way transportation universality gives arbitrary coefficient ratios
+-already with two explicit labels and unit network data. Its large
+-coefficient magnitudes coexist with polynomial encoding and polynomial-size
+-extended formulations. The coordinate-section proofs retain the relevant
+-products as actual coordinates of the sparse hull, rather than relying on
+-projection from a larger product space.
+-\end{enumerate}
++To the best of our knowledge, the residual-cycle formulation with the stated
++coefficient control, the complete structural libraries with their stated
++bounds, and these coefficient thresholds and sparse constructions have not
++been established in the prior work discussed in
++\cref{subsec:prior-work}. The underlying disaggregation, product elimination,
++transportation projection, and support-function methods are established.
++\Cref{tab:prior-comparison} separates those ingredients from the precise
++results claimed here; \cref{tab:structural-scope} records the graph classes.
+ 
+ \begin{table}[tb]\centering\small
+ \caption{Structural scope of the positive results. A unit coefficient is in
+@@ -108,13 +129,13 @@
+ \end{tabular}
+ \end{table}
+ 
+-These results refine established convexification methods. Simplex
+-disaggregation, shared-simplex gluing, reduced reformulation--linearization,
+-transportation projections, and normal-fan refinements supply the underlying
+-mechanisms. \Cref{subsec:prior-work} gives precise comparisons, especially
+-with the network convexification of \citet{KhademniaDavarnia2025}.
+-The claims concern the particular sparse formulations, complete structural
+-oracles, and coefficient boundaries established here.
++Equality conservation is essential to the circulation arguments. Converting
++balance inequalities to equalities with slack arcs is possible, but all graph
++assumptions must then be checked on the transformed network. The general
++network and block results permit arbitrary orientations, parallel arcs,
++loops, zero simplex weights, and capacity degeneracy. The flat-chain results
++use the specified directed unit-data topology. They do not assert the same
++fixed-label threshold on general nested series--parallel networks.
+ 
+ Exact rational implementations and numerical LP formulations make the
+ distinction between these outputs concrete. The experiments compare with
+--- baseline/sections/01-foundations.tex
++++ stage1/sections/01-foundations.tex
+@@ -55,66 +55,112 @@
+ the joint hull in \eqref{eq:sparse-hull}.
+ 
+ \subsection{Relation to prior work}\label{subsec:prior-work}
+-The general convexification principle is established. Disjunctive hull
+-formulations \citep{Balas1998} apply after expanding the simplex into its
+-vertices. Simultaneous convexification over a polytope times a simplex is
+-developed by \citet{DavarniaRichardTawarmalani2017}.
+-\citet{KhademniaDavarnia2025} specialize this setting to network polytopes:
+-their electronic companion, p.~1, equation~(25), gives a full extended
+-hull,\footnote{The published electronic companion is available at
+-\href{https://pubsonline.informs.org/doi/suppl/10.1287/moor.2023.0001/suppl_file/moor.2023.0001.sm1.pdf}{this direct supplement link}.}
+-and their
+-aggregation-and-projection framework gives a complete original-space
+-description in principle. Their explicit tree and forest constructions
+-identify more structured inequality families; the forest recipe for multiple
+-simplex coordinates should not be confused with the entire projection
+-framework. Their general framework permits balance inequalities, and their
+-Section~3 represents equality balances by pairs of opposite inequalities.
+-Thus their network specialization includes \eqref{eq:flow-polytope}; here we
+-exploit its underlying equality circulation space. We use the published
+-article and its electronic companion for equation and example numbering.
+-
+-The shared-simplex gluing principle is also known. In particular,
++The starting hull and the operations used to describe it are established.
++Disjunctive programming \citep{Balas1998} applies after expanding the simplex
++into its vertices. \citet{DavarniaRichardTawarmalani2017} develop simultaneous
++convexification over a polytope times a simplex, including linear combinations
++of bilinear products. Selecting only some individual products is a special
++case of that framework. In particular, sparsity of $\Obs$ does not make
++existence of an exact extended formulation a new result.
++
++The closest predecessor is \citet{KhademniaDavarnia2025}. Their Theorem~1
++gives a complete original-coordinate hull description through all extended
++cancel-and-relax (EC\&R) inequalities. Their Theorem~2 identifies explicit
++tree constructions for one simplex variable, and their Theorem~3 supplies a
++structured forest construction for multiple simplex variables. The scope
++of that particular forest recipe is narrower than their complete projection
++framework. Their Section~3 represents equality balances by opposite
++inequalities, so their setting includes \eqref{eq:flow-polytope}.
++We use equality conservation to obtain residual-cycle counts, complete
++finite libraries for the specified graph classes, and sharp coefficient
++boundaries. These results refine the established hull using its equality circulation
++space.
++
++Two established reductions are especially close to our formulation.
+ \citet[Proposition~2.6]{Davarnia2016} proves that convexifying Cartesian
+-components separately is exact when the components share the same simplex.
+-The cited locator belongs to the dissertation, which is distinct from the
+-2017 journal article. Our block decomposition applies this principle to the
+-independent circulation spaces of an equality-constrained network. We give a
+-direct proof to make the treatment of sparse observations and zero weights
+-explicit.
+-
+-Several established methods explain the subsequent structural reductions.
+-Reduced reformulation--linearization uses multiplied linear equations to
+-remove common-factor products \citep{LibertiPantelides2006}. In networks,
+-the remaining freedom can be identified with circulations supported on
+-unobserved arcs. The network representation of Cayley hulls of
+-\citet{KisHorvath2022} gives cut descriptions and transportation projections;
+-their Sections~5.7 and~5.9 are close predecessors for the parallel-path
+-construction. The lower-bound shift and transportation projection in their
+-Section~5.9 (Proposition~22 and equations~(30)--(31)) give the more direct
+-comparison.
+-The support geometry of Minkowski sums and edge-generated zonotope
+-refinements is classical \citep{GritzmannSturmfels1993,OnnRothblum2004}.
+-These are ingredients of the graph-specific formulations and separation
+-procedures, rather than new general convexification mechanisms.
+-
+-Two further comparisons delimit coefficient obstructions. Three-way
+-transportation universality is established by \citet{DeLoeraOnn2006}, and
+-large coefficients in general $0/1$ polytopes are classical
+-\citep{AlonVu1997}. A restricted network realization must therefore be
+-specified as part of a coefficient result. \citet{Fiorini2006} gives a
+-general transfer of $0/1$-polytope facets to acyclic-subgraph facets.
+-Our transfer instead preserves selected bilinear coordinates in sections
+-of continuous network--simplex hulls; neither facet transfer nor large
+-coefficients in graph polytopes is a new phenomenon in itself.
+-Moreover, the integrality of
+-\emph{aggregate} flows on two-terminal series--parallel networks does not
+-give a hull description in selected state-flow coordinates.
+-\citet[Remark~1]{AlmoghrabiSkutellaWarode2026} explicitly distinguish
+-aggregate integrality from decomposability of the vector of individual
+-commodity flows. Our observed products retain such individual-state
+-information. Neither a sparse extended formulation nor polynomial separation
+-precludes large numerical coefficients after projection.
++components separately is exact when they share a simplex. We apply that
++gluing principle to the independent block circulation spaces and explicitly
++refine the blockwise merged states into common global states, including
++zero weights. \citet[Theorem~3.1]{LibertiPantelides2006} use multiplied linear
++equations to eliminate common-factor bilinear terms. Our nullity count is
++the graph specialization of that linear algebra: the undetermined state
++flows are precisely the circulations on unobserved arcs. The resulting
++formulation also retains all state and residual capacity bounds and controls
++the coefficients after elimination. This last distinction matters because
++eliminating a bilinear equation alone does not justify discarding its convex
++relaxation, as \citet[discussion after Theorem~3.1]{LibertiPantelides2006}
++explicitly observe.
++
++For direct descriptions, \citet{KisHorvath2022} represent Cayley hulls by
++networks and derive projection inequalities from cuts. Their Sections~5.7
++and~5.9 are close predecessors for our parallel-path construction; in
++particular, Proposition~22 and equations~(30)--(31) in Section~5.9 use a
++lower-bound shift and a transportation projection. We specialize those
++mechanisms to observed state slices and give the resulting separator and
++recovery. For bounded-rank blocks, the support geometry of Minkowski sums
++and refinements by edge-generated zonotopes is classical
++\citep{GritzmannSturmfels1993,OnnRothblum2004}. Our bounds use the particular
++totally unimodular cycle matrix to control all state directions, support
++normals, and recovery bases, including degenerate slices.
++
++Coefficient growth also has important precedents. In the published article, \citet[Example~2]{KhademniaDavarnia2025} already exhibits a nonunit dual aggregation
++weight with two simplex variables. Such a multiplier alone need not force
++a nonunit ratio between product coefficients in every original-coordinate
++description. Our coordinate-section arguments establish that stronger
++conclusion for the stated restricted networks, and make it invariant under
++affine-hull equations. More generally, large coefficients for $0/1$ polytopes
++\citep{AlonVu1997} and transfers of facets to graph polytopes
++\citep{Fiorini2006} are established. The new restrictions here concern the
++actual retained product coordinates, label count, and graph structure.
++
++Likewise, \citet[Theorems~1.1 and~1.2]{DeLoeraOnn2006} establish
++three-way transportation and bitransportation universality, including a
++two-commodity network interpretation. Our unrestricted-network result
++transfers that universality to a coordinate section of a sparse bilinear
++hull with two explicit simplex labels and unit network data. On
++series--parallel networks, integrality of aggregate multiflows does not
++settle this question: \citet[Remark~1]{AlmoghrabiSkutellaWarode2026}
++distinguish aggregate integrality from decomposability of the individual
++commodity-flow vector. The observed products preserve individual-state
++information that aggregate flows omit.
++
++A recent related extension is \citet{DavarniaRahimian2026}, who develop
++aggregation and projection for bilinear constraints with binary simplex
++variables, with applications to mixing sets in chance-constrained
++programming. Their target is a hull in the $x$-space after eliminating the
++simplex variables (Section~3). Here $y$ is continuous and remains in the
++hull together with selected products; our results concern the circulation
++structure and coefficient geometry of that retained-coordinate hull.
++
++\begin{table}[tb]\centering\small
++\caption{Established ingredients and the specific developments in this paper.
++The comparison concerns the stated constructions and bounds, not priority
++for general convexification or polynomial-time separation.}
++\label{tab:prior-comparison}
++\begin{tabular}{>{\raggedright\arraybackslash}p{.43\linewidth}
++                >{\raggedright\arraybackslash}p{.49\linewidth}}\toprule
++Established ingredient & Development here\\\midrule
++Simplex disaggregation and complete EC\&R projection
++\citep{DavarniaRichardTawarmalani2017,KhademniaDavarnia2025}
++& Exact residual-cycle formulation with unit coefficients;
++\cref{thm:observed-compression}.\\[4pt]
++Shared-simplex gluing and elimination by multiplied equalities
++\citep{Davarnia2016,LibertiPantelides2006}
++& Blockwise observation merging and recovery, with
++$\sum_{B,j}\rho_{Bj}$ residual coordinates and the individual-product
++completion interpretation; \cref{thm:block-state-reduction,prop:minimum-completion}.\\[4pt]
++Transportation projection and support refinements
++\citep{KisHorvath2022,GritzmannSturmfels1993,OnnRothblum2004}
++& Complete graph-specific libraries and coefficient bounds;
++\cref{thm:bounded-rank,thm:rank-recovery,cor:chain-observed-labels}.\\[4pt]
++Nonunit aggregation weights, large polytope coefficients,
++and transportation universality
++\citep{KhademniaDavarnia2025,AlonVu1997,DeLoeraOnn2006}
++& Unavoidable product-coefficient ratios: the sharp flat-chain threshold,
++sparse Fibonacci family, and two-label coordinate-section transfer;
++\cref{thm:three-state-chain,cor:fibonacci-simple,thm:universality}.\\\bottomrule
++\end{tabular}
++\end{table}
+ 
+ \subsection{The known exact disaggregation}\label{subsec:disaggregation}
+ For $\lambda\ge0$, define the scaled flow system
+--- baseline/sections/09-conclusion.tex
++++ stage1/sections/09-conclusion.tex
+@@ -1,31 +1,41 @@
+ \section{Conclusion}\label{sec:conclusion}
+-Sparse network--simplex convexification depends on which state information
+-survives the observations. On an arbitrary equality-flow graph, the cycle
+-rank of each unobserved subgraph gives the exact residual-coordinate count
+-of the observation-sensitive construction. Forest complements remove all
+-such coordinates. At bounded block rank, finite normal libraries also
+-permit original-coordinate separation and constructive recovery, including
+-degenerate state domains.
++The main conclusion is that exact sparse network--simplex formulations are
++controlled by unobserved circulation freedom. Classical disaggregation
++already gives the hull; the observation-sensitive construction retains only
++one coordinate per independent cycle of each unobserved block--state
++subgraph. It therefore provides a direct hull description when those
++subgraphs are forests and a smaller exact extension when cycles remain.
++The count describes this construction and the associated completion by
++individual products, rather than unrestricted extension complexity.
+ 
+-The coefficient results give complementary boundaries. Rank three already
+-requires coefficient two on a five-product $K_4$ example. A flat chain,
+-despite its unbounded cycle rank, admits unit flow/product coefficients
+-whenever at most three labels are observed, and four observed labels can
+-force a ratio of two. With growing label count, Fibonacci ratios occur on
+-simple series--parallel graphs of maximum degree three. With unrestricted
+-graphs, even two labels permit unbounded ratios.
+-Thus neither small treewidth alone nor a small number of labels alone
+-implies a uniform coefficient bound for the full class. These obstructions
+-concern original-coordinate descriptions and do not imply difficult
+-separation or large extension complexity.
++Eliminating the remaining state coordinates reveals a different structural
++question: which coefficients are needed in the original coordinates?
++Bounded block cycle rank permits finite support and recovery libraries and
++a uniform rank-dependent coefficient bound. Long flat chains admit a second
++positive result: unit flow/product coefficients suffice for every observation
++pattern with at most three observed labels, and four labels can force a
++ratio of two. The rank-three $K_4$ example, sparse Fibonacci constructions
++on simple series--parallel graphs of maximum degree three, and two-label
++universality transfer show why neither small treewidth alone nor a small
++number of labels alone implies a uniform coefficient bound over general
++networks. These are obstructions to simple projected descriptions; exact
++extended formulations and polynomial-time separation remain available.
+ 
+-For implementation, global state merging and native flow bounds are essential
+-baselines. They often make a conventional LP the fastest option. Local cycle
+-and observation reductions can yield further substantial size savings, while
+-specialized rational oracles provide exact cuts and compact decompositions
+-that a numerical feasibility status does not supply. The retained code,
+-raw measurements, and independent checks make both the advantages and the
+-negative runtime findings reproducible. The complete results apply to the
+-stated component hull; adding external coupling constraints gives a valid
+-relaxation and requires its own convexification analysis if an exact hull
+-of the enlarged model is sought.
++For modeling, the results give a choice between retaining a small set of
++state coordinates and generating complete structural cuts. For exact
++verification, the recovery constructions turn membership into explicit
++state flows and convex decompositions, including on degenerate boundaries.
++The computational evidence supports substantial formulation-size savings,
++particularly when labels occur in different blocks. It also shows that
++global merging of unused labels and native flow bounds often make a
++conventional LP the fastest method. A runtime benefit must therefore be
++demonstrated for the intended workload rather than inferred from a smaller
++formulation or an operation bound.
++
++The scope is the equality-flow component hull with a shared simplex and
++selected products. Additional side constraints may be imposed on this hull
++to obtain a valid relaxation, but exactness for a larger coupled model
++requires a separate argument. Likewise, the sharp observed-label threshold
++is proved for flat chains, not for all nested series--parallel networks.
++These boundaries separate the completed structural results from extensions
++that the present arguments do not establish.
+--- baseline/references.bib
++++ stage1/references.bib
+@@ -32,6 +32,16 @@
+   title = {Convexification Techniques for Bilinear and Complementarity Constraints with Application to Network Interdiction},
+   school = {University of Florida}, year = {2016},
+   url = {https://ufdcimages.uflib.ufl.edu/UF/E0/05/02/79/00001/DAVARNIA_D.pdf}
++}
++@misc{DavarniaRahimian2026,
++  author = {Davarnia, Danial and Rahimian, Hamed},
++  title = {A Unifying Convexification Framework for Chance-Constrained Programs with Finite Support via Bilinear Formulations over a Simplex},
++  year = {2026},
++  eprint = {2510.15861},
++  archivePrefix = {arXiv},
++  primaryClass = {math.OC},
++  url = {https://arxiv.org/abs/2510.15861v2},
++  note = {Preprint, version 2, August 11, 2026}
+ }
+ @article{KisHorvath2022,
+   author = {Kis, Tam{\'a}s and Horv{\'a}th, Mark{\'o}},

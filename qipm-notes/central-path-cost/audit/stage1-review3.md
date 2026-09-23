@@ -1,0 +1,39 @@
+# Stage 1 independent review 3
+
+Verdict: **NO MAJOR ISSUES**. The foundations and exact-distance results are mathematically sound in their intended parameter ranges. Three small repairs should be made before Stage 1 closes. No manuscript files were edited and no other reviewer reports were consulted.
+
+## Required minor corrections
+
+1. **State the parameter ranges in both movement corollaries.** In `sections/01-foundations.tex:133–145`, add `0<R<1` to the statement and identify the self-concordant-barrier assumption explicitly, or impose these as standing assumptions immediately before the corollary. The definition of a forward-R sequence currently does not constrain R, whereas the denominator is undefined for R>=1. In `sections/02-exact-distance.tex:326–349`, explicitly assume `0<epsilon<W_0` and `0<R<1`. The immediately preceding paragraph discusses epsilon>=W_0 and epsilon=0, making it unsafe to leave the preceding theorem's open accuracy range implicit. For epsilon>=W_0 the optimizer is zero and there is no positive gamma satisfying the displayed Lambert characterization. These are hypothesis omissions with immediate repairs, not defects in the intended results or proofs.
+
+2. **Define the Peirce spaces used in the Jordan proof.** At `sections/02-exact-distance.tex:148–151`, the reader encounters `V_ij` and later `V_ii` without a definition. Add `V_ii=R e_i` and, for i<j, `V_ij={h:e_i circ h=e_j circ h=h/2, e_k circ h=0 for k not in {i,j}}`. This makes the orthogonal decomposition and its coefficient normalization understandable to an optimization reader who knows matrix spectral decompositions but not Jordan notation. The inversion derivative is correct; its current alternative phrase “power series ... followed by scaling the diagonal entries” is unnecessarily imprecise. The simplest precise justification is to differentiate `z circ z^{-1}=e`, use invertibility of the multiplication operator at positive z, and apply the displayed Peirce rules. No new mathematical development is required.
+
+3. **Give the metric hypothesis in the NT2002 comparison.** At `sections/01-foundations.tex:17–19`, identify the product barrier as the sum of a logarithmically homogeneous cone barrier and its conjugate dual barrier. The current summary is recognizable and does not explicitly make a false universal claim, but mentioning only “the product cone” leaves the central hypothesis on the metric unstated. A short qualifier suffices. The distinction will matter especially when the manuscript later compares primal and primal–dual movement.
+
+## Mathematical checks
+
+- The global chord bound uses the starting norm in the correct direction. Integrating the mixed self-concordance inequality along a curve gives `||y-x||_x <= exp(length)-1`, and segmentation consequently uses `log(1+R)`, while the lower count uses `-log(1-R)`.
+- The Hermitian dilation gives exactly two copies of `g''=b''/2`. The real and complex trace-Hessian normalizations are consistent, including the factor 2 on off-diagonal entries. The zero singular-value and repeated-eigenvalue statements are correctly formulated almost everywhere, avoiding nonexistent two-sided derivatives at isolated crossings.
+- The Jordan off-diagonal coefficient is the displayed divided difference with the full Peirce-component squared norm, rather than twice that norm. Differentiating the inverse identity confirms the coefficient `-(z_i z_j)^{-1}`. The repeated-cluster perturbation argument is standard and the application to absolutely continuous paths is legitimate.
+- Spectral contractions are used only for radial and coordered common-frame equality. No invalid distance formula for arbitrary differently framed endpoints is asserted.
+- The exact barrier parameter is `alpha` times rank, despite the larger additive logdet certificate from the ambient restriction. Gradient orthogonality to the off-frame directions establishes the correct inverse-Hessian gradient norm. Scaling >=1 is correctly separated from arbitrary positive metric scaling.
+- The Jordan objective reduction uses nonnegative frame overlaps and their unit row/column sums correctly, including direct products. Signed eigenvalues can be rearranged into the objective frame since only their squared transformed coordinates enter the radial distance.
+- Strict convexity, compact sublevels, active constraints, strictly positive scalar coordinates, and positive unique multiplier in the allocation theorem all follow as stated for `0<epsilon<W_0`. The within-factor scale condition ensures the optimizer is coordered with the objective. The Lambert multiplier equation correctly excludes its extraneous zero root in that same open range.
+
+## Literature checks and novelty boundaries
+
+I read `literature/README.md` first, inspected the cited NT2002 and NN2008 local primary texts, and independently re-extracted NN2008 PDF pages 18 and 26 using `pdftotext` through `conda run -n qipm`. The attempted qipm `fitz` import was unavailable; no package was installed, and the existing extraction tool sufficed.
+
+- NT2002, PDF pp.12–14: Lemma 4.1 gives the product-distance rule; Theorem 4.1 assumes logarithmic homogeneity and primal/dual orthogonality, giving the product length and sqrt(2) comparison. PDF pp.15–16, Theorem 5.2 specializes the result to feasible primal–dual central paths. PDF p.20, Section 6.2 uses the scalar `-log cos` barrier on a rescaled cube, giving a coordinatewise Euclidean isometry. The manuscript credits these foundational facts appropriately.
+- NN2008, PDF p.18 / printed p.550: Theorem 4.1 is precisely `L <= log 2 + nu^(1/4) sqrt(D(D+log 12))` for the specified nondegenerate nu-self-concordant barrier central path. The manuscript reproduces the constants correctly. PDF p.26 / printed p.558: Theorem 5.3 assumes the radius-1/10 Dikin ellipsoid misses the target objective sublevel and gives `O(1) nu^(1/4) sqrt(D_set(D_set+log nu))`. The manuscript correctly avoids conflating it with the fixed-endpoint statement. Its acknowledgment of Example 1.1 and prior target-set comparisons is substantively important and accurate.
+- The claim about the spectral Hessian is appropriately qualified as classical. The direct power-series proof avoids relying on a complex-Hermitian version of Lewis–Sendov's real-symmetric theorem. Baes is cited for the subject, not an unverified numbered theorem. That is an acceptable use given the inaccessible full text recorded in the evidence ledger.
+- Targeted online searches for Hessian spectral metrics, matrix-ball Hessian distance, and the Baes paper did not produce a direct duplicate theorem, but this is not evidence of priority. Stage 1 wisely makes no blanket first-result claim. The final novelty statement should continue distinguishing classical scalar flattening/product rules from the explicit bounded-spectral-ball/EJA radial formula, target allocation, and later sharp centrality comparisons. There is no need to rebrand elementary scalar flattening as a contribution.
+
+Primary sources checked for the comparisons: [NT2002 author manuscript](https://people.orie.cornell.edu/miketodd/NTRiemann.pdf), [NN2008 published text](https://www2.isye.gatech.edu/~nemirovs/FCM_Riem_2008.pdf).
+
+## Optional preferences, not defects
+
+- A brief explanation that a primitive idempotent is a nonzero idempotent not decomposable into two nonzero orthogonal idempotents would help readers unfamiliar with Jordan algebras. A standard Jordan reference can accompany the spectral/Peirce rules.
+- The current first subsection compares several geometries before formally introducing the metric. This is normal mathematical exposition and is not a reason to restructure Stage 1. The final introduction may eventually make these comparisons easier to place.
+
+Provisional abstract, empty author, future sections, and `root-radial-upper.md` were treated as intentionally outside this stage's review scope.

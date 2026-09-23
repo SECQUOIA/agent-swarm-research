@@ -1,0 +1,20 @@
+# Stage 3, round 1 — corrections
+
+Date: 2026-09-17. Read the parent adjudication and all five reviewer reports. Implemented the accepted major issue and all four localized corrections in `sections/03-polymer.tex` and `evidence/stage3-polymer.md`. No bibliography changes, new pressure/materials screen, regeneration development, or selective catalyst separation were added.
+
+| Issue | Correction |
+| --- | --- |
+| M1: zero-makeup pressure response cannot gate partial substitution | The existing 0/0.2/0.4 g once-only makeup bracket is crossed with both pressures in the qualified semibatch mode: six independently replicated conditions. Common reference charge-1 history and once-only addition before charge 2 remain. Reduced nonzero doses are tested irrespective of the zero-dose result. Pressure contrasts are reported within dose. A zero-dose null closes only rescue without makeup; broader closure requires informative reduced-dose results and remains limited to the measured range. The predictor now uses both crossed brackets and retains pressure–dose interaction. |
+| 1. Pressure-enabled saving versus ordinary dose optimization | The selected withheld intermediate dose is validated at both pressures on independent sequences with matched histories and predictions frozen before either result. A pressure-enabled saving requires the lower-pressure dose to pass and the same reference-pressure dose to fail an acceptance criterion with informative uncertainty. If both pass, report an adequate lower dose and any separately resolved pressure benefit; if the reference result is unresolved, pressure necessity is not established. No minimum over unmeasured doses is claimed. |
+| 2. Executable extension and complete costs | Predeclare the per-charge output/quality/time trigger, common accepted polymer-carbon target, and maximum complete-time/charge-count bounds. At the trigger, collect product and remove the whole catalyst/residue mixture, accounting for solids and unprocessed carbon. Replace with 0.4 g fresh Na/alumina plus 0.4 g fresh W/silica and restart the validated pressure history and once-only second-charge makeup. Count all replacements, failed charges, handling, collection, closure, and withdrawn/final residues. Credit the common target, report excess separately, and give no extrapolated credit to a policy failing to reach it. The sustained comparison is bounded to this explicit replacement policy. |
+| 3. Guironnet and Peters attribution | State that they developed the chain-population model and described the numerical extension to varying ethylene. Their displayed solutions use fixed ethylene; a variable-ethylene solution is not represented as a computed result. The original p.5 passage was checked. |
+| 4. Compatible carbon-free tracer detection | Name He measured by calibrated GC-TCD with Ar carrier, separately calibrated hydrocarbon detection, synchronized sampling, and tracer recovery checks against known flows. Explicitly state that the source FID cannot measure He. Qualify separation from hydrogen, actual-mixture response, analytical access, and reference behavior after the change. Detector documentation supports method plausibility; no installed or qualified instrument is assumed. |
+
+Validation:
+
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error -cd manuscript/main.tex` passed and produced a 22-page integrated PDF.
+- Final LaTeX/BibTeX logs contain no warnings, errors, undefined references/citations, or overfull/underfull boxes. PDF text was extracted and the rendered prediction/extension page 20 checked for legibility and fit.
+- Unchanged three-charge arithmetic rechecked: 2.4/0.8/1.0/1.2 g total solids for all-fresh/no makeup/midpoint/full makeup; conditional midpoint savings are 25% Na/alumina and 16.7% total solids.
+- Closed source hashes remain unchanged: water `34792454be1aa5930c992591ba95390a898726d0620dc8effbeee92d622f7a3c`; cyclic oxides `1828b7b736451112b2a6ab80d03ac9725481cc5ad5d1962121de1dcf2c75b77f`.
+
+Ready for the required second independent five-reviewer round. This record does not close Stage 3.

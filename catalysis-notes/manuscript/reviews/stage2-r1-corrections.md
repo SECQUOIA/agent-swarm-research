@@ -1,0 +1,27 @@
+# Stage 2, round 1 — corrections
+
+Date: 2026-09-17. Read the adjudication and all five round 1 reports. Implemented the accepted major correction and all nine minor corrections in `sections/02-cyclic-oxides.tex`; updated `evidence/stage2-cyclic.md`. No experiments or instrument access are claimed. The water chapter and source library remain unchanged. No bibliography change was needed.
+
+| Issue | Implemented correction |
+| --- | --- |
+| Major: ordinary steam compatibility is untested by CO2-managed arms | Experiment 1 now begins with independently replicated ordinary-cycle steam-versus-Ar operation without supplementary CO2. Select and freeze one steam-rich post-oxidation duty, conditioning, cycle/replicate counts, and output windows. Measure cycle and cumulative ethylene before any special reset or added dry conditioning. This is operating performance, including carryover and reversible inhibition, not permanent damage. Apply one qualified terminal reset to the completed matched steam and Ar histories and compare a common dry-cycle assay. The existing equal-dose timing diagnostic remains separate. Experiment 2 includes untreated steam and Ar, using the ordinary blocks only when conditions and experimental blocks match. All nulls are restricted to their gas, duty, state, horizon, and recovery policy. |
+| Minor 1: direct steam contrasts | Added wet-concurrent minus dry-early and wet-delayed minus dry-late contrasts, with uncertainty against the consequential-loss threshold. The timing interaction, absolute outputs, and Ar comparisons remain. |
+| Minor 2: intermediate-state preservation | Extended in situ observation or validated termination/quench/controlled transfer to every sampled endpoint, including the first segment and completed exposure. Document time and gas history; withhold temporal species/spatial attribution when sampling changes the observable. |
+| Minor 3: carbonate carbon and coke | Added carbonate capture/release and inventory changes to the cycle carbon balance. Separate measured total COx from bounded hydrocarbon-derived COx. Regeneration CO2 alone is not a coke assay; unresolved attribution is reported without inventing precise combustion selectivity or coke. Direct ethylene remains primary and requires no isotope campaign. |
+| Minor 4: Gao attribution | Corrected the manuscript and evidence note: Fig. 4D demonstrates coated-LSF CO2 inhibition; Fig. 4E provides the explicit reversible trace in the separate molten-salt/ethane/O2 experiment. |
+| Minor 5: prediction versus cause | Changed the extension to a useful measured state indicator that predicts function under the specified policy. Successful held-out prediction does not establish causal dominance. Replenishment is explicitly not automatically selective for Li inventory because it can alter coverage, composition, and carrier state. |
+| Minor 6: reset cadence | Ordinary oxidation occurs every cycle. No special reset occurs within the initial ordinary comparison. Repeated timing exposures receive one special terminal reset after the fixed accumulation block. Managed operating policies freeze and report any periodic treatment cadence; terminal analytical reset follows the counted output block. The alternating validation follows the same distinction. |
+| Minor 7: plausible measurement routes | Named conditional cross-sectional NanoSIMS mapping with microscopy correlation, submicrometre resolution finer than the compared features, matrix/sectioning/beam controls, and separate bulk Li inventory. Named state-preserved 57Fe Mössbauer with reference materials, replicate spectra, resolvable state/phase differences, and bulk-averaging limitations. Access and qualification are dependencies; unresolved interfaces and absolute coverage are not inferred. |
+| Minor 8: opening and scope | Restricted the contribution to a selected post-oxidation purge, specified histories, recoverability, and conditional output prediction. Removed the general operating-boundary promise. Post-ethane steam operation and lifetime tolerance remain outside the claim. |
+| Minor 9: O2 washout | Post-reset assays now qualify both CO2 and O2 against a consequential effect on the first ethane pulse. Ordinary-cycle output is not silently replaced by an additional dry assay. |
+
+Source checks were limited to the corrections: Gao's original Fig. 4 discussion and Mössbauer method precedent; Chacko original PDF p.116, printed p.101, for carbonate-carbon accounting; and a primary NanoSIMS study abstract for method plausibility. Source-access and transfer limitations are recorded in the evidence note. No fresh literature survey or expanded material campaign was added.
+
+Validation:
+
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` in `manuscript/` passed; the integrated PDF has 16 pages.
+- Final LaTeX/BibTeX logs contain no warnings, undefined references/citations, errors, or overfull/underfull boxes. PDF text was extracted, and rendered pages 10 and 11 were inspected for table, equations, text fit, and legibility.
+- Rechecked unchanged arithmetic: Li inventory 18.785188 mg per illustrative gram; 0.1% carbonate inventory 1.353400 micromol; integrated CO2 resolution 60.670204 ppm; added-time headroom 2.0186283 min/cycle; circulation ratio 2.04248366 mol CO2/mol ethane.
+- The closed water source SHA-256 remains `34792454be1aa5930c992591ba95390a898726d0620dc8effbeee92d622f7a3c`.
+
+Ready for the required second independent five-reviewer round. This correction record does not close Stage 2.

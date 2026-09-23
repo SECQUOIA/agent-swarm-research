@@ -1,0 +1,605 @@
+\section{Executable scalar algorithms and reproducible computations}
+\label{sec:computation}
+
+The preceding fixed-dimensional algorithms establish bit complexity without
+promising an efficient general implementation of real quantifier elimination.
+This section gives executable specializations. We distinguish three tasks:
+certifying a proposed convex response path, constructing a complete nonconvex
+response graph, and optimizing an upper problem over that graph. In particular,
+an exact follower oracle at finitely many prices does not solve a continuous
+leader problem.
+
+\subsection{Convex quadratic paths and an aligned sweep}
+\label{subsec:convex-implementation}
+Consider the unique response on the unit box to
+\begin{equation}\label{eq:implemented-convex}
+ \min_{0\le z\le1}\ \tfrac12z\trans Qz+(c+Cx)\trans z,
+ \qquad Q=D+UHU\trans\succ0,\quad x\in[L,R],
+\end{equation}
+where all data are rational, $D$ is positive diagonal, $H$ is symmetric,
+and the displayed decomposition is supplied. Here $x$ is scalar. The
+implemented upper objective is the minimization of
+\begin{equation}\label{eq:implemented-upper}
+ o_xx+o_z\trans z+o_{xx}x^2+x\,o_{xz}\trans z
+ \quad\text{subject to}\quad a_jx+b_j\trans z\le h_j.
+\end{equation}
+Thus tariff maximization is represented by a negative $x$--response coefficient.
+The nonconvex interface below instead directly maximizes revenue.
+
+For a status assignment with free coordinates $F$ and upper coordinates $B$,
+set $z_B=1$, set the remaining bound coordinates to zero, and solve
+\[
+ Q_{FF}z_F=-c_F-C_Fx-Q_{FB}\mathbf1.
+\]
+This yields a rational affine function. Free-coordinate bounds and bound-gradient
+signs give its exact closed validity interval. Degenerate zero gradients are
+allowed. The affine stationarity identities and the signs at the interval's
+two endpoints certify KKT throughout the interval. Positive definiteness then
+certifies the unique global response. This is the familiar active-set mechanism
+behind explicit parametric quadratic programming
+\citep[Theorems 2 and 4]{BemporadEtAl2002}; here the certificate also includes
+coverage of the entire requested price interval.
+
+No inverse of $H$ is required. For a right-hand side $v$, put
+$S=U_F\trans D_F^{-1}U_F$ and solve
+\[
+ (I+SH)w=U_F\trans D_F^{-1}v,
+ \qquad z_F=D_F^{-1}(v-U_FHw).
+\]
+The determinant identity
+$\det Q_{FF}=\det D_F\det(I+SH)$ proves invertibility, even when $H$ is singular
+or indefinite. For rank $k$, a pattern solve uses
+$O(N(1+k^2)+k^3)$ rational arithmetic operations; this count excludes validation
+of the supplied positive-definiteness assumption. The implementation checks
+that assumption, using direct exact matrix tests when the small-rank sufficient
+tests do not apply.
+
+\begin{proposition}[Certified and exhaustive convex paths]
+\label{prop:convex-certified-path}
+A finite collection of rational affine pieces for \eqref{eq:implemented-convex}
+is a complete exact response path if every piece passes the preceding KKT test
+and its closed intervals cover $[L,R]$. Enumerating all $3^N$ status assignments
+always produces such a path. On any certified complete path,
+\eqref{eq:implemented-upper} is solved exactly by rational arithmetic.
+\end{proposition}
+\begin{proof}
+KKT is necessary and sufficient on a box for a convex differentiable objective.
+Every optimizer supplies a status assignment, including at a degenerate
+boundary, so exhaustive enumeration covers every price. Conversely each
+certified piece contains only optimizers. Substitute its affine response into
+each upper row and intersect intervals, retaining singleton intersections.
+The upper objective becomes a rational quadratic. Compare its endpoints and,
+when its quadratic coefficient is positive, its interior stationary point.
+These rational candidates cover its minimum. Taking the least value over the
+finite path solves the upper problem, or certifies infeasibility.
+\end{proof}
+
+The generic implementation uses a numerical box-QP routine only to propose a
+status assignment at a price in an uncovered gap. It tries several numerical
+status tolerances, recomputes the proposed segment exactly, and verifies that
+the queried price belongs to it. For small $N$ it can fall back to exhaustive
+search. It returns a path only after exact KKT and coverage verification;
+otherwise it raises a recovery or coverage error. A cap on the number of
+segments and unsuccessful numerical proposals are explicit failure modes.
+This procedure is not an unconditional polynomial-time path-construction
+algorithm. No numerical tolerance is used to declare global coverage.
+
+There is a complete simpler sweep for the aligned rank-one case
+$Q=D+h uu\trans\succ0$ and $C=\gamma u$, with $\gamma>0$. Define
+\[
+ z_i(t)=\clip_{[0,1]}(-(c_i+u_it)/d_i),\qquad A(t)=u\trans z(t).
+\]
+Zero entries of $u$ give constant coordinates. Signed nonzero entries give
+at most two rational breakpoints each. On a multiplier interval,
+$A(t)=A_0+A_1t$, with $A_1=-\sum_{i\in F}u_i^2/d_i$. The relation
+\begin{equation}\label{eq:convex-sweep-inversion}
+ x=(t-hA(t))/\gamma,\qquad
+ t=(\gamma x+hA_0)/(1-hA_1)
+\end{equation}
+is strictly increasing: every free principal matrix is positive definite,
+so $1+h\sum_{i\in F}u_i^2/d_i>0$. This includes negative $h$ whenever the
+whole Hessian is positive definite. The map tends to both infinities on the
+tails and therefore covers every price. Updating the affine coefficients at
+each grouped breakpoint gives the complete response path. Maintaining the
+weighted response sums in the objective and $m$ upper rows takes
+$O(N\log N+N(m+1))$ rational arithmetic operations; only the final selected
+response needs reconstruction in all coordinates. This is an arithmetic count,
+not a constant-cost claim for arbitrarily long rational numbers.
+Sorting and clipped multiplier allocation are classical resource-allocation
+ingredients \citep{Kiwiel2008}; the implementation combines them with exact
+upper-interval optimization. Its sweep and upper solve are fused, which matters
+when interpreting their timings.
+
+\subsection{Complete nonconvex scalar compression}
+\label{subsec:nonconvex-compression}
+The second specialization allows an indefinite follower Hessian:
+\begin{equation}\label{eq:nonconvex-implemented}
+ f_x(z)=\sum_{i=1}^N\left(\tfrac12d_i z_i^2+c_i z_i\right)
+       -\tfrac h2(u\trans z)^2+\gamma x u\trans z,
+ \quad \ell\le z\le r,\quad x\in[L,R].
+\end{equation}
+Here $N\ge1$, all data are rational, $d_i>0$, $h\ge0$, $\gamma\ne0$, $\ell_i\le r_i$,
+and $L\le R$. Signed and zero $u_i$, fixed coordinates, negative prices,
+and either sign of $\gamma$ are allowed. The upper problem maximizes $xw$,
+where $w=u\trans z$, subject to rational affine upper rows. Optimistic and
+pessimistic meanings follow Section~\ref{sec:foundations}, with maxima and
+suprema in place of minima and infima.
+
+Let $[w_-,w_+]$ be the image of the follower box under $u\trans z$, and define
+\begin{equation}\label{eq:scalar-fiber-value}
+ C(w)=\min\left\{\sum_i(\tfrac12d_i z_i^2+c_i z_i):
+                  \ell\le z\le r,\ u\trans z=w\right\},
+ \qquad \psi(w)=C(w)-\tfrac h2w^2.
+\end{equation}
+The fiber problem is strictly convex even when \eqref{eq:nonconvex-implemented}
+is nonconvex. Its minimizer $z(w)$ is unique. Every global follower optimum
+must be this minimizer on its fiber; otherwise its objective could be decreased
+without changing the aggregate terms. Thus the original global problem is
+exactly $\min_{w\in[w_-,w_+]}\{\psi(w)+\gamma xw\}$, with actual responses
+recovered by $z(w)$.
+
+\begin{lemma}[Rational fiber pieces]\label{lem:scalar-fiber-pieces}
+If $w_-<w_+$, the interval has at most $2N-1$ nondegenerate pieces on which
+$z(w)$ is rational affine and $\psi(w)$ is rational quadratic. They and their
+endpoints can be constructed in polynomial bit complexity. If $w_-=w_+$,
+there is one constant aggregate and one unique fiber response.
+\end{lemma}
+\begin{proof}
+For a multiplier $\lambda$, strict convexity gives
+\[
+ z_i(\lambda)=\clip_{[\ell_i,r_i]}((\lambda u_i-c_i)/d_i).
+\]
+For $u_i=0$ this is interpreted as the constant clipped unconstrained
+minimizer. Ignore fixed coordinates when forming events. Sort the at most
+$2N$ numbers $(d_i\ell_i+c_i)/u_i$ and $(d_ir_i+c_i)/u_i$ for $u_i\ne0$.
+On each intervening interval, $z=a+b\lambda$ and
+$w=w_0+S\lambda$, with $S=\sum_{i\in F}u_i^2/d_i\ge0$.
+If $S>0$, invert to obtain $z(w)$. If $S=0$, the interval maps to a single
+aggregate already supplied by its adjacent pieces. The two infinite tails
+likewise supply only endpoints. Continuity of clipping shows that the union
+covers $[w_-,w_+]$; the fiber KKT equations and strict convexity prove the
+recovered response is the unique fiber optimum, also at shared endpoints.
+Substituting it into \eqref{eq:scalar-fiber-value} gives each quadratic.
+If all aggregates are equal, the box constraints with nonzero $u_i$ fix those
+coordinates and the others minimize independently. Rational sums, products,
+sorting and inversions give polynomial bit bounds. Explicitly storing every
+length-$N$ affine response uses at most quadratic, rather than linear, storage.
+\end{proof}
+
+Write a piece as $\psi(w)=Aw^2+Bw+D$ on $[a,b]$. Its complete minimizer
+candidates under the price tilt are:
+\begin{enumerate}
+\item its endpoints, available at every price;
+\item if $A>0$, the stationary point $w=-(B+\gamma x)/(2A)$ on the rational
+price interval where it lies in $[a,b]$;
+\item if $A=0$, the whole interval $[a,b]$ at $x=-B/\gamma$.
+\end{enumerate}
+A piece with $A<0$ contributes only endpoints. The stationary candidates have
+quadratic value functions in $x$; endpoint candidates have affine values.
+These are feasible candidates, so comparison of their \emph{original} values,
+not their stationarity alone, decides globality.
+
+\begin{theorem}[Complete scalar atlas and upper optimization]
+\label{thm:nonconvex-atlas}
+For \eqref{eq:nonconvex-implemented}, a finite exact response description and
+both upper tariff problems can be computed in polynomial bit complexity.
+The description consists of rational affine responses on open price intervals
+with algebraic endpoints of degree at most two, together with all isolated
+responses and all flat fiber intervals at individual prices. The algorithm
+decides upper feasibility, computes the supremum and its attainment, and
+returns an attaining response when one exists. Each reported optimizer or limiting pair, together with its value,
+belongs to one field of degree at most two; different atlas cuts may lie in
+different quadratic fields. Optimistic
+feasibility implies attainment; pessimistic feasibility need not.
+\end{theorem}
+\begin{proof}
+Form all candidate domain endpoints, all flat-piece prices, and every real
+crossing of two candidate value polynomials in their common domain. Include
+$L,R$ and discard prices outside them. There are $O(N^2)$ cuts, each rational
+or quadratic algebraic. On each open interval, a rational sample determines
+the valid candidates and every comparison sign. Keep all global winners.
+At every cut compare all valid candidates anew, adding a flat interval exactly
+when its value equals the global minimum. This proves completeness, including
+isolated ties and lower-dimensional price strata.
+
+On an open interval, two winning value polynomials must agree identically.
+Their derivatives equal $\gamma w(x)$, both for endpoint and stationary
+candidates. Since $\gamma\ne0$, they describe the same aggregate, and uniqueness
+of the fiber minimizer gives the same original response. Different optimal
+responses can therefore coexist only at the recorded individual prices.
+
+For an open interval, substitute the affine response into the upper rows.
+Their intersection is an interval, possibly empty or a singleton inside the
+original open interval. Maximize its quadratic revenue by comparing endpoint
+limits and any interior stationary point with negative quadratic coefficient.
+Also retain an interior rational sample to recognize attainment of a constant
+value. Flag an endpoint as attained only if it belongs to the original open
+price interval; upper inequalities themselves are closed.
+
+At a recorded price, an optimal response component is $z(w)$ on a singleton
+or a closed fiber interval. Optimistically, intersect each component with all
+upper rows and maximize the linear function $xw$ on what remains.
+Pessimistically, require every upper row at both endpoints of every component,
+then take the least $xw$ over all those endpoints. These endpoint tests are
+exact because $z(w)$ is affine on a fiber piece. Comparing the finite list of
+values and one-sided limits gives the supremum. Prefer an attained candidate
+when its value ties a limit; if none attains the best value, return the limiting
+price and aggregate with an explicit nonattainment flag. The optimistic graph
+is closed in a compact box, which separately proves its attainment assertion.
+The pessimistic assertion cannot be inferred from that closedness.
+
+The all-pair construction has polynomially many branches, cuts and comparisons.
+All rational coefficient lengths are polynomial in the input. Quadratic root
+isolation and comparison, including comparisons between different quadratic
+fields, have polynomial bit complexity. A rational sample between distinct
+quadratic cuts can be found by dyadic refinement with polynomial bit length.
+Upper stationary points and nontrivial row boundaries on open pieces are
+rational; flat-piece prices are rational; all remaining endpoint outputs lie
+in the field of their one quadratic price. Thus no compositum of all switch
+fields is needed for any reported optimizer or value.
+\end{proof}
+
+The executable compressed implementation inserts candidates into the current
+lower envelope. On each existing envelope interval it splits at the new
+candidate's validity boundaries and its crossings with the current winner,
+then compares at rational interior samples. It keeps the resulting envelope
+and also a separate set of contact prices, including tangencies. Finally it
+compares \emph{all} original candidates at retained contacts and flat prices.
+To justify this shorter list, consider a final global tie when the later of
+two tied branches was inserted. No then-existing branch could have had smaller
+value there. The tie was therefore at a current boundary, a new domain
+boundary, or a crossing with a current winner, unless the value polynomials
+coincided. In that last case their derivatives give the same response and
+there is no missing distinct contact. An isolated-domain candidate also
+contributes its domain endpoint. Consequently the incremental construction
+preserves every final global contact. Conservative bounds are $O(N^2)$ retained
+cuts and $O(N^3)$ interval processing steps. The implementation retains full
+response vectors and uses symbolic arithmetic; these counts do not predict
+its practical running time.
+
+\subsection{Convex-envelope values and original contacts}
+\label{subsec:contacts}
+Extend $\psi$ by $+\infty$ outside $[w_-,w_+]$. Its conjugate gives
+\begin{equation}\label{eq:contact-conjugacy}
+ v(x)=-\psi^*(-\gamma x)
+     =\min_w\{\psi^{**}(w)+\gamma xw\}.
+\end{equation}
+For completeness, put $m=\min_w(\psi(w)+\gamma xw)$. The affine function
+$m-\gamma xw$ minorizes $\psi$ and hence lies below its closed convex envelope
+$\psi^{**}$. The rightmost minimum is at least $m$ and, because
+$\psi^{**}\le\psi$, at most $m$. Moreover the original minimizers are exactly
+\begin{equation}\label{eq:actual-contact}
+ \{w:\ \psi^{**}(w)+\gamma xw=v(x),\quad \psi(w)=\psi^{**}(w)\}.
+\end{equation}
+The second equality is essential for upper feasibility and tie-breaking.
+Convex envelopes of piecewise quadratic functions and their conjugates have
+established algorithms. Gardiner and Lucet
+\citep[Propositions 3.1 and 4.3]{GardinerLucet2010} give quadratic and linear
+arithmetic-time constructions; Moehle et al.~\citep[Section 6.3 and Appendix B]{MoehleEtAl2023}
+give a further constructive account. Those envelope bounds are not claimed
+as improvements here. Our direct
+candidate proof supplies the original contact sets and rational-bit guarantees
+needed here; it does not require a tangent formula from an external
+implementation.
+
+\begin{example}[False choices from convexification]\label{ex:false-contacts}
+Take $N=1$, $d=u=1$, $c=-1$, $h=3$, $\gamma=1$, $z\in[0,1]$,
+and $x\in[1,3]$. Then $\psi(z)=-z^2-z$ has convex envelope $-2z$.
+The actual response is $1$ for $x<2$, $0$ for $x>2$, and $\{0,1\}$ at
+$x=2$. The convexified response at $2$ is the entire interval $[0,1]$.
+Consequently upper rows requiring $z=1/2$ are infeasible for the original
+bilevel problem, although convexification admits revenue $1$. Mixing the
+two original optima cannot repair this discrepancy. Without those rows,
+the optimistic maximum is $2$, attained at $(2,1)$, whereas the pessimistic
+supremum is $2$ and is not attained.
+\end{example}
+
+\begin{example}[Capacity at an interior jump]\label{ex:capacity-jump}
+Let $d=(1,1)$, $c=(-1,-1/2)$, $u=(1,1)$, $h=3/5$, $\gamma=1$,
+$z\in[0,1]^2$, $x\in[0,1]$, and impose $w\le1$ above. The fiber formula is
+\[
+\psi(w)=\begin{cases}
+ w^2/5-w,&0\le w\le1/2,\\
+ -w^2/20-3w/4-1/16,&1/2\le w\le3/2,\\
+ w^2/5-3w/2+1/2,&3/2\le w\le2.
+\end{cases}
+\]
+At $x_*=17/20$, its only tilted minima are $w=3/8$ and $13/8$, both of
+value $-9/320$, giving responses $(3/8,0)$ and $(1,5/8)$. The middle piece
+is strictly concave; its endpoints have value $-1/40$, so supply no additional
+minimizer. Comparing with the larger contact shows that for $x<x_*$ every
+optimal $w$ is at least $13/8>1$: a putative smaller $w$ has nonnegative
+excess value at $x_*$ and gains strictly less from the negative price change.
+For $x>x_*$, comparison with the smaller contact forces $w\le3/8$;
+minimization on the low piece gives $w=(5/2)(1-x)$. Its revenue decreases
+on $[x_*,1]$. Only the smaller contact satisfies capacity at $x_*$.
+Thus the optimistic maximum is $51/160$, attained there, while the
+pessimistic supremum is the same number and is unattained. This is a failure
+of universal upper feasibility at a tie, not a failure to compute the nominal
+global follower value.
+\end{example}
+
+\begin{figure}[t]
+\centering\includegraphics[width=.96\linewidth]{figures/contacts.pdf}
+\caption{Example~\ref{ex:false-contacts}. Left: the original aggregate cost and
+its convex envelope. Right: original responses retain two contacts at the
+switch; the additional vertical segment admitted by convexification consists
+of false follower choices.}
+\label{fig:contacts}
+\end{figure}
+
+Local stationarity alone is also insufficient: on $[0,1]$,
+$f(z)=z/4-z^2/2$ has a strict one-sided local minimum at $0$, of value $0$,
+but its global minimum is at $1$, of value $-1/4$. Both satisfy box KKT.
+The examples and the atlas construction address global selection explicitly.
+
+\subsection{An independent full-task stationary-face baseline}
+\label{subsec:full-task-baseline}
+To compare complete bilevel tasks, we implement a second solver directly in
+original coordinates. Enumerating stationary faces of a box quadratic is
+classical; see, for example, the discussion in \cite{HladikCernyRada2021}.
+The baseline extends this validation to the full price interval and both upper
+selection conventions. It shares rational instance data with the compressed
+method, but no fiber allocation, envelope construction or upper-optimization
+code. Its declared restriction is that \emph{every principal minor} of
+$Q=\diag(d)-huu\trans$ is nonzero. It checks all $2^N-1$ nonempty minors
+and rejects an unsupported instance before solving. This restriction excludes
+flat follower directions; the compressed method has no such restriction.
+
+\begin{proposition}[Completeness of the original-coordinate baseline]
+\label{prop:original-face-baseline}
+Under the stated nonzero-principal-minor restriction, enumerating original
+stationary box faces, comparing their original objective values over the
+whole price interval, and retaining all ties yields the complete response
+graph of \eqref{eq:nonconvex-implemented}. Both upper tariff problems, including
+attainment, are then solved exactly. Enumeration is exponential in $N$.
+\end{proposition}
+\begin{proof}
+Take any global minimizer and its minimal box face. On its free coordinates
+$F$, first-order stationarity holds and the second-order necessary condition
+makes $Q_{FF}$ positive semidefinite. Its nonzero determinant therefore makes
+it positive definite. Hence this optimizer appears in an enumerated face with
+\[
+ z_F(x)=-Q_{FF}^{-1}(c_F+\gamma u_Fx+Q_{FB}z_B).
+\]
+Here $B$ comprises both lower and upper fixed coordinates. The baseline
+solves this dense original-coordinate system, rejects non-positive-definite
+free faces, and intersects the free bounds and bound-gradient signs to get an
+exact rational validity interval. A coordinate whose lower and upper bounds
+coincide needs no gradient sign. Each retained candidate is feasible; every
+global optimum is retained. Comparing their \emph{original} quadratic values
+therefore gives exactly all global optima, regardless of nonglobal KKT points.
+
+Substitution into $\tfrac12z\trans Qz+(c+\gamma xu)\trans z$ gives a rational
+quadratic in $x$. Form all validity endpoints and all pairwise value crossings
+on overlaps, including crossings above the global envelope. Exact comparison
+on open cells and separately at their endpoints retains all ties. The
+nonzero-minor condition precludes a missing continuum: any minimizer in a
+positive-dimensional minimal face has the unique stationary point just solved.
+Equal winning value polynomials on an open cell have equal derivatives
+$\gamma u\trans z$ and hence equal aggregate responses. Strict fiber convexity
+then makes their entire responses equal.
+
+The baseline independently clips each open response cell with the upper rows
+and compares quadratic revenue endpoints, stationary points, and interior
+samples, tracking whether each endpoint belongs to the cell. At a cut,
+optimism compares all upper-feasible global responses; pessimism requires
+all global responses to satisfy the rows and takes their least revenue.
+This finite decomposition proves the upper result, including nonattainment.
+There are at most $3^N$ faces and quadratically many pair comparisons in that
+number; each solve and comparison uses exact rational or quadratic algebraic
+arithmetic. This is an exponential reference algorithm, not a scalability claim.
+\end{proof}
+
+An older independent oracle enumerates original stationary faces only at a
+requested price. It can skip singular free faces while preserving the global
+\emph{value}: a stationary positive-semidefinite singular face admits a null
+direction along which the quadratic stays constant; moving to the boundary
+reduces the face until it is nonsingular or a vertex. That argument does not
+recover a whole flat minimizer set and does not optimize over all prices.
+The new baseline's stronger checked restriction makes it a complete-response,
+complete-upper-task comparison. Separate tests continue to exercise the main
+method on singular and flat cases.
+
+\subsection{Computational protocol and findings}\label{subsec:computations}
+All fresh runs use the supplied rational data and deterministic generators in
+the accompanying code and data archive. The platform was Linux on an Intel
+Xeon w5-2565X, with Python 3.13.11, SymPy 1.14.0, NumPy 2.5.1 and SciPy 1.18.0.
+Each reported fresh timing is the median of three serial, fresh-process runs;
+all individual times are retained. The thread environment for OpenBLAS, OpenMP,
+MKL and NumExpr was set to one, and the SciPy MILP calls additionally forwarded
+\texttt{threads=1} to HiGHS. The wrapper's warnings and solver output are
+retained. Processes start with the SymPy cache cleared, and the order of paired
+methods alternates between repetitions. This controls shared-cache ordering;
+the machine was shared and no hardware isolation or statistical speed guarantee
+is claimed. Every worker had an external 90-second limit. All 60 recorded
+workers completed; no timed-out algorithm run is omitted.
+
+The new correctness tests compare both global upper outcomes on eight
+adversarial and ten seeded small random instances. They compare the entire
+response sets at every independently constructed face-atlas cut and an interior
+sample of every face-atlas cell. For each attained output from \emph{both}
+methods, they directly check bounds, $w=u\trans z$, revenue, every upper row,
+and original follower cost against all valid original-coordinate faces at
+that returned price. Pessimistic witnesses also undergo universal feasibility
+and least-revenue checks. These prices include upper row boundaries and
+stationary revenue points, not just follower switches. A singular principal
+minor is rejected by the baseline, while separate compressed tests retain
+flat intervals, fixed boxes and singleton aggregates.
+
+Additional, distinct diagnostics exercise exact convex path certification,
+forced numerical-proposal failures, corrupted certificates and missing coverage;
+nonconvex original-face value comparisons on signed and fixed-coordinate
+instances; and incremental-envelope contacts against a full pairwise partition.
+The convex checks include negative rank-one coefficients with positive-definite
+total Hessian, nearly singular rational data, and data outside floating-point
+range. These finite checks support the implementation contracts and expose
+specified failure modes. Their counts are recorded by test family and are not
+combined into a claim of formal verification of the general theorems.
+
+\paragraph{The same continuous leader task.}
+The heterogeneous family draws $d_i$ uniformly from
+$\{8,\ldots,16\}/8$, $u_i$ from $\{4,\ldots,8\}/4$, and $-c_i$ from
+$\{4,\ldots,24\}/8$, using seed $17+N$ in that order. It has the unit box,
+$x\in[0,5]$, $h=(7/5)/(\sum_i u_i^2/d_i)$, and upper capacity
+$u\trans z\le\tfrac12\sum_i u_i$. Its Hessian is indefinite: diagonal
+congruence gives $I-hvv\trans$ with $v\trans v=\sum_i u_i^2/d_i$ and one
+negative eigenvalue. Both solvers construct the whole reaction graph and solve
+\emph{both} tariff semantics with these same upper rows.
+Table~\ref{tab:full-task} also includes Example~\ref{ex:capacity-jump}.
+Every exact value and attainment flag agrees between the methods and across
+repetitions. The face algorithm is faster on the jump and $N=4$ instances;
+the compressed method is faster on the tested heterogeneous $N=2,6$ instances.
+Thus even these small complete-task comparisons do not show uniform dominance.
+The exponential baseline was deliberately limited to $N\le6$, where it checks
+at most 63 principal minors and 729 statuses. Larger instances were not
+attempted with it; they are not reported as timeouts.
+
+\begin{table}[t]
+\centering\small
+\caption{Fresh full-task comparisons, seconds (three-run medians).
+Build includes the face baseline's input parsing and principal-minor validation.
+Opt. and pess. solve the two upper semantics after construction.
+Total includes solver input validation, construction and both upper solves;
+wall includes process startup, imports and input-file reading as well.
+The columns are independently computed medians.}
+\label{tab:full-task}
+\begin{tabular}{llrrrrr}\toprule
+$N$ & Method & Build & Opt. & Pess. & Total & Wall\\\midrule
+\input{data/table-full-task}\end{tabular}
+\end{table}
+
+\paragraph{Symbolic cost and population structure.}
+A profile of the unchanged scalar implementation on the $N=12$ heterogeneous
+family identified repeated symbolic cancellation in sign tests as the principal
+cost: cancellation accumulated 5.74 of 9.88 profiled seconds across the build
+and one unconstrained upper solve. Profiled times include instrumentation
+and are not benchmark times. The paper copy first decides the sign of an
+already rational expression and, for two rational interval endpoints, uses
+their rational midpoint. The full exact algebraic fallback and the candidate,
+envelope and contact logic are unchanged. The fallback still uses a rational
+sample between unrelated quadratic cuts, avoiding unnecessary output-field
+extensions.
+
+The controlled ordinary measurements compare the original and paper copies on
+the same constrained $N=12$ task. Original build times were
+$3.150,2.929,3.107$ seconds; paper-copy times were $2.748,2.679,2.708$ seconds.
+Median totals including both upper solves were $4.055$ and $3.605$ seconds,
+respectively. This modest measured improvement supports the two local changes;
+it does not remove the symbolic cost of heterogeneous events.
+Table~\ref{tab:scalar-scaling} reports the remaining fresh scalar runs.
+
+The two-type family has $N=2m$: $m$ copies of $(d,c,u)=(1,-1,1)$ and $m$
+copies of $(1,-1/2,1)$, with $h=3/(5m)$, $x\in[0,1]$ and capacity $w\le m$.
+Its Hessian is indefinite since $h\sum_i u_i^2/d_i=6/5$.
+Uniqueness of the local fiber allocation makes coordinates within each type
+equal. Dividing costs and aggregate by $m$ reduces the response problem exactly
+to Example~\ref{ex:capacity-jump}. Therefore the optimistic optimum is
+$51m/160$ at price $17/20$ and aggregate $3m/8$, while the pessimistic
+supremum is the same and is unattained. There are three fiber pieces and seven
+atlas points for every $m$. The $N=1000$ run tests repeated types, whereas
+$N=48$ has 66 fiber pieces; their timings measure different structural regimes.
+
+\begin{table}[t]
+\centering\small
+\caption{Fresh compressed scalar runs, seconds (three-run medians).
+The last two upper columns concern the same capacity row. Total includes input
+validation, build and both upper solves; process wall times and all repetitions
+are in the data archive.}
+\label{tab:scalar-scaling}
+\begin{tabular}{lrrrrrr}\toprule
+$N$ & Fiber pieces & Atlas points & Build & Opt. & Pess. & Total\\\midrule
+\input{data/table-scaling}\end{tabular}
+\end{table}
+
+The distinct convex tariff family uses $u_i=1$, $h=1/(10N)$,
+$d_i\in\{5,\ldots,20\}/10$, $-c_i\in\{1000,\ldots,25000\}/10000$,
+$x\in[0,3]$, and a service floor $\sum_i z_i\ge N/5$. Seeds are $50001+N$.
+The aligned sweep and upper solve are fused: their fresh median times were
+$0.014$, $0.117$ and $1.100$ seconds for $N=100,1000,10000$, respectively;
+input generation and validation added $0.0005$, $0.0032$ and $0.0336$ seconds.
+Every returned response passed exact KKT and service-floor checks. These
+synthetic convex results do not measure the nonconvex atlas or a general
+large-scale bilevel model.
+
+Earlier archived measurements are preserved separately. The older all-pair
+\emph{compressed} implementation kept 274 atlas points for $N=12$, compared
+with 45 after incremental envelope insertion; its recorded build medians
+were $15.882$ and $3.079$ seconds. It is a different comparator from the new
+original-coordinate baseline. The archived heterogeneous $N=48$ timings were
+$18.699$ seconds for construction and $2.922$ for one upper solve. Archived
+$N=1000$ two-type timings were $0.255$ and $1.261$ seconds, with only three
+fiber pieces and seven atlas points. The archived convex $N=10000$ fused sweep
+took $1.047$ seconds on the separate convex family. These historical runs used
+different cache and repetition protocols; their differences from fresh timings
+are not controlled speedup estimates. The earlier generic convex-path runs
+also retain their exact certificates and small dense-KKT MILP comparisons.
+They provide evidence for the certificate interface, not a completeness
+guarantee for numerical proposals on arbitrary inputs.
+
+\paragraph{Dense screening: a negative timing result.}\label{para:screening-results}
+The exact screening prototype implements the scalar-cell specialization of
+Section~\ref{sec:robust-screening}. The identity surrogate has a diagonal
+response cover; the true dense Hessian is a rational symmetric perturbation
+with verified strict diagonal dominance. Screening fixes certified statuses,
+and exact original KKT recovery enumerates the ambiguous ones. Dense inversion,
+cover construction and certification are real computational costs: the bound
+$M3^t$ counts recovery LPs only.
+
+The independent numerical comparator uses two binary variables $l_i,u_i$ per
+coordinate and $g=Qz+c+Cx$, imposing
+\[
+ z_i+l_i\le1,\quad z_i-u_i\ge0,\quad l_i+u_i\le1,
+ \qquad -M_i u_i\le g_i\le M_i l_i,
+\]
+with $0\le z_i\le1$ and
+$M_i=1+|c_i|+|C_i|\max(|L|,|R|)+\sum_j|Q_{ij}|$.
+If both binaries vanish, $g_i=0$; if $l_i=1$ or $u_i=1$, the corresponding
+bound and gradient sign hold. Conversely every box KKT point admits such
+binaries, including zero-gradient bounds. Positive definiteness makes this an
+exact real-arithmetic reformulation. Its SciPy--HiGHS solve is numerical,
+with a 30-second limit and requested relative MIP gap zero; numerical primal
+and dual reports are not rational optimality certificates.
+
+\begin{table}[t]
+\centering\small
+\caption{Screening versus dense KKT MILP, seconds. Archived entries are single
+runs; fresh entries are three-run medians. Exact preprocessing includes input
+generation and surrogate cover; exact total also includes final rational
+verification. MILP preprocessing includes input generation and formulation.
+Tighter-tolerance follow-ups are excluded from the default-solve columns.}
+\label{tab:screening-negative}
+\begin{tabular}{llrrrrrr}\toprule
+ & &\multicolumn{3}{c}{Exact screening}&\multicolumn{3}{c}{Numerical MILP}\\
+Source&$N$&Preprocess&Solve&Total&Preprocess&Solve&Total\\\midrule
+\input{data/table-screening}\end{tabular}
+\end{table}
+
+The exact prototype was slower on all four archived instances, and the fresh
+$N=8,20$ repetitions preserve that finding after including preprocessing
+(Table~\ref{tab:screening-negative}). Their maximum ambiguity is two, with
+105 and 285 completed cell/status assignments. The archived $N=40$ case has
+maximum ambiguity four and 2304 completed assignments; rational recovery alone
+took $15.29$ of $17.57$ solver seconds. Small certified ambiguity therefore
+does not imply practical superiority over this numerical comparator.
+
+The default $N=8$ MILP reports optimality and zero gap but an objective
+$3.3703\cdot10^{-7}$ below the exact value
+$4810519997/235205877942$, with a modeled-row violation of approximately
+$3.5387\cdot10^{-7}$. This discrepancy occurs in both the archived run and
+all fresh repetitions. Requesting primal and MIP feasibility tolerances
+$10^{-9}$ gives objective agreement within $3.82\cdot10^{-17}$ and maximum
+row violation $1.11\cdot10^{-16}$. The follow-up timings and forwarded-option
+warnings are retained rather than substituted into the default comparison.
+At $N=20$, agreement is within $1.34\cdot10^{-15}$. The exact returned
+screening solutions satisfy all rows and dense KKT equations rationally;
+their global guarantee rests on the screening theorem, not on checking a
+returned point alone.
+
+The accompanying scripts preserve prepared rational instances, generator seeds,
+input hashes, software and machine metadata, individual timings, failures of
+the initial result-transport harness, and exact diagnostic logs. The completed
+experiments establish reproducible behavior for the stated scalar subclasses.
+They do not implement the general polynomial quantifier-elimination algorithms,
+and they provide no evidence of superiority on industrial instances or on
+arbitrary heterogeneous follower populations.

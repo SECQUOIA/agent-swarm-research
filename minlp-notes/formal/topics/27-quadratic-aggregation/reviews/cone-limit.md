@@ -1,0 +1,122 @@
+# Cone geometry and normalized limit review
+
+Reviewer: cone-geometry agent. Date: 2026-09-22.
+
+This review covers `ConeClosed.lean`, `ConeGeometry.lean`,
+`LimitCompactness.lean`, and `Coefficients.lean`. It checks the statements
+against the coefficient-cone and limiting arguments in Section 3 of
+`results/quadratic-aggregation-trivial-hull-certificate.md`. It does not certify
+the surrounding supporting-hyperplane construction or the final theorem.
+
+## Finite cone closedness
+
+`isClosed_nonnegative_span` proves closedness of the set of all actual finite
+nonnegative combinations of the generators. It does not assume closedness or
+boundedness of the weight vectors. Its conclusion uses the full coefficient
+space, with no quotient, normalization, or loss of a kernel direction.
+
+The support-reduction proof is valid. A nontrivial linear dependence can be
+negated to give a positive coefficient. The smallest ratio of a nonnegative
+weight to a positive dependence coefficient gives a subtraction that preserves
+all nonnegative weights, preserves the represented vector, and eliminates one
+generator. The minimum may be zero; this still removes a generator and is
+therefore sufficient for the induction. Repeated or zero generators are
+allowed. For an independent family, its coefficient map is an injective linear
+map with finite-dimensional domain, hence a closed embedding. The nonnegative
+orthant is closed. A finite union of the smaller closed cones finishes the
+induction.
+
+The empty generating family gives the cone `{0}`. Values of a witness weight
+function outside its finite support are irrelevant by definition. The theorem
+correctly does not require the ambient normed real space to be finite
+dimensional: each independent coefficient map has finite-dimensional domain.
+
+## Uniform separation
+
+`exists_uniform_infDist_cone_separation` matches source Lemma 3 and is stronger
+in two harmless ways: finite generation is replaced by the closedness it
+supplies, and convexity is not required. The hypotheses state explicitly that
+both sets are closed, are stable under nonnegative scaling, and meet only at
+zero, with zero belonging to the comparison set.
+
+The proof minimizes distance on the closed cone's compact unit section. The
+compact lower-bound theorem also covers an empty section, so the zero cone and
+an empty first set do not need an omitted existence assumption. Closedness and
+nonemptiness of the comparison set make distance strictly positive away from
+it. The positive norm of each nonzero point justifies normalization and the
+subsequent scaling. The pointwise-distance bound implies the distance-to-set
+bound without assuming existence of a nearest point. No Euclidean norm,
+spectral decomposition, or positive-semidefinite projection is used.
+
+## Normalized limit
+
+`exists_nonzero_psd_limit` is a valid alternative to the source's simplex-limit
+and spectral argument. Its assumptions include the facts its application must
+supply: nonzero coefficient pairs, membership in a closed cone, nonnegative
+scaling stability, continuous linear evaluations, and a perturbation parameter
+converging to zero. It normalizes the complete quadratic/linear pair by its
+positive norm and extracts a convergent subsequence on the unit sphere. Cone
+closedness retains actual cone membership. Continuity and the vanishing
+parameter make both perturbation terms tend to zero, pointwise for every test
+vector. The same subsequence works for all test vectors; the proof chooses the
+subsequence before introducing a test vector. The limit has norm one and is
+therefore nonzero.
+
+The lemma does not assume that the original constants divided by the
+coefficient-pair norms are bounded. Its `d` term is instead a continuous linear
+functional of the normalized pair. In the intended application, strict
+feasibility at `x0` supplies
+`c_lambda < -q(A_lambda,x0) - 2 b_lambda·x0`; replacing the constant by this
+upper bound yields precisely the displayed nonnegative expression. The
+application must separately rule out zero coefficient pairs before invoking
+the lemma. The generic lemma itself neither assumes nor proves that step.
+The accompanying `SweepBounds.lean` supplies this step: a zero pair would
+leave a strictly negative constant multiplied by the positive square of the
+nonzero reciprocal level times `alpha·alpha`. Its constant-elimination lemma
+uses the nonnegative square to preserve the inequality direction. The current
+headline passes the fixed feasible-point functional
+`d(A,b)=q(A,x0)+2 b·x0` to the generic limit, as required.
+
+## Concrete coefficient interface
+
+The coefficient space is the actual pair `(A_lambda,b_lambda)`. Quadratic
+evaluation `q(A,x)` and linear evaluation `b·x` are continuous linear maps in
+this pair. The cone permits all nonnegative weights, including zero. This is
+the correct homogeneous cone; simplex normalization is unnecessary here.
+`isClosed_coefficientCone` explicitly identifies this set with the finite cone
+generated by the original pairs `(A_i,b_i)` and applies the proved finite-cone
+closedness theorem. There is no additional closedness premise on the system.
+
+`certificate_of_coefficientCone` uses pair nonzeroness to prove nonzero weights
+and nontriviality of the resulting certificate. It obtains symmetry from the
+original system's symmetric matrices before converting nonnegative quadratic
+evaluation into matrix positive semidefiniteness. Consequently it does not
+mistake the quadratic form of a nonsymmetric matrix for a PSD matrix.
+
+For zero-dimensional variable or constraint spaces, the corresponding
+nonzero-pair or nonzero-weight premises are impossible, as required. The
+lemmas do not manufacture a certificate in these degenerate cases. Nonzero
+weights whose aggregate pair vanishes remain possible and are correctly not
+classified as nontrivial certificates.
+
+## Verification record
+
+Targeted checks completed:
+
+- `LEAN_NUM_THREADS=1 lake build Formal.QuadraticAggregation.ConeClosed` passed.
+- `LEAN_NUM_THREADS=1 lake build Formal.QuadraticAggregation.ConeGeometry` passed.
+- `LEAN_NUM_THREADS=1 lake env lean Formal/QuadraticAggregation/LimitCompactness.lean`
+  passed.
+- `LEAN_NUM_THREADS=1 lake env lean Formal/QuadraticAggregation/Coefficients.lean`
+  passed after the owner corrected missing `noncomputable` annotations and
+  supplied the product-sum projection lemmas in the closedness bridge.
+
+The compilation issues were reported and resolved. No review item remains
+open for these four files. `SweepBounds.lean` and the headline application were
+read to verify the intended connection; their compilation and complete theorem
+coverage belong to the package-level targeted verification.
+
+No mathematical defect was found in the reviewed statements or proofs. The
+reviewer's own `ConeGeometry.lean` is a self-check; the other files were
+implemented by other agents. This record concerns local targeted checks, not
+CI or project-wide verification.

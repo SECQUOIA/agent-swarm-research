@@ -1,0 +1,73 @@
+# Independent review: Stage 03, round 01, reviewer 4
+
+Reviewer: `paper_reviewer_4`. Date: 2026-09-07.
+
+**Verdict: no major or minor issue requiring correction found.** In particular, the new supercritical equivalent has a valid lower-limit and recovery argument under the manuscript's smooth-test scalar convention; it is more than a scaling conjecture.
+
+## Snapshot and independence
+
+Reviewed snapshot: `13abd3fbd62d1a6faf46617e4f678ed14ac22bacb42b8ff161f0ee27d67f0b00`. All twelve source/handoff hashes in the manifest matched when independently recomputed. I read the complete new section, its handoff, and its accepted form/localization prerequisites. I did not read other reviewer reports or coordinator checks, did not delegate review work, and made no manuscript edits. No build was needed for these mathematical checks.
+
+## Convexity, shells, and global upper bounds
+
+The quotient expression for J, followed by the increasing positive qth power, is the supremum of fixed-source numerators times negative powers of affine energies. Each is convex for every q>0, including q<1. Thus the convexity argument does not incorrectly infer convexity from composing a convex response with a concave power. Reflection and translation by π form the stated four-element symmetry group; translation changes c to -c and therefore preserves its law. Budget preservation and averaging are valid.
+
+For the sliding bump, the mean derivative energy is bounded by `Cm/(r ell)` by Fubini, while reaction costs `Cr²ell³`. The width `ell∼(m/r³)^(1/4)` balances these terms. The quotient then has size `m^(-1/4)r^(-5/4)`, and the sampled offset interval has probability of order r², giving `r^(2-5q/4)m^(-q/4)` after the negative-power Jensen step. The proof controls an arbitrary L¹ coefficient, because it averages the actual derivative energy rather than replacing D by a local point value. Disjoint enlarged shells permit legitimate total-budget accounting. At q=8/5 their radial factor is one, and minimizing the sum of inverse mass powers gives the required `N^(7/5)` factor. When m=0, shrinking widths give an infinite bound as asserted.
+
+The fold bump has source of order R, derivative energy at most M/R², and reaction energy at most R⁵ throughout an offset window of width R². With R=M^(1/7), this yields J≥cR^(-3), and the integrated qth moment lower bound has exponent `(2-3q)/7`.
+
+For graded upper designs, a separated root at distance r from a fold sees mobility comparable to `a_R r^(-α)` and quadratic rate coefficient comparable to r². The harmonic response is therefore `a_R^(-1/4)r^(-3/2+α/4)`. The complement's reciprocal response of order r^(-3) is smaller by the factor `(R/r)^((6+α)/4)`, using `a_R∼R^(6+α)`. The inner interval has mobility of order R⁶, so rescaling gives response of order R^(-3); the rootless estimate is the direct reciprocal-potential integral. These comparisons remain valid across coefficient kinks and for larger arbitrary mobilities by monotonicity.
+
+I checked the exact budget normalizations in all three regimes. For α<1 the normalization integral remains finite, for α=1 it grows logarithmically, and for α>1 it has size R^(1-α). This gives the manuscript's three choices of R and `a_R∼R^(6+α)` in each case. The radial moment exponent is `(8-5q)/(q+4)`, with the expected change of sign. The core and rootless parameter integrals fit the same upper orders, including small q where their contributions can instead remain bounded.
+
+## Sharp subcritical and critical coefficients
+
+I independently recalculated the moving-root certificate. For the reference bump, `∫h_r=I z_c`, reaction energy is `U z_c[1+o(1)]`, and reference derivative energy is `T z_c`. A pair of disjoint roots therefore has source `2I z_c` and reference energy `2Qψ z_c`. The global supporting line for the negative power gives exactly the displayed constant term and derivative penalty. Its error comes only from the smooth rate expansion and is independent of the competitor D.
+
+There are two distinct counting factors, both handled correctly: converting a reference expectation to an integral over both root arcs divides by two; integrating the derivative energy of the paired test already sums those two roots and does not divide again. With root density `|sin r|/4`, this produces `Kψ,E=2^(q-3)jψ^q Z_E^(1+q/4)`.
+
+For the derivative kernel, squared amplitude times inverse width is `M^(-5/4)d_E^(-5/4)a^(-3/4)`. Multiplying by `z_c^(q-1)` and the root density yields the constant spatial factor `M^(-1-q/4)Z_E^(1+q/4)/4`. The integral of the remaining derivative profile is T. The kernel upper bound consequently cancels precisely the `qT/Qψ` surplus in the tangent inequality when integrated against any budget-M design. This is the step needed to exclude concentrated or oscillating competitors; a fixed-shape Hölder calculation alone would not suffice.
+
+The change of root variable has a uniformly controlled Jacobian because the width varies slowly on its own support. The kernel is nonnegative before truncating root arcs, so endpoint truncation gives an upper bound and remains valid just outside an arc. This controls mass concentrated at arc edges as well as in their interiors.
+
+For the subcritical upper design, the fold envelope exponent is `γq=q(6-αq)/8=7q/[2(q+4)]<1`. The core, separated-root, and rootless estimates all give this same integrable envelope after multiplication by M^(q/4). Thus dominated convergence is justified even for 4/3≤q<8/5, when the uniform-mobility envelope would fail. The limiting integral yields precisely Kq.
+
+At criticality the lower certificate's smallest root distance M^b, b<1/7, keeps the support-to-root-distance ratio uniformly small, even after the logarithmic normalization is included. Logarithmic derivatives of the coefficient factors are O(1/r), so the same ratio controls the tangent-kernel error. The four one-sided approaches to the two folds give `Z_E=4b log(1/M)+O(1)`. Sending b up to 1/7 gives the claimed lower coefficient.
+
+For the critical upper construction, `Z_R∼(4/7)L`, `a_R∼(7/4)R⁷`, and retention of root distances at least RL makes the scaled harmonic radius grow at least as L^(5/4). The complementary response has relative order at most L^(-5/4). The local equivalent is `2C0 a_R^(-1/4)(1-c²)^(-5/8)`. Its q=8/5 moment converts to the displayed integral of `1/|sin s|` with factor `(2C0)^(8/5)/8`. Omitted root annuli cost only `a_R^(-2/5)log L`; the core and rootless sides cost `a_R^(-2/5)`. These are negligible compared with the main logarithm. Combining factors recovers Kcrit, including its power of 4/7.
+
+## New whole-line measure argument
+
+The singular-mass argument is valid specifically for this scalar smooth-test convention. A singular measure can be exhausted, on the compact support of a test derivative, by compact subsets of a Lebesgue-null set. Neighborhoods can therefore have both vanishing length and vanishing absolutely continuous mobility mass. Flattening the derivative there changes the source and reaction terms uniformly by a vanishing amount and changes the absolutely continuous derivative energy by a vanishing amount. The small fixed-bump correction restores the total derivative integral to zero, so the integrated trial remains compactly supported. Its added energy against the finite singular measure tends to zero as well. This proves equality of the responses with and without singular mass; it does not assign a physical diffusion to a singular mobility measure.
+
+For each compact smooth test, the response expression is continuous under vague convergence of mobility measures. The supremum is lower semicontinuous. Its parameter dependence is lower semicontinuous and hence measurable, so Fatou supplies lower semicontinuity of the integrated positive moment. A fixed bump for |μ|≤1 gives a strictly positive lower bound uniform over measures of mass at most one.
+
+The positive graded-tail construction is available for every q>8/5: the interval `1<α<min(2,6-8/q)` is nonempty. At large positive μ the mobility near each root has size μ^(-α/2), and its harmonic response has power `-(6-α)/8`. The complementary reciprocal potential is smaller. The negative tail has power -3/2. Both qth powers are integrable under the chosen restriction, proving that Sq is finite.
+
+Mass scaling follows directly from `d_m(x)=m^(6/7)d(x/m^(1/7))`. It gives response factor m^(-3/7), parameter Jacobian m^(2/7), and integrated cost factor `m^(-(3q-2)/7)`. This scaling has a strict penalty for losing mass when q>8/5. Thus the direct-method existence paragraph is justified: a vague limit of a unit-mass minimizing sequence has absolutely continuous mass at most one, and any strictly smaller absolutely continuous mass would have cost strictly larger than Sq. Lower semicontinuity rules that out. Neither escaped mass nor singular mass can remain in such a minimizing limit.
+
+## Weighted natural endpoints and sharp recovery
+
+The natural-endpoint lemma addresses rough integrable densities rather than assuming smooth approximation of an unknown optimizer. On each fixed interval the positive background gives a derivative lower bound, so weighted derivative convergence controls unweighted derivative convergence and the integrated function uniformly. Smooth approximation of a derivative in L²(d dx), followed by a fixed-bump integral correction, preserves zero endpoint values when needed. Every correction has finite weighted energy because d is locally integrable.
+
+For expanding intervals, the reaction controls x⁴ times the function squared outside a fixed core, giving uniformly vanishing source tails. Locally, the derivative lower bound identifies weak limits in both weighted and ordinary H¹ spaces. The stated Sobolev estimate combines a local squared L² bound of order |x|^(-4) and a squared derivative bound of order |x|^α. Its cross term is |x|^(α/2-2), which decays for the allowed α. The limiting function is therefore bounded. With d integrable, the derivative energy introduced by a far cutoff tends to zero, and compact derivative approximation completes the membership proof. This supplies the upper endpoint limit even for an unbounded profile. Source and reaction weights bounded above and below and converging locally do not disrupt these estimates.
+
+For the unrestricted supercritical lower limit, pushing the design measure divided by M under `x=(s-sj)/ell`, with `M=b0²ell⁷`, gives unit total mass across the two rescaled cells. The amplitude `b0^(-2)ell^(-4)` makes source, derivative, and reaction energies share the response factor `b0^(-2)ell^(-3)`. Compact tests justify each local liminf. Fatou on disjoint bounded parameter windows, followed by their expansion, gives the integrated lower bound with curvature factor `b0^((3-8q)/7)/4`. Decreasing strict-convex mass cost allocates one-half of the mass to each fold. At b0=1/2, the full factor is `2^((11q-12)/7)`, as stated.
+
+The recovery construction starts from a near-minimizing L¹ density, adds a graded positive background, and uses exact spatial mass scaling to restore mass one. Its cost inflation is at most `(1+varepsilon)^((3q-2)/7)`, so no continuity theorem for arbitrary optimizer smoothing is assumed. Reflection averaging is justified by the earlier convexity argument and the even local potential.
+
+The sine coordinate in each physical half-cell makes the potential exactly quartic. The selected metric factor in the mobility cancels the derivative Jacobian exactly; the source and reaction retain only the bounded weight w_ell. The budget is `m∫w_ell² d`, converging to m by dominated convergence since `w_ell²≤2`. Final multiplication by a factor tending to one restores the exact budget and changes responses by relative o(1), by form comparison.
+
+At each fixed scaled offset, the other physical cell is rootless with uniformly positive rate, so it contributes only O(1). The weighted natural-endpoint lemma and compact lower tests give the local response limit in the active cell. Crucially, the global graded background also provides the stated q-integrable envelope over the entire assigned parameter half. At offsets away from the fold with roots, μ is of order ell^(-2), and the rescaled ordinary-root bound has exactly the envelope's power; rootless offsets obey the reciprocal bound. Therefore dominated convergence is valid on the expanding full parameter ranges. This completes the matching upper equivalent with the same Sq, rather than merely an order bound or a compact-parameter recovery statement.
+
+## Independent algebra, scope, and literature check
+
+I independently simplified, with symbolic arithmetic, the shell radial exponent, subcritical envelope exponent, fold curvature exponent, supercritical graded exponent, and final two-fold power of two. All residuals against the displayed manuscript formulas were zero. These checks support the derivations above; they are not a numerical evaluation of Sq.
+
+I inspected [Buttazzo–Oudet–Velichkov's primary preprint](https://arxiv.org/pdf/1506.00141), Proposition 4.1 on printed page 17. It does contain the cited measure-valued reinforcement compactness and fixed-test semicontinuity argument. The manuscript credits that method and separately proves its noncompact folded-potential extensions. It does not claim the standard weak-measure method itself as new. A broader comparison of the resulting sharp supercritical theorem remains appropriate in Stage 07, as planned.
+
+The full-bulk transfer invokes the accepted theorem under fixed positive bulk diffusivity and nonzero mean speed. Measures are explicitly excluded as automatic physical diffusion coefficients; the constructed compact-wall positive backgrounds supply actual admissible physical trials. Fixed fabrication constraints and finite-budget optimizer claims are also correctly excluded. The half-uniform example correctly separates attaining an optimal order from attaining the sharp coefficient. The stronger mass-allocation conclusion follows from equality in the sharp lower-bound chain, without implying profile uniqueness.
+
+## Findings and recommendation
+
+No actionable error or proof gap was found in this independent review. The unrestricted lower certificates, critical coefficient, measure compactness, absence of beneficial singular or escaped mass, and globally dominated recovery jointly support the principal theorem. The author has resolved the previously open supercritical value question in a rigorous variational form; an elementary formula or uniqueness theorem is not required for that conclusion. Subject to adjudication of all five reviews, this stage can proceed to acceptance.

@@ -1,0 +1,845 @@
+\section{Certified computation from rational witnesses}
+\label{sec:a-cert}
+
+The additive algorithms above specify a tolerance before computation. A
+numerical solver presents a different question: what can be proved about
+its actual output? This section gives rational witnesses for energy,
+individual flows, linear flow goals, and recovered resistance scenarios.
+Their verification uses exact arithmetic and does not assume that a
+numerical optimization method has attained its stopping tolerance.
+The global resistance-design certificate in
+\cref{prop:a-corr-certificate} already treats maximum dissipation over a
+polytope; the present certificates concern the physical state of a fixed
+law and its use in the arc-envelope reduction.
+
+The underlying principles are classical. Conjugates and Slater duality
+are used in their standard sense
+\citep[Sections 3.3, 5.1.6, and 5.2.3]{boyd2004-convex}.
+The divergence below is precisely the convex-function divergence of
+\citet[p.~206, equation (1.4)]{bregman1967-relaxation}, with its second
+argument equal to the unknown physical state. Primal-dual gaps as
+computable bounds on uniformly convex errors are established a posteriori
+methods; see \citet[Section 3, Proposition 3.1]{bartels2020-primal-dual}.
+The conservation projection is the electrical cut/cycle projection
+\citep[Chapter 2, Section 4]{lyons2016-probability}.
+Our purpose is to give their complete asymmetric-quadratic specialization,
+exact rational checks, degeneracy conditions, and original-instance
+interpretation. We make no novelty claim for these general principles.
+
+Repository formal-verification topics 03 and 16 establish in Lean the
+deterministic energy, Bregman, support and curvature guarantees below,
+including conditional scenario recovery and the two-path comparison.
+The original uncertainty-to-envelope mapping, numerical producers,
+Python verifiers and parsers, conservation repair, bit-complexity claims,
+and effective-resistance reformulation remain outside that formal coverage.
+The rational goal predicate checks a supplied factor $C(v)$; optimality
+of $C_*$ is established by separate theorems.
+
+\subsection{Energy witnesses and rational construction}
+
+Let $A$ have $+1$ at the tail and $-1$ at the head of each oriented
+edge. In this section the graph may be a finite loopless multigraph,
+possibly disconnected, with $m\ge1$; nominations must be feasible
+on each component. Define
+\begin{equation}
+ \begin{split}
+ E(x)&=\sum_e E_e(x_e),\qquad
+ E_e(t)=\frac13
+ \begin{cases}c_e^+t^3&t\ge0,\\c_e^-(-t)^3&t<0,\end{cases}\\
+ G_e(t)&=E_e'(t)=c_e^{\sgn(t)}t|t|,\qquad
+ \beta_L=\min_{e,\sigma\in\{+,-\}}c_e^\sigma>0.
+ \end{split}
+ \label{eq:a-cert-energy}
+\end{equation}
+All coefficients and nominations are rational. The notation
+$c_e^{\sgn(t)}$ selects $c_e^+$ at $t=0$; every formula at zero
+is independent of this convention. Strict convexity and coercivity
+imply that $E$ has a unique minimizer $x^*$ on $Ax=b$.
+Stationarity on this affine space gives
+$G(x^*)=A^\top\pi^*$, with one arbitrary potential gauge per component.
+Thus $x^*$ is the passive physical flow.
+
+\begin{proposition}[Rational energy and uniform flow certificate]
+\label{prop:a-cert-energy}
+Let $y\in\Q^m$ satisfy $Ay=b$ and let $p\in\Q^V$ be arbitrary.
+For $d=A^\top p$, suppose rational $u_e\ge0$ satisfy
+\[
+ (u_e)^2 c_e^{\sgn(d_e)}\ge |d_e|^3.
+\]
+Set
+\begin{equation}
+ L=b^\top p-\frac23\sum_e u_e,\qquad
+ \delta=E(y)-L.
+ \label{eq:a-cert-gap}
+\end{equation}
+Then $0\le E(y)-E(x^*)\le\delta$. Any rational $\eta\ge0$
+with $\beta_L\eta^3\ge6\delta$ gives
+$|y_e-x_e^*|\le\eta$ for every edge. All these hypotheses and
+conclusions about the claimed gap and radius have polynomial-time
+rational verification.
+\end{proposition}
+\begin{proof}
+For $d>0$ the maximizer of $dt-E_e(t)$ is positive, since negative
+$t$ gives a nonpositive value whereas small positive $t$ gives a
+positive value. Differentiation gives $t=\sqrt{d/c_e^+}$ and value
+$(2/3)\sqrt{d^3/c_e^+}$. The negative case uses $c_e^-$ and the
+maximizer $-\sqrt{|d|/c_e^-}$; at zero the maximizer and value
+are zero. Hence
+\[
+ E_e^*(d)=\frac23\sqrt{\frac{|d|^3}{c_e^{\sgn(d)}}}.
+\]
+The defining inequality $E_e(t)+E_e^*(d)\ge dt$, summed over the
+physical flow, proves $E(x^*)\ge L$. Minimality gives
+$E(y)\ge E(x^*)$.
+
+For completeness, the scalar modulus used in
+\cref{eq:a-bound-energy-error} also applies to all laws
+\eqref{eq:a-cert-energy}. The function
+$G_e(t)-\beta_Lt|t|$ is nondecreasing, and
+\[
+ (u|u|-v|v|)(u-v)\ge\frac12|u-v|^3.
+\]
+On either same-sign half-line this follows by factoring; for opposite
+signs it is $|u|^2+|v|^2\ge(|u|+|v|)^2/2$.
+Writing $a=y_e-z_e$ and integrating with $u=z_e+ta$, $v=z_e$,
+$0\le t\le1$, yields
+\begin{equation}
+ D_e(y_e,z_e):=E_e(y_e)-E_e(z_e)-G_e(z_e)(y_e-z_e)
+ \ge\frac{\beta_L}{6}|y_e-z_e|^3.
+ \label{eq:a-cert-scalar-modulus}
+\end{equation}
+Indeed the integrand $[G_e(z_e+ta)-G_e(z_e)]a$ is at least
+$\beta_Lt^2|a|^3/2$. At $z=x^*$ the linear terms sum to zero
+by $A(y-x^*)=0$. Summation proves the asserted radius.
+The checks require only rational additions, products, comparisons, and
+cubes, with polynomially bounded intermediate bit lengths.
+\end{proof}
+
+The verification complexity here and below counts the expanded binary
+lengths of rational numerators and denominators. A parser may accept
+additional exact string forms, including scientific exponent notation;
+the bound applies after their expansion, not to their raw JSON length.
+Neither $y$ nor $p$ is required to satisfy the constitutive equations.
+An inaccurate candidate simply has a larger certified gap.
+
+A practical construction repairs conservation before evaluating the
+energy. Choose a spanning tree in each component, round the chord flows
+to dyadics, subtract their incidence contributions from $b$, and recover
+tree flows by leaf elimination. At a leaf the unique remaining tree
+flow is its residual nomination, with its orientation sign; transfer
+that residual to its parent and delete the leaf. The last residual
+vanishes because the component sum of $b$ is zero. This proves exact
+conservation. If a conserved reference flow was approximated on every
+chord to accuracy $\rho$, each tree correction differs from that
+reference by at most $m\rho$: removing a tree edge expresses its flow
+as a cut sum, with at most $m$ chord errors. Thus this repair also
+preserves convergence of increasingly accurate approximations.
+It is polynomial in the input and rounding precision. The current
+numerical helper implements the connected simple loopless case and
+rejects other graphs; this implementation restriction does not narrow
+the mathematical certificate.
+
+For a nonnegative rational $a/b$, a dyadic upper enclosure of its
+$k$th root, $k\in\{2,3\}$, is $j/2^q$, where $j$ is the least
+nonnegative integer satisfying
+\begin{equation}
+ j^k b\ge a2^{kq}.
+ \label{eq:a-cert-root}
+\end{equation}
+An integer square root, or binary search for an integer cube root,
+followed by one exact upward comparison computes $j$ in polynomial
+time in the expanded input length and $q$. Its excess over the root
+is less than $2^{-q}$. This constructs the conjugate enclosures and
+$\eta$ without algebraic-number arithmetic. Potentials can be rounded
+independently. These constructions certify achieved accuracy; they do
+not prove a polynomial stopping bound for an arbitrary numerical solver.
+
+\subsection{Bregman intervals, pressure objectives, and sign recovery}
+
+\begin{proposition}[Separate-edge rational intervals]
+\label{prop:a-cert-bregman}
+Assume the certificate in \cref{prop:a-cert-energy} has been verified.
+If $\delta>0$, rational endpoints $l_e\le y_e\le u_e$ satisfying
+\begin{equation}
+ D_e(y_e,l_e)\ge\delta,\qquad D_e(y_e,u_e)\ge\delta
+ \label{eq:a-cert-bregman-test}
+\end{equation}
+certify $x_e^*\in[l_e,u_e]$. If $\delta=0$, $x^*=y$ and the
+singleton intervals suffice. Starting from $y_e\pm\eta$, rational
+bisection constructs the endpoints in \eqref{eq:a-cert-bregman-test}
+to any specified additive boundary accuracy in polynomial bit time.
+\end{proposition}
+\begin{proof}
+Conservation and stationarity give the exact identity
+\begin{equation}
+ E(y)-E(x^*)=\sum_e D_e(y_e,x_e^*)\le\delta.
+ \label{eq:a-cert-bregman-sum}
+\end{equation}
+Every summand is nonnegative. For fixed $y_e$, differentiation with
+respect to $z$ gives
+\[
+ \frac{d}{dz}D_e(y_e,z)=2c_e^{\sgn(z)}|z|(z-y_e).
+\]
+The function is continuously differentiable at zero as well. Its
+derivative is strictly negative on $z<y_e$ except possibly at the
+single point zero, and strictly positive on $z>y_e$ with the same
+exception. Consequently it is strictly decreasing to zero at $y_e$
+and strictly increasing thereafter. It tends to infinity at both
+ends by \eqref{eq:a-cert-scalar-modulus}. Thus its sublevel set at
+$\delta$ is one interval. The endpoint inequalities, in the stated
+outward directions, enclose this sublevel set and hence $x_e^*$.
+The initial endpoints $y_e\pm\eta$ are outside or on the sublevel
+boundary because $\beta_L\eta^3/6\ge\delta$. On each side keep
+$y_e$ as an inside endpoint and the current outer endpoint with
+$D_e\ge\delta$. Bisect and replace the appropriate endpoint using
+exact cubic evaluation. After $k$ steps the boundary bracket length
+is $\eta2^{-k}$. All rational sizes grow polynomially in $k$.
+A zero gap gives $E(y)=E(x^*)$, so uniqueness proves the singleton
+claim without a curvature assumption.
+\end{proof}
+
+Increasing boundary accuracy at a fixed positive gap does not make
+these intervals arbitrarily narrow: it approaches the two roots of
+$D_e(y_e,z)=\delta$. Away from zero the divergence grows quadratically
+in displacement; near zero its cubic behavior persists. This is the
+source of its improvement over a common cube-root radius, and also
+its limitation.
+
+The physical edge drop lies in the rational interval
+$[G_e(l_e),G_e(u_e)]$. Along a fixed path, sum these intervals with
+orientation signs to enclose the terminal potential difference.
+For any rational zero-sum weighted potential objective $a^\top\pi$
+on a connected graph, choose a spanning-tree flow $q$ with $Aq=a$.
+Then $a^\top\pi=q^\top G(x^*)$; signed interval arithmetic on the
+tree edges gives its enclosure. Componentwise zero sums give the same
+statement for disconnected graphs. These are deterministic-state
+certificates on arbitrary graphs. An uncertainty interpretation for
+that objective still requires its own graph-dependent reduction.
+In particular, an envelope target-drop interval concerns the envelope
+law, whose target coefficient may differ from the selected original
+resistance scenario.
+
+\begin{proposition}[Posterior endpoint-scenario recovery]
+\label{prop:a-cert-signs}
+Suppose \eqref{eq:a-cert-energy} is a correctly constructed envelope
+for an original target-flow extremum, with allowed resistance endpoints
+$\underline\beta_e,\overline\beta_e$ and fixed nominations.
+Select $\widehat\beta_e=c_e^+$ if $y_e\ge0$ and
+$\widehat\beta_e=c_e^-$ otherwise. Let $[l_e,u_e]$ be verified
+intervals containing $y_e$ and $x_e^*$, and put
+\[
+ a_e=\begin{cases}\max\{0,-l_e\}&y_e\ge0,\\
+                       \max\{0,u_e\}&y_e<0,
+       \end{cases}
+ \qquad r_e=(\overline\beta_e-\underline\beta_e)a_e^2.
+\]
+If $\widehat x$ is the physical flow at the selected scenario, then
+\begin{equation}
+ \|\widehat x-x^*\|_\infty^2
+ \le\frac{2}{\beta_L}\sum_e r_e.
+ \label{eq:a-cert-sign-error}
+\end{equation}
+In particular, resolved signs give an exactly optimal rational endpoint
+scenario even when the exact flow is irrational. More generally, exact
+optimality holds whenever every edge satisfies at least one of
+\begin{equation}
+ \begin{gathered}
+ c_e^+=c_e^-=\widehat\beta_e,\qquad
+ l_e\ge0\ \hbox{and}\ \widehat\beta_e=c_e^+,\\
+ u_e\le0\ \hbox{and}\ \widehat\beta_e=c_e^-,\qquad
+ l_e=u_e=0.
+ \end{gathered}
+ \label{eq:a-cert-compatible}
+\end{equation}
+\end{proposition}
+\begin{proof}
+A disagreement between the selected coefficient and the envelope
+coefficient at the true sign can occur only on the opposite side of
+zero from $y_e$. In that event $|x_e^*|\le a_e$, whence
+$|\widehat\beta_e x_e^*|x_e^*|-G_e(x_e^*)|\le r_e$.
+Write $d=\widehat x-x^*$ and $D=\|d\|_\infty$.
+The two physical potential gradients both annihilate $d$. Pairing
+with $d$ and using the scalar monotonicity inequality gives
+\[
+ \frac{\beta_L}{2}\sum_e|d_e|^3
+ \le\sum_e\bigl(G_e(x_e^*)-
+              \widehat\beta_e x_e^*|x_e^*|\bigr)d_e
+ \le D\sum_e r_e.
+\]
+If $D=0$ there is nothing to prove; otherwise division by $D$
+proves \eqref{eq:a-cert-sign-error}. Under
+\eqref{eq:a-cert-compatible}, the selected law and envelope law
+agree at $x^*$ on every edge. The envelope state therefore satisfies
+the selected scenario's equations, and uniqueness gives
+$\widehat x=x^*$. Non-strict signs suffice because both laws vanish
+at zero. The envelope theorem supplies the extremum interpretation.
+\end{proof}
+
+An upward rational square root of the right side of
+\eqref{eq:a-cert-sign-error} certifies scenario loss. Using only
+$|y_e-x_e^*|\le\eta$ recovers the uniform bound from
+\cref{thm:a-bound-envelope-algorithm}; in particular
+$(1+2m\beta_U/\beta_L)\eta$ is a valid, possibly conservative,
+loss bound when $\beta_U=\max_e\overline\beta_e$.
+There is no universal finite-precision sign-identification guarantee
+here: a zero or very small physical flow may keep an interval across
+zero. Exact optimality is a sufficient posterior conclusion when
+\eqref{eq:a-cert-compatible} succeeds.
+
+\subsection{Conserved-energy support certificates for linear goals}
+
+Separate-edge intervals omit the coupling $Ax=b$. For a rational
+linear goal $w^\top x^*$, retain that coupling in the compact convex set
+\[
+ S(y)=\{x:Ax=b,\ E(x)\le E(y)\}.
+\]
+This set contains $x^*$, but its other points need not be physical
+states of the fixed law.
+
+\begin{theorem}[Rational support certificate and completeness]
+\label{thm:a-cert-support}
+Let $Ay=b$. For rational $\lambda>0$, $v\in\Q^V$, set
+$s=w-A^\top v$. If rational $R_e\ge0$ satisfy
+\begin{equation}
+ R_e^2\lambda c_e^{\sgn(s_e)}\ge |s_e|^3,
+ \qquad
+ U_w=\lambda E(y)+v^\top b+\frac23\sum_e R_e,
+ \label{eq:a-cert-support}
+\end{equation}
+then $w^\top x\le U_w$ for every $x\in S(y)$.
+Applying the construction to $-w$ gives the interval
+$[-U_{-w},U_w]$ for $w^\top x^*$.
+For $\lambda=0$, a finite dual bound exists exactly when
+$w=A^\top v$; then $w^\top x=v^\top b$ on $Ax=b$ and no
+roots are needed.
+
+If $E(y)>E(x^*)$, the infimum of these rational upper bounds equals
+$\max_{x\in S(y)}w^\top x$. Hence rational witnesses can approach
+the exact support value arbitrarily closely. As conserved trial
+energies decrease to $E(x^*)$, the exact support intervals converge
+to $w^\top x^*$ for every $w$.
+\end{theorem}
+\begin{proof}
+The scalar calculation in \cref{prop:a-cert-energy}, with coefficient
+$\lambda c_e^{\sgn(s_e)}$, gives
+\[
+ (\lambda E_e)^*(s_e)=
+ \frac23\sqrt{\frac{|s_e|^3}{\lambda c_e^{\sgn(s_e)}}}.
+\]
+Fenchel's inequality gives $s^\top x\le\lambda E(x)+
+\sum_e(\lambda E_e)^*(s_e)$. Add $v^\top Ax=v^\top b$
+and use $E(x)\le E(y)$. When $\lambda=0$, the conjugate
+of the zero function is finite only at $s=0$, proving the stated
+condition. These are exactly the goals constant on the conservation
+affine space, because $(\ker A)^\perp=\operatorname{im}A^\top$.
+They include cut flows and each bridge flow; rational linear elimination
+finds $v$ from rational $A,w$ whenever it exists.
+
+For completeness of the unrounded dual, minimize $-w^\top x$ subject
+to $Ax=b$, $E(x)\le E(y)$. Its value is finite and attained by
+coercivity. If $E(y)>E(x^*)$, the point $x^*$ is strictly feasible
+for the energy inequality relative to $Ax=b$. Slater duality
+therefore gives equality of the support value and the dual infimum,
+and a dual minimizer. Redundant conservation rows may first be
+removed, so their presence causes no qualification issue.
+If $w$ is nonconstant on $Ax=b$, a finite dual minimizer cannot
+have $\lambda=0$ by the preceding conjugate calculation.
+For $\lambda>0$ the displayed unrounded objective is continuous in
+$(\lambda,v)$, including at $s_e=0$: the two asymmetric terms tend
+to zero there. Approximate a dual minimizer by rational data keeping
+$\lambda>0$, and then take increasingly accurate upward rational
+square roots. The resulting valid rational upper bounds tend to the
+support value. Constant goals already have an exact rational witness
+at $\lambda=0$.
+
+For convergence, the cubic modulus gives the stronger quantitative
+statement
+\[
+ |z_e-x_e^*|^3
+ \le \frac{6\bigl(E(y)-E(x^*)\bigr)}{\beta_L}
+ \qquad(z\in S(y),\ e\in E).
+\]
+Indeed, apply \eqref{eq:a-cert-scalar-modulus} at $x^*$ to the
+feasible flow $z$. Conservation cancels the summed linear terms, and
+$E(z)\le E(y)$ gives the displayed bound. Thus, if $Ay_k=b$ and
+$E(y_k)\to E(x^*)$, the whole set $S(y_k)$ eventually lies in any
+fixed positive-radius supremum-norm ball about $x^*$. Continuity of
+each fixed linear goal proves convergence of its exact support interval.
+This estimate is in terms of energy error and gives no rate in
+producer runtime or certificate size.
+\end{proof}
+
+The support problem has the cubic second-order-cone lift of
+\cref{thm:a-bound-envelope-algorithm}, with a linear objective and
+an energy sublevel constraint. This permits numerical conic proposals
+for its dual variables. The accompanying support module supplies exact
+verification, conversion of supplied rational dual data to root
+witnesses, and analytic demonstrations; it does not implement a general
+conic search for these dual data. The completeness statement gives no
+polynomial certificate-size or producer-runtime bound at a specified
+support tolerance. It also does not assert that a support interval
+always improves a Bregman interval. In particular,
+\eqref{eq:a-cert-bregman-sum} uses physical stationarity at $x^*$;
+one may not assume the same separate-edge Bregman constraints for
+all $x\in S(y)$.
+
+\subsection{Curvature bounds and the constrained Laplacian}
+
+\begin{theorem}[Conservation-aware quadratic goal certificate]
+\label{thm:a-cert-hessian}
+Let $y\in\Q^m$ satisfy $Ay=b$.
+Suppose $0\le E(y)-E(x^*)\le\delta$ is verified, and rational
+intervals $[l_e,u_e]$ contain both $y_e$ and $x_e^*$. Define
+\begin{equation}
+ h_e=\begin{cases}
+ 2c_e^+l_e&l_e>0,\\
+ -2c_e^-u_e&u_e<0,\\
+ 0&l_e\le0\le u_e.
+ \end{cases}
+ \label{eq:a-cert-curvature}
+\end{equation}
+Let $P=\{e:h_e>0\}$ and $Z=\{e:h_e=0\}$. For any rational
+$v$ with $s=w-A^\top v$ satisfying $s_Z=0$, put
+\begin{equation}
+ C(v)=\sum_{e\in P}\frac{s_e^2}{h_e}.
+ \label{eq:a-cert-factor}
+\end{equation}
+Every rational $r\ge0$ with $r^2\ge2\delta C(v)$ proves
+\begin{equation}
+ |w^\top(x^*-y)|\le r.
+ \label{eq:a-cert-goal-radius}
+\end{equation}
+If $\delta=0$, every goal is exact regardless of $h$ or $s_Z$.
+\end{theorem}
+\begin{proof}
+The second derivative is $E_e''(t)=2c_e^{\sgn(t)}|t|$, including
+its continuous zero value. Formula \eqref{eq:a-cert-curvature} is
+its minimum on the interval. Taylor's integral formula along the
+segment between $x_e^*$ and $y_e$ gives
+$D_e(y_e,x_e^*)\ge h_e(y_e-x_e^*)^2/2$. Therefore
+\begin{equation}
+ \frac12\sum_e h_e(x_e^*-y_e)^2\le\delta.
+ \label{eq:a-cert-quadratic-error}
+\end{equation}
+Since $A(x^*-y)=0$, the goal difference equals $s^\top(x^*-y)$.
+The identity $s_Z=0$ and weighted Cauchy--Schwarz on $P$ bound its square by
+$C(v)\sum_e h_e(x_e^*-y_e)^2\le2\delta C(v)$.
+Empty sums are zero, so the proof also covers $P=\varnothing$.
+For a zero gap use strict convexity, which gives $x^*=y$ directly.
+\end{proof}
+
+\begin{proposition}[Optimal factor and zero-curvature obstruction]
+\label{prop:a-cert-projection}
+Write $D=\operatorname{diag}(1/h_e:e\in P)$. The zero-edge
+condition is feasible exactly when
+\begin{equation}
+ w_Z^\top z=0\quad\hbox{for every }z\in\ker A_Z.
+ \label{eq:a-cert-zero-obstruction}
+\end{equation}
+When feasible, the minimum $C_*$ of \eqref{eq:a-cert-factor} is
+attained by a rational solution of
+\begin{equation}
+ \begin{bmatrix}A_PD A_P^\top&A_Z\\ A_Z^\top&0\end{bmatrix}
+ \begin{bmatrix}v\\\xi\end{bmatrix}
+ =\begin{bmatrix}A_PD w_P\\w_Z\end{bmatrix}.
+ \label{eq:a-cert-kkt}
+\end{equation}
+Singular potential gauges and redundant zero-edge constraints are
+allowed. The value $\sqrt{2\delta C_*}$ is the exact supremum of
+$|w^\top d|$ over
+\begin{equation}
+ Ad=0,\qquad \tfrac12\sum_e h_ed_e^2\le\delta
+ \label{eq:a-cert-error-set}
+\end{equation}
+for every $\delta>0$. If \eqref{eq:a-cert-zero-obstruction} fails,
+that supremum is infinite. Thus optimizing the Laplacian constant is
+sharp for this quadratic information, without asserting sharpness for
+the physical error or for the additional interval constraints.
+\end{proposition}
+\begin{proof}
+The equation $A_Z^\top v=w_Z$ is solvable exactly when $w_Z$
+is orthogonal to $\ker A_Z$, by the fundamental subspace identity.
+If it is inconsistent there is $z\in\ker A_Z$ with
+$w_Z^\top z\ne0$. Extending $z$ by zeros on $P$ gives a
+zero-curvature circulation; arbitrary multiples satisfy
+\eqref{eq:a-cert-error-set} and have unbounded goal.
+
+For the feasible case, minimize the squared norm
+$\|D^{1/2}(w_P-A_P^\top v)\|^2$ on the affine space
+$A_Z^\top v=w_Z$. Its affine image in Euclidean space is closed,
+so a least-norm point exists. First-order optimality on that affine
+space says its gradient lies in $\operatorname{im}A_Z$.
+Writing a multiplier $\xi$ gives exactly
+\eqref{eq:a-cert-kkt}; conversely these equations imply global
+optimality of the convex quadratic. The system is rational and
+consistent. Exact elimination with free coordinates set to zero
+returns rational $v,\xi$, even with redundant rows. Determinant
+bounds after clearing denominators give polynomial output bit length
+and polynomial bit complexity; a singular system need not be perturbed.
+
+For sharpness, take an optimal solution and put
+$d_P=D(w_P-A_P^\top v)$ and $d_Z=-\xi$.
+The first row of \eqref{eq:a-cert-kkt} gives $Ad=0$, and the
+second gives $s_Z=0$. Consequently
+\[
+ w^\top d=s^\top d=C_*,\qquad \sum_e h_ed_e^2=C_*.
+\]
+If $C_*>0$, multiply $d$ by $\sqrt{2\delta/C_*}$ to attain
+the upper bound from weighted Cauchy--Schwarz. If $C_*=0$,
+$s=0$ on all edges, so $w=A^\top v$ and every circulation goal
+is zero. This also handles $P=\varnothing$: consistency makes
+$w$ a cut goal, and the optimal factor is the empty sum zero.
+\end{proof}
+
+When every $h_e>0$, let $H=\operatorname{diag}(h)$ and
+$L_H=AH^{-1}A^\top$. The minimum can equivalently be written
+\begin{equation}
+ C_*=w^\top H^{-1}w-
+ (AH^{-1}w)^\top L_H^+(AH^{-1}w),
+ \label{eq:a-cert-effective}
+\end{equation}
+where $L_H^+$ is the Moore--Penrose inverse. To verify this expression,
+expand $C(v)$ as a quadratic in $v$, solve
+$L_Hv=AH^{-1}w$, and substitute. The right side is in
+$\operatorname{im}L_H=\operatorname{im}A$, so the substitution
+is unaffected by component gauges. For a single-edge selector
+$w=\one_e$, writing $a_e$ for that incidence column gives
+\[
+ C_*=\frac1{h_e}-\frac{R_{\rm eff}(e)}{h_e^2},\qquad
+ R_{\rm eff}(e)=a_e^\top L_H^+a_e.
+\]
+Here the auxiliary network has conductances $1/h_e$.
+For a bridge the unit terminal current has no alternative route,
+so $R_{\rm eff}(e)=h_e$ and the factor vanishes, as conservation
+also proves. This is the usual electrical projection and effective
+resistance identity, now used as a goal-error constant.
+
+The supplied producer solves \eqref{eq:a-cert-kkt} by dense exact
+rational elimination. It is intended for modest certificate sizes;
+no sparse scalability claim follows. Optimality of its potentials is
+unnecessary for certificate validity. With positive curvatures, even a
+rounded numerical Laplacian solution gives a valid, perhaps larger,
+factor. With zero curvatures, all equalities $A_Z^\top v=w_Z$
+must instead survive exactly. Regularizing away an inconsistent
+constraint cannot produce a valid witness. The implementation first
+handles zero energy gap, then rejects the documented zero-curvature
+obstruction. The full pipeline may omit this optional goal witness
+and retain its independently verified Bregman interval.
+
+\subsection{An exact comparison on two long paths}
+
+\begin{example}[Information lost by separate-edge bounds]
+\label{ex:a-cert-paths}
+Consider two internally disjoint source--sink paths, each of length
+$L\ge1$, with every edge oriented toward the sink, all coefficients
+one, source nomination two, sink nomination minus two, and zero internal
+nominations. The physical flow is one on every edge: its path drops
+are both $L$, and strict convexity gives uniqueness. For rational
+$0<\eps<1$, choose $y=1+\eps$ on the first path and
+$y=1-\eps$ on the second. Its exact energy gap is
+\begin{equation}
+ \delta=\frac L3\bigl((1+\eps)^3+(1-\eps)^3-2\bigr)
+       =2L\eps^2.
+ \label{eq:a-cert-path-gap}
+\end{equation}
+Integral physical potentials, decreasing by one on each path edge,
+give this exact dual energy value, with rational conjugate roots.
+
+Every conserved flow has path values $t,2-t$. Its energy is strictly
+convex, symmetric about $t=1$, and strictly increasing with $|t-1|$.
+Consequently $S(y)$ is exactly $1-\eps\le t\le1+\eps$,
+even though the energy formula uses absolute cubes outside $[0,2]$.
+The exact support interval of a first-path edge is therefore of width
+$2\eps$. Its upper dual can also be attained rationally. Choose
+\[
+ \lambda=\frac1{4L\eps},\qquad
+ (A^\top v)_e=w_e-\lambda t_e^2,
+\]
+where $t_e=1+\eps$ on the first path and $1-\eps$ on the second,
+and $w$ selects one first-path edge. The two sums of these prescribed
+potential drops agree because
+$1-\lambda L(1+\eps)^2=-\lambda L(1-\eps)^2$.
+Thus rational node potentials exist. The residual is
+$s_e=\lambda t_e^2$, with exact root
+$R_e=\lambda t_e^3$; equality in Fenchel and in the energy
+constraint gives $U_w=1+\eps$. Exchanging the path values and
+using $-w$ gives the lower support bound as well.
+
+For fixed $L$ and rational $\eps\downarrow0$, let $z=y_e+a$ remain
+positive. Direct expansion gives
+\[
+ D_e(y_e,y_e+a)=y_ea^2+\frac23a^3.
+\]
+The two boundary displacements satisfying $D_e=2L\eps^2$
+therefore obey $a/\eps\to\pm\sqrt{2L}$. The separate-edge
+Bregman width is
+\begin{equation}
+ 2\sqrt{2L}\,\eps+o(\eps).
+ \label{eq:a-cert-path-bregman}
+\end{equation}
+All interval endpoints tend to one, so their curvatures tend to two.
+The circulation space is one-dimensional, generated by $d$ equal to
+$+1$ on one path and $-1$ on the other. Directly optimizing
+\eqref{eq:a-cert-error-set}, or using
+\cref{prop:a-cert-projection}, gives
+$C_*=1/\sum_e h_e\to1/(4L)$ for the selected edge.
+Thus the optimized Laplacian width is
+\begin{equation}
+ 2\sqrt{2\delta C_*}=2\eps+o(\eps).
+ \label{eq:a-cert-path-hessian}
+\end{equation}
+These asymptotics hold for exact boundaries. They also hold for rational
+outer endpoints and roots with errors $o(\eps)$.
+They are pointwise in $L$. Choosing $L$ large and then $\eps$
+sufficiently small makes the improvement factor arbitrarily large;
+no uniform-in-$L$ asymptotic or computational lower bound is implied.
+The physical solution of this family is elementary.
+\end{example}
+
+The centers of these intervals differ. The Laplacian interval is
+centered at $w^\top y$, whereas the exact support interval need not
+be. Equal asymptotic widths therefore do not imply equal endpoints.
+For a concrete warning against combining their hypotheses, take
+$L=1$ and $\eps=1/10$. The opposite support endpoint has
+$D_1(11/10,9/10)=29/750>\delta=1/50$. It belongs to $S(y)$
+but fails a separate-edge physical Bregman constraint. Intersecting
+independently verified enclosures of $x^*$ is valid; silently
+restricting the support problem using those physical constraints is
+a different optimization problem.
+
+\subsection{Verification of the original uncertainty instance}
+
+The preceding certificates validate a deterministic energy model. Its
+JSON data alone cannot establish that it is the right envelope for a
+specified uncertainty problem. The complete pipeline additionally
+verifies a connected simple loopless graph with no $K_4$ minor,
+fixed balanced nominations, independent positive rational resistance
+intervals or explicit finite sets, a target edge, and maximum or
+minimum direction. It accepts no operating side constraints or
+correlated uncertainty. Its simple-graph restriction is narrower than
+the multigraph scope of the mathematics.
+
+The verifier checks indices, simplicity, connectivity, dimensions, and
+exact balance. Allowed sets must be nonempty and strictly positive. It recognizes
+its graph class by repeatedly eliminating a vertex of degree at most
+two and joining its two neighbors when needed. The $K_4$-minor-free
+characterization underlying \cref{lem:a-bound-signs} implies that
+such a vertex always exists in the remaining graph. Suppressing a
+degree-two vertex is a minor operation; degrees zero or one also
+preserve the class. Conversely a completed elimination order reverses
+to adding vertices whose existing neighbors form cliques of size at
+most two. Starting with bags of at most three vertices and attaching
+a new bag at its neighbor clique gives a tree decomposition of width
+at most two; therefore the original graph has no $K_4$ minor.
+This also explains why the test accepts dangling cyclic blocks.
+
+Next solve the grounded all-unit-conductance Laplacian for a unit
+injection at the target tail and withdrawal at its head. Exact
+rational elimination computes every adjoint drop and its sign,
+including exact zeros. Let these signs be $\sigma_e$, and let
+$d=1$ for maximization and $d=-1$ for minimization. Set
+\[
+ t_e=d\sigma_e\quad(e\ne a),\qquad t_a=-d.
+\]
+The directional coefficients are
+\[
+ c_e^+=\begin{cases}\overline\beta_e&t_e>0,\\
+                         \underline\beta_e&t_e\le0,\end{cases}
+ \quad
+ c_e^-=\begin{cases}\overline\beta_e&t_e<0,\\
+                         \underline\beta_e&t_e\ge0.\end{cases}
+\]
+For finite sets, $\underline\beta_e,\overline\beta_e$ are their
+minimum and maximum. The target's reversed rule and the zero-sign
+choice are those of \cref{thm:a-bound-envelope-structural}.
+The confluence and finite-secant proofs there justify this exact
+mapping for all positive secant resistances. The verifier recomputes
+it from the original instance, rather than trusting stored coefficients
+or floating-point signs.
+
+It then checks an energy witness for this envelope and a second energy
+witness for the selected original endpoint scenario. Each yields
+Bregman intervals, optionally intersected with independently verified
+linear-goal intervals for the reconstructed target selector. Empty
+intersections are rejected. Let the resulting target intervals be
+$I^*=[l^*,u^*]$ and $I^\beta=[l^\beta,u^\beta]$.
+The original-scenario loss is bounded directly by
+\begin{equation}
+ \begin{cases}
+ 0\le\OPT-x_a(\beta)\le u^*-l^\beta&\text{for maximization},\\
+ 0\le x_a(\beta)-\OPT\le u^\beta-l^*&\text{for minimization}.
+ \end{cases}
+ \label{eq:a-cert-direct-loss}
+\end{equation}
+Indeed the original envelope theorem identifies $\OPT$ with $x_a^*$,
+the scenario belongs to the allowed product, and interval subtraction
+bounds their difference. If \eqref{eq:a-cert-compatible} holds, the
+checker instead reports zero loss by exact endpoint optimality.
+A zero loss certifies the selected scenario, not an exact numerical
+value for its possibly irrational flow.
+
+The second witness requires no second physical-flow optimization.
+The producer may reuse the conserved envelope trial flow, round it
+again if necessary, and recompute a dual potential proposal under the
+selected symmetric law. Its independent primal-dual check certifies
+the resulting scenario interval; poor reuse only widens it. This is a
+posterior alternative to the uniform recovery factor.
+
+\subsection{Scaling, implementation scope, and reproducible evidence}
+
+Let $B=\sum_{b_v>0}b_v$ and $C=\max_{e,\sigma}c_e^\sigma$.
+For $B>0$ the producer solves and certifies normalized data
+$\widetilde b=b/B$, $\widetilde c=c/C$. The exact lift is
+\begin{equation}
+ \begin{gathered}
+ y=B\widetilde y,\quad p=CB^2\widetilde p,\quad
+ u=CB^3\widetilde u,\quad
+ \delta=CB^3\widetilde\delta,\quad\eta=B\widetilde\eta,\\
+ [l_e,u_e]=B[\widetilde l_e,\widetilde u_e],\quad
+ h_e=CB\widetilde h_e,\quad
+ v=\widetilde v,\quad C(v)=\widetilde C(v)/(CB),\quad
+ r=B\widetilde r.
+ \end{gathered}
+ \label{eq:a-cert-scaling}
+\end{equation}
+In the first line $u$ denotes the vector of conjugate-root bounds;
+in the second, $u_e$ is an interval endpoint. Cubic homogeneity
+proves the energy and root identities: $|A^\top p|^3/c$ scales
+by $C^2B^6$. The second-derivative formula proves the curvature
+identity, and $r^2\ge2\delta C(v)$ then scales by $B^2$.
+Thus every rational inequality is preserved. Certifying in normalized
+units before this exact lift makes the rounding error covariant under
+common rational changes of flow and resistance units. Normalizing
+only the floating-point solve would not have that property.
+When $B=0$, balance implies $b=0$ and the producer uses the exact
+zero physical state. A positive-gap zero-load trial circulation is
+still a legitimate input to the general verifier and may exhibit the
+zero-curvature obstruction.
+
+The numerical energy producer uses the explicit cubic cone lift with
+CVXPY and Clarabel, conservation repair, rounded least-squares potential
+proposals, and exact root bounds. It is a practical proposal mechanism,
+not an implementation of the rational convex-body algorithm proved
+in \cref{thm:a-bound-envelope-algorithm}. It accepts no requested
+accuracy guarantee. Extreme coefficient ratios can cause large
+certified intervals or a failed numerical solve. Verification uses
+only Python's standard library and explicit exceptions, so its
+mathematical checks remain active under \texttt{python -O}.
+The original-instance reader also rejects duplicate JSON keys,
+unknown fields, nonstring rational fields, and Boolean indices.
+The simpler base-energy reader certifies the deterministic instance
+encoded in its own file; it does not enforce this complete
+original-instance schema. The Bregman helper requires prior base
+verification, and the integrated goal verifier repeats that check.
+
+The implementation files, in \texttt{code/potential\_flow\_mpd/},
+have distinct roles:
+\begin{center}
+\begin{tabular}{@{}p{.45\linewidth}p{.48\linewidth}@{}}
+\toprule
+File & Verified role\\
+\midrule
+\texttt{envelope\_rational\_\allowbreak certificates.py} &
+Deterministic energy, conjugate roots, conserved flow, and uniform radius.\\
+\texttt{envelope\_bregman\_bounds.py} &
+Outward scalar interval sharpening after base verification.\\
+\texttt{goal\_flow\_certificate.py} &
+Support verification and exact constrained-Laplacian production and verification.\\
+\texttt{certified\_envelope.py} &
+Original data, exact envelope mapping, two state certificates,
+optional target witnesses, and scenario-loss interpretation.\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The saved six-edge deterministic witness gives a uniform interval width
+below $3.405\cdot10^{-4}$. Rechecking it and sharpening by exact
+Bregman arithmetic gives maximum edge width below
+$2.894\cdot10^{-6}$ and maximum edge-drop width below
+$4.0\cdot10^{-6}$; all six edge intervals exclude zero.
+Applying the exact Laplacian producer without another physical solve
+gives maximum goal width below $9.447\cdot10^{-7}$.
+These are widths of verified enclosures, not measurements of the
+true numerical error. Exact optimality of an original scenario still
+requires an independently checked envelope mapping for that saved
+base witness.
+
+The two-path demonstration at $\eps=10^{-3}$ gives the following
+rounded displays of exactly checked bounds. The support column is the
+analytic width from \cref{ex:a-cert-paths}.
+\begin{center}
+\begin{tabular}{@{}rrrr@{}}
+\toprule
+$L$ & Separate-edge width & Laplacian width & Exact support width\\
+\midrule
+2 & $0.00399800593$ & $0.00200200435$ & $0.002$\\
+8 & $0.00799603843$ & $0.00200401743$ & $0.002$\\
+32 & $0.0159922895$ & $0.00200807006$ & $0.002$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+A replay of the original-instance benchmark produced valid certificates
+in ten cases, including maximum and minimum directions, mixed finite
+and interval sets, reversed orientations, an 80-edge graph of rank
+39, a full coefficient ratio of $3\cdot10^6$, supply $10^{-8}$, a dangling
+zero-adjoint block, zero nominations, and an ambiguous-sign case.
+Nine cases certified exact endpoint optimality. Some numerical solves
+reported \texttt{optimal\_inaccurate}; the reported guarantees came
+from the exact witnesses. The ambiguous-sign instance retained a
+nonzero certified loss: the goal witness reduced its target enclosure
+width from about $4.99\cdot10^{-4}$ to $4.37\cdot10^{-6}$
+and its loss upper bound from about $6.92\cdot10^{-4}$ to
+$5.28\cdot10^{-6}$. These are approximately $114$-fold and
+$131$-fold reductions in verified bounds, respectively, with no
+claim about the actual scenario error or exact sign resolution.
+
+One case adapts the topology and pipe geometry of the open water-network
+dataset accompanying \citet{vrachimis2018-hydraulic}.
+It uses 11 nodes and 13 pipes, synthetic unit demands at the nine
+nonreservoir nodes numbered 2 through 10, zero demand at the leak
+subdivision node, and supply nine at node 1. Its quadratic proxy
+coefficient is $(\mathrm{length}/1000)(300/\mathrm{diameter})^5$,
+with a $\pm10\%$ interval. The target is original pipe 11,
+from node 4 to node 9. This explicitly transformed instance tests
+an external topology; it does not reproduce the source's hydraulic
+law, measurements, demand scenarios, or leakage estimates. The
+benchmark establishes neither hydraulic prediction accuracy nor
+large-network scalability.
+
+The retained verification record includes ordinary and optimized
+Python runs of independently written deterministic, Bregman, goal,
+and original-instance checks. Their controls include exact signed
+states, zero gaps, zero-curvature cut and cycle goals, parallel edges,
+disconnected gauges, malformed witnesses, and all 771 connected
+labeled graphs on two through five vertices tested against the
+branch-set definition of a $K_4$ minor. The two small numerical cases
+were additionally compared with all 128 endpoint scenarios combined,
+using a separate numerical physical solver; this latter comparison is
+a regression check, not a proof. Exact scale tests at $10^{400}$
+and $10^{-400}$ verify the covariance in
+\eqref{eq:a-cert-scaling}. The new section diagnostic also checks the
+sharp quadratic constant directly in circulation coordinates, including
+singular zero-edge cases, and the rational two-path support equalities.
+Finite checks supplement the proofs and do not establish their
+universal statements.
+
+From the repository root, the saved complete certificate can be checked
+without scientific packages by
+\begin{quote}\small\ttfamily
+cd code/potential\_flow\_mpd\\
+python -S -O certified\_envelope.py verify \textbackslash\\
+\hspace*{1em}certified\_envelope\_example.json
+\end{quote}
+The deterministic saved witness is checked with the base module's
+\texttt{--verify} option; the goal module runs the analytic demonstration
+with no arguments and accepts \texttt{--certificate} for the saved
+six-edge comparison. The numerical benchmark entry point is
+\texttt{certified\_envelope\_benchmarks.py}; it requires the scientific
+Python environment and writes example and result JSON files beside
+itself. The retained replay uses an isolated copy so the distributed
+saved witnesses remain unchanged. Source hashes, full commands,
+interpreter and package versions, exact rational comparison data,
+and return codes accompany the verification record. No solver status,
+rounded display, or historical benchmark result substitutes for
+rechecking the exact witness against its original instance.

@@ -1,0 +1,13 @@
+# Bounded source assessment: curvature rank and coupled convex graph precision
+
+Date: 2026-09-05. Scope: [the curvature-rank candidate](convex-vector-curvature-rank-precision.md), including its finite comparison and polynomial rational construction. This is a bounded source check, not proof of priority.
+
+The basis primitive has a direct antecedent. Awerbuch and Kleinberg, *Adaptive Routing with End-to-End Feedback: Distributed Learning and Geometric Approaches* (STOC 2004), section 2.3, defines barycentric spanners and approximate spanners, proves existence by maximum determinants, and gives a determinant-exchange algorithm. I opened the primary manuscript and checked Proposition 2.2, Observation 2.3, Proposition 2.4, and Figure 2. The candidate must credit that primitive. Its coefficient-space basis is a finite-set application. [Author manuscript](https://www.cs.cornell.edu/~rdk/papers/OLSP.pdf).
+
+Lubin, Vielma and Zadik, *Mixed-integer convex representability*, is the antecedent for the parity obstruction and the distinction between binary and general-integer convex representations. I opened the paper in this check. The candidate applies parity to approximate graph contacts and then uses convex chord gaps; it does not claim parity as new. [Primary paper](https://arxiv.org/pdf/1706.05135).
+
+The scalar compiler is an existing local theorem with its own two proof audits and source assessment. That assessment credits scalar segmentation, greedy extension, and per-segment search to Codsi, Ngueveu and Gendron's LinA report. I also opened the report during this check. Its segmentation setting is different from a uniform polynomial-size circuit indexed by only logarithmically many integer bits. [Primary report](https://www.cirrelt.ca/documentstravail/cirrelt-2021-39.pdf).
+
+Searches combined vector-valued convex interpolation, common knots, simultaneous piecewise-linear approximation, curvature rank, and mixed-integer graph representation. They found adjacent work on vector-valued splines, PWL fitting, and matrix approximation, but no checked primary source stating the candidate's complete additive curvature-rank comparison with the minimum over all convex integer lifts. This absence is limited search evidence.
+
+The defensible proposed contribution is the combination of an original-output barycentric spanner, nonnegative chord gaps, explicit scalar error-factor refinement, and the existing compact scalar compiler. It gives a rank-dependent comparison without requiring an efficiently indexed optimal vector partition. Do not claim a new barycentric-spanner algorithm, a new parity principle, a generic multivariate theorem, or necessity of the logarithmic rank term.

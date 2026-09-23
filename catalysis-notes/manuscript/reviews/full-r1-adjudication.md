@@ -1,0 +1,16 @@
+# Complete manuscript, round 1 — parent adjudication
+
+Read all five fresh independent reviews and reread all six manuscript sections. Every reviewer found no major issue. The parent agrees: no accepted finding invalidates a central inference, calculation, proposed comparison, or contribution. Accept all eight distinct minor revisions below. Overlapping findings are consolidated; none is rejected.
+
+1. **Water overview scope (reviewer 4).** Separate the test of protection at one state/disturbance from the conditional prediction of output during a nearby reversible humidity pulse. The table should not imply a validated damage law across histories.
+2. **Cyclic experiment map (reviewer 4).** Add a compact sequence table summarizing ordinary steam/Ar operation, the five-arm timing diagnostic, and usable policy blocks. Identify exposure, special-reset timing, and primary endpoint. Summarize existing design without adding arms; preserve pre-reset operating output and post-reset recovery as distinct measurements.
+3. **Priority terminology (reviewer 4).** Replace “strongest reserve” for the second main program with “second feasibility priority,” avoiding confusion with the six brief reserve ideas.
+4. **Water source-data locator (reviewers 1 and 3).** Identify Fang's Source Data workbook, sheet “Figure 1,” and separate interpolation of conversion and selectivity before integration of their product on the combined grid over 25–585 h. A compact note is sufficient. The public artifact is already recorded in the companion evidence; do not copy the supplied workbook into the manuscript folder.
+5. **Water feedback stability (reviewer 3).** State that the relaxation expression assumes positive storage and a stable stationary state, with G greater than the local source derivative evaluated at that state. The equation is correct; its decay domain should be explicit.
+6. **Polymer component roles (reviewer 5).** Briefly identify W/silica as the metathesis component and Na/alumina as the isomerization component. Explain their established tandem roles without assigning the disputed initiation mechanism or assuming which role decays.
+7. **Ag chlorine background (reviewer 5).** Explain gas-modifier deposition and competing chlorine removal, including alkane-mediated removal, and why the balance affects rate/selectivity and an operating optimum. Use the existing Iyer citation and avoid universal coverage or optimum claims.
+8. **References navigation (reviewer 5).** Add a correctly anchored contents/outline entry for References at the bibliography start. Verify its actual final page after the other edits; do not hard-code the old page number.
+
+Reviewer 2 requests no corrections. The parent independently checked the added background against Conk and Iyer primary passages, verified the water linearization domain, and agrees that the map and source locator improve accessibility without changing experimental scope.
+
+Assign all accepted issues to the separate correction agent. Update evidence/correction records as needed, rebuild, and verify changed prose, table, bibliography destination, and relevant numeric reproduction. Because this round found no major issue, a further five-reviewer round is not required unless correction verification exposes a major problem. All minor revisions must be complete before closure.

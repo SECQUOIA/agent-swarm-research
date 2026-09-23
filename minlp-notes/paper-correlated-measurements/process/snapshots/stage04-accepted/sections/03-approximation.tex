@@ -1,0 +1,497 @@
+\section{Approximation with exact discrete feasibility}
+\label{sec:approximation}
+Relative information control has two algorithmic consequences. A linear
+information criterion can be optimized on the local graph without fixing the
+parameter dimension. Several nonlinear criteria can instead share a finite
+set of feasible designs when that dimension is fixed. We distinguish these
+statements, and their computational models, carefully.
+
+\subsection{A rational weighted-trace scheme}
+\label{subsec:trace-scheme}
+All inputs in this subsection are rational and explicitly encoded in binary,
+including the sensitivity matrices, $J_0\succeq0$, and a common weight
+$W\succeq0$. We maximize
+\[
+ \mathcal I(S)=\tr(WJ(S)).
+\]
+This is a weighted trace of information, not conventional A-optimality.
+An FPTAS means an algorithm polynomial in input length and $1/\varepsilon$
+that returns a feasible value at least $1-\varepsilon$ times the maximum.
+
+\begin{theorem}[Weighted trace with input-sized dimensions]
+\label{thm:trace-fptas}
+Suppose the covariance belongs to any of the following promised classes:
+\begin{enumerate}
+\item The scalar model \eqref{eq:scalar-promises}, with fixed rational upper
+bounds $0\le\rho\le\rho_0<1$ and $\overline P/r_{\min}\le B_0$.
+\item The full-packet model of Theorem~\ref{thm:block-locality}, supplied in
+rational coordinates with
+$P_t\preceq B_0V_t$ and
+$A_tV_{t-1}A_t^\top\preceq\rho_0^2V_t$, for fixed rational
+$B_0\ge0$, $0\le\rho_0<1$.
+\item The general-decay model \eqref{eq:decay-promises}, or its supplied
+metric version \eqref{eq:metric-decay-promises}, with fixed rational
+upper bounds on $C/m$ and $\rho<1$.
+\item The partial-packet model \eqref{eq:intrinsic-partial-promises}, with
+fixed rational upper bounds $s\le s_0$ and $\gamma\le\gamma_0<1$.
+\end{enumerate}
+Packet, latent-state, and parameter dimensions may be part of the input.
+For rational $0<\varepsilon<1$, an exact cardinality $k$, mandatory and forbidden times, and an optional
+integer minimum calendar gap $g\ge1$, there is a deterministic rational
+FPTAS. It detects infeasibility exactly. The polynomial depends on the fixed
+promise constants but its exponent does not grow with these dimensions.
+\end{theorem}
+\begin{proof}
+Each class has a rational envelope
+\begin{equation}
+ \delta_L\le C_0\beta^{L+1},\qquad 0<\beta<1,
+ \label{eq:complexity-envelope}
+\end{equation}
+with $C_0,\beta$ bounded by fixed constants. For the scalar and full-packet
+classes one may use $C_0=2B_0/(1-\rho_0)^2$, $\beta=\rho_0$, from the
+weaker gain bound \eqref{eq:gain-delta}. The stronger bound is unnecessary
+for complexity. For general decay use $K_{\mathrm{dec}},\vartheta$ in
+\eqref{eq:decay-constants}, replacing $C/m$ and $\rho$ by fixed upper
+promises before forming the constants. Equivalently apply the theorem with
+those larger decay/floor-ratio bounds. For partial packets put
+$\kappa_0=s_0/(1+s_0)$ and use
+\[
+ C_0=2\kappa_0\left\{\frac1{1-\gamma_0}
+       +\frac{s_0\gamma_0}{(1-\gamma_0)(1-\gamma_0^2)}\right\},
+ \qquad\beta=\gamma_0.
+\]
+This follows from $\sqrt{\kappa_0s_0}\le s_0$ in
+\eqref{eq:partial-normalized-delta}. Zero signal variance or zero contraction
+makes the relevant conditional model exact with $L=0$; no logarithm or
+expression involving $1/\log(1/\beta)$ is needed in that case.
+
+For $n\ge1$ choose the first $L\ge0$ for which
+$C_0\beta^{L+1}\le\varepsilon/2$, stopping at $L=n-1$ if necessary.
+Use rational powers and comparisons. At the cap all histories are complete
+and their error is zero. Compute \eqref{eq:local-conditionals} in the
+original rational coordinates and assign arc score
+$\tr(W W_{t,H})\ge0$ to \eqref{eq:calendar-arc}. Add
+$\tr(WJ_0)$ once. Exact longest-path optimization then maximizes
+$\mathcal I_L(S)=\tr(WJ_L(S))$ over the graph.
+
+Here is an explicit polynomial feasibility extension of that graph.
+Clamp $g$ to $\min(g,n+1)$, which leaves every feasible schedule unchanged.
+Before time $t$ record a counter $c\in\{0,\ldots,g-1\}$ for the number of
+still-forbidden times. A skip replaces $c$ by $\max(c-1,0)$; a choose is
+permitted only at $c=0$ and sets the next counter to $g-1$. The count starts
+at zero, increases by one on a choose, and must end at $k$. Initialize the
+counter and history at zero. Remove skips at mandatory times and chooses
+at forbidden times. The graph has
+$O(n(k+1)g2^L)$ states and arcs and represents exactly the required family,
+including $L=0$ and $g>L$. Reachability detects conflicting restrictions.
+If $k\notin\{0,\ldots,n\}$ the family is infeasible. For $k=0$, or $n=0$,
+return the empty schedule only when all restrictions permit it.
+
+Let $S^*$ maximize the true criterion and $\widehat S$ maximize its
+surrogate. Lemma~\ref{lem:residual-transfer} and $W,J_0\succeq0$ imply
+\begin{equation}
+ \mathcal I(\widehat S)\ge
+ \frac{\mathcal I_L(\widehat S)}{1+\delta_L}\ge
+ \frac{1-\delta_L}{1+\delta_L}\mathcal I(S^*)
+ \ge(1-\varepsilon)\mathcal I(S^*).
+ \label{eq:trace-approximation-ratio}
+\end{equation}
+No division by the optimum is used, so a zero optimum is included.
+
+For completeness, put $a=\log2/\log(1/\beta)$. Minimality before the
+full-history cap gives
+\[
+ 2^L\le\max\{1,(2C_0/\varepsilon)^a\}.
+\]
+If the cap is encountered earlier this bound remains valid: when $L>0$ the
+previous window failed the accuracy test. Thus the graph has polynomial
+size. A simple algorithm first forms the whole covariance by rational state
+recursions, or reads the supplied dense covariance. A local solve uses at most
+the scalar coordinates of $L+1$ packets; the number of histories is
+$O(n2^L)$. These matrix operations are polynomial in the explicitly supplied
+dimensions. In the metric cases whitening is used only in the proof; no
+irrational square root is computed by the algorithm.
+
+We also require polynomial bit complexity, not just arithmetic counts.
+State recursions expand into sums of products along at most $n$ transitions.
+A common denominator formed from input denominators to polynomial powers has
+polynomial bit length; the logarithm of the number of expanded coordinate
+paths is also polynomial. Hence the covariance entries have polynomial bit
+length. Rational principal solves have polynomial-size numerators and
+denominators by determinant bounds and can be computed by fraction-free
+elimination. Each path value sums at most $n$ rational arc scores and one
+prior score. Its denominator bit length is bounded by the sum of those
+polynomial bit lengths. Rational comparison is therefore polynomial even
+when many paths merge into a state. This proves the Turing bound.
+\end{proof}
+
+The theorem takes model sensitivities as input; it does not assert that an
+arbitrary nonlinear differential-equation model has polynomial-time sensitivity
+evaluation. Promise verification is rational linear algebra: for example,
+$B B^\top\preceq a^2I$ tests $\norm{B}_2\le a$ without computing eigenvalues.
+For supplied block metrics use the corresponding Schur-complement matrix
+inequality. Such tests can certify the finite input promises; the fixed-constant
+assumption is a restriction on a sequence of instances. If contraction approaches
+one under grid refinement, the exponent $a$ is no longer uniform. Arbitrary
+binary resource budgets need not admit a polynomial-size graph.
+
+\subsection{Scope, hardness, and the scalar predecessor}
+\label{subsec:approximation-scope}
+Selecting complete packets is a substantive restriction. The following
+conditioning calculation explains it; it is not a claim to introduce hardness
+of correlated selection.
+\begin{proposition}[Individual-channel boundary]
+\label{prop:channel-hardness}
+Unless $\mathrm P=\mathrm{NP}$, there is no deterministic FPTAS for scalar
+information under exact individual-channel cardinality, even at a single time
+with covariance condition number at most $5/3$, independent isotropic
+observation noise, and the fixed full-packet variance promise $B_0=1$.
+\end{proposition}
+\begin{proof}
+Independent Set is NP-hard on cubic graphs
+\citep[Theorem 4.1(a)]{Mohar2001}. For a graph on $m$ vertices with adjacency
+matrix $A$, take $R=I+A/12$, scalar sensitivity $\mathbf1$, latent covariance
+$P=I/3+A/12$, and observation noise $V=2I/3$. Since
+$\norm A_2\le3$, $P\succ0$, $P\preceq(7/8)V$, and
+$3I/4\preceq R\preceq5I/4$. The transition promise is vacuous.
+For a $k$-subset $S$ let $x=R_{SS}^{-1}\mathbf1$. A Neumann-series bound
+from $\norm{A_{SS}/12}_\infty\le1/4$ gives
+$\norm x_\infty\le4/3$. Each equation for $x_i$ therefore gives
+$x_i\ge1-3(4/3)/12=2/3$. Summing those equations yields
+\[
+ \mathbf1^\top R_{SS}^{-1}\mathbf1
+ =k-\frac1{12}\sum_{i\in S}\deg_S(i)x_i.
+\]
+This is $k$ for an independent set and at most $k-1/9$ otherwise. With
+optional fixed prior $J_0=1$, an FPTAS at
+$\varepsilon=1/[18(m+1)]$ must return an independent $k$-set whenever one
+exists, since its permitted loss is at most $1/18$. Checking that returned
+set would decide the NP-hard problem in polynomial time. Trivial impossible
+cardinalities can be checked first. The reduction chooses separate channels
+within one packet, which Theorem~\ref{thm:trace-fptas} does not allow.
+\end{proof}
+
+There is also strong positive scalar prior art. The bounded-treewidth
+Gaussian message scheme of \citet[Section 3.2, Theorem 43]{Mahalanabis2012}
+can be specialized to one unobservable target and designated observable
+candidates. Appendix~\ref{app:scalar-prior} supplies the recurrence adaptation,
+a rational normalization and regularization, and the posterior-variance to
+information conversion. This derives the scalar approximation guarantee in
+the predecessor's spectral-rounding model, so we do not claim a first scalar
+FPTAS. The explicit rational finite-history realization in
+Theorem~\ref{thm:trace-fptas} avoids importing that numerical model.
+
+For a growing latent block or a growing-rank target, the corresponding
+Gaussian separator contains growing-dimensional precision messages; the
+bounded-width runtime does not itself establish the dimension dependence of
+Theorem~\ref{thm:trace-fptas}. Nor can independent scalar target problems
+be optimized separately when they must share a schedule. This is a precise
+scope distinction, not a lower bound on every older method. Weighted
+information and common-support multiple-response approximation are established:
+\citet{Liu2016} treats correlated Fisher criteria, while
+\citet[Section 5]{Liberty2017} gives sparse multiple-regression guarantees
+with enlarged support. The exact cardinality in our statement matters.
+
+\subsection{A relative matrix cover of feasible paths}
+\label{subsec:spectral-set}
+We now fix the information dimension $p\ge1$. Let $G=(V,E)$ be an explicitly
+encoded directed acyclic graph, with source $s$, sink $t$, rational
+$Q_e\succeq0$ on each edge and rational $Q_0\succeq0$. For a path $P$ write
+$J(P)=Q_0+\sum_{e\in P}Q_e$. This notation is local to the additive graph;
+$Q_e$ is an information atom, not an approximate observation precision.
+
+\begin{theorem}[Feasible spectral approximation set]
+\label{thm:dag-spectral-set}
+For rational $0<\eta<1$, a deterministic algorithm returns a set $\mathcal C$
+of actual $s$--$t$ paths such that for every feasible path $P$ some
+$\widehat P\in\mathcal C$ satisfies
+\begin{equation}
+ (1-\eta)J(P)\preceq J(\widehat P)\preceq(1+\eta)J(P).
+ \label{eq:spectral-cover}
+\end{equation}
+The set size and Turing bit complexity are polynomial in the entire input
+length and $1/\eta$ for fixed $p$. No positive lower eigenvalue, positive
+definite prior, or condition-number bound is assumed. The two matrices in
+\eqref{eq:spectral-cover} have exactly the same kernel. Infeasible graphs
+return the empty set; if $s=t$ the sole path is empty and is returned exactly.
+\end{theorem}
+
+We give a common normalization lemma before the graph algorithm. It also
+supports the represented-matroid extension below.
+\begin{lemma}[Rational normalization with exact ranges]
+\label{lem:spectral-normalization}
+Consider $m$ rational PSD atoms of order $p$, a common PSD prior, and feasible
+objects selecting each atom at most once. Decompose each matrix into at most
+$p$ labeled terms $w_jv_jv_j^\top$, where $w_j>0$ and $v_j$ are rational;
+retain the atom or prior owning each label. There are $M\le p(m+1)$ labels.
+There is a rational trial for each independent set of $r$ labels,
+$1\le r\le p$, with the following properties. Retained matrices have ranges contained in a
+common subspace $\mathcal S$, a reversible rectangular congruence to
+$r\times r$ matrices whose entries have absolute value at most $4p$, and
+at most $r$ forced atom owners. Every accepted object has transformed
+information at least $I_r$ and range exactly $\mathcal S$. Every feasible
+object of positive information rank survives at least one trial.
+The algebraic normalization, filters, and owner requirements have polynomial
+bit complexity for fixed $p$; feasibility is handled by the later
+family-specific algorithms.
+\end{lemma}
+\begin{proof}
+Pivoted rational LDL factorization supplies the decomposition. A positive
+diagonal pivot leaves a rational PSD Schur complement; a PSD matrix with
+zero diagonal is zero because $|a_{ij}|^2\le a_{ii}a_{jj}$. Repeating this
+argument proves the decomposition even for singular matrices, without square
+roots. Fix an independent label set with column matrix
+$V_b=[v_{b_1},\ldots,v_{b_r}]$, and define
+\begin{align}
+ L_b&=(V_b^\top V_b)^{-1}V_b^\top,&\Pi&=V_bL_b,\nonumber\\
+ T&=\diag(\tau_i)L_b,&K&=V_b\diag(\tau_i^{-1}),
+ \qquad 1\le\tau_i^2w_{b_i}<4.
+ \label{eq:spectral-normalization}
+\end{align}
+Here each $\tau_i$ is a power of two, found by rational comparisons. We have
+$TK=I_r$, $KT=\Pi$, and $\Pi$ is the orthogonal projector onto
+$\mathcal S=\range V_b$. Reject the trial if $\Pi Q_0\ne Q_0$; discard
+an atom if $\Pi Q_e\ne Q_e$. For any retained symmetric matrix,
+\begin{equation}
+ Q=K(TQT^\top)K^\top.
+ \label{eq:spectral-reconstruction}
+\end{equation}
+Indeed $\Pi Q=Q$ implies $Q\Pi=Q$, so the right side is $\Pi Q\Pi$.
+Put $A_e=TQ_eT^\top$ and $A_0=TQ_0T^\top$. Reject the trial if some
+diagonal of $A_0$ exceeds $4p$, and discard atoms with that property.
+Positive semidefiniteness bounds all remaining entries by $4p$ in magnitude.
+Require all distinct nonprior owners of the basis labels. Their factors are present with their original multiplicities,
+so every accepted object's information $A$ obeys
+\begin{equation}
+ A\succeq\diag(\tau_i^2w_{b_i})\succeq I_r.
+ \label{eq:forced-lower-floor}
+\end{equation}
+Together with the range tests this gives exact range $\mathcal S$.
+
+To prove coverage, fix an object whose information has rank $r>0$. The
+factors in its atoms and prior span its information range: a vector is in
+the kernel of a sum of PSD matrices exactly when it is in every summand's
+kernel. Introduce $u_j=\sqrt{w_j}v_j$ for this proof only, and choose $r$
+such vectors of maximum $r$-dimensional volume. For their matrix $B$, every
+other selected factor has coordinates $u=Bx$ with $|x_i|\le1$. Replacing
+column $i$ by $u$ multiplies volume by $|x_i|$, which proves the assertion.
+The algorithm enumerates this basis's rational labels. Its range tests
+preserve the object, and $TB=\diag(\tau_i\sqrt{w_{b_i}})$ has diagonal in
+$[1,2)$. Every transformed selected factor therefore has coordinates of
+magnitude less than two. Each matrix has at most $p$ factors, so its
+transformed diagonal is at most $4p$ and it survives every filter. Its forced
+owners were selected by construction.
+
+Exact LDL, rational inverses, projectors and filters have polynomial bit
+length by determinant bounds. A very small rational pivot changes the dyadic
+exponent by at most its encoding length; the dyadic rational itself still
+has polynomial encoding length. Thus no square-root or maximum-volume oracle
+is used, and all actual trial operations are polynomial in bit complexity.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:dag-spectral-set}]
+After the stated reachability and $s=t$ cases, let $N=\max(1,|V|-1)$ bound
+path length. Apply Lemma~\ref{lem:spectral-normalization} with edge owners.
+For a rank-$r$ trial use $h=\eta/(rN)$ and the signed integer labels
+\begin{equation}
+ z_{e,ij}=\left\lfloor A_{e,ij}/h\right\rfloor,
+ \qquad 1\le i\le j\le r.
+ \label{eq:signed-profile}
+\end{equation}
+Do not round the prior. In topological order keep one actual path at every
+state consisting of a vertex, a bit mask of forced owners already visited,
+and the sum of upper-triangular integer labels. Transitions add labels and
+update masks. Every continuation depends only on this state; hence merging
+paths with identical states preserves all reachable states. At $t$ return
+all representatives with complete masks, across all trials.
+
+Fix a feasible rank-$r$ path and its surviving trial from the lemma. Its
+terminal state has a representative $\widehat P$. For each entry a path's
+rounding residual lies in $[0,Nh)$; this holds for negative entries too
+because the operation is floor. Equal integer sums and the common prior give
+$|A(\widehat P)_{ij}-A(P)_{ij}|<Nh$. The spectral norm of their symmetric
+difference is at most the maximum absolute row sum, hence at most
+$rNh=\eta$. Since $A(P)\succeq I_r$, this proves the two-sided relative
+inequality in normalized coordinates. Congruence by $K$ and
+\eqref{eq:spectral-reconstruction} prove \eqref{eq:spectral-cover}.
+For rank zero, if $Q_0=0$, search the subgraph of exactly zero-matrix edges
+and include one path when possible. A zero PSD sum has only zero summands,
+so this covers every zero-information path.
+
+An explicit bound makes the polynomial assertion verifiable. Put
+$d_r=r(r+1)/2$ and
+\[
+ C_r=\left\lceil8prN^2/\eta+N\right\rceil+2.
+\]
+Every signed accumulated coordinate has at most $C_r$ values, because
+$|A_{e,ij}|\le4p$ and at most $N$ labels are added. There are at most
+$|V|2^rC_r^{d_r}$ states and $|E|2^rC_r^{d_r}$ edge extensions per trial,
+up to dictionary and fixed-dimensional arithmetic costs. In particular,
+\begin{equation}
+ |\mathcal C|\le1+\sum_{r=1}^p\binom Mr\,2^rC_r^{d_r}.
+ \label{eq:dag-cover-size}
+\end{equation}
+Normalization, floors and integer sums have polynomial bit length; stored
+path reconstruction has length at most $N$. This proves the claimed Turing
+bound. Exact ranges and \eqref{eq:forced-lower-floor} prove the kernel claim.
+\end{proof}
+
+Exact ranges cannot be omitted. For $a=(1,0)^\top$ and
+$b=(1,t)^\top$ with nonzero rational $t$, the matrices $aa^\top$ and
+$bb^\top$ approach each other entrywise as $t\to0$ but have different
+kernels. Neither can dominate a positive multiple of the other. Also,
+$\mathcal C$ need not be a Pareto-optimal set: deleting a dominated matrix
+may destroy the upper half of \eqref{eq:spectral-cover}.
+The exponent in \eqref{eq:dag-cover-size} grows with $p$. This is a
+complexity theorem, not a practical running-time claim or a fixed-parameter
+tractability statement with a dimension-independent exponent.
+
+\subsection{Criteria, singular information, and finite-memory transfer}
+\label{subsec:spectral-consequences}
+One computed set supports objectives chosen afterwards, provided their
+values can be compared. If $\Phi\ge0$ is Loewner-nondecreasing and
+homogeneous of degree $a>0$, the best representative has value at least
+$(1-\eta)^a\max_P\Phi(J(P))$. This follows by applying $\Phi$ to the lower
+sandwich; concavity is unnecessary. Monotonicity alone supplies no such
+multiplicative guarantee.
+
+For D-optimality, $\eta=\varepsilon/p$ gives determinant ratio
+$(1-\eta)^p\ge1-\varepsilon$ by Bernoulli's inequality. Rational
+determinants can be compared exactly. Determinant roots have ratio
+$1-\eta$; these are not multiplicative log-determinant statements.
+For E-optimality the minimum eigenvalue has ratio $1-\eta$. At fixed $p$,
+characteristic polynomials have fixed degree, and rational polynomial root
+isolation and exact algebraic-number comparison are polynomial in coefficient
+bit length. Equal roots can be detected by polynomial gcd before refinement;
+standard root-separation bounds bound the required refinement. If all paths
+are singular the E optimum is zero.
+
+For conventional A-optimality give singular information infinite cost.
+Inversion of the lower sandwich gives
+$\tr(J(\widehat P)^{-1})\le(1-\eta)^{-1}\tr(J(P)^{-1})$ on positive
+definite matrices. The choice $\eta=\varepsilon/(1+\varepsilon)$ gives
+ratio $1+\varepsilon$; inverse traces are rational. Existence of a positive
+definite feasible matrix is detected by the set itself. For a specified
+contrast $c$, give $c^\top J^\dagger c$ infinite cost unless
+$c\in\range J$. The common-kernel property permits inversion on the
+common range and gives
+\[
+ \frac{c^\top J(P)^\dagger c}{1+\eta}
+ \le c^\top J(\widehat P)^\dagger c
+ \le\frac{c^\top J(P)^\dagger c}{1-\eta}.
+\]
+This is not an assertion that pseudoinverses reverse order across different
+kernels. Multiple fixed estimable contrasts with nonnegative weights follow
+by summation. Adding any common $H\succeq0$ preserves
+\eqref{eq:spectral-cover}, as does any common congruence. The same set can
+therefore be reused after either operation, with the stated objective-evaluation
+qualifications.
+
+\begin{corollary}[Cover for the true finite-memory design model]
+\label{cor:true-spectral-cover}
+Suppose an explicit rational PSD-edge graph satisfies, for every feasible
+schedule, $(1-\delta)J(S)\preceq J_L(S)\preceq(1+\delta)J(S)$,
+$0\le\delta<1$. The set from Theorem~\ref{thm:dag-spectral-set} satisfies
+\begin{equation}
+ \frac{(1-\eta)(1-\delta)}{1+\delta}J(S)
+ \preceq J(\widehat S)\preceq
+ \frac{(1+\eta)(1+\delta)}{1-\delta}J(S)
+ \label{eq:true-spectral-cover}
+\end{equation}
+for a representative of every feasible $S$. Under any fixed-promise class
+of Theorem~\ref{thm:trace-fptas}, fixed $p$ gives a deterministic polynomial
+relative cover, and hence the stated D, E, A and contrast schemes, for the
+true selected covariance.
+\end{corollary}
+\begin{proof}
+Apply the local sandwich once to each of $S,\widehat S$ and the graph
+cover between them to obtain \eqref{eq:true-spectral-cover}. Given a desired
+$0<\xi<1$, take $\eta=\xi/4$ and a window with $\delta\le\xi/8$.
+The lower factor's deficit is at most $\eta+2\delta\le\xi/2$. The upper
+factor's excess is $(\eta+2\delta+\eta\delta)/(1-\delta)\le17\xi/28<\xi$.
+The graph construction and cover are polynomial under the fixed promises;
+the finite-history cap is handled as in Theorem~\ref{thm:trace-fptas}.
+Choose $\xi$ according to the desired scalar criterion ratio. All these
+sandwiches preserve kernels, including singular priors.
+\end{proof}
+
+\subsection{Rationally represented matroids and contribution boundary}
+\label{subsec:matroid-cover}
+A different feasible family admits the same cover, through an established
+exact profile algorithm. Let $A\in\Q^{a\times m}$ represent a matroid:
+a set is independent precisely when its columns of $A$ are independent.
+Its rank $q=\rank A$ is input-sized. Give its elements rational PSD atoms
+$Q_e$ of fixed order $p$, and define $J(B)=Q_0+\sum_{e\in B}Q_e$ for bases.
+\begin{theorem}[Represented-matroid spectral cover]
+\label{thm:matroid-spectral-set}
+For the preceding rational representation, one can deterministically return
+actual bases satisfying \eqref{eq:spectral-cover} for every target base,
+with polynomial output size and Turing bit complexity in input length and
+$1/\eta$ for fixed $p$. Singular information and an input-sized matroid
+rank are allowed. The same criterion and reuse consequences apply.
+\end{theorem}
+The complete proof in Appendix~\ref{app:matroid-proof} combines
+Lemma~\ref{lem:spectral-normalization} with the squared-determinant profile
+polynomial, interpolation and deletion recovery of \citet{Berstein2008}.
+Those algebraic algorithms are prior work. Rational Vandermonde
+representations include uniform matroids and their direct sums (partition
+quotas); incidence matrices include graphic matroids and spanning forests.
+The result requires the supplied characteristic-zero representation. It does
+not construct one from an independence oracle or finite-field representation,
+and it does not cover matroid intersections. Most importantly, additive
+matroid atoms do not encode arbitrary correlated history or an additional
+matroid restriction on the calendar graph without a further reduction.
+
+Approximate Pareto sets and additive profile schemes are established
+\citep{Papadimitriou2000,Tsaggouris2009,Mittal2013}. Their nonnegative
+coordinate formulations do not directly turn relative entrywise errors into
+relative PSD errors, because cancellation and singular ranges matter.
+\citet{Brown2024} already normalize, filter large vectors, force a guessed
+subset, and handle several monotone homogeneous criteria in a randomized
+fixed-dimensional PTAS for the broader independence-oracle matroid model.
+Our rationally represented specialization has deterministic polynomial
+accuracy dependence; it does not subsume their oracle model.
+Generic decomposition of multiresponse PSD atoms into tied rank-one copies
+is also established \citep[Theorem 1]{Filova2026}; decomposition itself is
+not a contribution here.
+
+Covariance-state pruning predates these design schemes
+\citep{Vitus2012,Atanasov2014}. Their additive-error results concern dynamic
+Riccati trajectories and process-noise/covariance bounds. Multiplicative
+relaxed dynamic programming is older still
+\citep{Alriksson2005,Lincoln2006}. A quadratic lower-envelope guarantee has
+a different quantifier: a retained matrix may depend on the tested direction.
+For example,
+\[
+ \min\{x^\top\diag(0,2)x,x^\top\diag(2,0)x\}\le x^\top Ix
+ \quad\text{for every }x,
+\]
+yet neither retained singular matrix is a relative PSD approximation to $I$.
+Objective-independent spectral spanners and coresets are also prior art
+\citep{Indyk2020,Mahabadi2026}; they retain elements and use fractional
+replacements or criterion-specific rounding, rather than returning one
+feasible integral object within $1\pm\eta$ of each target matrix.
+The projected-vertex method of \citet{Onn2004} addresses convex
+maximization. Its vertices are insufficient here: among the three
+feasible matrices $\diag(1,3),2I,\diag(3,1)$, the middle projected profile
+uniquely maximizes both determinant and minimum eigenvalue.
+Fixed-decision-dimensional polynomial optimization \citep{DeLoera2008}
+does not supply attainability of these fixed-dimensional matrix profiles:
+the number of path or element decisions is still input-sized. Recent
+one-exact Pareto frameworks \citep{Bokler2026} likewise require a suitable
+positive-objective restriction oracle; they do not automatically supply
+the signed-profile to PSD-order reduction used here.
+
+To the best of our knowledge, the specific combined guarantee in
+Theorems~\ref{thm:dag-spectral-set} and \ref{thm:matroid-spectral-set}---a
+polynomial set of feasible integral objects giving an all-target, two-sided
+relative PSD cover, exact singular ranges, and deterministic polynomial
+accuracy dependence under the stated explicit representations---is not
+stated in these predecessors. This qualified contribution is the
+normalization-to-bounded-profiles reduction and its complete guarantees,
+not dynamic programming, profile interpolation, PSD pruning, or objective
+independence separately. The proofs establish the result irrespective of
+that priority assessment. The large polynomial exponents preclude an
+inference of practical superiority; the computational methods later in this
+paper use support pricing and certificates instead of constructing these
+full spectral sets.

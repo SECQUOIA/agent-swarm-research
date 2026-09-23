@@ -1,0 +1,13 @@
+# Stage 5, first full review round
+
+Repository: `/home/sgusev/repo/minlp-notes`. Review the entire `papers/pooling/sections/05-contract-algorithms.tex`, not just your emphasis. The frozen copy will be `papers/pooling/process/snapshots/stage-05-round-01.tex`. Follow `papers/pooling/process/reviewer-protocol.md`.
+
+Read the full stage, accepted sections 01–04 dependencies as needed, and the five canonical arguments: `results/pooling-fixed-product-contracts-algorithm.md`, `results/pooling-quality-scaled-path-flow.md`, `results/pooling-contract-exceptions-algorithm.md`, `results/pooling-contracted-common-capacity-algorithm.md`, and `results/pooling-two-source-qualities-convex-feasibility.md`. Consult distinct precursor notes listed in the coverage map, especially the general parameterized-path, affine-strip, scalar/fixed-rank exception, and symbolic clamp proofs. Read `literature/AGENTS.md` before consulting literature. Check original primary sources where claims matter. Historical PASS labels, author/root audits, and finite experiments do not establish a theorem.
+
+The stage proves generic one-parameter quasipolynomial path projection and polynomial equal-gain strip/tree/fixed-cycle-rank projection; fixed-outlet conservation; scalar quadratic-field feasibility by signed connected cuts; fixed-rank and arbitrary-quality bounded exceptions; symbolic binary path energies and box-base support; restrictive common capacity and newly completed exact throughput optimization; and two full source-quality-vector feasibility with variable supplies by convex quadratic programming. Review every proof, physical correspondence, degeneracy, bit/field guarantee, source comparison, and coverage claim.
+
+Do not edit the manuscript, inspect other reports in this round, or spawn subagents. Save your report as `papers/pooling/process/stage-05-round-01/reviewNN.md`, where NN is assigned. Give exact locations, severity, mathematical reasons, and proposed corrections or counterexamples. Distinguish false or unsupported claims from optional exposition. End with major/minor/no-findings verdict and verification limits.
+
+Root handles compilation. If a distinct finite check resolves a concrete concern, scientific Python is `/home/sgusev/miniconda3/envs/minlp-notes/bin/python`. Preserve any new independent check and command. Do not repeat passing numerical runs without a reason. Source downloads belong outside the manuscript in `/tmp/pooling-paper-sources`; preserve links and accurate locators in your report.
+
+All 15 reviewers assess the whole stage independently; emphasis is supplementary. Root adjudicates every finding, a separate agent repairs accepted issues, and any accepted major finding requires another full round before stage 6.

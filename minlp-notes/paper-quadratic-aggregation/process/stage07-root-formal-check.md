@@ -1,0 +1,7 @@
+# Stage 7 independent portable formal verification
+
+The coordinator ran `python3 verify.py` from `supplement/lean`, with output captured in `verification-root-run.log`. The run completed successfully: 64 explicitly selected topic modules compiled with `lake build --wfail`, five transitive axiom audits checked 178 + 158 + 248 + 93 + 232 = 909 owned declarations, and all 64 topic modules passed individual `lake env leanchecker` kernel replays. The allowed transitive axioms are `propext`, `Classical.choice`, and `Quot.sound`.
+
+The fresh portable build used a local `.lake/packages` symlink to already cached pinned dependencies. It did not test downloading those dependencies from scratch. The portable project has its own build outputs; its 69 copied sources (64 owned, 5 local dependencies), toolchain and dependency manifest were independently compared with their repository originals. All were identical. Imported support and Mathlib dependencies were not individually kernel-replayed. The owned declaration audits inspect their transitive axioms.
+
+On resuming the session, the coordinator independently rechecked SHA256 hashes for all 86 inputs in the successful portable verification manifest. Every input remained unchanged. The archive excludes the local cache symlink and raw root-run log, while including the runner's manifest and individual check logs. No project-wide verification or CI inspection was performed.

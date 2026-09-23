@@ -1,0 +1,800 @@
+\section{Structural and arithmetic boundaries}\label{sec:boundaries}
+The preceding algorithms use more than a small leader dimension or a convex
+follower. This section separates four restrictions: the interaction matrix in
+the follower objective, the number and interaction graph of the leaders, the
+coupling of follower constraints, and the requested arithmetic precision.
+Throughout, \(\clip(t)=\min\{1,\max\{0,t\}\}\).
+
+\subsection{A scalar leader with a dense positive definite follower}
+\label{subsec:dense-hardness}
+Consider the rational problem
+\begin{equation}\label{eq:dense-box-model}
+ \min_{x\in X} a\trans z(x)+b\trans x,\qquad
+ z(x)=\argmin_{z\in[0,1]^N}
+ \left\{\tfrac12z\trans Qz+(c+Dx)\trans z\right\},\quad Q\succ0.
+\end{equation}
+There are no upper constraints involving the response in this subsection.
+The response is unique and continuous: any convergent sequence of leaders has
+follower subsequences, and the limiting optimality inequalities identify every
+subsequence limit with the unique response at the limiting leader. Thus a
+compact leader polytope has an attained upper optimum.
+
+Scalar-leader hardness and ternary digit gadgets have a close linear-bilevel
+precedent in \citet[Theorem~2.1 and Section~4]{SugishitaCarvalho2026}. Exponential
+strongly convex response paths also precede the following reduction.
+In particular, the full-support sign patterns in
+\citet[Proposition~2, equation~(4)]{MairalYu2012} imply a Boolean-vertex box path.
+For their invertible square Lasso design \(A\) and target \(v\), the normalized
+dual, with \(t=1/\lambda\), is
+\[
+ \min_{u\in[-1,1]^p}\tfrac12u\trans A^{-1}A^{-\mathsf T}u
+       -t(A^{-1}v)\trans u.
+\]
+At a full-support primal sign pattern its dual point is that sign vector.
+Their recursion visits every full sign vector whose last coordinate is positive;
+an affine box change therefore gives every Boolean assignment in the first
+\(p-1\) coordinates. This consequence of duality does not itself establish the
+encoding bounds or upper-objective gap of a hardness reduction.
+
+\begin{lemma}[Rational certificates for box responses]\label{lem:box-np}
+For rational data in \eqref{eq:dense-box-model}, a rational upper threshold and a
+rational leader polytope, threshold feasibility is in NP, even when the leader
+dimension grows and affine upper rows are allowed.
+\end{lemma}
+\begin{proof}
+Guess a partition \((L,F,U)\) of the coordinates into lower, free and upper
+statuses. Set \(z_L=0,z_U=1\), and solve
+\[
+ z_F(x)=-Q_{FF}^{-1}(c_F+D_Fx+Q_{FU}\mathbf1).
+\]
+The principal matrix is positive definite; Cramer's rule gives affine rational
+functions of polynomial bit length. Their box bounds, the endpoint gradient
+signs \((Qz+c+Dx)_L\ge0\), \((Qz+c+Dx)_U\le0\), and all upper rows and the
+threshold form a rational polyhedron in \(x\). If nonempty, it has a rational
+point of polynomial bit length. Weak bounds on the free coordinates include
+degeneracies. A verifier reconstructs \(z\) and checks these conditions exactly;
+convexity makes them sufficient for global optimality. For a scalar leader the
+polyhedron is simply an interval, possibly a singleton.
+\end{proof}
+
+\begin{theorem}[Dense scalar hardness with a constant gap]\label{thm:dense-hardness}
+Threshold feasibility in \eqref{eq:dense-box-model} is NP-complete already for
+\(X=[0,1]\), a rational positive definite \(Q\) independent of the leader, and an upper objective
+with coefficients in \(\{-2,0,2\}\). A polynomial reduction gives an attained
+optimum equal to zero in the yes case and at least two in the no case. All
+leaders are feasible. The follower objective can be represented as a jointly
+convex sum of affine squares in the leader and followers.
+\end{theorem}
+\begin{proof}
+Start from a 3SAT instance with \(n\ge1\) variables and \(m\) clauses, each on
+three distinct variables. This restriction preserves NP-hardness: remove
+repetitions and tautologies; pad a two-literal clause using both signs of a
+fresh variable, and a unit clause using all four sign pairs of two fresh
+variables. An empty clause can be replaced by the fixed unsatisfiable formula
+containing all eight clauses on three variables. Write \(\ell_a(y)\) for the
+sum of the three continuous literal values in clause \(a\).
+Put
+\[
+ \rho=\frac1{100\,3^n},\quad w_i=\rho^{i-1},\quad
+ \eta=\rho^n,\quad \xi=\frac\eta{m+1},\qquad
+ r_i=y_i-3^ix+2\sum_{j<i}3^{i-j}y_j+1.
+\]
+Use followers \((y,p,v)\in[0,1]^{2n+m}\) and minimize
+\begin{equation}\label{eq:dense-square-gadget}
+ \frac12\sum_iw_ir_i^2+
+ \frac\eta2\sum_i(p_i-2y_i+1)^2+
+ \frac\xi2\sum_a(v_a-1+\ell_a(y))^2.
+\end{equation}
+The residual map in the followers is square block triangular with diagonal
+blocks \(L,I,I\), where \(L\) is lower triangular with unit diagonal.
+Its positive weighted Gram matrix is positive definite.
+
+Every Boolean vector \(d\in\{0,1\}^n\) occurs in the response at
+\[
+ x_d=\sum_{i=1}^n\frac{2d_i}{3^i}+\frac1{2\,3^n}\in(0,1).
+\]
+Indeed, with \(t_i=3^{i-1}x_d-2\sum_{j<i}3^{i-1-j}d_j\), the residual
+\(r_i=d_i-3t_i+1\) has sign \(1-2d_i\) and magnitude between
+\(1/(2\,3^{n-i})\) and one. The gradient of the first sum in coordinate \(i\)
+is \(G_i=w_ir_i+\sum_{k>i}2\,3^{k-i}w_kr_k\). Its later-coordinate contribution
+has magnitude at most
+\[
+ w_i\frac{6\rho}{1-3\rho}<\frac{w_i}{10\,3^n},
+ \qquad (1-2d_i)G_i>\frac{w_i}{3^n}.
+\]
+At any complete follower optimum, conditional minimization gives
+\begin{equation}\label{eq:shortfall-readout}
+ p_i=\clip(2y_i-1),\quad y_i-p_i=\min(y_i,1-y_i),\quad
+ v_a=\max(0,1-\ell_a(y)).
+\end{equation}
+At \(y=d\), take these conditional optima. The \(p\)-squares add derivative
+\(-2\eta\) at a zero bit and zero at a one bit. A clause residual is respectively
+\(0,0,1,2\) when the clause has \(0,1,2,3\) true literals, so the magnitude of
+all clause feedback at any base coordinate is at most \(2m\xi<2\eta\).
+The total perturbation is less than
+\(4\eta=w_n/(25\,3^n)\), below the base margin. All box optimality signs
+therefore hold, including those of the auxiliary coordinates. Positive
+definiteness proves that this is the unique global response.
+
+Choose the upper objective
+\[
+ H=2\sum_i y_i-2\sum_i p_i+2\sum_a v_a.
+\]
+It is nonnegative by \eqref{eq:shortfall-readout}, and a satisfying Boolean
+response gives zero. If the formula is unsatisfiable, round \(y\) at \(1/2\)
+and take a false clause. Its literal sum is at most
+\(D_y=\sum_i\min(y_i,1-y_i)\), since its variables are distinct. Consequently
+\[
+ H\ge 2D_y+2\max(0,1-D_y)\ge2.
+\]
+The shortfall coordinates have thus replaced all upper clause constraints by
+an objective penalty inside the response. No upper feasibility assumption is
+needed. Every coefficient and every displayed witness has polynomial bit
+length: powers \(3^i\) have \(O(n)\) bits and the weights have \(O(n^2)\) bits.
+Expanding the squares yields \eqref{eq:dense-box-model} after removing a
+leader-only term. The unexpanded squares are jointly convex; deleting that
+term preserves responses but need not preserve joint convexity in \((x,z)\).
+Lemma~\ref{lem:box-np} proves NP membership.
+\end{proof}
+
+\subsection{Exact hardness arbitrarily close to the identity}
+\label{subsec:conditioned-hardness}
+The small weights in the last proof do not control conditioning. A different
+construction does, at the cost of a much smaller upper gap. Positive diagonal
+network scaling is established in \citet[equations~(2.6)--(2.7)]{ElGhaouiEtAl2021},
+and convex squared-residual energies with weak backward feedback are used by
+\citet[Section~2]{ZachEstellers2019}. The proof below supplies explicit rational
+scales and a relative-coordinate error bound needed for the reduction.
+
+\begin{theorem}[Near-identity exact hardness]\label{thm:conditioned-hardness}
+Threshold feasibility in \eqref{eq:dense-box-model} with \(X=[0,1]\) remains NP-complete when
+all normalized follower and upper coefficients have magnitude at most two and
+\[
+ (49/50)^2 I\preceq Q\preceq(51/50)^2 I,\qquad \kappa_2(Q)<2.
+\]
+For any supplied rational \(0<\zeta\le1\), the reduction can also ensure
+\(\norm{Q-I}_1,\norm{Q-I}_\infty,\norm{Q-I}_2<\zeta\) and strict diagonal
+dominance. The resulting yes/no objective gap is exponentially small but has
+polynomial bit length. Unless \(\mathrm P=\mathrm{NP}\), there is no global
+additive approximation algorithm polynomial in input length and accuracy bit
+length for this class.
+\end{theorem}
+\begin{proof}
+Use the same clause functions. Starting with \(t_1=x\), define a feedforward
+ReLU computation
+\[
+ \begin{gathered}
+ \alpha_i=(3t_i-1)_+,\quad \beta_i=(3t_i-2)_+,\quad y_i=\alpha_i-\beta_i,\\
+ t_{i+1}=3t_i-2y_i,\qquad p_i=(2y_i-1)_+,\qquad v_a=(1-\ell_a(y))_+.
+ \end{gathered}
+\]
+The map \(t\mapsto3t-2\clip(3t-1)\) sends \([0,1]\) into itself.
+Order the states as \(h=(\alpha_1,\beta_1,\ldots,\alpha_n,\beta_n,p,v)\),
+with \(N=3n+m\). Substituting the recursion for each \(t_i\) gives
+\[
+ h=(Ah+b_0+xb_1)_+,
+\]
+where \(A\) is strictly lower triangular and its entries and those of \(b_0,b_1\)
+have magnitude at most \(C=2\,3^n\). On \([0,1]\),
+\(0\le h\le2\mathbf1\), and
+\(0\le h-Ah-b_0-xb_1\le2\mathbf1\): the preactivations for \(\alpha,\beta,p,v\)
+lie respectively in \([-1,2],[-2,1],[-1,1],[-2,1]\).
+The score
+\[
+ \Phi(h)=2\sum_i\alpha_i-2\sum_i\beta_i-2\sum_i p_i+2\sum_a v_a
+          =\ell\trans h
+\]
+has \(\norm\ell_1=2N\). The previous rounding argument gives \(\Phi\ge0\),
+value zero at a satisfying encoded leader, and \(\Phi\ge2\) everywhere for an
+unsatisfiable formula. At \(x_d\), the ternary recursion gives \(y=d\).
+
+Set
+\[
+ M=(1+NC)^N,\quad \theta=\frac1{100NCM},\quad
+ s_i=\frac{\theta^{i-1}}{4C},\quad S=\diag(s_i),\quad B=SAS^{-1}.
+\]
+If the additional tolerance is requested, replace \(\theta\) by
+\(\min\{\theta,\zeta/(10C)\}\). The unit-box follower minimizes
+\begin{equation}\label{eq:scaled-network-energy}
+ \tfrac12\norm{(I-B)u-S(b_0+xb_1)}_2^2.
+\end{equation}
+Since \(|B_{ij}|\le C\theta^{i-j}\) for \(i>j\), both its row and column norm
+are at most \(2C\theta\le1/50\). Thus \(Q=(I-B)\trans(I-B)\) has the asserted
+spectral bounds. Moreover \(\norm{Sb_j}_\infty\le1/4\), so the normalized
+linear-cost coefficients are less than one in magnitude. The spectral bound
+also bounds every entry of \(Q\) by two.
+
+Here the small absolute size of \(u\) is not an adequate error measure.
+Let \(u\) be the true minimizer, \(e_i=|u_i/s_i-h_i|\),
+\(P=|A|\), and \(r=(I-B)u-S(b_0+xb_1)\). The exact KKT fixed point is
+\[
+ u=\clip\bigl(Bu+S(b_0+xb_1)+B\trans r\bigr).
+\]
+The scaled feedforward point \(Sh\) is the same clipped fixed point without
+\(B\trans r\); its positive coordinates are strictly below one.
+Coordinatewise nonexpansiveness of clipping gives
+\[
+ e\le Pe+U|S^{-1}r|,\qquad
+ U=S^{-1}|B|\trans S=S^{-2}P\trans S^2,
+ \qquad |S^{-1}r|\le(I+P)e+2\mathbf1.
+\]
+The nonnegative matrix \(T=(I-P)^{-1}=\sum_{j=0}^{N-1}P^j\) has
+\(\norm T_\infty\le M\); also \(\norm P_\infty\le NC\) and
+\(\norm U_\infty\le2C\theta^2\). Multiplication by \(T\) therefore yields
+\[
+ \norm e_\infty\le 2MC(1+NC)\theta^2\norm e_\infty+4MC\theta^2,
+ \quad
+ \norm e_\infty\le8MC\theta^2\le\frac1{16N},
+\]
+since the first coefficient is less than \(1/2\). These inequalities continue
+to hold after decreasing \(\theta\).
+Put \(\delta=s_N\) and use upper objective \(G(u)=\delta\ell\trans S^{-1}u\).
+Every coefficient has magnitude at most two, while
+\[
+ |G(u)-\delta\Phi(h)|\le\delta/8.
+\]
+The yes optimum is at most \(\delta/8\); the no optimum is at least
+\(15\delta/8\). Comparing with threshold \(\delta\) proves hardness, and
+Lemma~\ref{lem:box-np} supplies membership. All scales have polynomial bit
+length, including the additional input length of \(\zeta\).
+Finally, \(\norm B_1,\norm B_\infty\le\zeta/5\) gives
+\(\norm{Q-I}_{1,\infty,2}\le2\zeta/5+\zeta^2/25<\zeta\).
+For each row, \(Q_{ii}-\sum_{j\ne i}|Q_{ij}|\ge1-\norm{Q-I}_\infty>0\).
+Accuracy \(\delta/4\) separates the two cases and has polynomially many bits.
+\end{proof}
+The last theorem is ordinary exact hardness. Its bounded coefficients and
+conditioning do not yield strong NP-hardness or an inverse-polynomial
+absolute gap under the same restrictions. In particular it is compatible with
+the following algorithm, whose dependence is on inverse accuracy.
+
+\subsection{A conditioned approximation scheme for dense box followers}
+\label{subsec:conditioned-algorithm}
+\begin{theorem}[A cost-space grid]\label{thm:conditioned-grid}
+Fix \(r\). For \eqref{eq:dense-box-model}, let \(X\subseteq[0,1]^r\) be a
+nonempty rational polytope. For rational \(0<\eps\le1\), one can return a
+rational leader and its exact rational follower with upper value at most
+\(\mathrm{OPT}+\eps\norm a_1\), in time polynomial in the rational input length,
+\(K=\norm Q_\infty\norm{Q^{-1}}_\infty\), and \(1/\eps\). Here
+\(K\le N\kappa_2(Q)\) for \(N\ge1\). There are no response-dependent upper rows.
+\end{theorem}
+The maximum-volume basis used below is the classical barycentric-spanner
+argument of \citet[Proposition~2.2]{AwerbuchKleinberg2004}. Approximation of
+parametric convex solution paths and uniform optimizer errors have earlier
+treatments, including \citet{GiesenJaggiLaue2012} and
+\citet[Theorem~4]{BemporadFilippi2001}. The particular purpose of the saturation
+step here is to remove numerical dependence on the affine-cost magnitudes;
+all those coefficients still contribute their binary encoding lengths.
+The scalar additive path bound of \citet[Lemma~4 and Theorem~5]{GiesenEtAl2012}
+is another close precedent: its coefficient involves parameter range and slope
+variation of the follower value. Strong convexity converts follower-objective
+error into response error, but alone does not remove those numerical factors.
+
+\begin{proof}
+If \(N=0\), solve the leader LP. If \(r=0\), evaluate the sole follower. If
+\(a=0\), solve the leader LP and evaluate its follower for the promised output.
+Hence assume \(N,r\ge1\) and \(\norm a_1>0\). Put
+\(\mu=1/\norm{Q^{-1}}_\infty\le\lambda_{\min}(Q)\). For row \(i\), write
+\[
+ m_i^- =\sum_j\min(Q_{ij},0),\quad m_i^+=\sum_j\max(Q_{ij},0),\quad
+ R_i=m_i^+-m_i^-=\sum_j|Q_{ij}|>0.
+\]
+If its linear cost \(t_i\ge-m_i^-\), its response coordinate is zero:
+for \(z_i>0\) its gradient is at least \(Q_{ii}z_i+t_i+m_i^->0\),
+contradicting box optimality. Similarly \(t_i\le-m_i^+\) forces \(z_i=1\),
+because at \(z_i<1\) the gradient is at most
+\(Q_{ii}(z_i-1)+t_i+m_i^+<0\). These tests include equality at thresholds.
+
+Arrange the \(2N\) hyperplanes \(c_i+D_ix=-m_i^\pm\), intersect all relative
+cells with \(X\), and use their closures. There are \(N^{O(r)}\) such cells.
+On each, coordinates outside a set \(J\) are fixed at endpoints; all costs
+with indices in \(J\) lie in the closed slabs of width \(R_i\). Coordinates
+with constant costs inside a slab remain in \(J\). For two leaders in this
+cell, the two variational inequalities and positive definiteness give
+\begin{equation}\label{eq:cost-grid-sensitivity}
+ \norm{z(x)-z(x')}_2\le\frac{\norm{D_J(x-x')}_2}{\mu}.
+\end{equation}
+Indeed the response difference vanishes outside \(J\), so the cost difference
+in those coordinates contributes nothing to their summed inequalities.
+
+Let \(E=D_J/\mu\) have rank \(q\le r\). If \(q=0\), the response is constant
+on the cell and minimizing \(b\trans x\) suffices. Otherwise choose \(q\)
+independent columns of \(E\), then a maximum absolute \(q\)-row minor in those
+columns. Let \(B_0\) denote the selected full rows. Every row of \(E\) is a
+linear combination of those rows with coefficients in \([-1,1]\): replacing
+one row in the maximal minor and applying Cramer's rule proves the bound;
+the selected columns determine dependencies among full rows. Consequently
+\[
+ \norm{B_0(x-x')}_\infty\le h
+ \quad\Longrightarrow\quad \norm{z(x)-z(x')}_2\le\sqrt N\,qh.
+\]
+A selected coordinate \(D_ix/\mu\) ranges in
+\([(-m_i^+-c_i)/\mu,(-m_i^--c_i)/\mu]\), of width
+\(R_i/\mu\le K\). Its offset may be large but has polynomial bit length.
+Divide each of these \(q\) intervals into closed intervals of length at most
+\(h=\eps/(Nr)\). For every resulting rectangle, intersect its inverse image
+under \(B_0\) with the current cell, minimize \(b\trans x\) there by rational
+LP, and evaluate the exact follower. Keep the best value. The number of LPs is
+\(N^{O(r)}(2+KNr/\eps)^r\), and their data have polynomial bit length.
+An optimal leader belongs to one of these closed sets. Its LP representative
+has no larger direct leader cost and changes the response term by at most
+\(\norm a_1\sqrt N\,rh\le\eps\norm a_1\). Cell boundaries are included by the
+weak saturation tests.
+
+For completeness an elementary exact follower oracle fits the claimed
+\(\poly(K)\) running time. At a rational leader put \(t=c+Dx\) and
+\(L_Q=\norm Q_\infty\). Projected gradient iteration from zero,
+\[
+ z^{j+1}=\clip\bigl(z^j-(Qz^j+t)/L_Q\bigr),
+\]
+contracts Euclidean distance to the optimum by at most \(1-1/K\). This follows
+from nonexpansiveness of projection and the eigenvalues of \(I-Q/L_Q\).
+Clear all denominators in \(Q,t\) simultaneously, and bound the absolute
+integer entries by \(H\ge1\). In any active principal system, the denominator
+of each optimum coordinate in reduced form is at most \(B=N!H^N\);
+Cramer's rule gives this bound also when free coordinates reach endpoints.
+After
+\[
+ j=\left\lceil K\bigl(2\lceil\log_2B\rceil+
+               \lceil\log_2N\rceil+4\bigr)\right\rceil
+\]
+iterations every coordinate is within \(1/(4B^2)\) of its optimum. Two distinct
+rationals of denominator at most \(B\) differ by at least \(1/B^2\), so the
+optimum is the unique such rational in that error interval. It is found among
+the continued-fraction convergents of the iterate: the error is less than
+\(1/(2q^2)\) for its denominator \(q\le B\); endpoints zero and one can be
+checked separately. Verify the recovered vector by exact box KKT conditions.
+The iteration count is polynomial in \(K\) and input length; rational iterate
+bit lengths grow at most linearly in that count times the input length.
+All recovery and verification therefore have the claimed bit complexity.
+Finally, symmetry gives \(\norm Q_\infty\le\sqrt N\norm Q_2\) and the same
+inequality for \(Q^{-1}\), establishing \(K\le N\kappa_2(Q)\).
+\end{proof}
+A grid directly in leader coordinates would not have this uniform guarantee.
+For \(Q=2^{-L}\) and linear cost \(-xz\), the scalar response is
+\(\clip(2^Lx)\), although its Hessian condition number is one. Saturation and
+cost normalization isolate precisely this narrow transition. Neither the
+number of grid cells nor the runtime above is polynomial in accuracy bit
+length, or fixed-parameter tractable in \(r\).
+
+\subsection{Growing leader dimension and a bounded core}
+\label{subsec:leader-structure}
+With an identity Hessian and independent boxes, each follower is
+\(z_i(x)=\clip(h_i(x))\) for an affine rational \(h_i\). Thus affine upper
+optimization on a leader product box is optimization of a signed sum of
+clipped affine functions. Define its \emph{leader interaction graph} by joining
+two leader coordinates whenever both occur in some \(h_i\). This graph refers
+to cost dependence on leaders, not to constraints joining follower coordinates.
+
+\begin{theorem}[Growing leader dimension]\label{thm:growing-leader}
+With growing leader dimension \(r\), identity follower Hessian, independent
+unit boxes and no upper constraints, threshold optimization is NP-complete
+and W[1]-hard parameterized by \(r\). Under the exponential time hypothesis
+(ETH), no algorithm has runtime \(f(r)\mathcal L^{o(r)}\), where \(\mathcal L\)
+is input length. These conclusions hold with each follower depending on at
+most two leaders, all follower affine coefficients of magnitude at most one,
+and upper coefficients of magnitude at most two. The reduction has a constant
+absolute upper-objective gap.
+\end{theorem}
+\begin{proof}
+The parameterized source result is due to
+\citet[Proposition~4.1, Theorem~5.3 and Corollary~5.5]{FroeseEtAl2026}.
+From Multicolored Clique with \(k\) colors it constructs a two-layer ReLU
+network in \(k\) inputs with maximum \(C_0=k+\binom k2\) in the yes case and
+at most \(C_0-1\) otherwise. Its realizing points lie in a polynomially bounded
+box \([0,L]^k\); all affine coefficients are polynomially bounded in magnitude,
+and each neuron depends on at most two inputs. Output coefficients can be
+made \(\pm1\) by positive homogeneity and duplication of their bounded
+integer magnitudes. These properties follow directly from its node and edge
+spikes, whose locations are integers in a greedy Sidon set of polynomial
+magnitude. We use the proved gap, not an assumption that continuous inputs
+must themselves be discrete.
+
+Rescale the input as \(t=Lx\). Write the resulting network as
+\(\sum_i\sigma_i(h_i(x))_+\), with \(\sigma_i\in\{-1,1\}\). Choose a positive
+integer \(R>\max_i(|h_i(0)|+\norm{\nabla h_i}_1)\), polynomially bounded in
+the source size. Then
+\[
+ \clip(h_i(x)/R)=(h_i(x))_+/R\quad(x\in[0,1]^k).
+\]
+Each coordinate is the response of the identity-Hessian follower with cost
+\(-h_i(x)z_i/R\). The upper expression
+\(C_0-R\sum_i\sigma_i z_i(x)\) has gap zero versus at least one.
+Duplicate each coordinate \(R\) times to replace its coefficient \(R\sigma_i\)
+by unit coefficients. If a constant-free linear objective is required, add
+\(C_0\) fixed-one responses. All follower coefficients now have magnitude at
+most one; the duplication is polynomial and preserves dependence on at most
+two leaders. The source parameter and ETH bounds transfer with \(r=k\).
+Lemma~\ref{lem:box-np} proves ordinary NP membership.
+\end{proof}
+This theorem transfers an established parameterized hardness result. An
+alternative explicit construction below records a useful continuous rounding
+gap and avoids reliance on the particular shape of the source spikes.
+
+\begin{proposition}[A mixed-radix gap]\label{prop:mixed-radix}
+Given a graph on \(n\ge2\) labeled vertices and \(k\ge2\), one can construct in
+polynomial time a nonnegative signed clipped-affine objective on \([0,1]^k\)
+whose minimum is zero for a \(k\)-clique and at least two otherwise. It has an
+identity-Hessian realization satisfying the coefficient and two-leader
+restrictions of Theorem~\ref{thm:growing-leader}.
+\end{proposition}
+\begin{proof}
+Put \(t_i=(n-1)x_i\), and let \(d(t)\) be distance to the nearest integer label
+in \(\{0,\ldots,n-1\}\). On this interval,
+\[
+ 2d(t)=\sum_{a=0}^{2n-3}(-1)^a\clip(2t-a).
+\]
+For integer \(s=u+nv\), define \(f(s)=0\) if \(u,v\) are distinct adjacent
+vertices and \(f(s)=1\) otherwise. Its piecewise linear interpolation is
+\[
+ \varphi(s)=1+\sum_{a=0}^{n^2-2}(f(a+1)-f(a))\clip(s-a),
+ \quad 0\le s\le n^2-1.
+\]
+It lies in \([0,1]\) and is 1-Lipschitz. Take
+\[
+ H(t)=2n\sum_i d(t_i)+2\sum_{i<j}\varphi(t_i+nt_j).
+\]
+A clique labeling gives zero. Otherwise round every \(t_i\) to a label, let
+\(D_t=\sum_i d(t_i)\), and choose a bad pair of rounded labels. For that pair
+\(\varphi(t_i+nt_j)\ge\max(0,1-nD_t)\). Hence
+\(H\ge2nD_t+2\max(0,1-nD_t)\ge2\).
+The displayed formulas use \(O(k^2n^2)\) clipped coordinates after duplicating
+the coefficient \(n\) in the first sum; upper coefficients have magnitude at
+most two. Every affine argument depends on at most two leaders and has
+polynomially bounded integer coefficients. To bound those coefficients by one,
+choose \(R=2n^2\) and use, for each such argument \(h\),
+\[
+ \clip(h)=R\{\clip(h/R)-\clip((h-1)/R)\}.
+\]
+On the leader box neither positive scaled argument exceeds one, so the
+identity follows from \(\clip(h)=(h)_+-(h-1)_+\). Duplicate \(R\) copies to
+retain upper coefficients of magnitude at most two. This gives
+\(O(k^2n^4)\) coordinates with follower affine coefficients bounded by one.
+Constant terms are realized by fixed-one responses if needed.
+\end{proof}
+
+\begin{theorem}[A supplied bounded leader core]\label{thm:leader-core}
+Suppose the leader domain is a product of rational intervals, the follower
+Hessian is positive diagonal, and all other data are as in
+\eqref{eq:dense-box-model}, with no response-dependent upper rows. Suppose a
+set of at most \(c\) leader vertices is supplied whose deletion leaves
+components of size at most \(h\) in the leader interaction graph. For fixed
+\(c,h\), exact optimization and a rational optimal leader-response pair can
+be computed in polynomial time.
+\end{theorem}
+\begin{proof}
+Normalize the leader intervals to unit intervals; fixed coordinates are removed.
+Normalize each positive diagonal quadratic to obtain its clipped affine
+response. Write the core as \(u\), and the component leaders as \(v_b\) with
+\(h_b\le h\). The upper objective decomposes as
+\(H_0(u)+\sum_bH_b(u,v_b)\), since a follower's noncore arguments all belong
+to one component.
+For fixed \(u\), an optimum of \(H_b\) on its box occurs at a vertex of the
+arrangement of its clipping hyperplanes and box facets: it is affine on every
+closed arrangement cell. Enumerate every choice of \(h_b\) hyperplanes with
+independent coefficients in \(v_b\). Solving them gives a candidate
+\(v_b=P u+q\), with rational affine data of polynomial bit length.
+There are at most \((2m_b+2h_b)^{h_b}\) candidates, where \(m_b\) is the
+number of clipped terms of that component. Discard singular choices. Box
+facets ensure that all relevant arrangement vertices are included even when
+some clipping hyperplanes coincide or miss the box at particular parameters.
+A candidate is feasible precisely when it belongs to the component box; it
+need not remain a vertex away from the parameter where it was generated.
+
+In core space arrange the hyperplanes where a candidate coordinate reaches
+zero or one, where a clipped term evaluated at a candidate reaches either
+threshold, and where a core-only term reaches a threshold. On each relative
+cell, candidate feasibility is constant and every feasible candidate's value is
+a fixed affine function of \(u\). Add all pairwise equality hyperplanes between
+candidate values for the same component, and refine the cell. A minimizing
+candidate for each component is now fixed, and the summed objective is affine.
+Minimize it by LP on the closure of each resulting cell and reconstruct the
+selected candidates and followers. All enumerations have polynomial size for
+fixed \(c,h\); constant core dimension also covers \(c=0\).
+
+The closure step is sound: each selected candidate remains box-feasible and
+its continuous clipped value agrees with its affine formula on the closure.
+At a boundary, a newly feasible candidate omitted from this particular LP
+could be better, but that does not invalidate the returned feasible value.
+Completeness follows by considering the relative cell containing an optimal
+core point, where all its feasible candidates are considered. Thus the best
+constructed point is globally optimal. Rational LP recovery proves the output
+claim.
+\end{proof}
+The vertex integrity of a graph is the minimum, over deleted vertex sets, of
+their size plus the largest remaining component size. Thus the supplied core
+in Theorem~\ref{thm:leader-core} certifies vertex integrity at most \(c+h\).
+This is a bounded-core decomposition in the leader cost graph. Related
+``few global variables'' decompositions for integer programming are studied
+by \citet{DvorakEtAl2021}; their integer constraint graphs and conclusions are
+different. The algorithm here is polynomial for fixed \(c,h\), with exponents
+depending on these parameters. A core need not be found by an FPT algorithm:
+enumerating all sets of size at most \(c\) also gives a polynomial algorithm
+when \(c\) is fixed. If each follower depends on only one leader, the objective
+separates completely and each univariate clipped sum can be minimized at its
+breakpoints.
+
+\begin{theorem}[A leader path is already hard]\label{thm:leader-path}
+With a growing number of leaders, the identity-Hessian independent-box model
+is weakly NP-hard even when its leader interaction graph is a path and all
+follower affine coefficients have magnitude at most one and upper coefficients
+have magnitude at most two. Threshold feasibility is NP-complete. Exact
+continuous-state messages on a path can have exponentially many affine pieces,
+even for an identical local factor with a fixed finite coefficient alphabet.
+\end{theorem}
+\begin{proof}
+For positive Subset Sum weights \(a_1,\ldots,a_n\), let \(W=\sum_i a_i\).
+Targets outside \([0,W]\), and its endpoints, can be handled directly; assume
+\(0<T<W\). Put \(r_i=a_i/W\), \(\tau=T/W\). For \(-1\le t\le1\), define
+\[
+ \rho_r(t)=\min\{|t|,|t-r|\}
+ =-t+2\clip(t)-2\clip(t-r/2)+2\clip(t-r),\quad0<r\le1.
+\]
+On leaders \(x_0,\ldots,x_n\in[0,1]\) take
+\[
+ H(x)=x_0+|x_n-\tau|+\sum_{i=1}^n\rho_{r_i}(x_i-x_{i-1}).
+\]
+Choose \(\delta_i\in\{0,r_i\}\) nearest to the increment and telescope to get
+\(\bigl|\sum_i\delta_i-\tau\bigr|\le H(x)\). Conversely, cumulative sums of
+any chosen subset lie in the box and give that subset's distance to \(\tau\).
+Therefore
+\begin{equation}\label{eq:subset-path-distance}
+ \min H=\frac1W\min_{S\subseteq[n]}\left|\sum_{i\in S}a_i-T\right|.
+\end{equation}
+The clipped expansion is
+\[
+ 2x_0-2x_n+\tau+2\clip(x_n-\tau)+
+ 2\sum_i\{\clip(x_i-x_{i-1})-\clip(x_i-x_{i-1}-r_i/2)
+                         +\clip(x_i-x_{i-1}-r_i)\}.
+\]
+It uses \(3n+1\) independent identity-Hessian followers, each depending only
+on consecutive leaders or the terminal leader. Unary copies of \(x_0,x_n\)
+and a fixed-one response may replace the direct affine terms. The coefficient
+bounds follow, and Lemma~\ref{lem:box-np} gives NP membership. The gap is
+\(0\) versus at least \(1/W\). Scaling the objective by \(W\) produces a
+constant gap but loses the bounded coefficient claim; no strong hardness is
+inferred.
+
+There is also an exact message identity. Let \(S_n\) be the set of normalized
+subset sums, and minimize \(x_0+\sum_i\rho_{r_i}(x_i-x_{i-1})\) with \(x_n=t\).
+The same telescope is a lower bound of \(\dist(t,S_n)\). For the reverse bound,
+follow a zero-cost subset path to its terminal sum and change only its last
+coordinate to \(t\). Its last factor increases by at most that distance.
+The message is therefore exactly \(\dist(t,S_n)\). Weights \(a_i=2^{i-1}\)
+give \(S_n=\{j/(2^n-1):0\le j\le2^n-1\}\), hence \(2(2^n-1)\) maximal
+affine pieces on \([0,1]\).
+For a fixed alphabet use instead the identical factor
+\(\rho_{1/2}(x_i-x_{i-1}/2)\). Its zero-cost terminal states are
+\(S_n=\{j/2^n:0\le j<2^n\}\). If \(e_i=x_i-x_{i-1}/2-\delta_i\),
+\(\delta_i\in\{0,1/2\}\), then
+\[
+ t-\sum_i2^{-(n-i)}\delta_i
+ =2^{-n}x_0+\sum_i2^{-(n-i)}e_i.
+\]
+The absolute value is bounded by \(x_0+\sum_i|e_i|\); the same last-coordinate
+construction gives equality with \(\dist(t,S_n)\). There are
+\(2^{n+1}-1\) maximal affine pieces, including the last tail to one.
+All local coefficients now belong to one finite set (gains \(1,-1/2\), shifts
+\(0,-1/4,-1/2\), and readout coefficients \(\pm2\)).
+\end{proof}
+Closure of continuous piecewise linear functions under variable elimination
+is classical; see \citet[Lemmas~1--2 and Theorem~1]{MeuleauEtAl2008} for a
+scheduling formulation. Closure alone gives no polynomial bound on intermediate
+message size. The identical-factor family above has the trivial optimum zero;
+its exponential message size is an output-complexity example, not another
+NP-hardness proof.
+
+\subsection{A path in the follower constraints}
+\label{subsec:follower-path}
+The preceding path connected \emph{leaders} in affine follower costs. Now there
+is one leader, the Hessian is diagonal, and a path connects \emph{follower}
+coordinates through inequalities. This distinction explains why the next
+example lies outside the independent-block response theorem.
+For rational \(0<\gamma<1/2\), set \(z_0=0\) and
+\begin{equation}\label{eq:klee-polytope}
+ P_n(\gamma)=\{z:0\le z_1\le1,\quad
+          \gamma z_{j-1}\le z_j\le1-\gamma z_{j-1}\ (2\le j\le n)\}.
+\end{equation}
+Every row involves at most two consecutive coordinates (2VPI).
+Appendix~\ref{app:path-geometry} proves the needed geometric and arithmetic
+facts, and states with its proof the sparse-shadow construction of
+\citet[Section~4]{GartnerEtAl2013}.
+
+\begin{proposition}[What a sparse shadow obstructs]\label{prop:path-shadow-boundary}
+For \(\gamma=1/4\), there is an explicit scalar-price LP over \(P_n(\gamma)\)
+with \(2^n\) distinct optimal vertices, each uniquely optimal on a price
+interval. Its value has \(2^n\) affine pieces, although evaluation at a
+rational price requires only \(O(n)\) rational arithmetic operations of
+polynomial bit length. The terminal-state value message has \(2^n-1\) affine
+pieces. An unextended quantifier-free polynomial description of the bounded
+epigraph in the two price/value variables requires the sum of the degrees of
+its nonzero polynomials to be at least \(2^n\).
+\end{proposition}
+The explicit formulas and the boundary-factor proof are in
+Appendix~\ref{app:path-geometry}. This is a limitation on enumerating an entire
+response or on eliminating all auxiliary variables, not on solving one LP,
+nor on arithmetic circuits or descriptions retaining quantified states.
+
+\begin{theorem}[Scalar-leader hardness with an identity-Hessian path follower]
+\label{thm:follower-path-hardness}
+There is an NP-complete restricted family of rational bilevel feasibility
+problems with one leader in \([-1,1]\), a unique follower minimizing a strictly
+convex diagonal quadratic over a 2VPI path polytope, one upper slab with two
+linear bounds, and one \emph{nonconvex quadratic upper row}. The follower
+Hessian can be exactly the identity. Without upper rows, such path followers
+can have at least \(2^n\) distinct constant response intervals.
+The feasibility hardness also holds when all \emph{local follower inequality}
+coefficients and right-hand sides belong to fixed finite alphabets.
+\end{theorem}
+\begin{proof}
+Take Subset Sum data \(a_i>0\), \(W=\sum_i a_i\), \(0\le T\le W\), and put
+\(\gamma=1/(8W)\). Define
+\[
+ c_i=(1-\gamma)\gamma^{2(n-i)-1}\ (i<n),\quad c_n=0,\quad
+ F(z)=z_n-c\trans z-z_n^2.
+\]
+Lemma~\ref{lem:klee-telescope} shows that \(F\ge0\) on \(P_n(\gamma)\), with
+zeros precisely at its vertices. Each vertex has a bit description
+\(v_j=d_j+(1-2d_j)\gamma v_{j-1}\), and
+\(|v_j-d_j|\le\gamma\). The slab
+\begin{equation}\label{eq:klee-slab}
+ T-1/4\le\sum_i a_i z_i\le T+1/4
+\end{equation}
+therefore contains a vertex if and only if the Subset Sum instance is positive:
+the forward error is at most \(\gamma W=1/8\), and conversely a vertex in
+the slab gives \(|\sum_i a_i d_i-T|\le3/8<1\), forcing equality of integers.
+
+It remains to make every required vertex an exact strongly convex response.
+Terminal vertex values are distinct and have denominators dividing
+\(D=(8W)^{n-1}\). Thus their separation is at least \(1/D\). Put
+\(\Delta=D^{-2}\), \(\tau=\Delta/(2n)\), and let the follower minimize
+\begin{equation}\label{eq:klee-quadratic-follower}
+ \tfrac\tau2\norm z_2^2-c\trans z-\lambda z_n
+ \quad\text{over }P_n(\gamma),\qquad -1\le\lambda\le1.
+\end{equation}
+At vertex \(v\) choose \(\lambda_v=2v_n-1\). Since
+\(c\trans u=u_n-u_n^2\) at every vertex \(u\), the loss in the linear score
+from \(v\) to any other vertex is \((u_n-v_n)^2\ge\Delta\).
+For an arbitrary convex combination \(z=\sum_u\alpha_u u\), put
+\(a=\sum_{u\ne v}\alpha_u\). Then the score loss is at least \(\Delta a\),
+\(\norm{z-v}_\infty\le a\), and
+\(\norm z_2^2-\norm v_2^2\ge-2na\). Consequently its follower objective
+exceeds that at \(v\) by at least \((\Delta-\tau n)a=\Delta a/2\), strictly
+if \(z\ne v\). The same reasoning at price \(\lambda_v+h\) loses at most
+\(|h|a\), so \(v\) remains the unique response whenever \(|h|\le\Delta/4\)
+within the leader interval. There is a nontrivial one-sided interval even at
+an endpoint. Fixing \(\gamma=1/4\) proves the exponential constant-response
+claim with no upper constraints.
+
+Impose \(F(z)\le0\) and \eqref{eq:klee-slab} as upper rows. The former forces
+an original path vertex; the preceding equivalence and exposing leaders give
+the reduction in both directions. Guessing its bits, computing the vertex and
+\(\lambda_v\), and checking the slab is a polynomial-bit NP certificate for
+this restricted family. All coefficients have polynomial bit length, including
+\(1/\tau\). Multiplication of the entire follower objective by \(1/\tau\)
+preserves the response and makes its Hessian the identity.
+
+For the fixed local alphabet, apply the padding construction of
+Lemma~\ref{lem:klee-padding}: use \(\gamma=1/4\), dimension
+\(N=n+(n-1)r\) with \(4^{-(r+1)}\le1/(8W)\), and bound each padding
+coordinate by \(1/2\). Use the full \(N\)-dimensional cube's \(F,c\), and
+\(D=4^{N-1},\Delta=D^{-2},\tau=\Delta/(2N)\). Every required free-bit
+pattern is an original cube vertex satisfying the padding bounds. Its strict
+response inequality was proved over the entire cube, so it remains valid on
+the padded subset. Conversely \(F\le0\) forces an original cube vertex and
+its padding bits must be zero. Apply the slab only to the free coordinates;
+the same \(1/8\) error proves the equivalence. Local inequality coefficients
+are now in \(\{0,\pm1,\pm1/4\}\), and right-hand sides in \(\{0,1/2,1\}\).
+\end{proof}
+The upper quadratic row has Hessian \(-2e_ne_n\trans\); it is not a convex
+upper constraint. The same reduction can minimize \(F(z(\lambda))\) under the
+linear slab at threshold zero. The slab-only feasible set is nonempty: the
+continuous response visits zero and the all-one-bit vertex, whose weighted
+free-coordinate sum is at least \(W-1/8\); the intermediate value theorem
+covers integer targets below \(W\), and that last vertex covers \(T=W\).
+Its compact feasible graph gives attainment. Deleting the quadratic row from
+the feasibility version therefore makes every target feasible. This proof
+establishes neither all-linear-upper feasibility hardness nor strong hardness.
+The fixed local alphabet does not bound the slab weights or the rescaled
+linear costs. Rank-one concave quadratic hardness more generally has the
+classical precedent \citet{PardalosVavasis1991}.
+
+There is a narrow positive counterpart. If both sides of each affine interval
+transition use the \emph{same} gain, exact feasibility projection along paths
+is polynomial, including negative or zero gains. Proposition~\ref{prop:strip-projection}
+in Appendix~\ref{app:strip-projection} gives the full construction, its extension
+to trees and fixed \emph{total} cycle rank, and same-field witness recovery.
+The opposite gains \(+\gamma\) and \(-\gamma\) in
+\eqref{eq:klee-polytope} do not satisfy that hypothesis. Nor does that
+projection permit arbitrary objectives involving all eliminated states.
+
+\subsection{Curvature, degree encoding, and arithmetic output}
+\label{subsec:arithmetic-boundaries}
+\begin{proposition}[Removing positive local curvature]\label{prop:curvature-boundary}
+Optimistic feasibility is NP-complete in restricted degree-two families with
+no leader and an independent unit-box follower if either zero local curvature
+and quadratic upper rows, or negative local curvature and linear upper rows,
+are permitted.
+\end{proposition}
+\begin{proof}
+With zero follower objective, every \(z\in[0,1]^N\) is optimal. Upper rows
+\(z_i(1-z_i)=0\) and the linear literal-sum inequalities \(\ell_a(z)\ge1\)
+encode 3SAT. Alternatively minimize \(\sum_i z_i(1-z_i)\) in the follower.
+Its minimum is zero and its minimizers are exactly the Boolean vertices;
+then only the linear upper clause rows are needed. Boolean assignments are
+certificates for both restricted families. These are existential, optimistic
+statements; universal feasibility for every optimal response is different.
+\end{proof}
+
+\begin{proposition}[Sparse binary degrees and output length]
+\label{prop:single-power-output}
+Polynomial dependence on numerical degrees cannot in general be replaced by
+polynomial dependence on their binary encoding, even with one power follower.
+For an integer \(P\ge1\), \(z(x)=x^{1/P}\), \(0\le x\le1\), each of the following requires
+\(\Omega(P)\) bits in any rational leader meeting the indicated guarantee:
+\begin{enumerate}
+\item upper objective \((z-1/2)^2\), no upper rows, additive error \(1/64\);
+\item upper objective \(z\), upper row \(z\ge1/2\), exact feasibility and
+additive error \(1/8\).
+\end{enumerate}
+The second example has a strict feasible anchor \(x=1\) and a convex reduced
+upper inequality. Sparse upper data alone can also force exponential algebraic
+output degree, with a trivial positive quadratic follower.
+\end{proposition}
+\begin{proof}
+The power response minimizes \(z^{P+1}/(P+1)-xz\) on the unit interval,
+with a sparse binary description of \(O(\log(P+1))\) bits.
+In the first example the optimum is zero at \(x=2^{-P}\). The error guarantee
+forces \(3/8\le z\le5/8\); hence \(0<x\le(5/8)^P\). In the second example
+the optimum is \(1/2\), and the guarantee forces \(1/2\le z\le5/8\), giving
+the same upper bound on positive \(x\). If \(x=p/q>0\) is a reduced rational,
+then \(q\ge1/x\ge(8/5)^P\). Its binary encoding has \(\Omega(P)\) bits.
+The reduced row \(1/2-x^{1/P}\le0\) is convex, and its value at one is
+\(-1/2\). Thus an anchor does not remove the numerical-degree dependence of
+Theorem~\ref{thm:accuracy-upper}.
+For the last assertion let the upper feasible set be
+\(1\le x\le2,\ x^{2^t}=2\), and minimize \(x\). Use the independent follower
+\(\min_{0\le z\le1}z^2\), whose response is zero. The sparse upper description
+has \(O(t)\) bits, whereas its unique leader has degree \(2^t\), since
+\(X^{2^t}-2\) is Eisenstein at two.
+\end{proof}
+Example~\ref{ex:sparse-power-output} already gives the rational-output obstruction
+with an affine upper objective and no upper rows by using two different powers.
+Proposition~\ref{prop:single-power-output} strengthens the one-follower case
+when polynomial upper data or a response row is allowed; it does not settle
+the one-power affine-objective, no-upper-row subclass.
+
+\begin{proposition}[An exponential common-field degree]\label{prop:root-sum-degree}
+Independent uniformly strongly convex scalar polynomial followers can have an
+aggregate value of algebraic degree \(2^N\). Even singleton convex quadratic
+local sets can encode the exact Square Root Sum comparison problem through
+one linear aggregate row.
+\end{proposition}
+\begin{proof}
+For distinct primes \(p_i\), minimize \(z_i^3/3-p_i z_i\) on \([1,p_i+1]\).
+The unique response is \(\sqrt{p_i}\), and the second derivative is at least
+two throughout the interval. The value \(s=\sum_i\sqrt{p_i}\) has degree
+\(2^N\). Here is a direct field argument. Inductively, the products
+\(\sqrt{\prod_{i\in S}p_i}\) form a basis for the field generated by the first
+\(j\) radicals, with independent sign-changing automorphisms. If the next
+radical were in that field, its image under any such automorphism would be
+itself or its negative, since its square is rational. It would be a common
+eigenvector for all sign changes. In the displayed basis the characters are
+distinct, so such an eigenvector is a rational multiple of one basis element.
+Squaring contradicts the parity of the prime valuations of \(p_{j+1}\).
+The next extension therefore has degree two and all old sign changes extend
+with either new sign, completing the induction. The \(2^N\) signed sums are
+distinct by this basis independence; they are all conjugates of \(s\).
+
+For arbitrary nonnegative integers \(a_i\), the local set
+\(Y_i=\{y_i:0\le y_i\le\max(1,a_i),\ y_i^2=a_i\}\) is a compact convex
+singleton. Feasibility of \(\sum_i y_i\le K\) is exactly
+\(\sum_i\sqrt{a_i}\le K\). There is no core variable and only one aggregate.
+\end{proof}
+The lower bound concerns minimal-polynomial and common-number-field output;
+a list of radicals can be a much shorter expression. Exact Square Root Sum
+comparison is not proved NP-hard by this encoding, and no such claim is used
+here; polynomial-time exact comparison remains an open problem
+\citep{EisenbrandEtAl2024}. It is an arithmetic obstruction to extending
+Appendix~\ref{app:fixed-core}'s polyhedral-leaf elimination by replacing each
+leaf with an arbitrary convex semialgebraic set. Accuracy-bit approximation,
+which does not require the entire common field, remains compatible with it.

@@ -1,0 +1,69 @@
+# Uploaded-literature audit: physical water management and FT
+
+2026-09-17. Audit of the newly supplied originals against the existing physical-water program, first test, measurement pilot and calculations. No new direction or experiment is introduced. The audited intake records are [65-paper promotions](../../literature/runs/2026-09-16-inbox-65-promotions/run.md) and [remaining promotions](../../literature/runs/2026-09-16-inbox-remaining-promotions/run.md). Later intake titles were screened for directly relevant FT/water overlaps; this is not a review of every methane-oxidation or other water-sensitive catalyst paper.
+
+**The current water proposal needs corrections to its source coverage and novelty framing, but the new literature does not invalidate its bounded feasibility and late-additive functional test.** It does not justify upgrading the proposal into a substantial transport-mechanism program. Geometry-linked cobalt durability, retained-liquid alternatives, water-history experiments and oxygen-isotope transients have stronger direct precedent than the old documentation credited. None of the inspected originals supplies the missing stationary water exposure at cobalt in the actual Co/SiO2–PDVB packing.
+
+The water work remains a defensible first feasibility commitment if a suitable FT platform already exists. This is a conditional investment judgment based on its established functional effect and a finite useful-output test, not evidence that the transport hypothesis is likely to be uniquely identified. The relative ordering against newly re-read cyclic-oxide sources belongs to the portfolio review; this audit finds no water-specific reason for compulsory cancellation or promotion.
+
+## Original-derived changes that matter
+
+### Geometry and wax effects have close cobalt precedent
+
+[Yang et al. 2020, DOI 10.1039/C9CY02557J](../../literature/papers/yang2020-investigation-of-the-deactivation-behavior/fulltext.md), PDF pp. 6–9, is the most consequential addition. It varies silica-shell geometry in Co@SiO2 and compares catalysts at similar initial CO conversion, using adjusted GHSV. Table 2, PDF p. 7 (printed p. 1188), reports initial conversion about 74–75.5% and calculated bulk water pressures 0.36–0.37 MPa for the matched comparison; the thinner-shell material loses less activity during the 50 h test. The authors attribute the difference to local water removal and reduced cobalt oxidation. At 220 °C, they instead emphasize heavy-hydrocarbon retention, pore blocking and restricted syngas transport; PDF p. 8 reports 56–59% TG weight loss for the spent samples.
+
+These findings prevent claiming that geometry controls water-related durability, or that wax can confound a water mechanism, as new discoveries. They do **not** directly establish local water concentration: water pressure is calculated from conversion, and cobalt loading, pore dimensions and gas flow also change. The original's intermediate 40–50% conversion description at 220 °C should not replace the 46–50 h values of 31.6–37.9% in Table 2. This difference is temporal, not necessarily contradictory.
+
+**Consequence:** credit this study in the program, size analysis and working-liquid rejection note. Retain the prospective prediction and late low-dose additive contrast as the potential contribution. Do not import a shell-specific rate or diffusivity into the granule calculations.
+
+### Supplied-water history and recovery were tested decades ago
+
+[Hanssen et al. 1997, DOI 10.1016/S0167-2991(97)80407-7](../../literature/papers/names1997-transient-and-steady-state-studies/fulltext.md), PDF pp. 2–3 and 5–9, compares water pretreatment, cofeed and dry return on Co and Co/Re–alumina. The high-pressure experiments use 13 bar, 483 K and an initial 24 h interval, then water cofeed and a final dry interval. Flow is adjusted after cofeeding to restore comparable conversion. Low-pressure methane-SSITKA is measured before and after water treatment; the apparatus cannot record those transients during water exposure. Already pretreated catalysts show relatively little further change on subsequent water cofeed.
+
+[Rothaemel et al. 1997, DOI 10.1016/S0920-5861(97)00041-2](../../literature/papers/rothaemel1997-the-effect-of-water-on/fulltext.md), PDF pp. 2–6, gives related methane-focused SSITKA evidence: fewer methane-forming intermediates and reversibly adsorbed CO after water treatment, while methane residence time remains similar within uncertainty. The oxidation interpretation is consistent with these observations; SSITKA alone is not a direct census of oxidized cobalt. Its methane-rich conditions do not establish C5+ performance or a universal water-damage law.
+
+**Consequence:** the first-test document now credits direct pretreatment/cofeed/recovery precedent, alongside Wolf and Paterson. The specific question remains whether adding a modest amount of neighboring PDVB after common conditioning changes a later disturbance's useful-output consequence. A null result must not be promoted to proof that the original promotion is purely a startup effect.
+
+### The isotope caveat is now supported by the original, not an abstract
+
+[Den Breejen et al. 2009, DOI 10.1021/ja901006x](../../literature/papers/breejen2009-on-the-origin-of-the/fulltext.md), PDF pp. 2–3 and 5, explicitly uses C16O/C18O switching to obtain an OHx response on Co/CNF at 210 °C, 1.85 bar and H2/CO = 10. OHx includes O and OH intermediates **and adsorbed H2O**. PDF p. 5 expressly warns that water readsorption may overestimate residence time and coverage. [The 2010 thesis](../../literature/papers/breejen2010-cobalt-particle-size-effects-in/fulltext.md), Chapter 2, PDF pp. 23–29, reproduces these relevant methods and cautions.
+
+**Consequence:** the missing-original and abstract-only statements in the two-pool calculation were stale and have been replaced. The new evidence strengthens the need to distinguish chemical oxygen pools, readsorption and passive transfer. It does not invalidate the two-pool counterexample or supply a source-site reporter. No isotope expansion is added.
+
+### Independent exchange NMR is a real precedent, with a substantial transfer gap
+
+[Elgersma et al. 2022, DOI 10.1016/j.ces.2021.117229](../../literature/papers/elgersma2022-measuring-the-liquid-solid-mass/fulltext.md), PDF pp. 4–6 and 8–11, uses T2–T2 relaxation exchange to measure exchange between water inside and outside porous pellets. Its model fits an external transfer coefficient after geometry, intra-pellet diffusivity and relaxation properties are independently supplied. It uses water-filled 1.3 mm silica and 3.1 mm titania spheres, not a reacting hot cobalt/polymer/wax packing. At zero flow it obtains Sherwood numbers near 9 for its beds; it distinguishes local film transfer from apparent coefficients that incorporate axial dispersion.
+
+**Consequence:** acknowledge a concrete independent measurement precedent. It limits any blanket implication that independent resistance information is unavailable in principle. It does not establish feasibility with cobalt, smaller granules, multicomponent liquids or the intended temperature/pressure; nor is its measured coefficient a local water chemical potential. Do not transfer its Sherwood number or commission NMR automatically. The existing conditional pilot remains appropriate.
+
+[Brandani and Mangano's ZLC review, DOI 10.1007/s10450-020-00273-w](../../literature/papers/brandani2020-the-zero-length-column-technique/fulltext.md), Sections 2 and 3, supports the existing blank, multiple-flow, linearity and partial-loading checks. Partial-loading experiments are themselves established methodology. Their ability to discriminate ideal passive diffusion/barrier models does not guarantee identification in a reacting, evolving multipool catalyst. [Barrer and Fender 1961](../../literature/papers/barrer1961-the-diffusion-and-sorption-of/fulltext.md), p. 1 and diffusion analysis, and the [2024 IUPAC report](../../literature/papers/karger2024-diffusion-in-nanoporous-materials-with/fulltext.md), pp. 5–12 and 35–38, support the existing self/transport/apparent-diffusivity distinctions. No source coefficient can be substituted into the current gas-referenced model without its concentration basis, thermodynamics and geometry.
+
+### Another physical-PDVB result needs explicit normalization caution
+
+[Zhao et al. 2023, DOI 10.1016/j.nanoen.2023.108350](../../literature/papers/zhao2023-hydrophobic-modification-for-co-photo/fulltext.md), PDF pp. 3 and 7, reports enhanced cobalt photothermal CO hydrogenation and suppressed water-gas shift after physical PDVB mixing. The assay uses 50 mg LD-Co versus 100 mg of a 1:1 LD-Co/PDVB mixture in a one-hour batch experiment at 0.2 MPa. It is relevant prior art, but differs materially from the 5% separate-granule longevity formulation.
+
+The reported water uptakes, 8.82 and 4.41 cm³/g, differ by exactly a factor of two. **If grams denote total sample mass and PDVB uptake is negligible, this is precisely the dilution-only prediction without any decrease in water loading on LD-Co.** The figure and main-text methods do not justify silently assigning a cobalt-only uptake basis. Likewise, the reported WGS rates 1.47 and 0.22 mmol/g/h give a 6.7-fold reported contrast, but the gram basis must be verified before calling this a catalyst-specific reduction. Under a total-mixture basis, correction to equal LD-Co mass would yield about 3.34-fold. This is a conditional normalization calculation, not a replacement source result or proof that promotion is absent. The SI was not located in this audit and has been requested through the sole literature maintainer.
+
+**Consequence:** add the study to the novelty boundary with the denominator qualification. Do not use its half-uptake claim as independent evidence of local drying.
+
+## What stays unchanged
+
+The published-output integration concerns Fang's retained data, not these new papers; none changes its source values or makes it an optimized-industrial comparison. No correction to its numerical output is warranted by this intake. The storage/conductance distinction, two-pool counterexample and size-scaling ambiguity are analytical statements under explicit assumptions and survive the new source checks. None of the new originals assigns actual coefficients to the Fang packing. The preload mechanism test remains rejected because the intervention changes multiple interfaces at once.
+
+The [Hwang transport-input audit](hwang-transport-input-audit.md) concerns the separate optional oxygen-return measurement, not FT water transport. Its printed-input arithmetic and the distinction between net oxygen consumption and gross reconsumption remain valid; no new Hwang original appeared in the two audited promotion manifests. No change to that audit follows from these uploads.
+
+## Confidence and investment recommendation
+
+- **Scientific hypothesis:** good evidence that physical mixing can change catalytic function; lower confidence that sustained local water transport is the dominant cause in the longevity recipe. New geometry and wax sources strengthen plausible competing explanations rather than selecting one.
+- **Feasibility and informative value:** moderate, conditional on a functioning pressurized FT platform, reproducible handling and source-resolved water measurements. Independent NMR is a demonstrated method in another physical setting, not a completed feasibility bridge. The late-additive functional comparison can remain informative even if transport cannot be identified.
+- **Practical improvement beyond the source recipe:** still uncertain. Added precedent narrows novelty and does not supply improved productivity, pressure drop, lifetime or cost for the proposed intervention.
+
+Proceed with the already bounded qualification and functional test only. A new substantial program still requires a consequential prediction or practical decision beyond published mixing, geometry and history effects. There is no justification here for further idea generation, a generic size screen, preloading campaign or a larger isotope/NMR apparatus effort.
+
+## Reading scope, edits and source handoff
+
+This audit read the relevant original-derived text, not just package summaries. Full relevant methods/results were inspected for Yang, Hanssen, Rothaemel, den Breejen 2009, Elgersma and Zhao. Den Breejen's thesis was checked selectively in Chapter 2; the rest of the thesis was not exhaustively re-reviewed. Brandani, Barrer and the IUPAC report were inspected for the specific transport and measurement claims above, not as whole-document replications. Decisive original PDF images were checked for Yang Table 2 (p. 7), den Breejen oxygen-transient cautions (p. 5), and Zhao uptake/normalization presentation (p. 7). No numerical curve digitization or new experimental parameter extraction was performed.
+
+Updated files: `physical-water-management.md`, `water-management-first-test.md`, `water-measurement-feasibility.md`, `water-working-liquid-intervention.md`, `water-local-exposure-identifiability.md`, `water-size-discriminator.md`, and `water-transport-limits.md`. Edits add original-derived boundaries, supersede stale source-status wording and preserve the existing finite experimental scope; no executable calculation or output was changed.
+
+KB corrections were routed to the parent for the sole literature maintainer: Hanssen's authors are plainly given on original p. 1 despite the package's `Unknown` field; Yang's local-water explanation needs attribution as interpretation; Zhao's uptake and WGS summaries need the normalization qualification, and its SI remains a targeted source request. No KB file was changed by this reviewer. Historical intake reports should remain historical, with current status pointing to the later successful promotions.

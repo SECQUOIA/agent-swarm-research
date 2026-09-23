@@ -1,0 +1,1463 @@
+\section{LP Loading and Recovery Lower Bounds}
+\label{sec:lp-hardness}
+
+This section gives the LP thread of the paper.  Its endpoint is a
+linear-size, bounded-degree standard-form LP whose reduced primal Newton
+matrix is a scalar identity at a public infeasible start, whose reduced
+log-barrier Hessian is a scalar identity along the entire central path, and
+whose original-primal Newton-direction state nevertheless needs a linear
+number of raw coefficient queries.  The obstruction is not the scalar solve:
+it is construction of the hidden affine translation and recovery in the
+original coordinates.
+
+All state, access, residual, and success conventions are those of
+\cref{sec:prelim-quantum-access,sec:prelim-output-contracts}.  Throughout
+this section \(N\geq2\).  In particular, a residual without another
+qualifier is the global RHS-relative residual
+\(\norm{Ax-b}_2/\norm b_2\), and an output state is unconditional.  The same
+results hold for a heralded branch of input-independent constant success
+probability when repetitions are charged.  A reduced-coordinate state is not
+an original-coordinate output, and an unobserved ``good branch'' is not an
+output contract.  We count all raw queries used for setup, preconditioning,
+right-hand-side formation, solution, and recovery.
+
+The underlying amplification motifs are established.  Parity and the
+polynomial method are classical query-complexity tools
+\cite{beals2001-quantum-lower-bounds-by-polynomials}; endpoint padding and
+biased clocks occur in HHL and Feynman--Kitaev constructions
+\cite{harrow2009-quantum-algorithm-linear-systems-equations,caha2018-feynman-kitaev-clock,bausch2018-analysis-limitations-modified-circuit};
+and sparse QLS states carrying an endpoint bit occur in Wang--Zhang and Mori
+et al.\ \cite{wang2024-tight-quantum-depth-lower-bound,mori2026-sparsity-dependent-complexity-lower-bound}.
+Apers--Gribling Theorem~8.4 already gives a linear exponent for sparse-LP
+\emph{value} estimation in balanced dimensions
+\cite{apers2026-quantum-speedups-linear-programming-interior}.  None of these
+results is a constant-condition QLS lower bound of the kind sometimes
+informally inferred from the statements below.  Our contribution is the
+LP-native conjunction of regularity, reduced geometry, original-coordinate
+output contracts, sharp residual thresholds, and complete access accounting.
+
+\subsection{Parity amplification and feasible-state hardness}
+\label{sec:lp-foundation}
+
+Let \(\sigma_1,\ldots,\sigma_N\in\{\pm1\}\), and put
+\[
+ p_0=1,\qquad p_i=\prod_{j=1}^i\sigma_j.
+\]
+Represent a signed scalar at node \(j\) by a nonnegative pair
+\((u_j,v_j)\), with \(d_j=u_j-v_j\) and \(q_j=u_j+v_j\).  A chain fixes
+\begin{equation}
+ d_0=1,\qquad d_i-\sigma_i d_{i-1}=0\quad(1\leq i\leq N).
+\end{equation}
+At node \(N\), attach a complete binary copy tree with
+\begin{equation}
+ M=2^{\lceil\log_2(8(N+1))\rceil},\quad K=2M-2,
+ \quad P=N+1+K,
+\end{equation}
+and impose \(d_j-d_{\pi(j)}=0\) on every new node.  Thus all \(K\) copy
+nodes have difference \(p_N\), while row and column sparsity remain at most
+four and three.
+
+We use the following elementary decoder throughout the section.
+
+\begin{lemma}[Fixed-observable parity decoder]
+\label{lem:lp-decoder}
+Let \(O\) be an input-independent Hermitian observable with \(\norm O_2\leq1\).
+If a family of normalized ideal states obeys
+\[
+ p_N\langle\psi_\sigma|O|\psi_\sigma\rangle\geq\delta>0,
+\]
+then the POVM \((I\pm O)/2\) guesses \(p_N\) with bias at least
+\(\delta/2\).  From any \(\rho_\sigma\) with
+\(\Dtr(\rho_\sigma,\ket{\psi_\sigma}\!\bra{\psi_\sigma})\leq\epsilon\),
+the bias is at least \((\delta-2\epsilon)/2\).  If this is positive by an
+absolute constant, preparing \(\rho_\sigma\) requires \(\Omega(N)\) raw
+coefficient queries.
+\end{lemma}
+
+\begin{proof}
+Trace duality changes the expectation of \(O\) by at most \(2\epsilon\).
+The stated POVM has signed expectation \(\operatorname{Tr}(O\rho)\).  Constant
+repetition turns any constant positive bias into bounded error.  Every sparse
+row, column, position, or value query in the families below exposes at most one
+\(\sigma_i\), even coherently, and is simulated by one call to the sign oracle.
+The parity lower bound completes the reduction.
+\end{proof}
+
+First minimize \(\sum_jq_j\) subject to the chain and copy equations.  Exact
+feasibility fixes every \(d_j\in\{\pm1\}\), and \(q_j\geq1\).  Hence the
+unique optimum has \(q_j=1\) and value \(P\).  The nullspace has the public
+orthonormal basis
+\begin{equation}
+ V_j=\frac{e_{u_j}+e_{v_j}}{\sqrt2}.
+\end{equation}
+On the feasible affine space the barrier objective is
+\begin{equation}
+ \Phi_\mu(q)=\sum_j\left[q_j-
+       \mu\log\frac{q_j^2-1}{4}\right].
+\end{equation}
+Thus every central coordinate is
+\(q(\mu)=\mu+\sqrt{\mu^2+1}\), and
+\begin{equation}
+ V^T\nabla^2\Phi_\mu V
+ =2\mu\bigl[(q+1)^{-2}+(q-1)^{-2}\bigr]I.
+\end{equation}
+At \(\mu=3/4\), \(q=2\), so every oriented pair is
+\((3/2,1/2)\).  If instead an exactly feasible point has objective gap at
+most one, writing \(q_j=1+\delta_j\) gives
+\(\sum_j\delta_j\leq1\) and
+\begin{equation}
+ \norm x_2^2=\sum_j\frac{q_j^2+1}{2}\leq P+\frac32.
+\end{equation}
+Since \(K\geq16(N+1)-2\), more than \(9/10\) of this mass lies in the
+copy tree, and within an oriented copy pair the correct coordinate has at
+least \(9/10\) of the pair mass.  The computational-basis decoder therefore
+succeeds with probability greater than \(43/50\); trace error \(1/10\)
+leaves success greater than \(19/25\).  This proves an \(\Omega(N)\) lower
+bound both for every such near-optimal primal state and for the exact
+\(\mu=3/4\) central state, despite \(\kappa_{\rm red}=1\).
+
+There is a stronger any-feasible-point contract.  Add \(t_j\geq0\) and
+\begin{equation}
+ 2u_j+2v_j+2t_j=3
+\end{equation}
+at every node, and retain objective \(\sum_jq_j\).  Exact feasibility now
+gives
+\begin{equation}
+ 1\leq q_j\leq\frac32,\qquad t_j=\frac32-q_j.
+\end{equation}
+The equality matrix has rank \(2P\), and its public orthonormal null basis is
+\begin{equation}
+ \bar V_j=\frac{e_{u_j}+e_{v_j}-2e_{t_j}}{\sqrt6}.
+\end{equation}
+The positive optimal columns form a basis; the opposite pair coordinate has
+dual slack two.  Thus the LP is bounded and strictly primal--dual feasible,
+with a unique nondegenerate strictly complementary optimum.  Its reduced
+central Hessian is again a scalar identity, because the reduced barrier is a
+sum of identical functions of \(q_j\).
+
+For \(q\in[1,3/2]\), one triple has squared norm
+\begin{equation}
+ \bar w(q)=\frac{q^2+1}{2}+\left(\frac32-q\right)^2
+ \in\left[\frac54,\frac{13}{8}\right].
+\end{equation}
+The copy triples therefore carry more than \(9/10\) of the total mass, and
+the plus/minus decoder, randomized on \(t\), succeeds conditionally with
+probability at least \(9/10\).  Consequently \emph{every} exact feasible
+amplitude state, without an objective promise, has the same
+\(\Omega(N)\) query lower bound at trace error \(1/10\).  The proof also
+survives \(x\geq0\) and the absolute global \(\ell_1\) residual
+\(\norm{\bar Ax-\bar b}_1\leq1/50\): telescoping gives
+\(p_Nd_j\geq49/50\) at every copy node, while the cap gives
+\(q_j+t_j\leq151/100\).  The resulting copy mass is greater than \(43/50\),
+and the signed conditional expectation exceeds \(63/100\).  Before trace
+error the total signed expectation is therefore
+\begin{equation}
+ \frac{43}{50}\frac{63}{100}=\frac{2709}{5000},
+\end{equation}
+so trace error \(1/10\) leaves signed expectation at least
+\[
+ \frac{2709}{5000}-\frac15=\frac{1709}{5000}>\frac13.
+\]
+
+\subsection{The robustness frontier}
+\label{sec:lp-robustness-frontier}
+
+The preceding \(\ell_1\) theorem cannot be promoted to a constant
+\(\ell_2\) theorem on one unit-height path.  In gauged variables set
+\begin{equation}
+ p_id_i=1-\frac{i}{N},\qquad d_j=0\quad(j\text{ in the copy tree}),
+\end{equation}
+and take \(q_j=1,t_j=1/2\).  All cap and copy equations are exact, the
+\(N\) chain residuals equal \(1/N\), and the total residual is
+\(N^{-1/2}\), yet the amplified coordinates have no parity signal.  Using
+\(1-2i/N\) instead gives an entirely wrong copy plateau at residual
+\(2/\sqrt N\).  This is the basic drift obstruction.
+
+A bounded-height repair, for power-of-two \(N\), uses \(R=N\) length-\(N\)
+signed paths in parallel.
+A binary fanout tree feeds the paths, and a binary tree with \(L=16N\)
+leaves is attached to every endpoint.  The resulting tree has
+\begin{equation}
+ P=(2N-1)+N^2+N(2L-2)=33N^2-1,
+ \qquad |S|=16N^2
+\end{equation}
+vertices and designated output leaves \(S\).  At every vertex use
+\((u,v,h,t)\geq0\), impose pinned labelled-copy equations on
+\(d=u-v\), pinned unsigned-copy equations on \(h\), and
+\(q+t-2h=0\).  Minimize \(\sum_j(2u_j+2v_j+h_j+t_j)\).
+
+\begin{theorem}[Parallel-path residual tube]
+\label{thm:lp-parallel-path}
+This LP has \(4P\) variables, \(3P\) full-rank equalities, coefficients of
+magnitude at most two, and row and column sparsity at most four.  It has the
+same regularity properties as the capped family and a scalar reduced central
+Hessian for every \(\mu>0\).  If \(x\geq0\), \(x\ne0\), and
+\begin{equation}
+ \frac{\norm{Ax-b}_2}{\norm b_2}\leq\frac1{200},
+ \qquad \norm b_2=\sqrt2,
+\end{equation}
+then the output-coordinate decoder has ideal bias greater than \(1/80\).
+Consequently, preparing an amplitude state within trace distance \(1/100\)
+of any such point needs \(\Omega(N)=\Omega(\sqrt P)\) raw queries.  Any
+extra two-sided objective or centrality promise is immaterial.
+\end{theorem}
+
+\begin{proof}
+Let \(\lambda_j\) be the exact propagated tree label.  Gauging removes all signs.
+Descendant counting in each binary tree and Cauchy--Schwarz on the \(N\)
+parallel paths give
+\begin{equation}
+ \frac{\norm{\operatorname{Diag}(\lambda)z-\mathbf1}_2}{\sqrt P}
+ \leq12\norm{(z_r-1,Dz)}_2,
+\quad
+ \frac{\norm{\operatorname{Diag}(\lambda_S)z_S-\mathbf1}_2}{\sqrt{|S|}}
+ \leq12\norm{(z_r-1,Dz)}_2.
+\label{eq:lp-tag-9-15}
+\end{equation}
+The binary-level operator norms sum to
+\(\sum_{\ell\geq1}2^{-\ell/2}=1+\sqrt2<5/2\), while the path term is
+\(\sqrt{N/R}=1\).  With \(E=\norm{Ax-b}_2\leq\sqrt2/200\),
+\eqref{eq:lp-tag-9-15} for
+\(d\) and \(h\), plus the cap and nonnegativity, gives
+\begin{equation}
+ \norm x_2^2<11P,
+ \qquad
+ \sum_{j\in S}\lambda_jd_jq_j>\frac35|S|.
+\end{equation}
+The two loss terms in the second inequality, divided by \(|S|\), are at most
+\[
+ 12E\left(1+2.18\sqrt{P/|S|}\right)
+ <\frac{12\sqrt2}{200}\left(1+2.18\sqrt{33/16}\right)<\frac25.
+\]
+Hence the measurement bias is larger than
+\[
+ \frac{(3/5)16}{2\cdot11\cdot33}=\frac8{605}>\frac1{80}.
+\]
+Trace error \(1/100\) leaves positive constant bias, and
+Lemma~\ref{lem:lp-decoder} applies.  Full rank and regularity follow by
+pivoting successively on the pinned \(d\), pinned \(h\), and private
+\(t\) blocks.  The public null vectors are the local vectors in
+\eqref{eq:lp-gain-null}; identical feasible intervals make the central
+curvature scalar.
+\end{proof}
+
+The quadratic volume is necessary in the signed-edge gadget class, not in all
+bounded-coefficient real-linear gadgets.
+
+\begin{proposition}[Effective-resistance volume bound]
+\label{prop:lp-resistance-volume}
+Let a connected graph have maximum degree \(\Delta\), a pinned root, and
+outputs \(S\).  Suppose every consistent edge constraint
+\(d_v-a_{uv}(\sigma)d_u=0\) has \(a_{uv}\in\{\pm1\}\) depending on at most
+\(k\) input bits, and every output label is parity.  Then there is a vector
+with root value one and wrong-parity value at every output whose residual is
+at most
+\begin{equation}
+ \frac{k\sqrt{2\Delta|V|}}{N}.
+\label{eq:lp-tag-9-17}
+\end{equation}
+Thus excluding all wrong-output vectors below an absolute residual \(\eta\)
+requires \(|V|>\eta^2N^2/(2\Delta k^2)\).
+\end{proposition}
+
+\begin{proof}
+The product of edge labels on a root-to-output path is parity.  Fourier degree
+is subadditive under products, so every such path has length at least \(N/k\).
+Gauge the consistent labels away and consider a unit root-to-\(S\) flow.
+Removing circulations and decomposing into paths gives
+\(\sum_e|f_e|\geq N/k\).  Cauchy--Schwarz and Thomson's principle yield
+\[
+ R_{\rm eff}(r,S)\geq\frac{N^2}{k^2|E|},\qquad
+ C_{\rm eff}(r,S)\leq\frac{\Delta k^2|V|}{2N^2}.
+\]
+The Dirichlet energy for voltage difference two is \(4C_{\rm eff}\); its
+harmonic minimizer lies in \([-1,1]\).  Taking the square root and undoing
+the gauge proves \eqref{eq:lp-tag-9-17}.  The next section develops the general mixture and
+cut frontiers; only this signed-edge specialization is needed here.
+\end{proof}
+
+There is a load-bearing escape witness.  On one path replace the signed
+recurrence by
+\(d_i-2\sigma_i d_{i-1}=0\), add a public reference
+\(h_i-2h_{i-1}=0\), and retain \(q_i+t_i-2h_i=0\).  The exact scale is
+\(h_i=|d_i|=2^i\).  With absolute residual
+\(E=\norm{Ax-b}_2\), rescaling by \(2^{-i}\) gives
+\begin{equation}
+ \left|2^{-i}p_id_i-1\right|
+ \leq\left(1+\frac1{\sqrt3}\right)E.
+\end{equation}
+Put \(K_0=1+1/\sqrt3\), and assume \(E\leq10^{-2}\).  Applying the same
+estimate to the reference rows gives
+\[
+ p_id_i\geq(1-K_0E)2^i,\qquad
+ 0\leq h_i\leq(1+K_0E)2^i.
+\]
+If \(c_i=q_i+t_i-2h_i\) is the cap residual, nonnegativity gives
+\(q_i,t_i\leq2h_i+|c_i|\).  Therefore
+\begin{equation}
+ \norm x_2^2
+ \leq\sum_i\bigl[(q_i+t_i)^2+h_i^2\bigr]
+ \leq12(1+K_0E)^2\,4^N+2E^2,
+\qquad
+ x_{{\rm correct},N}\geq(1-K_0E)2^N.
+\end{equation}
+The endpoint consequently has constant normalized mass (and ideal decoder
+bias greater than \(3/100\) at \(E=10^{-2}\)), giving a linear-size robust
+family.  It has exponential range and poor conditioning, showing that bounded
+local coefficients alone do not imply the quadratic volume law.  The next
+construction replaces the long gain chain by a short gain prefix and a
+polynomial plateau.
+
+\subsection{The linear-size gain--plateau family}
+\label{sec:lp-gain-plateau}
+
+Set
+\begin{equation}
+ T=\left\lceil\frac12\log_2N\right\rceil,
+ \quad K=16N,\quad P=17N+1,
+ \quad H_i=2^{\min\{i,T\}},\quad H=2^T\in[\sqrt N,2\sqrt N).
+\end{equation}
+There are nodes \(i=0,\ldots,N+K\), gains
+\(g_i=H_i/H_{i-1}\in\{1,2\}\), and labels \(a_i=\sigma_i\) for
+\(i\leq N\) and \(a_i=1\) afterward.  Define
+\[
+ \tau_0=1,\qquad \tau_i=\prod_{j=1}^i a_j,\qquad
+ R_\tau=\diag(\tau_0,\ldots,\tau_{P-1}).
+\]
+At every node introduce
+\((u_i,v_i,h_i,t_i)\geq0\), put \(d_i=u_i-v_i\), \(q_i=u_i+v_i\), and
+impose
+\begin{equation}
+\begin{aligned}
+ d_0&=1,&d_i-g_ia_id_{i-1}&=0,\\
+ h_0&=1,&h_i-g_ih_{i-1}&=0,\\
+ &&q_i+t_i-2h_i&=0.
+\end{aligned}
+\label{eq:lp-tag-9-20}
+\end{equation}
+The base objective is \(\sum_i(2u_i+2v_i+h_i+t_i)\).  Its public
+orthonormal null basis is
+\begin{equation}
+ W_i=\sqrt{\frac23}\left(\frac12e_{u_i}+\frac12e_{v_i}-e_{t_i}\right).
+ \label{eq:lp-gain-null}
+\end{equation}
+
+\begin{theorem}[Linear robust primal-state lower bound]
+\label{thm:lp-gain-plateau}
+The LP \eqref{eq:lp-tag-9-20} has \(4P\) variables, \(3P\) full-rank equalities,
+coefficients of magnitude at most two, and row and column sparsity at most
+four and three.  It is bounded and strictly primal--dual feasible, with a
+unique nondegenerate strictly complementary optimum.  The optimum is
+\(\Theta(N^{3/2})\), its largest coordinate is \(\Theta(\sqrt N)\), and
+its Euclidean norm is \(\Theta(N)\).
+
+For every nonzero \(x\geq0\) with
+\begin{equation}
+ \operatorname{res}_p(x)\leq\frac1{100},
+\label{eq:lp-tag-9-21}
+\end{equation}
+the fixed plateau decoder has ideal bias greater than \(1/30\).  Preparing
+its original-primal state to trace error \(1/100\) therefore needs
+\(\Omega(N)=\Omega(P)\) raw queries.  Moreover,
+\begin{equation}
+ \kappa_{\rm red}(\mu)<\frac76\qquad(0<\mu\leq1/16).
+\label{eq:lp-tag-9-22}
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+The pinned signed and unsigned bidiagonal blocks fix
+\(d_i=H_i\tau_i\) and \(h_i=H_i\); private \(t_i\) columns finish the rank
+proof.  Exact feasibility is
+\begin{equation}
+ H_i\leq q_i\leq2H_i,\qquad t_i=2H_i-q_i.
+\end{equation}
+The local objective is \(q_i+3H_i\), so the unique optimum has
+\(q_i=t_i=H_i\).  The sign-selected pair member together with \(h_i,t_i\)
+forms a triangular positive basis, and the opposite coordinate has slack two.
+This proves all regularity claims.  Since there are \(\Theta(N)\) nodes of
+height \(H=\Theta(\sqrt N)\), the three scale estimates follow.
+
+Write a central coordinate as \(q_i=H_i+z_i\).  Stationarity and curvature
+are
+\begin{equation}
+ \frac1\mu=\frac1{2H_i+z_i}+\frac1{z_i}-\frac1{H_i-z_i},
+\quad
+ f_i''=\mu\left[(2H_i+z_i)^{-2}+z_i^{-2}+(H_i-z_i)^{-2}\right].
+\end{equation}
+For \(\mu\leq1/16\),
+\(15\mu/16\leq z_i<\mu\), whence
+\(1/\mu<f_i''<7/(6\mu)\).  Changing to the orthonormal coordinates
+\eqref{eq:lp-gain-null} multiplies every eigenvalue by \(2/3\), proving
+\eqref{eq:lp-tag-9-22}.
+
+For robustness put \(E=\norm{Ax-b}_2\leq\sqrt2/100\).  The weighted
+resistance is
+\[
+ \sum_{i\geq1}H_i^{-2}<\frac13+\frac{17N}{H^2}\leq\frac{52}{3}.
+\]
+Weighted telescoping gives, simultaneously at every node,
+\begin{equation}
+ \left|\frac{\tau_id_i}{H_i}-1\right|<\frac3{40},
+ \qquad \left|\frac{h_i}{H_i}-1\right|<\frac3{40}.
+\end{equation}
+The cap then gives \(q_i,t_i<2.165H_i\), and
+\begin{equation}
+ \norm x_2^2<11\sum_iH_i^2
+ <\frac{583}{3}NH^2.
+\end{equation}
+On the \(K=16N\) output nodes,
+\(p_Nd_iq_i>(37H/40)^2\).  The computational-basis decoder has bias
+\begin{equation}
+ \frac{16N(37/40)^2H^2}{2(583/3)NH^2}>\frac1{30}.
+\end{equation}
+Trace error \(1/100\) leaves bias greater than \(7/300\), and
+Lemma~\ref{lem:lp-decoder} completes the proof.
+\end{proof}
+
+The early-path conditioning claim cannot be strengthened: for \(\mu/H\to
+\infty\), local curvature scales as \(\mu/H_i^2\), so the unrigidified
+condition ratio can reach \(\Theta(H^2)=\Theta(N)\).  The gain is also the
+precise escape from the quadratic path-bundle law.  If \(R\) internally
+disjoint length-\(N\) paths have reference height at most \(H\), a harmonic
+wrong-endpoint interpolation has squared residual at most \(4RH^2/N\).
+Therefore exclusion below absolute residual \(\eta\) requires
+\begin{equation}
+ RH^2>\frac{\eta^2N}{4},\qquad
+ P=\Theta(RN)\Longrightarrow PH^2=\Omega(N^2).
+\label{eq:lp-tag-9-28}
+\end{equation}
+Both the bounded-height parallel construction and the linear-volume
+gain--plateau construction attain this frontier.  The general gadget-class
+mixture and cut theorems are given in \cref{sec:gadget-frontiers};
+\eqref{eq:lp-tag-9-28} is
+the only
+path-bundle statement used here.  Naive balanced-XOR/PCP encodings do not
+improve it: boundary truth-table points obstruct strict feasibility, and
+homogenized shallow circuits still admit fractional drift across a small cut.
+
+For one static input, Theorem~\ref{thm:lp-gain-plateau} gives the tight total
+ledger
+\begin{equation}
+ Q_{\rm prep}+\sum_{t=1}^R
+ (Q_{{\rm form},t}+Q_{{\rm solve},t}+Q_{{\rm recover},t})+Q_{\rm out}
+ =\Omega(P).
+\label{eq:lp-tag-9-29}
+\end{equation}
+The bound is total, not per iteration.  Querying all \(N\) signs and caching
+their prefixes costs \(O(P)\) and makes every later raw query free, so no
+\(\Omega(RP)\) fixed-instance theorem is possible.
+
+\subsection{Reduced geometry versus the affine offset}
+\label{sec:lp-affine-separation}
+
+All reduced geometry in the gain--plateau family is public.  Every exact
+feasible point has the form
+\begin{equation}
+ x_\sigma(q)_i=
+ \left(\frac{q_i+H_i\tau_i}{2},
+       \frac{q_i-H_i\tau_i}{2},H_i,2H_i-q_i\right),
+\label{eq:lp-tag-9-30}
+\end{equation}
+and
+\begin{equation}
+ \{x:A_\sigma x=b\}=x_\sigma^{\rm off}+\operatorname{range}(W),
+\quad
+ (x_\sigma^{\rm off})_i
+ =H_i\left(\frac{1+\tau_i}{2},\frac{1-\tau_i}{2},1,1\right).
+\end{equation}
+Even the minimum-norm offset is hidden: minimizing the local squared norm in
+\eqref{eq:lp-tag-9-30} gives \(A_\sigma^\dagger b=x_\sigma(4H_i/3)\).  By contrast, the
+full reduced barrier, all derivatives, central scalars, \(W\), both
+projectors, and the diagonal reduced Hessian are independent of \(\sigma\).
+For \(\mu\leq1/16\), its eigenvalues lie in
+\((2/(3\mu^2),7/(9\mu^2))\) in the unscaled log-barrier convention of
+\cref{def:reduced-kappa}; the \(\mu\)-weighted Hessian
+\(W^\top\nabla^2\Phi_\mu W\) has eigenvalues in
+\((2/(3\mu),7/(9\mu))\).
+
+\begin{corollary}[Affine-offset oracle dichotomy]
+\label{cor:lp-affine-dichotomy}
+Grant arbitrary exact input-independent reduced-geometry oracles for free.
+For the gain--plateau family, loading any original-primal state satisfying
+\eqref{eq:lp-tag-9-21} costs \(\Omega(P)\), while the free reduced Hessian has condition
+below \(7/6\) on the late tail.  For the parallel-path family, the analogous
+cost is \(\Omega(\sqrt P)\), while the reduced Hessian is an exact scalar
+identity for the entire central path.  In both cases the hidden object is the
+affine offset, not the reduced solution.
+\end{corollary}
+
+\begin{proof}
+Every granted channel is the same for all \(\sigma\) and can be hardwired in
+the parity reduction.  Theorem~\ref{thm:lp-gain-plateau} and
+Theorem~\ref{thm:lp-parallel-path} then apply unchanged.  A free feasible
+offset, prefix table, or loading isometry would not be input-independent: one
+known output pair reveals \(p_N\), and a normalized offset state carries a
+constant amount of output-pair mass.
+\end{proof}
+
+\subsection{Exact Newton secants}
+\label{sec:lp-newton-secants}
+
+The base objective in the gain--plateau family gives a uniformly conditioned
+late central tail, but its exact public-start construction initially used
+different complementarity parameters on the \(O(\log N)\) gain nodes.  A
+public reweighting removes that qualification.  At height \(H_i\), replace
+the local objective by
+\begin{equation}
+ (1+\omega_i)(u_i+v_i)+h_i+t_i,
+ \qquad \omega_i=\frac7{36H_i}.
+\end{equation}
+On the feasible line its nonconstant part is \(\omega_iq_i\), so the unique
+optimum and all regularity properties survive; the nonbasic reduced cost is
+\(2\omega_i>0\).
+
+Set
+\begin{equation}
+ \mu_1=\frac1{16},\qquad
+ x_i^1=H_i\left(\frac98,\frac18,1,\frac34\right)
+\label{eq:lp-tag-9-33}
+\end{equation}
+up to the hidden pair swap, and put \(s_j^1=\mu_1/x_j^1\).  The reduced
+stationarity equation at \(z_i=H_i/4\) is exact because
+\begin{equation}
+ \frac{\omega_i}{\mu_1}=\frac{28}{9H_i}
+ =\frac1{2H_i+H_i/4}+\frac1{H_i/4}-\frac1{H_i-H_i/4}.
+\end{equation}
+Thus \((x^1,y^1,s^1)\) is the genuine global \(\mu_1\)-central point.
+
+Use the public start
+\begin{equation}
+\begin{split}
+ x_i^0&=H_i(5/6,5/6,20/27,5/9),\\
+ s_i^0&=H_i^{-1}(10/27,10/27,5/12,5/9),\qquad y^0=0.
+\end{split}
+\label{eq:lp-tag-9-35}
+\end{equation}
+Every coordinate product is
+\begin{equation}
+ \mu_0=\frac{25}{81},\qquad
+ \widehat\mu=\frac{25}{162}=\frac{\mu_0}{2}.
+\end{equation}
+Every Newton right-hand side is public, because the pair differences at the
+start vanish.  For either hidden pair orientation,
+\begin{equation}
+ \frac{10}{27H_i}\frac{9H_i}{8}
+ +\frac{5H_i}{6}\frac1{18H_i}
+ =\frac{10}{27H_i}\frac{H_i}{8}
+ +\frac{5H_i}{6}\frac1{2H_i}
+ =\frac{25}{54}.
+\label{eq:lp-tag-9-37}
+\end{equation}
+The \(h,t\) coordinates give the same \(25/54\).  Hence
+\begin{equation}
+ S^0(x^1-x^0)+X^0(s^1-s^0)
+ =\left(\frac{25}{54}-2\frac{25}{81}\right)e
+ =(\widehat\mu-\mu_0)e.
+\label{eq:lp-tag-9-38}
+\end{equation}
+Primal and dual endpoint feasibility provide the other two rows of the
+standard system \eqref{eq:full-kkt}; full row rank makes the correction
+unique.  One full algebraic Newton step therefore reaches the genuine global
+\(\mu_1=1/16\) center.  The endpoint parameter differs from
+\(\widehat\mu\) because the Newton equation omits
+\(\Delta X\Delta s\).
+
+Up to the hidden swap, the primal direction block is
+\begin{equation}
+ \Delta x_i=H_i(7/24,-17/24,7/27,7/36),
+ \qquad \norm{\Delta x_i}_2^2
+ =D H_i^2,\quad D=\frac{16139}{23328}.
+\label{eq:lp-tag-9-39}
+\end{equation}
+The unselected-minus-selected squared pair gap is \(5H_i^2/12\) (the
+unselected coordinate carries the larger direction mass, \(17H_i/24\)
+against \(7H_i/24\)).  Since
+\(\sum_iH_i^2<(17N+4/3)H^2\), the fixed output-copy decoder has bias
+\begin{equation}
+ \frac{16N(5/12)H^2}{2D(17N+4/3)H^2}>\frac14.
+\label{eq:lp-tag-9-40}
+\end{equation}
+Thus the exact original-primal direction state at trace error \(1/100\)
+needs \(\Omega(P)\) raw queries.
+
+In the unscaled log-barrier convention of
+\cref{def:reduced-kappa}, the \(\mu_1\)-scaled endpoint reduced Hessian and
+the start reduced Newton matrix are
+\begin{equation}
+ \mu_1 W^T\nabla^2F(x^1)W
+ =\frac{182}{243}\diag(H_i^{-2}),
+\qquad
+ W^T(X^0)^{-1}S^0W=\frac{22}{27}\diag(H_i^{-2}).
+\end{equation}
+Thus all but the \(T=O(\log N)\) public gain modes form an exact scalar
+block.  The public congruence \(D_H=\diag(H_i)\) makes both matrices scalar;
+as a standard-form diagonal change of variables it raises the coefficient
+scale to \(\Theta(\sqrt N)\).  More generally, scaling by \(H_i^\eta\)
+gives
+\begin{equation}
+ B_\eta=\Theta(H^\eta),\quad
+ \kappa_\eta=H^{2(1-\eta)},\quad
+ B_\eta^2\kappa_\eta=\Theta(N).
+\end{equation}
+This is a property of this diagonal family, not a universal
+normalization--condition theorem.
+
+The remaining outliers are forced inside this local ansatz.
+
+\begin{proposition}[Four-variable-node incompatibility]
+\label{prop:lp-local-incompatibility}
+Consider hidden-swappable endpoint pairs with values \(L_i>S_i>0\) at one
+common central parameter \(\mu_1\), and suppose their differences are the
+prescribed heights \(L_i-S_i=H_i\).  Within the separable four-variable
+node gadget, the following three requirements are incompatible: a public
+start centered coordinatewise at one \(\mu_0\); one full standard Newton
+correction with a common target that works for both hidden orientations; and
+an \(O(1)\)-conditioned endpoint Hessian in the raw orthonormal null basis.
+This statement does not cover added rows, weighted barriers, or other local
+gadgets.
+\end{proposition}
+
+\begin{proof}
+Write the two public start values as \(a_i,b_i\), with slacks
+\(\mu_0/a_i,\mu_0/b_i\).  Equality of the first-coordinate secant cross
+terms for the two hidden orientations requires
+\[
+ \frac{\mu_0L_i}{a_i}+\frac{a_i\mu_1}{L_i}
+ =\frac{\mu_0S_i}{a_i}+\frac{a_i\mu_1}{S_i}.
+\]
+Since \(L_i\ne S_i\), this gives
+\(a_i^2=\mu_0L_iS_i/\mu_1\); the second coordinate similarly gives
+\(b_i=a_i\).  The common cross term is therefore
+\[
+ C_i=\sqrt{\mu_0\mu_1}\,
+       \frac{L_i+S_i}{\sqrt{L_iS_i}}.
+\]
+One global Newton target makes \(C_i\) independent of \(i\), hence the
+aspect ratio \(L_i/S_i\) is constant.  The cap row
+\(t_i=2H_i-(L_i+S_i)>0\) makes \(L_i+S_i\) proportional to \(H_i\) and
+forces that constant aspect ratio to exceed three.  Together with
+\(L_i-S_i=H_i\), this makes both endpoint values proportional to \(H_i\).
+The log-barrier curvature in the local orthonormal null direction
+consequently scales as \(H_i^{-2}\), giving condition ratio
+\(H^2=\Theta(N)\).
+\end{proof}
+
+The reweighted construction also exposes an important negative result.  A
+fixed relative residual for the full Newton system alone does not force the
+primal direction ray.  On the \(K\) output nodes let
+\(w=\sum_{i\in S}W_i\), and perturb the exact solution by
+\begin{equation}
+ e_x=Mw,\qquad e_y=0,\qquad
+ e_s=-(X^0)^{-1}S^0e_x.
+\end{equation}
+The primal and complementarity residual perturbations vanish.  On the
+plateau, direct substitution in \eqref{eq:lp-tag-9-35} gives the sharp bound
+\[
+ \norm{(X^0)^{-1}S^0w}_2\leq\frac{\norm w_2}{H^2}
+\]
+(the exact coefficient is below \(0.856/H^2\)), whereas the public cap RHS
+has norm \(\Omega(H\sqrt K)\).  With \(M=H^2\), the relative full-KKT
+residual is \(O(H^{-1})\) and the normalized primal direction converges to
+the public zero-query state \(\ket{w/\norm w}\).  The perturbed update has
+negative \(t\)-coordinates.  Therefore the robust direction theorem below
+must retain the geometric condition \(x^0+\widetilde{\Delta x}\geq0\); a
+bare fixed full-KKT residual promise is insufficient.
+
+\subsubsection{Prefix rigidification: the condition-one capstone}
+\label{sec:lp-prefix-rigidified}
+
+Return to the constraints \eqref{eq:lp-tag-9-20}.  At each of the \(T\) small-height nodes
+\(i<T\), add the public row
+\begin{equation}
+ q_i-\frac54h_i=0,
+\label{eq:lp-tag-9-44}
+\end{equation}
+and use the uniform objective
+\begin{equation}
+ \sum_i[(1+\omega)(u_i+v_i)+h_i+t_i],
+ \qquad \omega=\frac7{36H}.
+\end{equation}
+Write the augmented matrix and RHS as \(A'_\sigma,b'\).
+
+\begin{theorem}[Condition-one original-primal Newton hardness]
+\label{thm:lp-prefix-capstone}
+The prefix-rigidified family has \(4P\) variables and \(3P+T\) full-rank
+equalities.  Coefficients have magnitude at most two, and row and column
+sparsity are at most four.  It is bounded and strictly primal--dual feasible,
+with a unique nondegenerate strictly complementary optimum.  In the raw
+orthonormal reduced coordinates,
+\begin{equation}
+ \kappa_{\rm red}(\mu)=1\quad\text{for every }\mu>0,
+\end{equation}
+and the reduced Newton matrix at the public start \eqref{eq:lp-tag-9-35} is also exactly
+condition one.
+
+The unique standard Newton correction from that start with target
+\(\widehat\mu=25/162\) lands after one full step at the genuine global
+\(\mu_1=1/16\) center \eqref{eq:lp-tag-9-33}.  Its original-primal direction state has
+decoder bias greater than \(1/4\), so trace error \(1/100\) requires
+\(\Omega(N)=\Omega(P)\) raw queries.
+
+The same lower bound holds for a state of every nonzero \(x\geq0\) satisfying
+\(\operatorname{res}_p(x)\leq1/100\), and for every nonzero direction
+\(\widetilde{\Delta x}\) whose update is nonnegative and obeys that residual,
+at state trace error \(1/100\).  In the latter case a fixed interference
+decoder has bias greater than \(1/54\).
+\end{theorem}
+
+\begin{proof}
+For the row \(r_i\) in \eqref{eq:lp-tag-9-44} and the old null vectors,
+\begin{equation}
+ r_i^TW_j=\sqrt{2/3}\,\delta_{ij}.
+\end{equation}
+Hence the new rows are independent modulo the old row space and
+\begin{equation}
+ \ker A'_\sigma=\operatorname{span}\{W_i:i\geq T\}.
+\label{eq:lp-tag-9-48}
+\end{equation}
+They fix \(q_i=5H_i/4\) on the prefix, leaving only equal-height \(H\)
+coordinates free.  At the optimum all four prefix variables and three
+variables at every free node are positive, exactly \(3P+T\) in total.  A
+null vector supported on them must vanish because every nonzero free \(W_i\)
+touches that node's zero pair coordinate.  The positive columns form a basis,
+and each nonbasic reduced cost is \(2\omega>0\).  This proves rank and
+regularity.
+
+All surviving nodes have the same height, objective slope, central scalar,
+and local curvature.  Equation~\eqref{eq:lp-tag-9-48} therefore gives
+\[
+ W^T\nabla^2F(x(\mu))W=\lambda(\mu)I_{P-T}.
+\]
+At \(\mu_1=1/16\), the free coordinate is \(q=5H/4\), while the fixed
+prefix coordinates already have the same local template.  Positive slacks
+\(s^1=\mu_1(X^1)^{-1}e\) are orthogonal to the surviving kernel after
+subtracting the objective, so full row rank supplies the central multiplier.
+The secant identities \eqref{eq:lp-tag-9-37}--\eqref{eq:lp-tag-9-38} are unchanged, and the endpoint satisfies
+the new rows.  This proves the exact Newton statement.  At the start,
+\begin{equation}
+ W^T(X^0)^{-1}S^0W=\frac{22}{27H^2}I_{P-T}.
+\end{equation}
+The fraction-to-boundary maximum is exactly
+\(\alpha_{\max}=20/17>1\), so the full step preserves strict positivity;
+any safety factor at least \(17/20\) permits it.  The direction formula
+\eqref{eq:lp-tag-9-39} survives and \eqref{eq:lp-tag-9-40} proves the exact-state lower bound.
+
+For a robust feasible state, deleting the public new residual coordinates
+gives the base residual bound with the same RHS norm
+\(\norm{b'}_2=\sqrt2\); Theorem~\ref{thm:lp-gain-plateau} applies.  For a
+robust direction, set \(\widetilde x=x^0+\widetilde{\Delta x}\geq0\).  On
+every plateau node the same telescoping estimates give
+\begin{equation}
+ \tau_i\widetilde d_i>\frac{37}{40}H,\quad
+ \frac{37}{40}H<\widetilde h_i<\frac{43}{40}H,\quad
+ \widetilde q_i,\widetilde t_i<\frac{433}{200}H.
+\label{eq:lp-tag-9-50}
+\end{equation}
+Together with the public start, these imply
+\begin{equation}
+ \norm{\widetilde{\Delta x}}_2^2<100NH^2,\qquad
+ \widetilde{\Delta h}_i>\frac{199}{1080}H
+ \quad(i\in S).
+\label{eq:lp-tag-9-51}
+\end{equation}
+Let \(\ket{g_i}=(\ket{u_i}-\ket{v_i})/\sqrt2\), and use the public norm-one
+observable
+\begin{equation}
+ O=\bigoplus_{i\in S}
+ (\ket{h_i}\!\bra{g_i}+\ket{g_i}\!\bra{h_i}).
+\end{equation}
+Equations \eqref{eq:lp-tag-9-50}--\eqref{eq:lp-tag-9-51} give signed expectation greater than
+\begin{equation}
+ \frac{7363\sqrt2}{270000}>\frac1{27},
+\end{equation}
+so its associated binary POVM has bias greater than \(1/54\).  Trace error
+\(1/100\) leaves positive constant bias.  Lemma~\ref{lem:lp-decoder}
+finishes the proof.
+\end{proof}
+
+The condition-one claim is intentionally reduced-primal.  At the same start,
+the raw OSS matrix \({\cal M}_0=[-X^0(A')^T\ \ S^0W]\) and the eliminated
+augmented KKT matrix satisfy
+\begin{equation}
+ \kappa_2({\cal M}_0)\geq\sqrt{681/44}\,H^2,
+ \qquad
+ \kappa_2({\cal K}_0)\geq\sqrt{1701/178}\,H^2,
+\end{equation}
+so both are \(\Omega(P)\).  Exact block preconditioning can reduce the
+second condition to \(\varphi^2\), but its difference-row Schur block has
+the gauge form
+\begin{equation}
+ G_\sigma^{(d)}=R_\tau G_+^{(d)}R_\tau,\qquad
+ (G_\sigma^{(d)})^{-1/2}
+ =R_\tau(G_+^{(d)})^{-1/2}R_\tau.
+\end{equation}
+The all-positive block is an irreducible tridiagonal Stieltjes matrix, whose
+inverse square root is entrywise strictly positive by its resolvent integral.
+Thus the sign of a sign-resolving preconditioner entry reveals a prefix
+product.  A factor block encoding without entry access requires a separate
+implementation analysis; \cref{sec:preconditioning} treats that
+factor-access frontier.
+
+The access localization can be exact.  In the Moore--Penrose gauge write
+\begin{equation}
+ \Delta x=p_\sigma+Wz,\qquad
+ p_\sigma=(A'_\sigma)^\dagger(b'-A'_\sigma x^0).
+\end{equation}
+On every free node,
+\begin{equation}
+ (p_d,p_q,p_h,p_t)=H(\tau_i,-4/27,7/27,-2/27),
+\end{equation}
+with pair coordinates recovered from \(p_d,p_q\).  The complete reduced
+system is public:
+\begin{equation}
+ M=\frac{22}{27H^2}I,\qquad
+ z_i=-\frac{29}{108}\sqrt{\frac32}\,H,\qquad Mz=g.
+\end{equation}
+Normalized at \(\alpha_M=22/(27H^2)\), it has
+\(M/\alpha_M=I\), \(\kappa=1\), and
+\begin{equation}
+ \alpha_M\frac{\norm{M^{-1}g}_2}{\norm g_2}=1.
+\end{equation}
+The states of \(g,z,Wz\) are public and free.  For the fixed diagonal-pair
+observable
+\[
+ O_S=\sum_{i\in S}
+ \bigl(\ket{u_i}\!\bra{u_i}-\ket{v_i}\!\bra{v_i}\bigr),
+\]
+each output node contributes
+\(u_i^2-v_i^2=p_d p_q=-(4/27)p_NH^2\).  A free-node block has squared norm
+\((851/1458)H^2\), a prefix block has squared norm
+\(DH_i^2\) with \(D=16139/23328<7/10\), and
+\(\sum_iH_i^2<(53/3)NH^2\).  Hence
+\begin{equation}
+ \left|\left\langle
+ \frac{p_\sigma}{\norm{p_\sigma}_2},O_S
+ \frac{p_\sigma}{\norm{p_\sigma}_2}
+ \right\rangle\right|
+ >\frac{(64/27)NH^2}{(7/10)(53/3)NH^2}
+ =\frac{1920}{10017}>\frac16.
+\end{equation}
+Its sign is \(-p_N\), so
+preparing \(\ket{p_\sigma/\norm{p_\sigma}}\) to trace error \(1/100\)
+costs \(\Theta(P)\) raw queries.  Because
+\(p_\sigma\perp Wz\), their coherent combination succeeds with probability
+at least \(1/2\), provided one has phase-referenced coherent preparation
+access to both normalized summands.  A density-state contract alone does not
+supply that access, as \cref{sec:prelim-output-contracts} records.  The
+localization is gauge-specific: an arbitrary
+particular solution can trade a null component with \(z\); the invariant
+claim is the end-to-end original-coordinate lower bound.
+
+The capstone has the same tight static ledger \eqref{eq:lp-tag-9-29}.  Its matching upper
+bound caches all signs in \(N\) queries.  A genuine iteration multiplier is
+valid only for a streaming service in which round \(t\) releases a fresh
+independent sign block after output \(t-1\) is committed.  Before the next
+block is released, round \(t\) must return an unconditional state within
+trace distance \(1/100\) of that round's hard original-coordinate Newton
+direction (or of a point under the robust contract in
+\cref{thm:lp-prefix-capstone}).  Let \(Q_t\) count every call to the current
+block's coefficient oracle or inverse, all setup after that block is
+released, and all queries used to prepare classical or quantum advice
+consumed in that round.  Conditioned on all past memory, the new block is
+independent, so \cref{thm:lp-prefix-capstone} applies in every round and
+\begin{equation}
+ \sum_{t=1}^RQ_t=\Omega(RN)=\Omega(RP).
+\end{equation}
+This is a freshness direct sum, not a per-iteration theorem for one fixed LP.
+
+\subsection{Full-KKT and preconditioned formulations}
+\label{sec:lp-full-kkt}
+
+The preceding results request only the original-primal block.  A related
+construction makes the complete primal--dual direction hard while keeping its
+unpreconditioned right-hand side public.  Use the unrigidified gain--plateau
+constraints \eqref{eq:lp-tag-9-20}, the base objective \(c_i=(2,2,1,1)\), and the public start
+\begin{equation}
+ x^0=s^0=e,\qquad y^0=0,\qquad \mu^0=1.
+\end{equation}
+For a public centering target \(\theta\in[0,1]\), the Newton equations are
+\begin{equation}
+ A_\sigma\Delta x=b-A_\sigma e,\quad
+ A_\sigma^T\Delta y+\Delta s=c-e,\quad
+ \Delta x+\Delta s=(\theta-1)e.
+\label{eq:lp-tag-9-62}
+\end{equation}
+The RHS is input-independent: every hidden coefficient multiplies the zero
+pair difference at the start.
+
+Let \(R_{r,j}=\sum_{i=j}^{N+K}H_i^r\).  Direct elimination and backward
+substitution give
+\begin{equation}
+\begin{aligned}
+ \Delta x_{u_i}&=(4H_i-8+3H_i\tau_i)/6,&
+ \Delta x_{v_i}&=(4H_i-8-3H_i\tau_i)/6,\\
+ \Delta x_{h_i}&=H_i-1,&
+ \Delta x_{t_i}&=(2H_i-1)/3,\\
+ \alpha_j&=\tau_jR_{2,j}/(2H_j),&
+ \beta_j&=[7R_{2,j}+(4-9\theta)R_{1,j}]/(3H_j),\\
+ \gamma_j&=(2H_j+2)/3-\theta .
+\end{aligned}
+\label{eq:lp-tag-9-63}
+\end{equation}
+Here \((\alpha,\beta,\gamma)=\Delta y\) correspond to the signed,
+reference, and cap rows.
+
+\begin{theorem}[Public-RHS full-KKT direction]
+\label{thm:lp-full-kkt}
+Let \(w_\sigma=(\Delta x,\Delta y,\Delta s)\) solve \eqref{eq:lp-tag-9-62}.
+Preparing its
+normalized state to trace distance \(1/100\) takes at least \(N/2\) raw
+coefficient queries.  The same holds if an approximate vector obeys
+\(\norm{\widetilde w-w_\sigma}_2\leq\norm{w_\sigma}_2/300\) and its state
+has trace error at most \(1/300\).
+
+For \(\theta=1\), the two-block elimination has an explicit canonical sparse
+block encoding of normalization six and a public RHS state.  The same
+\(N/2\) lower bound holds for calls to that fully specified block encoding,
+not merely to its principal matrix block.
+\end{theorem}
+
+\begin{proof}
+On the \(K\) output rows define
+\(A_S=H^2\sum_{\ell=1}^K\ell^2/4\).  The height sums and
+\eqref{eq:lp-tag-9-63} imply
+\begin{equation}
+ \norm\alpha_2^2<3A_S,\qquad
+ \norm\beta_2^2<\frac{484}{3}A_S,\qquad
+ \norm{w_\sigma}_2^2<165A_S.
+\end{equation}
+Moreover \(\alpha_j\) has sign \(p_N\) and \(\beta_j>0\) on the output
+suffix, with \(\beta_j/|\alpha_j|\geq3\).  The public norm-one observable
+that swaps the corresponding \(\alpha_j,\beta_j\) coordinates therefore has
+parity-signed expectation
+\begin{equation}
+ p_N\langle O_{\rm KKT}\rangle>\frac6{165}=\frac2{55}>\frac1{30}.
+\label{eq:lp-tag-9-65}
+\end{equation}
+Trace error \(1/100\) changes this by at most \(1/50\).  The resulting
+expectation is a real polynomial of degree at most twice the query count; its
+nonzero parity Fourier coefficient forces degree at least \(N\).  Thus the
+query count is at least \(N/2\).  The triangle inequality for normalized
+rays gives the approximate-vector statement.
+
+At \(\theta=1\), eliminate \(\Delta s=-\Delta x\), put \(y'=-\Delta y\),
+and write
+\begin{equation}
+ {\cal K}_\sigma=\begin{bmatrix}I&A_\sigma^T\\A_\sigma&0\end{bmatrix},
+ \qquad
+ r_\sigma=\binom{e-c}{b-A_\sigma e}.
+\end{equation}
+The maximum absolute row and column sums are six.  The standard
+magnitude-weighted row/column state-pair construction gives an exact normalization-six
+block encoding.  Its support, magnitudes, failure arms, and left preparation
+are public; the right preparation uses one local sign phase, hence exactly
+one sign query per call, adjoint, or controlled call.  Also
+\(\norm{r_\sigma}_2^2=3P+T+1\), and its preparation is public.  Removing
+\(\Delta s\) can only strengthen \eqref{eq:lp-tag-9-65}, so the same degree argument applies
+to this complete oracle implementation.
+\end{proof}
+
+Ideal Schur preconditioning makes the matrix well conditioned but does not
+make the end-to-end raw-input task easy.  Put
+\[
+ {\cal S}_\sigma=A_\sigma A_\sigma^T,\quad
+ Q_\sigma={\cal S}_\sigma^{-1/2}A_\sigma,\quad
+ P_\sigma=\diag(I,{\cal S}_\sigma^{-1/2}).
+\]
+Define
+\[
+ \overline w_\sigma=P_\sigma^{-1}\binom{\Delta x}{y'},\qquad
+ \overline r_\sigma=P_\sigma r_\sigma,\qquad
+ \overline K_\sigma=P_\sigma{\cal K}_\sigma P_\sigma.
+\]
+Then
+\begin{equation}
+ \overline K_\sigma=
+ \begin{bmatrix}I&Q_\sigma^T\\Q_\sigma&0\end{bmatrix},
+ \qquad
+ \overline K_\sigma\overline w_\sigma=\overline r_\sigma,
+\end{equation}
+and the primal block of \(\overline w_\sigma\) is exactly \(\Delta x\).
+Since \(Q_\sigma Q_\sigma^T=I\), the spectrum is \(1\) on the nullspace and
+\begin{equation}
+ \frac{1+\sqrt5}{2},\qquad \frac{1-\sqrt5}{2}
+\end{equation}
+on every coupled two-plane.  Therefore
+\begin{equation}
+ \norm{\overline K_\sigma}_2
+ =\norm{\overline K_\sigma^{-1}}_2=\varphi,\qquad
+ \kappa_{\rm abs}(\overline K_\sigma)=\varphi^2
+ =\frac{3+\sqrt5}{2}.
+\label{eq:lp-tag-9-69}
+\end{equation}
+This is the classical ideal-Schur spectrum of Murphy--Golub--Wathen
+\cite{murphy2000-a-note-on-preconditioning-for}.
+
+\begin{theorem}[Residual-robust Schur-preconditioned KKT state]
+\label{thm:lp-preconditioned-kkt}
+Suppose \(\widetilde{\overline w}\ne0\) obeys
+\begin{equation}
+ \norm{\overline K_\sigma\widetilde{\overline w}
+       -\overline r_\sigma}_2
+ \leq10^{-3}\norm{\overline r_\sigma}_2.
+\label{eq:lp-tag-9-70}
+\end{equation}
+Preparing its normalized state to trace error \(1/200\) takes at least
+\(N/2\) total raw coefficient queries, counting preconditioner, transformed
+RHS, solve, and recovery access.  The result transfers to the
+prefix-rigidified family.
+\end{theorem}
+
+\begin{proof}
+Let
+\[
+ O_x=\sum_{i\in S}
+ \bigl(\ket{D_i}\!\bra{h_i}+\ket{h_i}\!\bra{D_i}\bigr),
+ \qquad
+ \ket{D_i}=\frac{\ket{u_i}-\ket{v_i}}{\sqrt2}.
+\]
+This norm-one, primal-supported observable has exact parity-signed
+expectation greater than \(2/87\) on the preconditioned solution.  Indeed,
+\begin{equation}
+ \norm{\Delta x}_2^2\leq\frac{11}{3}PH^2,\qquad
+ p_N\frac{\langle\Delta x|O_x|\Delta x\rangle}
+              {\norm{\Delta x}_2^2}>\frac16,\qquad
+ \norm{\overline w}_2^2<\frac{29}{4}\norm{\Delta x}_2^2.
+\end{equation}
+Equations \eqref{eq:lp-tag-9-69}--\eqref{eq:lp-tag-9-70} give
+\(\norm{\widetilde{\overline w}-\overline w}_2
+ \leq10^{-3}\varphi^2\norm{\overline w}_2\).  The total target-state
+distance is at most
+\begin{equation}
+ \frac1{200}+\frac{2\varphi^2}{1000}<\frac1{87},
+\label{eq:lp-tag-9-72}
+\end{equation}
+which preserves the sign of the observable.  The polynomial argument gives
+\(N/2\).
+
+For the prefix-rigidified transfer, use the same all-ones start.  Every
+added row \(q_i-\frac54h_i=0\) has the public primal residual \(-3/4\), and
+the uniform objective is
+\[
+ c'_i=(1+\omega,1+\omega,1,1),\qquad
+ \omega=\frac7{36H}.
+\]
+The hidden difference coefficients still multiply \(u_i-v_i=0\), so the
+complete Newton RHS remains public.  On every free node, null projection and
+exact feasibility give
+\[
+ \Delta q_i=\frac{4H-6-2\omega}{3},\qquad
+ \Delta h_i=H-1,\qquad
+ \Delta u_i-\Delta v_i=H\tau_i.
+\]
+The prefix variables are fixed by feasibility.  These formulas yield
+\[
+ \norm{\Delta x}_2^2<5\sum_iH_i^2,\qquad
+ p_N\frac{\langle\Delta x|O_x|\Delta x\rangle}
+              {\norm{\Delta x}_2^2}>\frac18,
+\]
+because the numerator is \(K\sqrt2H(H-1)\), each prefix node contributes
+less than \(5H_i^2\), and each free node less than \(4H^2\).
+For the exact block preconditioner the transformed primal RHS is
+\(e-c'=(-\omega,-\omega,0,0)\) per node, and
+\[
+ \frac{\norm{e-c'}_2}{\norm{\Delta x}_2}<\frac{21}{100},
+ \qquad
+ \norm{\overline w_\sigma}_2^2
+ <\frac52\norm{\Delta x}_2^2.
+\]
+Thus the parity-signed expectation on the complete preconditioned state
+exceeds \(1/20\).  Its condition remains \(\varphi^2\), while the solve and
+output errors in \eqref{eq:lp-tag-9-72} change the expectation by less than
+\(2/87<1/20\).  The same \(N/2\) conclusion follows.
+\end{proof}
+
+There is no matrix-only normalization/condition tradeoff behind this theorem.
+The row-space projector is public because \(\ker A_\sigma\) is public.  If
+\(Q_0\) is a public row isometry with \(Q_0^TQ_0=I-WW^T\), then
+\(O_\sigma=Q_\sigma Q_0^T\) is orthogonal and
+\begin{equation}
+ \diag(I,O_\sigma)^T\overline K_\sigma\diag(I,O_\sigma)
+ =\begin{bmatrix}I&Q_0^T\\Q_0&0\end{bmatrix},
+\end{equation}
+which is wholly public.  Input dependence has moved to the transformed RHS
+and recovery map.  Accordingly the invariant accounting statement is
+\begin{equation}
+ Q_{\rm pre}+Q_{\rm on}\geq N/2.
+\end{equation}
+It is tight: after \(N\) cached sign queries, later raw-query cost can vanish.
+The separate factor-access frontier is given in
+\cref{sec:preconditioning}; it is not proved here.
+
+\subsection{Bounded data and the sharp residual scale}
+\label{sec:lp-bounded-data}
+
+Remove the gain prefix by setting every height and gain to one, retain a
+length-\(N\) signed chain followed by \(K=16N\) public copy edges, and put
+\(P=17N+1\).  Use the same four nonnegative variables at every node and the
+equations
+\begin{equation}
+\begin{aligned}
+ d_0&=1,&d_i-a_id_{i-1}&=0,\\
+ h_0&=1,&h_i-h_{i-1}&=0,\\
+ &&q_i+t_i-2h_i&=0,
+\end{aligned}
+\qquad
+ a_i=\begin{cases}\sigma_i&i\leq N,\\1&i>N.\end{cases}
+\end{equation}
+Use objective
+\begin{equation}
+ c^Tx=\sum_i\left[\frac{43}{36}(u_i+v_i)+h_i+t_i\right].
+\end{equation}
+All matrix, RHS, objective, feasible-primal, and relevant slack coordinates
+are bounded by absolute constants; \(\norm b_2=\sqrt2\).  Exact feasibility
+is \(d_i=\tau_i,h_i=1,t_i=2-q_i,1\leq q_i\leq2\), so the same basis
+\eqref{eq:lp-gain-null} spans the nullspace.
+
+\begin{theorem}[Bounded exact-state separation]
+\label{thm:lp-bounded-exact}
+The all-unit family is bounded and strictly primal--dual feasible, with a
+unique nondegenerate strictly complementary optimum.  Its raw orthonormal
+reduced central Hessian has condition one for every \(\mu>0\), and its
+reduced Newton matrix at the public start below is \((22/27)I\).
+
+At \(\mu_1=1/16\), one exact Newton correction from
+\begin{equation}
+ x_i^0=(5/6,5/6,20/27,5/9),\quad
+ s_i^0=(10/27,10/27,5/12,5/9),\quad y^0=0
+\label{eq:lp-tag-9-77}
+\end{equation}
+with \(\mu_0=25/81\) and target \(25/162\) lands at the exact center
+\begin{equation}
+ x_i^1=(9/8,1/8,1,3/4),\qquad
+ s_i^1=(1/18,1/2,1/16,1/12),
+\end{equation}
+up to the hidden pair swap.  Preparing either the exact primal direction
+state or exact central-primal state to trace error \(1/100\) requires
+\(\Omega(N)=\Omega(P)\) raw queries.
+\end{theorem}
+
+\begin{proof}
+On the feasible line the local objective is \(3+(7/36)q_i\), so the unique
+optimum has \(q_i=1\).  The positive columns form a basis and the zero pair
+coordinate has reduced cost \(7/18\).  All central coordinates solve the
+same scalar equation
+\[
+ \frac{7}{36\mu}=\frac1{q+1}+\frac1{q-1}-\frac1{2-q},
+\]
+so the reduced Hessian is scalar.  At \(q=5/4,\mu=1/16\), both sides are
+\(28/9\), and direct evaluation gives the \(\mu_1\)-scaled reduced
+curvature \(182/243\).  Equations
+\eqref{eq:lp-tag-9-37}--\eqref{eq:lp-tag-9-38} with \(H_i=1\) prove the same exact Newton secant and
+\((22/27)I\) start matrix.
+
+The primal direction is the constant block in \eqref{eq:lp-tag-9-39}.  Its plateau decoder
+has bias
+\[
+ \frac{K(5/12)}{2DP}>\frac14.
+\]
+Each central block has squared norm \(91/32\) and oriented pair gap \(5/4\),
+so the central-state decoder has bias
+\[
+ \frac{K(5/4)}{2(91/32)P}=\frac{20K}{91P}>\frac15.
+\]
+Lemma~\ref{lem:lp-decoder} completes both lower bounds.
+\end{proof}
+
+The all-unit family is robust, but only at the sharp vanishing scale.
+
+\begin{theorem}[Sharp all-unit residual threshold]
+\label{thm:lp-unit-threshold}
+For every nonzero \(x\geq0\) satisfying the absolute residual bound
+\begin{equation}
+ \norm{A_\sigma x-b}_2\leq\frac1{16\sqrt N},
+\label{eq:lp-tag-9-79}
+\end{equation}
+the normalized primal state has constant correct-parity bias.  Preparing it
+to trace error \(1/100\) needs \(\Omega(N)=\Omega(P)\) raw queries.  In
+relative form, \eqref{eq:lp-tag-9-79} is \(1/(16\sqrt{2N})\); in particular it contains
+the \(1/(100\sqrt N)\) absolute residual tube.
+
+The order is sharp: a nonnegative zero-signal plateau exists at absolute
+residual \(1/\sqrt N\), and a nonnegative entirely wrong-parity plateau
+exists at absolute residual \(2/\sqrt N\), even with exact optimal objective.
+After public homogeneous rigidification, the wrong witness can also have
+exact dual feasibility and exact coordinatewise complementarity.
+\end{theorem}
+
+\begin{proof}
+Let \(E=\norm{Ax-b}_2\), \(z_i=\tau_id_i\), and
+\(\delta=\sqrt P E\).  Telescoping the signed and reference recurrences gives
+\begin{equation}
+ |z_i-1|\leq\sqrt P E,\qquad |h_i-1|\leq\sqrt P E.
+\end{equation}
+The factor \(\sqrt P\) is exact by equality in Cauchy--Schwarz.  Under
+\eqref{eq:lp-tag-9-79}, \(P/N\leq35/2\) gives \(\delta<4/15\), so on every output node
+\(p_Nd_i>11/15\).  The cap and nonnegativity give
+\(q_i,t_i<31/12\), \(h_i<19/15\), and
+\(\norm x_2^2<15P\).  Thus the output decoder has bias
+\begin{equation}
+ \frac{K(11/15)^2}{30P}>\frac1{70}.
+\end{equation}
+Trace error \(1/100\) leaves bias at least
+\(1/70-1/100=3/700>0\).
+
+For the zero-signal witness take
+\begin{equation}
+ z_i=1-i/N\ (i\leq N),\qquad z_i=0\ (i>N),
+\end{equation}
+and for the wrong-parity witness replace this by
+\begin{equation}
+ z_i=1-2i/N\ (i\leq N),\qquad z_i=-1\ (i>N).
+\end{equation}
+Set \(d_i=\tau_i z_i\) and \(h_i=q_i=t_i=1\).  All reference and cap rows
+are exact.  The \(N\) signed residuals are respectively \(1/N\) and
+\(2/N\), proving the claimed norms.  Both points are nonnegative and have
+the exact optimal objective.
+
+For the stronger failure, add \(q_i-5h_i/4=0\) on all non-output nodes and
+average the exact centers of the \(N\) inputs obtained by flipping one sign.
+The average has the wrong common output template and the same
+\(2/\sqrt N\) primal residual.  Every coordinate is positive.  Setting
+\(\bar s=\mu_1\bar X^{-1}e\) gives exact complementarity.  The remaining
+nullspace is supported on output nodes, where \(\bar x\) is itself an exact
+central template; hence \(c-\bar s\perp\ker A\), which supplies an exact
+dual multiplier.
+\end{proof}
+
+The recurrence-only cutoff is exactly \(E<1/\sqrt P\): taking
+\(z_i=1-(i+1)/P\) makes all gauged residuals \(-1/P\), reaches zero at the
+last node, and has norm \(1/\sqrt P\).  Inverting the robust scale over all
+hidden lengths \(L\) with \(17L+1\leq P\) gives the worst-case accuracy law
+\begin{equation}
+ Q(P,\epsilon)=\Omega\bigl(\min\{P,\epsilon^{-2}\}\bigr)
+\end{equation}
+for absolute or RHS-relative residual, up to constants.  This is a
+reparameterized family bound, not accumulating hardness at several accuracies
+on one instance.
+
+The public copy plateau is necessary for constant one-copy distinguishability
+at unit height.  Flipping only \(\sigma_N\) swaps exactly \(K+1\) target
+blocks.  For the central and direction states the normalized overlaps are
+\begin{equation}
+ 1-\frac{32(K+1)}{91P},\qquad
+ 1-\frac{K+1}{DP},
+\end{equation}
+respectively.  If \(K=o(N)\), their trace distance is \(o(1)\) even for
+opposite parities.  Hence the correct bounded-data resource is
+\(K=\Theta(N)\) copies, not \(\Theta(\sqrt N)\) dynamic range.
+
+\subsection{Dual homogeneity and the bounded full direction}
+\label{sec:lp-dual-homogeneity}
+
+There is one exact way to suppress the multiplier accumulation of a unit-height
+chain.  Positive dual scaling is an elementary symmetry of the central and
+Newton equations, consistent with the general scale-invariance viewpoint in
+interior-point theory \cite{tuncel1998-primal-dual-symmetry-scale-invariance}.
+
+\begin{lemma}[Dual homogeneity]
+\label{lem:lp-dual-homogeneity}
+In the standard Newton system, leave \((A,b,x^0)\) fixed and replace
+\begin{equation}
+ (c,y^0,s^0,\widehat\mu)
+ \longmapsto
+ (\lambda c,\lambda y^0,\lambda s^0,\lambda\widehat\mu),
+ \qquad\lambda>0.
+\end{equation}
+Then \((\Delta x,\Delta y,\Delta s)\) is replaced by
+\((\Delta x,\lambda\Delta y,\lambda\Delta s)\).  The primal central
+trajectory is unchanged, with \(\mu\) reparameterized as
+\(\mu'=\lambda\mu\).
+\end{lemma}
+
+\begin{proof}
+The primal equation is unchanged, while substitution multiplies the dual and
+complementarity equations by \(\lambda\).  Full row rank and positivity make
+the Newton solution unique.  The same substitution in
+\(Ax=b,A^Ty+s=c,Xs=\mu e\) proves the central-path statement.
+\end{proof}
+
+For the full-state theorem use the all-unit signed chain and copy plateau, but
+pin each reference coordinate independently by \(h_i=1\).  This changes the
+row representation, not the primal feasible set.  Starting from
+\eqref{eq:lp-tag-9-77}, scale
+the objective, initial slacks, and complementarity data by
+\begin{equation}
+ \lambda=\frac1P.
+\label{eq:lp-tag-9-87}
+\end{equation}
+The exact primal correction remains the block \eqref{eq:lp-tag-9-39}.  If the first coordinate
+is paired with the larger endpoint coordinate, the unscaled slack correction
+is
+\begin{equation}
+ \Delta\bar s_i=(-17/54,7/54,-17/48,-17/36),
+\label{eq:lp-tag-9-88}
+\end{equation}
+and, with difference, height-pin, and cap multipliers,
+\begin{equation}
+ \Delta y=\frac1P(\bar\alpha,\bar\beta,\bar\gamma),\quad
+ \bar\alpha_j=\frac29\tau_j(P-j),\quad
+ \bar\beta_j=\frac{133}{48},\quad
+ \bar\gamma_j=\frac{11}{12}.
+\label{eq:lp-tag-9-89}
+\end{equation}
+
+\begin{theorem}[Bounded full-KKT direction]
+\label{thm:lp-dual-homogeneous-full}
+Every coordinate of the complete \(11P\)-dimensional direction
+\(w=(\Delta x,\Delta y,\Delta s)\) in
+\eqref{eq:lp-tag-9-87}--\eqref{eq:lp-tag-9-89} is bounded by an
+absolute constant, and \(\norm w_2=\Theta(\sqrt P)\).  Preparing its
+normalized state to trace error \(1/100\) requires
+\(\Omega(N)=\Omega(P)\) raw queries.
+
+The explicit canonical sparse block encoding of either the three-block Newton
+matrix or its two-block elimination has normalization five, a public RHS, and
+the same linear call lower bound.  The reduced Newton condition remains one,
+but the central endpoint is at \(\mu_1'=1/(16P)\), and both raw full-KKT
+matrices have condition \(\Theta(P)\).
+\end{theorem}
+
+\begin{proof}
+Equations \eqref{eq:lp-tag-9-39}, \eqref{eq:lp-tag-9-88}, and
+\eqref{eq:lp-tag-9-89} give
+\[
+ \norm{\Delta x}_\infty\leq17/24,
+ \quad \norm{\Delta y}_\infty\leq2/9,
+ \quad \norm{\Delta s}_\infty\leq17/(36P).
+\]
+Writing \(D=16139/23328\), direct summation gives
+\begin{equation}
+ DP\leq\norm w_2^2<\left(D+\frac1{40}\right)P<\frac34P.
+\end{equation}
+Use the diagonal decoder convention \(+1\) on every \(v\) coordinate and
+\(-1\) on every \(u\) coordinate.  The underlying \(u\)-minus-\(v\)
+squared-mass difference on each output node is \(-p_N(5/12)\), so the
+decoder expectation contributes \(+p_N(5/12)\) per node and has magnitude
+\begin{equation}
+ \frac{(5/12)K}{(3/4)P}=\frac{5K}{9P}
+ \geq\frac{32}{63}>\frac12.
+\end{equation}
+Trace error preserves constant bias.  The polynomial method gives at least
+\(N/2\) sign queries.
+
+The maximum absolute row and column sums of both canonical matrices are five.
+The same magnitude-weighted state-pair construction used in
+Theorem~\ref{thm:lp-full-kkt} therefore gives normalization five and one
+sign query per full oracle call.  The RHS remains public because the start
+has zero pair difference.  This proves the canonical-oracle claim.
+
+Dual homogeneity gives \(\mu_1'=1/(16P)\) and the reduced start matrix
+\((22/(27P))I\).  If \(z\in\ker A\) is unit, applying either raw KKT matrix
+to the corresponding nullspace test vector has norm at most \(1/P\), while
+the largest singular value is bounded below by a constant.  Conversely, the
+pinned signed incidence has smallest singular value \(\Theta(P^{-1})\);
+bounded local changes reduce the remaining blocks to identities.  The paired
+saddle eigenvalues then show that both conditions are \(\Theta(P)\).
+\end{proof}
+
+The price is real: objective coefficients, positive slacks, reduced costs, and
+complementarity are \(\Theta(P^{-1})\).  The theorem is not a simultaneous
+constant-scale and constant-full-condition result.  It also does not inherit
+the sharp relative-residual theorem, because independent height pins make
+\(\norm b_2=\Theta(\sqrt P)\).
+
+\subsection{Why the inverse-scale price remains open}
+\label{sec:lp-beyond-pairs}
+
+The obstruction can be stated without signed pairs.  At any positive start,
+eliminate \(\Delta s\) from the Newton equations and put
+\[
+ H=(X^0)^{-1}S^0,\qquad g=(X^0)^{-1}r_c-r_d.
+\]
+Then
+\begin{equation}
+ H\Delta x-A^T\Delta y=g,\qquad
+ \boxed{r_p^T\Delta y=\Delta x^TH\Delta x-g^T\Delta x}.
+\end{equation}
+This exact work identity is representation-independent.  If \(g=0\),
+\(H\succeq\rho I\), and \(\norm{r_p}_1\leq R\), it gives
+\begin{equation}
+ \norm{\Delta y}_\infty\geq
+ \frac{\rho\norm{\Delta x}_2^2}{R}.
+\end{equation}
+A constant-scale correction with \(\Theta(P)\) squared norm behind a sparse
+public source therefore forces an \(\Omega(P)\) multiplier, independently of
+redundant rows or branching.
+
+There is also a two-input version for constant-dimensional copy blocks.  Let a
+flat output region \(S\) carry \(z_v\in\R^k\) and orthogonal copy equations
+\(z_v-U_ez_u=0\).  After public transports \(G_v\), suppose stationarity is
+\begin{equation}
+ \operatorname{div}_U(f)_v=D_v\Delta z_v+g_v,
+ \qquad D_v\succeq\rho I,
+\label{eq:lp-tag-9-94}
+\end{equation}
+with the same numerical \(D_v,g_v\) for two opposite-parity inputs, and their
+transported codewords differ by a common \(w\), \(\norm w_2\geq2a\).  If a
+boundary row scale is at most \(B\), summing the difference of
+\eqref{eq:lp-tag-9-94} over
+\(S\) cancels every public source and internal force.  Taking the inner
+product with \(w\) yields
+\begin{equation}
+ \max_{p\in\{+,-\}}\norm{\Delta y_{\partial S}^p}_{2,\infty}
+ \geq\frac{\rho a|S|}{B|\partial S|}.
+\end{equation}
+Thus swaps, simplex permutations, and public flat rotations do not remove
+dual accumulation behind a bounded interface.
+
+The most tempting counterexample is a real quarter-turn
+\(J=\left[\begin{smallmatrix}0&-1\\1&0\end{smallmatrix}\right]\), with
+\(z_i=\sigma_iJz_{i-1}\) and closure \(z_0-Jz_N=e_1\).  For \(4\mid N\),
+\begin{equation}
+ z_0(p)=\frac12(1,p)^T,
+\end{equation}
+so all blocks are bounded and locally reveal parity after a public inverse
+rotation.  Nevertheless the work identity gives the closure multiplier
+\begin{equation}
+ e_1^T\Delta y_{\rm close}=\sum_{i=0}^N\norm{z_i}_2^2
+ =\frac{N+1}{2}.
+\label{eq:lp-tag-9-97}
+\end{equation}
+After gauging, the constraint is a twisted cycle whose singular values are
+\begin{equation}
+ 2\left|\sin\frac{2\pi\ell\pm\pi/2}{2(N+1)}\right|,
+ \qquad \ell=0,\ldots,N,
+\end{equation}
+so its least singular value is
+\(2\sin(\pi/[4(N+1)])=\Theta(N^{-1})\).  A positive/negative standard-form
+LP realization preserves bounded primal and slack directions and even allows
+a positive half-centering step, but \eqref{eq:lp-tag-9-97} survives exactly.  Circulations,
+public antisymmetric sources, and dense public residuals fail for the same
+work or two-parity cancellation reason unless they introduce linearly many
+genuinely independent hard interfaces.
+
+\begin{openproblem}[Bounded-scale full-KKT parity amplifier]
+\label{open:lp-bounded-full-kkt}
+Does a sparse standard-form LP family exist that simultaneously has:
+\begin{enumerate}[label=(\roman*)]
+ \item linear dimension and bounded row and column degree;
+ \item bounded coefficients with one-bit-local input dependence;
+ \item public, simply preparable Newton right-hand sides;
+ \item primal and slack starts bounded above and below by positive constants;
+ \item a coordinatewise bounded complete Newton direction; and
+ \item a parity-hard primal component with constant mass in that complete
+ direction state?
+\end{enumerate}
+The work identity and orthogonal-copy cut law rule out the natural signed,
+permutation, rotation, and flat-copy constructions.  They do not cover
+arbitrary nonorthogonal mixed-mode constraints, input-dependent sources whose
+loading is separately charged, or output interfaces that quotient the equality
+multipliers.
+\end{openproblem}
+
+The distinction closing the section is therefore exact.  The
+prefix-rigidified construction proves condition-one \emph{reduced Newton
+geometry} together with a linear original-coordinate loading/recovery cost.
+The preconditioned full-KKT result proves a constant-condition residual theorem
+only after charging construction of its data-dependent access.  The bounded
+full direction obtained by dual homogeneity instead has canonical full-system
+condition \(\Theta(P)\).  None is a constant-\(\kappa\) QLS lower bound with
+free matrix and RHS preparation oracles; each is an end-to-end LP access and
+output theorem.

@@ -1,0 +1,1353 @@
+\section{Exact contracts and their exceptions}\label{s5:contracts}
+
+Exact external contracts can remove aggregate equations that obstruct
+path elimination. They lead to several different algorithms, whose
+hypotheses and certificate guarantees should be distinguished. Throughout
+this section there is one pool, no pool--pool arc, and finite rational
+bounds on every actual flow. Write $C_i=\lambda_i$ for an input quality,
+$y_i,v_j,z_{ij}$ for feed, outlet, and bypass flows, and $q$ for pool
+quality. An absent feed or outlet has bounds $[0,0]$. Exact supplies are
+$a_i$, and an exact product contract is demand $b_j$ and quality $B_j$.
+The symbols $C_i,B_j,q$ denote vectors except in explicitly scalar
+arguments. All lower bounds, including positive individual arc bounds,
+are retained. Exact quality at zero demand has the homogeneous meaning
+of Section~\ref{s1:model}.
+
+The algorithms use rational LP, exact arithmetic in a common represented
+real-algebraic field, and fixed-dimensional real-algebraic decision and
+sampling. The latter includes polynomially growing degrees under dense
+encoding: see \citet[Theorem~1.3.1 and Sections~3.1.3--3.2]
+{basu1996-on-the-combinatorial-and-algebraic}. The algebraic LP step uses
+\citet[Section~5, Remark~1]{s4:adler1994}. Polynomial time below always
+means rational bit time, with an exponent allowed to depend on the
+specified fixed parameters.
+
+\subsection{Parameterized path relations}\label{s5:parameter-paths}
+
+We first retain two general projection facts. They concern the relation
+on retained coordinates; they do not eliminate arbitrary accumulated
+costs or dense aggregate constraints.
+
+\begin{theorem}[One parameter and general planar relations]
+\label{s5:quasipoly-path}
+Let $\rho$ range over a compact rational interval and let
+$(x_{i-1},x_i)\in P_i(\rho)$, $1\le i\le h$, where each $P_i$ is
+specified by weak inequalities linear in its two state coordinates,
+with explicitly encoded rational polynomial coefficients of fixed
+degree in $\rho$. Suppose every state has a uniform finite rational
+box bound. For input length $N$, the exact endpoint relation has a
+representation on $N^{O(\log(h+1))}$ parameter cells. Each cell is an
+open interval or singleton with polynomial-degree, polynomial-encoding
+algebraic endpoints. On each cell the relation has polynomially many
+linear endpoint inequalities with polynomial-degree, polynomial-bit
+integer-polynomial coefficients. This representation is constructible
+in quasipolynomial bit time. Existential feasibility has the same bound
+and admits a polynomial-encoding witness in one polynomial-degree real
+algebraic field.
+\end{theorem}
+\begin{proof}
+Clear rational denominators in the initial rows. Compose along a balanced
+binary tree, padding with bounded identity relations if necessary.
+Consider two children on a common open parameter cell, each with a fixed
+row list whose coefficients have degree at most $D$. In coordinates
+$(x,y,z)$, eliminate $y$ by Fourier--Motzkin elimination. For rows with
+$y$ coefficients $b_i>0>b_j$, use $-b_j$ times the first row plus $b_i$
+times the second. Retain all zero-$y$ rows and all applicable pairs,
+including pairs from the same child. There are quadratically many
+candidates in the total child row count, and coefficient degrees at most
+$2D$. Split first at roots of the $b_i$ to fix the applicable pairs.
+At a root, treat a vanishing coefficient as zero, using its actual value.
+
+For the resulting rows $A_rx+B_rz\le C_r$, retain the four fixed box
+rows and split further at every root of every nonzero minor of orders
+one, two, and three in the augmented matrix $(A_r,B_r,C_r)$. For $k$
+candidates there are $O(k^3)$ such polynomials, of degree $O(D)$.
+Their signs fix whether any two boundary lines intersect uniquely and,
+by Cramer's rule, whether that intersection satisfies each row. Every
+nonempty bounded planar polyhedron, including a point or segment, has
+a vertex determined by two independent boundary lines.
+
+On a sample in each open sign cell, delete redundant candidate rows,
+keeping the box. The same subset remains equivalent throughout the
+cell: each potential vertex of its bounded polyhedron has invariant
+feasibility and invariant satisfaction of every omitted row. Thus
+validity at all vertices persists. Emptiness also persists, since the
+existence of a feasible intersection pair is sign-determined. At every
+singleton perform the same selection in the field of that parameter.
+Store selected symbolic rows, rather than substituting unrelated
+algebraic coefficients into subsequent steps. On an empty sign cell
+store the constant contradiction $0\le-1$ together with the box,
+so an empty relation also has a constant-size retained description.
+
+Lemma~\ref{s4:polygon-composition} bounds the necessary number of rows
+in a nonempty composition by a universal constant times the sum of
+child sizes. This also bounds a subset of the candidate description.
+In dimension two keep the facet rows. In dimension one two opposite
+rows defining the affine hull and at most two endpoint rows suffice;
+in dimension zero at most four rows whose normals positively span the
+plane suffice. These assertions can also be obtained by planar
+redundancy deletion: a minimal positive dependence among planar normals
+has at most three members, and positive spanning needs at most four.
+Thus, with a larger universal $C$ and the retained box,
+\[
+ m_{\rm parent}\le C(m_{\rm left}+m_{\rm right}+2).
+\]
+Logarithmic depth makes all row counts polynomial in $N$.
+
+In one parameter the common refinement of the two child partitions has
+only the sum of their numbers of breakpoints. On each common cell,
+coefficient roots and minor roots introduce polynomially many additional
+cells. Consequently
+\[
+ L_{\rm parent}\le N^c(L_{\rm left}+L_{\rm right})
+\]
+for a fixed $c$. Iteration through $O(\log(h+1))$ levels proves the
+quasipolynomial bound, including all intermediate work. It is essential
+here that the parameter is scalar.
+
+Each coefficient combination takes two polynomial products and a sum.
+Degree at most doubles per level, so it is $O(dh)$ for initial degree
+$d$. Coefficient heights satisfy the same doubled recurrence with an
+additional logarithmic convolution term and remain polynomial in $N$.
+All minors therefore have polynomial degree and height. Exact univariate
+root isolation, comparison, and sign evaluation have polynomial cost
+per polynomial; separation bounds give polynomial-bit rational samples
+between distinct roots. Singleton arithmetic takes place in the field
+of the single chosen parameter and introduces no new parameter root.
+
+A final minor refinement makes endpoint nonemptiness constant even for
+$h=1$. Check every open-cell sample and singleton. At a feasible
+parameter, solve the original bounded path LP over its field. A vertex
+basis expresses its coordinates as Cramer ratios of the original
+polynomial coefficients evaluated at that parameter. The determinants
+have polynomial degree and height: a determinant of dimension $O(N)$
+contains at most $O(N)!$ terms, so its coefficient height increases by
+only polynomially many bits. These expressions give a polynomial-size
+common-field witness; the algebraic LP algorithm constructs one.
+Alternatively, store the balanced composition trees and lift interval
+slices as in Theorem~\ref{s4:path-projection}.
+\end{proof}
+
+\begin{theorem}[Affine strips, trees, and fixed total cycle rank]
+\label{s5:strip}
+Let $\eta$ have fixed dimension. Suppose a scalar path has finite
+polynomial coordinate bounds and transitions
+\[
+ \ell_i(\eta)\le x_i\le u_i(\eta),\qquad
+ a_i(\eta)x_{i-1}+b_i(\eta)\le x_i
+ \le a_i(\eta)x_{i-1}+c_i(\eta).
+\]
+All polynomials are densely encoded; degrees may grow. On each supplied
+sign cell of the gains $a_i$, the projection onto $\eta$ and a fixed
+number of states has polynomial size, degree, and coefficient length.
+The same holds on a tree with arbitrarily oriented edges, and on a graph
+of fixed total cycle rank after retaining at most twice that many extra
+states. These constructions give polynomial-time feasibility and exact
+infimum and attainment analysis for polynomial objectives on the
+retained coordinates. An optimizer is returned when the infimum is
+attained; a nonempty compact closed original feasible set suffices.
+\end{theorem}
+\begin{proof}
+First consider a path and a sign cell where every gain is nonzero. Put
+$A_0=1$, $A_i=\prod_{h=1}^i a_h$, and $y_i=x_i/A_i$. The transitions
+become $\alpha_i\le y_i-y_{i-1}\le\beta_i$, where the endpoints
+$b_i/A_i,c_i/A_i$ are ordered according to the known sign of $A_i$.
+The state bounds similarly become $L_i\le y_i\le U_i$. Include every
+lower-versus-upper consistency condition. Define directed distances
+\[
+ d(i,j)=\sum_{h=i+1}^j\beta_h,\qquad
+ d(j,i)=-\sum_{h=i+1}^j\alpha_h\quad(i<j),\qquad d(i,i)=0.
+\]
+These are shortest-path distances: every walk on the bidirected path
+reduces to its unique simple path and two-edge excursions of lengths
+$\beta_h-\alpha_h\ge0$. Feasibility is exactly
+\begin{equation}
+ L_i\le U_j+d(j,i)\quad\hbox{for every }i,j.
+ \label{s5:distance-test}
+\end{equation}
+Necessity follows by summing differences. For sufficiency take
+$y_i=\min_j(U_j+d(j,i))$. This lies between $L_i$ and $U_i$; the
+triangle inequality yields $y_i\le y_h+d(h,i)$ and hence both
+adjacent transition inequalities.
+
+To retain a state, replace its interval by its prospective exact value
+$x_i/A_i$ and keep its original bounds separately. This gives
+$O(n^2)$ inequalities on the retained coordinates. Multiple interval
+bounds are handled by all lower/upper pairs, so no choice of an active
+bound is required. A zero gain gives simply $b_i\le x_i\le c_i$ and
+no restriction on $x_{i-1}$: split there, place that interval on its
+original head, and apply the construction separately.
+
+For a tree, delete zero-gain edges in precisely this way. On each
+remaining tree choose factors satisfying $A_v=a_eA_u$ for each original
+edge $u\to v$. Rooting assigns factors as products of gains or their
+reciprocals along root paths. Dividing by $A_v$ gives the same two
+bounded differences on each edge, with signs ordered using $A_v$.
+The unique simple path between any two vertices again gives distances
+and \eqref{s5:distance-test}, with exactly the same recovery proof.
+No zero-gain equation is reversed when an edge points toward the root.
+
+Products of polynomially many densely encoded gains have polynomial
+degree and height in a fixed number of parameters. A common product of
+all nonzero gains, with a fixed sufficient multiplicity and the original
+coefficient denominators, clears all the products, reciprocals, and
+path sums just used. Its sign is known on the cell. Clearing denominators
+in \eqref{s5:distance-test} therefore gives polynomially encoded rows.
+Enumerating realizable gain sign conditions has polynomial complexity
+in fixed dimension; zero and lower-dimensional conditions are included.
+Recovery uses minima and rational functions in the same field as the
+retained sample.
+
+Finally, remove $c$ edges to form a spanning forest when the total cycle
+rank is $c$. Retain their at most $2c$ endpoints, project the forest,
+and restore every removed original strip row on these states. The
+remaining dimension is fixed. Quantifier elimination applied to the
+attainable objective values gives the stated feasibility, infimum, and
+attainment conclusions. Finite state bounds at each parameter do not
+alone imply bounded parameters or attainment; the theorem makes no such
+inference.
+\end{proof}
+
+Both sides of a strip must have the same gain. Arbitrary planar
+relations instead satisfy Theorem~\ref{s5:quasipoly-path}, whose bound
+is quasipolynomial and is not asserted to be tight. Neither theorem
+retains an arbitrary dense objective. For scalar upper product quality
+bounds alone, lowering a fixed pool quality preserves each local
+quality row because its pool flow coefficient is nonnegative. Thus
+local path feasibility is nested in that parameter. This does not
+control changing facets or the global pool mixing equality, which is
+not a local upper-bound row. Likewise, inequalities
+$x_i\ge|x_{i-1}-a|$ do not enforce iterated absolute values: existential
+intermediate states may exceed their lower bound. Such observations
+cannot replace either projection proof.
+
+\subsection{A fixed number of pool outlets}\label{s5:fixed-outlets}
+
+\begin{theorem}[Conserved boundary masses]\label{s5:fixed-products}
+Suppose the bypass graph has maximum degree two, every source has exact
+supply $a_i$, and the set $J_P$ of allowed pool outlets has fixed size
+$r$. Every product outside $J_P$ has an exact product contract; products
+in $J_P$ may have arbitrary demand and quality intervals. Feasibility
+and standard economic optimization are polynomial-time solvable, with
+an exact algebraic original optimizer when feasible. Arbitrarily many
+feeds and quality coordinates, arbitrary quality rank, restrictive
+common pool bounds, and all individual arc bounds are allowed. Linear
+costs on the $r$ outlets and on pool throughput are also permitted.
+\end{theorem}
+\begin{proof}
+If $r=0$, mass conservation forces every feed to zero. Check zero against
+all incident and common bounds and solve the remaining rational LP,
+retaining external contracts. Otherwise eliminate every feed by
+\[
+ Y_i=a_i-\sum_jz_{ij}.
+\]
+Put its actual feed bounds on $Y_i$, or impose $Y_i=0$ if absent. Each
+row uses at most two bypass coordinates. At $j\notin J_P$ impose
+$\sum_i z_{ij}=b_j$ and $\sum_i C_i z_{ij}=b_jB_j$. These also have
+at most two coordinates, regardless of the number of attributes.
+
+Retain the bypass set $H$ entering $J_P$, of size at most $2r$. Define
+\begin{align}
+ T&=\sum_i a_i-\sum_{j\notin J_P}b_j-\sum_{ij\in H}z_{ij},\notag\\
+ Q&=\sum_i C_i a_i-\sum_{j\notin J_P}b_jB_j
+                         -\sum_{ij\in H}C_i z_{ij}.
+ \label{s5:boundary-masses}
+\end{align}
+Summing the exact source and nonreceiving-product equations gives,
+for every local bypass lift,
+\begin{equation}
+ \sum_iY_i=T,\qquad \sum_i C_iY_i=Q.
+ \label{s5:boundary-identities}
+\end{equation}
+Their coefficients are polynomial-bit sums of rational products.
+Retain $v_j$ and outlet fractions $\theta_j$ for all $j\in J_P$, and
+require
+\[
+ \theta_j\ge0,\quad\sum_{j\in J_P}\theta_j=1,\qquad
+ v_j=\theta_jT.
+\]
+There are at most $4r$ retained coordinates. Keep all outlet and common
+pool bounds, every receiving-product demand bound on
+$t_j=v_j+\sum_i z_{ij}$, and every quality bound on the mass
+$\theta_jQ+\sum_i C_i z_{ij}$. These are quadratic rows in the core;
+additional quality coordinates add rows, not variables.
+
+Delete $J_P$ from the bypass graph. Every residual component with a
+boundary is a path with at most two retained endpoint arcs, and
+Theorem~\ref{s4:path-projection} gives its polynomial-size rational
+endpoint relation. A component with one boundary gives an interval;
+a component with no boundary, including a cycle or isolated node, is
+a bounded rational LP. Such a detached component may still feed the
+pool. Its arbitrary feasible lift does not change
+\eqref{s5:boundary-identities}, so it needs no extra aggregate variable.
+Two boundary arcs may meet the same deleted product.
+
+The resulting core is closed, bounded, fixed-dimensional, and defined
+by polynomially many quadratic or linear rows of polynomial bit length.
+If $T>0$, \eqref{s5:boundary-identities} gives actual quality $Q/T$;
+its mass into product $j$ is $v_jQ/T=\theta_jQ$. If $T=0$, nonnegative
+$Y_i$ all vanish, so $Q=0$ and every outlet vanishes. Fractions then
+have no physical effect. Conversely a feasible physical solution gives
+$\theta_j=v_j/T$ when $T>0$ and any simplex point when $T=0$.
+Thus core feasibility and original feasibility are equivalent, including
+inactive pools and zero-demand products.
+
+For unit input costs $c_i$ and revenues $R_j$, profit is
+\[
+ \sum_{j\notin J_P}R_jb_j-\sum_ic_i a_i
+       +\sum_{j\in J_P}R_j\Bigl(v_j+\sum_i z_{ij}\Bigr).
+\]
+It is affine in the core. Outlet costs and a cost proportional to $T$
+are affine there as well. Fixed-dimensional algebraic optimization gives
+an attained optimum, and stored path relations lift its sample in the
+same represented field. Recover feeds from $Y_i$ afterward.
+\end{proof}
+
+Arbitrary intake costs become a dense bypass objective after the
+substitution for $Y_i$; arbitrary bypass costs are already dense. They
+are outside Theorem~\ref{s5:fixed-products}. A fixed number of additional
+cost-bearing arcs can be retained using Theorem~\ref{s4:fixed-support};
+for a designated intake retain its at most two adjacent bypass flows.
+Exact nonreceiving quality is material. For example, two unit supplies
+have qualities zero and two. Only the clean input bypasses to a product
+of demand one and upper quality one; the other product receives one unit
+from the pool and has upper quality $3/2$. The first product consumes
+all clean supply, forcing pool quality two, hence infeasibility. Treating
+its upper quality one as an equality would incorrectly subtract one
+unit of quality mass in \eqref{s5:boundary-masses}.
+
+\subsection{Fully contracted signed flows}\label{s5:scaled}
+
+\begin{lemma}[Contract conservation]\label{s5:conservation}
+With exact source supplies and exact product contracts, first check
+\begin{equation}
+ \sum_i a_i=\sum_j b_j,\qquad
+ \sum_i C_i a_i=\sum_j B_jb_j.
+ \label{s5:global-constants}
+\end{equation}
+After eliminating $Y_i=a_i-\sum_jz_{ij}$ and
+$V_j=b_j-\sum_i z_{ij}$, retain their actual bounds and every equation
+\begin{equation}
+ \sum_i(C_i-q)z_{ij}=b_j(B_j-q).
+ \label{s5:contract-quality}
+\end{equation}
+Together with bypass bounds, these conditions are equivalent to all
+physical constraints except a possibly restrictive common pool bound.
+\end{lemma}
+\begin{proof}
+The mass equality in \eqref{s5:global-constants} implies
+$\sum_iY_i=\sum_jV_j$, since both sides subtract the same total bypass
+flow. Summing \eqref{s5:contract-quality} gives
+\[
+ q\sum_jV_j=\sum_j b_jB_j-\sum_{ij}C_i z_{ij}
+                         =\sum_i C_iY_i.
+\]
+Thus actual pool mixing holds coordinate by coordinate. At positive
+throughput this identifies $q$ as the feed average. At zero throughput
+nonnegative incident flows all vanish, so their quality masses vanish.
+Every output equation is exactly its original equation after substitution,
+even when its outlet is absent. The converse follows by summing original
+mass and quality conservation. A common bound has not been derived.
+\end{proof}
+
+\begin{lemma}[Signed node intervals and connected cuts]\label{s5:cuts}
+For a directed graph with finite signed arc bounds $\ell_e\le u_e$
+and node bounds $\alpha_v\le\beta_v$, a flow satisfying
+\[
+ \ell\le w\le u,\qquad
+ \alpha_v\le\operatorname{div}_w(v)\le\beta_v
+\]
+exists if and only if, for every vertex subset $S$,
+\begin{align}
+ \alpha(S)&\le u(\delta^+S)-\ell(\delta^-S),\notag\\
+ \beta(S)&\ge \ell(\delta^+S)-u(\delta^-S).
+ \label{s5:hoffman-cuts}
+\end{align}
+Here divergence is outgoing minus incoming, and set arguments indicate
+sums. It suffices to check connected induced subsets. A disjoint union
+of paths, cycles, and isolated vertices requires $O(n^2)$ such sets,
+with at most two cut edges each. Prescribing boundary arc flows gives
+the same description after shifting their signed contributions out of
+adjacent node intervals and retaining their arc bounds separately.
+\end{lemma}
+\begin{proof}
+This is the signed interval transshipment criterion of
+\citet[Corollary~11.2i, p.~175]{s5:schrijver2003}, with the divergence
+sign reversed. To derive it from circulation feasibility, add a root
+and an arc from the root to each $v$, bounded by
+$[\alpha_v,\beta_v]$. Conservation at $v$ makes that arc equal its
+original divergence; conservation at the root follows by summing
+original divergences. The circulation inequalities on subsets excluding
+the root and on complements of subsets containing it give the two
+inequalities in \eqref{s5:hoffman-cuts}. Conversely those two families
+are all circulation cuts, so the circulation criterion supplies the
+flow. Signed bounds cause no difficulty: subtract lower bounds before
+the usual nonnegative-capacity feasibility test.
+
+If $S$ is disconnected in its induced underlying graph, both node sums
+and both cut expressions add over its connected components, since no
+edge joins distinct components within $S$. Their separate inequalities
+therefore imply its inequalities. The connected subsets of a path are
+intervals; those of a cycle are cyclic intervals and the whole cycle.
+Whole components and isolated vertices must be retained. For prescribed
+boundary flow $t_e$ with divergence sign $\sigma_{ve}$ at $v$, the
+internal divergence lies between
+$\alpha_v-\sum_e\sigma_{ve}t_e$ and
+$\beta_v-\sum_e\sigma_{ve}t_e$. This is an exact substitution.
+\end{proof}
+
+\begin{theorem}[Quadratic-field feasibility]\label{s5:quadratic-field}
+Suppose every source and product is exactly contracted, the quality is
+scalar, and the bypass graph has maximum degree two. If the common pool
+lower bound is zero and the upper bound is redundant, feasibility is
+polynomial-time decidable. A feasible original flow can be constructed
+in one real field of degree at most two over $\Q$, with polynomial
+encoding length. The same result holds for arbitrarily many attributes
+of affine input rank at most one.
+\end{theorem}
+\begin{proof}
+Check \eqref{s5:global-constants}. If the pool has no allowed feed or no
+allowed outlet, force its incident flows to zero, check their bounds,
+and solve the remaining rational LP with all external contracts. Otherwise
+restrict $q$ to the closed interval spanned by allowed feed qualities.
+This loses no active flow by mixing; an inactive pool can be assigned
+any value in that interval. At every distinct source quality in this
+interval, including its endpoints, solve the original fixed-$q$ physical
+LP with actual pool arcs and balances. These are rational LPs.
+
+On each remaining open interval, every $\gamma_i=C_i-q$ is nonzero
+with fixed sign. Set
+\begin{equation}
+ w_{ij}=\gamma_i z_{ij},\qquad z_{ij}=w_{ij}/\gamma_i.
+ \label{s5:scaling}
+\end{equation}
+Keep the orientation input to product even when $w$ is negative. Feed
+bounds $\ell_i^P\le Y_i\le u_i^P$ become a bound on
+$\sum_jz_{ij}$ between $a_i-u_i^P$ and $a_i-\ell_i^P$. Multiplication
+by $\gamma_i$, with order determined by its sign, gives an affine
+interval on input divergence $\sum_jw_{ij}$. Every original bypass
+interval likewise gives affine signed bounds on its $w_{ij}$.
+Equation~\eqref{s5:contract-quality} becomes
+\begin{equation}
+ \sum_i w_{ij}=R_j(q),\qquad R_j(q)=b_j(B_j-q),
+ \label{s5:output-divergence}
+\end{equation}
+so product divergence is exactly $-R_j(q)$.
+
+The outlet interval is a bound $L_j\le s_j\le U_j$ on total bypass
+$s_j$, where $L_j=b_j-u_j^P$ and $U_j=b_j-\ell_j^P$. With two inlets
+of distinct qualities, write $\gamma_h=C_h-q$. Solving
+$w_1+w_2=R_j$ and $s_j=w_1/\gamma_1+w_2/\gamma_2$ gives
+\begin{equation}
+ w_1=\frac{\gamma_1(R_j-\gamma_2s_j)}{C_1-C_2}.
+ \label{s5:outlet-arc}
+\end{equation}
+Its coefficient of $s_j$ is
+$-\gamma_1\gamma_2/(C_1-C_2)$, nonzero of fixed sign. Thus the outlet
+interval is exactly the interval on $w_1$ with endpoints
+\begin{equation}
+ \frac{\gamma_1(R_j-\gamma_2L_j)}{C_1-C_2},\qquad
+ \frac{\gamma_1(R_j-\gamma_2U_j)}{C_1-C_2}.
+ \label{s5:quadratic-bounds}
+\end{equation}
+They are quadratic polynomials in $q$; retain
+\eqref{s5:output-divergence} and all original arc bounds too.
+If the qualities coincide, $\gamma s_j=R_j$ instead, so the outlet
+interval gives the pure parameter condition that $R_j$ lie between
+$\gamma L_j$ and $\gamma U_j$. With one inlet it gives that affine
+arc interval together with $w=R_j$. With zero inlets require
+$L_j\le0\le U_j$ and $R_j=0$. These cases include zero demands and
+missing outlets without division by a vanishing quality difference.
+
+Each arc now has constantly many lower and upper quadratic candidates.
+Its effective bounds are the maximum lower and minimum upper candidate.
+Include every lower-versus-upper consistency inequality. Node bounds
+are affine. Apply Lemma~\ref{s5:cuts}. Each connected cut uses at most
+two arc bounds. The first right side of \eqref{s5:hoffman-cuts} is the
+minimum over all upper-outgoing/lower-incoming candidate choices; the
+second is the maximum over lower-outgoing/upper-incoming choices.
+Thus each cut is equivalent to the conjunction over all its constantly
+many choices. The result is polynomially many univariate quadratic
+inequalities and the pure parameter conditions. No capacity disjunction
+or exponential subset enumeration is required.
+
+Exact root isolation and sign tests decide their conjunction on the
+open source-quality interval. Include isolated roots of these new
+polynomials; only the original source-quality endpoints are excluded
+from the nonsingular chart. Coefficients have polynomial bit length,
+since they use constant-degree products, rational quality differences,
+and polynomially many sums. A feasible open interval contains a
+polynomial-bit rational sample, and a feasible isolated boundary is a
+root of a quadratic polynomial of polynomial height. Thus choose $q$
+of degree at most two.
+
+At this $q$, evaluate all effective bounds and solve the signed
+circulation in $\Q(q)$. The standard reduction in
+\citet[Corollary~11.3a, p.~176]{s5:schrijver2003}, or the algebraic LP
+algorithm, constructs a feasible point. Its constant incidence matrix
+has vertex coordinates given by rational linear combinations of bounds
+in this same field, with polynomial coefficient length. Dividing by
+the nonzero $\gamma_i$ and recovering $Y_i,V_j$ preserves that field
+and polynomial encoding. Lemma~\ref{s5:conservation} proves physical
+feasibility. Singular LP witnesses are rational.
+
+For affine rank one, compute $C_i=C_0+d\,\xi_i$ with rational
+$d\ne0$ and rational scalars $\xi_i$. Reject a positive-demand product
+outside that line, and otherwise write $B_j=C_0+d\,\bar\xi_j$.
+At zero demand its quality vector may be replaced by any vector on the
+line. Local mass conservation cancels the $C_0$ terms, and any nonzero
+coordinate of $d$ makes all vector equations equivalent to the scalar
+ones in $\xi_i,\bar\xi_j$. Rational affine algebra has polynomial
+encoding and changes no physical flow bound. Rank zero is a rational
+LP after checking positive-demand product compatibility.
+\end{proof}
+
+The proof also gives a reusable boundary description
+\label{s5:fixed-boundary}: after retaining a fixed number of transformed
+boundary flows, Lemma~\ref{s5:cuts} gives polynomially many rows linear
+in those coordinates and quadratic in $q$. Capacity bounds on a removed
+boundary arc remain explicit. A physical boundary coordinate $z_{ij}$
+can be linked by the bilinear equation in \eqref{s5:scaling}.
+
+\begin{example}[A common bound is an additional constraint]
+\label{s5:capacity-counterexample}
+Take unit supplies of qualities zero and two. The clean input bypasses
+only to a product of demand one and exact quality $1/2$; the dirty input
+bypasses only to a product of demand one and exact quality $3/2$.
+Both inputs feed the pool and both products receive its flow; all
+individual upper capacities are one and lower bounds zero. The local
+contracts force
+\[
+ Y_0=V_{1/2}=\frac1{2q},\qquad
+ Y_2=V_{3/2}=\frac1{2(2-q)},\qquad \tfrac12\le q\le\tfrac32.
+\]
+Hence $T=1/[q(2-q)]\ge1$. Local feasibility holds at $q=1$, but common
+upper capacity $3/4$ makes the physical model infeasible. The global
+identities do not imply a restrictive pool bound. The example is a
+scope distinction, not a hardness result.
+\end{example}
+
+\subsection{A bounded number of contract exceptions}\label{s5:exceptions}
+
+Designate exceptional external sets $E_I,E_J$ and put
+$s=|E_I|+|E_J|$. Ordinary inputs have exact supplies; ordinary products
+have exact demand and quality contracts. Exceptional inputs may have
+supply intervals, and exceptional products may have demand and quality
+intervals. In this subsection the bypass maximum degree is two, and
+common pool bounds are redundant: their lower bound is zero and their
+upper bound is at least a valid total throughput bound. For example,
+the minimum of the sums of input upper supplies, feed capacities, and
+outlet capacities is such a bound. Individual pool-arc intervals remain
+unrestricted. Standard economics is the objective. Before the following
+algorithms, a pool with no allowed feed or no allowed outlet is removed
+by forcing all its incident flows to zero, checking their bounds, and
+solving the remaining rational LP with every external requirement.
+Thus the nonlinear constructions may assume both kinds of pool arc exist.
+
+\begin{lemma}[A fixed-dimensional pool-quality space]
+\label{s5:quality-chart}
+For fixed $s,d$, suppose pool quality is restricted to a supplied rational
+affine space $q=q_0+D\eta$ of dimension $d$, where the columns of $D$
+are independent, and to the closed coordinate box spanned by the allowed
+feed vectors. For a pool with both an allowed feed and an allowed outlet,
+the preceding exception model with these quality restrictions admits polynomial-time
+feasibility and standard economic optimization, with a polynomial-size
+common real-algebraic original optimizer. Ambient quality dimension and
+input-quality rank may grow. The retained dimension is at most $d+5s$.
+\end{lemma}
+\begin{proof}
+Use the supplied closed coordinate box. At an active pool its balance
+will imply this box; an inactive pool in this branch is required to have
+a representative quality in the supplied intersection. If the
+supplied affine space misses this box the branch is empty. Select $d$
+independent coordinate rows of $D$. They express $\eta$ as a rational
+affine function of bounded quality coordinates and hence give explicit
+finite polynomial-bit bounds on $\eta$. Retain all box inequalities.
+
+Retain each exceptional node's incident pool flow and every bypass arc
+in $H$ incident to an exceptional node. There are at most $s$ such
+pool flows and $2s$ bypass flows. For exceptional nodes define the core
+expressions
+\[
+ A_i=y_i+\sum_jz_{ij},\qquad
+ D_j=v_j+\sum_i z_{ij},\qquad M_j=qv_j+\sum_iC_i z_{ij}.
+\]
+Keep their supply, demand, quality, and arc bounds. At ordinary nodes
+eliminate feeds and outlets by exact contracts as before. Preserve
+\eqref{s5:contract-quality} at every ordinary product. Put in the core
+one mass equation and all ambient quality equations
+\begin{align}
+ \sum_{i\notin E_I}a_i+\sum_{i\in E_I}A_i
+ &=\sum_{j\notin E_J}b_j+\sum_{j\in E_J}D_j,\notag\\
+ \sum_{i\notin E_I}C_i a_i+\sum_{i\in E_I}C_i A_i
+ &=\sum_{j\notin E_J}b_jB_j+\sum_{j\in E_J}M_j.
+ \label{s5:exception-balances}
+\end{align}
+To verify sufficiency of these equations, subtract total bypass mass
+from the first equality to obtain actual pool mass balance. In each
+quality coordinate, sum the ordinary output equations and the
+exceptional masses $M_j$; subtracting bypass quality mass from the
+second equality gives
+$q\sum_jv_j=\sum_iC_i y_i$. Thus actual pool quality balance holds
+for every local lift. At zero throughput all pool arcs vanish.
+
+For each full source vector $C_i$ belonging to the supplied affine space
+and box, solve the original fixed-vector-quality physical LP, including
+its objective. These cover all $q=C_i$ singularities, even for inputs
+without a feed. At every other $q$ some vector in the explicit list
+\begin{equation}
+ \beta(k)=(1,k,\ldots,k^{K-1}),\qquad
+ 1\le k\le |I|(K-1)+1
+ \label{s5:directions}
+\end{equation}
+has $\gamma_i=\beta(k)\mathbin{\cdot}(C_i-q)\ne0$ for every input.
+Indeed each nonzero $C_i-q$ defines a nonzero polynomial of degree at
+most $K-1$ in $k$, excluding at most $K-1$ list members. The union of
+all excluded sets cannot exhaust the list. Its size and coefficient
+bit lengths, $O(K\log(|I|K+1))$ per entry, are polynomial even when
+$K$ grows. For $K=1$ one direction suffices, and $K=0$ is an LP.
+
+Fix a direction. Define $w_{ij}=\gamma_i z_{ij}$ and, for retained
+arcs, keep both $w_{ij}$ and its bilinear link to $z_{ij}$. This gives
+at most $d+s+2s+2s=d+5s$ variables. Projecting the ordinary product
+equation onto $\beta$ gives
+\[
+ \sum_iw_{ij}=R_j,\qquad R_j=b_j\beta\mathbin{\cdot}(B_j-q).
+\]
+Original bypass and ordinary input bounds become affine signed arc
+and divergence bounds, after partitioning by the nonzero signs of
+$\gamma_i$. For a two-inlet ordinary product set
+$c_h=\beta\mathbin{\cdot}C_h$. If $c_1\ne c_2$, its outlet bounds
+become the quadratic arc interval of \eqref{s5:quadratic-bounds}, with
+$c_1-c_2$ in the denominator and the projected $R_j$. If $c_1=c_2$,
+use the corresponding pure parameter condition instead.
+
+The projection alone does not enforce all quality coordinates. For
+each ambient coordinate $h$, substitute $w_2=R_j-w_1$ into its original
+quality equation and multiply by the nonzero $\gamma_1\gamma_2$.
+The exact residual equation is
+\begin{align}
+ a_h(q)w_1&=f_h(q),\notag\\
+ a_h&=(C_{1h}-q_h)\gamma_2-(C_{2h}-q_h)\gamma_1,\notag\\
+ f_h&=\gamma_1\bigl[b_j(B_{jh}-q_h)\gamma_2
+                         -(C_{2h}-q_h)R_j\bigr].
+ \label{s5:residual-quality}
+\end{align}
+The quadratic terms of $a_h$ cancel, and the quadratic terms inside
+the brackets of $f_h$ cancel; hence $a_h$ is affine and $f_h$ quadratic
+in $\eta$. Include every $a_h$ in the affine sign partition. If
+$a_h=0$, impose $f_h=0$. Otherwise impose both bounds
+$w_1=f_h/a_h$ with known denominator sign. Keep all such equations,
+including redundant ones, on the same chosen incident arc.
+
+With one inlet, projected quality fixes $w=R_j$, and each additional
+coordinate gives
+\[
+ (C_{ih}-q_h)R_j=b_j(B_{jh}-q_h)\gamma_i.
+\]
+Keep these parameter equalities and the outlet's affine interval on
+$w$. With no inlets, require $0$ in the bypass-total interval and
+$b_j(B_j-q)=0$ in every coordinate. Thus every ordinary quality
+condition is preserved, including equal projected qualities and zero
+coefficients. No assumption that the ambient vectors lie in the supplied
+quality space was used.
+
+The signs of the polynomially many affine functions $\gamma_i,a_h$
+have polynomially many realizations in fixed dimension $d$. Keep
+lower-dimensional sign conditions, and require $\gamma_i\ne0$ strictly.
+On each such cell every internal arc has polynomially many rational
+bound candidates, of numerator degree at most two and denominator
+degree at most one. Delete exceptional nodes and remove retained
+boundary arcs from the internal graph, subtracting their signed $w$
+contributions from adjacent divergence intervals. A candidate bound
+assigned to a boundary arc remains a core row. An arc between two
+exceptional nodes requires no internal projection.
+
+Residual components are paths, cycles, or isolated nodes. Apply
+Lemma~\ref{s5:cuts} to connected sets. Each cut crosses at most two
+internal edges; conjunction over their candidate combinations is still
+polynomial, even with polynomial-size candidate lists. Include every
+lower-versus-upper candidate comparison on each arc. Clear only the
+at most two selected affine denominators in each inequality, using their
+known signs. Node sums are affine in $\eta$ and linear in boundary
+$w$ coordinates, so degree four is a safe bound for all resulting
+polynomial inequalities. Pure parameter conditions and retained
+candidate rows have the same bound. Multiplying all internal-arc
+denominators would be unnecessary and would lose this constant-degree
+property.
+
+The resulting formula has fixed dimension, constant degree,
+polynomially many rows, and polynomial coefficient length. Together
+with \eqref{s5:exception-balances} and the retained physical rows it is
+exactly the original model on the chart. Standard profit reduces to
+\begin{equation}
+ \sum_{j\notin E_J}R_j^{\rm econ}b_j-
+ \sum_{i\notin E_I}c_i a_i+
+ \sum_{j\in E_J}R_j^{\rm econ}D_j-
+ \sum_{i\in E_I}c_i A_i,
+ \label{s5:exception-profit}
+\end{equation}
+where $R_j^{\rm econ}$ denotes revenue and is unrelated to the
+projected quality residual $R_j$. It is affine in original retained
+flow coordinates.
+
+Use quantifier elimination to describe the attainable profit values
+on every actual sign cell, and unite these descriptions with the
+fixed-source-vector LP value intervals. The union is precisely the
+attainable set of the original model with the closed affine quality
+restriction and box, a compact set. If nonempty it has an attained
+maximum. Select that value and sample a point on a cell attaining it.
+Do not close a chart at a vanishing denominator: its polynomial rows
+can lose information there, while the singular LPs retain it.
+
+At the sample, all residual incidence bounds belong to its common
+represented real-algebraic field. Solve each residual signed flow LP
+in that field, then divide by nonzero $\gamma_i$ and recover ordinary
+feeds and outlets from their contracts. A constant incidence matrix
+has vertex coordinates that are rational linear combinations of its
+bounds, and the sample has polynomial degree and encoding. Therefore
+recovery remains polynomial in the same field. Equations
+\eqref{s5:exception-balances} prove the actual pool balances for every
+recovered flow.
+\end{proof}
+
+\begin{corollary}[Scalar and fixed-rank exceptions]\label{s5:fixed-rank}
+For fixed $s$ and fixed affine input-quality rank $t$, the exception
+model admits polynomial-time feasibility and standard economic
+optimization. For scalar quality the core dimension is at most $1+5s$
+and every chart row may be chosen quadratic. For fixed rank $t$ the
+bound is $t+5s$. Neither assertion gives a quadratic-field witness
+bound when exceptions are present.
+\end{corollary}
+\begin{proof}
+For scalar quality the above chart argument uses only the signs of
+$C_i-q$, the scalar intervals \eqref{s5:quadratic-bounds}, the boundary
+cut description, and the two equations
+\eqref{s5:exception-balances}; there are no residual vector equations
+or variable denominators in arc candidates. Thus all rows are quadratic
+and dimension is $1+5s$.
+
+For affine rank $t$, compute rational coordinates
+$C_i=C_0+D\xi_i$ with $t$ independent columns. A positive-demand
+ordinary product must belong to this affine hull; reject it otherwise.
+Zero-demand qualities are immaterial. Express every original exceptional
+quality inequality in the coordinate quality masses and throughput;
+keep all such inequalities. Local mass conservation cancels $C_0$, so
+coordinate quality equations are equivalent to all ambient equations.
+Apply Lemma~\ref{s5:quality-chart} in $t$ coordinates, or take its
+supplied space to be this full affine hull. Rank zero is a fixed-quality
+LP. All coordinate and bound computations are polynomial-bit rational
+linear algebra.
+\end{proof}
+
+\begin{theorem}[Arbitrary-quality bounded exceptions]
+\label{s5:arbitrary-exceptions}
+For fixed $s$, the exception model admits polynomial-time exact
+feasibility and standard economic optimization with a polynomial-size
+common real-algebraic original optimizer. The number of quality
+coordinates and their affine input rank are unrestricted.
+\end{theorem}
+\begin{proof}
+Consider an ordinary product $j$ with positive pool inflow $v_j>0$.
+Its nonnegative flow and exact contract imply $b_j>0$, and
+\[
+ q=\frac{b_j}{v_j}B_j-\sum_i\frac{z_{ij}}{v_j}C_i.
+\]
+The coefficients sum to one by product mass conservation. Since at most
+two bypass inlets exist,
+\begin{equation}
+ q\in\operatorname{aff}\bigl(\{B_j\}\cup
+                    \{C_i:ij\text{ is a bypass}\}\bigr),
+ \label{s5:active-space}
+\end{equation}
+an affine space of dimension at most two. Enumerate this space for each
+positive-demand ordinary product and apply
+Lemma~\ref{s5:quality-chart} with $d\le2$. Rational Gaussian elimination
+gives polynomial-bit bases and bounds. Dimension zero is a physical
+fixed-quality LP. There are polynomially many spaces. No branch needs
+to require that its designated outlet actually be positive: every
+branch retains all original constraints and is sound; every solution
+with an active ordinary outlet belongs to a branch by
+\eqref{s5:active-space}.
+
+It remains to handle flows whose only active outlets are exceptional.
+Force all ordinary outlets to zero, checking their lower bounds.
+Let $J_E\subseteq E_J$ be the products with an allowed pool outlet and
+put $r=|J_E|$. For $j\in E_J\setminus J_E$, put $v_j=\theta_j=0$
+by convention. If $r=0$, force all pool arcs to zero and solve the
+remaining rational LP. Otherwise retain exceptional input feeds, the
+$r$ outlet flows indexed by $J_E$, every bypass arc incident to an
+exceptional node, and $r$ outlet fractions $\theta_j$, $j\in J_E$.
+There are at most $3|E_I|+4|E_J|$ coordinates. Exceptional source
+withdrawals $A_i=y_i+\sum_jz_{ij}$ are core expressions. Ordinary
+inputs give the local affine feed bounds, while ordinary products now
+give bypass-only exact mass and vector-quality equations. Delete the
+exceptional nodes and apply Theorem~\ref{s4:path-projection} to all
+remaining rational path relations; solve detached components by LP.
+
+Define core expressions
+\begin{align}
+ S&=\sum_{i\notin E_I}a_i+\sum_{i\in E_I}A_i,&
+ G&=\sum_{i\notin E_I}C_i a_i+\sum_{i\in E_I}C_i A_i,\notag\\
+ T&=S-\sum_{j\notin E_J}b_j-
+                     \sum_{ij:\,j\in E_J}z_{ij},&
+ Q&=G-\sum_{j\notin E_J}b_jB_j-
+                     \sum_{ij:\,j\in E_J}C_i z_{ij}.
+ \label{s5:exceptional-only-masses}
+\end{align}
+Every term uses only retained coordinates or constants. Summing
+ordinary product contracts and all source equations proves
+$T=\sum_i y_i$ and $Q=\sum_iC_i y_i$ for every local lift. Impose
+$\theta_j\ge0$ and $v_j=\theta_jT$ for $j\in J_E$, and
+$\sum_{j\in J_E}\theta_j=1$. Keep the demand and homogeneous quality
+bounds at every $j\in E_J$, including products without pool outlets,
+using quality mass
+$\theta_jQ+\sum_iC_i z_{ij}$ and throughput $v_j+\sum_i z_{ij}$,
+as well as all retained arc and source bounds. These rows are quadratic
+in a fixed number of variables independently of the ambient quality
+count. At positive $T$ they give actual pool quality $Q/T$. At zero
+$T$, all nonnegative feeds vanish and $Q=0$, so fraction choices are
+harmless. Conversely every physical flow of this branch supplies its
+fractions, or any simplex point if inactive. Thus this branch is exact,
+closed, bounded, and polynomially described.
+
+Standard profit is again \eqref{s5:exception-profit}, hence depends
+only on the core. Optimize this branch and all active-space branches
+and select the largest feasible value. They cover every physical flow;
+each feasible branch is compact before its internal chart partition,
+so an optimum is attained. The quality branches use incidence recovery;
+the exceptional-only branch uses rational endpoint lifting and local
+feed recovery. Both yield one common field of polynomial degree and
+encoding. This proves the theorem.
+\end{proof}
+
+A fixed number of designated additional arc costs can be included by
+declaring their external endpoints exceptional and preserving their
+original contracts there. Their actual arc flows are then retained.
+The increase in $s$ is fixed, so the proof applies with these affine
+core costs. This is not unrestricted dense arc-cost optimization.
+The common-bound assumption in this subsection also remains necessary
+for the argument: total pool throughput need not be a core coordinate.
+Theorem~\ref{s3:five-thm} gives the complementary strong feasibility
+hardness already with five exceptions when ordinary products may have
+three bypass inlets. In particular the positive bypass-degree-two
+condition here is consistent with the total-output-degree-three
+hardness boundary and with the positive contracts used there.
+
+\subsection{Restrictive common pool bounds}\label{s5:common-capacity}
+
+The signed-flow feasibility cuts do not constrain the total unscaled
+bypass flow. To recover that quantity, we compute its extreme values
+as a linear objective on node divergences. Two supporting facts make
+that computation polynomial over the quality parameter.
+
+\begin{lemma}[Symbolic binary path and cycle minimization]
+\label{s5:clamp}
+Let $\eta$ have fixed dimension, and consider binary path labels
+$x_1,\ldots,x_n$ with energy
+\[
+ \sum_iU_i(x_i;\eta)+\sum_{i=2}^n
+ \bigl[a_i(\eta)\mathbf1_{(x_{i-1},x_i)=(0,1)}+
+       b_i(\eta)\mathbf1_{(x_{i-1},x_i)=(1,0)}\bigr].
+\]
+Suppose all terms are rational polynomials of fixed degree and
+$a_i,b_i\ge0$ on the specified domain; unary terms may be signed.
+The minimum has an explicit polynomial formula on each of polynomially
+many realizable polynomial sign conditions, with polynomial coefficient
+length and the same fixed degree. The same conclusion holds for cycles.
+\end{lemma}
+\begin{proof}
+Let $E_i(t)$ be the minimum prefix energy ending in label $t$, put
+$D_i=E_i(1)-E_i(0)$, and $u_i=U_i(1)-U_i(0)$. The two ordinary
+prefix recurrences give
+\begin{align*}
+ E_i(0)&=E_{i-1}(0)+U_i(0)+\min(0,D_{i-1}+b_i),\\
+ D_i&=u_i+\min(D_{i-1},a_i)-\min(0,D_{i-1}+b_i)\\
+    &=u_i+\operatorname{clamp}(D_{i-1},-b_i,a_i),
+ \qquad D_1=u_1.
+\end{align*}
+The last identity follows by the three cases $D<-b_i$,
+$-b_i\le D\le a_i$, and $D>a_i$; nonnegative $a_i,b_i$ put the
+endpoints in the stated order. Set $P_i=\sum_{h=1}^iu_h$ and
+$Z_i=D_i-P_i$. Then
+\begin{equation}
+ Z_1=0,\qquad Z_i=\operatorname{clamp}
+          (Z_{i-1},-b_i-P_{i-1},a_i-P_{i-1}).
+ \label{s5:clamp-recurrence}
+\end{equation}
+Every $Z_i$ is selected from zero and the $2(i-1)$ preceding clamp
+endpoints. Form the common list of those polynomials and all $-P_i$.
+Signs of its pairwise differences determine every clamp selection,
+every increment $\min(0,D_{i-1}+b_i)$, and the final comparison between
+$E_n(0)$ and $E_n(1)$. On each realizable sign condition, execute the
+recurrence symbolically; its value is a sum of polynomially many input
+terms of the original degree. Equal values can be resolved by either
+choice, including on lower-dimensional conditions. Coefficient heights
+remain polynomial. A polynomial-size list of fixed-degree polynomials
+has polynomially many realizable sign conditions in fixed dimension,
+constructible by the cited real-algebraic algorithms.
+
+For a cycle, fix $x_1$ to zero and then to one. The edge from the last
+vertex to the fixed first vertex is a unary cost at the last vertex;
+the first edge is handled by the fixed initial condition (or absorbed
+at the second vertex). Apply the path construction and compare the two
+value formulas on their common sign refinement. A product of two
+polynomial bounds is polynomial. This proof is specific to the binary
+submodular energy and its clamp recurrence.
+\end{proof}
+
+\begin{lemma}[Box-bounded divergence support]\label{s5:box-base}
+Let $\ell\le u$ be finite signed arc bounds on a directed graph with
+vertex set $V$, and let $\alpha\le\beta$ be finite node bounds.
+Assume
+\[
+ \mathcal D=\{\operatorname{div}(w):\ell\le w\le u,
+                  \ \alpha\le\operatorname{div}(w)\le\beta\}
+\]
+is nonempty. Define
+\begin{equation}
+ f(S)=u(\delta^+S)-\ell(\delta^-S),\qquad
+ g(S)=\min_{T\subseteq V}\{f(T)+\beta(S\setminus T)
+                                     -\alpha(T\setminus S)\}.
+ \label{s5:box-rank}
+\end{equation}
+Then $g$ is submodular, $g(\varnothing)=g(V)=0$, and
+\[
+ \mathcal D=B(g):=\{d:d(S)\le g(S)\ (S\subseteq V),\ d(V)=0\}.
+\]
+If $c_1\ge\cdots\ge c_n$ is any ordering of a real cost vector and
+$S_k=\{1,\ldots,k\}$, then
+\begin{equation}
+ \max_{d\in\mathcal D}c^Td
+   =\sum_{k=1}^{n-1}(c_k-c_{k+1})g(S_k),\qquad
+ d_k^*=g(S_k)-g(S_{k-1})
+ \label{s5:greedy-support}
+\end{equation}
+gives an attaining divergence vector. Minimum support is obtained by
+negating the maximum for $-c$.
+\end{lemma}
+
+The box rank formula and greedy rule are classical. They are stated in
+\citet[Theorems~1--2, equation~(11), p.~192]{s5:shioura2013} for the
+maximal vectors of a box-truncated submodular polyhedron. We prove the
+needed base-polyhedron specialization, including its total-sum condition.
+
+\begin{proof}
+Before the node box is imposed, feasible divergences are exactly $B(f)$.
+Necessity follows by summing divergences. Conversely, prescribe a vector
+$d$ with $d(V)=0$ and $d(S)\le f(S)$; its complementary inequality is
+$d(S)\ge\ell(\delta^+S)-u(\delta^-S)$. Lemma~\ref{s5:cuts} with
+$\alpha=\beta=d$ supplies the flow. Also
+\[
+ f(T)=\sum_{e\in\delta^+T}(u_e-\ell_e)
+                         +\sum_{v\in T}\operatorname{div}(\ell)_v.
+\]
+A nonnegative directed cut function is submodular, as verified edge
+by edge on the four membership possibilities, and the second term is
+modular. Thus $f$ is submodular even when $\ell,u$ are signed, and
+$f(\varnothing)=f(V)=0$.
+
+The expression minimized in \eqref{s5:box-rank} is jointly submodular
+in $(S,T)$. Its node term takes values $0,\beta_v,-\alpha_v,0$ at
+membership pairs $(0,0),(1,0),(0,1),(1,1)$; the only nontrivial
+submodularity inequality is $\alpha_v\le\beta_v$. Add the submodular
+term $f(T)$. For minimizing pairs $(S_1,T_1),(S_2,T_2)$, the product
+lattice inequality bounds their sum below by the values at union and
+intersection, which in turn bound $g(S_1\cup S_2)+g(S_1\cap S_2)$.
+Hence partial minimization gives submodular $g$.
+
+For every $d\in\mathcal D$ and every $S,T$,
+\[
+ d(S)=d(T)+d(S\setminus T)-d(T\setminus S)
+       \le f(T)+\beta(S\setminus T)-\alpha(T\setminus S).
+\]
+Thus $d(S)\le g(S)$. At $S=\varnothing,V$, this inequality and the
+choices $T=\varnothing,V$ respectively prove
+$g(\varnothing)=g(V)=0$, using nonemptiness. This gives
+$\mathcal D\subseteq B(g)$. Conversely, choose $T=S$ to see
+$g(S)\le f(S)$, so $B(g)\subseteq B(f)$. At $S=\{v\}$ choose
+$T=\varnothing$ to get $d_v\le\beta_v$; at $S=V\setminus\{v\}$
+choose $T=V$ to get $d(V\setminus\{v\})\le-\alpha_v$, hence
+$d_v\ge\alpha_v$. This proves equality of the two polyhedra.
+
+For completeness, the greedy vector is feasible by diminishing
+increments. For any subset $A$, and each $k\in A$, the marginal of
+adding $k$ to $S_{k-1}$ is at most its marginal when added to
+$A\cap S_{k-1}$, since the latter set is contained in the former.
+Summing these inequalities gives $\sum_{k\in A}d_k^*\le g(A)$.
+The full sum telescopes to $g(V)=0$. For any feasible $d$,
+\[
+ c^Td=c_n d(V)+\sum_{k=1}^{n-1}(c_k-c_{k+1})d(S_k)
+       \le\sum_{k=1}^{n-1}(c_k-c_{k+1})g(S_k).
+\]
+The greedy vector attains equality at each prefix. This handles signed
+costs and ties, and proves \eqref{s5:greedy-support}.
+\end{proof}
+
+\begin{theorem}[Common lower and upper throughput bounds]
+\label{s5:restrictive-capacity}
+The fully contracted scalar or affine-rank-one model of
+Theorem~\ref{s5:quadratic-field} admits polynomial-time feasibility with
+an arbitrary common throughput interval $[L_P,U_P]$. All individual
+arc bounds, including positive lower bounds, remain. A feasible physical
+flow is constructible in one real algebraic field of polynomial degree
+and encoding length. No quadratic-field bound is asserted here.
+\end{theorem}
+\begin{proof}
+Intersect the common interval with nonnegativity and a valid finite
+throughput bound; reject an empty intersection. If the pool has no feed
+or no outlet, force all incident flows to zero and explicitly require
+$L_P=0$, check incident bounds, and solve the remaining original LP.
+Check \eqref{s5:global-constants}; treat every singular source quality
+by its original rational physical LP, now retaining $[L_P,U_P]$.
+
+On a nonsingular quality interval perform the signed transformation
+of Theorem~\ref{s5:quadratic-field}. Split at roots of all arc-candidate
+comparisons. There are polynomially many quadratic comparisons and
+hence polynomially many interval and singleton cells. On each cell the
+effective $\ell_e,u_e$ are explicit quadratic polynomials; node
+$\alpha,\beta$ are affine. Keep every pure parameter condition and
+connected cut. These enforce $\mathcal D(q)\ne\varnothing$ before
+Lemma~\ref{s5:box-base} is applied.
+
+Let $A=\sum_i a_i$ and assign costs
+\[
+ c_i(q)=\frac1{C_i-q}\quad\hbox{at inputs},\qquad
+ c_j(q)=0\quad\hbox{at products}.
+\]
+Since input divergence is the sum of its outgoing transformed bypasses,
+\begin{equation}
+ Z:=\sum_{ij}z_{ij}=c(q)^T\operatorname{div}(w),\qquad T=A-Z.
+ \label{s5:throughput-support}
+\end{equation}
+The cost order is fixed on each nonsingular source-quality interval:
+input cost differences have numerator $C_h-C_i$ and denominator
+$(C_i-q)(C_h-q)$, both of known sign; the comparison with zero is
+also fixed. Repeated input qualities merely give ties.
+
+For every prefix in the orders for $c$ and $-c$, evaluate $g(S)$
+symbolically. Its definition \eqref{s5:box-rank}, with membership of
+$T$ as binary labels, is a path/cycle energy. Indeed $f(T)$ is a directed
+cut with capacities $u_e-\ell_e\ge0$ plus the unary terms
+$\operatorname{div}(\ell)_v\mathbf1_{v\in T}$; the remaining box
+terms are unary too. All these costs are quadratic polynomials on the
+cell. Lemma~\ref{s5:clamp} gives an explicit quadratic minimum on
+polynomially many univariate sign cells. Different connected components
+minimize independently, including isolated vertices. Take the union
+of all univariate breakpoints over all prefixes, orders, and components.
+This remains polynomial; it is not a product enumeration of their
+partitions. Keep singleton and equality cells.
+
+On the resulting cells, \eqref{s5:greedy-support} supplies rational
+functions $Z_{\min}(q),Z_{\max}(q)$ with polynomial degrees and
+coefficient lengths. A common denominator is the product of the
+distinct nonzero factors $C_i-q$; its degree is at most the input count
+and its sign is fixed. Combining polynomially many quadratic numerators
+with these factors increases degree and height only polynomially.
+For a fixed feasible $q$, compactness and convexity of the signed flow
+polytope imply that its attainable bypass totals form exactly the closed
+interval $[Z_{\min},Z_{\max}]$. It meets $[A-U_P,A-L_P]$ exactly when
+\begin{equation}
+ Z_{\min}(q)\le A-L_P,\qquad Z_{\max}(q)\ge A-U_P.
+ \label{s5:capacity-test}
+\end{equation}
+Clear the known-sign denominator. These are univariate polynomial
+inequalities of polynomial degree and bit length. Root isolation and
+sign testing on each actual cell, together with retained cut and local
+conditions, decide feasibility in polynomial bit time.
+
+Choose a feasible rational interval sample or an algebraic boundary
+point $q$ of polynomial degree and encoding. For each support extremum,
+Lemma~\ref{s5:box-base} constructs an attaining divergence by differences
+of the computed prefix rank values. These values belong to $\Q(q)$
+with polynomial encoding. Realize each divergence by a bounded-flow LP
+in the same field. Its incidence matrix has a polynomial-encoding
+vertex; the cited algebraic LP algorithm constructs one. This also
+follows from the usual lower-bound shift and a polynomial-augmentation
+flow algorithm using exact comparisons in the represented field.
+
+Choose $Z^*$ in the nonempty intersection with $[A-U_P,A-L_P]$, for
+example $\max(Z_{\min},A-U_P)$. If the extrema differ, interpolate the
+two realizing flows with coefficient
+$(Z^*-Z_{\min})/(Z_{\max}-Z_{\min})$. If equal, use either. This
+coefficient is one quotient in $\Q(q)$ of polynomial encoding.
+Convexity preserves all signed arc and node bounds and makes the total
+exactly $Z^*$. Divide by $C_i-q$, recover physical pool arcs, and use
+Lemma~\ref{s5:conservation} to verify all balances. The resulting
+throughput is in the common interval. The rank-one compression of
+Theorem~\ref{s5:quadratic-field} changes no flow or capacity and therefore
+extends the conclusion to affine input rank one.
+\end{proof}
+
+\begin{corollary}[Exact pool-throughput optimization]
+\label{s5:throughput-optimization}
+In Theorem~\ref{s5:restrictive-capacity}, both the minimum and maximum
+pool throughput, and therefore standard economic cost plus a rational
+linear pool-throughput cost, can be optimized exactly in polynomial bit
+time with a polynomial-size common-field physical optimizer.
+\end{corollary}
+\begin{proof}
+On each nonsingular cell retain a second variable $T$ and impose
+\[
+ L_P\le T\le U_P,\qquad
+ A-Z_{\max}(q)\le T\le A-Z_{\min}(q).
+\]
+Clear the same known-sign denominators. These rows and the retained
+local feasibility conditions give a formula of polynomial size and
+degree in two variables. Every satisfying $(q,T)$ is physically
+realizable by the extrema interpolation in the preceding proof.
+Conversely every physical flow in the cell satisfies them. At each
+singular quality, the original rational LP gives the full attainable
+throughput interval by minimizing and maximizing $T$.
+
+The union of all these actual-cell descriptions and singular intervals
+is exactly the attainable $(q,T)$ set of the original compact physical
+model with the closed feed-quality interval. Quantifier elimination
+projects this polynomial-size union onto $T$ and supplies its attained
+endpoints. Sample an attaining $(q,T)$ in its actual cell and use the
+same interpolation to recover an original optimizer, or use the
+singular LP. Fixed dimension and polynomial degrees give polynomial bit
+time and a polynomial-degree common field. Exact source and product
+throughputs make standard economics constant, so adding any rational
+multiple of $T$ selects one of these extrema (or any feasible flow when
+its coefficient is zero). No other dense arc-cost objective is included.
+\end{proof}
+
+\subsection{Two full input-quality vectors}\label{s5:two-vectors}
+
+A different reduction permits arbitrary bypass topology and arbitrary
+source supply intervals. It uses the fact that all nonlinear outlet
+upper bounds have the same concave quadratic term.
+
+\begin{theorem}[Two-vector feasibility with variable supplies]
+\label{s5:two-vector-theorem}
+Suppose the input qualities take at most two distinct full rational
+vectors. Products have exact demands and exact quality vectors, sources
+may have arbitrary finite rational supply intervals, and the bypass
+graph is unrestricted. Individual feed and bypass lower bounds may be
+positive. Every pool-outlet lower bound and the common pool lower bound
+must be zero; their finite upper bounds may be restrictive. Feasibility
+is polynomial-time decidable and, when feasible, has a constructible
+rational original-flow witness of polynomial encoding length. This
+statement concerns feasibility, including variable procurement, without
+an economic or arbitrary arc-cost optimization claim.
+\end{theorem}
+\begin{proof}
+With one distinct input vector, every active mixture has that vector,
+so checking compatible positive-demand product qualities leaves a
+rational LP. With two distinct vectors, choose a coordinate on their
+rational affine line that assigns the vectors the scalar values zero
+and one. Every positive-demand product vector must lie on the segment
+between them; otherwise it cannot be a convex mixture and the instance
+is infeasible. Its scalar coordinate is $B_j\in[0,1]$. A zero-demand
+product has all incoming flows zero, so its stated quality is immaterial
+and may be assigned any coordinate on the line. Local mass equations
+cancel the affine offset, making scalar quality equivalent to every
+original vector equation. All this is polynomial-bit rational linear
+algebra. Write $I_0,I_1$ for the two input classes.
+
+If the pool lacks a feed or an outlet, force all its arcs to zero,
+check their bounds, and solve the remaining original LP with source
+intervals and product contracts. Otherwise the only active scalar
+qualities are in $[0,1]$. Solve the original physical LPs at $q=0$ and
+$q=1$, retaining every pool balance and capacity. An inactive pool can
+also be represented at either endpoint. Only the nonsingular case
+$0<q<1$ remains.
+
+Let actual withdrawal at input $i$ be $A_i$ and feed flow $y_i$.
+Exact product contracts fix the total consumption of each class:
+\begin{equation}
+ A_0^{\rm tot}=\sum_jb_j(1-B_j),\qquad
+ A_1^{\rm tot}=\sum_jb_jB_j.
+ \label{s5:class-totals}
+\end{equation}
+These identities follow by total mass and scalar-quality conservation;
+individual withdrawals need not be fixed. Put $\gamma_i=-q$ on $I_0$
+and $\gamma_i=1-q$ on $I_1$, and introduce
+\begin{equation}
+ w_{ij}=\gamma_i z_{ij},\qquad t_i=\gamma_i A_i,
+ \qquad h_i=\gamma_i y_i.
+ \label{s5:two-scaling}
+\end{equation}
+A source interval $[L_i,U_i]$ becomes the interval with endpoints
+$\gamma_iL_i,\gamma_iU_i$ on $t_i$, in the sign order fixed by its
+class. Feed intervals give the corresponding bounds on $h_i$, with
+$h_i=0$ for an absent feed. Bypass intervals give affine bounds on
+$w_{ij}$. This retains positive feed and bypass lower bounds. Impose
+\begin{equation}
+ t_i=h_i+\sum_jw_{ij},\qquad
+ \sum_{i\in I_0}t_i=-q A_0^{\rm tot},\qquad
+ \sum_{i\in I_1}t_i=(1-q)A_1^{\rm tot}.
+ \label{s5:two-input-rows}
+\end{equation}
+Every row is affine in the transformed variables and $q$.
+
+For each product define
+$W_{0j}=\sum_{i\in I_0}w_{ij}$ and
+$W_{1j}=\sum_{i\in I_1}w_{ij}$. Its exact quality equation after
+eliminating $v_j=b_j-\sum_i z_{ij}$ is
+\begin{equation}
+ W_{0j}+W_{1j}=b_j(B_j-q).
+ \label{s5:two-output}
+\end{equation}
+Use $\sum_i z_{ij}=-W_{0j}/q+W_{1j}/(1-q)$ in this identity to get
+\begin{equation}
+ W_{0j}=q b_j(B_j-1)+q(1-q)v_j.
+ \label{s5:two-outlet-identity}
+\end{equation}
+This uses no bound on the number of bypass inlets and remains valid
+when an input class is absent at a product. Thus the outlet bounds
+$0\le v_j\le U_j^P$ are exactly
+\begin{equation}
+ q b_j(B_j-1)\le W_{0j}\le
+        q b_j(B_j-1)+U_j^P q(1-q).
+ \label{s5:concave-outlet}
+\end{equation}
+An absent outlet is $U_j^P=0$. Summing
+\eqref{s5:two-outlet-identity} gives the common upper bound $T\le U_P$
+as
+\begin{equation}
+ \sum_jW_{0j}\le q\sum_jb_j(B_j-1)+U_Pq(1-q).
+ \label{s5:concave-common}
+\end{equation}
+All upper coefficients $U_j^P,U_P$ are nonnegative.
+
+We check the reverse physical correspondence before solving these
+inequalities. At interior $q$, divide \eqref{s5:two-scaling} by its
+nonzero class factor to recover $A_i,y_i,z_{ij}$. Their original bounds
+and input conservation follow from the affine interval and local rows.
+The class equations \eqref{s5:two-input-rows} give
+$\sum_i A_i=A_0^{\rm tot}+A_1^{\rm tot}=\sum_jb_j$, hence recovered
+pool intakes and outlets have the same total. Also
+\[
+ \sum_i t_i=-q A_0^{\rm tot}+(1-q)A_1^{\rm tot}
+       =\sum_jb_j(B_j-q)=\sum_{ij}w_{ij}.
+\]
+Summing the input equations therefore gives $\sum_i h_i=0$, namely
+\[
+ -q\sum_{i\in I_0}y_i+(1-q)\sum_{i\in I_1}y_i=0.
+\]
+This is precisely the pool quality balance. The product equations give
+actual product quality, and \eqref{s5:concave-outlet} gives actual
+nonnegative outlet flow and its upper bound by
+\eqref{s5:two-outlet-identity}. Equation~\eqref{s5:concave-common}
+gives the shared capacity. At zero throughput every nonnegative pool
+flow vanishes. Conversely every original interior-quality solution
+satisfies all transformed rows, by these same identities.
+
+Introduce one auxiliary variable $r$ and replace every $q(1-q)$ on
+the right sides of \eqref{s5:concave-outlet} and
+\eqref{s5:concave-common} by $q-r$. Let $P$ be the resulting rational
+polytope of all affine rows together with $0\le q,r\le1$. It is
+bounded: source, feed, and bypass capacities bound $t,h,w$ uniformly
+since $|\gamma_i|\le1$. Empty $P$ is rejected. The original transformed
+system at an interior $q$ is feasible if and only if some point in $P$
+satisfies
+\begin{equation}
+ F(q,r,t,h,w):=q^2-r\le0.
+ \label{s5:single-qp}
+\end{equation}
+Forward take $r=q^2$. In reverse, $r\ge q^2$ makes every replaced
+upper bound at least as restrictive as the original one, since every
+multiplying capacity is nonnegative. The lower bounds are affine and
+were unchanged. Thus the equivalence holds.
+
+The rational objective $F$ has positive semidefinite Hessian of rank
+one. Exact rational convex quadratic programming over a rational
+polytope is polynomial-time solvable, including an exact optimal value
+and a rational optimizer of polynomial encoding length. This is the
+classical algorithm of \citet[pp.~1320--1323; numbered paragraphs~3
+and~6 for rational optimal solutions and recovery]{s5:kozlov1980}.
+It is a convex-QP invocation, not an appeal to generic exact conic
+feasibility. For the rationality assertion specifically, at a minimizer
+choose its active affine rows. The corresponding KKT stationarity,
+active equalities, primal inequalities, and nonnegative multipliers
+form a rational linear system; every solution is optimal by convexity.
+A rational basic feasible solution of that system has polynomial
+encoding by determinant bounds. The algorithm constructs such an
+optimizer without enumerating active sets.
+
+The closed polytope may contain spurious transformed endpoint points,
+so interior quality must still be enforced exactly. First maximize
+$\epsilon$ over $P$ with
+$0\le\epsilon\le q$ and $\epsilon\le1-q$. If infeasible or its optimum
+is zero, $P$ contains no interior-quality point. Otherwise retain a
+polynomial-bit rational point $p\in P$ with $0<q_p<1$. Now minimize
+$F$ over $P$, obtaining a rational optimizer $x^*$ and value $m$.
+If $m>0$, there is no solution. If $m=0$, all minimizers have the same
+$q$: for two minimizers $x,y$,
+\[
+ F((x+y)/2)=\tfrac12F(x)+\tfrac12F(y)-\tfrac14(q_x-q_y)^2,
+\]
+so different qualities would contradict optimality. Thus this branch
+is feasible precisely when $0<q_{x^*}<1$; then $x^*$ is a witness.
+If $m=-\rho<0$, use $F(p)\le1$ (from $0\le q,r\le1$) and choose
+\[
+ \lambda=\frac{\rho}{2(\rho+1)},\qquad
+ x=(1-\lambda)x^*+\lambda p.
+\]
+This rational point has interior quality, and convexity gives
+$F(x)\le-\rho+\lambda(\rho+1)=-\rho/2<0$. All numbers have polynomial
+encoding. This handles exact zero minima and isolated feasible interior
+qualities without a numerical margin or a closure assumption.
+
+Finally divide by the nonzero rational class factors to recover
+$A_i,y_i,z_{ij}$ and set $v_j=b_j-\sum_i z_{ij}$. Every recovered flow
+is rational with polynomial bit length; the established reverse mapping
+verifies all physical rows. Endpoint branches already use the original
+rational LPs. Returning to the original affine quality line restores
+all full-vector quality equations and proves the theorem.
+\end{proof}
+
+\begin{corollary}[Exact supplies and additional outlet resources]
+\label{s5:two-vector-extensions}
+Theorem~\ref{s5:two-vector-theorem} includes exact supplies as a special
+case. For exact supplies standard input costs and output revenues are
+constant. In either supply model it also permits any polynomial number
+of additional outlet rows $\sum_j\alpha_jv_j\le U$ with rational
+$\alpha_j$ and $U\ge0$.
+\end{corollary}
+\begin{proof}
+Exact supplies fix $A_i=a_i$, so the class totals require
+$\sum_i a_i=\sum_jb_j$ and $\sum_{i\in I_1}a_i=\sum_jb_jB_j$.
+The variables $t_i$ in \eqref{s5:two-input-rows} may then be substituted
+by $\gamma_i a_i$. Eliminating $h_i$ gives the affine signed bypass
+interval at each source, preserving the exact-source construction and
+all its lower bounds. Economic constancy follows from fixed source and
+product throughputs.
+
+For an additional resource row, multiply
+\eqref{s5:two-outlet-identity} by $\alpha_j$ and sum. Since $q(1-q)>0$,
+the row is exactly
+\[
+ \sum_j\alpha_jW_{0j}\le
+ q\sum_j\alpha_jb_j(B_j-1)+Uq(1-q).
+\]
+Replace its last term by $U(q-r)$ in $P$. Nonnegative $U$ gives the
+same two-way equivalence with \eqref{s5:single-qp}. The signs of the
+$\alpha_j$ do not change the identity or this comparison. Endpoint LPs
+retain the original resource rows. The proof and rational recovery are
+otherwise unchanged.
+\end{proof}
+
+Positive outlet lower bounds would give
+$W_{0j}\ge qb_j(B_j-1)+\ell_j^P q(1-q)$, whose quadratic term has the
+opposite inequality direction. A positive common pool lower bound has
+the same obstruction. Neither is covered by this convex reduction;
+they are permitted by the different, degree-two algorithm in
+Theorem~\ref{s5:restrictive-capacity}. Variable source withdrawals also
+make input procurement costs nonconstant, so feasibility in
+Theorem~\ref{s5:two-vector-theorem} does not establish their optimization.
+The restriction is two distinct complete quality vectors, not two
+quality coordinates or a fixed number of physical inputs.
+
+The established ingredients in this section are planar elimination,
+difference constraints, signed circulation, submodular base optimization,
+convex quadratic programming, and fixed-dimensional real algebra. Their
+specializations above retain the physical contract assumptions. The
+fixed-input no-bypass algorithm of \citet[Theorem~1]{s4:boland2017}
+and the fixed-demand model without feed availability and common pool
+capacity constraints in \citet[Assumption~2.2]{s3:baltean2018} have
+different hypotheses. They do not supply the unbounded-input,
+contracted-bypass classifications proved here. This comparison is scoped
+to those statements and is not a claim of exhaustive priority.

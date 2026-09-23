@@ -1,0 +1,157 @@
+Verification of the sppc0 / sppb0 root-bound claims in assessment.md
+Date: 2026-09-23. Scope: only the two claims below. No other instances, no new theory.
+
+Claims checked (assessment.md, Sections 1 and 4.4):
+  (A) pq + disaggregated single-pool single-output multi-attribute hulls ("D") gives the valid dual bound
+      -93442.92 on pooling_sppc0pq and -45047.42 on pooling_sppb0pq (minimization).
+  (B) These bounds beat the dual bounds listed on MINLPLib (quoted as -97328.57 for sppc0 and
+      -45318.86 for sppb0).
+
+Note on names: MINLPLib has no pooling_sppc0 / pooling_sppb0 page (pooling_sppc0.html returns 404).
+The instances are pooling_spp{b,c}0{pq,stp,tp}; the author worked on the pq variants. The comparison below
+treats the pq, stp and tp variants as the same pooling instance, as the assessment does.
+
+VERDICTS
+  1. Validity of the added constraints ..................... CONFIRMED (math argument + 280 feasible points)
+  2. Rebuilt model contains every original row ............. CONFIRMED
+  3. Safe dual bounds ...................................... CONFIRMED; the author's numbers are valid
+       sppc0pq: safe bound -93325.2208  (author's valid value: -93442.92)
+       sppb0pq: safe bound -45046.1012  (author's valid value: -45047.42)
+     Both safe bounds are at least as high as the author's values, so the author's values are also valid
+     lower bounds.
+  4. "Better than MINLPLib's listed dual bounds":
+       sppc0: CONFIRMED, but the margin is smaller than stated. It is about 1682, not 3886.
+       sppb0: REFUTED. MINLPLib lists better (higher) Gurobi dual bounds.
+
+--------------------------------------------------------------------------------------------------
+4. MINLPLib dual bounds (fetched 2026-09-23 from www.minlplib.org/pooling_*.html; all solver entries)
+   The assessment quoted one BARON entry per instance. Each page lists several solver bounds. For
+   minimization the best listed bound is the highest one; here it is always GUROBI, updated 07 Aug 2025.
+
+   instance          ANTIGONE      BARON         COUENNE       GUROBI (best)  LINDO         SCIP
+   pooling_sppc0pq   -99074.96362  -98656.19074  -99332.74837  -95824.43143   -99077.8089   -97245.21165
+   pooling_sppc0stp  -99096.92766  -97328.56564  -             -95843.58519   -98752.68824  -97127.76571
+   pooling_sppc0tp   -98965.65106  -97855.44032  -99518.0487   -95124.69444   -98688.94586  -97841.98607
+   pooling_sppb0pq   -45373.04599  -45426.7169   -45447.39734  -44853.09376   -45344.40167  -45151.61648
+   pooling_sppb0stp  -             -45353.24624  -45461.9365   -44775.35793   -45406.42476  -45172.03702
+   pooling_sppb0tp   -45403.61559  -45318.86209  -45445.13211  -44564.91548   -45373.24855  -45092.9906
+   Best primal: sppc0pq -87924.99821; sppb0pq -43412.41188.
+
+   sppc0: the safe bound -93325.22 beats the best listed bound, -95124.69 (tp, GUROBI), by 1799.47. It
+          beats the best pq bound, -95824.43, by 2499.21. The author's own -93442.92 beats -95124.69 by
+          1681.77.
+          Relative gap to the best primal, (primal - bound)/|primal|: 6.14% with the safe bound, 8.19% with
+          the best MINLPLib bound.
+   sppb0: the safe bound -45046.10 is WORSE than GUROBI's -44564.92 (tp), by 481.19; than -44775.36 (stp),
+          by 270.74; and than -44853.09 (pq), by 193.01. It beats only the BARON, ANTIGONE, COUENNE, LINDO
+          and SCIP entries. The claim "new dual bound for sppb0" in Sections 1 and 4.4 is false. The
+          Alfaki-Haugland (2013) values quoted in the assessment were not rechecked.
+
+--------------------------------------------------------------------------------------------------
+1. Validity of the added constraints
+
+What is actually computed. The "valid" numbers come from gridrelax.py ... outer. This is an LP, not the
+SOC extended formulation or the exact hull. For each pool-output pair (l,j) it adds a Balas disjunctive
+formulation over x = y_lj in [0, XU], split into intervals [x_g, x_{g+1}]. Each piece is the block set
+with w_i = x q_i replaced by McCormick rows for x in [x_g, x_{g+1}] and q_i in [0, qU]. The block set is:
+  - q in the simplex; sum_i w_i = x;
+  - bypass aggregates v_b >= 0, with x + sum_b v_b <= C_j;
+  - the output's quality rows sum_i g_ij w_i + sum_b g_bj v_b <= 0.
+The master coordinates are y_lj, q_il, w_ilj and v_b = z_bj + sum_{l' != l} w_{b l' j}.
+The SOC/"finite union of pieces" hull statements in Section 3 are not used by these bounds. The bound is
+therefore that of an outer approximation of the hull. It is weaker than the exact-hull value but still
+valid. (The inner grid estimates -93317.03 and -45038.59 are not bounds.)
+
+Argument. Take any feasible point of the original pq model and fix (l,j). Its projection satisfies every
+row of the block set:
+  - simplex: an original row;
+  - sum_i w_ilj = y_lj: w_ilj = q_il * y_lj and sum_i q_il = 1;
+  - the quality rows: each is an original row, rewritten after grouping bypass flows by input. This is
+    exact because every quality coefficient depends only on (input, output). spp.py asserts this, and it
+    was rechecked here: the quality rows are reproduced identically.
+    Every flow into j other than via l is in some v_b. An omitted flow with a negative coefficient would
+    make the block row invalid, so this matters; it holds.
+  - x + sum v_b <= C_j: the original output-capacity row;
+  - x <= XU: the author's XU = ybound(l,j) equals the OSiL bound on y_lj for all 115 and 234 pairs.
+On the interval containing y_lj, the four McCormick inequalities are the products of nonnegative bound
+factors, so they hold exactly. The lift that puts lambda = 1 on that piece and 0 on the others satisfies
+the homogenized system. Every piece's McCormick rows are valid on its interval and the pieces cover
+[0, XU], so the disjunction is a relaxation.
+
+The pq layer adds only valid rows:
+  - McCormick of w = q y with OSiL bounds;
+  - sum_i w_ilj = y_lj;
+  - sum_j w_ilj <= C_l q_il, which is q_il times the pool-capacity row.
+
+Numerical test. Every point is lifted into the author's outer LP (G=40, the grid of the sppc0 run) and
+into the independent LP, and every row and bound is evaluated. The points are:
+  - MINLPLib solutions: sppb0pq p1-p2 and sppc0pq p1-p6;
+  - 20 random starts per instance, each with 6 alternating LP steps (fix q, then fix y), using the true
+    objective or random objectives;
+  - 4 local-search steps from each MINLPLib point.
+Each point is feasible in the original model to at most 2.7e-9.
+   sppb0pq: 130 points; worst row violation, author LP 2.1e-10, independent LP 2.1e-10.
+   sppc0pq: 150 points; worst row violation, author LP 5.7e-10, independent LP 5.7e-10.
+   These are the points' own tolerance levels. No constraint cuts off a feasible point.
+   (A first run showed a spurious violation of 145. The cause was a lift bug in the checker: y = -5e-12
+   was assigned to the last piece. It was fixed and rerun.)
+
+--------------------------------------------------------------------------------------------------
+2. Rebuild check (check_author.py; original rows read independently with osil_eval.py)
+   Every OSiL linear row appears identically, after variable mapping, in the author's build_pq model:
+     - sppb0pq: 804 of 804 rows (714 quality, 73 capacity, 17 simplex);
+     - sppc0pq: 1760 of 1760 rows (1600 quality, 130 capacity, 30 simplex).
+   All bilinear rows are covered: 1153 and 2826 w = q*y rows, each with McCormick rows.
+   Objective coefficients are identical (max difference 0). No variable bound is tighter than in the OSiL.
+   The rebuild drops the OSiL upper bounds on the w variables. This only weakens the relaxation.
+   The pq LP values match exactly: -45466.540 and -99129.090 (independent: -45466.5402, -99129.0897).
+
+--------------------------------------------------------------------------------------------------
+3. Independent rebuild and safe bound (indep_bound.py)
+   The LP is built directly from OSiL decimal data and does not use spp.py, instance.py or gridrelax.py.
+   Its rows are:
+     - all original linear rows and bounds;
+     - McCormick of every bilinear row;
+     - sum_i w = y, and the q-times-pool-capacity rows;
+     - for each y_lj, the Balas outer disjunction over the same x grid (G=40 -> 46 points, 45 intervals).
+   Block rows are all original rows whose support lies in the output's flows. Other flows are aggregated
+   by identical coefficient vectors, and every piece variable has a finite, valid upper bound.
+   The LP is solved with Gurobi barrier, no crossover, BarConvTol 1e-10. (Crossover stalled on sppc0.)
+
+   Safe bound (Neumaier-Shcherbina):
+     - take the row duals and set wrong-signed values to 0;
+     - compute d = c - A^T y with a rigorous floating-point error bound. The bound includes 2^-52 relative
+       uncertainty of every coefficient and right-hand side against its decimal value;
+     - bound = b^T y + sum_j min over the box of d_j x_j, with directed error terms and correctly
+       rounded sums (math.fsum).
+   All variable bounds are exactly representable, which is asserted in the code. Grid products are
+   asserted exact.
+   Sanity test on sppb0 with a coarse grid: the safe value is at most the exact-rational evaluation of the
+   same certificate, for exact and for noisy duals (noise 0, 1e-6, 1e-3).
+
+   instance  grid  LP rows x cols        LP value         SAFE BOUND        author valid  author inner
+   sppb0pq   46    671718 x 263842       -45046.101108    -45046.1011081    -45047.42     -45038.59
+   sppc0pq   46    1713394 x 728587      -93325.220789    -93325.2207955    -93442.92     -93317.03
+   The safe correction is below 1e-5. The independent LP is slightly stronger than the author's. This
+   plausibly comes from the extra valid bounds: the OSiL w bounds, and the bounds on the aggregated bypass
+   flows in each piece.
+
+--------------------------------------------------------------------------------------------------
+Corrections needed in assessment.md
+  - Section 1 table and Section 4.4: MINLPLib's best listed dual bounds are the GUROBI entries
+    (-95124.69 for sppc0tp and -95824.43 for sppc0pq; -44564.92 for sppb0tp and -44853.09 for sppb0pq),
+    not -97328.57 and -45318.86.
+  - sppb0: remove the "new dual bound" claim.
+  - sppc0: the improvement over MINLPLib is about 1.7e3 (tp) or 2.4e3 (pq), not 3886. A safe bound
+    -93325.22 is now available.
+  - The valid numbers come from a piecewise-McCormick disjunctive LP, not from the SOC formulation of the
+    exact hull.
+
+Files (code/): indep_bound.py, gen_points.py, check_author.py, check_indep_points.py.
+Logs: code/out/verify/*.log; points in code/out/verify/pts_*.npz.
+Commands (PY=~/miniconda3/envs/exact-quadratic-hull/bin/python, run in code/):
+  $PY indep_bound.py <osil> 40 D nox;  $PY indep_bound.py <osil> 40 pq
+  $PY gen_points.py <osil> out/verify/pts_<inst>.npz 20 <minlplib .sol files>
+  $PY check_indep_points.py <osil> out/verify/pts_<inst>.npz 40
+  $PY check_author.py <osil> out/verify/pts_<inst>.npz 40
+Only these targeted checks were run. No project-wide verification.

@@ -1,0 +1,35 @@
+# Carbonylation reassessment after the literature uploads
+
+Date: 2026-09-16. Bounded review of the existing proposal; no experiments or new direction developed. Corrections below were subsequently implemented in the screen and benchmark review during the same date.
+
+## Decision
+
+**The Shimura comparator and source-access statements have been updated; the conditional wet-feed decision and low portfolio priority are retained.** The newly available full text establishes a useful Cu-MOR tandem reference, but its high selectivity accompanies low conversion and a short observation period. It does not establish a practical advantage over drying, a long-lived wet catalyst, or a new transferable water-occupancy mechanism.
+
+This review checks [Shimura 2026](../../literature/papers/shimura2026-direct-synthesis-of-methyl-acetate/original.pdf), DOI [10.1039/D6CY00105J](https://doi.org/10.1039/D6CY00105J), against the [existing screen](../working/carbonylation-value-screen.md) and [benchmark review](carbonylation-benchmark-review.md). Original PDF pages 3, 4 and 10 were visually inspected; relevant methods, discussion and conclusions were read from the PDF text. Other uploaded carbonylation works were not comprehensively re-audited here.
+
+## Findings and implemented corrections
+
+1. **The stale main-text access claim has been removed.** Its main article is now retained and readable, and the screen records the quantitative comparison below. The local `paper.md` remains too generic to support research decisions: it should record these numbers and limits rather than only repeating the title, abstract framing and conclusion. Knowledge-base edits remain the sole literature worker's responsibility.
+
+2. **Keep optimum selectivity, optimum yield and time course separate.** The introduction reports **93.7% combined MA/AA selectivity at 2.8% CO conversion** for 0.5 g CuMgAlOx (CMA) plus 3.0 g Cu(3.1)-MOR(18), 230 °C and 5 MPa. The maximum reported yield, **3.22%**, instead uses 0.75 g CMA plus 2.25 g Cu-MOR (Figure 9 discussion, PDF p.10). Figure 1's **10 h** time course uses the distinct Y-containing CMYA catalyst, 0.5 g, plus 2.5 g Cu-MOR. Its combined selectivity rises from about 70% to 85% over approximately **7 h of induction**, then remains near that level to 10 h; CO conversion stays around 3.5% (PDF p.4). These cannot be combined into one high-selectivity durability claim.
+
+3. **Record the denominator limits explicitly.** The main text reports maximum space-time yield **0.67 mmol g−1 h−1**, referring to SI Table S9, without an explicit mass definition in the inspected main-text passage (PDF p.10). The main tables do not give a mathematical selectivity definition. Do not silently apply Han's CO-free-organic-carbon convention, or compare this molar productivity directly with Fan's mass productivity. Treat `2.8% × 93.7% ≈ 2.62%` only as a conditional yield calculation if selectivity is defined per converted CO carbon; prefer the paper's explicitly reported yield until the definition is verified. This uncertainty does not affect the conclusion that single-pass conversion and reported maximum yield are low.
+
+4. **Resolve replication details before using the paper as a protocol.** The original methods print granule diameters **0.35–0.71 nm**, physically inconsistent with the stated granulation/packed-bed procedure. A millimetre unit is plausible but not confirmed. The headline GHSV of **3.4 L g−1 h−1** is consistent with the total 200 mL min−1 feed divided by 3.5 g solids. In contrast, the later 1000–4000 mL g−1 h−1 range matches the stated 50–200 mL min−1 *syngas* flow divided by 3.0 g, without including a separate N2 flow. The diluent treatment in that series needs SI confirmation; preserve actual component flows and masses rather than assuming a uniform GHSV convention.
+
+5. **The SI is now represented in the unresolved-material handoff.** The sole literature worker created a [metadata-only SI package](../../literature/papers/shimura2026-supporting-information-for-direct-synthesis/paper.md); retrieval remains unsuccessful and it remains unread. Tables S9–S11 are needed for productivity, yield and flow normalization, and detailed characterization is assigned to the SI. This is a missing evidentiary component even though the uploaded-main-file batch was fully processed. No knowledge-base files were changed by this reviewer.
+
+## Consequence for the existing experiment
+
+Shimura strengthens the requirement to test a credible **Cu-exchanged MOR tandem reference** when the chosen application resembles its syngas feed. It supplies no controlled water-on/water-off comparison establishing Cu-specific water protection: the authors explicitly describe poisoning by dehydration-derived water as a speculation in the initial H-MOR comparison. CO adsorption and Cu-state characterization support their catalytic interpretation but do not measure working water occupancy. These observations should not be rewritten as proof that Cu promotion solves moisture inhibition.
+
+The proposed finite wet/dry/recovery comparison remains feasible and informative on an appropriate platform. Its scientific claim still requires distinguishing ordinary inhibition, induction, transport and persistent change. In particular, a 7 h induction makes premature transient comparison a concrete concern. Its practical value still depends on a real feed, a specified drying alternative, and integrated output including conditioning and recovery. None of the newly checked results justifies raising confidence in meaningful process improvement or promoting carbonylation above the current leads.
+
+**Confidence:** high in the need to correct access status and separate the reported operating cases; moderate in this bounded comparison's informativeness; low, unchanged, in a substantial practical improvement without a specified process boundary. No changes to the existing Fan/Han arithmetic are established by this narrow review.
+
+## Implementation and checks
+
+The screen now specifies a finite entry decision, calibration and induction gates, at least two independently conditioned wet-step and sham beds per arm, common-feed recovery, a withheld realistic water history and a stop for unresolved practical uncertainty. It separates matched causal tests from the best available wet/dry operating policies. Integrated net acetate units, product split, carbon balance, calendar-time downtime, total solids and actual drying/H2/purge burdens define the practical comparison. Existing stop conditions and separate scientific, experimental and practical confidence are retained.
+
+The prior handoff table is explicitly dated as historical; a current access paragraph replaces its use as a missing-source inventory. Original PDF checks remain those listed above. File links and patch consistency were checked; no experiments or numerical reactor simulation were performed. SI definitions, replication details, the real process boundary and all proposed experimental outcomes remain unresolved.

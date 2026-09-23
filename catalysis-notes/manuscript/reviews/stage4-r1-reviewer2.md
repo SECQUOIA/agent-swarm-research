@@ -1,0 +1,36 @@
+# Stage 4, round 1 — independent reviewer 2
+
+**Verdict: revise one major comparator issue. No separate minor finding.**
+
+The proposed program has a sound central distinction between a causal material comparison at common conditions and a comparison of usable operating policies. Its ordinary-operation horizon, cumulative EO accounting, minimum work-rate requirement, lower-chloride alternative, and recovery-versus-continuation design avoid rewarding selectivity at negligible activity or an unpriced recovery peak. The prediction explicitly adds within-material recovery benefit to absolute full-clock output before comparing material choices, which is the right decision boundary.
+
+The remaining issue is that the unprocessed functioning reference is not explicitly retained as an ordinary-aging policy comparator. Initial qualification of the sham does not establish that extra processing leaves its subsequent drift unchanged.
+
+## Major finding
+
+**M1. Keep the untreated reference in the finite ordinary-operation comparison before claiming a useful Ni advantage.** Locations: `manuscript/sections/04-silver.tex:23–25`, `manuscript/sections/04-silver.tex:30–32`, `manuscript/sections/04-silver.tex:46–50`, and the absolute policy comparison at `manuscript/sections/04-silver.tex:77`. Related design summaries: `manuscript/evidence/stage4-silver.md:36–38`.
+
+Stage A prepares untreated, sham-processed, and Ni-treated materials, but gives the untreated material the role of diagnosing processing damage before the retention campaign. The explicitly specified initial chloride comparison is Ni versus sham, and Stage B ages the common-setting pair and policies derived from it. It never clearly requires the untreated functioning material to remain a policy comparator over the same horizon. “Ni-free” is insufficiently specific here because both the untreated and sham materials are Ni-free.
+
+This leaves a consequential alternative explanation open. Untreated and sham materials could have indistinguishable fresh chloride responses, but post-impregnation and drying could change later promoter redistribution or sintering. Ni might prevent that newly introduced instability. For example, identical fresh outputs followed by 5% loss for untreated, 20% for sham, and 5% for Ni would establish a real Ni-versus-sham intervention effect but no improvement over using the original catalyst without extra processing. Fresh sham qualification would pass. A lower-chloride policy tested only on the sham would not necessarily recover the missing comparison.
+
+This is major because the chapter's central objective is choosing a useful material or operating policy, not merely showing that Ni changes the consequences of its own preparation route. The text already recognizes the danger of rescuing a damaged sham at line 25, but applies no explicit long-horizon safeguard against a latent processing penalty. The historical Kemp comparison does not resolve it: its solvent control was not aged, as the chapter correctly reports.
+
+**Concrete remedy:** retain at least one independently replicated untreated-reference policy over the same complete horizon and preparation blocks. Give it a credible chloride setting or adjustment policy within the same operating and tuning limits. Keep the Ni/sham common-setting pair for the causal intervention contrast; it is not necessary to duplicate the entire chloride/recovery factorial on untreated material. The absolute output/resource comparison must include the best tested untreated policy as well as the sham policies. If the existing “Ni-free” policy arm was intended to use untreated material, state that assignment explicitly and explain how its setting was selected. A Ni/sham retention difference without an advantage over untreated operation should be reported as a processing-dependent result, not as a useful improvement of the starting catalyst.
+
+## Other design judgments
+
+- The preparation and loading choice is appropriately a single historically grounded route, not a claim to reproduce a particular isolated-Ni surface state. Sham handling, measured promoter inventories, and morphology checks support the complete addition-intervention estimand; they do not prove equal unresolved interfaces.
+- Fresh benefit is not used as a gate against a later retention benefit. The ordinary-operation comparison precedes any artificial excursion, and its null is limited to the tested horizon and preparation.
+- Recovery is compared with ordinary continuation at a matched age on both materials. Its own output, return time, and later trajectory remain included. The proposed duration validation can therefore assess a recovery decision without claiming universal irreversibility or an established periodic regeneration policy.
+- Chlorine/product gradients and the difference between steady rate-curve collapse and temporal recovery are treated correctly. The familiar baseline must be calibrated to these materials; an extra memory term is conditional on an informative prediction failure and cannot automatically be labeled promoter relocation or a selective oxygen population.
+- The measurement and qualification dependencies are reasonable for a proposal with access to a qualified EO platform as its entry condition. No performed positive experiment, isotope-return experiment, or expanded composition library is needed to repair M1.
+
+## Evidence checked and limits
+
+- Read the complete stage 4 chapter, evidence record, and bibliography entries. Followed the previously read `literature/AGENTS.md`. No other reviewer report was read, and no chapter or library file was changed.
+- Reviewed Kemp's local patent text for the preparation, solvent control, testing procedure, and Table III. It confirms that the solvent-treated control was not aged and that the reported values are losses from separate starting selectivities after accelerated aging and reoptimization. This supports the manuscript's qualified prior-art description and does not establish unchanged long-term behavior after sham processing.
+- Reviewed Iyer and Bhan 2021 local full text, especially Section 3.4 and the preceding independently assessed chlorine-exchange and EO-degradation behavior. The paper supports a forward steady-reactor baseline with axial gradients, not automatic transfer of a temporal recovery model. Source: [Iyer and Bhan, ACS Catalysis](https://doi.org/10.1021/acscatal.1c03493).
+- Directly extracted Iyer and Bhan 2023 original PDF pp.3–4. Table 1 reports materially different site estimates from its three titration estimators, supporting the manuscript's caution about exact active-site counts. Source: [Chemical Titration of Promoted Ag Catalysts](https://doi.org/10.1002/cctc.202300329).
+- Consulted the Hwang local full-text architecture/mechanistic context and the [lower-chloride patent disclosure](https://patents.google.com/patent/US20240279193A1/en). Neither supplies the missing untreated-versus-sham ordinary-aging control for the proposed new preparation.
+- Checked the selectivity-resource arithmetic and units of both output integrals. They are consistent with their stated assumptions. This review does not independently digitize the Jalil supplementary transient or infer an industrial lifetime from the cited records.

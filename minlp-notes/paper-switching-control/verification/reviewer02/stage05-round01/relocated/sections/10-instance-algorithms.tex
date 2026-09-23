@@ -1,0 +1,244 @@
+\section{Exact algorithms for a supplied input}\label{sec:algorithms}
+
+The minimax results quantify the hardest input. We now optimize the schedule
+for a supplied input on an arbitrary grid $\mathcal T=(x_0,\ldots,x_N)$.
+The data are rational integrated cell allocations
+$a_{ji}=A_i(x_j)-A_i(x_{j-1})$, with $a_{ji}\ge0$ and
+$\sum_i a_{ji}=\Delta_j$. By Lemma~\ref{lem:endpoint}, these data determine
+the error of every grid schedule even when the original relaxed control
+varies inside a cell. Arithmetic-operation bounds below count rational
+operations; the rational bit lengths are also polynomial in the input length
+for each fixed switch budget.
+
+\subsection{One switch and an optimal final block}
+
+Order the modes by nonincreasing terminal mass, breaking ties consistently,
+and denote the first two by $h_1,h_2$. Only these leaders, and a third leader
+for evaluating omitted maxima, need be selected; a full sort is unnecessary.
+
+\begin{theorem}[Three candidates per boundary]\label{thm:linear-one-switch}
+For $n\ge3$ and a fixed internal boundary $t$, an optimal ordered pair of
+distinct initial and final modes is among
+\[
+ (h_1,h_2),\qquad(h_2,h_1),\qquad(p_t,h_1),
+ \qquad p_t\in\argmax_{i\notin\{h_1,h_2\}}A_i(t).
+\]
+For $n=2$ the first two pairs suffice. Comparing these candidates at all
+permitted internal boundaries with the best constant schedule solves the
+at-most-one-switch problem in $O(nN)$ arithmetic operations. The same bound
+holds with a prescribed initial mode and any subset of permitted boundaries.
+\end{theorem}
+\begin{proof}
+By~\eqref{eq:one-switch-error}, the error for $p\to q$ at $t$ is
+\[
+ \max\{\max_{i\notin\{p,q\}}m_i,\ t-A_p(t),\ T-t-m_q\}.
+\]
+Replacing $q$ by a largest-mass mode other than $p$ cannot increase any
+term: the newly omitted mode has no larger mass than the mode removed from
+the omitted set. Thus the final mode can be $h_2$ if $p=h_1$ and $h_1$
+otherwise. The first two initial choices give the first two pairs. For
+$p\notin\{h_1,h_2\}$ the omitted maximum is $m_{h_2}$ and the final-mode
+term is fixed; maximizing $A_p(t)$ gives the third pair.
+
+Select at most three mass leaders in $O(n)$ time and form the cumulative
+data in $O(nN)$ operations. Each permitted boundary needs one scan to find
+$p_t$ and then a constant number of error evaluations. A largest-mass mode
+is the best constant choice, with error $T-m_{h_1}$. If the initial mode is
+fixed to $p$, compare only its constant schedule and $p\to q_p$, where
+$q_p$ has largest mass among the other modes. With no eligible boundaries,
+only the constant comparison remains.
+\end{proof}
+
+For a fixed initial mode $p$ and its final choice $q_p$, the two varying
+terms are $L_p(t)=t-A_p(t)$ and $R_p(t)=T-t-m_{q_p}$. Their difference
+$2t-A_p(t)-T+m_{q_p}$ is strictly increasing, since its increase between
+$u<v$ is at least $v-u$. Before its unique crossing, if one exists,
+$\max(L_p,R_p)$ decreases; after it, that maximum is nondecreasing.
+The omitted-mass term is constant. Consequently the two permitted boundaries
+adjacent to the crossing suffice, with the first or last boundary when the
+crossing lies outside the permitted range. Binary search over a sorted
+boundary list gives $O(n\log(N+1))$ additional queries once the cumulative
+data and mass leaders are available for random access. This bound excludes
+reading the raw $nN$ input values and preparing the boundary list.
+
+Permitted boundaries can enforce a common minimum duration $d$ for both
+nonempty runs by retaining $d\le t\le T-d$, provided constants are allowed
+and $T\ge d$. The dominance theorem does not by itself permit arbitrary
+mode-specific dwell requirements or restrictions coupling the two labels.
+The general algorithm below handles mode-specific minimum dwell times.
+
+\begin{lemma}[Best completion of a fixed prefix]\label{lem:final-residual}
+Fix a schedule on $[0,u]$, where $u<T$, with discrepancy $E_0$ and service
+$c_i=W_i(u)$. Put $r_i=m_i-c_i$, so that $\sum_i r_i=T-u$.
+Completing it in mode $j$ has exact error
+\begin{equation}\label{eq:final-residual}
+ \max\{E_0,\ \max_{i\ne j}r_i,\ T-u-r_j\}.
+\end{equation}
+Among any fixed nonempty set of eligible final modes, a mode with largest
+residual $r_j$ is optimal. Residuals may be negative.
+\end{lemma}
+\begin{proof}
+Every inactive discrepancy increases to $r_i$, while the active discrepancy
+decreases to $r_j-(T-u)$. The other endpoints are already bounded by $E_0$,
+which proves the formula. Replacing $j$ by an eligible mode with larger
+residual decreases the last term and cannot increase the omitted residual
+maximum. This argument is unaffected by negative residuals.
+\end{proof}
+This lemma optimizes the last block after a fixed prefix; it supplies no
+greedy rule for choosing that prefix. The eligible set is held fixed during
+this comparison.
+
+\subsection{Assigning modes to a fixed set of blocks}
+
+Fix $k$ positive consecutive blocks with grid endpoint indices
+$0=b_0<b_1<\cdots<b_k=N$, and lengths
+$\ell_j=x_{b_j}-x_{b_{j-1}}$. For mode $i$ and a subset
+$U\subseteq[k]$, define
+\begin{equation}\label{eq:block-subset-cost}
+ c_i(U)=\max_{1\le j\le k}
+ \left|A_i(x_{b_j})-\sum_{\substack{h\in U\\h\le j}}\ell_h\right|.
+\end{equation}
+This is exactly the component error when mode $i$ occupies those blocks,
+including disconnected subsets. In particular $c_i(\varnothing)=m_i$:
+unused modes still contribute to the objective.
+
+\begin{proposition}[Subset assignment]\label{prop:subset-DP}
+The optimum for these fixed block boundaries is obtained from
+\begin{equation}\label{eq:subset-DP}
+ D_0(\varnothing)=0,\quad D_0(S)=+\infty\ (S\ne\varnothing),
+ \qquad
+ D_i(S)=\min_{U\subseteq S}\max\{D_{i-1}(S\setminus U),c_i(U)\},
+\end{equation}
+as $D_n([k])$. After cumulative preprocessing, its arithmetic cost is
+$O(n(k2^k+3^k))$ and its storage, including traceback, is $O(n2^k)$.
+\end{proposition}
+\begin{proof}
+A labeling is a partition of $[k]$ into the subsets assigned to the modes,
+with empty subsets allowed. Its discrepancy is the maximum of their costs
+by Lemma~\ref{lem:endpoint}. For the first $i$ modes assigning precisely
+$S$, enumerate the subset $U$ assigned to mode $i$ and optimize the rest
+using the preceding modes. This proves the recurrence by induction.
+Each of $2^k$ costs for one mode takes $O(k)$ operations, and
+$\sum_{S\subseteq[k]}2^{|S|}=3^k$ counts its transitions. Keep two objective
+rows and the minimizing subset for each state and mode. Backtracking from
+$D_n([k])$ then gives a labeling with the stated storage.
+\end{proof}
+
+\begin{theorem}[Exact fixed-budget optimization]\label{thm:fixed-budget}
+Let $s\ge0$ and $k=\min(s+1,N)$. An optimal grid schedule with at most
+$s$ switches is computable in
+\begin{equation}\label{eq:fixed-budget-complexity}
+ O\left(nN+\binom{N-1}{k-1}n(k2^k+3^k)\right)
+\end{equation}
+arithmetic operations and $O(nN+n2^k)$ storage. In particular, two switches
+admit $O(nN^2)$ exact optimization. Repeated modes are permitted.
+\end{theorem}
+\begin{proof}
+Enumerate all $\binom{N-1}{k-1}$ sets of internal block boundaries and use
+Proposition~\ref{prop:subset-DP}. Every resulting labeling has at most
+$k-1\le s$ changes. Conversely, any feasible grid schedule has at most $k$
+maximal runs. Subdivide these runs at unused grid boundaries until there
+are exactly $k$ positive nominal blocks, assigning the same label to adjacent
+pieces. This is possible because $k\le N$ and does not change the control.
+Thus the enumeration covers every feasible schedule. Retain only the best
+answer and reuse the workspace for successive partitions.
+\end{proof}
+
+For fixed $s$, all rational numbers formed by this algorithm are sums or
+differences of polynomially many input numbers; comparisons do not enlarge
+them. Their bit lengths remain polynomial. The method is linear in $n$
+in its arithmetic count for fixed block count, but its factor of order
+$N^{k-1}$ prevents a fixed-parameter tractability claim in $s$ alone.
+Switching-time enumeration and exact graph methods for CIA are established
+\citep[Section~6.4.3]{zeile2021thesis}\citep{bestehorn2021shortest}.
+The subset recurrence is a standard partition dynamic program; its useful
+specialization here groups all occurrences of a mode, avoiding enumeration
+of the $n^k$ possible mode words.
+
+\subsection{Dwell constraints and a candidate-label bound}
+
+Let each mode have a nonnegative minimum dwell duration $d_i$. We require
+every maximal constant run, including initial and terminal runs, to have
+length at least $d_i$ when its mode is $i$. An unused mode has no dwell
+obligation. In~\eqref{eq:block-subset-cost}, set $c_i(U)=+\infty$ if a
+maximal string of consecutive indices in $U$ has total block length below
+$d_i$. Consecutive assigned blocks must be merged before applying this test.
+The empty subset remains admissible. This check takes $O(k)$ operations,
+so both complexity bounds remain valid. The subset recurrence is still
+exact because this admissibility depends only on $i$ and $U$. Moreover,
+subdivision of a run preserves its physical length and hence its feasibility,
+so the proof of Theorem~\ref{thm:fixed-budget} remains valid. The algorithm
+detects infeasibility; for example, if every $d_i>T$, no schedule exists.
+
+Other restrictions depending only on one mode's assigned subset can be
+treated by the same infinite-cost convention, with their checking cost
+included. Extending such a rule from prescribed blocks to the full-budget
+enumeration additionally requires invariance under subdivision into adjacent
+equally labeled blocks. Arbitrary transition graphs couple different modes
+and are outside this separation argument.
+
+An alternative fixes both the block boundaries and their equality pattern.
+There are then $d\le k$ distinct roles, each comprising a nonempty subset
+of blocks, to be assigned injectively to modes. Let $c_{ri}$ be the
+full-horizon component error when role $r$ is assigned to mode $i$;
+unselected modes have cost $m_i$.
+
+\begin{lemma}[A bounded candidate set]\label{lem:candidate-labels}
+Suppose $n\ge d$. In the unrestricted role-assignment problem, some optimal
+assignment uses only the union of the $d$ largest-mass modes and, for each
+role $r$, the $d$ modes with smallest $c_{ri}$. This union has at most
+$d^2+d$ elements. Ties may be broken consistently in any way.
+\end{lemma}
+\begin{proof}
+Start with an optimal assignment using a label $i$ outside that union. Since
+$i$ is not among the $d$ largest-mass labels and there are only $d$ assigned
+roles, one of those $d$ largest labels is omitted. Hence $m_i$ is no larger
+than the current omitted-mass maximum. Among the $d$ cheapest labels for
+$i$'s role, one label $j$ is unused by the other $d-1$ roles. It differs
+from $i$ and has no larger role cost. Replace $i$ by $j$. The newly omitted
+mass $m_i$ is bounded by the old omitted maximum, so the objective cannot
+increase. This removes one label outside the union and adds none. Iteration
+proves the claim. If $n=d$, all labels already belong to the union.
+\end{proof}
+This elementary exchange bound is useful for searches over equality patterns.
+The subset algorithm does not need it. No assertion of a new general
+assignment principle or unrestricted constraint support is intended.
+
+\subsection{Exact continuous optimization for piecewise-affine input}
+
+For completeness, a finite exact benchmark also exists when switches may
+occur inside input cells. Suppose $A$ is piecewise affine on an $N$-cell
+rational input grid, and let $k=s+1$ without truncating it at $N$. Fix a word
+$p\in[n]^k$ and a nondecreasing list of $k-1$ input-cell indices, one for
+each switch time. Write $t_0=0,t_k=T$. On its assigned cell,
+$A_i(t_j)$ is affine in $t_j$. The service at that endpoint is
+\[
+ W_i(t_j)=\sum_{h=1}^j\mathbf1_{\{p_h=i\}}(t_h-t_{h-1}).
+\]
+Therefore the cell bounds, $t_1\le\cdots\le t_{k-1}$, $0\le E\le T$,
+and
+\begin{equation}\label{eq:continuous-cell-LP}
+ -E\le A_i(t_j)-W_i(t_j)\le E
+ \quad(i\in[n],\ 1\le j\le k)
+\end{equation}
+form a rational linear program in $k$ variables, minimizing $E$.
+Lemma~\ref{lem:endpoint} proves that no additional error constraints at
+input breakpoints are needed. For the one-sided objective retain only
+$W_i(t_j)-A_i(t_j)\le E$.
+
+There are $n^k\binom{N+k-2}{k-1}$ word/cell choices. They cover all schedules:
+zero-length blocks and repeated labels are allowed, and a switch at an input
+boundary may be assigned to either incident closed cell. The minimum of
+their LP values is consequently the continuous instance optimum. Each
+feasible LP is bounded and has $O(nk+k)$ inequalities. One entirely rational
+solution method enumerates all $k$-element subsets of its inequalities,
+solves the corresponding nonsingular equality systems, and retains the best
+feasible vertex. A nonempty bounded polytope has an optimal vertex with
+$k$ independent active constraints, including when its affine dimension is
+smaller than $k$. Thus this method is complete. Its operation count adds a
+factor $\binom{O(nk+k)}{k}$ and polynomial work per vertex, and its bit
+complexity is polynomial for fixed $k$ by rational elimination and determinant
+bounds. This deliberately small-instance benchmark is less efficient in
+the number of modes than the grid subset algorithm. Its enumeration principle
+is classical; the explicit time-cell decomposition states how rational
+certification can be made complete.

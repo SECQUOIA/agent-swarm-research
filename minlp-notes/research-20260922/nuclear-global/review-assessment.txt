@@ -1,0 +1,283 @@
+Review of nuclear-global/assessment.md (feasibility assessment for the open nuclear* instances)
+Date: 2026-09-23. Reviewer: independent skeptical review (fresh agent). No author code was imported;
+all checks below use the reviewer's own parser and scripts in nuclear-global/code/review/.
+
+SUMMARY
+The mathematics is sound. The power-variable reformulation is exact. B1, B2, B3 (IEP) and B4 are valid
+upper bounds for the model as written. The node and pattern counts are correct. The reviewer reproduced
+the root B3/B2 values independently and CERTIFIED them in exact rational arithmetic for all seven F1
+instances (va-vf, 14). The certified values agree with the author's table to within 1.2e-6, but four
+of the author's 6-decimal entries are slightly below what can be certified and must be rounded up.
+Independent Gurobi runs match the root B4 value for nuclearva (1.160711) and the leaf B4 values
+(floating point; B4 is not certified).
+Fixes are needed in five places:
+  (a) Assumption U, as stated, is too weak for the enumeration argument.
+  (b) "A fixed pattern has no continuous freedom" is stated as a fact. It depends on U.
+  (c) "No subtree can be pruned at any depth" is false: IEP proves some fresh-fuel placements
+      infeasible at depth 3.
+  (d) The certification status and rounding of the new bounds need restating.
+  (e) Several small factual items (stored primal precision, sampled contraction maximum, timing).
+No finding changes the headline verdict: no-go for branch and bound, and enumeration of va-vf is
+conditional on an unproven uniqueness result.
+
+WHAT WAS DONE (targeted local checks only; no CI checks were run or inspected)
+Interpreter: ~/miniconda3/envs/exact-quadratic-hull/bin/python, run from nuclear-global/code/review/.
+Outputs are in nuclear-global/runs/review/.
+- osil.py, struct_nuc.py: a new exact OSiL reader (Fractions), plus role detection from the shape of
+  each row: burnup, peaking, normalization, eigen, k1, kappa, node, type, tie and copy rows. Every row
+  of the F1 files must get exactly one role; G must be identical at every t; the type-row and
+  kappa-row weights must equal V; KF and a must be unique.
+  Run: struct_nuc.py nuclearva..vf nuclear14 nuclear14a nuclear14b
+- check_sym_counts.py: exact automorphisms of (G, V, c, tie pairs) by backtracking, and pattern
+  counts (runs/review/sym_counts.txt).
+- check_primal_reform.py: exact evaluation of the stored primal points on all OSiL rows; the power
+  map at those points; the reviewer's own equilibrium simulator; 10 random starts per pattern
+  (runs/review/primal_reform.txt).
+- cert_root_iep.py: root IEP followed by B1 and B2, in exact rational arithmetic
+  (runs/review/cert_root_iep.txt).
+  * Collatz-Wielandt enclosures of the Perron roots.
+  * LP bounds on p from weak duality: float HiGHS duals, reduced costs evaluated exactly.
+  * Outward rounding to 1e-18.
+  * B2 by an exact fractional-knapsack Dinkelbach iteration.
+- b4_root_rv.py: the reviewer's own Gurobi model of B4, at the root and at fixed patterns
+  (runs/review/b4_*.json|log).
+- sample_check.py: 6,000 independent uniform samples of nuclearva patterns
+  (runs/review/sample_va.txt).
+- spot_contraction.py (runs/review/contraction_va.txt).
+- leaf_iep.py, partial_iep.py, fresh_subsets.py: float IEP at complete patterns and with only the
+  fresh fuel placed (runs/review/leaf_iep_va.txt, partial_iep_va.txt, fresh_subsets_va.txt).
+
+----------------------------------------------------------------------------------------------------
+(1) POWER-VARIABLE REFORMULATION AND TIE ROWS -- VERDICT: CORRECT (two small fixes)
+
+- Proposition 1 is correct.
+  * lam_t > 0: if lam_t = 0, then G(phi o k) = 0. Every column of an irreducible G with N >= 2 has
+    a positive entry, and phi, k >= 0, so phi o k = 0. This contradicts the normalization row.
+  * Forward direction: multiply eigen row i by k_i.
+  * Converse: phi := Gp/lam >= 0, and (R4) gives phi_i k_i = p_i.
+  * Injectivity: phi is forced by the eigen rows.
+  * (R5) is exactly phi >= phi_lb.
+- Variable bounds were confirmed from the files.
+  * phi, k, lam have lower bound 0 and upper bound +INF in F1.
+  * In F2/F3 (14a, 14b, 25a, 49b, 10a checked), phi >= phi_lb > 0 and k >= 0.12.
+  * No phi has a finite upper bound, so "(R5) has no upper counterpart" is correct.
+- Numerical check at the seven stored primal points: R1-R4 hold to <= 9.6e-25, and phi = Gp/lam holds
+  to <= 1.1e-25. These residuals come from the 25-digit storage (see (5)).
+- Tie rows: confirmed.
+  * va-vf contain exactly 24 rows y_{i,g} - y_{j,g} = 0, for the node pairs (1,7) and (11,14) (1-based)
+    and all 12 types.
+  * V = 1/2 on these four nodes and 1 on the other ten.
+  * Because every type row has weight 1, each type occupies exactly one of the 12 slots
+    (10 full nodes plus 2 tied pairs).
+Fixes:
+- F1.1 In (R4), write "lam_t >= eps" or state explicitly that the strict inequality lam_t > 0 is part
+  of the reformulated feasible set. Without it, lam_t = 0 is feasible in the reformulation whenever
+  some k_i = 0. A solver model must impose lam_t > 0 through a bound, or rely on k > 0.
+- F1.2 Section 2, step 2: p_t is the Perron vector of diag(k_t) G, not of G diag(k_t). The two
+  matrices are similar and have the same spectral radius, so this is notation only.
+
+----------------------------------------------------------------------------------------------------
+(2) NODE AND PATTERN COUNTS -- VERDICT: CORRECT
+
+- nuclear14, 14a and 14b each have N = 24 and T = 8 (192 eigen rows).
+- va-vf: N = 14, T = 6.
+- F1 structure: 3 chains x 4 ages (va-vf) and 6 chains x 4 ages (nuclear14). Every predecessor chain
+  starts at a fresh type.
+- The chain-relabeling action is free, which gives:
+  * va-vf: 12!/3! = 79,833,600;
+  * nuclear14: 24!/6! = 861,733,891,296,165,888,000 (8.62e20).
+- F2/F3 (nfresh = 6 read from the file): the Lah number C(23,5) 24!/6! = 2.8996e25. It counts path
+  covers. Cycles are infeasible because phi >= phi_lb > 0 and k >= 0.12.
+- The automorphism group of (G, V, c, ties) is trivial for all nine instances (exact backtracking).
+
+----------------------------------------------------------------------------------------------------
+(3) THE FOUR BOUNDS
+
+(K+) Age bounds on reactivity: VALID.
+- The lower bounds match the text: va 0.6904, vc 0.7014, vf 0.7712, vb/vd/ve 0.7914, nuclear14 0.9450.
+- The files have c equal at every (i,t), so a single c is correct.
+
+B1 (Perron monotonicity): VALID.
+
+B2 (Collatz-Wielandt with kh and peaking): VALID for y >= 0 with sum_i y_i p_i/kh_i > 0 on P.
+- The claim that the left Perron vector of G diag(kh) makes the ratio constant is correct.
+- Floating-point artifact: at the nuclearva root, the author's Gurobi bisection reports B2 = 1.18204303,
+  below B1 = 1.18204334.
+  * Reproducing this with the same LP in Gurobi, the returned y has an exact ratio of 1.1820473.
+  * So the 3e-7 "improvement" over B1 is an LP-tolerance artifact.
+  * The certifiable value at the va root is 1.1820434 (B1 with IEP kh).
+  * With HiGHS, the reviewer's bisection finds no peaking gain at the va root.
+
+B3 (interval equilibrium propagation, IEP): VALID.
+- Every step encloses all feasible points:
+  * the Lam_t enclosure (Perron root and monotonicity, since k_t > 0 by (K+));
+  * the Perron cone Q_t;
+  * the burn update;
+  * the reload update, applied only where both the type and its predecessor are placed.
+- An empty Q_t proves infeasibility.
+- At the root there is no reload information, so one sweep is final.
+- Independent certified reproduction (cert_root_iep.py; exact rationals; values rounded up):
+
+    instance   author table (B2 with IEP)   reviewer B1 with IEP   reviewer certified B2 with IEP   6-dec, rounded up
+    nuclearva  1.182043                     1.182043341            1.182043341                      1.182044
+    nuclearvb  1.184036                     1.186844316            1.184035934                      1.184036
+    nuclearvc  1.194607                     1.197316745            1.194606992                      1.194607
+    nuclearvd  1.193067                     1.194846500            1.193067530                      1.193068
+    nuclearve  1.189370                     1.191481969            1.189369982                      1.189370
+    nuclearvf  1.178375                     1.181543702            1.178375057                      1.178376
+    nuclear14  1.196838                     1.196838878            1.196838878                      1.196839
+
+- The reviewer's B1 values agree with the author's B1_iep values (runs/rootiep.json) to 1e-9.
+- The certificate covers the IEP chain and the B2 step, not only the final eigenvalue:
+  * The final values are exact rationals, printed in the log.
+  * Each is a proven upper bound on lam_T for every feasible point, given the file data as parsed by
+    the reviewer's reader.
+- These certified values improve the certified bounds of nuclear-bounds.md on all seven instances,
+  by 0.22% (va) to 1.25% (vf), and by 0.26% (nuclear14).
+
+B4 (aggregate-burn relaxation): VALID RELAXATION; VALUES ARE FLOATING POINT, NOT CERTIFIED.
+- Every feasible point maps to b = sum_{t<T} p_t with V'b = T-1 and 0 <= b <= (T-1)c. The reload rows
+  are kept. The added boxes k in [KF - 4ac(T-1), KF] and lam <= 1.1 KF are implied by (K+), (K) and
+  (CW).
+- nuclearva root: the reviewer's model gives bound 1.1607108 (incumbent 1.1605956, status optimal,
+  4 threads, 180 s). The author's value is 1.1607109.
+- Leaf B4:
+  * nuclearva, best pattern: reviewer bound 1.1311502 and incumbent 1.1310447; author 1.1310516.
+  * nuclear14, the author's random pattern: reviewer incumbent 1.1686964, author bound 1.1686915.
+    The reviewer's incumbent is 5e-6 higher only because it violates an eigen row by 6.9e-7. At its
+    k_T the Perron root is 1.1686910.
+  * So B4 values agree to about 5e-6.
+- nuclear14 root (the author reported 1.185512 at the 1800 s limit): see ADDENDUM.
+  * With the reviewer's own models, Gurobi's incumbents of the relaxation stayed below 1.185512, so
+    there is no contradiction.
+  * With auxiliary variables s = Gp, the reviewer's dual bound reached 1.184370, below the author's
+    1.185512. Without them, the dual bound stalled at 1.19470. The author's 1.1855 is therefore
+    consistent with an independent model, but it remains a floating-point Gurobi claim.
+- Treat every B4 number as a floating-point solver claim. It is not certified.
+
+Fixes for (3):
+- F3.1 Summary, "The new root bounds lower the certified bound by 0.2-1.3% (B3)": replace the B3
+  column with the certified values above (rounded up). Say that B3 at the root is now certified, with
+  the review scripts as the certificate. Keep B4 labeled "floating-point Gurobi claim". The wording
+  "lower the certified bound" should become "improve on the certified bound".
+  * The nuclear14 B3 gap becomes (1.196839 - 1.1297096)/1.1297096 = 5.94%.
+  * The certified B3 improvement is 0.22-1.25%.
+- F3.2 Section 3, "Certification status": B2 values from a Gurobi LP bisection can be optimistic by
+  about 1e-6. Report either certified values or the B1 value.
+  * The va root B2 entry must be 1.182044, not 1.182043.
+  * The partial-pattern B2 entries are uncertified; the depth-3 entry (1.17621 vs B1 1.17765) was not
+    checked.
+- F3.3 "The bounds developed here are valid" (Summary): keep the sentence, and add "(B3/B2 root values
+  certified by the review; B4 values are floating-point solver bounds)".
+
+----------------------------------------------------------------------------------------------------
+(4) "A FIXED PATTERN HAS NO CONTINUOUS FREEDOM" AND UNIQUENESS -- VERDICT: REDUCTION CORRECT;
+HEADING OVERCLAIMS; ASSUMPTION U TOO WEAK AS STATED
+
+- Steps 1-3 are correct.
+  * (K+) gives k > 0.
+  * The Perron vector is unique at each t.
+  * The reload is affine, with R >= 0 and R^4 = 0.
+  * Rows of fresh nodes are zero; the other rows are V-weighted means.
+  * 183 equations in 183 unknowns: 84 p + 84 k + 6 lam + 9 kappa.
+- These steps show only that the feasible set of a pattern equals the peaking-feasible fixed points of
+  Phi. A square analytic system can have several isolated solutions or a continuum. "No continuous
+  freedom" therefore holds only under U.
+- U is clearly labeled unproven in Sections 2 and 6 and in the Summary. Good.
+Fixes:
+- F4.1 Rename the heading to "A fixed F1 pattern reduces to a fixed-point equation in k_1". Move
+  "no continuous freedom" into U.
+- F4.2 U as stated ("at most one PEAKING-FEASIBLE fixed point") does not support the enumeration.
+  * 78% of the va patterns have a computed fixed point that violates peaking.
+  * U allows such a pattern to have a second fixed point that satisfies peaking. That point would be
+    feasible and would be missed.
+  * The a-priori box B from (K+) does not help. A peaking-violating fixed point need not lie in B,
+    and Phi need not map B into itself.
+  * State U as: "Phi has at most one fixed point in Omega = {k_1 : the cycle from k_1 keeps k_t > 0}".
+    Omega is the domain where Phi is defined and contains every feasible point.
+  * Alternatively, certify infeasible patterns separately, for example with the IEP emptiness test
+    (see (5b)).
+  * The contraction route in Section 4 needs its domain chosen so that Phi^4 maps it into itself and
+    it contains both the computed and any feasible fixed point. Say so.
+- F4.3 "Sampled contraction of Phi^4 ... is at most 0.53 (va)": this is a sample maximum, not a
+  bound. The reviewer found 0.578 on one of 6 random va patterns (10 random box points each;
+  runs/review/contraction_va.txt). Write "the largest sampled value was 0.53 (va) ...".
+  The local rho(dPhi) = 0.41-0.55 agrees with 0.33-0.61.
+- F4.4 Minor: the Birkhoff-Hopf coefficient of G^5 for nuclear14 computes to 1 - O(1e-8), not 1 to
+  machine precision (va: 1 - 4.1e-5, confirmed). |lambda_2|/lambda_1: 0.9410 and 0.9655, confirmed.
+
+----------------------------------------------------------------------------------------------------
+(5) SAMPLING AND OTHER EMPIRICAL CLAIMS -- VERDICT: CONFIRMED, WITH ONE FALSE CLAIM
+
+(5a) Sampling statistics (spot check)
+- Recomputed from the author's .npy files (124,000 va; 40,000 vd):
+  * va: feasible 21.70%; feasible and within 1% / 0.5% / 0.2% of 1.0143049: 14.57% / 2.52% / 0.085%.
+  * vd: 6.68% / 0.26% / 0.010%.
+  * These match the text. The percentages are fractions of ALL sampled patterns; say so explicitly.
+- The reviewer's own 6,000 samples with its own simulator (va): feasible 22.3 +- 1.1%; within 1% /
+  0.5% / 0.2%: 14.8 +- 0.9% / 2.7 +- 0.4% / 0.10 +- 0.08%. Consistent.
+- Every sample converged (residual < 1e-13).
+- The best pattern values and the seven "best primal" values were reproduced to 1e-10 with the
+  reviewer's simulator. Ten random starts per pattern all converged to the same fixed point
+  (<= 1.2e-13).
+
+(5b) "No subtree can be pruned at any depth" (Summary and Section 3): FALSE as stated.
+- The reviewer's float IEP with only the three fresh-fuel slots placed proves infeasibility of 4 of the
+  220 fresh placements of nuclearva: slots {0,1,2}, {0,1,3}, {0,1,7} and {0,1,8} (0-based). That is
+  1,451,520 of the 79,833,600 patterns (1.8%), pruned at depth 3.
+- At complete patterns, IEP proved 2 of 9 random peaking-infeasible patterns infeasible.
+- Pruning by bound indeed never occurs: the depth-3 bounds on the other 216 placements lie in
+  [1.1510, 1.1808], all above 1.0143.
+- The conclusion "branch and bound degenerates into enumeration" survives. The sentence should read:
+  "No subtree can be pruned by bound. IEP prunes a few infeasible fresh-fuel placements (1.8% of va
+  patterns at depth 3, floating point)."
+- The partial-pattern evidence covers one branching path per instance. Say so.
+
+(5c) Primal points
+- All seven stored points satisfy every OSiL row in exact arithmetic. Bound and integrality
+  violations are 0, and the objectives match the table.
+- However, the stored decimal strings have about 25 significant digits. Evaluated as stored, the
+  maximum row violations are 7.0e-25 to 9.6e-25, not the 6.7e-59 to 1.0e-56 reported. The reported
+  figures are for the in-memory 60-digit points.
+- Fix: report the violation of the stored points, or store 60 digits.
+
+(5d) Other checks
+- Fixed-pattern Gurobi run: root 1.14969 after cuts; 1.021924 after 600 s on 4 threads; gap 0.751%.
+  Confirmed from the log.
+- Enumeration cost:
+  * The logs give 3.57 ms/pattern (va) and 2.79 ms/pattern (vd), measured on a loaded machine.
+  * "2.8 ms ... 62 core-hours" in the Summary should read "2.8-3.6 ms ... 62-79 core-hours".
+- Section 3, "The loss is structural. Any relaxation that decouples ...", and Summary, "every
+  relaxation that does not solve the coupled equilibrium loses about 13%": these are supported only
+  for the relaxations tried. Write "every relaxation tried here".
+
+----------------------------------------------------------------------------------------------------
+LIST OF FIXES (in order of importance)
+1. F4.2: restate U as uniqueness of fixed points on the positive domain Omega, or add an
+   infeasibility certificate for patterns whose computed fixed point violates peaking.
+2. F4.1: the "no continuous freedom" heading depends on U.
+3. (5b): "No subtree can be pruned at any depth" -> "no pruning by bound; IEP prunes 1.8% of va
+   patterns at depth 3 by infeasibility".
+4. F3.1-F3.3: use the certified root B3/B2 values (va 1.182044, vb 1.184036, vc 1.194607,
+   vd 1.193068, ve 1.189370, vf 1.178376, nuclear14 1.196839) and label them certified. Keep B4 labeled
+   floating point. The va B2 entry 1.182043 is not a valid rounded bound.
+5. (5c): the stored primal strings give 1e-24 row violations, not 1e-57.
+6. F4.3, F4.4, (5d) timing, (5a) "fraction of all patterns", "every relaxation tried here".
+7. F1.1, F1.2 (notation).
+
+----------------------------------------------------------------------------------------------------
+ADDENDUM: nuclear14 root B4, reviewer runs (b4_root_rv.py, 1800 s, 4 threads, floating point)
+- Model without auxiliary variables (runs/review/b4_nuclear14.json|log): time limit reached.
+  Dual bound 1.194700; incumbent of the relaxation 1.181970.
+- Model with auxiliary variables s_i = (G p)_i (b4_root_rv.py nuclear14 1800 4 none aux;
+  runs/review/b4_nuclear14_aux.json|log): time limit reached. Dual bound 1.184370; incumbent 1.182184.
+- Comparison with the author (dual bound 1.185512, incumbent 1.181936):
+  * No reviewer incumbent exceeds the author's dual bound, so there is no contradiction.
+  * The reviewer's s-variable model ends with a tighter dual bound (1.184370).
+  * The optimum of the B4 relaxation for nuclear14 lies in about [1.182184, 1.184370].
+  * The root B4 entry for nuclear14 can therefore be improved to 1.184370. That value is a
+    floating-point Gurobi claim, not certified. It gives a gap of (1.184370 - 1.1297096)/1.1297096 =
+    4.84%.
+- Verdict: the author's 1.185512 is consistent with an independent model. It is a valid floating-point
+  bound, not certified. The formulation matters: without s = Gp, Gurobi's bound stalls about 0.8%
+  higher.

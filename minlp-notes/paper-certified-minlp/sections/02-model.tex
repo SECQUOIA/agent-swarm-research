@@ -1,0 +1,74 @@
+\section{Model semantics and the certification contract}
+\label{sec:model}
+\subsection{The mathematical problem}
+Let $J\subseteq\{1,\ldots,n\}$ index the integer variables. We consider
+\begin{equation}
+\begin{aligned}
+  p^* = \inf\quad & f(x)\\
+  \text{subject to}\quad & x\in B_0,\quad x_j\in\Z\quad(j\in J),\\
+  & \ell\leq Ax\leq u,\\
+  & h_i(x)\leq 0\quad(i=1,\ldots,m),
+\end{aligned}
+\label{eq:model}
+\end{equation}
+where $A$ is rational, each finite component of $\ell,u$ is rational, and
+$B_0=\prod_{j=1}^n[L_j^0,U_j^0]$ has rational finite endpoints and may have infinite endpoints. Bounds with an infinite endpoint have their usual half-line or whole-line meaning. Binary variables are integer variables restricted to $[0,1]$, and a fixed variable has equal lower and upper bounds. For this box-based formulation, $f,h_1,\ldots,h_m$ are defined, finite, and convex on $B_0$. This sufficient domain contract is deliberately stronger than requiring definedness only at feasible points. Functions may include rational powers, exponentials, and logarithms; the coefficients in their expression representations are rational, but their values need not be rational. Let $F$ denote the feasible set of \eqref{eq:model}. An upper nonlinear row $g(x)\leq u_i$ is normalized as $h_i=g-u_i$; a lower row $g(x)\geq\ell_i$ is normalized as $h_i=\ell_i-g$. Convexity is required after normalization. Affine equalities are allowed through equal row bounds. General nonlinear equalities and two-sided nonlinear rows are rejected by the present implementation.
+
+We use an infimum because attainment is not needed for a lower-bound certificate. The basic assertion is $\beta\leq f(x)$ for all $x\in F$. This assertion remains meaningful when $F$ is empty; under the extended-real convention $\inf\varnothing=+\infty$, it implies $\beta\leq p^*$. It is not a certificate that $F$ is nonempty. Maximization of a concave objective $f_{\max}$ is treated by minimizing $-f_{\max}$; a lower bound $\beta$ for that minimization gives the upper bound $-\beta$ in the original sense.
+
+An epigraph variable $t$ handles a nonlinear objective. The lifted feasible set is
+\begin{equation}
+ \widehat F=\{(x,t):x\in F,\ f(x)-t\leq0\},
+ \label{eq:epigraph}
+\end{equation}
+and the lifted objective is $t$. In particular, $(x,f(x))\in\widehat F$ for every $x\in F$. No artificial finite bound on $t$ is required. For affine objectives, the master retains the exact affine objective, including its constant.
+
+\subsection{Expressions and model identity}
+\label{sec:semantics}
+A certificate refers to a particular mathematical expression model. A rational coefficient $p/q$, with integers $p,q$ and $q>0$, denotes its exact real value. In the implementation, every finite floating-point leaf of the loaded Pyomo tree denotes its exact stored binary value as a rational, and every integer leaf denotes that integer. All subsequent symbolic additions and multiplications use exact arithmetic. This rule also applies to bounds, fixed values, row shifts, exponents, and objective constants. Addition, multiplication, and powers are interpreted compositionally; logarithms and noninteger powers require their stated domains. Algebraic normalization is admissible only when it preserves this interpretation on the certified domain. In particular, cancellation of a denominator must not remove a domain restriction.
+
+There are three different objects in a software pipeline: the source modeling file, the model built by its modeling environment, and the exact expression model checked by the certificate system. A source decimal such as \texttt{0.1} can become a binary floating-point value during construction. Treating that resulting value as an exact rational is a precise convention, but it does not recover the decimal rational $1/10$. Similarly, floating-point aggregation performed before extraction cannot be undone by subsequently storing the aggregate as a rational. If the modeling environment rewrites $x/3$ using a binary approximation to $1/3$, that resulting coefficient defines the checked input; the original rational division is not recovered. The Python model loader executes the input file and is trusted input construction, not a sandbox for untrusted programs.
+
+The distinction affects more than tiny changes in the optimum. For example, if the binary values of \texttt{0.1}, \texttt{0.2}, and \texttt{0.30000000000000004} are treated as exact coefficients, then
+\begin{equation}
+ (\texttt{0.1})x^2+(\texttt{0.2})x^2
+ -(\texttt{0.30000000000000004})x^2=-2^{-55}x^2.
+ \label{eq:folding-example}
+\end{equation}
+Floating-point coefficient aggregation can instead produce zero. The first expression is concave and the second affine. A convexity check of one expression cannot justify underestimator evaluation of the other.
+
+The required invariant is therefore that curvature analysis, domain checks, differentiation or subgradient justification, interval evaluation, and master construction all refer to the same exact expression model. A reproducible artifact must identify that model and document its relation to the source file. A hash identifies bytes; it does not prove semantic equivalence. When extraction itself is not formally verified, the extraction code and its interpretation rules remain part of the trusted software base. Agreement with a solver using another input format must be described as an empirical comparison unless equivalence of the interpreted models has been established.
+
+\subsection{Boxes, support points, and domains}
+A checker may derive a tighter rational box $B\subseteq B_0$ from the affine rows and integer restrictions, provided it establishes $F\subseteq B$. This propagation need not reach a fixed point. Every accepted tightening must preserve all feasible points; incomplete propagation affects strength, not validity.
+
+The implementation first validates original expression domains on $B_0$, before algebraic cancellations, and does not infer missing domains from nonlinear constraints. For example, $x/x$ cannot be replaced by $1$ on a box containing zero. This can reject an otherwise valid constrained problem. Subsequent linear bound propagation may strengthen a cut by reducing $B$ without changing the input-domain convention.
+
+A cut for a nonlinear row $h_i$ is an affine function $a^\top x+b$ satisfying
+\begin{equation}
+ a^\top x+b\leq h_i(x)\qquad(x\in B).
+ \label{eq:underestimator}
+\end{equation}
+Here $a\in\Q^n$ and $b\in\Q$. Condition \eqref{eq:underestimator} is sufficient for $a^\top x+b\leq0$ to be valid for the row $h_i(x)\leq0$ on $B$. It is stronger than necessary for validity on that feasible subset. In particular, cut validity is not equivalent to global underestimation on the box.
+
+A point $z\in B$ used to justify an underestimator need not satisfy the nonlinear rows or integrality constraints. What is required is a valid support inequality
+\begin{equation}
+ h_i(x)\geq h_i(z)+s^\top(x-z)\qquad(x\in B)
+ \label{eq:support-contract}
+\end{equation}
+for a vector $s$, and justified enclosures of the quantities used in the rational correction. Differentiability of a convex function on an open convex neighborhood of $B$ is one sufficient condition, with $s=\nabla h_i(z)$. More general support conditions can apply on boundary domains, but evaluating an undefined derivative at a boundary is not justified by convexity alone. For example, $-\sqrt{x}$ is convex and finite on $[0,1]$ but has no finite supporting slope at zero. The implementation must reject a proposed cut when its evaluation or support conditions cannot be established. The mathematical formulation permits subgradients; that permission is not a claim that the implementation supports arbitrary nonsmooth functions.
+
+\subsection{What a complete check establishes}
+A rational master $M$ retains justified bounds, affine rows, integrality, and valid nonlinear-row cuts, together with either the original affine objective or epigraph cuts. Its obligation is to contain the appropriate image of every feasible point of \eqref{eq:model}, with the same objective value. A proof of the master's bound then transfers to \eqref{eq:intro-bound}. The master objective includes the affine constant exactly once. Variable correspondence, row coefficients and directions, bounds, integrality, and the objective sense must match the proof input. A proof for a presolved model requires a separately justified transformation; matching only its objective value is insufficient. No assumption of accurate nonlinear subproblem solutions is part of this implication.
+
+The following distinctions govern the use of the term ``verified'' throughout the paper.
+\begin{enumerate}
+\item \emph{Nonlinear-lemma checking} establishes curvature, domains, bound propagation, and the validity of the rational cuts. It does not establish a master bound.
+\item \emph{Complete certificate checking} additionally checks master identity and a proof of the reported master bound under an explicitly stated proof-checker contract.
+\item \emph{Proof-assistant verification} establishes the specific theorems or executable checks processed by the proof assistant. Its coverage must be stated separately from that of the ordinary software checker.
+\end{enumerate}
+Even complete certificate checking has a trusted computing base: the arithmetic and expression implementation, parser, proof checker, and their execution environment unless individually verified. Repeating the producer's numerical search is unnecessary, but sharing code for mathematical rules means the implementation is not independently developed in every component. The accurate description is a separate replay from the numerical search, with shared trusted components identified explicitly.
+
+A complete lower-bound check returns a finite bound only after all its obligations pass. Partial nonlinear/master checking has a distinct result and yields no certified bound. Rejection can reflect unsupported syntax, a failed sufficient condition, or a mathematically invalid proof step; those outcomes have different diagnostic meanings and none is silently treated as acceptance.
+
+Finally, a feasible MILP-master solution is generally not a feasible nonlinear solution. A primal witness must independently satisfy all original domains, bounds, integrality conditions, affine rows, and nonlinear rows, and provide an outward objective enclosure. For minimization, such a witness with upper bound $U$, combined with a checked lower bound $\beta$, proves $0\leq U-p^*\leq U-\beta$ when the witness exists. Equality $U=\beta$ proves attainment and exact optimality. Comparison with a rounded reference objective supplies none of these feasibility premises.

@@ -1,0 +1,9 @@
+# Stage4B face-sharing author audit
+
+Independently reconstructed bounded-face-sharing-product-ball-factors and ray-exposed-cone-dictionary-product-balls from cylinder nonnegativity, derivative direct sums, compact exact-label strata and the reviewed proper-base-domain lemma. No source theorem assumed. Each distinction is explicit: whole vs split rows; global selected maps vs arbitrary lifts; fixed dictionary vs all dictionaries; f>1 necessary interpolation vs exact ray-exposed case; arbitrary ambient barriers vs slice parameters.
+
+Additional source bounded-face-sharing-sharp-models read fully. Its general whole-row dimension/contact-face theorem, heterogeneous grouping/NP-hardness and H cones are subsumed by 09a. Its new scalar-square P_q dimension/face minimality, full polynomial construction, PSD comparison and exact parameter q+1 are in 09b. Classical H spectral barriers and exact arbitrary coupled product parameters are subsumed by 09e. The fixed-scale product-ball barrier identity is retained in 09b. Central path and bounded-Dikin movement claims are explicitly routed to Stage5, not silently claimed complete here.
+
+Checks: only C1 used in cross-contact differentiation; no symmetry/PSD assumed for local mixed forms; exact-label strata compact despite switching; normalized dual phase injection proved without polarity derivative; c=p transition correct; dimension minimization monotone; recession face q of P_q included and q<=2q-1 at q>=1; product orthant lower bounds valid for arbitrary barriers. Scalar P_q model minimality uses genuine functional span and contact face, not differential rank alone. All comparisons are construction-specific, not optimality over homogeneous dictionaries.
+
+The manuscript does not claim a literature priority theorem for shared-square barriers. Sparse completion literature is attributed in 09e. Full slack correspondence uses GPT2013. No new external bibliography required in 09b.

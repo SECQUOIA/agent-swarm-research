@@ -1,0 +1,764 @@
+\section{Hidden-Block State Conversion}
+\label{sec:state-conversion}
+
+The central paths in \cref{sec:wta-central-path} concentrate trace on a
+hidden set of winning blocks.  This section asks for the query cost of
+preparing that block center when the number of winners is promised to be
+either zero or $k$.  The endpoints were already visible in
+\cref{sec:condensation-exact-k-preparation}: sufficiently coarse error permits
+the public all-loser output, whereas sufficiently accurate coherent
+preparation costs search complexity.  Between them, however, the collision
+statistic in \eqref{eq:cond-multi-collision} loses a factor $1/k$, and pairwise
+trace distance supplies no single measurement that works for every unknown
+winner set.  The remedy is to measure a proposed label and verify it with
+fresh queries.  This verified-sample decoder is one-sided on the no-winner
+branch and works directly on trace-close mixed outputs.
+
+For parity blocks, a polynomial argument then gives the entire nontrivial
+accuracy curve.  The key step is that averaging over inputs of fixed block
+parity kills every proper sub-block character, dividing polynomial degree by
+the block length.  We also contrast the coupled centers with a batch of
+uncoupled triangle-holonomy SDPs: vector output admits no amortization, while
+one averaged scalar objective has the usual approximate-counting frontier.
+
+\subsection{The zero-versus-\texorpdfstring{$k$}{k} conversion problem}
+\label{sec:state-conversion-model}
+
+Let $f:\mathcal X_0\sqcup\mathcal X_1\to\{0,1\}$ be a possibly partial
+Boolean predicate on one block.  Its bounded-error query complexity and
+negative-weight adversary value satisfy
+\[
+ Q(f)=\Theta(A),\qquad A=\operatorname{Adv}^{\pm}(f).
+\]
+There are $G$ independently queried blocks, and
+$S=\{g:f(x_g)=1\}$ is promised to have size zero or $k$, where
+$1\le k<G$.  One raw query addresses one coordinate of one block.  The
+target on a $k$-winner input is
+\begin{equation}
+ \rho_S=\frac pk\sum_{g\in S}\ket g\!\bra g\otimes\rho_W
+ +\frac{1-p}{G-k}\sum_{g\notin S}\ket g\!\bra g\otimes\rho_L,
+ \qquad
+ \rho_0=\frac1G\sum_{g=1}^G\ket g\!\bra g\otimes\rho_L^0,
+ \label{eq:sc-targets}
+\end{equation}
+where $p=p_{G,k}$ and the constant-dimensional internal states are public.
+Write
+\begin{equation}
+ \eta_{\rm int}=\Dtr(\rho_L,\rho_L^0),\qquad \delta=p-\varepsilon.
+ \label{eq:sc-parameters}
+\end{equation}
+Here \(\eta_{\rm int}\) is the local internal-state discrepancy, not the
+residual tolerance \(\eta\) used elsewhere.
+The task is to output, on every promised input, a state within trace distance
+$\varepsilon$ of its target.  The upper bounds below use a clean coherent
+evaluator as in \eqref{eq:cond-clean-evaluator}, with the membership bit for
+$S$, at cost $T_{\rm eval}$ per call.  An exact evaluator costs
+$\Theta(Q_E(f))$ raw queries, $Q_E$ denoting exact quantum query complexity;
+a bounded-error evaluator may be substituted
+after coherent error reduction to operator-norm error below the per-call
+budget of the amplification it enters, at cost
+$O(Q(f)\log(G/\min\{\delta,\varepsilon\}))$ per call, which the stated tildes
+absorb.  For $f=\operatorname{PARITY}_N$, $Q_E(f)=\lceil N/2\rceil$, and
+$Q(f)$ and $\operatorname{Adv}^{\pm}(f)$ are both $\Theta(N)$.  As in the
+condensation applications, we assume $p\ge k/G$ when invoking rejection
+preparation.
+For classical algorithms, queries are charged but state synthesis from the
+classical transcript is free.
+
+Measuring the label of an $\varepsilon$-accurate output and then evaluating
+$f$ on the sampled block accepts with probability at least
+$p-\varepsilon=\delta$ on the $k$-winner branch, before verifier error.  On
+the zero-winner branch, every proposed block is a loser, so only verifier
+error can cause acceptance.  This conclusion is independent of the state
+produced by the circuit on that branch.  It is the common measurement that
+the collision approach lacks.
+
+\begin{theorem}[Verified-sample lower bound (M-1)]
+\label{thm:sc-m1}
+Fix $\delta\in(0,1)$.  Suppose a $T$-query circuit solves
+\eqref{eq:sc-targets} with $\varepsilon\le p-\delta$.  If
+\begin{equation}
+ \sqrt{G/k}\ge C\delta^{-1}\log(e/\delta)
+ \label{eq:sc-m1-domain}
+\end{equation}
+for a sufficiently large universal constant $C$, then
+\[
+ T=\Omega\!\left(\delta A\sqrt{G/k}\right).
+\]
+For $f=\operatorname{PARITY}_N$, this is
+$T=\Omega(\delta N\sqrt{G/k})$.
+\end{theorem}
+
+\begin{proof}
+First reduce the zero-versus-one problem of \cref{thm:cond-unique-or} to
+zero-versus-$k$.  Put $G'=\lfloor G/k\rfloor$.  Replace each of the $G'$
+input blocks by $k$ addressable copies and pin the remaining
+$G-kG'<k$ blocks to a fixed public element of $\mathcal X_0$.  A query to a
+copy is simulated by one query to its original.  Zero winners remain zero,
+and a unique winner produces exactly $k$ winners.  The Cartesian-product
+promise is preserved.  Since \eqref{eq:sc-m1-domain} places us away from the
+$G/k=1$ edge, $G'=\Theta(G/k)$, and
+\eqref{eq:cond-unique-or-adv} gives a decision lower bound
+$\Omega(A\sqrt{G/k})$.  This copies-plus-public-loser recipe is also valid
+when $k$ does not divide $G$.
+
+Now repeat the following trial $R=\Theta(1/\delta)$ times.  Run the
+preparation circuit afresh, measure its label $g$, and evaluate $f(x_g)$
+with error at most $\beta=\delta/8$.  Standard error reduction costs
+$O(Q(f)\log(e/\delta))$ queries per verification.  On a $k$-winner input,
+contractivity of trace distance under the two-outcome measurement
+$\{\sum_{g\in S}\ket g\!\bra g\otimes I,I-\cdots\}$ gives
+\[
+ \Pr[g\in S]\ge p-\varepsilon\ge\delta,
+ \qquad \Pr[\text{accept}]\ge\delta(1-\beta)\ge\delta/2.
+\]
+On a zero-winner input, every label fails the true predicate, regardless of
+the prepared state, and $\Pr[\text{accept}]\le\beta=\delta/8$.  A
+multiplicative Chernoff bound distinguishes these two rates with constant
+error using $R=\Theta(1/\delta)$ trials.  Its total cost
+\[
+ O\!\left(\delta^{-1}
+   [T+Q(f)\log(e/\delta)]\right)
+\]
+is therefore $\Omega(A\sqrt{G/k})$.  Since $Q(f)=\Theta(A)$,
+\eqref{eq:sc-m1-domain} absorbs the verification term and proves the claim.
+\end{proof}
+
+The restriction \eqref{eq:sc-m1-domain} is substantive.  At constant
+$\delta$ it requires only $G/k=\Omega(1)$.  For \cref{cor:sc-m3} we adopt
+the uniform hypothesis $k=O(G/\log^2G)$, which is stronger than the
+displayed domain requires at constant $\delta$.  At variable $\delta$, the
+domain contains the scale $G/k=\Omega(\delta^{-2})$ up to logarithms.  The
+advantage of \cref{thm:sc-m1} is its general inner predicate and its complete
+lack of a purification or inverse-preparation assumption.
+
+\begin{theorem}[Detuned rejection preparation (M-2)]
+\label{thm:sc-m2}
+Assume $p\ge k/G$, $1-p\ge c_0>0$, and $0<\varepsilon<p$.  With
+$\delta=p-\varepsilon$, if $4\eta_{\rm int}\le\varepsilon$, then
+\begin{equation}
+ Q_\varepsilon=O\!\left(
+ T_{\rm eval}\left[1+\sqrt{\delta G/k}\right]c_0^{-1/2}
+ \log\frac{e}{\min\{\delta,\varepsilon\}}\right).
+ \label{eq:sc-m2-upper}
+\end{equation}
+If $0<\varepsilon<4\eta_{\rm int}$, then
+\begin{equation}
+ Q_\varepsilon=O\!\left(
+ T_{\rm eval}\sqrt{G/k}\log(e/\varepsilon)\right).
+ \label{eq:sc-m2-fallback}
+\end{equation}
+In the accuracy-frontier regime $\varepsilon=\Omega(\delta)$, the logarithm
+in \eqref{eq:sc-m2-upper} is simply $O(\log(e/\delta))$.
+\end{theorem}
+
+\begin{proof}
+We use two detuning regimes.  Define
+\begin{equation}
+ \begin{aligned}
+ m&=\begin{cases}
+ \max\{3\delta/2,k/G\},&\delta\le2p/3,\\
+ \max\{p-\varepsilon/2,k/G\},&\delta>2p/3,
+ \end{cases}\\[-2pt]
+ m&\le p:\quad
+ \begin{cases}
+ 3\delta/2\le p\ \text{and}\ k/G\le p,&\delta\le2p/3,\\
+ p-\varepsilon/2\le p\ \text{and}\ k/G\le p,&\delta>2p/3.
+ \end{cases}
+ \end{aligned}
+ \label{eq:sc-detuning}
+\end{equation}
+Then $k/G\le m\le p$, $m-\delta\ge\delta/2$ in the first
+regime, and $m-\delta\ge\varepsilon/2$ in the second.  Moreover
+$\sqrt{Gm/k}=O(1+\sqrt{\delta G/k})$: this is immediate in the first
+regime, while $m=\Theta(\delta)$ in the second.  The upper cap $m\le p$
+is essential: together with $1-p\ge c_0$, it keeps the empty-branch
+acceptance probability from acquiring an additional
+$(1-m)^{-1/2}$ amplification cost.
+
+Run the rejection construction of \cref{prop:cond-rejection-preparation},
+here with the label copied before amplification and the copy included in
+every reflection, with detuned weights
+\[
+ a'_W=m/k,\qquad a'_L=(1-m)/(G-k),\qquad a'_{\max}=m/k.
+\]
+Starting from the uniform label superposition, copy the label to an
+environment register, compute the membership bit, rotate an acceptance
+qubit with amplitude $\sqrt{a'_b/a'_{\max}}$, and conditionally attach
+public purifications of $\rho_W$ and $\rho_L$.  A trial has acceptance
+probability
+\begin{equation}
+ P_k=\frac{k}{Gm},\qquad
+ P_0=\frac{k(1-m)}{m(G-k)}
+ \label{eq:sc-branch-acceptance}
+\end{equation}
+on the $k$- and zero-winner branches, respectively.  Both are at least a
+constant times $c_0k/(Gm)$, because $m\le p$ implies
+$1-m\ge1-p\ge c_0$.
+
+Apply fixed-point amplification simultaneously to the two possible
+acceptance angles \cite{yoder2014-fixed-point-quantum-search}.  The
+fixed-point reflections act on every register the trial touches, including
+the environment copy of the label, which is uncomputed and recomputed inside
+each reflection.  With
+\[
+ r=\frac18\min\{\delta,\varepsilon\},
+\]
+the acceptance-subspace residual can be made at most $r^2$ on both branches
+using
+\[
+ O\!\left(\sqrt{Gm/k}\,c_0^{-1/2}\log(e/r)\right)
+\]
+evaluator calls.  The quadratic residual is necessary: overlap error of a
+purification becomes its square root in trace distance.  Writing $q=k/G$,
+\eqref{eq:sc-branch-acceptance} gives
+$P_0/P_k=(1-m)/(1-q)$.  Thus $m=q$ has no branch mismatch.  When
+$q=o(m)$, however, an exact schedule tuned to the larger probability $P_k$
+under-rotates the empty branch and can leave $\Theta(m^2)$ junk probability,
+which is unaffordable for constant $p$.  Fixed-point amplification avoids
+this mismatch.
+
+Conditioned on acceptance, the $k$-branch output is exactly
+\eqref{eq:sc-targets} with winner mass $m$ in place of $p$; the zero-winner
+output is exactly $G^{-1}\sum_g\ket g\!\bra g\otimes\rho_L$.  Hence the
+respective errors are at most
+\[
+ (p-m)+r,\qquad \eta_{\rm int}+r.
+\]
+If $\delta\le2p/3$, then $\varepsilon=p-\delta\ge\delta/2$ and
+$p-m\le\varepsilon-\delta/2$, so both errors are below
+$\varepsilon$.  If $\delta>2p/3$, then $p-m\le\varepsilon/2$ and
+$r\le\varepsilon/8$, again proving the contract.  Substituting the bound on
+$m$ gives \eqref{eq:sc-m2-upper}.
+
+For \eqref{eq:sc-m2-fallback}, first decide whether there are zero or $k$
+winners by fixed-point search, reducing its error to $O(\varepsilon)$.  On
+the $k$ branch use the exactly-$k$ circuit \eqref{eq:cond-ap3}; on the empty
+branch prepare $\rho_0$ directly.  The decision error contributes at most
+$O(\varepsilon)$ in trace distance, and the stated cost dominates both
+steps.  Deciding the branch first avoids any circular use of an exactly-$k$
+preparation promise.
+\end{proof}
+
+The precision dependence in \eqref{eq:sc-m2-upper} is written explicitly.
+In the second line of \eqref{eq:sc-detuning}, suppressing the fixed-point
+residual only to $O(\delta)$ would not suffice when
+$\varepsilon\ll\delta$; spending an $O(\varepsilon)$ residual is necessary.
+
+\begin{corollary}[Constant-visibility regime (M-3)]
+\label{cor:sc-m3}
+Let $f=\operatorname{PARITY}_N$, let $p$ be bounded away from zero and one,
+and suppose
+\[
+ k=O(G/\log^2G),\qquad
+ 4\eta_{\rm int}\le\varepsilon\le(1-c)p
+\]
+for a constant $c>0$.  Then, up to fixed-point precision logarithms,
+\[
+ Q_\varepsilon=\Thetatilde\!\left(N\sqrt{G/k}\right).
+\]
+The same scale covers $\varepsilon<4\eta_{\rm int}$ when $\delta=\Omega(1)$ via
+\eqref{eq:sc-m2-fallback}.  Above the minimax radius of the target family,
+zero queries suffice; \eqref{eq:cond-multi-visibility} gives the useful
+public-output bound $\max\{p,k/G\}$ when the internal loser states agree.
+\end{corollary}
+
+\begin{proof}
+Here $\delta=p-\varepsilon=\Omega(1)$ and $A=\Theta(N)$.
+The domain assumption makes \eqref{eq:sc-m1-domain} valid, so
+\cref{thm:sc-m1} supplies the lower bound.  The upper bound is
+\cref{thm:sc-m2}.  The zero-query statement follows by returning the public
+all-loser target and using \eqref{eq:cond-multi-visibility}.
+\end{proof}
+
+\begin{theorem}[Classical accuracy law (M-4)]
+\label{thm:sc-m4}
+For $f=\operatorname{PARITY}_N$, suppose $p\ge k/G$,
+$1-p=\Omega(1)$, and
+\begin{equation}
+ 2\eta_{\rm int}\le\varepsilon,
+ \qquad Ck/G\le\delta=p-\varepsilon\le1/2.
+ \label{eq:sc-m4-domain}
+\end{equation}
+Here $C>0$ is a sufficiently large universal constant.
+Then the randomized classical raw-query complexity is
+\[
+ R_\varepsilon=\Theta(N\delta G/k).
+\]
+\end{theorem}
+
+\begin{proof}
+For the upper bound, inspect
+$t=\Theta(\delta G/k)$ uniformly random blocks without replacement and
+compute each parity exactly using $N$ queries.  Put $q=k/G$.  The probability
+of finding at least one winner is
+\[
+ P_{\rm find}=1-\frac{\binom{G-k}{t}}{\binom Gt}.
+\]
+The constant in $t$ can be chosen so that
+$P_{\rm find}\ge\delta$ throughout
+\eqref{eq:sc-m4-domain}.  This use of a linear budget relies on
+$\delta\le1/2$; as $\delta\to1$, the correct sampling budget contains
+$(G/k)\log(1/(1-\delta))$.
+
+Let $E_{\rm all}$ be the event that every sampled block is a winner.  Its
+public probability is at most $q^t\le q\le\delta$.  On $E_{\rm all}$ output
+a uniformly selected sampled winner.  On
+$E_{\rm find}\setminus E_{\rm all}$, do the same with a public probability
+chosen so that the total probability of winner output is exactly $\delta$;
+this is possible because
+$\Pr(E_{\rm all})\le\delta\le\Pr(E_{\rm find})$.  In all other cases select
+uniformly among sampled losers.  A loser is available whenever the latter
+rule is used.  Exchangeability makes the selected winner uniform on $S$ and
+the selected loser uniform on its complement.  Attaching the corresponding
+public internal state therefore prepares exactly the target shape with
+winner mass $\delta$ in place of $p$.  Its $k$-branch trace error is
+$p-\delta=\varepsilon$.  On the empty branch the output is the uniform-label
+$\rho_L$ state and has error $\eta_{\rm int}\le\varepsilon/2$.  Thus
+$O(N\delta G/k)$ queries suffice.
+
+For the lower bound, append exact $N$-query parity verification to a sampled
+output label and repeat the preparation $\Theta(1/\delta)$ times.  This
+decides zero versus $k$ winners with one-sided error and cost
+$O(\delta^{-1}(T+N))$.  For the decision lower bound, use the $k$-copy
+embedding from \cref{thm:sc-m1} and draw each original block uniformly
+conditioned on its parity.  Every proper subset of a block is uniform, so a
+classical transcript is independent of the planted parity until all $N$
+positions of that block have been queried.  A $q$-query tree completes at
+most $q/N$ original blocks, and it hits the uniformly planted winner with
+probability at most $O(qk/(NG))$.  Yao's principle therefore gives
+$\Omega(NG/k)$ decision queries.  Consequently
+\[
+ \delta^{-1}(T+N)=\Omega(NG/k).
+\]
+The lower restriction $\delta\ge Ck/G$ absorbs the additive $N$ term.
+\end{proof}
+
+No lower bound is asserted in the sliver $\delta=o(k/G)$: a public
+uniform-label output may already meet the state contract there.  The upper
+restriction in \eqref{eq:sc-m4-domain} is equally real, because finding
+probability ceases to be linear in the number of sampled blocks near one.
+
+\subsection{Composed small-success search}
+\label{sec:state-conversion-small-success}
+
+The verified-sample argument above loses a factor $\sqrt\delta$ through
+repetition.  For parity blocks the polynomial method recovers it.  We state
+the degree-division mechanism separately because it will also be used for
+the uncoupled batch.
+
+\begin{lemma}[Parity collapse]
+\label{lem:sc-parity-collapse}
+Let a $T$-query quantum algorithm access
+$x\in\{\pm1\}^{G\times N}$, and let $P(x)$ be the probability of a fixed
+final measurement event.  For block parities
+$z_g=\prod_{j=1}^N x_{g,j}$, define
+\[
+ q(z)=\mathbb E[P(x)\mid \textstyle\prod_jx_{g,j}=z_g
+                  \text{ for every }g].
+\]
+The conditional expectation is uniform over each parity fiber, independently
+across blocks.
+Then $q$ is a real multilinear polynomial in $z\in\{\pm1\}^G$ of degree
+at most $\lfloor2T/N\rfloor$.  If $0\le P\le1$, then $0\le q\le1$ on
+the Boolean cube.
+\end{lemma}
+
+\begin{proof}
+The polynomial method writes $P$ as a real multilinear polynomial of degree
+at most $2T$ \cite{beals2001-quantum-lower-bounds-by-polynomials}.  Consider
+a monomial $x_R$.  Conditional expectation factors over blocks.  In one
+block, the average of a character on a parity coset is one when its share of
+$R$ is empty, is $z_g$ when that share is the full block, and is zero for
+every proper nonempty share.  The last assertion follows by pairing inputs
+that differ in two coordinates, one inside and one outside the proper
+share.  Thus a surviving raw monomial becomes a monomial in $z$ whose
+degree is the number of full blocks it contains, at most
+$|R|/N\le2T/N$.  Averaging all monomials proves the claim.
+\end{proof}
+
+\begin{remark}[Parity-collapse audit]
+As a check on the character calculation in \cref{lem:sc-parity-collapse},
+the identity was verified by exhaustive enumeration for block lengths
+$N=2,3,4,5$ and end-to-end on random multilinear polynomials.
+\end{remark}
+
+\begin{theorem}[One-sided composed small-success bound (S)]
+\label{thm:sc-small-success}
+Suppose a $T$-query quantum algorithm accepts with probability at most
+$\beta\le\delta/2$ on every all-even input and at least $\delta$ on every
+input with exactly $k$ odd-parity blocks.  Then absolute constants
+$c_1,c_2>0$ satisfy
+\begin{equation}
+ T\ge c_1N\sqrt{\delta G/k}-c_2N.
+ \label{eq:sc-small-success}
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+Let $P(x)$ be the acceptance probability.  By
+\cref{lem:sc-parity-collapse}, conditioning on all block parities gives a
+polynomial $q(z)$ of degree at most
+$D=\lfloor2T/N\rfloor$, bounded between zero and one at every Boolean
+input.  It is at most $\beta$ at the all-even point and at least $\delta$
+at every parity vector of odd-block weight $k$.
+
+Average $q$ over all block permutations.  Minsky--Papert symmetrization
+\cite{minsky1988-perceptrons} gives a univariate polynomial $h$ of degree at
+most $D$ such that
+\[
+ 0\le h(w)\le1\quad(w=0,1,\ldots,G),\qquad
+ h(0)\le\beta,\qquad h(k)\ge\delta.
+\]
+Fix a sufficiently small absolute $\gamma>0$.  First suppose
+$D\le\gamma\sqrt G$.  The Coppersmith--Rivlin inequality bounds a
+degree-$D$ polynomial bounded at the $G+1$ equally spaced integer points by
+\[
+ \sup_{t\in[0,G]}|h(t)|\le C(\gamma),
+\]
+where $C(\gamma)$ is an absolute constant in this degree range
+\cite{coppersmith1992-growth-polynomials,klauck2007-quantum-classical-sdpt}.
+Only existence of the universal Coppersmith--Rivlin constants is used; the
+original paper does not specify numerical values; this is the form quoted in
+Theorem~8 of Klauck--\v Spalek--de Wolf.  Erd\'elyi proves a related
+explicit-constant inequality in a different, single-point-versus-supremum
+parametrization
+\cite{erdelyi2016-coppersmith-rivlin}.
+
+Markov's inequality, rescaled from $[-1,1]$ to $[0,G]$, now gives
+\[
+ \sup_{[0,G]}|h'|\le\frac{2D^2C(\gamma)}G.
+\]
+The mean value theorem on $[0,k]$ gives a point $\xi$ with
+\[
+ h'(\xi)\ge\frac{h(k)-h(0)}k
+ \ge\frac{\delta-\beta}k\ge\frac{\delta}{2k}.
+\]
+Therefore $D=\Omega(\sqrt{\delta G/k})$.  In the complementary case
+$D>\gamma\sqrt G$, the same conclusion follows directly from
+$\delta\le1\le k$.  Finally $D\le2T/N$, with an optional additive
+$O(N)$ allowance for integer bookkeeping, proves
+\eqref{eq:sc-small-success}.
+\end{proof}
+
+The theorem is new as stated to the best of our knowledge, but its
+ingredients are standard and the result is plausibly derivable by experts.
+In particular, it should not be confused with a new general composition
+theorem.
+
+\begin{corollary}[Composed search (S1)]
+\label{cor:sc-s1}
+If a quantum algorithm outputs an odd-parity block with probability at least
+$\delta$ whenever exactly $k$ blocks are odd, then
+\[
+ T=\Omega\!\left(\sqrt\delta\,N\sqrt{G/k}\right)-O(N).
+\]
+This is tight up to constants and the additive $N$ term.
+\end{corollary}
+
+\begin{proof}
+Verify the output block by computing its parity exactly with $N$ fresh
+queries.  Acceptance is then zero on an all-even input and at least
+$\delta$ on an exactly-$k$ input, so \cref{thm:sc-small-success} applies to
+$T+N$ queries.  Conversely, if $\delta\le4k/G$ a uniformly random label is
+odd with probability $k/G\ge\delta/4$ at zero queries.  Otherwise $k/G<1/4$,
+so the initial Grover angle $\theta=\arcsin\sqrt{k/G}$ is below $\pi/6$, and
+$t=\lceil c\sqrt{\delta G/k}\rceil\ge1$ Grover iterations with $c=1/6$ keep
+$(2t+1)\theta\le\pi/2$; each uses a $\Theta(N)$-query parity marker, and
+together they produce a winner with probability
+$\sin^2((2t+1)\theta)\ge\sin^2(2c\sqrt\delta)=\Theta(\delta)$.  Direct exact
+verification costs another $N$ queries.
+For one marked item, Zalka proved exact optimality
+\cite{zalka1999-grovers-quantum-searching-algorithm-is}.  The small-success
+scaling for $k$ marked items follows from the angle bound in Theorem~2 of
+the published Dohotaru--H\o yer paper (Theorem~9 of the arXiv version) plus
+the standard $k$-copy embedding.
+Carolan--Poremba Corollary~2.4 records the packaged inequality
+$\delta\le8(T+1)^2k/G$; our attribution uses the angle theorem and embedding,
+not their intermediate distance-based derivation
+\cite{dohotaru2009-exact-grover,carolan2024-quantum-one-wayness}.  Zalka's
+result alone does not establish the $k$-marked statement.  Aaronson's
+direct-product Theorem~4.6 instead concerns the find-all-$k$ analogue
+\cite{aaronson2005-limitations-quantum-advice}.
+\end{proof}
+
+\begin{corollary}[Full conversion curve (S2)]
+\label{cor:sc-s2}
+Let $f=\operatorname{PARITY}_N$, $p\ge k/G$, $1-p=\Omega(1)$,
+$4\eta_{\rm int}\le\varepsilon<p$, and $\delta=p-\varepsilon\ge Ck/G$ for a
+sufficiently large constant $C$.  Then
+\begin{equation}
+ \boxed{Q_\varepsilon=\Thetatilde\!\left(
+ N\sqrt{(p-\varepsilon)G/k}\right).}
+ \label{eq:sc-full-curve}
+\end{equation}
+The tilde hides only fixed-point precision logarithms: the hidden factor is
+$\log(e/\min\{\delta,\varepsilon\})=\log(1/\varepsilon)+O(1)$ when
+$\varepsilon\ll\delta$, and can be unbounded relative to the main term for
+superpolynomially small $\varepsilon$.  The lower bound is nonvacuous once
+$\delta G/k$ is a sufficiently large constant.
+\end{corollary}
+
+\begin{proof}
+One preparation followed by label measurement and exact parity verification
+uses $T+N$ queries.  It accepts with probability zero on the empty branch
+and at least $p-\varepsilon=\delta$ on the $k$-winner branch.  Applying
+\cref{thm:sc-small-success} and absorbing its additive $O(N)$ term under the
+domain assumption gives the lower bound.  The upper bound is
+\cref{thm:sc-m2}; its additive one is absorbed on the same domain.
+\end{proof}
+
+Unlike \cref{thm:sc-m1}, this conclusion needs neither
+$k=O(G/\log^2G)$ nor $G/k=\widetilde\Omega(\delta^{-2})$.  It is
+parity-specific: the gain comes from \cref{lem:sc-parity-collapse}.
+
+\begin{corollary}[Mixed-output preparation profile (S3)]
+\label{cor:sc-s3}
+Suppose a $T$-query circuit, on every exactly-$k$ parity input, outputs a
+state within trace distance $\varepsilon\le p/2$ of the winner-mass-$p$
+target.  Then
+\begin{equation}
+ T=\Omega\!\left(\sqrt p\,N\sqrt{G/k}\right)-O(N).
+ \label{eq:sc-mixed-profile}
+\end{equation}
+Thus the first two lines of the AP6 profile
+\eqref{eq:cond-ap6} are tight for trace-close mixed-state output contracts:
+the lower bounds are $\Omega(N\sqrt{G/k})$ in the subcritical phase and
+$\Omega(N(G/k)^{1/4})$ at criticality.  In the supercritical phase the
+displayed lower bound is vacuous and does not certify the $O(N)$ upper
+bound.
+\end{corollary}
+
+\begin{proof}
+Run the circuit also on an all-even input, which is outside its preparation
+promise but on which the physical circuit remains defined.  Measure a label
+and verify its parity exactly.  Acceptance is zero on this input and is at
+least $p-\varepsilon\ge p/2$ on every exactly-$k$ input.  Apply
+\cref{thm:sc-small-success} with $\delta=p/2$.  The three phase statements
+follow by substituting the winner masses from
+\cref{thm:cond-multiwinner}: $p=\Theta(1)$,
+$p=\Theta(\sqrt{k/G})$, and $p=\Theta(k/G)$.
+\end{proof}
+
+This changes the hypothesis, not the upper bounds, in the preparation
+ledger of \cref{sec:condensation-exact-k-preparation}.  The AP5 lower bound
+\eqref{eq:cond-ap5} was obtained by coherent extraction through AP4
+\eqref{eq:cond-ap4}, and therefore assumed access to a preparation unitary
+and its inverse.  For parity blocks and $\varepsilon\le p/2$,
+\cref{cor:sc-s3} replaces that operator-level hypothesis by the weaker
+contract that the circuit output is a trace-close mixed state.  The AP3
+upper bound \eqref{eq:cond-ap3} and the AP6 supercritical caveat are
+unchanged.  In the concrete family of \cref{sec:wta-central-state}, this
+explains which condensed central states reveal hidden holonomy without
+changing the search-then-crossover architecture of
+\eqref{eq:wta-architecture}.
+
+Combining \cref{cor:sc-s2,thm:sc-m4} gives, on their common domain,
+\begin{center}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+model & query complexity & dependence on $\delta=p-\varepsilon$ \\ \midrule
+quantum & $\Thetatilde(N\sqrt{\delta G/k})$ & square root \\
+randomized classical & $\Theta(N\delta G/k)$ & linear \\
+\bottomrule
+\end{tabular}
+\end{center}
+Thus every nontrivial accuracy scale between $\delta=\Theta(k/G)$ and
+constant $\delta$ has the corresponding quadratic search separation: the
+classical-to-quantum ratio is $\widetilde\Theta(\sqrt{\delta G/k})$.
+It approaches one at the public-output boundary and grows to
+$\widetilde\Theta(\sqrt{G/k})$ at fixed relative accuracy.
+
+\begin{openproblem}[General-inner composition]
+\label{open:sc-general-composition}
+Does every predicate $f$ satisfy a composed small-success lower bound
+\[
+ \Omega\!\left(\sqrt\delta\,Q(f)\sqrt{G/k}\right)
+\]
+for finding a winner with probability $\delta$?  The adversary reduction in
+\cref{thm:sc-m1} gives only linear dependence on $\delta$, while the parity
+proof uses the special disappearance of every proper sub-block character.
+\end{openproblem}
+
+\subsection{Uncoupled holonomy batches}
+\label{sec:state-conversion-batch}
+
+The global trace row in \cref{sec:wta-construction} couples all components.
+For contrast, take $G$ disjoint copies of the triangle-holonomy component,
+including one public trace-one row per component and no equality that joins
+two components.  The path length and local costs are those of
+\cref{eq:wta-parameters,eq:wta-local-costs}.  Consequently the product has
+$L=33GN$ constant-size PSD blocks, scalar row sparsity at most three and
+column sparsity at most two.  If
+\[
+ h_g=\prod_{j=1}^N\sigma_{g,j},\qquad y_g=(1+h_g)/2,
+\]
+then \eqref{eq:wta-cost-spectra} gives component optima
+$v_+=29/10$ and $v_-=14/5$.
+
+\begin{theorem}[No amortization for vector output]
+\label{thm:sc-batch-vector}
+Returning estimates $\widehat v_1,\ldots,\widehat v_G$ satisfying
+$|\widehat v_g-v_{h_g}|\le1/25$ for every $g$, with worst-case joint success
+probability at least $2/3$, has quantum raw-query complexity
+\[
+ \Theta(GN)=\Theta(L).
+\]
+Moreover, there are constants $a,b>0$ such that at most $aGN$ queries give
+worst-case joint success probability at most $2^{-bG}$.
+\end{theorem}
+
+\begin{proof}
+Threshold every estimate at $57/20$ to recover all $h_g$.  Their product is
+the parity of all $GN$ raw signs, which has quantum query complexity
+$\Omega(GN)$; reading all signs is a matching upper bound.  For the stronger
+claim, specialize Lee--Roland's strong direct-product theorem to
+$G$ copies of $\operatorname{PARITY}_N$
+\cite{lee2012-a-strong-direct-product-theorem}.  Its Theorem~1.1 with
+success parameter $3/4$ gives
+\[
+ Q_{1-(3/4)^{G/2}}(f^{(G)})
+ \ge\frac{G\ln(9/8)}{8000}Q_{1/4}(f).
+\]
+Since $Q_{1/4}(\operatorname{PARITY}_N)=\Theta(N)$, fewer than a fixed
+constant times $GN$ queries makes simultaneous decoding succeed with
+worst-case probability at most $(3/4)^{G/2}=2^{-\Omega(G)}$.
+\end{proof}
+
+Now average the $G$ component objectives.  Separability gives the single
+optimum
+\begin{equation}
+ V(\sigma)=\frac1G\sum_{g=1}^Gv_{h_g}
+ =\frac{14}{5}+\frac1{10G}\sum_{g=1}^Gy_g.
+ \label{eq:sc-batch-value}
+\end{equation}
+
+\begin{theorem}[Scalar batch frontier]
+\label{thm:sc-batch-scalar}
+For $0<\varepsilon\le1/100$,
+\begin{align}
+ Q_\varepsilon(V)&=\Theta\!\left(
+ N\min\{G,1/\varepsilon\}\right),
+ \label{eq:sc-batch-quantum}\\
+ R_\varepsilon(V)&=\Theta\!\left(
+ N\min\{G,1/\varepsilon^2\}\right).
+ \label{eq:sc-batch-classical}
+\end{align}
+\end{theorem}
+
+\begin{proof}
+An exact coherent query to $y_g$ costs $\Theta(N)$ raw sign queries.
+Amplitude estimation estimates its mean to error $10\varepsilon$ using
+$O(1/\varepsilon)$ such calls
+\cite{brassard2002-quantum-amplitude-amplification-and-estimation}; when
+$1/\varepsilon>G$, compute all parities.  This proves the quantum upper
+bound.  Classically, sample
+$O(\min\{G,1/\varepsilon^2\})$ groups without replacement, compute their
+parities, and use the empirical mean, scanning all groups when the minimum
+is $G$.
+
+For every $G$, restricting to inputs in which all $G$ groups carry the same
+$N$-bit string $x$ makes $V$ change by $1/10>2\varepsilon$ when the parity of
+$x$ flips, so an $\varepsilon$-estimator computes
+$\operatorname{PARITY}_N$ and $T\ge N/2$; this settles $G<6$, where
+$\min\{G,1/\varepsilon\}=O(1)$.  For $G\ge6$, choose Hamming weights
+$\ell,\ell'\in[G/4,3G/4]$ separated by
+$\Delta=\max\{1,\lceil21\varepsilon G\rceil\}$.  Their values in
+\eqref{eq:sc-batch-value} differ by more than $2\varepsilon$, so thresholding
+an estimator gives a bounded-error polynomial distinguishing the two
+weights.  Nayak--Wu's symmetric approximate-counting lower bound gives
+degree
+\[
+ \Omega\!\left(\frac{\sqrt{m(G-m)}}{\Delta}\right)
+ =\Omega(\min\{G,1/\varepsilon\}),
+\]
+where $m$ is the selected weight farther from $G/2$
+\cite{nayak1999-the-quantum-query-complexity-of}.  Applying the already
+proved degree division in \cref{lem:sc-parity-collapse} forces
+$\lfloor2T/N\rfloor=\Omega(\min\{G,1/\varepsilon\})$.
+
+The same lower bound also follows from perfect negative-adversary
+composition: compose the partial symmetric outer gap-counting problem with
+$G$ independent parity blocks and combine Nayak--Wu's outer bound with the
+Belovs--Lee composition theorem
+\cite{belovs2020-the-quantum-query-complexity-of}.  Thus the parity-collapse
+argument here is a construction-specific proof, not a new composition
+theorem.
+
+For completeness, the classical reduction also charges the entire parity
+block even to an adaptive algorithm.  Fix $h\in\{\pm1\}^G$ and draw the raw
+signs of each group uniformly conditional on their product being $h_g$.
+A simulator answers every first-time query while at least two signs remain
+unseen by an independent fair sign.  Only when the final unseen sign in a
+group is queried does it query $h_g$ and force the required product.
+This exactly reproduces the conditional distribution under arbitrary
+interleaving.  Each parity-oracle query consumes $N$ distinct raw queries,
+so a depth-$q$ raw tree induces a parity-bit tree of depth at most
+$\lfloor q/N\rfloor$.  The classical bounded-error complexity of estimating
+a $G$-bit mean to error $10\varepsilon$ is
+$\Theta(\min\{G,1/\varepsilon^2\})$, by the standard Yao distribution on
+two nearby central Hamming weights.  Multiplication by $N$ proves
+\eqref{eq:sc-batch-classical}.
+\end{proof}
+
+The two frontiers form three regimes:
+\begin{center}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+accuracy & $Q_\varepsilon(V)$ & $R_\varepsilon(V)$ \\ \midrule
+$\varepsilon=\Omega(G^{-1/2})$
+ & $\Theta(N/\varepsilon)$ & $\Theta(N/\varepsilon^2)$ \\
+$G^{-1}=O(\varepsilon)=O(G^{-1/2})$
+ & $\Theta(N/\varepsilon)$ & $\Theta(NG)$ \\
+$\varepsilon=O(G^{-1})$
+ & $\Theta(NG)$ & $\Theta(NG)$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+At $\varepsilon=\Theta(G^{-1/2})$, the costs are
+$\Theta(N\sqrt G)$ and $\Theta(NG)$, exactly the quantum and classical
+scales of the coupled winner-take-all value bound
+\eqref{eq:wta-value-complexity}.  This is a dimension--accuracy crossover,
+not an unqualified exponential advantage.
+
+\begin{corollary}[Parallel Newton materialization]
+\label{cor:sc-parallel-newton}
+At the public point $X_{g,i}=I/3$ and product-barrier parameter
+$\mu=1/(GP)$, the uncoupled batch has reduced root Hessian $(9/G)I$ and
+condition number one.  Nevertheless, producing classical descriptions of
+all $G$ root Newton directions to entrywise error less than $1/200$ costs
+$\Theta(GN)$ queries, and sublinear constant-factor query budgets have
+$2^{-\Omega(G)}$ worst-case joint success.
+\end{corollary}
+
+\begin{proof}
+Using $A_h$ from \eqref{eq:wta-Ah}, direct elimination gives
+\[
+ \Delta Z_g=-\frac1{90}(H_{12}+H_{23}+h_gH_{13}).
+\]
+Every full physical step remains positive definite, with minimum eigenvalue
+at least $14/45$.  The hidden $13$ entry has magnitude $1/90>1/200$, so its
+sign reveals $h_g$.  Apply \cref{thm:sc-batch-vector}.
+\end{proof}
+
+These batch results concern raw queries to the displayed signed copy rows.
+An oracle supplying block parities, aggregate gradients, or component
+optima has already performed the hard composition.  The vector theorem
+concerns simultaneous classical materialization, not one normalized global
+quantum direction state; the latter can hide individual entries by
+amplitude dilution, as \cref{rem:wta-dilution} shows.  Finally, the claims
+are for the exact equalities: the path operator has small singular values,
+so no constant-residual robustness statement is implicit.
+
+\subsection{Remaining boundaries}
+\label{sec:state-conversion-open}
+
+Three boundaries remain.  First, the winner-mass decoder is insensitive to
+the internal-state discrepancy $\eta_{\rm int}$.  Determining the minimax radius and
+query complexity of this internal-state channel, especially when $p$ is below the
+condensation threshold, is open.  Second,
+\cref{open:sc-general-composition} asks for $\sqrt\delta$ composition beyond
+parity.  Third, the sliver $\delta=o(k/G)$ is deliberately excluded from
+the tight laws: public uniform-label outputs can already satisfy some such
+contracts, and the exact boundary depends on the internal states rather
+than winner mass alone.

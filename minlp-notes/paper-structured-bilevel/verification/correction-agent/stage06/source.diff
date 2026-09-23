@@ -1,0 +1,78 @@
+--- process/snapshots/stage06-round01/README.md
++++ README.md
+@@ -4,8 +4,10 @@
+ The current draft contains accepted stages 1 through 5, including the fixed-core,
+ inverse-approximation, quantitative-bounds and path-geometry appendices. Each
+ passed five independent reviews and separate correction of all accepted minor
+-issues. Computation and final synthesis stages remain; this is not a completed
+-paper.
++issues. Stage 6's scalar algorithms and computations are authored and have
++completed five reviews; root verification of the accepted corrections remains
++pending. Final synthesis and the whole-manuscript review remain.
++This is not a completed paper.
+ 
+ Build from this folder:
+ 
+@@ -33,7 +35,7 @@
+ review cycle. Historical repository reviews are evidence to inspect, not a
+ substitute for these new reviews.
+ 
+-Later computation stages will add reproduction commands and their actual logs.
++Stage 6 reproduction commands and the locations of their logs are given below.
+ Historical benchmark values must remain explicitly distinguished from reruns.
+ No user-supplied literature originals are copied into this folder.
+ 
+@@ -112,10 +114,12 @@
+ The default command starts a new run and replaces this paper's fresh results;
+ repository historical outputs are never overwritten.
+ 
+-`code/compressed_solver.py` is the original scalar solver with two measured
+-local changes: rational sign decisions before symbolic cancellation and rational
+-midpoints when both interval endpoints are rational. All algebraic fallback and
+-contact logic remain. `code/original_faces.py` is an independent full-price,
++`code/compressed_solver.py` contains two measured local changes to the original
++scalar solver: rational sign decisions before symbolic cancellation and rational
++midpoints when both interval endpoints are rational. A later correction
++materializes upper constraints once before validation so one-shot iterators
++retain every row. All algebraic fallback and contact logic remain.
++`code/original_faces.py` is an independent full-price,
+ full-upper-task baseline. It checks every nonempty principal Hessian minor,
+ rejects singular minors, enumerates original stationary faces, compares original
+ quadratic values over the entire price interval and retains all exact ties.
+@@ -135,6 +139,14 @@
+ Numerical convex comparisons supplement exact KKT/coverage checks.
+ 
+ The reported measurements and input hashes are in `data/stage06-results.json`.
++The measured compressed solver is preserved as
++`verification/correction-agent/stage06/measured-compressed-solver.py`; its hash
++matches the recorded solver hash. The later iterator correction was not part
++of those measurements. The measured calls used reusable lists or tuples, so
++their results remain valid; the raw timings have not been changed or relabeled
++as measurements of the corrected version. Source-version mappings and new
++correctness checks are recorded in `process/stage06-corrections.md` and
++`verification/correction-agent/stage06/manifest.json`.
+ The measured driver source is preserved as
+ `verification/stage06-author/measured-run-experiments.py` with its matching
+ recorded hash. Later driver changes only add prepared-input archival and create
+--- process/snapshots/stage06-round01/code/check_full_task.py
++++ code/check_full_task.py
+@@ -58,6 +58,9 @@
+     for semantics in ('optimistic','pessimistic'):
+         a=faces.optimize(ref,rows,semantics);b=compressed.optimize_tariff(atlas,cons,semantics)
+         assert (a is None)==(b is None),(name,semantics,a,b)
++        if name=='false_convexification':
++            assert b is None,(name,semantics,b)
++            assert compressed.optimize_tariff(atlas,iter(cons),semantics) is None,('constraint iterator',semantics)
+         if a is not None:
+             assert faces.compare(a['value'],b.value)==0 and a['attained']==b.attained,(name,semantics,a,b)
+             validate_witness(a,ref,rows,semantics);validate_witness(b,ref,rows,semantics)
+--- process/snapshots/stage06-round01/code/compressed_solver.py
++++ code/compressed_solver.py
+@@ -337,6 +337,7 @@
+     if semantics not in ('optimistic','pessimistic'):
+         raise ValueError('Unknown semantics')
+     ins = atlas.instance
++    constraints = tuple(constraints)
+     if any(len(row.b)!=len(ins.d) for row in constraints):
+         raise ValueError('Constraint dimension mismatch')
+     best = None

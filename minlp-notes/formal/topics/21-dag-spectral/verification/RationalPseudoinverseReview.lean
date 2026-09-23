@@ -1,0 +1,12 @@
+import Formal.DAGSpectral.RationalContrastTrace
+#print axioms DAGSpectral.rationalPseudoInverse_eq
+#print axioms DAGSpectral.rationalEstimable_iff
+#print axioms DAGSpectral.rationalContrastVariance_eq
+#print axioms DAGSpectral.rationalPseudoInverseWithTrace_value
+#print axioms DAGSpectral.rationalPseudoInverseWithTrace_bitWork
+#print axioms DAGSpectral.rationalContrastWithTrace_value
+#print axioms DAGSpectral.rationalContrastWithTrace_bitWork
+
+#print axioms DAGSpectral.coefficientIndexRun_eq
+#print axioms DAGSpectral.matrixArithmeticRun_eq
+#print axioms DAGSpectral.rationalContrastWithTrace_eq

@@ -1,0 +1,30 @@
+# Stage 4 author assignment (after Stage 3 is accepted)
+
+Write all Stage 4 rows of `scope-proposal.md` in coherent new sections and appendices. One author owns the entire stage. Preserve accepted earlier mathematics. Read every mapped result, relevant correction note, and the foundations before writing. Supply full fresh proofs, not citations to internal audits; verify primary external ingredients and cite them accurately.
+
+Required details:
+
+- Define the fractional-cardinality problem, integer parameter ranges, exact optimum 1/4, original dimension, node oracle, threshold and certified-region convention before each lower bound. Prove the witness count for arbitrary real coordinate splits and general covers. Prove the separable-underestimator domination by chords, exponential upper certificate, fixed-demand-level polynomial exact certificate, and second-order chord error. Charge objective-based discarded slabs. For feasibility tolerance delta, explicitly require 0<=delta<1/2 and epsilon+delta^2<1/4; prove the tolerance optimum and implication rather than repeating an unrestricted slogan. Reconcile the older stale statement that SDP behavior is open.
+- SDP–RLT: include a complete augmented PSD construction, all pairwise box inequalities including diagonal cases, equality products and objective calculation. State how this model compares with order one of the ensuing preordering.
+- Higher SOS: give self-contained fractional-cardinality moments, normalization, Boolean reduction, cardinality identities through the correct degree, homogeneous reduction, exact Gram decomposition and positivity coefficients. Prove the assignment-indicator localizer lemma including repeated slack factors, arbitrary global square multipliers and every degree restriction. Finite numerical eigenvalues are supplemental checks only.
+- Derive q_r=min{k-2r+2,z-2r+2,m(1/2-2epsilon)} and the cover lower bound, including strict/non-strict endpoint handling. Give the allowed order-versus-dimension regime precisely. Treat all-zero thresholds without division.
+- Prove unique-minimizer perturbation, explicit positive distinct coefficients, increasing strictly concave allocation consequence and its absolute-versus-relative limitation. First-order moments stay in [0,1] by the node constraints.
+- Product domains may be disconnected, nonclosed and otherwise arbitrary nonempty coordinate subsets. All univariate valid polynomial inequalities and equalities are granted through degree, not merely the input generators. Check products of local constraints times globally coupled squares. Endpoint membership and witness membership suffice; do not assume a compact-domain hull theorem here.
+- Develop the paper-local candidate in `process/univariate-lift-refinement.md`: endpoint interpolation appears to remove the rD loss entirely for auxiliaries depending on one original coordinate, even finite-valued nonpolynomial functions. Verify the proof yourself before promoting it. Require original coordinates retained, original affine balances, objective polynomial available through lifted degree 2r with exact full-graph agreement, independent local graph restrictions, and no arbitrary coupled valid cuts. State and prove every equality/localizer/objective transfer; distinguish endpoint interpolation of a moment functional from a continuous graph identity. If valid, give the sharper order-r theorem and retain the literal-substitution rD argument as a valid coarser comparison. The root's exact 36-case checker supports degree bookkeeping but is not the proof.
+- Relative tolerance: fixed-size independent blocks, global tensor positivity for total degree (including squares coupling every block), tau>0, exact exponent, explicit r=1,t=2 example. Prove unique optimizer and absence of coordinate-permutation symmetries modulo the balance equations using squared-index coefficients, not distinctness alone. Explain the short alternative component certificate. Transfer the new local-lift improvement if valid with full tensor reasoning.
+- Exhibit the classical Boolean-quadric clique inequality that closes the root and the perturbed root, one per relative block. Do not claim inherent hardness of these easy-to-optimize families. This motivates the next XOR stage without implying its signed cubic family is a positive multilinear gap example.
+
+Root already independently read the higher-order Gram/homogenization/localizer proof, relative tensor argument and symmetry proof, and product-domain construction. The new local-lift theorem is still a candidate, not previously accepted. Root checks are in verification/, and primary-source/access records are `verification/primary-source-checks.md` and `literature-screen-additions.md`. Coniglio's 2026 original appendix was inaccessible behind an OpenReview verification page; do not claim to have read it or claim absence of prior related spatial lower bounds. Read local Jarre and fractional-cardinality sources as appropriate, and distinguish classical moment ingredients from this spatial transfer.
+
+Write a row-by-row source/claim/label ledger, bounded-development record, source checks and test/build evidence in `process/stage-04-author.md`. Add narrow paper-local exact checks where they provide new confidence. Use existing verification/build_and_check.py; do not change snapshots, literature or other paper directories. Do not return until the entire assigned stage is checked, written and compilable. Fifteen independent full-stage reviewers will follow.
+
+Source-access update: root subsequently read the primary review-version
+Coniglio AppendixC through the browser. See the final entry of
+verification/primary-source-checks.md; the published-version limit remains.
+
+For the new graph-lift theorem, explicitly define each auxiliary function on
+the entire original coordinate interval [0,1], with finite real values there.
+This makes the reformulation preserve the original feasible problem and all
+witness graph tuples. Node restrictions may then have arbitrary nonempty
+preimages; do not silently alter the original problem through an undefined
+auxiliary value.

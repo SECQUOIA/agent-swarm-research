@@ -1,0 +1,71 @@
+# Stage 6, round 1, independent review 14
+
+**Verdict: PASS.** I found no demonstrable mathematical, attribution, scope, or presentation defect requiring a change. This is a review of this frozen stage, not approval of a future final version or a claim that every external theorem has been reproved.
+
+## Coverage
+
+The reviewed PDF is `process/snapshots/stage06-round01/main.pdf`, 111 pages, with independently checked SHA256 `343b29156e275df970236babbab1077b3a53261317e0995a6a7ea0398b583916`.
+
+I read the entire frozen manuscript source, including `main.tex`, `macros.tex`, `references.bib`, and every included section:
+
+- `sections/01-foundations.tex`, `02-universal-positive.tex`, `03-cubic-equal-means.tex`, `04-incidence-interiority.tex`, `05-feedback-frequency.tex`, `06-treewidth-two.tex`, `07-positive-boxes.tex`, `08-exact-complexity.tex`;
+- `sections/09-cardinality-spatial.tex`, `10-cardinality-preordering.tex`, `11-coordinate-domains-lifts.tex`, `12-relative-blocks-cuts.tex`, `13-xor-quadratic-hulls.tex`, `14-monomial-reformulations.tex`, `15-finite-certificates-affine.tex`, `16-supporting-comparisons.tex`, `17-synthesis.tex`;
+- `sections/appendix-finite-signings.tex`, `appendix-positive-couplings.tex`, `appendix-cubic-certificates.tex`, `appendix-structural-auxiliary.tex`, `appendix-positive-box-predecessors.tex`, `appendix-point-packing.tex`, `appendix-scaling.tex`, `appendix-p-split.tex`, `appendix-rank-one.tex`, `appendix-fbbt.tex`, `appendix-integer-comparison.tex`.
+
+I read the frozen review protocol, Stage 6 reviewer assignment, author assignment and author record, scope proposal, and claim-coverage ledger. I consulted the frozen author validation record for source locations; its success labels were not used as proof. Coverage was checked against the scope and coverage ledgers, not by independently rereading every underlying repository development. I did not read other current-round reports or edit manuscript files.
+
+I read `literature/AGENTS.md` before inspecting originals. The following are the principal original-source checks, with the actual scope of inspection rather than an assertion that each entire external paper was audited:
+
+| Source and inspected locator | Check relevant to this manuscript |
+| --- | --- |
+| Davidson–Donsig, local arXiv original, PDF pp. 1–7, especially Theorems 1.1–1.2 and 2.4 | Real Grothendieck constant, weighted Schur bound, and why integer row-boundedness is not the weighted statement needed here. |
+| Luedtke–Namazifar–Linderoth, author original, PDF p. 22, Conjecture 1 | Positive multilinear conjecture and the scope of its attribution. |
+| Cornuéjols, packing/covering manuscript, printed p. 76, Theorem 6.5; Theorem 6.13 and surrounding proof | Camion's Eulerian-submatrix criterion versus balanced mixed-system integrality. The scanned theorem image was inspected. |
+| Hassin–Tamir, original PDF p. 3, printed p. 381, Theorem 3.1 and adjacent definitions | Series-parallel characterization and two-terminal constructions; inspected the scanned page. |
+| Grötschel–Lovász–Schrijver, printed p. 179, Theorem 6.4.9 and start of proof | Strong separation/optimization equivalence for well-described rational polyhedra. |
+| Altschuler–Boix-Adserà, Section 7.2, Theorem 7.4, its precision discussion, and Corollary 7.5 | Polynomial dependence on inverse accuracy is not polynomial dependence on its bit length. |
+| Schoenebeck, 19-page full author version, PDF pp. 6–13 and 16–19, especially Theorems 11–12, Lemma 13, Theorem 21 and Proposition 22 | Constant-density random-instance assumptions, signed equivalence-class construction, and linear-width conclusion used by the spatial transfer. |
+| Jarre, complete six-page local preprint text, especially Sections 2–3 | Binary knapsack/max-cut SDP predecessor and its restricted algorithm model. |
+| Anstreicher, PDF pp. 12–13, Conjecture 4; Khajavirad, arXiv:2404.03091v1, Propositions 1 and 3 | All four packing values and the symmetry/reflection convention. Khajavirad's primary HTML was inspected at `https://arxiv.org/html/2404.03091v1`. |
+| Kronqvist et al., local original, PDF pp. 4–7 and 15–16, assumptions, Remark 1, Corollary 3, Definition 4, Theorem 6 and proof | Retained compact convex domain, shared/scaled auxiliary functions, and the precise universal nonexactness statement challenged by the examples. |
+| Wu et al., local original, PDF p. 12, Lemma 3 and Theorem 3 | Stated variable-aggregation perspective scope; supplementary proofs were not available in that original. |
+| Starr, printed pp. 35–36, Appendix 2, Lemma 2 and corollary | Finite-dimensional convexification input and its hypotheses. |
+| Fawzi–Parrilo, original PDF p. 3, Theorem 1 and adjacent cone discussion | Fixed block size, constants, and exact cone-size consequences. |
+| Braun et al., author version PDF p. 18, Section 4.1 and Theorem 6(i) | Fixed-dilation correlation-polytope sandwich, rather than an arbitrary approximation theorem. |
+| Lee–Raghavendra–Steurer, author version PDF p. 23, Theorem 3.8/equation (3.11), and pp. 32–34, Theorems 5.3–5.4 | Quantitative pseudo-density statement, normalization and sup norm, and exact PSD-rank theorem. Equation (3.11) was also inspected visually. |
+| Etessami–Yannakakis, PDF pp. 26–28, Theorem 5.2 and proof | Circuit normalization, positive/negative splitting, detector, and amplifier used in the FBBT specialization. |
+| Stewart–Etessami–Yannakakis, PDF pp. 21–22, Section 4.1 and equation (18); Esparza et al., PDF p. 34, Theorem 7.1 | Repeated squaring and earlier nonlinear-depth convergence examples, distinguished from the paper's primitive-update inference. |
+| Belotti et al., PDF pp. 1–2 | Continuous linear limiting-bound result and the difference between limit computation and primitive iteration. |
+| Lubin et al., PDF p. 12, Lemma 4.1 and proof; Beach et al., combined preprint PDF p. 21, Section 5.1.1 | Parity-class obstruction and the stated, version-specific square-approximation constants. |
+
+The Coniglio review-version PDF URL in the bibliography returned an OpenReview browser-verification page in this review. I therefore did not freshly verify its Assumption 1, Propositions 2–4 or Appendix C. The manuscript explicitly records which review version supports the comparison and that identity with the published version was not verified. I found no basis for silently upgrading that limited comparison into a fully verified published-version claim.
+
+## Findings
+
+None. In particular, I found no unsupported general priority claim. The abstract and introduction identify established bilinear asymptotic content; the packing appendix explicitly credits the four values; the spatial discussion acknowledges predecessors and excludes a general priority claim. Stage 6 statements distinguish inherited theorems from the local reductions and stability calculations.
+
+## Independent verification
+
+The following are checks I reconstructed from the arguments, rather than acceptance of previous review labels.
+
+1. **Common-law gap arguments.** I checked the vertex-distribution representation, simultaneous mean preservation, cut-width reduction, half-integral grid reduction, and the roles of weighted orientation and polarization. For the universal positive law, the dyadic affine surrogate and the nested digit-reversal construction agree with the asserted exact hull value. The harmonic law normalizes correctly; its inactive mass is retained in the bound. The coefficient-removal argument requires, and supplies, a uniform estimate over all clone vertices before transferring both envelopes. The cubic arguments distinguish a finite certificate from a determination of the unknown exact cubic constant.
+
+2. **Structural and physical-box boundaries.** I checked the full boundary invariant used in the series/parallel argument, rather than just terminal colors. The TU argument uses the all-cycle condition and Camion, not balancedness alone. Frequency-two rounding retains the coverage baseline of an odd component. In the positive-box argument, spreading uses the actual global minimum and maximum coefficients; generic Schur concavity is not invoked. The ambient law remains fixed on restriction in the balanced-orientation refinement. The exact single-product reduction retains rational bit bounds and an inverse-precision separation, and does not establish fixed-additive-error hardness.
+
+3. **Spatial moment transfer.** I reconstructed the cardinality Gram decomposition and its nonnegative coefficients under the stated order restrictions. Tensor positivity covers globally coupled square polynomials. Endpoint interpolation for coordinatewise graphs preserves the relevant endpoint evaluations even when the auxiliary function itself has high or unbounded algebraic degree. For XOR, the signed-character construction gives moments in `{0,1,-1}`; the quadratic realization is a law on the full coordinate box, which need not be a graph law. Substitution preserves the requisite graph identities in the pseudoexpectation. The original-degree budget is `4rD` for lifted indicator squares. The parity-rank counting argument still controls overlapping and repeated monomial supports. The order-one quadratic-formulation upper certificate and the order-two Bernstein certificate use different premises and remain separate.
+
+4. **Scaling and P-split.** I checked the two-endpoint scaling convex combination, common-intensive-variable obstruction, and the rectangularity fiber iteration. The zero-weight perspective cone is handled using compactness, and the corrected perspective claim concerns the specified extensive variables. Against the original P-split hypotheses, a retained box whose disjunctive hull is the box is a counterexample to universal strict weakness. Conversely, strict Jensen loss at a selected fiber gives the narrower local obstruction. The ball calculation correctly convexifies a downward auxiliary image; the projected radius condition, distance calculation, and rational rotation comparison remain valid. The final exact-image strengthening does not incorrectly assert convexification of the full feasible graph.
+
+5. **Correlation face and quantitative lift bounds.** For a nonzero rank-one generator, `W=rc^T/S` and `tr(W)<=1`; equality forces the common indicator marginals. The paired trace face yields the displayed correlation map. Exposure follows from `S<=m+2mB+4mD`, hence `g>=B+D`. Rounding gives the intermediate bound `4SB+58SD+5|S-m|`, from which the stated `136m+10` follows. Retaining the signed total deviation before mixing gives `28mB+156mD+5(m-T)`, hence the stronger section constant `184m+6` and `A_m=m(184m+6)`. For the PSD approximation, the shifted sign slack has expectation at most `-1/(8k^2)` and uses the quantitative LRS theorem with `delta=1/(16k^2)`. Its prefactor is `k^(-23/4)`, and its bracket scales as `m/(k^(13/2) log m)`. Choosing odd `k` of order `(m/log m)^(2/13)` gives precisely the superpolynomial conclusion claimed. The small fixed-dilation SDP does not substitute for that argument. Exact exponential SOC dimension and approximate superpolynomial SOC dimension are not conflated.
+
+6. **Primitive FBBT and integer comparison.** The monotone-system assignment is feasible at the least fixed point, so sound additional contractions cannot delete it; fair forward updates converge to that fixed point. I checked detector and amplifier normalization and the repeated-squaring encoding. Fixing upstream variables at their strongest valid bounds yields the fastest relevant lower-bound recurrence; its invariant still gives at least `1/(2b)=2^(2^n-1)` counted primitive updates. This does not count accelerated global solves. The integer appendix's midpoint/parity closures, square diameter, bilinear logarithmic area bound, and simultaneous-edge allocation address the specified precision resource, not the spatial moment oracle.
+
+7. **Independent exact finite computations.** I wrote and ran `verification/reviewer14/stage06-round01/check.py`; the recorded output is `results.json` in that directory. Direct quadratic-form enumeration, independently of the manuscript's cut-bit-count program, checks every normalized signing for `n=2,...,7` and returns `[1,2,4,4,5,8]`. Exact rational Hamming-level interpolation checks the LRS normalization, negative objective expectation, sup-norm bound, and shifted-function range for odd `k=3,...,19`. Exact rational construction checks every tightened RLT inequality and every pairwise distance in the symmetry covariance example for `n=5,...,40`; the minimum is always `k/[4(k-1)]`. All checks passed. The covariance PSD property is the separate analytic projection/block argument, not a claim derived from those finite inequalities.
+
+8. **Rendered document.** I visually inspected rendered PDF pages 1, 3, 25, 50, 75, 93, 103 and 111, including the abstract, introduction, long proof material, Stage 6 comparisons and bibliography. The saved inspection sheet is `verification/reviewer14/stage06-round01/pdf-samples.png`. I saw no clipping or unreadable formula layout in that sample. This was sampled visual inspection, not a page-by-page typography audit.
+
+## Remaining limits
+
+I did not reprove the full external Schur-multiplier, strong-optimization, random-CSP, matching, conic-factorization or extension-complexity theories. Source inspection above verifies important hypotheses and applications; it is not a full proof audit of every cited work. Other classical or contextual bibliography entries were read as manuscript citations but were not all freshly checked against their originals. I did not carry out an exhaustive literature search establishing priority, independently inspect every repository precursor, run solver-dependent historical searches, rebuild the frozen PDF, or replay every author checker. The new exact checker is deliberately finite and does not establish universal claims or replace the handwritten proofs.
+
+The explicitly open constants, affine-branching boundary, and stronger feasible-graph or coupled-localizer models remain outside the proved scope. I found their status consistent with the synthesis and scope ledger. No revision is requested on the basis of those limits.

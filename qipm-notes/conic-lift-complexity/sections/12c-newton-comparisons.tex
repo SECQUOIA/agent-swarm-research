@@ -1,0 +1,822 @@
+\section{Newton systems: elimination, packing, and access}
+\label{newt:section}
+
+Cone resources do not determine the cost of a Newton equation.  The
+projected variables, the auxiliary iterate, the chosen elimination, and
+the requested output all matter.  We establish this point for the grouped
+and column-packed ball formulations.  In particular, feasible auxiliary
+allocations improve the off-center comparison from a quadratic to a
+sharp linear dependence on residual eccentricity.
+
+\subsection{The common marginal barrier and its Newton equation}
+
+Let $C=\prod_{a=1}^b B_2^{s_a}$, let $n=\sum_a s_a$, and partition each
+source vector $x_a$ into $h_a\geq1$ nonempty coordinate groups.  Pad a
+group by public zero coordinates when necessary, and arrange the resulting
+columns in real matrices $W_\ell\in\R^{p_\ell\times c_\ell}$.  Every
+projected coordinate occurs once.  Let $E_a^\ell$ be the diagonal
+projector onto the columns of block $\ell$ assigned to source $a$.
+These projectors are orthogonal and sum to the identity in each block;
+source $a$ has $h_a$ columns in total.  The packed formulation is
+\begin{equation}\label{newt:packing}
+ Z_\ell=\begin{pmatrix}S_\ell&W_\ell^T\\W_\ell&I_{p_\ell}\end{pmatrix}
+ \succ0,\qquad
+ \sum_\ell\tr(E_a^\ell S_\ell)=1,
+ \qquad F=-\sum_\ell\log\det Z_\ell.
+\end{equation}
+All additional constraints and the objective in this subsection depend
+only on $x$.  Write $D_\ell=S_\ell-W_\ell^TW_\ell$ and
+$\rho_a=1-\norm{x_a}^2>0$.
+
+\begin{proposition}[Packing-independent marginal and centered system]
+\label{newt:center}
+For fixed $x\in\intr C$, the unique minimum of $F$ on its auxiliary
+fiber has diagonal residuals
+\begin{equation}\label{newt:d0}
+ (D_\ell^0)_{\gamma\gamma}=d_a:=\rho_a/h_a
+       \quad(\gamma\hbox{ assigned to }a).
+\end{equation}
+The marginal barrier and its Hessian are
+\begin{align}
+ \Phi(x)&=-\sum_a h_a\log\rho_a+\sum_a h_a\log h_a,
+       \label{newt:marginal}\\
+ H_0(x)&=\bigoplus_a\left(
+       \frac{2h_a}{\rho_a}I_{s_a}
+       +\frac{4h_a}{\rho_a^2}x_ax_a^T\right).
+       \label{newt:center-hessian}
+\end{align}
+Its self-concordant barrier parameter is exactly $\sum_a h_a$.
+The grouped paraboloid formulation with the same groups has the same
+marginal.  At their fiber centers, both formulations give the same
+projected Newton matrix and right-hand side for every common affine
+constraint $Ax=d$, linear objective, multiplier, and projected iterate.
+\end{proposition}
+\begin{proof}
+The Schur determinant identity gives $\det Z_\ell=\det D_\ell$.
+For fixed diagonal, Hadamard's inequality uniquely maximizes the
+determinant at a diagonal positive matrix.  The allocation equations become
+$\sum_{\gamma\in\Gamma_a}d_\gamma=\rho_a$; AM--GM uniquely maximizes
+their product at $d_\gamma=\rho_a/h_a$.  The same AM--GM calculation
+applies to the grouped slacks $t_\gamma-\norm{x_\gamma}^2$.
+Differentiation gives \eqref{newt:center-hessian}.  Each summand is $h_a$
+times the standard unit-ball barrier, and its squared dual gradient norm is
+$2h_a\norm{x_a}^2/(1+\norm{x_a}^2)$.  This tends to $h_a$ at the
+boundary.  Additivity and simultaneous boundary approach prove exactness
+of the parameter.
+
+For completeness, the equality extends to the uncondensed residual
+equations.  For a direction $(A_\ell,U_\ell)=(\delta S_\ell,\delta W_\ell)$
+put $B_\ell=A_\ell-W_\ell^TU_\ell-U_\ell^TW_\ell$.  Direct
+differentiation along this affine direction gives
+\begin{equation}\label{newt:lifted-hessian}
+ D^2F[(A,U)]^2=\sum_\ell\left[
+ \tr(D_\ell^{-1}B_\ell D_\ell^{-1}B_\ell)
+       +2\tr(D_\ell^{-1}U_\ell^TU_\ell)\right].
+\end{equation}
+At diagonal $D^0$, off-diagonal entries of $B$ are independent positive
+quadratic modes.  They have zero gradient, objective, and constraint
+coefficients.  The diagonal modes $r_\gamma=B_{\gamma\gamma}$ obey
+\begin{equation}\label{newt:star-quadratic}
+ \sum_\gamma\frac{r_\gamma^2}{d_\gamma^2}
+       +2\sum_\gamma\frac{\norm{u_\gamma}^2}{d_\gamma},
+ \qquad
+ \sum_{\gamma\in\Gamma_a}
+       (r_\gamma+2x_\gamma^Tu_\gamma)=0.
+\end{equation}
+These are precisely the grouped residual equations, including their
+linear terms $-\sum_\gamma r_\gamma/d_\gamma$ and the common objective.
+Additional rows $Au=0$ coincide.  Eliminating $r$ and the allocation
+multipliers therefore gives the same matrix and right-hand side.
+\end{proof}
+
+With no additional affine coupling, the graph of
+\eqref{newt:star-quadratic}, with one allocation multiplier per source,
+is a disjoint union of stars.  Solving these stars, or applying the
+diagonal-plus-rank-one inverse in \eqref{newt:center-hessian}, costs
+$O(n+\sum_a h_a)=O(n)$ arithmetic.  The graph of a fully materialized
+generic Hessian is instead a union of $s_a$-cliques.  Both descriptions
+are correct; they measure different representations of the same operator.
+Adding constraint hubs for $A$ gives a graph $G$ on projected variables,
+source hubs, and constraint hubs.  Attaching the $r_\gamma$ leaves gives
+width $\max\{1,\operatorname{tw}(G)\}$; this graph, rather than the PSD
+packing layout, controls the corresponding sparse solve.
+
+\begin{corollary}[Matched projected-oracle equivalence]
+\label{newt:oracle}
+Supply both formulations with the same complete canonical oracles for
+their common projected data and reduced Newton equation, at the same
+precision.  Require the same projected direction, or its normalized
+quantum state when the direction is nonzero.  Then their minimum
+classical and quantum query complexities agree exactly.  This equivalence
+also holds along any adaptive procedure that uses only these projected
+records and recenters the auxiliary fibers before each Newton call.
+\end{corollary}
+\begin{proof}
+Proposition~\ref{newt:center} identifies both the operator and the right-hand
+side, in the same coordinates.  Forward each query to the identical oracle;
+retain all other operations, measurements, and stopping decisions.  The
+simulation works in both directions.  Induction on calls gives the
+adaptive statement.  A common charged compiler from common raw data
+likewise gives identical preparation work.
+\end{proof}
+
+Here ``same oracle'' includes its action on unused input and ancilla
+subspaces.  Equality of an encoded matrix block alone would permit a
+unitary completion to reveal extra information.  Thus the corollary is
+an exact interface statement, not an oracle construction at no cost.
+It preserves normalization, spectrum, right-hand-side norm, solution
+overlap, and output accuracy.  In residual coordinates the centered PSD
+KKT system is the grouped system direct-summed with a positive diagonal
+off-diagonal block and a zero right-hand side; public zero padding also
+identifies those solution states.  The original $\delta S$ output is
+different: reconstructing it requires $W^TU+U^TW$.  Its cost is not covered
+by the projected equivalence.  If all $h_a=h$, changing $h$ multiplies
+the unconstrained marginal Hessian by $h$.  It changes its metric scale
+but not its condition number or normalized inverse state for a fixed
+right-hand side.  This illustrates why fewer cone factors alone do not
+establish a state-generation advantage.
+
+\subsection{A sharp comparison away from the fiber center}
+
+\begin{theorem}[Exact quotient and allocation-aware transfer]
+\label{newt:linear}
+At a strictly feasible point of \eqref{newt:packing}, define
+\begin{align}
+ z_a(U)&=\sum_\ell\tr(E_a^\ell W_\ell^TU_\ell),
+ &M_{ab}(D)&=\sum_\ell\tr(E_a^\ell D_\ell E_b^\ell D_\ell).
+       \label{newt:z-m}
+\end{align}
+The quadratic form obtained by eliminating all auxiliary Hessian
+directions is
+\begin{equation}\label{newt:quotient}
+ Q_D(U)=2\sum_\ell\tr(D_\ell^{-1}U_\ell^TU_\ell)
+                 +4z(U)^TM(D)^{-1}z(U).
+\end{equation}
+Let $H_D$ denote this form on the projected coordinates.  If
+$\mu D_\ell^0\preceq D_\ell\preceq L D_\ell^0$ for all $\ell$,
+where $0<\mu\leq1\leq L$, then
+\begin{equation}\label{newt:linear-transfer}
+ L^{-1}H_0\preceq H_D\preceq\mu^{-1}H_0,
+ \qquad
+ \kappa(H_0^{-1/2}H_DH_0^{-1/2})\leq L/\mu.
+\end{equation}
+The dependence and the condition factor are sharp.  The comparison
+survives restriction to any common projected tangent space.  For any
+full-row-rank matrix $A$, the dual normal matrices satisfy
+\begin{equation}\label{newt:dual-transfer}
+ \mu AH_0^{-1}A^T\preceq AH_D^{-1}A^T
+                         \preceq L AH_0^{-1}A^T.
+\end{equation}
+\end{theorem}
+\begin{proof}
+Equip symmetric residual directions with
+$\ip{B}{C}_D=\sum_\ell\tr(D_\ell^{-1}B_\ell D_\ell^{-1}C_\ell)$.
+The allocation functional $B\mapsto\sum_\ell\tr(E_a^\ell B_\ell)$
+has Riesz representative $(D_\ell E_a^\ell D_\ell)_\ell$.  The Gram
+matrix of these representatives is $M(D)$.  It is positive definite:
+for $E_\ell(\theta)=\sum_a\theta_aE_a^\ell$,
+\[
+ \theta^TM(D)\theta=\sum_\ell
+   \norm{D_\ell^{1/2}E_\ell(\theta)D_\ell^{1/2}}_F^2,
+\]
+and its vanishing forces every $\theta_a=0$, since each source has a
+column.  The tangent allocation constraint is
+$\sum_\ell\tr(E_a^\ell B_\ell)=-2z_a(U)$.
+Its minimum squared $D$-norm is $4z^TM^{-1}z$, proving
+\eqref{newt:quotient} from \eqref{newt:lifted-hessian}.
+
+The sharper comparison uses feasibility, not just tensor-product order.
+Although $E_\ell(\theta)$ may be indefinite,
+$E_\ell(\theta)D_\ell E_\ell(\theta)\succeq0$.  Positive trace pairing
+therefore gives
+\[
+ \mu\sum_\ell\tr(D_\ell^0 E_\ell D_\ell E_\ell)
+ \leq\theta^TM(D)\theta
+ \leq L\sum_\ell\tr(D_\ell^0 E_\ell D_\ell E_\ell).
+\]
+The diagonal matrices $D_\ell^0$ and $E_\ell$ commute.  Exact source
+allocations, $\sum_\ell\tr(E_a^\ell D_\ell)=\rho_a$, yield
+\begin{equation}\label{newt:allocation-identity}
+ \sum_\ell\tr(D_\ell^0 E_\ell D_\ell E_\ell)
+ =\sum_a\theta_a^2d_a\rho_a
+ =\theta^TM_0\theta,
+ \qquad M_0=\operatorname{diag}(\rho_a^2/h_a).
+\end{equation}
+Hence $\mu M_0\preceq M(D)\preceq LM_0$.
+Both terms in \eqref{newt:quotient} now obey the first-power bounds
+$L^{-1}$ and $\mu^{-1}$.  At the same $W$, their vector $z(U)$ is
+unchanged, so these inequalities prove \eqref{newt:linear-transfer}.
+Restriction preserves order; inversion followed by congruence proves
+\eqref{newt:dual-transfer}.  Sharpness is established in
+Example~\ref{newt:obstruction} below.
+\end{proof}
+
+It is essential to distinguish this Hessian elimination from first
+minimizing the barrier value over a fiber.  The latter always replaces
+$D$ by $D^0$.  It is also essential to retain the eliminated gradient.
+For minimizing $F+\eta\ip{c}{x}$ at a feasible packed point, the reduced
+Newton gradient is the linear functional
+\begin{equation}\label{newt:reduced-gradient}
+ g_D[U]=2\rho^TM(D)^{-1}z(U)+\eta\ip{c}{U}.
+\end{equation}
+Indeed the Newton quadratic before auxiliary elimination is
+\[
+ \tfrac12\norm{B}_D^2-\sum_\ell\tr(D_\ell^{-1}B_\ell)
+  +\sum_\ell\tr(D_\ell^{-1}U_\ell^TU_\ell)+\eta\ip{c}{U}.
+\]
+Completing the square replaces $B$ by $B-D$ and its allocation by
+$-2z(U)-\rho$.  Its minimum is
+$\tfrac12(2z+\rho)^TM^{-1}(2z+\rho)$, plus the displayed $U$ terms
+and a constant.  This proves \eqref{newt:reduced-gradient}.  At $D^0$
+it is $\sum_a2h_a\ip{x_a}{U_a}/\rho_a+\eta\ip{c}{U}$,
+the marginal gradient.  Away from the center, a spectral comparison of
+matrices alone does not identify Newton directions or their normalized
+states.  Homogeneous additional tangent constraints are common to both
+systems; nonzero affine infeasibility has additional right-hand-side terms.
+
+\begin{example}[Sharpness and fixed-projection obstruction]
+\label{newt:obstruction}
+Pack two sources as two columns of one block, take $W=0$, and put
+\[
+ D=\begin{pmatrix}1&\xi\\\xi&1\end{pmatrix},\qquad
+ D^0=I_2,\qquad |\xi|<1.
+\]
+The source equations hold exactly.  Formula~\eqref{newt:quotient} reduces
+to
+\[
+ Q_D(U)=\frac{2}{1-\xi^2}
+  (\norm{u_1}^2+\norm{u_2}^2-2\xi u_1^Tu_2).
+\]
+The relative eigenvalues are $1/(1+\xi)$ and $1/(1-\xi)$.
+Thus $\mu=1-|\xi|$, $L=1+|\xi|$, and the relative condition is
+exactly $L/\mu$.  For objective columns $(v,0)$, $\norm{v}=1$, the
+projected Newton directions are $-\eta(v,\xi v)/2$ and
+$-\eta(v,0)/2$ at $D$ and $D^0$.  Their normalized states have trace
+distance $|\xi|/\sqrt{1+\xi^2}$.  Replacing $\xi$ by $-\xi$
+leaves all projected input records unchanged but makes the two states
+have trace distance $2|\xi|/(1+\xi^2)\to1$.
+Consequently projected data alone cannot uniformly recover unrestricted
+off-center Newton states.  This is a one-iterate obstruction; it asserts
+no lower bound on the number of outer iterations.
+\end{example}
+
+\begin{corollary}[Approximate allocations]
+\label{newt:inexact}
+Keep $W$ and its exact center $D^0$ fixed, but allow positive residuals
+$\widehat D$ with allocations
+\[
+ (1-\zeta)\rho_a\leq
+ \sum_\ell\tr(E_a^\ell\widehat D_\ell)
+ \leq(1+\zeta)\rho_a,\qquad 0\leq\zeta<1.
+\]
+If $\mu D^0\preceq\widehat D\preceq LD^0$, with
+$0<\mu\leq1\leq L$, their homogeneous-tangent Hessian quotient obeys
+\begin{equation}\label{newt:approx-transfer}
+ \frac{H_0}{L(1+\zeta)}\preceq H_{\widehat D}
+       \preceq\frac{H_0}{\mu(1-\zeta)}.
+\end{equation}
+In particular relative residual error
+$\norm{(D_\ell^0)^{-1/2}(\widehat D_\ell-D_\ell^0)
+(D_\ell^0)^{-1/2}}_2\leq\delta<1$ gives condition at most
+$((1+\delta)/(1-\delta))^2$ without exact allocations, and at most
+$(1+\delta)/(1-\delta)$ when the allocations are exact.
+\end{corollary}
+\begin{proof}
+The middle trace in \eqref{newt:allocation-identity} lies between
+$(1-\zeta)\theta^TM_0\theta$ and
+$(1+\zeta)\theta^TM_0\theta$.  Repeat the proof and use the weaker
+of the resulting bounds for the two nonnegative terms of $Q$.
+Spectral error $\delta$ implies allocation error at most $\delta$ by
+positive trace pairing with each projector.  Set $\mu=1-\delta$,
+$L=1+\delta$, and $\zeta=\delta$ or $0$, respectively.
+\end{proof}
+
+The linear improvement in Theorem~\ref{newt:linear} is specific to the
+feasible allocation structure.  Its proof uses elementary positive trace
+inequalities; it is not a new general matrix-order principle.  Neither
+version supplies free access to $D^{-1}$, $M(D)^{-1}$, or $H_0^{-1/2}$.
+Those constructions and any encoding normalization remain separate costs.
+
+\subsection{What exact recentering requires}
+
+The center has an inexpensive implicit representation.  Store $(W,d)$
+with the semantics $S_\ell=W_\ell^TW_\ell+\operatorname{Diag}(d_\ell)$.
+Computing all squared source norms and all labels
+$d_\gamma=\rho_a/h_a$ uses $O(n)$ arithmetic and storage, independently
+of packing, because $\sum_a h_a\leq n$.  The source equations hold
+exactly by $\norm{x_a}^2+h_ad_a=1$.  For $B$-bit common-denominator
+dyadic coordinates the squared norms and labels are exact rationals of
+$O(B+\log n)$ bits.  Fast integer arithmetic gives the conservative
+bound $\widetilde O(n\mathsf M(B+\log n))$, where $\mathsf M(t)$
+is the cost of multiplying $t$-bit integers.  This represents the exact
+center of the stored interior rational iterate.  It does not require
+subtracting rounded Gram matrices.  Unrelated rational denominators,
+inverse evaluation, and requested numerical accuracy have their own bit
+costs.
+
+A reversible value oracle for $\rho_a$ similarly supplies $d_\gamma$
+with one scale query and reversible division by the public $h_a$.
+Together with blockwise direction-state access, it permits the common
+rank-one compiler for \eqref{newt:center-hessian}; radii and certified
+normalization bounds must be supplied or computed.  In particular
+normalized state access to $x_a$ alone does not provide this scale.
+The same complete state-preparation unitary can prepare the direction of
+$r_0v$ and $r_1v$, while their $1-r_j^2$ differ by arbitrarily large
+factors.  No algorithm with only that unitary can return both scales to
+a fixed relative accuracy.
+
+\begin{proposition}[Cost of missing radial metadata]
+\label{newt:scale}
+For coordinate-bit access to a source of dimension $s\geq2$, producing a
+classical center scale to relative error $\delta<1/3$ can require
+$\Omega(\sqrt s)$ quantum or $\Omega(s)$ randomized queries.
+For $b$ independent sources, returning all scales with joint success at
+least $2/3$ requires $\Omega(b\sqrt s)$ and $\Omega(bs)$,
+respectively.  These orders are attained on the promise used in the proof.
+For $k\mid s$, $1\leq k\leq s/2$, the one-source promise can instead
+have smaller slack $\rho=k/s$, with tight costs
+$\Theta(\rho^{-1/2})$ quantum and $\Theta(\rho^{-1})$ randomized.
+\end{proposition}
+\begin{proof}
+Take $x_i=z_i/\sqrt s$ with $z_1=0$ public and all other bits one,
+except for at most one additional hidden zero.  The slack is $1/s$ or
+$2/s$.  Their relative-$\delta$ intervals are disjoint precisely when
+$\delta<1/3$, so recovering the scale solves promised unstructured
+search.  The standard search bounds apply \citep{BBBV1997,BHMT2002}.
+
+For clarity, the quantum direct sum has a short adversary proof.  Index
+one source's promise by the no-mark input and its $s-1$ single-mark
+inputs.  The star adjacency matrix $\Gamma$ has norm $\sqrt{s-1}$,
+and filtering by any queried bit leaves norm one.  For $b$ sources use
+$\sum_{a=1}^b I^{\otimes(a-1)}\otimes\Gamma\otimes
+I^{\otimes(b-a)}$.  Its norm is $b\sqrt{s-1}$; filtering a query in
+one source retains only that summand.  Its entries vanish between inputs
+having the same output vector.  The adversary lower bound for function
+evaluation \citep{LMRSS2011} gives the claim.  For randomized algorithms,
+give each source an independent fair no-mark/single-uniform-mark promise.
+Joint success implies constant average success for each output, and the
+usual search indistinguishability argument requires a constant fraction
+of the $s-1$ expected queries per such source; summing proves $\Omega(bs)$.
+On this promise, exact amplitude amplification for the known single-mark
+case followed by verification distinguishes zero from one mark with
+$O(\sqrt s)$ queries and no error.  Applied sourcewise it attains joint
+success without an amplification logarithm.  Scanning attains the
+randomized order.
+
+Finally partition coordinates into blocks of size $k$.  One public block
+is zero; all candidate blocks are one except possibly one hidden zero
+block.  The two slacks are $k/s$ and $2k/s$.  A representative coordinate
+is an oracle for its block mark, reducing to search on $s/k-1$ labels.
+This number is within a constant factor of $s/k$ in the stated range.
+\end{proof}
+
+The joint-output bound also applies to a standalone compiled value
+interface whose output can be read on all labels with the same joint
+correctness guarantee and with no further coordinate-input queries.
+It does not describe one online coherent evaluation: the promised search
+can be controlled by the source label at $O(\sqrt s)$ input queries per
+evaluation.  Those queries remain charged on every invocation.  The
+following fresh update family supplies a temporal bound under an explicit
+output contract.
+
+A \emph{compile-and-commit maintainer} returns, before the next epoch,
+either a classical record of all source scales or a complete reusable
+unitary for their encoded numerical values.  The latter must allow every
+basis-label value to be copied out, using the unitary and its inverse,
+with no further raw-update queries and with the entire backing workspace
+restored exactly, including correlations with other retained registers.
+More precisely, each committed object has fixed value strings $v_a$;
+compute--copy--uncompute on label $a$ acts as
+\[
+ |a,z\rangle|\psi\rangle\longmapsto
+ |a,z\mathbin\oplus v_a\rangle|\psi\rangle
+\]
+on its backing state and any retained reference.  The strings encode
+numbers $\widehat d_a$.  Correctness means that, with joint probability at
+least $2/3$, all committed values at all epochs obey
+$|\widehat d_a-d_a|\leq\delta d_a$.  A state consumed or disturbed by
+reading its values does not meet this contract.  Rational encodings allow
+exact values even for $\delta=0$; fixed-point encodings require enough
+bits for the requested positive error.
+
+\begin{theorem}[Fresh-update scale maintenance]
+\label{newt:dynamic-scale}
+Let $b,T\geq1$, $s\geq2$, and $0\leq\delta<1/3$.  For the packing
+\eqref{newt:packing} with $b$ sources of dimension $s$ and public column
+counts $h_a$, there is a family of $T$ fresh coordinate-bit update batches,
+each zero or one-sparse per source, on which compile-and-commit maintenance
+has tight worst-case raw-query costs
+\begin{equation}\label{newt:dynamic-commit}
+ Q=\Theta(Tb\sqrt s),\qquad R=\Theta(Tbs)
+\end{equation}
+for quantum and randomized algorithms, respectively.  Each epoch starts
+from the same public interior base and is reset after commitment.
+For $k\mid s$, $1\leq k\leq s/2$, a replicated-block version has
+$k$-sparse updates and smaller slack $\rho_*=k/s$, with costs
+\begin{equation}\label{newt:dynamic-margin}
+ Q=\Theta(Tb\rho_*^{-1/2}),\qquad R=\Theta(Tb\rho_*^{-1}).
+\end{equation}
+The lower bounds allow all epoch oracles from the start, superposed queries
+over epoch, source, and coordinate, and arbitrary persistent workspace.
+The upper bounds have zero error on these promises.
+\end{theorem}
+\begin{proof}
+Use $\bar x=(0,1,\ldots,1)/\sqrt s$.  Independently for each pair
+$(t,a)$, the update is either $u_{t,a}=0$ or
+$u_{t,a}=-e_j/\sqrt s$ at one hidden $j\in\{2,\ldots,s\}$.
+The raw oracle returns the corresponding mark bit at a queried coordinate.
+After the update,
+\[
+ \rho_{t,a}=1-\norm{\bar x+u_{t,a}}^2\in\{1/s,2/s\},
+ \qquad d_{t,a}=\rho_{t,a}/h_a.
+\]
+Both cases are strictly interior, and Proposition~\ref{newt:center}
+gives these exact PSD fiber-center labels.  Their relative-error intervals
+are disjoint because $1+\delta<2(1-\delta)$.
+Undo each batch after commitment; inverse-update access uses the same
+bits and reveals no new information.  A public reset only strengthens
+the model.
+
+Read every committed label before continuing the maintainer, restoring its
+workspace in the quantum case.  Thresholding recovers $m=Tb$ independent
+presence bits with joint success $2/3$ and no extra raw queries.  Apply the
+star adversary from Proposition~\ref{newt:scale}, with tensor factors now
+indexed by $(t,a)$.  Its Kronecker sum has norm $m\sqrt{s-1}$ and every
+coordinate filter has norm one.  It is entrywise nonnegative and vanishes
+between inputs with the same output vector, so the finite-output spectral
+adversary bound applies \citep[Theorems~3--4]{ACGT2010}.  The proof already
+uses simultaneous oracle access and allows cross-epoch query scheduling.
+
+For the randomized bound, independently choose no mark with probability
+$1/2$ and a uniform single mark otherwise.  Fix the randomness and all
+other pairs, and let $L$ count distinct candidates queried when this pair
+has no mark.  The no-mark and random-mark transcripts coincide unless
+the mark lies in these $L$ locations.  Averaging over the fixed data, the
+total variation distance is at most $\mathbb E L/(s-1)$.
+Marginal success at least $2/3$
+forces $\mathbb E L\geq(s-1)/3$.  Since the no-mark case has probability
+$1/2$, this pair contributes at least $(s-1)/6$ expected queries under
+the product distribution.  Summing over the $m$ pairs proves the
+worst-case randomized bound.
+
+Exact amplitude amplification designed for one marked coordinate,
+followed by verification, decides zero versus one mark in $O(\sqrt s)$
+queries \citep[Theorems~4 and~16]{BHMT2002}.  Verification always rejects
+in the zero-mark case.  Search each pair and store its exact rational
+scale; no joint-success amplification logarithm is needed.  Scanning
+gives the classical upper bound.
+
+For the margin version, partition coordinates into $s/k$ blocks of size
+$k$, with one public zero block in the base.  An update zeros either no
+candidate block or one whole candidate block.  The slacks are $k/s$ and
+$2k/s$.  A coordinate query reveals only its block's mark bit, and one
+representative coordinate per block suffices.  Replace $s-1$ throughout
+by $s/k-1=\Theta(s/k)$, which is at least one in the stated range.
+\end{proof}
+
+\begin{corollary}[Universal invocation versus compilation tradeoff]
+\label{newt:scale-service}
+On the same promises, suppose a service must support any adaptive client
+making at most $r_t$ value invocations at epoch $t$, including coherent
+label inputs in the quantum case.  Invocations implement the reusable
+value interface above, but may query the raw input; all preprocessing and
+invocation queries are charged.  Require joint correctness with probability
+at least $2/3$ over the entire interaction.  For prescribed nonnegative
+integer budgets $r_t$, the tight worst-case costs are
+\begin{equation}\label{newt:scale-service-cost}
+ Q=\Theta\left(\sqrt s\sum_{t=1}^T\min\{r_t,b\}\right),\qquad
+ R=\Theta\left(s\sum_{t=1}^T\min\{r_t,b\}\right).
+\end{equation}
+In the margin version replace $\sqrt s,s$ by
+$\rho_*^{-1/2},\rho_*^{-1}$, respectively.
+\end{corollary}
+\begin{proof}
+Choose the permitted client that reads $\min\{r_t,b\}$ distinct basis
+labels at each epoch.  Fix all other update pairs to zero.  Its transcript
+recovers $\sum_t\min\{r_t,b\}$ independent search bits, so the same
+adversary and product-distribution proofs give the lower bounds.
+For the upper bound, if $r_t<b$, run the exact promised search controlled
+by the source label on each invocation.  Coherently verify, copy the
+deterministic presence bit, and uncompute the search workspace; this is a
+clean value unitary at $O(\sqrt s)$ queries per call.  If $r_t\geq b$,
+search all sources once and keep a classical table for query-free reversible
+lookup.  Classical scans give the analogous strategies.  Apply the same
+choice to candidate-block representatives for the margin version.
+\end{proof}
+
+This universal-service contract is stronger than a particular downstream
+algorithm's structured calls.  One online coherent evaluation has no $b$
+factor; a service supporting at least $b$ arbitrary calls reaches the
+compilation cost.  Neither result concerns arbitrary one-shot state output
+or finite-precision gate complexity.
+
+For an explicit sparse list, the exact identity
+\begin{equation}\label{newt:scale-update}
+ \rho_a(x+\alpha u)=\rho_a(x)-2\alpha x_a^Tu_a
+                               -\alpha^2\norm{u_a}^2
+\end{equation}
+instead maintains scales in $O(\sum_a|\operatorname{supp}u_a|)$
+arithmetic, given access to the current coordinates and a list of affected
+sources.  In particular one-sparse lists cost $O(b)$ per epoch.
+The lower bound charges discovery of hidden support, not sparsity itself.
+Nor does a snapshot lower bound imply a factor $T$ for one fixed oracle:
+if every round requests the same promised OR bit, compute and cache it
+once in $\Theta(\sqrt s)$ quantum or $\Theta(s)$ randomized queries.
+All $T$ subsequent requests then use no raw queries.
+
+\begin{proposition}[Fixed central-path scale caching]
+\label{newt:fixed-scale}
+For the uncoupled product of balls, minimize
+$\Phi(x)+\eta\sum_a c_a^Tx_a$ with fixed $c_a$ and $\eta\geq0$.
+Put $q_a=\norm{c_a}$ and $\tau_a=\eta q_a/h_a$.  The unique center is
+\begin{equation}\label{newt:fixed-path-scale}
+ \rho_a(\eta)=\frac{2}{1+\sqrt{1+\tau_a^2}},\qquad
+ x_a(\eta)=-\frac{\eta\rho_a(\eta)}{2h_a}c_a,\qquad
+ d_a(\eta)=\frac{\rho_a(\eta)}{h_a}.
+\end{equation}
+For $s_a\geq2$, its source Hessian has radial-to-tangential eigenvalue ratio
+$2/\rho_a(\eta)-1=\sqrt{1+\tau_a^2}$.
+\end{proposition}
+\begin{proof}
+Stationarity is $2h_ax_a/\rho_a+\eta c_a=0$.  Substitution in
+$\rho_a=1-\norm{x_a}^2$ gives
+$\rho_a+\tau_a^2\rho_a^2/4=1$; its positive solution is
+\eqref{newt:fixed-path-scale}, also when $q_a=0$ or $\eta=0$.
+It is interior, and strict convexity of $\Phi$ gives uniqueness.
+Equation~\eqref{newt:center-hessian} gives eigenvalues $2h_a/\rho_a$
+and $2h_a/\rho_a+4h_a(1-\rho_a)/\rho_a^2$, proving the ratio
+(equal to one at $x_a=0$).
+\end{proof}
+
+Thus supplied reversible access to the fixed norms $q_a$ evaluates a
+requested scale with $O(1)$ norm queries and charged scalar arithmetic;
+uncomputing norm scratch may require an inverse query.  Explicit objective
+data permits all norms to be acquired once in $O(n)$ real arithmetic,
+including square roots, and reused for every $\eta$.
+Requested precision and reversible arithmetic still have their own costs.
+Additional affine constraints or inexact neighborhood iterates need not
+satisfy this stationarity equation.  The fresh batches in
+Theorem~\ref{newt:dynamic-scale} have not been embedded in the Newton
+trajectory of one fixed conic program: such an embedding and a contract
+recovering its independent outputs would be needed to multiply a query
+lower bound by an iteration count.  The closed-form uncoupled path witnesses
+reuse of fixed data, and supplies no such embedding.
+
+Explicit dense auxiliaries have a different output cost:
+$\Omega(\sum_\ell c_\ell^2)$ scalar writes and ordinary Gram formation
+cost $O(\sum_\ell p_\ell c_\ell^2)$.  An implicit ambient encoding can
+avoid these writes: put $K_\ell=(W_\ell\ I_{p_\ell})$ and write
+$Z_\ell=K_\ell^TK_\ell+\operatorname{Diag}(d_\ell,0)$.
+Products of a supplied $\alpha_K$-normalized encoding of $K_\ell$ and
+its adjoint, followed by a positive linear combination with an
+$\alpha_d$-normalized diagonal encoding, give normalization
+$\alpha_K^2+\alpha_d$.  This costs a constant number of supplied encoding
+calls.  Constructing these encodings, their norms, and an inverse remains
+charged; no statement about a flattened Gram-matrix output state follows.
+
+\subsection{Sparse augmented Lorentz systems}
+
+Low-rank augmentation of cone Hessians is classical, including in
+ECOS and nonsymmetric-cone implementations
+\citep{DomahidiChuBoyd2013,ChenGoulart2025}.  We use it to make the
+classical comparator explicit for the formulations above.  A graph below
+means the fixed structural graph of the augmented scalar matrix; special
+numerical zeros may delete edges.  Its treewidth is the minimum, over
+tree decompositions, of the largest bag size minus one.
+
+For a Lorentz block $x=(t,z)$, let $q=t^2-\norm z^2>0$ and
+$J=\operatorname{diag}(1,-I)$.  Its standard Hessian is
+\begin{equation}\label{newt:one-hub}
+ H_x=-\frac{2J}{q}+\frac{4(Jx)(Jx)^T}{q^2}
+       =D_x+w_xw_x^T.
+\end{equation}
+Thus the equality-form Newton matrix and its one-hub augmentation are
+\begin{equation}\label{newt:augmented}
+ K_0=\begin{pmatrix}H&A^T\\A&0\end{pmatrix},\qquad
+ \widetilde K_0=
+ \begin{pmatrix}D&W&A^T\\W^T&-I&0\\A&0&0\end{pmatrix}.
+\end{equation}
+Here $W$ has one embedded $w_x$ column per cone.  Eliminating the negative
+identity gives $K_0$, and the augmented right-hand side is $(g_x,0,g_y)$.
+There is no assumption of a positive diagonal in $D$.
+
+\begin{proposition}[Exact field-operation comparison]
+\label{newt:treewidth}
+Suppose $A\in\R^{p\times M}$ has full row rank, there are $k$ Lorentz
+blocks, and a compact width-$\tau$ tree decomposition of the structural
+graph of $\widetilde K_0$ is supplied.  Then a Newton equation can be
+solved in $O((M+p+k)(\tau+1)^2)$ exact field operations, after
+$O(M+\operatorname{nnz}A)$ coefficient formation.  Compactness here
+means $O(M+p+k)$ bags; processing a larger supplied decomposition is an
+additional input cost.
+\end{proposition}
+\begin{proof}
+Positive definiteness of $H$ and full row rank of $A$ imply nonsingularity
+of both matrices in \eqref{newt:augmented}.  Replace each vertex of each
+bag by its row and column copies.  The resulting decomposition of the
+matrix's row--column bipartite graph has width at most $2\tau+1$:
+every off-diagonal entry has both endpoints in some original bag, each
+diagonal entry is covered, and connectedness of each copy's bags is
+preserved.  Apply the exact low-treewidth linear-system algorithm of
+\citet[Corollary~3]{FurerHoppenTrevisan2025}.  Its bound is
+$O((m+n)(w+1)^2)$ for a supplied compact width-$w$ bipartite
+decomposition.  It allows nonzero pivots chosen during elimination and
+algebraic cancellations, so the zero or negative diagonal entries here
+cause no difficulty.  Formula~\eqref{newt:one-hub} uses only field
+operations and gives the formation cost.
+\end{proof}
+
+A positive-diagonal version is useful when a reusable symmetric
+factorization is wanted.  If $r=\norm z>0$ and $e=z/r$, put
+\begin{equation}\label{newt:two-hub}
+ D=\frac2q I,\quad
+ a=\frac{\sqrt{2r(t+r)}}q\binom1{-e},\quad
+ v=\frac{\sqrt{2r(t-r)}}q\binom1e.
+ \qquad H_x=D+aa^T-vv^T.
+\end{equation}
+At $r=0$ take $a=v=0$.  The identity follows by restricting $H_x-D$
+to the span of $(1,0)$ and $(0,e)$, where its matrix is
+$4q^{-2}\left(\begin{smallmatrix}r^2&-tr\\-tr&r^2\end{smallmatrix}\right)$.
+Moreover $v^TD^{-1}v=2r/(t+r)<1$, so $D-vv^T\succ0$.
+With embedded update and downdate columns denoted by $U,V$, respectively,
+the regularized augmentation is
+\begin{equation}\label{newt:quasidefinite}
+ \begin{pmatrix}
+ D&V&U&A^T\\V^T&I&0&0\\U^T&0&-I&0\\A&0&0&-\varpi I
+ \end{pmatrix},\qquad \varpi>0.
+\end{equation}
+Grouping $(x,V)$ as positive variables and $(U,y)$ as negative variables
+shows symmetric quasidefiniteness: the first diagonal block has Schur
+complement $D-VV^T\succ0$, and the second is negative definite.
+Every symmetric permutation therefore admits an exact pivot-free
+$LDL^T$ factorization \citep{Vanderbei1995}.  A supplied width-$\tau$
+elimination order gives $O((M+p+k)(\tau+1)^2)$ real arithmetic,
+$O((M+p+k)(\tau+1))$ storage, and width-linear subsequent solves.
+Square roots in \eqref{newt:two-hub} distinguish this branch from the
+field-operation result.
+
+This is not an unconditional numerical stability statement.
+Writing $K_\varpi=K_0-\varpi\operatorname{diag}(0,I)$, the resolvent
+identity gives, for $d_0=K_0^{-1}g\ne0$ and
+$\varpi\norm{K_0^{-1}}_2<1$,
+\begin{equation}\label{newt:regularization-error}
+ \frac{\norm{K_\varpi^{-1}g-d_0}}{\norm{d_0}}
+ \leq\frac{\varpi\norm{K_0^{-1}}_2}
+              {1-\varpi\norm{K_0^{-1}}_2}.
+\end{equation}
+Working precision, small pivots, growth, and residual certification still
+need bounds.  Quasidefiniteness rules out exact zero-pivot breakdown, not
+arbitrarily small pivots.  Also, two hubs cannot generically be reduced to
+one while retaining a positive diagonal base: when $m\geq3$ and every
+coordinate of $Jx$ is nonzero, off-diagonal consistency in
+$H=D_++\epsilon aa^T$ forces $\epsilon=1$ and
+$a_i^2=4(Jx)_i^2/q^2$.  The axial entry of $D_+$ is then $-2/q$.
+This only proves minimality within that diagonal-plus-one-signed-rank-one
+class.
+
+The two-hub graph can be bounded from coarse incidence.  Make one vertex
+for each cone and each equality row, joining them when the row uses a
+coordinate of that cone.  If this graph has width $w$ and each scalar
+column of $A$ has at most one nonzero, the expanded graph has width at
+most $\max\{2w+1,3\}$.  Replace every cone vertex in a coarse bag by its
+two hubs.  For each used coordinate attach a bag consisting of that
+coordinate, its two hubs, and its single row, to a bag covering the
+corresponding coarse edge.  For unused coordinates omit the row.  These
+bags cover all edges and preserve the connected-bag condition.  Thus a
+coarse forest gives width at most three regardless of cone dimension.
+
+\subsection{Exact graph counts for the ball constructions}
+
+For $N$ projected coordinates grouped into $k$ nonempty groups, set
+$q_j=s_j-\norm{w_j}^2$ and impose $\sum_j s_j=1$.
+The reduced barrier has Hessian blocks
+\begin{equation}\label{newt:group-hessian}
+ \operatorname{diag}(0,2I/q_j)
+      +q_j^{-2}(1,-2w_j)(1,-2w_j)^T.
+\end{equation}
+Their one-hub graph has the paths
+$\lambda-s_j-h_j$ and leaves $h_j-w_{ji}$.
+It is a tree with $N+2k+1$ vertices and $N+2k$ edges.
+The zero $s_j$ diagonal prevents an unqualified scalar leaf-pivot claim;
+Proposition~\ref{newt:treewidth} instead supplies the exact solve.
+Restricting \eqref{newt:two-hub} by
+$(s,w)\mapsto((1+s)/2,(1-s)/2,w)$ gives positive base
+$\operatorname{diag}(1/q,2I/q)$ and a positive downdated base by
+congruence.  The two-hub reduced graph has $N+3k+1$ vertices,
+$2N+3k$ edges, and width two.  Bags containing the two hubs and one
+coordinate, together with bags $\{\lambda,s_j\}$, prove the upper
+bound; each nonempty group supplies a cycle for the lower bound.
+
+For comparison, retain all raw Lorentz coordinates $(u_j,v_j,w_j)$
+and equations $u_j+v_j=1$, $\sum_j(u_j-v_j)=1$.
+The exact structural counts are
+\begin{center}
+\begin{tabular}{lrrc}
+\toprule
+representation & vertices & edges & treewidth\\
+\midrule
+raw grouped, one hub & $N+4k+1$ & $N+6k$ & $2$\\
+raw grouped, two hubs & $N+5k+1$ & $2N+8k$ & $3$\\
+reduced grouped, one hub & $N+2k+1$ & $N+2k$ & $1$\\
+reduced grouped, two hubs & $N+3k+1$ & $2N+3k$ & $2$\\
+\bottomrule
+\end{tabular}
+\end{center}
+To verify the raw widths, the one-hub graph has $K_{2,3}$ on axial
+coordinates $u_j,v_j$ and the hub, local row, and global row.  Bags
+$\{u_j,v_j,a\}$ for these three vertices $a$, plus hub--coordinate
+leaf bags, give width two.  The two-hub graph has a subdivision of $K_4$:
+its branch vertices are the two hubs and $u_j,v_j$; a row connects the
+two axial vertices and one $w$ coordinate connects the two hubs.
+A width-three decomposition uses the four branch vertices as a core,
+the two axial vertices with the local and global rows as another bag,
+and bags of the two hubs with each $w$ coordinate.  Different groups
+join through the global row.  Counting incidences gives the edge totals.
+
+The direct ball formulation $(t,x)\in Q_{N+1}$, $t=1$, has a one-hub
+tree with $N+3$ vertices; eliminating $t$ gives a star with $N+1$
+vertices.  A binary norm tree with $L=N-1$ internal nodes has $3L$
+raw cone coordinates, $L$ hubs, $L-1$ link rows, and one root row.
+It is connected with $5L$ vertices and $3L+2(L-1)+1=5L-1$ edges,
+hence a tree.  Its rows are independent because each link or root
+equality uses its own cone-coordinate slots.  These counts also explain
+why the smooth coordinatewise construction ($k=N$) has raw width two
+but reduced width one.  Smooth contact selections do not impose an
+intrinsic width-two cost.
+
+All these isolated-ball Newton equations have linear exact arithmetic
+cost.  The ambient and restricted barrier parameters and the movement
+bounds proved earlier remain different.  Thus replacing a large cone by
+many small cones can increase the standard short-step certificate and
+the bounded-Dikin movement cost without improving this linear solve.
+For products of cone epigraphs, fixing their axial coordinates to one
+reduces to products of balls; the earlier additive curvature bound forces
+at least $k(s-1)$ copies of $Q_3$ to represent $Q_{s+1}^k$, even under
+joint reformulation.  Their ambient product barrier has parameter at
+least $2k(s-1)$ by its orthant section.  Separate binary trees attain the
+count.  This compares the generic ambient-barrier certificate with the
+$2k$ certificate for the direct product, not all algorithms' iteration
+counts.
+
+\subsection{The full-output comparison and its boundary}
+
+The preceding exact solves give a precise replacement principle.  Suppose
+an outer algorithm requests a classical direction or updated iterate in
+every round, its theorem accepts any direction satisfying a stated Newton
+residual contract, and the current coefficients and right-hand side are
+classically evaluable at the cost charged to its quantum access model.
+If fixed compact decompositions of widths $\tau_t$ are supplied for its
+expanded systems, replacing the quantum Newton module by
+Proposition~\ref{newt:treewidth} costs
+\begin{equation}\label{newt:replacement}
+ \sum_t O((M_t+p_t+k_t)(\tau_t+1)^2)
+\end{equation}
+exact field operations, plus coefficient formation and any decomposition
+input cost.  The outer guarantee is preserved because the exact solution
+meets its residual contract.  This need not reproduce the quantum
+algorithm's random trajectory; the comparison requires the outer
+guarantee and the structural width bound for every admitted trajectory.
+Dense materialization already requires $\Omega(M_t+p_t)$ scalar writes
+per round.  When $p_t+k_t=O(M_t)$ and $\tau_t=M_t^{o(1)}$, the
+Newton module therefore gives no polynomial dimensional saving under
+this matched full-output, exact-arithmetic contract.  The centered packed
+family and the grouped or norm-tree ball family have $O(n)$ or $O(N)$
+replacements.  Dense external affine coupling can invalidate their width
+bounds.  A finite-precision replacement additionally needs a stable
+implementation and certification at the prescribed tolerance.
+
+There is a complementary classical route for sparse well-conditioned
+systems.  For a consistent full-column-rank system $Kd=r$ and zero
+initial guess, conjugate gradients on its normal equations, implemented
+by matrix--vector products as CGLS or LSQR \citep{PaigeSaunders1982},
+has the exact-arithmetic residual estimate
+\[
+ \norm{Kd_j-r}_2\leq
+ 2\left(\frac{\kappa_2(K)-1}{\kappa_2(K)+1}\right)^j\norm r_2.
+\]
+This follows from the usual CG energy-norm bound, because that norm is
+$\norm{K(d_j-d_*)}_2$ and
+$\sqrt{\kappa_2(K^TK)}=\kappa_2(K)$.
+If one pair of products by $K,K^T$ costs $\mathcal M$, including current
+entry evaluation, a relative residual $0<\epsilon_{\rm lin}<1$ costs
+$O(\mathcal M\kappa_2(K)\log(2/\epsilon_{\rm lin}))$.
+The case $\kappa_2(K)=1$ terminates after one step.  No normal matrix
+need be materialized.  Sparse bounded-size conic blocks fit this
+comparison only when their actual augmented entries are cheaply
+available.  Quantum-only encodings and tall implicit Hessian formation
+are different access models; in particular this argument does not
+replace the row-sampling work in \citet{ApersGribling2026}.
+
+The classical algorithms, signed-rank augmentations, and search bounds
+used here are established tools.  The formulation-specific conclusions
+are the packing-independent centered equation, its sharp feasible
+off-center transfer, and the exact access and output conditions under
+which the same classical Newton work applies.  Published quantum SDP
+and portfolio IPM analyses explicitly account for conditioning, data
+access, and classical readout \citep{AugustinoEtAl2023,DalzellEtAl2023};
+the present comparison is confined to the displayed structured families.
+In a block-diagonal SDP embedding the matrix order is the sum of block
+orders, not their maximum.  Substituting a block cap for that sum in a
+generic solver theorem is therefore unjustified.  State, sample, scalar,
+or coherent-iterate output can have different costs, as the following
+query results demonstrate.

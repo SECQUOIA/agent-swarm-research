@@ -1,0 +1,162 @@
+REVIEW: benchmark-observations/structural-bounds.md (elec, hadamard certified bounds)
+Reviewer: independent skeptical review, 2026-09-23
+Reviewer scripts: benchmark-observations/code/structural/review/
+  rv_osil.py        own OSiL reader (ElementTree; unknown elements/attributes raise)
+  rv_elec_model.py  elec OSiL -> sympy, compared with an independently built Thomson model
+  rv_elec_cert.py   exact check of certs/elec*.json (own Legendre basis, two positivity methods)
+  rv_had.py         hadamard OSiL -> polynomial dict vs own Leibniz det; primal; bounds; transfer
+  rv_had6.py        Ehlich-block partition check for m = 7; own exhaustive enumeration n = 6
+  *.out             captured outputs
+None of the author's code (osil_eval.py, elec_*.py, had_*.py) was imported or run.
+
+OVERALL VERDICT
+All eight certified bounds are CONFIRMED: elec25/50/100/200 lower bounds hold exactly as stated
+(exact rationals identical to the certificates), and hadamard_6/7/9 are closed with dual 9/32/144,
+while hadamard_8 has certified dual 65 and primal 56. Only small documentation errors were found
+(listed at the end); none affects a bound.
+
+======================================================================
+1. elec
+======================================================================
+1(a) Model. CONFIRMED.
+  rv_elec_model.py converts the whole OSiL tree to sympy expressions and compares it structurally
+  with an expected model built separately:
+  - 3N variables, all continuous, lb = -INF, ub = +INF.
+  - N rows, each lb = ub = 1, no linear terms, constant 0, no nl part, quadratic part exactly
+    x_i^2 + x_{i+N}^2 + x_{i+2N}^2. The set of rows equals the expected set of N sphere rows.
+  - One objective, min, no linear/quadratic/constant part. The nl objective (idx -1) is identical
+    to sum_{a<b} 1/sqrt(sum_c (x_{a+cN} - x_{b+cN})^2). The sympy Add has exactly N(N-1)/2
+    distinct terms (300/1225/4950/19900), so each unordered pair occurs exactly once (duplicates
+    would have merged into a coefficient 2).
+  - No other nonlinear expressions or sections.
+  Output: "elec{25,50,100,200}: ... MATCH" (18 s).
+
+1(b) Derivation. CONFIRMED (the formula in the report is the correct one).
+  With P_k the Legendre polynomials (P_k(1) = 1; these are the Gegenbauer polynomials
+  C_k^{1/2} for S^2), the addition theorem gives
+    P_k(<x,y>) = 4pi/(2k+1) sum_m Y_km(x) conj(Y_km(y)),
+  so sum_{i,j} P_k(t_ij) = 4pi/(2k+1) sum_m |sum_i Y_km(x_i)|^2 >= 0, and = N^2 for k = 0.
+  If h_k >= 0 for k >= 1 then sum over ALL ordered pairs (i,j), including i = j, satisfies
+    sum_{i,j} h(t_ij) >= N^2 h_0.
+  Diagonal: t_ii = 1, contributes N h(1) with h(1) = sum_{k>=0} h_k (INCLUDING h_0).
+  Off-diagonal: each unordered pair appears twice (ordered pairs), t_ij < 1 for distinct points
+  (the objective is undefined otherwise), so sum_{i!=j} h(t_ij) <= sum_{i!=j} f(t_ij) = 2E.
+  Hence 2E >= N^2 h_0 - N h(1), i.e. E >= (N^2 h_0 - N sum_{k>=0} h_k)/2
+                                       = (N(N-1) h_0 - N sum_{k>=1} h_k)/2.
+  The variant (N^2 h_0 - N sum_{k>=1} h_k)/2 (h_0 omitted from the diagonal term) is WRONG;
+  with the certificates it would give 254.74 / 1077.89 / 4494.71 / 18532.57, all ABOVE the known
+  primal values, which shows it is invalid. The report and the certificates use h(1) = sum_{k>=0}
+  h_k; rv_elec_cert.py recomputes the bound with that formula.
+  Only h_k >= 0 for k >= 1 is needed; h_0 has no sign condition. h <= f is needed only on [-1,1).
+
+1(c) Certificates. CONFIRMED for all four.
+  rv_elec_cert.py: h_k parsed from decimal strings as exact Fractions; P_k from sympy.legendre
+  (independent of the author's recurrence), P_k(1) = 1 asserted; hpoly(1) == sum h_k asserted.
+  With s = sqrt(2-2t) (bijection [-1,1) -> (0,2], t = 1 - s^2/2),
+    h(t) <= (2-2t)^(-1/2)  <=>  g(s) := 1 - s h(1 - s^2/2) >= 0 on (0,2].
+  g(0) = 1. Positivity of g on the closed interval [0,2] proved two ways:
+   A. sympy exact real-root isolation (Vincent-Collins-Akritas, integer coefficients) on
+      [0,2] returns no root, and g(2) > 0; with g(0) = 1 this gives g > 0 on [0,2].
+      (Different algorithm from both of the author's methods.)
+   B. own adaptive dyadic subdivision: on [c-r, c+r], exact Taylor coefficients a_j of g at c,
+      accept if a_0 - sum_{j>=1} |a_j| r^j > 0 (a valid lower bound). All cells accepted.
+  Results:
+   inst    nonzero h_k(k>=1)  h_k>=0  A   B (cells, max depth)  sampled min g (float, diag.)
+   elec25  19                 yes     ok  ok (383, 15)          9.2e-10 at s=0.742
+   elec50  30                 yes     ok  ok (425, 15)          1.6e-09 at s=0.532
+   elec100 47                 yes     ok  ok (275, 15)          3.0e-09 at s=0.378
+   elec200 54                 yes     ok  ok (243, 15)          5.8e-09 at s=0.268
+  The small min g (order delta*s) confirms the certificates are tight, as the delta-shift
+  construction intends.
+  Exact bounds recomputed; each equals the certificate's "bound" exactly:
+   elec25  9745546397461602351591/40000000000000000000      = 243.63865993654...
+   elec50  42193967534169477679419/40000000000000000000     = 1054.84918835423...
+   elec100 17789919861193191893152631/4000000000000000000000 = 4447.47996529829...
+   elec200 18436477818333876246068897/10^21                  = 18436.4778183338...
+  Gaps vs listed primal (primal-bound)/bound: 0.0715%, 0.0316%, 0.0196%, 0.0130% (match report).
+  Negative controls (both methods must fail, and do):
+   elec25 h_5 += 1e-6        -> A fails, B fails (min g ~ -7.3e-7)
+   elec25 h_0 += 2*delta     -> A fails, B fails (min g ~ -6.8e-9)
+   elec200 h_0 += 2*delta    -> A fails, B fails (min g ~ -8.7e-8)
+  Runtime: 56 s total.
+  Verdict: the four elec dual bounds are rigorously certified (for points exactly on S^2, as
+  the model states; the report's caveat on 1e-8 primal tolerance is correct and appropriate).
+
+======================================================================
+2. hadamard
+======================================================================
+2(a) Model = det(B). CONFIRMED, full symbolic check for all n = 6, 7, 8, 9 (not sampled).
+  rv_had.py expands the nl tree generically (sum/product/variable with coef/number) into a
+  dictionary {sorted tuple of variable indices (with repetition): coefficient} and compares it
+  with its own Leibniz expansion of det(B), B[i][j] = b_{i*n+j+1} (row-major; permutation sign
+  from cycle structure). Equal for n = 6, 7, 8, 9 (720, 5040, 40320, 362880 terms), all
+  monomials multilinear of degree n. Also checked: b1..b_{n^2} binary with bounds [0,1]; objvar
+  continuous, free; objective max objvar (coefficient 1, constant 0); single row e1 with
+  lb = 0, ub = +INF, constant 0, linear part -objvar only, no quadratic part. So the optimal
+  value is D01(n) = max det over 0/1 matrices. (49 s, 1.46 GB peak.)
+
+2(b) Transfer and classical bounds. CONFIRMED.
+  Transfer: A = [[1, 1^T], [1, J - 2B]]; subtracting row 1 gives det A = (-2)^n det B, so
+  D01(n) <= Dpm(n+1)/2^n. Checked symbolically by hand and on 800 random matrices exactly.
+  Integrality step D01 <= isqrt(floor(Dpm_bound^2 / 4^n)) is valid (D01 is an integer).
+  Statements checked against the survey source (arXiv:2104.06756, LaTeX e-print, numbering
+  computed from the source): Thm 1 Hadamard |det| <= n^{n/2} (all n); Thm 8 Wojtas/Ehlich Gram
+  bound; Cor 10 Barba, odd n: det <= sqrt(2n-1)(n-1)^{(n-1)/2}; Thm 17 (Ehlich/Wojtas/Cohn),
+  n = 2 mod 4: det <= (2n-2)(n-2)^{(n-2)/2}; Thm 25 (Ehlich Satz 3.3), n = 3 mod 4: the maximal
+  Ehlich-block Gram matrix has f(7) = 5 parts of sizes floor/ceil(7/5), with
+  det(C) = (n-3)^{n-s} prod(n-3+4r_i)(1 - sum r_i/(n-3+4r_i)).
+  Hypotheses vs m = n+1:
+   m=7  (3 mod 4): Ehlich applies; partition (2,2,1,1,1). The report's formula with s=5,
+        r=1, u=3, v=2 equals this det formula; value 344064. rv_had6.py evaluates the formula
+        over ALL 15 partitions of 7: maximum 344064, attained only at (2,2,1,1,1), consistent
+        with Thm 25. sqrt(344064)/64 = 9.165 -> 9. Barba (odd) also applies: 12.
+   m=8  (0 mod 4): Hadamard 8^4 = 4096, /2^7 = 32. Exact (no rounding).
+   m=9  (1 mod 4, odd): Barba 17*8^8 = 285212672 (squared), sqrt/2^8 = 65.97 -> 65.
+   m=10 (2 mod 4): Thm 17: 18*8^4 = 73728, /2^9 = 144 exactly.
+  All numbers in the report's table and in certs/hadamard_*.json match my recomputation.
+  Independent check of hadamard_6 not relying on Ehlich: rv_had6.py enumerates all 7,028,847
+  5-subsets of the 63 nonzero 0/1 rows for rows 1-5 (no column normalisation, unlike the author)
+  and optimises row 6 exactly via cofactors: max |det| = 9. (5x5 minors in float64, rounded;
+  rounding residual asserted < 1e-6, entries 0/1 so values are small integers.) 35 s.
+
+2(c) Primal matrices. CONFIRMED.
+  For each certificate matrix: entries 0/1; own fraction-Gaussian det = 9, 32, 56, 144;
+  parsed OSiL polynomial evaluated exactly at B gives the same value; with objvar = det(B),
+  row e1 activity = 0 >= 0 (feasible), objective = 9, 32, 56, 144.
+
+Status verdicts:
+  hadamard_6: CLOSED at 9 (Ehlich + integrality, and exhaustive enumeration).       CONFIRMED
+  hadamard_7: CLOSED at 32 (Hadamard bound, exact).                                  CONFIRMED
+  hadamard_8: dual 65 certified (Barba + integrality), primal 56; NOT closed.         CONFIRMED
+  hadamard_9: CLOSED at 144 (Ehlich-Wojtas n = 2 mod 4, cited theorem).               CONFIRMED
+  (hadamard_9 and the Ehlich part of hadamard_6 rest on cited published theorems, not re-proved;
+  the report says so.)
+
+======================================================================
+3. Minor issues in the report (do not affect any bound)
+======================================================================
+ M1. Gap convention mis-stated. The report says gaps use "(primal - dual)/|dual|" as in
+     open.csv, but open.csv actually uses |primal - dual| / min(|primal|, |dual|)
+     (hadamard_6: (25-9)/9 = 1.778; hadamard_7: 689/32 = 21.53). For hadamard_8 the report's
+     16.1% = 9/56 follows the open.csv rule, not the stated formula (which gives 9/65 = 13.8%).
+     Fix the wording. elec numbers are unaffected (dual is the smaller value).
+ M2. Rounding of elec25. The report says elec decimals are "rounded down", but 243.638660 is
+     rounded UP from 243.6386599365; rounded down it is 243.638659. The other three are rounded
+     down correctly. The exact rational in the certificate is correct.
+ M3. Survey citation. The report cites "Corollary 10 and Theorem 25". Those are Barba and
+     Ehlich (n = 3 mod 4); the n = 2 mod 4 Ehlich-Wojtas bound used for hadamard_9 is Theorem 17
+     in the same numbering. Add it.
+ Not checked by this review: MINLPLib headline values and per-solver dual bounds, the
+ "third-best" observation, Wikipedia Thomson energies, OEIS A003432 / Ehlich-Zeller for
+ D01(8) = 56, and the author's Gurobi LP construction (irrelevant to validity: only the
+ certificates matter).
+
+======================================================================
+Commands run (targeted; no CI checks run or inspected)
+======================================================================
+ cd benchmark-observations/code/structural/review; PY=~/miniconda3/envs/exact-quadratic-hull/bin/python
+ $PY rv_elec_model.py        4x MATCH, 18 s
+ $PY rv_elec_cert.py         all certified, bounds equal, negative controls fail, 56 s
+ $PY rv_had.py               4x poly == det, primal ok, transfer ok, bounds recomputed, 48 s
+ $PY rv_had6.py              Ehlich max 344064 at (2,2,1,1,1); exhaustive max |det| = 9, 35 s
+ Survey source: curl https://arxiv.org/e-print/2104.06756 (MaxDet.tex, Nov 2021 upload).

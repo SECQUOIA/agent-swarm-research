@@ -1,0 +1,27 @@
+# Stage 3 independent review 5
+
+## Verdict
+
+**Clean review: no major or minor correction identified.** The formal statements and their assumptions support the claims made in Section 5 and the changed introduction. They provide a substantive verification of the rational correction formulas and their composition, while accurately identifying the unformalized support, arithmetic-enclosure, and executable interfaces.
+
+## Evidence inspected
+
+Read all three proof modules, `Verify.lean`, the umbrella import, import checker, verification script, README, coverage table, toolchain and dependency manifest, both saved verification logs, the author report, Section 5, and the changed introduction paragraph. Checked the numbering in the coverage map against the current LaTeX auxiliary file. Ran the source fingerprint check; every listed file passed. I did not launch a concurrent full Lean build, as requested. Thus the saved build and kernel-replay records remain build evidence, while this is an independent statement/assumption and source review.
+
+## Adversarial mathematical checks
+
+- **Nonempty and bounded infimum:** `primal_infimum_bounds` constructs a member of `f '' F` from the actual feasible witness, and constructs `BddBelow (f '' F)` from the global finite lower bound. It then uses `le_csInf` and `csInf_le` with the appropriate premises. It does not apply real conditional-infimum facts to an empty or unbounded-below image. The empty-feasible-set case remains in the pointwise transfer predicates, as the prose states.
+- **Rational correction:** `Coordinate.correction` matches the enclosure table, including the lower-bound/upper-bound sign asymmetry and exact zero correction for a free coordinate. The actual residual is real and is enclosed by rational endpoints. The bounded proof uses the sign of the actual residual and the appropriate sign of `z-L` or `z-U`, rather than silently treating an uncertain gradient as exact. Support membership excludes inconsistent bounded intervals.
+- **Substantive safe-cut composition:** `safe_affine_of_shift_bounds` assumes a support inequality, individual shift bounds, and an intercept bound. Its algebra actually derives the new affine underestimator. `rational_enclosure_cut` obtains the individual shift bounds from `coordinate_correction_sound` and casts the rational intercept inequality into the real argument. Neither theorem assumes the desired final cut inequality. The empty finite-coordinate type causes no mathematical problem.
+- **Epigraph extension:** the formal master explicitly consists of base membership and all cut inequalities. `epigraph_graph_feasible` uses base inclusion and validity on the original epigraph to construct `(x,h(x))`. `epigraph_bound_transfer` then applies the master bound to this graph point. These claims neither assume rationality of the nonlinear objective value nor add a finite bound on the epigraph coordinate. The separate underestimator lemma has the correct `h(x)-t` sign.
+- **Transfer and signs:** `objective_preserving_transfer` explicitly assumes both master membership and objective equality. `signed_max_bound` correctly turns a lower bound on `-f` into the original upper bound `-beta`. The empty-master theorem needs only the same embedding and does not overclaim that the public Python API emits infeasibility results.
+- **Incumbent lifting:** the incumbent belongs to the master by an explicit premise. The restricted lower bound therefore holds at the incumbent itself, and objective order extends it to points outside its weak cutoff. This proves the advertised result without optimum attainment and without the unsound strict integer cutoff. It deliberately assumes the restricted bound instead of claiming to verify the VIPR inference invariant.
+- **Primal completion:** the matching theorem assumes a feasible original-model witness and an objective upper bound equal to the certified lower bound. The equality and optimality conclusions follow directly; no master witness or reference objective is substituted for original feasibility.
+
+## Cross-stage scope and build interpretation
+
+The boundary between the mathematics and its executable implementation is consistent across Sections 3–5. Support validity is still a premise here; the right-derivative bridge in Section 4 is not portrayed as mechanized. Interval enclosure calculations, rational serialization, curvature, propagation, master matching, VIPR arithmetic and parsing, and benchmark witness evaluation remain excluded. The introduction accurately lists selected coordinate/cut/transfer/primal results and does not present the package as an end-to-end verified MINLP checker.
+
+The audit inspects declarations by ownership in the imported project modules, including generated and private declarations, and checks their transitive axiom dependencies. The complete umbrella-import check prevents an existing proof source module from being silently omitted. The manifest records exact dependency revisions, and the documentation correctly distinguishes the subsequent `leanchecker` pass using the same kernel and imported dependencies from an independently implemented checker or a fresh verification of all mathlib. The saved logs and source fingerprints are consistent with these bounded claims.
+
+No additional theorem or broader software formalization is required to make the current Stage 3 claims correct. Such extensions would expand the formal coverage and are not repairs of the work reviewed here.

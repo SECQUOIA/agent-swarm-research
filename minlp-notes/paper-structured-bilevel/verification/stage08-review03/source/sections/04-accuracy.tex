@@ -1,0 +1,848 @@
+\section{Global optimization in accuracy bits}\label{sec:accuracy}
+
+Exact response coordinates for higher-degree local costs can generate
+large algebraic fields. Approximation avoids assembling those fields.
+The construction in this section approximates each scalar inverse by
+rational polynomials, optimizes their compositions in a fixed number
+of leader and dual variables, and recovers a rational leader with
+controlled error. The requested accuracy enters through its number of
+bits, rather than its reciprocal.
+
+\subsection{Model, output, and approximation tools}\label{subsec:accuracy-model}
+
+Let $X\subseteq[0,1]^r$ be a rational polytope, and let
+$C\in\Q^{k\times N}$ and $U\in\Q^{s\times N}$ be independent of
+the leader. The dimensions $r,k,s$ are fixed. The functions $b(x)$
+and $\ell_i(x)$ are rational affine. Each rational polynomial marginal
+$g_i$ is strictly increasing on $[0,1]$, with $g_i(0)=0$ and
+$G_i=g_i(1)>0$. Its coefficients may have either sign. Write
+$P=\max_i\deg g_i$ and $f_i(t)=\int_0^t g_i(u)\,du$.
+An arbitrary strictly convex polynomial local cost is included by
+subtracting its initial derivative from both its marginal and its
+linear incentive. Additive local constants do not affect responses.
+
+Put $R=\max\{1,\max_a\sum_i|U_{ai}|\}$ and
+$W=[-R,R]^s$. The rational polynomial $\phi(x,w)$ is convex in
+$w\in W$ for every follower-feasible leader. Convexity and strict
+increase are promises; strict increase can alternatively be checked by
+univariate sign methods. No positive lower bound on either local or
+aggregate curvature is imposed. The follower minimizes
+\begin{equation}\label{eq:accuracy-follower}
+ F_x(z)=\sum_{i=1}^N[f_i(z_i)-\ell_i(x)z_i]+\phi(x,Uz),
+ \qquad z\in[0,1]^N,\quad Cz\le b(x).
+\end{equation}
+Equality resources can be represented by pairs of inequalities, with
+the resulting row count fixed. The follower-feasible leaders form the
+explicit rational polytope $X_F$ of \cref{lem:resource-projection}.
+At every $x\in X_F$, strict convexity gives a unique response $z(x)$.
+
+Local marginals and the aggregate are densely encoded. Upper polynomials
+may instead be supplied by explicit monomial lists in $(x,z)$; all their
+terms and numerical total degrees count toward the complexity bound.
+In particular no expansion in all $N$ follower variables is required.
+Let $L_{\rm in}$ denote total rational input bit length and $D_{\rm all}$
+the maximum numerical degree of all supplied polynomials.
+
+\begin{theorem}[Accuracy-bit global optimization]\label{thm:accuracy-global}
+For fixed $r,k,s$, follower-feasible leader existence for
+\eqref{eq:accuracy-follower} is decidable in polynomial time. If
+$X_F\ne\varnothing$, then for any rational polynomial upper objective
+$H(x,z)$ and requested integer $B\ge1$, one can return a rational
+$\widehat x\in X_F$ and a rational number $\widehat V$ such that
+\[
+ H(\widehat x,z(\widehat x))\le
+       \min_{x\in X_F}H(x,z(x))+2^{-B},\qquad
+ |\widehat V-\min_{x\in X_F}H(x,z(x))|\le2^{-B}.
+\]
+The bit complexity and rational output lengths are polynomial in
+$(L_{\rm in},D_{\rm all},B)$. The minima are attained. No exact
+common-field representation of the full response or optimum is promised.
+Response-dependent upper constraints require the qualifications in
+\cref{subsec:accuracy-upper}.
+\end{theorem}
+
+Scalar inverse resource allocation is established
+\cite{PatrikssonStromberg2015}. Hochbaum and Shanthikumar
+\cite[Sections 1.2--1.3 and Theorem 1.1]{HochbaumShanthikumar1990} already
+approximate the allocation vector with logarithmic accuracy dependence;
+their bound has numerical dependence on constraint subdeterminants and uses
+function-value oracles. Approximation of algebraic sums in fixed dimension
+also has an established bit-model treatment \cite{Vigneron2014}, with
+polynomial dependence on inverse relative error. Here we optimize an
+independent, possibly signed and nonconvex function of the allocation response
+over all leaders. The additional guarantee combines global upper optimization,
+polynomial rational-bit bounds and exact base-domain leader recovery. It is
+not a claim that response-vector approximation itself is new. General polynomial bilevel relaxation methods provide a
+complementary global-optimization approach \cite{JeyakumarEtAl2016}.
+
+The clipped inverse $h_i$ of $g_i$ is zero for targets at most zero,
+one for targets at least $G_i$, and $g_i^{-1}$ between them.
+\Cref{thm:inverse-approximation} supplies rational polynomial branches
+approximating $h_i$ to any tolerance $\eta$, with a complete uniform
+error and polynomial-bit construction. Its proof in \cref{app:inverse}
+handles real and complex critical values, interior derivative zeros,
+rational analytic panels, and exact Taylor reversion.
+\Cref{prop:positive-inverse} retains sharper bounds when coefficients
+are nonnegative. We first explain how such approximations are used in
+the diagonal and single-resource cases, before proving the full theorem.
+
+\begin{lemma}[Rational recovery in a polytope]\label{lem:rational-rounding}
+In fixed dimension $n$, let $Q\subseteq[0,1]^n$ be a nonempty rational
+polytope and let $v\in Q$ have a polynomial-size common-field algebraic
+encoding. For any rational $h>0$, a rational $\widehat v\in Q$ with
+$\norm{\widehat v-v}_\infty\le h$ can be computed in polynomial bit
+time in these encodings and $\max\{0,\log(1/h)\}$.
+For a rational polynomial $S(v)=\sum_\alpha a_\alpha v^\alpha$,
+\begin{equation}\label{eq:polynomial-lipschitz}
+             L(S)=\max\{1,\sum_\alpha |a_\alpha|\,|\alpha|_1\}
+\end{equation}
+bounds its infinity-norm Lipschitz constant on the cube. Thus recovery
+can preserve any polynomial-size finite list of polynomial values to
+specified positive tolerances, while keeping membership in $Q$ exact.
+\end{lemma}
+\begin{proof}
+Enumerate vertices by independent active-row systems and use the
+convex-combination reduction in \cref{lem:core-recovery} to find an
+affinely independent subset of at most $n+1$ vertices with
+$v=\sum_{j=1}^t\lambda_jv_j$, $\lambda_j\ge0$, $\sum\lambda_j=1$.
+Enumerating these subsets and checking barycentric coordinates takes
+polynomial time in fixed dimension, in the existing algebraic field.
+For $j<t$ replace $\lambda_j$ by $\lfloor M\lambda_j\rfloor/M$
+and put the remaining mass on vertex $t$. All weights stay nonnegative;
+the point stays in the same simplex and moves by at most $2n/M$.
+Choose an integer $M\ge\max\{1,2n/h\}$. The floors require only
+$O(\log M)$ exact algebraic comparisons each. Lower-dimensional and
+singleton polytopes are included. Finally sum the absolute first partial
+derivatives on the cube to obtain \eqref{eq:polynomial-lipschitz}, and
+take $h$ no larger than the smallest tolerance divided by its bound.
+\end{proof}
+
+\subsection{Diagonal followers and dyadic powers}\label{subsec:accuracy-diagonal}
+
+When $k=s=0$, the response is $z_i(x)=h_i(\ell_i(x))$.
+For an affine upper objective $d_0+d\trans x+c\trans z(x)$, let
+$\eps=2^{-B}$, $A=\sum_i|c_i|$ and
+$\eta=\eps/[16\max\{1,A\}]$. If $A=0$, solve the leader LP.
+Otherwise pull back every inverse breakpoint through $\ell_i$ and
+construct the realizable affine sign cells in $X$, including zero signs.
+There are polynomially many in fixed dimension. Take their closures:
+weakening the strict affine tests gives the closure, since mixing any
+point satisfying the weak tests with a point of the original relative
+cell approaches it through that cell. Choose a valid branch on each
+closed cell $Q$. Their polynomial upper objective $H_Q$ satisfies
+\begin{equation}\label{eq:diagonal-uniform-error}
+                     |H_Q(x)-H(x,z(x))|\le A\eta\le\eps/16.
+\end{equation}
+At a threshold either adjacent branch is valid on the boundary.
+
+Minimize every $H_Q$ exactly on $Q$ by \cref{subsec:tools}, using
+one additional copy of the $r$ variables to express that no point has a
+smaller value. Compare the resulting algebraic values pairwise and
+select the smallest. This requires at most products of two polynomial
+field degrees, not a field containing all response radicals. If $v^*$
+is the winning point, then $H_Q(v^*)\le\mathrm{OPT}+\eps/16$.
+Use \cref{lem:rational-rounding} inside $Q$ so that its objective
+increases by at most $\eps/4$. The true objective of the resulting
+rational leader is at most $\mathrm{OPT}+3\eps/8$ by
+\eqref{eq:diagonal-uniform-error}. Bisection of each true inverse at
+that leader to weighted total error $\eps/4$ gives a rational optimum
+estimate of error less than $\eps$. Rational vertex recovery is essential:
+coordinatewise rounding of an algebraic minimizer can leave $X$.
+
+For the important power marginal $g_i(t)=t^{p_i}$, one can use a simpler
+fully explicit approximation. Put $m=\lceil\log_2(1/\eta)\rceil$,
+$P=\max_i p_i$, $K_0=Pm$, and $q=m+1$. Below $2^{-K_0}$ use zero;
+its root error is at most $2^{-m}$. On
+$2^{-(j+1)}\le t\le2^{-j}$, $j=0,\ldots,K_0-1$, put
+$b_j=3\cdot2^{-(j+2)}$ and $u=t/b_j-1\in[-1/3,1/3]$.
+For $\alpha=1/p_i$, the rational binomial coefficients have absolute
+value at most one, by their consecutive ratio. Thus
+\[
+ T_q(u)=\sum_{n=0}^q\binom\alpha n u^n,\quad
+ |T_q(u)|\le3/2,\quad
+ |(1+u)^\alpha-T_q(u)|\le3^{-q}/2\le\eta/4.
+\]
+Compute a rational $\sigma_j$ within $\eta/4$ of $b_j^{1/p_i}$ by
+bisection and use $\sigma_jT_q(t/b_j-1)$. Its error is at most
+$3\eta/8+\eta/4<\eta$. There are $Pm$ dyadic bands and degree
+$O(m)$. Bisection compares rational $p_i$th powers of
+$O(m)$-bit arguments against $O(Pm)$-bit dyadic targets. Binomial
+coefficient lengths are $O(q(\log P+\log q))$, and expansion adds
+$O(qK_0)$ bits from scaling. These are polynomial in numerical $P$
+and accuracy bits. In fixed leader dimension the substituted polynomial
+has at most $\binom{r+q}{r}$ monomials. This proves the diagonal
+accuracy-bit guarantee directly, without a critical-value calculation.
+
+\begin{example}[Sparse exponents can force long rational output]
+\label{ex:sparse-power-output}
+Let even $p\ge2$ be encoded in binary. Two independent unit-box
+followers with marginals $z^{p}$ and $z^{p/2}$ and incentive $x\in[0,1]$
+have responses $x^{1/p}$ and $x^{2/p}$. Their difference has minimum
+$-1/4$ at $x=2^{-p}$, since it is $(x^{1/p}-1/2)^2-1/4$.
+Suboptimality at most $1/64$ implies
+$3/8\le x^{1/p}\le5/8$, hence $0<x\le(5/8)^p$.
+For reduced rational $x=a/b>0$, this requires $b\ge(8/5)^p$,
+so explicit rational output takes $\Omega(p)$ bits, although the
+sparse input has $O(\log p)$ bits and accuracy is constant. The
+example uses two different powers. It is an output obstruction, not a
+hardness claim for the same-power subclass.
+\end{example}
+
+\subsection{One equality and an exact signed balance identity}
+\label{subsec:accuracy-one-resource}
+
+For $s=0$ with one resource equality $\sum_iw_iz_i=b(x)$, where
+$w_i\in\Q$ may be negative or zero, there is a sharper argument than
+the general residual estimate below. Define
+\[
+ b_-=\sum_i\min\{w_i,0\},\quad b_+=\sum_i\max\{w_i,0\},\quad
+ W_1=\sum_i|w_i|.
+\]
+The box image is exactly $[b_-,b_+]$: its endpoint vertices and their
+segment realize that interval. Thus $X_F=X\cap\{b_-\le b(x)\le b_+\}$.
+If $W_1=0$, this is simply $b(x)=0$ and the diagonal construction
+applies. Otherwise put $w_{\min}=\min_{w_i\ne0}|w_i|$.
+
+Bound each affine incentive on the leader cube by rational
+$\ell_i^-,\ell_i^+$. Among all $i$ with $w_i\ne0$, take the minimum
+$\lambda_-$ and maximum $\lambda_+$ of
+\[
+ \ell_i^-/w_i,\quad\ell_i^+/w_i,\quad
+ (\ell_i^--G_i)/w_i,\quad(\ell_i^+-G_i)/w_i.
+\]
+They have polynomial bit length and $\lambda_-<\lambda_+$.
+The box-Lagrangian response and its balance are
+\[
+ q_i(x,\lambda)=h_i(\ell_i(x)-\lambda w_i),\qquad
+ B_x(\lambda)=\sum_iw_iq_i(x,\lambda).
+\]
+The continuous nonincreasing function $B_x$ equals $b_+$ at
+$\lambda_-$ and $b_-$ at $\lambda_+$. Hence every feasible leader
+has a balancing multiplier in that interval. Its box minimizer is the
+resource optimum by Lagrangian comparison against any balanced point.
+This includes endpoint resources and requires no constraint qualification.
+All balancing multipliers give the same response by strict convexity.
+
+For a balancing $\lambda^*$, every nonzero term
+$w_i(q_i(x,\lambda)-q_i(x,\lambda^*))$ has the same weak sign.
+Zero-weight responses do not change. Therefore
+\begin{equation}\label{eq:signed-balance-identity}
+ \sum_i|w_i|\,|q_i(x,\lambda)-z_i(x)|
+                         =|B_x(\lambda)-b(x)|.
+\end{equation}
+In particular, for $c_{\max}=\max_i|c_i|$,
+\[
+ |c\trans(q-z(x))|\le(c_{\max}/w_{\min})|B_x(\lambda)-b(x)|.
+\]
+This identity uses monotonicity and the single dual parameter, including
+signed weights. There is no corresponding no-cancellation identity for
+several resource rows.
+
+Here is the complete affine-objective accuracy ledger for this case.
+If $c=0$ solve the LP over $X_F$. Otherwise let
+$A=\sum_i|c_i|$, $C_1=c_{\max}W_1/w_{\min}$ and
+$\eta=\eps/[32(1+A+C_1)]$. Normalize
+$\lambda=\lambda_-+(\lambda_+-\lambda_-)\theta$,
+$0\le\theta\le1$, and arrange the affine inverse breakpoints in
+$X_F\times[0,1]$. On each closed rational cell $Q$ let $p_i$ be its
+valid approximants, and put
+\[
+ H_Q=d_0+d\trans x+c\trans p,\qquad T_Q=\sum_iw_ip_i-b(x).
+\]
+Minimize $H_Q$ subject to $v=(x,\theta)\in Q$ and
+$|T_Q(v)|\le W_1\eta$. A true optimal leader and a balancing multiplier
+have such a lift, so the winning algebraic value is at most
+$\mathrm{OPT}+A\eta$. Optimize in $2(r+1)$ variables and recover a
+rational point in $Q$ within distance
+\[
+ h\le\min\{1,\eps/(8L(H_Q)),W_1\eta/L(T_Q)\}.
+\]
+The recovered polynomial residual is at most $2W_1\eta$ and the
+true box response residual at most $3W_1\eta$. Consequently
+\[
+ |H(\widehat x,z(\widehat x))-H_Q(\widehat v)|
+      \le(A+3C_1)\eta,
+\]
+and its suboptimality is at most
+$\eps/8+(2A+3C_1)\eta\le7\eps/32$. The rational polynomial value
+at $\widehat v$ lies between
+$\mathrm{OPT}-(A+3C_1)\eta$ and
+$\mathrm{OPT}+A\eta+\eps/8$, hence estimates the optimum within
+$5\eps/32$. The leader is exactly in $X_F$ even though its auxiliary
+response need not be balanced. Small weights affect logarithmic precision
+only. Compact balancing multipliers also prove response continuity by
+subsequence passage and uniqueness, and therefore attainment.
+
+\subsection{Resource and aggregate residuals control the response}
+\label{subsec:accuracy-certificate}
+
+We now return to \eqref{eq:accuracy-follower}, assuming $N\ge1$.
+Construct $X_F$ and $K$ by \cref{lem:resource-projection,lem:resource-constants}.
+Choose a rational $\overline G\ge1$ bounding
+$\norm{\nabla_zF_x(z)}_\infty$ on the leader and follower cubes.
+Absolute coefficient sums after normalizing $w=R(2t-\mathbf1)$
+supply such a bound with polynomial encoding. Put
+\[
+ \begin{gathered}
+ L_F=N\overline G,\qquad \Lambda=\max\{1,K\overline G\},\\
+ S=\max\{1,\max_j\sum_i|C_{ji}|\},\qquad
+ A_U=\max\{1,\max_a\sum_i|U_{ai}|\}=R.
+ \end{gathered}
+\]
+Empty row maxima are zero. The constant $L_F$ bounds the follower
+objective's infinity-norm Lipschitz constant. Let $L_\phi\ge0$ bound
+the infinity-norm Lipschitz constant of $\nabla_w\phi$ on $W$,
+uniformly on the leader cube; the maximum row sum of absolute Hessian
+coefficient bounds suffices. Define
+\[
+ D_\phi=L_\phi\sum_i\norm{U_i}_1,\qquad
+                        \mu=\frac{\min_iG_i}{4(4P)^P}.
+\]
+These are effective rational constants of polynomial bit length. With
+positive marginal coefficients one may use the larger $\mu$ from
+\cref{lem:polynomial-bregman}.
+
+For $x\in X_F$, $w\in W$ and $\lambda\in[0,\Lambda]^k$, define
+the frozen-gradient box response
+\begin{equation}\label{eq:accuracy-frozen-response}
+ q_i=h_i\bigl(\ell_i(x)-U_i\trans\nabla_w\phi(x,w)
+                                      -C_i\trans\lambda\bigr).
+\end{equation}
+This minimizes a strictly convex separable box objective with aggregate
+gradient frozen at $w$.
+
+\begin{lemma}[Response certificate]\label{lem:accuracy-certificate}
+If the true frozen response satisfies
+\begin{equation}\label{eq:accuracy-residuals}
+ Cq-b(x)\le\delta\mathbf1,\quad
+ |\lambda\trans(Cq-b(x))|\le\zeta,\quad
+                       \norm{Uq-w}_\infty\le\rho,
+\end{equation}
+where $\delta,\zeta,\rho\ge0$, then
+\begin{equation}\label{eq:accuracy-response-bound}
+ \norm{q-z(x)}_\infty
+ \le K\delta+\left(\frac{L_FK\delta+\zeta+D_\phi\rho}{\mu}
+                                                      \right)^{1/(P+1)}.
+\end{equation}
+An exact response has a certificate with all three residuals zero and
+$\lambda\in[0,\Lambda]^k$. The response $z(x)$ is continuous on $X_F$.
+\end{lemma}
+\begin{proof}
+Put $a=\nabla_w\phi(x,w)$ and $a_q=\nabla_w\phi(x,Uq)$.
+Testing the frozen box variational inequality at $z^*=z(x)$ and
+using convexity of the actual follower objective gives
+\[
+ F_x(z^*)\ge F_x(q)-\lambda\trans C(z^*-q)
+                            +(a_q-a)\trans U(z^*-q)
+ \ge F_x(q)+\lambda\trans(Cq-b(x))-D_\phi\rho.
+\]
+Here $Cz^*\le b(x)$, $\lambda\ge0$, and
+$\norm{U(z^*-q)}_1\le\sum_i\norm{U_i}_1$. Repair $q$ to feasible
+$y$ within $K\delta$ by \cref{lem:resource-constants}. Then
+\[
+ 0\le F_x(y)-F_x(z^*)\le L_FK\delta+\zeta+D_\phi\rho.
+\]
+First-order optimality at $z^*$ and \cref{lem:polynomial-bregman}
+bound $\mu\norm{y-z^*}_\infty^{P+1}$ by this gap. Add the repair
+distance to prove \eqref{eq:accuracy-response-bound}.
+
+At an exact optimum the bounded multipliers of
+\cref{lem:resource-constants} and $w=Uz^*$ give
+\eqref{eq:accuracy-frozen-response} with zero residuals. Conversely
+zero residuals imply the full convex follower KKT conditions and identify
+its unique response. Along a sequence in $X_F$, the aggregate and
+multiplier boxes are compact; every convergent subsequence of such
+certificates passes to a zero-residual certificate by continuity of
+the clipped inverses. Uniqueness identifies every response limit.
+This proves continuity, including at degenerate feasible faces.
+\end{proof}
+
+The aggregate error has a useful sharper exponent. Retaining
+$\norm{z^*-q}_\infty$ in the preceding dot-product bound and writing
+$t=\norm{y-z^*}_\infty$ yields
+\[
+ \mu t^{P+1}\le L_FK\delta+\zeta+D_\phi\rho(K\delta+t).
+\]
+If $t$ exceeded both terms in the following maximum, each right-hand
+term would be less than half the left side. Therefore
+\begin{equation}\label{eq:accuracy-sharp-mismatch}
+ \norm{q-z^*}_\infty\le K\delta+
+ \max\left\{
+ \left(\frac{2(L_FK\delta+\zeta+D_\phi\rho K\delta)}\mu\right)^{1/(P+1)},
+ \left(\frac{2D_\phi\rho}\mu\right)^{1/P}\right\}.
+\end{equation}
+When $\delta=\zeta=0$, take $y=q$ and divide by the response distance
+if it is positive to obtain the sharper
+$\norm{q-z^*}_\infty\le(D_\phi\rho/\mu)^{1/P}$.
+The simpler bound \eqref{eq:accuracy-response-bound} suffices below.
+For $s=0$ it reduces to the multiple-resource residual/complementarity
+bound, with no scalar balance identity presumed.
+
+\subsection{Polynomial response approximations and rational recovery}
+\label{subsec:accuracy-graph}
+
+Normalize $w=R(2t-\mathbf1)$, $\lambda=\Lambda\theta$, so the
+compressed variable $v=(x,t,\theta)$ lies in the rational polytope
+$Q_0=X_F\times[0,1]^{s+k}$. Its dimension $r+s+k$ is fixed.
+The inverse arguments
+\[
+ a_i(v)=\ell_i(x)-U_i\trans\nabla_w\phi(x,R(2t-\mathbf1))
+                                           -\Lambda C_i\trans\theta
+\]
+are rational polynomials. For tolerance $0<\eta\le1/4$, pull back
+all rational inverse breakpoints by these arguments and compute their
+realizable sign conditions on $Q_0$ using \cref{subsec:tools}.
+At each sign sample choose a valid branch for every inverse. Define
+$Q$ by $Q_0$ and the \emph{closed branch-interval conditions} for that
+chosen branch vector. These compact sets cover $Q_0$, and on each,
+\begin{equation}\label{eq:accuracy-valid-branches}
+                     |p_i(v)-q_i(v)|\le\eta.
+\end{equation}
+There are polynomially many sets, since there are polynomially many
+realizable signs in fixed dimension. They may overlap or be disconnected.
+The closed validity set may enlarge its originating sign condition,
+but every added point retains all branch error bounds. This avoids
+both a Cartesian enumeration of branch choices and an unjustified
+closure operation on nonlinear cells. When $s=0$, the arguments are
+affine and the sets can be the closed rational arrangement cells.
+
+On each $Q$ define the polynomial residuals
+\[
+ E=Cp-b(x),\qquad J=\lambda\trans E,\qquad T=w-Up,
+\]
+and the compact candidate set
+\begin{equation}\label{eq:accuracy-candidate}
+ \mathcal S_Q=\{v\in Q:E_j\le S\eta,\quad
+        |J|\le k\Lambda S\eta,\quad |T_a|\le A_U\eta\}.
+\end{equation}
+Empty row families are omitted. Every true response has a lift in some
+candidate set, with $p$ within $\eta$ of that response: use its true
+aggregate and a bounded multiplier. The polynomial residual allowances
+follow from \eqref{eq:accuracy-valid-branches}. Every candidate in turn
+has true residual allowances $2S\eta$, $2k\Lambda S\eta$ and
+$2A_U\eta$. All polynomials have polynomial degree and coefficient
+length after expansion in the fixed compressed dimension.
+
+\begin{lemma}[Recovery across nonlinear branch boundaries]
+\label{lem:accuracy-recovery}
+Given $0<\tau\le1/4$, choose
+\begin{equation}\label{eq:accuracy-general-tolerance}
+ \eta\le\min\left\{\frac14,\tau,\frac{\tau}{8KS},
+ \frac{\mu(\tau/2)^{P+1}}
+              {1+4L_FKS+5k\Lambda S+4D_\phi A_U}\right\}.
+\end{equation}
+For any algebraically encoded $v^*\in\mathcal S_Q$ and any rational
+$h_0>0$, one can compute a rational $\widehat v\in Q_0$ with
+$\norm{\widehat v-v^*}_\infty\le h_0$ such that
+\begin{equation}\label{eq:accuracy-recovery-interface}
+ \norm{q(\widehat v)-q(v^*)}_\infty\le\eta,\qquad
+ \norm{q(\widehat v)-z(\widehat x)}_\infty\le\tau,\qquad
+ \norm{p(v^*)-z(\widehat x)}_\infty\le2\eta+\tau.
+\end{equation}
+All additional precision and bit cost are polynomial in the supplied
+encodings, in $\log(1/\tau)$, and in the positive part of
+$\log(1/h_0)$.
+Membership in the nonlinear branch set $Q$ is not promised.
+\end{lemma}
+\begin{proof}
+Set
+\[
+ \alpha=\min_i\frac{G_i}{2}\left(\frac{\eta}{2P}\right)^P.
+\]
+By \cref{lem:inverse-modulus}, an argument change less than $\alpha$
+changes every clipped inverse by less than $\eta$: for actual degree
+$d\le P$, $(\eta/(2d))^d\ge(\eta/(2P))^P$.
+Let $M_a\ge1$ bound the Lipschitz constants of all $a_i$ on the
+normalized cube. Let $B_b\ge1$ bound the affine Lipschitz constant of
+$b$ and let $\overline E=S+\sup_{x\in[0,1]^r}\norm{b(x)}_\infty$,
+using an absolute coefficient upper bound for the supremum. Choose
+positive rational $h$ strictly smaller than
+\begin{equation}\label{eq:accuracy-rounding-distance}
+ \min\left\{h_0,\frac{\alpha}{2M_a},
+ \frac{S\eta}{B_b+1},\frac{A_U\eta}{2R+1},
+                                      \frac{S\eta}{\overline E+1}\right\}.
+\end{equation}
+Use \cref{lem:rational-rounding} in $Q_0$. Then true clipped responses
+change by at most $\eta$, right-hand sides by at most $S\eta$,
+aggregates by at most $A_U\eta$, and multipliers by at most
+$\Lambda S\eta/(\overline E+1)$.
+
+At $v^*$ the true residual allowances were twice those in
+\eqref{eq:accuracy-candidate}. At $\widehat v$ they are therefore
+\begin{equation}\label{eq:accuracy-transferred-residuals}
+       \delta=4S\eta,\qquad \zeta=5k\Lambda S\eta,
+                                      \rho=4A_U\eta.
+\end{equation}
+For complementarity write, with the \emph{true} residuals $e^*,\widehat e$,
+\[
+ \widehat\lambda\trans\widehat e-(\lambda^*)\trans e^*
+ =\widehat\lambda\trans(\widehat e-e^*)
+                         +(\widehat\lambda-\lambda^*)\trans e^*.
+\]
+The first term has magnitude at most $2k\Lambda S\eta$ and the
+second at most $k\Lambda S\eta$, because
+$\norm{e^*}_\infty\le\overline E$. This absolute residual bound
+is needed for inactive constraints with large negative slack.
+\Cref{lem:accuracy-certificate} and
+\eqref{eq:accuracy-general-tolerance} bound the repair and growth terms
+by $\tau/2$ each, proving \eqref{eq:accuracy-recovery-interface}.
+Every displayed constant and precision has polynomial bit length;
+raising a tolerance to $P+1$ costs polynomially many bits in numerical
+$P$. The proof compares true continuous clipped responses across the
+boundary. It never evaluates the old branch polynomial at a point where
+that branch might be invalid.
+\end{proof}
+
+For resource-only followers a sharper, entirely polyhedral recovery
+is available. Choose
+\begin{equation}\label{eq:accuracy-resource-tolerance}
+ \eta\le\min\left\{\frac14,\tau,\frac{\tau}{6SK},
+ \frac{\mu(\tau/2)^{P+1}}{3S(1+L_FK+k\Lambda)}\right\}.
+\end{equation}
+Round within its rational branch cell, allowing each $E_j$ to change
+by at most $S\eta$ and $J$ by at most $k\Lambda S\eta$.
+\Cref{lem:rational-rounding} also permits any finite list of additional
+polynomial rounding tolerances. The true residuals at the rounded
+point are then $3S\eta$ and $3k\Lambda S\eta$, so
+\cref{lem:accuracy-certificate} gives $\norm{q-z(\widehat x)}_\infty\le\tau$.
+Thus the valid rounded polynomial response obeys
+$\norm{p(\widehat v)-z(\widehat x)}_\infty\le\eta+\tau$.
+For an affine objective, set $\tau=\eps/[16(1+\norm{c}_1)]$ and
+allow objective rounding error $\eps/8$. A true optimum has polynomial
+lift value at most $\mathrm{OPT}+\norm{c}_1\eta$, while the final
+true-to-polynomial error is at most
+$\norm{c}_1(\eta+\tau)\le\eps/8$.
+The final suboptimality is at most $5\eps/16$; the rational rounded
+value lies between $\mathrm{OPT}-\eps/8$ and
+$\mathrm{OPT}+3\eps/16$. This is the complete fixed-resource
+ledger, including equalities and vanishing curvature. It uses repair
+and polynomial growth, not \eqref{eq:signed-balance-identity}.
+
+\subsection{Polynomial upper functions and the global theorem}
+\label{subsec:accuracy-polynomial-upper}
+
+For an explicitly listed upper polynomial
+$G(x,z)=\sum_{\alpha,\beta}a_{\alpha\beta}x^\alpha z^\beta$, put
+\begin{equation}\label{eq:upper-polynomial-lipschitz}
+ \begin{split}
+ L_x(G)&=\sum_{\alpha,\beta}|a_{\alpha\beta}|\,|\alpha|_1
+                                                        2^{|\beta|_1},\\
+ L_z(G)&=\sum_{\alpha,\beta}|a_{\alpha\beta}|\,|\beta|_1
+                                                        2^{|\beta|_1}.
+ \end{split}
+\end{equation}
+These bound the separate infinity-norm Lipschitz constants on
+$[0,1]^r\times[-1,2]^N$, by summing absolute partial derivatives.
+They may vanish when their variable group is absent. The enlarged
+response box includes approximants with $\eta\le1/4$.
+Their encodings are polynomial in the explicit input and numerical
+upper degree, including the factor $2^{|\beta|_1}$.
+
+On each candidate substitute $z=p(v)$. Let $d_h$ bound the degrees
+of the univariate inverse branches, and put
+$d_a=\max\{1,\max_i\deg a_i\}$. Since each $p_i$ is a branch
+composed with $a_i$, its degree is at most $d_h d_a$.
+The affine incentives and multiplier terms give
+$d_a\le\max\{1,\deg\phi-1\}$, with $d_a=1$ when $\phi$ is
+constant or zero. The substituted upper polynomial therefore has degree
+at most $D_{\rm up}\max\{1,d_h d_a\}$ in the fixed compressed
+variables. Both degree factors are polynomially bounded in the stated
+numerical-degree and accuracy parameters.
+Successive polynomial multiplication expands every listed monomial in
+polynomial time: only polynomially many monomials exist in fixed
+dimension at that degree, and coefficient growth is polynomial in
+numerical degree and input coefficient lengths. The number of upper
+polynomials and terms can grow without increasing the optimization
+dimension.
+
+For the recovery in \cref{lem:accuracy-recovery}, the segment between
+$p(v^*)$ and $z(\widehat x)$ lies in $[-1,2]^N$, so
+\begin{equation}\label{eq:upper-recovery-error}
+ |G(\widehat x,z(\widehat x))-G(x^*,p(v^*))|
+ \le L_x(G)h_0+L_z(G)(2\eta+\tau).
+\end{equation}
+At a true response lift the corresponding error is at most $L_z(G)\eta$.
+
+\begin{proof}[Proof of \cref{thm:accuracy-global}]
+Projection decides emptiness. Continuity from
+\cref{lem:accuracy-certificate} and compactness of $X_F$ ensure
+attainment. Let $\eps=2^{-B}$,
+$A_H=\max\{1,L_x(H),L_z(H)\}$, and choose
+$\tau\le\eps/(32A_H)$ and $h_0\le\eps/(32A_H)$, with
+$\eta$ as in \eqref{eq:accuracy-general-tolerance}.
+Minimize the substituted upper polynomial on every candidate set
+\eqref{eq:accuracy-candidate} and compare their exact minima.
+Each minimizing-point formula uses two copies of $r+s+k$ variables,
+so \cref{subsec:tools} gives polynomial-size algebraic minima
+and samples. At a true optimizer the lift exists, so the winning
+value $V$ satisfies $V\le\mathrm{OPT}+A_H\eta\le\mathrm{OPT}+\eps/32$.
+Recover the winner by \cref{lem:accuracy-recovery}.
+Equation \eqref{eq:upper-recovery-error} gives
+$|H(\widehat x,z(\widehat x))-V|\le4A_H\eps/(32A_H)=\eps/8$.
+Exact membership $\widehat x\in X_F$ also gives
+$V\ge\mathrm{OPT}-\eps/8$. Approximate $V$ rationally to error
+$\eps/16$ to obtain the claimed value estimate and the leader guarantee.
+Only polynomial-degree algebraic outputs in fixed dimension are compared;
+no exact sum of the true inverse values is evaluated.
+
+If $N=0$, the follower constraints reduce to $0\le b(x)$ and there
+is no response. Minimize the polynomial upper objective on this rational
+polytope in fixed dimension and apply \cref{lem:rational-rounding}.
+This is an LP only when the upper objective is affine. All counts,
+degrees, coefficient encodings and requested precisions above are
+polynomial in $(L_{\rm in},D_{\rm all},B)$.
+\end{proof}
+
+For example, a convex quartic aggregate may couple many units through
+one total output while local second derivatives vanish at an optimum.
+The objective $-x_1\sum_i z_i+d(x)$ includes tariff revenue and a
+polynomial intervention cost. Neither follower convexity nor the theorem
+requires the induced revenue to be concave. These are structural examples;
+the coarse constants and fixed-dimensional elimination do not establish
+an efficient implemented solver.
+
+\subsection{Upper constraints: approximation and exact feasibility}
+\label{subsec:accuracy-upper}
+
+Let $G_j(x,z)\le0$, $j=1,\ldots,m$, be explicitly listed rational
+polynomial upper inequalities, with $m$ unrestricted. Put
+$\mathcal H(x)=H(x,z(x))$, $\mathcal G_j(x)=G_j(x,z(x))$ and
+\begin{equation}\label{eq:tightened-value}
+ V(t)=\min\{\mathcal H(x):x\in X_F,\ \mathcal G_j(x)\le-t
+                  \text{ for all }j\},\qquad t\ge0,
+\end{equation}
+with $V(t)=+\infty$ for an empty set. By continuity and compactness
+each finite minimum is attained. Leader-only affine rows should be
+placed directly in $X$ and preserved exactly. Response-dependent
+upper equalities may be represented by opposite inequalities, but in
+general cannot satisfy the positive tightening assumptions below.
+
+Margin conversion from response error to upper feasibility is standard,
+including in near-optimal robust bilevel models
+\cite{BesanconAnjosBrotcorne2024}. The value of perturbed inequalities
+and convex interpolation toward a strict point are also established
+\cite[Section 5.6]{BoydVandenberghe2004}. Here they are combined with
+the proved global accuracy-bit construction and its rational recovery.
+
+\begin{theorem}[Outer and inner guarantees]\label{thm:accuracy-upper}
+For positive rational objective and violation tolerances $\eps,\delta$,
+there are algorithms with bit complexity polynomial in the input,
+numerical degrees, and the encodings of these tolerances, for fixed
+$r,k,s$, with the following properties.
+
+The \emph{outer} algorithm either certifies original infeasibility, or
+returns rational $\widehat x\in X_F$ with
+$\mathcal G_j(\widehat x)\le\delta$ for every $j$.
+If $V(0)$ is finite it returns a point and
+$\mathcal H(\widehat x)\le V(0)+\eps$.
+An outer point alone does not certify original feasibility.
+
+The \emph{inner} algorithm either reports an empty inner surrogate, or
+returns rational $\widehat x\in X_F$ satisfying all original upper
+inequalities exactly. If $V(\delta)$ is finite it returns a point with
+$V(0)\le\mathcal H(\widehat x)\le V(\delta)+\eps$.
+An empty inner surrogate implies $V(\delta)=+\infty$, but does not
+certify original infeasibility.
+\end{theorem}
+\begin{proof}
+Let $A$ be the maximum of one and all $L_x,L_z$ constants for the
+objective and upper rows, and choose
+\[
+ \kappa=\min\{1/4,\eps/(16A),\delta/(16A)\},\qquad
+ \tau\le\kappa,\quad h_0\le\kappa,
+\]
+with $\eta\le\kappa$ satisfying
+\eqref{eq:accuracy-general-tolerance}. On each candidate set write
+$F_j(v)=G_j(x,p(v))$ and $H_Q(v)=H(x,p(v))$.
+A true lift changes each criterion by at most $L_z(G_j)\eta$.
+At any candidate and its recovery, \eqref{eq:upper-recovery-error}
+is at most $4A\kappa\le\min\{\eps,\delta\}/4$.
+
+For the outer algorithm impose $F_j\le L_z(G_j)\eta$ on every
+candidate set and minimize $H_Q$ exactly. Every true feasible leader
+has an admissible lift. Hence emptiness certifies original infeasibility,
+and, when $V(0)$ is finite, the winning value $V_{\rm out}$ is at
+most $V(0)+L_z(H)\eta$. Recover its algebraic minimizer using
+\cref{lem:accuracy-recovery}. The true violation is at most
+$\delta/16+\delta/4$ and objective loss at most
+$\eps/16+\eps/4$, which prove the stated bounds.
+
+For the inner algorithm impose $F_j\le-\delta/2$.
+Every leader feasible for $V(\delta)$ has an admissible lift, since
+$L_z(G_j)\eta\le\delta/16$. Any recovered candidate satisfies
+$\mathcal G_j(\widehat x)\le-\delta/4<0$. If $V(\delta)$ is
+finite, its lift bounds the winning polynomial value by
+$V(\delta)+L_z(H)\eta$, and recovery gives the stated objective
+bound. All optimization still uses a fixed number of variables even
+though $m$ grows. In the resource-only case one may instead use the
+rational-cell recovery and its additional polynomial rounding tolerances;
+the same conclusions follow from its smaller response-error bounds.
+
+When $N=0$, optimize the upper polynomials directly over
+$X\cap\{0\le b(x)\}$ with the same outer/inner margins and rational
+polytope recovery. This is not in general an LP. Likewise, a
+response-independent objective does not justify skipping response
+approximation when any upper constraint still depends on it.
+\end{proof}
+
+The two algorithms give a posteriori global certificates without any
+regularity promise. Let rational $v_{\rm out},v_{\rm in}$ approximate
+the exact winning surrogate values within $\omega_{\rm out},\omega_{\rm in}$.
+For the inner recovery put
+$e_{\rm in}=L_x(H)h_0+L_z(H)(2\eta+\tau)$, using its own tolerances.
+If both procedures return, then
+\begin{equation}\label{eq:accuracy-posterior}
+ \underbrace{v_{\rm out}-\omega_{\rm out}-L_z(H)\eta_{\rm out}}_{\mathrm{Lower}}
+ \le V(0)\le\mathcal H(x_{\rm in})\le
+ \underbrace{v_{\rm in}+\omega_{\rm in}+e_{\rm in}}_{\mathrm{Upper}}.
+\end{equation}
+The inner point supplies the needed original feasibility. An outer
+objective alone is not an absolute-error estimate of $V(0)$ and can
+lie below it. As all tolerances tend to zero, the outer lower bounds
+converge to finite $V(0)$: otherwise compactness, vanishing violation,
+and continuity yield a feasible limit with smaller objective. Inner
+upper bounds also converge if $V(t)\to V(0)$ as $t\downarrow0$.
+The computed finite gap is always a valid certificate when both
+bounds exist; a quantitative stopping guarantee needs more.
+
+\begin{corollary}[A supplied tightening modulus]
+\label{cor:accuracy-tightening}
+Suppose $V(0)<+\infty$ and supplied rationals $D_0,\sigma>0$ and
+integer $\nu\ge1$ satisfy
+\begin{equation}\label{eq:tightening-modulus}
+ V(t)\le V(0)+D_0(t/\sigma)^{1/\nu},\qquad0<t\le\sigma.
+\end{equation}
+Then an exactly upper-feasible rational leader within additive $\eps$
+of $V(0)$, and a rational absolute-error optimum estimate, are computable
+in polynomial time in the input, numerical degrees, numerical $\nu$,
+and accuracy bits. The modulus parameters enter through their encodings;
+the algorithm need not verify the promise.
+\end{corollary}
+\begin{proof}
+Use inner tightening
+$t=\sigma\min\{1/2,(\eps/(2D_0))^\nu\}$ and objective tolerance
+$\eps/2$. The modulus ensures nonemptiness and tightening loss at
+most $\eps/2$. Its rational encoding is polynomial in numerical
+$\nu$ and the supplied bit lengths. Repeat with smaller constant
+fractions of the requested error and approximate the inner achieved
+objective using its surrogate/recovery bound to obtain an absolute-error
+estimate of $V(0)$.
+\end{proof}
+
+\begin{corollary}[Convex reduced constraints with a strict anchor]
+\label{cor:accuracy-anchor}
+Suppose each $\mathcal G_j$ is convex on $X_F$, and a supplied point
+$x_s\in X_F$ has $\mathcal G_j(x_s)\le-\sigma$ for all $j$, with
+rational $\sigma>0$. For $N\ge1$, \cref{cor:accuracy-tightening} applies with
+\[
+ \nu=P,\qquad D_0=\max\{1,L_x(H)+L_z(H)C_z\},
+\]
+where the effective constant $C_z$ is given in
+\cref{prop:accuracy-response-modulus}. One can alternatively use its
+simpler modulus with exponent $\nu=P+1$ and the corresponding constant.
+For $N=0$, use $\nu=1$ and $D_0=\max\{1,L_x(H)\}$ by direct
+Lipschitz interpolation. Convexity of the reduced constraints and the anchor margin are additional
+promises, not consequences of follower convexity.
+\end{corollary}
+\begin{proof}
+At an original optimizer $x^*$, set
+$x_t=(1-t/\sigma)x^*+(t/\sigma)x_s$, for $0\le t\le\sigma$.
+It lies in $X_F$, has all reduced constraints at most $-t$, and moves
+by at most $t/\sigma$. Equation \eqref{eq:response-modulus-sharp}
+and \eqref{eq:upper-polynomial-lipschitz} bound its objective change
+by $D_0(t/\sigma)^{1/P}$. This proves the modulus.
+The algorithm uses the supplied margin; it does not silently solve an
+exact algebraic-sum comparison to certify the anchor.
+\end{proof}
+
+For a concrete independent-follower subclass, assume the increasing
+marginals are convex, $g_i(0)=0$, and the affine incentives are
+nonnegative throughout $X$. Then
+$z_i(x)=\min\{1,g_i^{-1}(\ell_i(x))\}$ is concave: the increasing
+inverse is concave and its constant extension above saturation preserves
+concavity. Thus $a_{j0}+a_j\trans x-\sum_iw_{ji}z_i(x)$ is convex
+for $w_{ji}\ge0$, including minimum weighted production constraints.
+The incentive sign matters: clipping a negative incentive to zero can
+destroy concavity. This example does not assert concavity under shared
+resources or aggregate coupling.
+
+\begin{corollary}[Reserve controls with uniform headroom]
+\label{cor:accuracy-reserve}
+Write the leader as $(u,s)\in X_u\times S_r$, with a fixed-dimensional
+rational reserve polytope $S_r\subseteq[0,1]^p$. Suppose the complete
+follower objective and constraints depend only on $u$, and at least one
+follower-feasible $u$ exists. For each feasible
+$u$, assume every $G_j(u,s,z(u))$ is convex in $s$, and there is a
+supplied $s_{\rm safe}\in S_r$ with uniform margin
+$G_j(u,s_{\rm safe},z(u))\le-\sigma$ for all $u,j$.
+Then \cref{cor:accuracy-tightening} applies with $\nu=1$ and
+$D_0=\max\{1,L_s(H)\}$, where the polynomial coefficient bound for
+reserve derivatives supplies $L_s(H)$.
+\end{corollary}
+\begin{proof}
+Keep the incentive component $u^*$ of an original optimizer and
+interpolate its reserve toward $s_{\rm safe}$. The follower response
+is unchanged. Convexity in the reserve gives margin $t$ at interpolation
+fraction $t/\sigma$, and the objective changes by at most
+$L_s(H)t/\sigma$. The safe reserve also supplies original feasibility
+whenever the follower-feasible $u$ set is nonempty.
+\end{proof}
+
+For affine rows $a_{j0}+a_j\trans u+c_j\trans z-R_js\le0$,
+uniform headroom can be certified conservatively by rational LP over
+the explicit polytope $X_{u,F}\times[0,1]^N$ with $s=s_{\rm safe}$.
+The matrix $R$ need not have a prescribed sign. For an objective
+$h(u)+w\trans s$, use $D_0=\max\{1,\norm{w}_1\}$. Reserves are
+actual model controls, such as external procurement, not artificial
+slacks inserted into an existing hard constraint. Their dimension counts
+toward the fixed leader dimension. The aggregate must also be independent
+of them. No convexity of the reduced constraints in $u$ is needed.
+
+\subsection{Why the feasibility qualifications are necessary}
+\label{subsec:accuracy-limits}
+
+\begin{example}[A strict point does not ensure inner convergence]
+\label{ex:accuracy-isolated-optimum}
+For $x,z\in[0,1]$, let
+\[
+ F_x(z)=z^2/2+z^4/4-z^3/6-xz,\qquad
+ g(z)=z+z^2(z-1/2).
+\]
+The marginal derivative is
+$g'(z)=3(z-1/6)^2+11/12>0$, so even uniform strong curvature holds.
+Impose the affine upper row $z(x)-x\le0$ and minimize $x$.
+Since $g(0)=0$, $g(1)=3/2$, and $x\in[0,1]$, the response is its
+unclipped inverse. Monotonicity gives
+\[
+ z(x)\le x\ \Longleftrightarrow\ x\le g(x)
+                  \ \Longleftrightarrow\ x^2(x-1/2)\ge0.
+\]
+Thus the feasible set is $\{0\}\cup[1/2,1]$ with optimum zero and
+strict feasible point one. Every positively tightened feasible leader
+has $x>1/2$. By continuity and strict feasibility for $x>1/2$,
+$V(t)\to1/2$ as $t\downarrow0$, so the original optimum is not
+approached. A strict point alone cannot justify an inner convergence
+or tightening-modulus claim.
+\end{example}
+
+\begin{example}[No rational exactly feasible leader]
+\label{ex:accuracy-irrational-feasibility}
+The follower cost $z^3/3-xz$ on the unit box gives $z(x)=\sqrt x$.
+The affine upper equality $z-x=1/8$ permits precisely
+\[
+                         x=3/8\pm\sqrt2/4.
+\]
+Both roots lie in $[0,1]$ and satisfy the unsquared equation, but both
+are irrational. Thus feasible rational leader output is impossible
+without qualifications, even with one leader and one follower.
+\end{example}
+
+Finally, constant incentives $a_i/M^2$, cubic local costs and upper
+weights $M$, with integer $M\ge\max_i a_i>0$, give the fixed upper
+value $\sum_i\sqrt{a_i}$. One exact upper inequality therefore
+contains sum-of-square-roots comparison. The accuracy algorithms do not
+resolve this exact arithmetic problem: outer constraints allow prescribed
+violation and exact inner feasibility uses stated margins. Numerical
+degree dependence is also essential by \cref{ex:sparse-power-output}.
+Neither these arithmetic limits nor the rational-output examples are
+claims that a convex follower cannot itself be approximated efficiently.

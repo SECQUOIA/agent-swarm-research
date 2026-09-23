@@ -1,0 +1,31 @@
+# R2 independent review 2
+
+**Verdict: clean. No major or minor correction identified.** The reorganization improves the connection between the scientific questions and the reported evidence without strengthening the method, formal coverage, or empirical conclusions beyond their established scope. The current source package matches the manuscript and includes the new appendix.
+
+I read the revision plan, R2 author report and validation record, reorganized Section 6, new Appendix B, Appendix A, introduction roadmap, README, both current evidence maps, generated accounting inputs, and source packaging script. I checked the memory description against the actual two-pass checker and the formal statements against the accepted coverage map. No peer reports were read and no work was delegated. I changed only this report. Unchanged experiments, software tests, Lean proofs, and bulk contents were not rerun or reread.
+
+## Scientific claims and protocol boundaries
+
+Section 6.1 gives the reader the principal measured capability, then defines the reference comparison and its limitations. It retains all 299 selected names, the seven load and three earlier screen exclusions, and the full 289 attempted denominator. The 203 separately accepted artifacts remain distinct from the 198 successful producer returns; four timeout survivors and one worker-error survivor explain the difference. The text explicitly identifies separate execution of the same checker, rather than implying an independently implemented second verifier.
+
+Reference proximity remains an exact signed comparison with an unverified decimal string, not an optimality certificate. The 46/80/25 uniform and 52/81/23 historical comparisons retain their separate populations. The stronger optimality examples require matching original-model witnesses. The 222-model catalogue is explicitly a descriptive union across protocols with matching model identity, and the appendix retains the separate repair denominators. Neither it nor the expected 204/18/67 V3 outcome is presented as a new uniform experiment.
+
+Section 6.2 separates exact invalid-step witnesses, failures of sufficient nonlinear tests, and original-variable feasibility audits. It preserves the local-only consequence of an invalid supplied proof step, the uncertainty about a globally valid cut rejected by a sufficient enclosure test, and the absence of an inferred internal solver cause. The 19 uniform replay rejections distinguish 18 proof/grammar failures from the post-proof rational-reporting failure. The new placement does not turn reporting failure into mathematical proof failure. Historical label corrections and all numerical audit details remain available in the main section.
+
+Appendix B preserves the requested versus actual wall-clock limits, fallback and deterministic artifact-selection policies, worker concurrency, solver thread requests, proof-completion defaults, external-check differences, hardware/software provenance, and generation/replay timing boundaries. Its full production and phase accounting make the shortened main discussion assessable. Interrupted calls have no imputed completion time. Moving this material does not obscure which protocol supports each result.
+
+## Costs, memory, and formal coverage
+
+The main cost discussion distinguishes generation elapsed time, separate replay elapsed time, accepted-record sums, and all-record sums. Historical external corroboration is kept separate from primary replay. The observations are expressly shared-machine costs, not serial elapsed times or an algorithmic speed comparison. The compressed collection size is not confused with uncompressed proof contents or the smaller representative core.
+
+The memory paragraph correctly includes the per-derivation index arrays used in the first pass, as well as live sparse rows, master data, input-line length, and rational sizes. It does not infer a peak-memory measurement from the machine's approximately 30 GiB capacity or claim that two-pass replay eliminates dependence on proof length. It also preserves the distinction between one-thread numerical search requests and proof completion's defaults.
+
+The positive examples, 161 tests, and executable audits remain supporting validation. Section 6 explicitly says the test count is not a formal proof and directs the reader to the separate Lean scope. Appendix A and the README continue to describe selected theorem checking with pinned dependencies; they do not assert formal validation of Python, interval computation, VIPR replay, or benchmark artifacts. No new empirical paragraph strengthens the accepted mathematical contract.
+
+## Independent current-source check
+
+I freshly extracted the archive to `/tmp/cert-minlp-r2-review2-bk3130dy/certified-minlp-paper` using the tar data filter. Its **479,937-byte** size and SHA-256 **`9eb0f355af6a4af38a2586541f1c12c4fb0dcac06abe1fff66546edb90b9fb1b`** match the current external index. All **49** content-manifest entries both pass their hashes and match the current working source bytes; the archive has **50** entries including the manifest. All **13** formal source-fingerprint entries pass.
+
+Every `\\input` in the main file and section sources resolves within the extracted package, including `sections/09-experimental-accounting.tex` and the relocated generated table inputs. The archive contains no PDF, stale bibliography/auxiliary, `.lake` cache, or internal process directory. The existing package script includes the new appendix without a missing inventory entry. The author independently built the extracted package and checked PDF text/bibliography identity; I did not duplicate that compilation because the fresh byte and required-input checks provide the distinct delivery confidence needed here.
+
+The introduction roadmap, appendix links, README reading route, and evidence maps agree with the actual Section 6 / Appendix A / Appendix B organization. The source archive carries the current maps and documentation while the unchanged experimental archive identifiers remain explicit. No stale source-package contents, lost protocol qualification, unsupported memory claim, or formal/executable conflation was identified. No correction is requested before proceeding to the final integrated revision review.
