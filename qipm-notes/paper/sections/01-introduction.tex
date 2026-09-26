@@ -1,49 +1,47 @@
 \section{Introduction}
 \label{sec:introduction}
 
-Sparse linear and semidefinite programs are an attractive test case for
-quantum optimization.  Their data may be queried or applied without reading a
-dense matrix, and an interior-point method reduces optimization to a sequence
-of structured linear systems.  A quantum linear-system solver (QLS) can, in
-favorable access models, prepare a state proportional to a Newton direction
-without first writing every coordinate.  These observations motivate a simple
-question:
+An interior-point method (IPM) for a linear or semidefinite program follows
+the central path and reduces optimization to a sequence of structured Newton
+linear systems.  A quantum interior-point method (QIPM) performs each solve
+with a quantum linear-system (QLS) solver, which, in favorable access models,
+prepares a quantum state proportional to the Newton direction without writing
+down its coordinates.  Sparse problems look like a natural target, because
+their data can be queried without reading a dense matrix.  This paper asks:
 \begin{quote}
 Do quantum interior-point methods beat classical interior-point methods on
 sparse problems?
 \end{quote}
-The word ``sparse'' does not by itself determine the answer.  An input matrix
-can be sparse while its normal equations, null-space basis, factorization, or
-inverse is dense.  Conversely, a matrix that looks unfavorable through its
-condition number can have a clustered spectrum that a classical Krylov method
-uses efficiently.  A quantum state proportional to a direction is not yet a
-classical iterate, and a preconditioned matrix oracle is not free merely
-because the matrix it represents is well conditioned.  The relevant
-comparison must therefore name the Newton formulation, the input oracle, the
-block-encoding normalization, the right-hand side, the requested output, and
-the classical solver that receives the same structure.
+Sparsity alone does not decide the answer.  A sparse input matrix can have
+dense normal equations, null-space basis, factorization, or inverse.
+Conversely, a matrix with a large condition number can have a
+clustered spectrum that a classical Krylov method exploits.  A quantum state
+proportional to a direction is not a classical iterate, and access to a
+preconditioned matrix is not free just because that matrix is well
+conditioned.  A fair comparison must therefore specify the Newton system, the
+input oracle, the normalization of the block encoding, the right-hand side,
+the required output, and the classical solver that is given the same
+structure.
 
-This paper develops that comparison at three levels.  At the \emph{geometric}
-level, we ask which central-path conditioning is inherent in the optimization
-problem and which can be changed by selecting another barrier.  At the
-\emph{access-model} level, we ask what a classical or quantum linear solver can
-extract from the same spectral structure and what it costs to construct the
-operator and right-hand side it receives.  At the \emph{interface} level, we
-ask whether the output of one solve can be recovered, certified, and used to
-form the next solve.  The resulting picture is neither a blanket quantum
-speedup nor a blanket no-go theorem.  It is a set of sharp laws and scoped
-frontiers that identify where either conclusion would still have to be
-proved.
+We study the question at three levels: \emph{geometry} (how much of the
+ill-conditioning of the central path is forced by the problem rather than by
+the barrier), \emph{access models} (what classical and quantum linear solvers
+can extract from the same spectral structure, and what their inputs cost to
+build), and \emph{interfaces} (whether the output of one solve can be read
+out, checked, and used to set up the next).  The answer is neither a general
+quantum speedup nor a general impossibility theorem.  We prove sharp bounds
+at each level, state the classes of methods they cover, and so show where a
+speedup or a lower bound would still have to be proved.
 
 \subsection{State of play}
 \label{sec:introduction-state-of-play}
 
-The first generation of QIPMs inserted a QLS into a classical path-following
-framework.  Kerenidis and Prakash treated LPs and SDPs; Casares and
+The first QIPMs inserted a QLS solver into a classical path-following
+method.  Kerenidis and Prakash treated LPs and SDPs; Casares and
 Martin-Delgado developed a predictor--corrector LP method; Augustino et al.
-gave conic and semidefinite variants; and the Terlaky-group line developed
-inexact feasible, infeasible, orthogonal-subspace, and refinement-based
-methods
+gave conic and semidefinite variants; and work from Terlaky's group
+developed inexact feasible, infeasible, orthogonal-subspace, and
+iterative-refinement methods
 \cite{kerenidis2020-quantum-interior-point-method-lps,
 casares2020-quantum-interior-point-predictor-corrector,
 augustino2023-quantum-interior-point-methods-semidefinite,
@@ -53,601 +51,602 @@ augustino2022-quantum-interior-point-methods-for,
 wu2023-inexact-feasible-quantum-interior-point,
 mohammadisiahroudi2024-efficient-use-quantum-linear-system,
 mohammadisiahroudi2025-inexact-feasible-interior-point-method}.
-These methods made the potential role of QLS state preparation precise, but
-their ledgers also exposed condition, normalization, tomography, QRAM, and
-classical-update costs.  Dalzell et al. emphasize the same end-to-end
-accounting issues in their QIPM review and resource analysis
+Their cost analyses exposed the costs of conditioning, block-encoding
+normalization, tomography, QRAM, and classical updates, which Dalzell et al.
+also stress in their QIPM review and resource analysis
 \cite{dalzell2025-quantum-interior-point-methods,
 dalzell2023-end-end-resource-analysis-quantum}.
 
-Two newer lines change the architecture rather than merely improving the
-linear solver.  The quantum central-path method of Augustino, Leng,
+Two newer lines change the algorithm itself rather than only the linear
+solver.  The quantum central-path method (QCPM) of Augustino, Leng,
 Nannicini, Terlaky, and Wu uses Hamiltonian evolution and potential
-evaluation rather than repeated QLS tomography
+evaluation instead of repeated QLS solves followed by tomography
 \cite{augustino2024-quantum-central-path-algorithm-linear}.  The
-self-concordant Schr\"odinger-operator program of Gribling et al. likewise
-seeks optimization without a Newton condition-number factor
-\cite{gribling2025-self-concordant-schrodinger-operators-spectral}.  These
-approaches show why a conditioning theorem must be scoped to a named Newton
-matrix: a lower bound on a barrier Hessian is not a lower bound on every
-quantum optimization architecture.
+self-concordant Schr\"odinger-operator approach of Gribling et al. likewise
+aims to optimize without a factor that depends on the Newton condition number
+\cite{gribling2025-self-concordant-schrodinger-operators-spectral}.  Hence a
+conditioning theorem must name the Newton matrix it concerns: a lower bound
+on the condition number of a barrier Hessian is not a lower bound for every
+quantum optimization algorithm.
 
-Apers and Gribling take a different condition-number-free route.  Their tall
-LP algorithms use quantum spectral approximation and local-norm estimation,
-return an explicit solution, and prove a row-query separation when the number
-of constraints is sufficiently larger than the variable dimension
-\cite{apers2026-quantum-speedups-linear-programming-interior}.  Within the
-QIPM evidence compared here, this is the only proved asymptotic
-quantum--classical separation.  It is a row-query separation under a succinct
-row oracle, not automatically a wall-clock separation from the best
-\(\nnz\)-aware sparse solver.  Its requirements and high powers of the
-variable dimension also make it a specific positive regime rather than a
-generic consequence of sparsity.
+Apers and Gribling avoid the condition number in a different way.  Their
+algorithms for tall LPs use quantum spectral approximation and local-norm
+estimation, return an explicit solution, and prove a separation in the number
+of row queries when the number of constraints is sufficiently larger than the
+number of variables
+\cite{apers2026-quantum-speedups-linear-programming-interior}.  Among the
+QIPM results compared here, this is the only proved asymptotic
+quantum--classical separation.  It concerns queries to a succinct row
+oracle, not automatically running time against the best classical sparse
+solver whose cost scales with \(\nnz\), and its assumptions and high powers
+of the number of variables make it a specific favorable regime, not a
+general consequence of sparsity.
 
-The QLS primitive itself has evolved from HHL through the
-Childs--Kothari--Somma precision improvement and QSVT pseudoinversion
+The QLS primitive itself has evolved from HHL through the improved precision
+dependence of Childs, Kothari, and Somma to pseudoinversion by quantum
+singular value transformation (QSVT)
 \cite{harrow2009-quantum-algorithm-linear-systems-equations,
 andrew2017-quantum-algorithm-systems-linear-equations,
 andras2019-quantum-singular-value-transformation-beyond}.  Orsucci and Dunjko
-proved access-sensitive upper and lower bounds for positive-definite systems.
-Mori et al. proved an \(\Omega(\kappa\sqrt{s})\) sparse-access lower bound at
-fixed constant error and restated an \(\Omega(\kappa\log(1/\epsilon))\)
-constant-sparsity bound from earlier unpublished work of Harrow and Kothari.
-Dalzell, Li, and Su introduced truncation and filtering parameters that can be
-smaller than a worst-case condition number
+proved upper and lower bounds for positive-definite systems that depend on the
+access model.  Mori et al. proved an \(\Omega(\kappa\sqrt{s})\) lower bound
+for sparse access at fixed constant error, and restated an
+\(\Omega(\kappa\log(1/\epsilon))\) bound for constant sparsity from earlier
+unpublished work of Harrow and Kothari.  Dalzell, Li, and Su (DLS)
+introduced truncation and filtering parameters that depend on the right-hand
+side and can be smaller than the worst-case condition number
 \cite{orsucci2021-on-solving-classes-of-positive,
 mori2026-sparsity-dependent-complexity-lower-bound,
-dalzell2026-faster-quantum-linear-system-solver}.  Somma and de Wolf's related
-plain-versus-sum-of-squares separation concerns guided ground-state energy,
-not QLS, and we keep that distinction explicit in
-\cref{sec:spectra-quantum}
-\cite{somma2026-optimal-lower-bound-ground-state-energy}.  These results make
-``the QLS cost'' an incomplete phrase: cost depends on whether one has plain
-matrix access, factor access, sparse-entry access, or a stronger supplied
-oracle, and on how the right-hand side overlaps the hard spectral subspace.
+dalzell2026-faster-quantum-linear-system-solver}.  Somma and de Wolf's
+related separation between plain and sum-of-squares access concerns guided
+ground-state energy estimation, not QLS (see \cref{sec:spectra-quantum})
+\cite{somma2026-optimal-lower-bound-ground-state-energy}.  Hence the cost of
+a QLS solve depends on the access (plain matrix, factor, sparse-entry, or a
+stronger oracle) and on how much of the right-hand side lies in the
+eigenspaces that are hard to invert.
 
-Tomography is the second standard bottleneck.  A path-following method usually
-needs a classical direction to update all primal and dual coordinates, while
-a QLS naturally returns only a normalized state.  State-preparation-unitary
-tomography improves the dependence on readout accuracy, but still scales with
-the direction dimension
+Tomography is the second standard bottleneck.  A path-following method
+usually needs a classical direction to update all primal and dual
+coordinates, whereas a QLS solver returns only a normalized quantum state.
+Tomography with state-preparation unitaries improves the dependence on
+accuracy, but still scales with the dimension of the direction
 \cite{mohammadisiahroudi2023-exponentially-more-precise-tomography-for,
-joran2023-quantum-tomography-state-preparation-unitaries}.  Avoiding that cost
-requires a different output contract and, crucially, a way to generate the
-next changing diagonal or Newton operator from the compressed representation.
-The interface cannot be removed by renaming a state as an iterate.
+joran2023-quantum-tomography-state-preparation-unitaries}.  Avoiding this
+cost requires a different kind of output and a way to build from it the next
+Newton matrix, whose diagonal scaling changes at every iteration.
 
-Classical sparsity exploitation sets a demanding baseline.  Practical IPMs
-choose between normal equations and augmented systems, control fill, reuse
-symbolic factorizations and preconditioners, and adapt inner tolerances
+Classical methods that exploit sparsity set a demanding baseline.  Practical
+IPMs choose between normal equations and augmented systems, control fill-in,
+reuse symbolic factorizations and preconditioners, and adapt the tolerances
+of inner solves
 \cite{wright1997-primal-dual-interior-point-methods,
 jacek2012-interior-point-methods-25-years,
 gondzio2023-general-purpose-preconditioning-regularized-interior-point}.
-For bounded-treewidth structure, supplied elimination orders and specialized
-IPMs can be nearly linear in the problem size
+For problems of bounded treewidth, specialized IPMs with supplied elimination
+orders run in nearly linear time in the problem size
 \cite{dong2020-a-nearly-linear-time-algorithm,
-gu2022-a-faster-small-treewidth-sdp}.  A sparse-QIPM claim must therefore be
-compared with a structure-aware factorization or Krylov method, not with dense
-Gaussian elimination by default.
+gu2022-a-faster-small-treewidth-sdp}.  A claimed sparse QIPM speedup must
+therefore be compared with a structure-aware factorization or Krylov method,
+not with dense Gaussian elimination.
 
 \subsection{What a matched comparison counts}
 \label{sec:introduction-ledgers}
 
-The algorithmic literature above cannot be compared by retaining only the
-dimension and the sparsity of the original constraint matrix.  Its QIPM lines
-use different Newton formulations, state-preparation primitives, refinement
-schemes, and outputs.  We use a raw-query/QRAM-write ledger throughout the
-paper, counting calls after the oracle is precisely defined and writes needed
-to build or refresh QRAM.  We pair it with qualitative end-to-end audits of
-construction, reuse, recovery, and output.  Gate and arithmetic work are
-populated only for selected results, so these audits are not a uniform
-wall-clock ledger.  Neither accounting view substitutes for the other.
+The QIPMs above use different Newton systems, state-preparation primitives,
+refinement schemes, and outputs, so dimension and sparsity alone do not
+compare them.  Throughout the paper we count raw queries (calls to a
+precisely defined input oracle) and the QRAM writes needed to build or
+refresh QRAM, and we give qualitative end-to-end accounts of construction,
+reuse, recovery, and output.  Gate and arithmetic costs are given only for
+selected results, so these accounts are not a uniform running-time
+analysis.
 
-\paragraph{From sparse input to the solved operator.}
-For an LP, a diagonal scaling of a sparse constraint matrix may produce a
-normal equation \(AD^2A^\top\), an augmented KKT matrix, or an
-orthogonal-subspace system.  Constant row sparsity of \(A\) need not imply
-constant sparsity of any of these objects: one dense column creates a clique
-in the normal-equation graph, and a null-space basis can be dense.  The
-opposite can also occur, since a carefully chosen basis or augmented
-formulation can preserve structure that normal equations lose.  Consequently
-our notation distinguishes \(\nnz(A)\), the sparsity \(s_H\) of the actual
-system \(H\), and the access description of a factor \(G\) when
-\(H=G^\dagger G\); the formal definitions are in
-\cref{sec:newton-formulations,sec:prelim-quantum-access}.  A claim that starts
-from sparse \(A\) must prove the access properties of the operator it actually
-solves.
+\paragraph{From sparse input to the solved matrix.}
+For an LP, a diagonal scaling of a sparse constraint matrix \(A\) leads to
+the normal equations with matrix \(AD^2A^\top\), to an augmented KKT system,
+or to an orthogonal-subspace system.  Constant row sparsity of \(A\) does not
+imply constant sparsity of any of these matrices: one dense column of \(A\)
+creates a clique in the graph of the normal equations, and a null-space basis
+can be dense.  Conversely, a well-chosen basis or augmented system can keep
+structure that the normal equations lose.  Our notation therefore
+distinguishes \(\nnz(A)\), the sparsity \(s_H\) of the matrix \(H\) actually
+solved, and the access to a factor \(G\) when \(H=G^\dagger G\)
+(\cref{sec:newton-formulations,sec:prelim-quantum-access}).  A claim that
+starts from a sparse \(A\) must prove the access properties of the matrix it
+actually solves.
 
-\paragraph{Condition and normalization.}
-A block encoding presents \(H/\alpha_H\), so the inversion scale is governed
-by \(\alpha_H\lVert H^{-1}\rVert\), not by the spectral condition number in
-isolation.  Rescaling \(H\) changes neither this product nor the underlying
-problem.  Multiplying separately encoded factors can multiply their
-normalizations, and forming a perfect preconditioned product can require the
-same input information that the original solve was meant to discover.  The
-factor, congruence, and parity results of \cref{sec:preconditioning} make these
-exchanges exact on representative families.  On the classical side, an
-effective preconditioner also has a construction and application cost, but it
-can often be reused and can exploit entries already stored explicitly.  A
-matched comparison prices both constructions rather than granting either side
-an ideal inverse oracle.
+\paragraph{Condition number and normalization.}
+A block encoding of \(H\) is a unitary whose upper-left block is
+\(H/\alpha_H\) (\cref{def:block-encoding}).  The cost of inverting \(H\)
+through it is governed by \(\alpha_H\lVert H^{-1}\rVert\), not by the
+spectral condition number alone, and rescaling \(H\) changes neither this
+product nor the problem.  Multiplying separately encoded factors can multiply
+their normalizations, and forming a perfectly preconditioned matrix can
+require the same input information that the solve was meant to find
+(\cref{sec:preconditioning}).  A classical
+preconditioner also costs something, but it can often be reused and can use
+explicitly stored entries.  A matched comparison counts preconditioner costs
+on both sides and gives neither side a free inverse oracle.
 
 \paragraph{Right-hand sides and solve accuracy.}
-Worst-case QLS complexity is not always the right estimate for a Newton step.
-The direction depends on a particular RHS, and truncation can ignore a hard
-eigenspace only if the requested output error permits losing its solution
-mass.  A residual guarantee, a normalized-state error, and a coordinatewise
-direction error are different contracts.  They are connected by
-condition-dependent inequalities, so comparing a quantum state-error bound
-with a classical residual tolerance without conversion is not meaningful.  The
-coupling and spectral-measure analysis in \cref{sec:beyond-kappa} evaluates
-these distinctions on exact IPM systems, while the output contracts of
-\cref{sec:prelim-output-contracts} state which error is being promised.
+The Newton direction solves the system for one particular right-hand
+side (RHS), so worst-case QLS complexity is not always the right estimate.
+A solver may ignore a hard eigenspace only if the allowed
+output error permits losing the part of the solution in that eigenspace.  A
+residual bound, a bound on the error of the normalized state, and a bound on
+the coordinatewise error of the direction are different requirements on the
+output, which we call \emph{output requirements}
+(\cref{sec:prelim-output-contracts}).  They are related by inequalities that
+involve the condition number, so a quantum state-error bound cannot be
+compared with a classical residual tolerance without converting one into the
+other.  \Cref{sec:beyond-kappa} evaluates these distinctions on exact IPM
+Newton systems.
 
 \paragraph{State preparation and readout.}
-Under normalized operator and RHS access, a QLS call produces a quantum state
-proportional to a solution.  A hybrid QIPM that updates a classical iterate
-must then estimate a full vector, recover its norm and scale, and ensure that
-the resulting step satisfies the outer neighborhood condition.  Repeating the
-state preparation for tomography repeats every nonpersistent oracle and RHS
-cost.  A method that requests only an observable or compact certificate can
-avoid full readout, but then it must show how that object is sufficient for
-optimization and for constructing the next iteration.  The distinction among
-classical-vector, compact, state, density, coordinate-oracle, and heralded
-outputs in \cref{sec:prelim-output-contracts} is designed to prevent a proof
-for one interface from being silently reused for another.
+A hybrid QIPM that updates a classical iterate must estimate the full
+solution vector from QLS output states, recover its norm and
+scale, and check that the step stays in the neighborhood of the central path
+required by the outer method.  Each state preparation for tomography repeats
+every oracle
+call and RHS preparation whose result is not stored.  A method that requests
+only an expectation value or a compact
+output avoids full readout, but must show that this output suffices for
+optimization and for setting up the next iteration.
+\Cref{sec:prelim-output-contracts} distinguishes classical-vector, compact,
+state, density, coordinate-oracle, and heralded outputs, so that a proof for
+one kind of output is not silently reused for another.
 
 \paragraph{The classical comparator.}
-For a sparse direct method, the per-step cost is controlled by realized fill,
-numerical factorization, and triangular solves, with a symbolic ordering
-normally reused.  Multiple predictor or corrector RHSs can reuse the same
-factorization.  For a Krylov method, the relevant costs are matrix--vector and
-preconditioner applications times a spectrum- and tolerance-dependent
-iteration count.  Clustered eigenvalues can make that count far smaller than
-a worst-case \(\sqrt\kappa\) estimate, as
-\cref{prop:two-cluster-cg} demonstrates.  Specialized graph, treewidth,
-block-angular, and low-rank structure can improve the baseline further.  We
-therefore do not compare a quantum query count directly with dense cubic
-arithmetic or treat the act of writing a dense classical direction as the
-only classical cost.
+For a sparse direct method, the cost per iteration is set by the actual
+fill-in, the numerical factorization, and the triangular solves; the
+symbolic ordering is normally reused, and several predictor or corrector
+right-hand sides can share one factorization.  For a Krylov method, the cost
+is the number of matrix--vector products and preconditioner applications,
+times an iteration count that depends on the spectrum and the tolerance;
+clustered eigenvalues can make this count far smaller than the worst-case
+\(\sqrt\kappa\) estimate (\cref{prop:two-cluster-cg}).  Graph, treewidth,
+block-angular, and low-rank structure can improve the classical baseline
+further.  We therefore compare quantum query counts neither with dense cubic
+arithmetic nor with the cost of writing a dense classical direction alone.
 
-\paragraph{Setup, refresh, and trajectory reuse.}
-One-step costs do not automatically multiply by the IPM iteration count.  A
-fixed sparse input can be read once, a symbolic factorization can persist,
-and a lazy oracle can combine stored data with a changing scalar path
-parameter.  Conversely, a QRAM or block encoding of changing primal and slack
-diagonals may require per-step writes, and tomography may be repeated at every
-step.  The distinction is formalized by the amortized accounting contract in
-\cref{def:amortized-accounting}.  Our online direct-sum lower bound applies
-only when new oracle information is genuinely fresh
-\cref{thm:prec-online-direct-sum}; the caching-ceiling argument in
-\cref{sec:preconditioning-lazy} shows why no unqualified
-\(T\)-times-one-step claim follows for a static LP.
+\paragraph{Setup, refresh, and reuse along the path.}
+One-step costs do not automatically multiply by the number of IPM
+iterations: a fixed sparse input can be read once, a symbolic factorization
+kept, and an oracle can combine stored data with the current scalar path
+parameter.  Conversely, a QRAM or block encoding of
+the changing primal and slack diagonals may need new writes, and tomography
+may be repeated, at every step.  \Cref{def:amortized-accounting} formalizes
+this accounting.  Our lower bound for a sequence of solves
+(\cref{thm:prec-online-direct-sum}) applies only when each round supplies new
+oracle information; the caching argument in \cref{sec:preconditioning-lazy}
+shows why, for a fixed LP, no general bound of the form \(T\) times the
+one-step cost follows.
 
 \paragraph{Query separation versus time separation.}
 Raw coefficient, sparse-entry, row, block, QRAM, and preconditioned-product
-queries reveal different amounts of information.  A sublinear row-query
-algorithm can be a genuine oracle separation even when generating a queried
-row or performing local arithmetic prevents a time advantage.  Conversely,
-an explicitly stored sparse matrix may have no interesting input-query cost,
-while its repeated numerical solves remain expensive.  The Apers--Gribling
-result is positive in its declared row-query model; our parity and holonomy
-lower bounds are negative in their declared raw local-query models.  Neither
-statement changes models for the sake of the comparison.  This discipline is
-why the later theorems often conclude with a setup--solve--recovery inequality
-rather than with a single condition-number exponent.
+queries reveal different amounts of information.  Sublinearly many row queries
+can give a real query separation even when generating a queried row or the
+local arithmetic prevents a time advantage; conversely, an explicitly stored
+sparse matrix may have negligible query cost while repeated solves with it
+remain expensive.  The Apers--Gribling result is positive in its row-query model;
+our parity and holonomy lower bounds are negative in their raw local-query
+models; neither carries over to another model without proof.  This is why
+many later theorems bound the total of setup, solve, and recovery costs
+rather than give a single power of the condition number.
 
-\subsection{Answer in outline}
+\subsection{Main results}
 \label{sec:introduction-answer}
 
-Our first answer is that central-path conditioning is geometry before it is
-barrier design.  For a compact feasible slice, the diameter of an objective
-sublevel set and the length of its longest chord control the extreme
-eigenvalues of every self-concordant barrier Hessian.  The sublevel chord law
-in \cref{thm:sublevel-chord-law} gives a condition-number floor at a fixed
-objective gap, and \cref{thm:canonical-achievability} shows that the canonical
-log and log-det barriers attain that floor up to explicit instance constants.
-The conclusion is minimax and gap matched: changing the barrier cannot in
-general remove the divergence.  It does not say that every optimum is ill
-conditioned, nor does it cover a method that avoids barrier-Newton solves.
+Let the feasible set \(P\) be compact and convex, let the objective
+\(c^\top x\) be linear with optimal value \(\mathrm{OPT}\), and let \(F\) be a
+\(\nu_F\)-self-concordant barrier for \(P\).  A central point
+\(x=x_F(\mu)\) has objective gap \(g=c^\top x-\mathrm{OPT}\).  Let \(W\) have
+orthonormal columns spanning the directions of the feasible affine subspace,
+and let \(c_{\mathcal V}\) be the projection of \(c\) onto them.  The reduced
+Hessian is \(W^\top\nabla^2F(x)W\), with condition number \(\kappa_{\rm red}\)
+(\cref{def:reduced-kappa}), and \(D(g)\) is the diameter of the sublevel set
+\(\{y\in P:c^\top y\leq\mathrm{OPT}+g\}\).
 
-Our second answer is that a large condition number does not determine the
-relative classical and quantum costs.  Degenerate LP log-barrier Hessians
-split into two intervals with bounded internal ratios
-\cref{prop:two-cluster-hessian}.  A classical residual polynomial can exploit
-the empty interval, and \cref{prop:two-cluster-cg} gives polylogarithmic
-iteration dependence on the inter-cluster separation.  Quantum polynomial
-transformations must also remain bounded on the domain imposed by their
-access model.  Under plain block-encoding access the worst-case QLS cost is
-\(\Thetatilde(\kappa)\), even for two-point clusters when
-\(N_{\rm QLS}\gtrsim\kappa\).  A norm-tight factor presentation
-unconditionally has a \(\Thetatilde(\sqrt\kappa)\) polynomial route in its
-model; only the corresponding end-to-end solve needs the overlap hypotheses
-in \cref{thm:quantum-cluster-obstruction}.  On-path right-hand sides can be
-much easier still: \cref{prop:newton-rhs-alignment,cor:top-window-solve} show
-that the exact central-path right-hand side has \(O(\mu^2)\) weak-cluster
-fraction, so a top-window solve meets the fixed relative-residual contract
-once the spectral gap is resolved.
+Our first result is that part of the ill-conditioning of the central path is
+forced by geometry, whatever the barrier.  The sublevel chord law
+(\cref{thm:sublevel-chord-law}) states that at every exact central point
+\(\kappa_{\rm red}\geq(D(g)\norm{c_{\mathcal V}}_2/(2C_Fg))^2\), where
+\(C_F=\nu_F+2\sqrt{\nu_F}\).  \Cref{thm:canonical-achievability} shows that
+the canonical log and log-det barriers attain this bound at equal objective
+gap, up to explicit instance-dependent factors, provided the dual slack stays
+bounded on the tail of the path.  Thus no choice of barrier can in general
+remove the divergence.  Its rate depends on the geometry of the sublevel
+sets: every barrier has \(\kappa_{\rm red}=\Omega(g^{-2})\) when the optimal
+face has positive dimension, whereas the canonical log barrier has
+\(\kappa_{\rm red}=\Theta(1)\) at a unique LP vertex, even a degenerate one
+(\cref{cor:conditioning-regimes}).  The result does not cover methods that
+avoid barrier Newton solves.
 
-This classical--quantum contrast is not paradoxical.  CG is charged for
-matrix--vector products and can place roots in spectral gaps.  QSVT is charged
-for a bounded transformation of a supplied normalized operator, and the
-normalization and symmetric-domain constraints remain part of the problem.
-The comparison reverses the naive view that a large \(\kappa\) is always bad
-for the classical method and automatically favorable to a quantum method.
-It also motivates the instance-selection laws of
-\cref{sec:beyond-kappa}: one should measure right-hand-side coupling and
-spectral mass, not select a solver from \(\kappa\) alone.
+Our second result is that a large condition number does not determine the
+relative classical and quantum costs.  Near the optimum of a degenerate LP,
+the eigenvalues of the reduced log-barrier Hessian lie in two intervals, each
+with a bounded ratio of endpoints, whose separation grows as
+\(\Theta(\mu^{-2})\) (\cref{prop:two-cluster-hessian}).  Conjugate gradients
+can place roots of its residual polynomial in the gap, so its iteration
+count is polylogarithmic in this separation (\cref{prop:two-cluster-cg}).
+QSVT, by contrast, applies a polynomial to a normalized operator, and the
+polynomial must stay bounded on the whole
+interval allowed by the access model, not only at the eigenvalues.
+For block encodings normalized at the operator norm (norm-tight encodings),
+plain block-encoding access has worst-case QLS cost
+\(\Thetatilde(\kappa)\), even for two-point clusters, when
+\(N_{\rm QLS}\gtrsim\kappa\); the lower bound is due to Orsucci and Dunjko.
+With norm-tight factor access \(H=G^\dagger G\), there is always a
+polynomial transformation whose degree times amplitude bound (its maximum
+absolute value on the allowed interval) is \(\Thetatilde(\sqrt\kappa)\); only
+the corresponding end-to-end solve needs the overlap assumptions in
+\cref{thm:quantum-cluster-obstruction}.  The right-hand sides that occur on
+the central path are easier still: the exact central-path right-hand side
+has only an \(O(\mu^2)\) fraction of its norm on the cluster of small
+eigenvalues (\cref{prop:newton-rhs-alignment,cor:top-window-solve}).  Hence,
+for a fixed relative-residual tolerance \(\eta\), once \(\mu=O(\sqrt\eta)\),
+a solve that inverts only the cluster of large eigenvalues meets this
+tolerance at a cost independent of \(\kappa\).  A solver should therefore be
+chosen by how the right-hand side couples to the small eigenvalues and how
+its spectral mass is distributed, not by \(\kappa\) alone
+(\cref{sec:beyond-kappa}).
 
-Our third answer is that the decisive lower bounds often live outside the
-linear solve.  The LP constructions of \cref{sec:lp-hardness} can make the
-reduced Newton geometry condition one while hiding a parity-dependent affine
-translation or original-coordinate direction.  The SDP constructions of
-\cref{sec:sdp-hardness} separate intrinsic value information, Schur solves,
-KKT access, and recovery.  The preconditioning results of
-\cref{sec:preconditioning} show product laws: improving spectral condition
-can worsen factor normalization or physical-state sensitivity, and a state
-from one solve need not provide a coordinate oracle for the next.  The right
-unit of analysis is therefore a complete setup--load--solve--recover--output
-ledger.
+Our third result is that the decisive lower bounds often concern loading and
+recovery rather than the linear solve.  In the raw sparse coefficient model
+(\cref{def:raw-sparse-access}), the positions of the nonzero coefficients are
+public and each query reveals one hidden sign.  The LP families of
+\cref{sec:lp-hardness} include ones whose reduced Newton matrices have
+condition number one, yet the parity of the hidden signs determines either an affine offset
+of the solution or the Newton direction in the
+original coordinates, and preparing that direction as a quantum state needs
+a number of queries linear in the problem size.  The SDP families of
+\cref{sec:sdp-hardness} show that the optimal value, Schur-complement solves,
+access to the KKT matrix, and recovery of the solution can have very
+different query costs.  By the product bounds of
+\cref{sec:preconditioning}, improving the spectral condition number can
+worsen the normalization of the factor or the
+sensitivity of recovering the physical state, and a state produced by one
+solve need not provide the coordinate oracle needed by the next.
 
-Condensation supplies a complementary positive and negative example.  A
-shared trace budget drives winner-take-all mass onto the lowest-cost PSD
-block.  That mass simultaneously controls reduced-Hessian conditioning,
-trace-distance visibility, and the query cost of state preparation.  The
-transition has matching lower and upper query bounds on a bounded-incidence
-holonomy SDP, while small-success search gives a tight accuracy curve on its
-proved domain; the \(\delta=o(k/G)\) sliver and the internal-state
-\(\eta_{\rm int}\)-channel remain open
-\cref{sec:state-conversion-open}.  Thus output hardness is not inferred from
-condition alone: it is proved through a visible, decodable output contract.
+Condensation, the concentration of the trace of the central point on a
+single block, has both a positive and a negative side.  Consider \(G\)
+positive semidefinite blocks coupled by a single trace constraint, one
+winning block and \(G-1\) identical losing blocks with fixed
+dimension and spectral gaps, and the log-det central point at path
+parameter \(\tau=\alpha/G\) (the \(\mu\) of \cref{def:central-path}).  As
+\(G\to\infty\), the trace on the block whose
+cost matrix has the smallest eigenvalue (the winner mass) tends to a positive
+constant when \(\alpha\) is below a critical value \(\alpha_*\), and to zero
+at and above \(\alpha_*\) (\cref{thm:condensation-threshold}).  The winner
+mass controls at once the reduced-Hessian condition number, the trace
+distance between the central state and a public reference state that does
+not depend on the hidden input, and the query cost of preparing the state.
+On a bounded-incidence holonomy SDP whose \(G\) groups each hide the parity
+of \(N\) signs, the transition comes with matching query bounds; for
+example, estimating the optimal value costs
+\(\Theta(N\sqrt G)\) quantum queries.  For preparing a central state with
+\(k\) winners to trace distance \(\varepsilon\), we prove query bounds, as
+functions of \(\varepsilon\), that match up to logarithmic factors on the
+domain of \cref{cor:sc-s2}; the range where the margin
+\(\delta=p-\varepsilon\) between the winner mass \(p\) and the allowed error
+is \(o(k/G)\), and the effect of a discrepancy \(\eta_{\rm int}\) between
+internal states of losing blocks, remain open
+(\cref{sec:state-conversion-open}).  Output hardness is thus proved for an
+explicit output requirement, through a public measurement that decodes the
+hidden information, not inferred from the
+condition number.
 
-Finally, our no-go results are frontier theorems, not universal
-impossibilities.  Convex mixtures, cut resistance, bounded-arity Walsh rows,
-symmetry work identities, scalar congruences, and state-interface products
-rule out the natural gadget classes to which their hypotheses apply.  The
-section records the five escape routes in \cref{sec:frontier-synthesis}.  The
-positive modules of
-\cref{sec:positive-modules} inhabit some of those routes, but remain
-conditional and per-step: they require stable geometry, explicit access,
-compressed output, or a low-dimensional border.  No section silently upgrades
-one such module to an end-to-end sparse-QIPM advantage.
+Finally, our impossibility results cover stated classes of constructions and
+methods; they are not universal.  Convex mixtures, cut and resistance bounds,
+bounded-arity Walsh rows, symmetry work identities, scalar congruences, and
+products for state interfaces rule out the hardness constructions (gadgets)
+that satisfy their hypotheses, and \cref{sec:frontier-synthesis} lists five
+ways to escape them.  The positive
+modules of \cref{sec:positive-modules} take some of these routes, but they
+are conditional and apply per step: they need stable geometry, explicit
+access, compressed output, or a low-dimensional border.  No section combines
+them into an end-to-end sparse-QIPM advantage.
 
 \subsection{Contributions}
 \label{sec:introduction-contributions}
 
-The technical contributions follow the paper's order.  Each item names the
-result that supports its headline and the boundary under which it should be
-read.
+The technical contributions follow the order of the paper.
 
 \begin{enumerate}[leftmargin=*]
- \item \textbf{Universal conditioning geometry (\cref{sec:conditioning}).}
- We prove minimum-eigenvalue rigidity and the sublevel chord law for every
- self-concordant barrier
- \cref{thm:lambda-min-rigidity,thm:sublevel-chord-law}, sharpen it to a
- width-by-width spectral sandwich \cref{thm:width-spectrum-rigidity}, and
- show canonical LP and product-SDP barriers attain the resulting floor up to
- an explicit gap-matched factor \cref{thm:canonical-achievability}.  The
- conditioning dictionary includes positive-dimensional optimal faces,
- degenerate vertices, curved optima, singularity-degree exponents, and
- approximate centrality
- \cref{cor:conditioning-regimes,cor:fractional-conditioning-laws,cor:near-degeneracy-plateau,cor:approximate-centrality-transfer}.
+ \item \textbf{Conditioning geometry for every barrier (\cref{sec:conditioning}).}
+ For every self-concordant barrier, we prove the lower bound
+ \(\lambda_{\min}\geq1/\ell(x)^2\) on the reduced Hessian at every interior
+ point \(x\), where \(\ell(x)\) is the length of the longest segment from
+ \(x\) within its sublevel set (\cref{thm:lambda-min-rigidity}), and the
+ sublevel chord law (\cref{thm:sublevel-chord-law}).  We refine them to
+ two-sided bounds on every eigenvalue by directional widths of the sublevel
+ set (\cref{thm:width-spectrum-rigidity}), and show that the canonical LP and
+ product-SDP barriers attain the resulting lower bound up to an explicit
+ factor at equal objective gap (\cref{thm:canonical-achievability}).
+ Corollaries give the rates for
+ positive-dimensional optimal faces, degenerate vertices, curved optima, SDPs
+ with a given singularity degree, near-degenerate instances, and
+ approximately central points
+ (\cref{cor:conditioning-regimes,cor:fractional-conditioning-laws,cor:near-degeneracy-plateau,cor:approximate-centrality-transfer}).
 
- \item \textbf{Clustered spectra and solver separation
- (\cref{sec:spectra}).}  We prove the two-cluster LP tail
- \cref{prop:two-cluster-hessian}, the cluster-sensitive CG bound
- \cref{prop:two-cluster-cg}, and the plain-versus-factor quantum polynomial
- frontier \cref{thm:quantum-cluster-obstruction}.  The exact central-path
- right-hand side obeys a weak-mode cancellation law, yielding a
- condition-number-free top-window solve under the fixed relative-residual
- contract once the spectral gap is resolved
- \cref{prop:newton-rhs-alignment,cor:top-window-solve}.  The generic
- \(\Thetatilde(\sqrt\kappa)\) factor-access QLS interpretation is explicitly
- rejected: the theorem gives a polynomial metric and an overlap-qualified
- solve, not such an unrestricted algorithm.
+ \item \textbf{Clustered spectra and the separation of solvers
+ (\cref{sec:spectra}).}  \Cref{sec:spectra} proves the results on clustered
+ spectra, solver cost, and central-path right-hand sides described in
+ \cref{sec:introduction-answer}
+ (\cref{prop:two-cluster-hessian,prop:two-cluster-cg,thm:quantum-cluster-obstruction,prop:newton-rhs-alignment,cor:top-window-solve}).
 
- \item \textbf{Instance laws beyond \(\kappa\)
- (\cref{sec:beyond-kappa}).}  Exact block inversion identifies when DLS
- filtering improves on worst-case conditioning
- \cref{thm:dls-coupling}; a truncation transition separates solution-state
- and residual contracts \cref{prop:dls-truncation-transition}; and the
- effective-spectral-dimension theorem places truncation and filtering
- thresholds at dimensions four and eight
- \cref{thm:spectral-dimension-laws}.  Stable active-range equilibration
- preserves the Newton state for \(f\in\operatorname{range}Q\) while removing
- the divergent tail when its projector is supplied
- \cref{thm:stable-split-equilibration}.
+ \item \textbf{Solver choice beyond \(\kappa\)
+ (\cref{sec:beyond-kappa}).}  For norm-tight encodings, exact block
+ inversion at central points shows that DLS filtering improves on the
+ worst-case condition number if and only if a limiting coupling vector (up
+ to sign, the limit of the Newton solution's component on the
+ small-eigenvalue subspace, divided by \(\mu\)) vanishes
+ (\cref{thm:dls-coupling}).  A truncation transition separates requirements on
+ the solution state from requirements on the residual
+ (\cref{prop:dls-truncation-transition}).  If the spectral measure of the
+ right-hand side has effective dimension \(D\), meaning that its mass below
+ \(t\) is of order \(t^{D/2}\), then fixed-accuracy truncation becomes
+ independent of the condition number for \(D>4\), and filtering for \(D>8\)
+ (\cref{thm:spectral-dimension-laws}).  Given the orthogonal projector \(Q\)
+ onto the active range, a stable equilibration removes the divergent part of
+ the spectrum and exactly preserves the normalized Newton state for every
+ \(f\in\operatorname{range}Q\) (\cref{thm:stable-split-equilibration}).
 
  \item \textbf{Block log-det condensation
- (\cref{sec:condensation}).}  We derive the exact capacity transition and
- ground-multiplicity-dependent conditioning phases
- \cref{thm:condensation-threshold,thm:cond-conditioning-phases}, prove
- finite mass--conditioning laws \cref{thm:cond-mass-conditioning}, and link
- them to trace-distance visibility and raw-query complexity
- \cref{thm:cond-visibility,thm:cond-unique-or}.  The transition extends to
- sublinear multiwinner sets and to a stated approximate-centrality model
- \cref{thm:cond-multiwinner,thm:cond-robust}.  These are statements about the
- equality-reduced Frobenius Hessian and trace-normalized output, not every
- preconditioned KKT representation.
+ (\cref{sec:condensation}).}  We derive the exact transition and the
+ conditioning phases, which depend on the multiplicity of the smallest
+ eigenvalue of the winning block
+ (\cref{thm:condensation-threshold,thm:cond-conditioning-phases}); prove
+ bounds between winner mass and conditioning for finite \(G\)
+ (\cref{thm:cond-mass-conditioning}); and relate the winner mass to the trace
+ distance from the no-winner state and to raw-query complexity
+ (\cref{thm:cond-visibility,thm:cond-unique-or}).  The transition extends to
+ sublinearly many winners and to a stated model of approximate centrality
+ (\cref{thm:cond-multiwinner,thm:cond-robust}).  These statements concern the
+ Frobenius-metric Hessian with equality constraints eliminated and the
+ trace-normalized output, not every preconditioned KKT formulation.
 
  \item \textbf{A sparse winner-take-all SDP
- (\cref{sec:winner-take-all}).}  A bounded-incidence qutrit-holonomy family
- realizes the condensation law with tight \(\Theta(N\sqrt G)\) quantum and
- \(\Theta(NG)\) randomized value-query costs, a condition-one public root
- start, robust winner recovery \cref{thm:wta-robust-optimizer}, and a matching
- search-then-solve compact-output algorithm
- \cref{thm:wta-search-upper}.  The formulation tradeoff in
- \cref{sec:wta-scope} keeps the bounded-incidence claim separate from an
- isometric ambient conditioning claim.
+ (\cref{sec:winner-take-all}).}  A bounded-incidence family of
+ qutrit-holonomy SDPs realizes the condensation law, with optimal-value
+ estimation costing \(\Theta(N\sqrt G)\) quantum and \(\Theta(NG)\)
+ randomized queries and a public starting point where the Hessian in root
+ coordinates has condition number one.  A state within trace distance
+ \(1/100\) of an approximate optimizer reveals a winning group if one
+ exists, so preparing it needs \(\Omega(N\sqrt G)\) queries
+ (\cref{thm:wta-robust-optimizer}); a search-then-solve algorithm with compact
+ output matches this bound (\cref{thm:wta-search-upper}).
+ \Cref{sec:wta-scope} explains why bounded incidence and a condition-one
+ ambient formulation are not claimed together.
 
  \item \textbf{Accuracy curves for hidden-block state conversion
- (\cref{sec:state-conversion}).}  A verified-sample decoder gives a
- mixed-output lower bound \cref{thm:sc-m1}; detuned rejection preparation
- supplies the upper bound \cref{thm:sc-m2}; and parity collapse yields the
- tight nontrivial conversion curve
- \cref{thm:sc-small-success,cor:sc-s2}.  The batch results separate
- nonamortizable vector materialization from scalar approximate counting
- \cref{thm:sc-batch-vector,thm:sc-batch-scalar}.  The theorem domains retain
- the loser-state discrepancy, the small-success sliver, and logarithmic
- fixed-point costs rather than extrapolating through them.
+ (\cref{sec:state-conversion}).}  A decoder that verifies sampled labels
+ gives a lower bound for mixed-state outputs (\cref{thm:sc-m1}); detuned
+ rejection preparation gives the upper bound (\cref{thm:sc-m2}); and parity
+ collapse yields the tight curve for preparing, to trace distance
+ \(\varepsilon\), a state with winner mass \(p\) on \(k\) of \(G\) blocks
+ (\cref{thm:sc-small-success,cor:sc-s2}).  For a batch of uncoupled
+ instances, vector output cannot be amortized, whereas a single averaged
+ scalar has the usual approximate-counting cost
+ (\cref{thm:sc-batch-vector,thm:sc-batch-scalar}).  The discrepancy between
+ internal loser states, the very-small-success range, and logarithmic
+ fixed-point costs remain explicit limits of these theorems.
 
  \item \textbf{LP loading and recovery hardness
- (\cref{sec:lp-hardness}).}  The gain--plateau family gives a linear robust
- primal-state lower bound \cref{thm:lp-gain-plateau}.  Prefix rigidification
- strengthens this to condition-one reduced Newton geometry with linear
- original-coordinate recovery cost \cref{thm:lp-prefix-capstone}.  Complete
- KKT and Schur-preconditioned variants isolate public-right-hand-side,
- residual, bounded-data, and scale tradeoffs
- \cref{thm:lp-full-kkt,thm:lp-preconditioned-kkt,thm:lp-bounded-exact,thm:lp-unit-threshold,thm:lp-dual-homogeneous-full}.
- None is presented as a condition-one QLS
- lower bound with free transformed oracles.
+ (\cref{sec:lp-hardness}).}  The gain--plateau family gives a linear lower
+ bound for preparing any primal state with small residual
+ (\cref{thm:lp-gain-plateau}).  Prefix rigidification strengthens this to an
+ LP whose reduced Newton geometry has condition number one while recovering
+ the original coordinates costs linearly many queries
+ (\cref{thm:lp-prefix-capstone}).  Variants with complete KKT systems and
+ Schur-complement preconditioning show the tradeoffs among a public
+ right-hand side, residual accuracy, bounded data, and scale
+ (\cref{thm:lp-full-kkt,thm:lp-preconditioned-kkt,thm:lp-bounded-exact,thm:lp-unit-threshold,thm:lp-dual-homogeneous-full}).
+ None of them is a lower bound for a condition-one QLS problem with free
+ access to transformed oracles.
 
- \item \textbf{Gadget-class frontiers
- (\cref{sec:gadget-frontiers}).}  A single-flip convex-mixture theorem gives
- the graph-free default obstruction \cref{thm:frontier-single-flip}.
- Cut--resistance and Walsh-row theorems quantify the volume or scale needed
- by signed-copy and bounded-arity constructions
- \cref{thm:frontier-cut-resistance,thm:frontier-walsh}; gauge-flow, work, and
- Fourier identities locate the multiplier or input-incidence cost
- \cref{thm:frontier-gauge-flow,thm:frontier-work,thm:frontier-fourier-source}.
- The escape routes in
- \cref{sec:frontier-synthesis} are part of the result.
+ \item \textbf{Limits of classes of gadgets
+ (\cref{sec:gadget-frontiers}).}  A convex-mixture theorem for single-bit
+ flips gives the default obstruction without any graph structure
+ (\cref{thm:frontier-single-flip}).  Cut--resistance and Walsh-row theorems
+ give the size or scale that signed-copy and bounded-arity constructions
+ need (\cref{thm:frontier-cut-resistance,thm:frontier-walsh}); gauge-flow,
+ work, and Fourier identities show how the cost appears in multiplier size
+ or input incidence
+ (\cref{thm:frontier-gauge-flow,thm:frontier-work,thm:frontier-fourier-source}).
+ The hypotheses that a construction must drop to escape these theorems,
+ listed in \cref{sec:frontier-synthesis}, are part of the result.
 
  \item \textbf{SDP-native loading and recovery hardness
  (\cref{sec:sdp-hardness}).}  An intrinsic trace-normalized qutrit family has
- parity-hard value and a public, condition-one reduced Newton step whose
- primal and complete-KKT solution states are parity hard
- \cref{thm:sdp-intrinsic,thm:sdp-newton-state}.  Non-SOCP Schur families give
- an exact loading/accuracy frontier
- \cref{thm:sdp-schur,thm:sdp-accuracy-frontier}, and tree and group holonomy
- lift the mechanism to matrix-valued words
- \cref{thm:sdp-tree-loading,thm:sdp-holonomy-spectrum,thm:sdp-s3-hardness}.
- The proved query exponent for the \(S_3\) family is
- still obtained on an abelian restriction; intrinsically nonabelian word
- hardness remains open.
+ an optimal value that reveals a parity, and a public reduced Newton step of
+ condition number one whose primal and complete-KKT solution states are
+ parity hard (\cref{thm:sdp-intrinsic,thm:sdp-newton-state}).  Schur-complement
+ families that are not SOCP-representable give an exact tradeoff between
+ loading and accuracy (\cref{thm:sdp-schur,thm:sdp-accuracy-frontier}), and
+ tree and group holonomy extend the construction to matrix-valued words
+ (\cref{thm:sdp-tree-loading,thm:sdp-holonomy-spectrum,thm:sdp-s3-hardness}).
+ The query lower bound for the \(S_3\) family is still proved on an abelian
+ restriction; hardness for intrinsically nonabelian words remains open.
 
- \item \textbf{Preconditioning and state-interface products
- (\cref{sec:preconditioning}).}  Whitening and reusable inverse access obey
- normalization tradeoffs
- \cref{thm:prec-whitening-frontier,thm:prec-inverse-access}; scalar
- congruence trades transformed condition against physical recovery
- \cref{thm:prec-congruence-frontier,thm:prec-general-scalar-frontier}; and
- the parity ledger charges setup, RHS preparation, solve, and recovery
- \cref{thm:prec-factor-rhs-hardness,thm:prec-parity-ledger}.  State-to-next-solve
- and lazy-oracle theorems distinguish a one-use state from a reusable
- coordinate service
- \cref{thm:prec-state-diagonal,thm:prec-state-next-solve,thm:prec-lazy-lookup,thm:prec-reusable-endpoints}.
+ \item \textbf{Preconditioning and state interfaces
+ (\cref{sec:preconditioning}).}  Whitening and reusable inverse access trade
+ condition number against normalization
+ (\cref{thm:prec-whitening-frontier,thm:prec-inverse-access}); scalar
+ congruence trades the transformed condition number against the cost of
+ recovering the physical state
+ (\cref{thm:prec-congruence-frontier,thm:prec-general-scalar-frontier}); and for
+ an explicit parity-hard Newton update, the queries for setup, RHS
+ preparation, solve, and recovery together are at least linear in the problem
+ size for every invertible preconditioner
+ (\cref{thm:prec-factor-rhs-hardness,thm:prec-parity-ledger}).  The
+ state-to-next-solve and lazy-oracle theorems distinguish a state that can be
+ used once from a reusable coordinate oracle
+ (\cref{thm:prec-state-diagonal,thm:prec-state-next-solve,thm:prec-lazy-lookup,thm:prec-reusable-endpoints}).
 
  \item \textbf{Conditional positive modules
- (\cref{sec:positive-modules}).}  We prove a residual-certified pathwise
- refresh bound \cref{thm:positive-lazy-refresh}, a constructive stable
- active-range equilibration and exact face repair
- \cref{thm:positive-partition-free-equilibration,thm:positive-face-repair}, an
- implicit slack oracle and conditional
- compressed dual QIPM
- \cref{thm:positive-implicit-slack,thm:positive-compressed-qipm}, and a
- block-angular border solver whose \(\sqrt N\) block-count exponent is
- optimal in the block-oracle model, as proved in
- \cref{sec:positive-block-angular}.  Every theorem keeps its tail, gap,
- forcing, normalization, and output assumptions visible.
+ (\cref{sec:positive-modules}).}  We prove a bound on the number of fresh
+ solves when a Newton direction is reused along the path until a residual
+ check fails (\cref{thm:positive-lazy-refresh}); a constructive stable
+ equilibration of the active range and an exact face repair
+ (\cref{thm:positive-partition-free-equilibration,thm:positive-face-repair});
+ an implicit slack oracle and a conditional dual QIPM with compressed output
+ (\cref{thm:positive-implicit-slack,thm:positive-compressed-qipm}); and a
+ solver for block-angular systems through their border, whose \(\sqrt N\)
+ dependence on the number of blocks is optimal in the block-oracle model
+ (\cref{sec:positive-block-angular}).
 
  \item \textbf{Reusable structural tools
- (\cref{sec:structural-tools}).}  Involution and compact-group work
- identities \cref{thm:structural-involution-work,thm:structural-group-work},
- a noncommutative central-mixture sandwich
- \cref{thm:structural-sdp-kantorovich}, and rank and support barriers
- \cref{thm:structural-rank-progress,thm:structural-support-barrier} explain
- several no-go mechanisms abstractly.  Sparse OSS and treewidth-two KKT
- embeddings preserve known QLS restrictions
- \cref{thm:structural-oss-embedding,thm:structural-treewidth-two}, while
- exact-treewidth value hardness and a central-oracle light cone distinguish
- query, output, and physical-locality models
- \cref{thm:structural-exact-treewidth,thm:structural-light-cone}.
+ (\cref{sec:structural-tools}).}  Work identities for involutions and
+ compact groups (\cref{thm:structural-involution-work,thm:structural-group-work}),
+ a noncommutative sandwich for mixtures of central points
+ (\cref{thm:structural-sdp-kantorovich}), and lower bounds on the rank and
+ support of Newton steps
+ (\cref{thm:structural-rank-progress,thm:structural-support-barrier}) explain
+ several of the obstructions abstractly.  Sparse OSS and treewidth-two KKT
+ embeddings carry known QLS lower bounds over to these formulations
+ (\cref{thm:structural-oss-embedding,thm:structural-treewidth-two}), while
+ value hardness at exact treewidth and a light-cone bound for central oracles
+ separate query, output, and physical-locality models
+ (\cref{thm:structural-exact-treewidth,thm:structural-light-cone}).
 
  \item \textbf{Corrections and dead ends (\cref{sec:corrections}).}  We show
- that the global potential supremum used in the QCPM simulator ledger cannot
- scale as asserted \cref{prop:corr-qcpm-supremum}, correct the independent
- clock/time-dilation error \cref{eq:corr-qcpm-clock}, derive the corrected norm
- scale and its speed tradeoff
- \cref{thm:corr-qcpm-norm,cor:corr-qcpm-tradeoff}, and give explicit
- densification and hidden-start counterexamples
- \cref{thm:corr-path-simplex,thm:corr-hidden-sign}.  The recorded dead ends
- prevent first-inverse norms, sparse metrics, exact Schur products, or
- one-step bounds from being reused as claims they do not prove.
+ that the global potential supremum in the QCPM simulator-norm analysis
+ cannot scale as asserted (\cref{prop:corr-qcpm-supremum}), correct the
+ separate clock (time-dilation) error (the correct clock is
+ \cref{eq:corr-qcpm-clock}), derive the
+ corrected norm scale and its tradeoff with speed
+ (\cref{thm:corr-qcpm-norm,cor:corr-qcpm-tradeoff}), and give explicit
+ counterexamples for densification and hidden starting points
+ (\cref{thm:corr-path-simplex,thm:corr-hidden-sign}).  The recorded dead ends
+ show why norms of the first inverse, sparse metrics, exact Schur products, or
+ one-step bounds cannot be reused as claims they do not prove.
 \end{enumerate}
 
 \subsection{Related work and positioning}
 \label{sec:introduction-related-work}
 
 \paragraph{Quantum interior-point methods.}
-The QIPM literature spans QLS-based hybrid path following, iterative
-refinement, orthogonal-subspace formulations, condition-number-free sampling,
-and Hamiltonian central paths.  Representative lines include
-Kerenidis--Prakash, Casares--Martin-Delgado, Augustino et al.,
-Mohammadisiahroudi et al.,
-Wu et al., Apers--Gribling, and the reviews and resource ledgers of Dalzell et
-al.
+We do not put the QIPMs of \cref{sec:introduction-state-of-play} into a
+single complexity table
 \cite{kerenidis2020-quantum-interior-point-method-lps,
 casares2020-quantum-interior-point-predictor-corrector,
 augustino2023-quantum-interior-point-methods-semidefinite,
 mohammadisiahroudi2025-inexact-feasible-interior-point-method,
 wu2023-inexact-feasible-quantum-interior-point,
 apers2026-quantum-speedups-linear-programming-interior,
-dalzell2025-quantum-interior-point-methods}.  The QCPM and
-self-concordant-Schr\"odinger lines avoid the usual repeated-QLS architecture
-\cite{augustino2024-quantum-central-path-algorithm-linear,
-gribling2025-self-concordant-schrodinger-operators-spectral}.  We do not
-collapse these algorithms into a single complexity table: each uses a
-different access, condition, precision, and output contract.  The per-section
-novelty paragraphs compare the exact theorem at hand with its nearest line of
-work.
-
-\paragraph{Quantum linear systems.}
-HHL introduced sparse QLS state preparation, CKS improved the precision
-dependence, and QSVT placed inversion in a general block-encoding calculus
-\cite{harrow2009-quantum-algorithm-linear-systems-equations,
-andrew2017-quantum-algorithm-systems-linear-equations,
-andras2019-quantum-singular-value-transformation-beyond}.  Orsucci--Dunjko's
-positive-definite lower bounds ground our plain-access clustered comparison.
-Mori et al. prove \(\Omega(\kappa\sqrt{s})\) at fixed constant error and
-restate an \(\Omega(\kappa\log(1/\epsilon))\) constant-sparsity bound from
-earlier unpublished work of Harrow and Kothari.  DLS provide the
-beyond-condition-number parameters evaluated in
-\cref{sec:beyond-kappa}
-\cite{orsucci2021-on-solving-classes-of-positive,
-mori2026-sparsity-dependent-complexity-lower-bound,
-dalzell2026-faster-quantum-linear-system-solver}.  Somma--de Wolf provide an
-analogous plain-versus-sum-of-squares resolution separation in a guided
-Hamiltonian problem, not a QLS theorem
-\cite{somma2026-optimal-lower-bound-ground-state-energy}.  This access-model
-discipline is essential to \cref{sec:spectra,sec:preconditioning}.
+dalzell2025-quantum-interior-point-methods,
+augustino2024-quantum-central-path-algorithm-linear,
+gribling2025-self-concordant-schrodinger-operators-spectral}, because each
+uses a different access model, condition parameter, precision, and output
+requirement.  Each technical section compares its theorems with the nearest
+prior work.
 
 \paragraph{Quantum optimization lower bounds.}
-Van Apeldoorn et al. establish general quantum SDP upper and lower bounds and
-Boolean-in-optimum constructions; Brand\~ao--Svore initiated the quantum SDP
-solver line; and Apers--Gribling's Theorem~8.4 gives a sparse-LP value lower
-bound already having a linear exponent in balanced dimensions
+Van Apeldoorn et al. established general quantum SDP upper and lower bounds
+and constructions that embed a Boolean function in the optimum;
+Brand\~ao and Svore initiated the line of quantum SDP solvers; and
+Theorem~8.4 of Apers and Gribling gives a value lower bound for sparse LPs
+that is already linear for balanced dimensions
 \cite{apeldoorn2020-quantum-sdp-solvers,
 fernando2017-quantum-speed-ups-solving-semidefinite,
-apers2026-quantum-speedups-linear-programming-interior}.  Our parity and
-holonomy families do not claim parity, adversary composition, or the linear
-exponent as new.  Their contribution is the conjunction with exact central
-paths, condition-one or bounded-condition formulations, robust output
-contracts, and complete loading/recovery ledgers described in
-\cref{sec:winner-take-all,sec:lp-hardness,sec:sdp-hardness}.
+apers2026-quantum-speedups-linear-programming-interior}.  We do not claim
+parity hardness, adversary composition, or the linear exponent as new for our
+parity and holonomy families.  What is new is their combination with exact
+central paths, formulations of condition number one or bounded condition
+number, robust output requirements, and complete accounting of loading and
+recovery (\cref{sec:winner-take-all,sec:lp-hardness,sec:sdp-hardness}).
 
 \paragraph{Classical interior-point structure.}
 Wright's work on logarithmic-barrier Hessians and numerical error, the
-standard primal--dual theory, and the Forsgren--Gill--Wright survey provide
-the conditioning and implementation background
+standard primal--dual theory, and the survey of Forsgren, Gill, and Wright
+provide the background on conditioning and implementation
 \cite{wright1994-properties-hessian-logarithmic-barrier,
 wright1998-ill-conditioning-computational-error-interior,
 wright1997-primal-dual-interior-point-methods,
 forsgren2002-interior-methods-nonlinear-optimization}.  Gondzio and
-collaborators document preconditioning, structure exploitation, and practical
-IPM evolution
+collaborators document preconditioning, the use of structure, and the
+evolution of practical IPMs
 \cite{jacek2012-interior-point-methods-25-years,
 gondzio2023-general-purpose-preconditioning-regularized-interior-point}.
-Small-treewidth LP and SDP algorithms show why bounded graph width is a
-classical algorithmic asset rather than merely a sparse-oracle promise
-\cite{dong2020-a-nearly-linear-time-algorithm,
-gu2022-a-faster-small-treewidth-sdp}.  The sublevel chord law differs from the
-classical log-barrier conditioning analyses by quantifying over all
-self-concordant barriers, while \cref{sec:spectra} uses rather than ignores
-the classical cluster-sensitive Krylov advantage.
+The sublevel chord law differs from
+classical conditioning analyses of the log barrier in holding for all
+self-concordant barriers, and \cref{sec:spectra} uses, rather than ignores,
+the classical advantage of Krylov methods on clustered spectra.
 
-\paragraph{Positioning discipline.}
+\paragraph{Established ingredients.}
 Many ingredients used below are established: self-concordant containment,
 weak-sharp and singularity-degree error bounds, matrix-Burg resolvents,
 Rayleigh--Jeans condensation, parity and search, group synchronization,
 Kantorovich inequalities, effective resistance, and sparse elimination.  We
-credit them where each enters.  Because the nearest prior work changes from
-one theorem package to the next, this introduction does not restate every
-collision or priority qualification.  The detailed novelty and scope
-statements in
+credit each where it enters.  The detailed statements of novelty and scope in
 \cref{sec:conditioning-overview,sec:condensation-discussion,sec:wta-scope,sec:sdp-synthesis,sec:preconditioning-synthesis,sec:positive-synthesis,sec:structural-synthesis}
 are part of the claims.
 
-\subsection{Conventions, verification, and corrections}
+\subsection{Conventions and corrections}
 \label{sec:introduction-verification}
 
-The distinctions formalized in \cref{sec:preliminaries} are standing
-conventions, not optional caveats.  In particular, input sparsity differs from
-Newton-system sparsity; \(\kappa_H\) differs from block-encoding normalization;
-reduced and ambient KKT conditioning are different quantities; and value,
+The distinctions of \cref{sec:preliminaries} hold throughout: input sparsity
+differs from Newton-system sparsity, \(\kappa_H\) from the block-encoding
+normalization, reduced from ambient KKT conditioning, and value,
 classical-vector, quantum-state, coordinate-oracle, and heralded outputs are
-different contracts.  Query bounds count the setup and transformations named
-by their access model.  An uncharged stronger oracle is treated as a stronger
-problem statement, not as an implementation of raw sparse access.
+different output requirements.  Query bounds count the setup and
+transformations named by their access model; a stronger oracle supplied at
+no cost defines a stronger problem, not an implementation of raw sparse
+access.
 
-The verification process changed several statements inherited from
-preliminary research notes and identified two independent issues in a public
-preprint.  The corrections relevant
-to reading the paper are:
+Several results correct earlier versions of our own analysis and two
+independent errors in the QCPM preprint.  The corrections that matter for
+reading the paper are:
 \begin{enumerate}[leftmargin=*]
- \item \cref{sec:corrections-qcpm} corrects the QCPM v2 simulator-norm
- estimate and its independent clock/time-dilation error: a global supremum on
- a fixed truncation box is not controlled by concentration near the
- instantaneous center, and the time-varying kinetic coefficient requires the
- corrected clock in \cref{eq:corr-qcpm-clock}.
- \Cref{thm:corr-qcpm-norm,cor:corr-qcpm-tradeoff} give the resulting scale.
- This is a correction to that derivation, not a general impossibility result
+ \item \Cref{sec:corrections-qcpm} corrects the simulator-norm estimate of
+ QCPM v2, because a global supremum on a fixed truncation box is not
+ controlled by concentration near the current center, and its separate clock
+ error, because the time-varying kinetic coefficient requires a corrected
+ clock.  This corrects that derivation; it is not an impossibility result
  for Hamiltonian optimization.
- \item \cref{sec:spectra-quantum} corrects an overbroad factor-access
- inference in our earlier analysis.  A square-root polynomial metric, or a
+ \item \Cref{sec:spectra-quantum} corrects an overbroad conclusion about
+ factor access in our earlier analysis: a square-root polynomial cost, or a
  two-stage solve with explicit overlap, does not imply a generic
- \(\Thetatilde(\sqrt\kappa)\) factor-access QLS; the Orsucci--Dunjko instance
- rules out that unrestricted interpretation.
- \item \cref{sec:spectra-two-cluster} replaces a coarse three-scale picture
- of the degree-two SDP witness by the verified four-window spectrum.  The
- correction changes the intermediate spectral description, not the
- condition-number exponent.
- \item \cref{sec:effective-spectral-dimension} anchors effective spectral
- dimension at the smallest visible eigenvalue.  This repairs the earlier
- shell formulation and is needed for the dimension-four and dimension-eight
- phase laws in \cref{thm:spectral-dimension-laws}.
- \item \cref{sec:state-conversion-model,sec:state-conversion-small-success,sec:state-conversion-open}
- replace the collision shortcut by a verified-sample decoder, restrict the
- classical linear-in-success law to its actual domain, keep the
- very-small-success sliver open, and attribute the \(k\)-marked small-success
- search bound to Dohotaru--H\o yer rather than to Zalka's one-marked theorem
- alone.
- \item \cref{sec:positive-face-repair} corrects the earlier claim that two
- convergent leakage ledgers alone bound projective variation.  Neither the
- ledgers nor an additional $O(\mu_t)$ tail bound suffices: an
- oscillating-face-displacement counterexample has convergent ledgers, the tail
- bound, and linearly growing realized variation, so finite realized variation
- stays a separate hypothesis.
+ \(\Thetatilde(\sqrt\kappa)\) QLS solver with factor access, as the
+ Orsucci--Dunjko instance shows.
+ \item \Cref{sec:spectra-two-cluster} replaces a coarse three-scale
+ description of the degree-two SDP witness by its four-window spectrum; this
+ changes the intermediate spectral description, not the exponent of the
+ condition number.
+ \item \Cref{sec:effective-spectral-dimension} anchors the effective spectral
+ dimension at the smallest eigenvalue that the right-hand side sees,
+ repairing an earlier formulation by spectral shells; the phase laws of
+ \cref{thm:spectral-dimension-laws} need this.
+ \item
+ \Cref{sec:state-conversion-model,sec:state-conversion-small-success,sec:state-conversion-open}
+ replace the collision shortcut by a decoder that verifies sampled labels,
+ restrict the classical law that is linear in the success probability to its
+ actual domain, leave the very-small-success range open, and attribute the
+ small-success search bound with \(k\) marked items to Dohotaru--H\o yer
+ rather than to Zalka's theorem for one marked item alone.
+ \item \Cref{sec:positive-face-repair} corrects the earlier claim that two
+ convergent leakage sums alone bound the projective variation: a
+ counterexample with an oscillating face displacement has convergent sums,
+ satisfies an additional $O(\mu_t)$ tail bound, and has linearly growing
+ realized variation.  Finite realized variation therefore remains a separate
+ hypothesis.
 \end{enumerate}
-The list is deliberately narrow.  It records changes that affect the theorem
-statements or their interpretation, rather than presenting ordinary proof
-repairs as additional results.  Further failed shortcuts and their valid
-replacements are collected in \cref{sec:corrections-dead-ends}.
+The list includes only changes that affect theorem statements or their
+interpretation; other rejected shortcuts and their valid replacements are in
+\cref{sec:corrections-dead-ends}.
 
 \subsection{Organization and reading paths}
 \label{sec:introduction-organization}
 
-The conventions are fixed in \cref{sec:preliminaries}; thereafter we use the
-section pointers rather than redefining those contracts.  Conditioning
-geometry, clustered spectra, and beyond-condition-number instance laws occupy
-\cref{sec:conditioning,sec:spectra,sec:beyond-kappa}.  Condensation, its sparse
-winner-take-all realization, and the associated state-conversion accuracy
-curve occupy \cref{sec:condensation,sec:winner-take-all,sec:state-conversion}.
-The LP and SDP loading/recovery lower bounds, gadget frontiers, and
-preconditioning/interface obstructions are in
-\cref{sec:lp-hardness,sec:gadget-frontiers,sec:sdp-hardness,sec:preconditioning}.
-The conditional positive modules are in
-\cref{sec:positive-modules}, structural tools in \cref{sec:structural-tools},
-corrections and dead ends in \cref{sec:corrections}, and the combined verdict
-and open frontier in \cref{sec:discussion}.
+\Cref{sec:preliminaries} fixes the conventions.
+\Cref{sec:conditioning,sec:spectra,sec:beyond-kappa,sec:condensation,sec:winner-take-all,sec:state-conversion,sec:lp-hardness,sec:gadget-frontiers,sec:sdp-hardness,sec:preconditioning,sec:positive-modules,sec:structural-tools,sec:corrections}
+follow the order of the contributions above, and \cref{sec:discussion}
+gives the overall conclusions and open problems.
 
-Three shorter paths may be useful.  A reader interested only in conditioning
-can read
+A reader interested only in conditioning can read
 \cref{sec:preliminaries,sec:conditioning,sec:spectra,sec:beyond-kappa}.  A
 reader interested only in lower bounds can read
 \cref{sec:preliminaries,sec:condensation,sec:winner-take-all,sec:state-conversion,sec:lp-hardness,sec:gadget-frontiers,sec:sdp-hardness,sec:preconditioning}.
-A reader interested only in algorithmic
-modules can read
-\cref{sec:preliminaries,sec:beyond-kappa,sec:positive-modules}.  In every
-path, the output and access definitions of \cref{sec:preliminaries} remain
-part of the theorem statements.
+A reader interested only in algorithmic modules can read
+\cref{sec:preliminaries,sec:beyond-kappa,sec:positive-modules}.

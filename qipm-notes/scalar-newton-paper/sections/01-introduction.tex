@@ -1,147 +1,190 @@
 \begin{abstract}
-The positive inverse quadratic form $b^*H^{-1}b$ is the squared Newton
-decrement when $H$ and $b$ are a Hessian and gradient. Its query complexity
-need not coincide with the cost of preparing or writing a Newton direction.
-We study relative estimation under sparse and sampling-and-query access,
-and compare it with coherent block access. For
-$\kappa^{-1}I\preceq H\preceq I$ and row sparsity $d$, a classical local
-estimator uses
+When $H$ is the Hessian and $b$ the gradient of a barrier function,
+$b^*H^{-1}b$ is the squared Newton decrement. The cost of estimating this
+number can differ from that of preparing or writing out the Newton
+direction. We study the query complexity of estimating it to relative
+error $\epsilon$ when
+$\kappa^{-1}I\preceq H\preceq I$, given sparse access to $H$, with at
+most $d$ nonzeros per row, and sampling-and-query access to $b$. A
+classical estimator that explores neighborhoods of sampled coordinates
+uses
 $\kappa\epsilon^{-2}(d+1)^{O(\sqrt\kappa\log(2/\epsilon))}$ queries at
-constant confidence. Full-sampling lower families separately force the
-statistical factor and the exponential scale. Explicit clock diagonals and
-statistical composition give simultaneous lower bounds in stated regimes,
-without establishing the product of both full factors. Under plain block
-access of normalization $\alpha$, a three-dimensional lower bound matches, up to logarithmic factors,
-the known variable-time upper bound $\widetilde O(\alpha\kappa/\epsilon)$.
-We realize hard scalars as LP and SOCP values, optimizer coordinates, and
-Newton decrements, preserving the promised input interfaces. We also give
-scalar trajectory and endpoint constructions, together with examples and
-residual-certified reuse bounds explaining why one-shot hardness cannot
-simply be multiplied by an iteration count. Finally, a sparse-base solver
-with sampled low-rank corrections yields scalar estimates and solution
-samples for structured Lorentz and generalized-power Newton systems under
-explicit spectral and data-access assumptions. All bounds distinguish
-query cost, arithmetic, input acquisition, and the requested output.
+constant confidence. Separate sparse families show that the
+statistical factor $\kappa\epsilon^{-2}$ and the exponential factor are
+each necessary, even with full sampling access to the matrix. An explicit
+composition gives single instances that require both factors at once in
+some parameter ranges, but it does not force the product of the two full
+factors. In the
+quantum model where $H/\alpha$ is a block of a unitary, a lower bound for
+$3\times3$ matrices matches, up to logarithmic factors, the known
+variable-time upper bound $\widetilde O(\alpha\kappa/\epsilon)$. We
+construct sparse LPs and SOCPs whose optimal values, optimizer
+coordinates, or Newton decrements are classically hard to estimate,
+and every query to the full sampling-and-query interface of the
+formulation can be simulated with $O(1)$ queries to the hidden input. We also show that this cost adds up
+when the requested outputs (several path scalars or one endpoint
+coordinate) encode independent instances, and we use examples and reuse
+bounds to explain why one-shot hardness cannot simply be multiplied by
+an iteration count. For Newton matrices $N$ formed by a well-conditioned sparse
+matrix plus a sampled low-rank correction, including Lorentz and
+generalized-power cone systems under stated assumptions, we give
+classical algorithms that estimate $b^*N^{-1}b$ and sample from an
+approximate solution of $Nx=b$. All results are query and arithmetic
+bounds; they do not establish a quantum speedup
+for interior-point methods.
 \end{abstract}
 
 \section{Introduction}\label{sec:introduction}
-A Newton method may need only one number before it decides how to move:
-the squared decrement $b^*H^{-1}b$. It measures local centrality and
-Newton progress under the specified objective and barrier; by itself it
-is not a general certificate of global optimality. A linear-system routine
-may return a vector, a sample from its squared coordinates, or a normalized
-quantum state. These outputs carry different information. Normalization
-can discard the scale needed by a scalar estimate, while writing a whole
-vector can cost much more than estimating one of its observables.
-The distinction matters when assessing quantum improvements to
-interior-point methods, whose work includes acquiring iterate data,
-solving Newton systems, choosing steps, and reporting a final answer.
+An interior-point method may need only one number before it decides how
+to move: the squared Newton decrement $b^*H^{-1}b$, where $H$ and $b$
+are the Hessian and gradient of the barrier subproblem at the current
+point. It measures local centrality and Newton progress, but by itself
+it does not certify global optimality. A linear-system solver may instead
+return the Newton direction as a vector, as samples from its squared
+coordinates, or as a normalized quantum state. A normalized state loses
+the scale that a scalar estimate needs, and writing out a whole vector
+can cost much more than estimating one number derived from it. This
+matters when assessing quantum speedups of interior-point methods, which
+must also read the data, choose steps, and report an answer.
 
-This paper studies the scalar itself and then asks when its complexity
-survives an optimization formulation. Our central problem is relative
-estimation of
+We study the complexity of this scalar and when it carries over to
+outputs of an optimization problem. The central problem is to estimate
 \[
- q(H,b)=b^*H^{-1}b,\qquad \kappa^{-1}I\preceq H\preceq I.
+ q(H,b)=b^*H^{-1}b,\qquad \kappa^{-1}I\preceq H\preceq I,
 \]
-Classical algorithms receive local sparse matrix access and
-sampling-and-query access to $b$: coordinate values, its norm, and samples
-proportional to squared coordinate magnitudes. Lower bounds remain valid
-when the matrix also supplies exact row and column norms and the associated
-sampling operations. Quantum comparisons separately specify coherent
-entry access or a normalized matrix block inside a unitary. The distinction
-between these two quantum interfaces is necessary even for diagonal
-matrices of dimension three.
+to relative error $\epsilon$. Classical algorithms get sparse row
+access to $H$, with at most $d$ nonzeros per row, and sampling-and-query
+access $\SQ(b)$: coordinate values, the norm $\norm b$, and samples of
+an index $i$ with probability proportional to $|b_i|^2$. Our classical
+lower bounds hold even with full matrix $\SQ$ access, which adds the row
+and column norms of $H$ and the associated samples. Quantum algorithms
+get either coherent access to the entries of $H$ or block access, a
+unitary whose top-left block is $H/\alpha$. These two models differ even
+for diagonal $3\times3$ matrices: our block-access lower bound uses such
+matrices, and one exact entry query solves the same instances.
 
 \subsection{Results and contribution}
-The results have three connected parts. First, we identify the relative
-positive-form bounds justified by these interfaces. Second, we construct
-optimization outputs that retain hardness and examine what information
-can be reused across a path. Third, we give structured classical solves
-that delimit the scope of the hard constructions. Table~\ref{tab:rates}
-summarizes the central one-scalar rates; later sections state the
-optimization and structured-system contracts separately.
+Table~\ref{tab:rates} summarizes the bounds for a single scalar.
 
-\paragraph{Relative positive forms and simultaneous lower bounds.}
-A Chebyshev residual polynomial, local sparse evaluation, and coordinate
-importance sampling give Theorem~\ref{thm:classical-scalar}. Positivity
-allows the Kantorovich inequality to bound the estimator's relative second
-moment by $O(\kappa)$, yielding the statistical factor
-$\kappa\epsilon^{-2}$ rather than a bound quadratic in $\kappa$.
-These are established ingredients; the result makes their relative-error
-and access implications explicit.
-Theorem~\ref{thm:clock-lower} transfers the matrix-function hardness of
-Montanaro--Shao to real positive definite forms, verifies every full-SQ
-operation, and realizes the result at an LP analytic center.
-Theorem~\ref{thm:statistical-lower} supplies an independent two-sparse
-family with sharp statistical and confidence dependence, including the
-finite-population cutoff.
+\paragraph{Upper and lower bounds for the scalar.}
+Theorem~\ref{thm:classical-scalar} estimates $q$ with
+$O(\kappa\epsilon^{-2}\log(1/\zeta)(d+1)^{O(\sqrt\kappa\log(2/\epsilon))})$
+queries and arithmetic operations at failure probability $\zeta$. It
+combines known ingredients: a Chebyshev residual polynomial, local sparse
+evaluation, and importance sampling. Because the form is positive, the
+Kantorovich inequality bounds the relative second moment of the estimator
+by $O(\kappa)$, so the statistical factor is $\kappa\epsilon^{-2}$, not
+quadratic in $\kappa$. Theorem~\ref{thm:clock-lower} carries the
+matrix-function lower bound of Montanaro--Shao over to positive definite
+forms of row sparsity $s\geq5$: estimating two such forms with public
+right-hand sides (known without queries) requires
+$((s-1)/2)^{\Omega(\sqrt\kappa\log(1/\epsilon))}$ classical queries, up
+to a polynomial denominator; the family is realized at the analytic center of a sparse box LP.
+Theorem~\ref{thm:statistical-lower} gives a two-sparse family of
+dimension $2M$ with the sharp lower bound
+$\Omega(\min\{M,\kappa\epsilon^{-2}\})$, or
+$\Omega(\kappa\epsilon^{-2}\log(1/\zeta))$ at failure probability
+$\zeta$ when $M$ is large enough.
 
-Separate lower families do not justify multiplying their costs.
-Section~\ref{sec:composition} proves a distributional composition theorem
-for a single positive form and calculates the inverse diagonals of an
-explicit witness clock. The diagonal determines the baseline against
-which relative error measures a hidden signal. This yields, for example,
-a simultaneous $\epsilon^{-2}s^{\Omega(\sqrt\kappa)}$ lower bound up to
-polynomial denominators, and a different $\kappa^2$ product in a restricted
-high-accuracy regime. We also prove contrast limitations for specified
-cyclic, two-cluster, and Schur-complement constructions. These calculations
-identify what the constructions establish and which stronger products
-they do not establish.
+Theorem~\ref{thm:distributional-product} shows when both kinds of cost
+fall on one form: suppose a promise problem $g$ with randomized query
+complexity $R(g)$ is encoded, under the access and promise conditions of the theorem, as
+a form equal to a public positive baseline plus $C\Phi$, with
+signal-to-baseline ratio $\chi$ ($C$ divided by the baseline) at most $5/3$. Then, for $0<\epsilon\leq\chi/200$, estimating the
+average of such forms over many independent blocks to relative error
+$\epsilon$ needs $\Omega((\chi/\epsilon)^2R(g))$ classical full-$\SQ$
+queries. Relative error is measured against the whole value, so we
+compute the baseline exactly for an explicit witness clock
+(Proposition~\ref{prop:witness-diagonal}), a sparse matrix that applies
+circuit gates along a path of time steps. This gives, for example, a
+single-form lower bound $\epsilon^{-2}s^{\Omega(\sqrt\kappa)}$, up to
+polynomial denominators, and a bound with a factor $\kappa^2$ in a
+restricted high-accuracy regime (Theorem~\ref{thm:path-product}), but
+not the product of the two full lower bounds. We also prove limits for
+specific constructions. In the cyclic construction, the contrast (the
+ratio of the two possible values of the form) is at most $(1+K/L)^2$,
+where $K^2$ bounds the condition number, so contrast of the order of the condition number requires a bounded
+clock length $L$. The two-cluster construction gives only constant
+contrast. In a Schur-complement construction, a large form value
+raises the condition number.
 
-For plain coherent block access, Theorem~\ref{thm:coherent} combines the
-known variable-time inverse-power norm algorithm with a matching
-$\Omega(\alpha\kappa/\epsilon)$ block-query lower bound. Its explicit
-completion also explains why the lower bound does not transfer to exact
-entry queries. For general coherent sparse access, the proved lower and
-upper bounds remain $\Omega(\sqrt\kappa/\epsilon)$ and
-$\widetilde O(d\kappa/\epsilon)$, with state preparation charged separately.
+For plain block access with normalization $\alpha$,
+Theorem~\ref{thm:coherent} matches the known variable-time negative-power
+norm algorithm with an $\Omega(\alpha\kappa/\epsilon)$ lower bound on
+block queries; its explicit unitary completion shows why this bound does
+not transfer to exact entry queries. For coherent sparse access, the
+proved bounds are $\Omega(\sqrt\kappa/\epsilon)$ and
+$\widetilde O(d\kappa/\epsilon)$.
 
 \paragraph{Optimization outputs and repeated queries.}
-Section~\ref{sec:realizations} constructs LPs and SOCPs with hard optimizer
-coordinates, ordinary values, or Newton decrements. An exact cyclic
-inverse supplies public norms and a tunable conditioning--sparsity--accuracy
-relation. A public inverse-transpose norm gives a larger value signal;
-an affine-slice LP attains a matching classical upper and lower exponential
-dependence under its stated value-accuracy contract. The barrier parameter
-of that slice is one, but eliminating its equalities requires acquiring
-the hidden information. No free reduced objective is assumed.
+Section~\ref{sec:realizations} constructs sparse LPs and SOCPs whose
+optimizer coordinate, optimal value, or Newton decrement encodes the
+amplitude $\Phi$ of a Forrelation circuit. The underlying cyclic clock
+matrix runs the circuit forward, holds, and undoes it. This matrix and
+its Newton Hessian have public row and column norms, so full $\SQ$ access
+to the formulation can be simulated; its inverse applied to the start
+vector has an exactly known norm, and the clock parameters trade off
+conditioning, sparsity, and accuracy. For the optimizer coordinate, classical full-$\SQ$
+algorithms need $\Omega(2^{n/2}/n)$ queries, where $n$ is the number of
+work qubits of the Forrelation circuit, while a quantum algorithm
+with the corresponding coherent input oracle needs $O(1)$ queries to the
+hidden Forrelation sign tables
+(Theorem~\ref{thm:scalar-coordinate}). Scaling an objective tilt by the exact
+public norm of an inverse-transpose vector, rather than by an upper bound
+on it, enlarges the hidden signal in the optimal value
+(Theorem~\ref{thm:tilted-value}). For an LP on a one-dimensional affine
+slice, whose barrier has parameter one, the classical upper and lower
+bounds for the optimal value have the same exponential dependence in the
+accuracy regime of Theorem~\ref{thm:affine-lp}; the reduced objective is not assumed
+given, since eliminating the equality constraints requires hidden
+information.
 
-Section~\ref{sec:temporal} arranges independent inputs in successive scalar
-increments and ordinary SOCP predictor decrements. It also compiles
-promised overlaps into one bounded optimizer coordinate. The resulting
-direct-sum and endpoint bounds charge the information requested by those
-outputs. Section~\ref{sec:reuse} gives the complementary boundary: a sparse
-KKT system can have the same hard normalized solution at every central
-multiplier, even while reaching a small objective gap requires many bounded
-local movements. One acquisition can then serve every checkpoint.
-Residual-certified span reuse gives exact and approximate refresh bounds,
-with current residual tests and explicit-output costs charged separately.
+Section~\ref{sec:temporal} encodes $B$ independent instances in the
+changes of one coordinate between checkpoints on an LP central path, in
+the predictor decrements of an ordinary SOCP, and, through their parity,
+in one bounded optimizer coordinate. Because these outputs contain
+information about all $B$ instances, returning them requires
+$\Omega(BL_g)$ classical full-$\SQ$ queries, where $L_g=R(g)$
+(Theorems~\ref{thm:lp-trajectory}, \ref{thm:socp-trajectory},
+and~\ref{thm:threshold-xor}). Conversely, in Section~\ref{sec:reuse} a
+sparse KKT system has the same hard normalized solution along the whole
+central path, although reaching a small objective gap takes many bounded
+local steps; learning the hidden input once suffices. Reusing the span of stored
+solutions, and solving the system anew only when the smallest current
+relative residual over that span fails a test, requires at most $r$ such
+refresh solves if the solution directions span a space of
+dimension $r$ and computations are exact (Proposition~\ref{prop:exact-reuse}),
+and at most $2r-1$ if they lie close enough to one and the stated error
+bounds hold (Theorem~\ref{thm:robust-reuse}); residual tests and
+explicit outputs are counted separately.
 
 \paragraph{Structured Newton systems.}
 Theorem~\ref{thm:structured-sq} handles
 $N=S+CXLX^TC^T$, where $S=CC^T$ is a well-conditioned sparse full-rank
-base and $L$ is a small, possibly singular or indefinite correction.
-Its inputs are samples from source vectors for the columns of $X$.
-The algorithm never needs to normalize a nearly zero transformed column.
-A sampled small system, local polynomial evaluation, and raw rejection
-proposals produce one fixed approximate solution, with a reusable setup
-and bounded-cost flagged draws. Corollary~\ref{cor:structured-scalar}
-gives relative inverse-form estimation. Lorentz and generalized-power
-barriers satisfy the required structure under explicit eccentricity,
-sparse-base conditioning, and scalar-access promises. The need to acquire
-the power-cone geometric mean is a real restriction, for which we prove a
-query lower bound. Eccentricity-profile and supplied-treewidth solves give
-separate comparisons when a full classical direction is required.
+base and $CXLX^TC^T$ is a low-rank correction whose symmetric core $L$
+may be singular or indefinite.
+Each column of $X$ is a known sparse contraction of a unit source vector
+with $\SQ$ access, and no nearly zero column of $CX$ is normalized. The
+algorithm builds one fixed approximate solution with a reusable setup,
+and each draw returns a sample or a failure flag at bounded cost;
+Corollary~\ref{cor:structured-scalar} gives relative estimation of the
+inverse form. Lorentz and generalized-power barriers have this structure
+under explicit bounds on eccentricity and base conditioning, when certain
+scalars of each cone block are supplied; for the power cone, we prove a
+query lower bound for computing one of them, a weighted geometric mean,
+from vector access alone. For a full classical Newton direction, we give
+separate solve bounds using eccentricity profiles (how many cone blocks
+have large eccentricity) and latent sparsity (a supplied tree
+decomposition of small width).
 
-To the best of our knowledge, the additional contributions are the
-full-SQ positive-form lower bounds, the explicit single-form composition
-and baseline calculations,
-the parameterized scalar optimization and temporal realizations with their
-reuse boundaries, and the sparse-full-rank correction theorem under the
-specified source-vector interface. This is a claim about these precise
-statements. It is not a priority claim for inverse-form estimation,
-sparse polynomial dequantization, Forrelation matrix constructions,
-scalar optimization hardness, low-rank cone algebra, or subspace recycling.
+To our knowledge, the following are new: the full-$\SQ$ lower bounds for
+positive forms, the single-form composition and baseline calculations,
+the parameterized scalar realizations in optimization problems and along
+paths with the examples that limit reuse, and the theorem for a sparse
+full-rank base with low-rank corrections under source-vector access. We
+claim no priority for inverse-form estimation, sparse polynomial
+dequantization, Forrelation matrix constructions, hardness of scalar
+optimization outputs, low-rank cone algebra, or subspace recycling.
 
 \begin{table}[!htbp]
 \centering
@@ -168,8 +211,8 @@ $\displaystyle\Omega\!\left(
 $\kappa\geq4$, $s\geq5$, small $\epsilon$;
 Theorem~\ref{thm:clock-lower}\\
 Classical full SQ; one-form composition &
-$\Omega((\chi/\epsilon)^2L_g)$ lower, where $\chi$ is the signal-to-baseline
-ratio and $L_g$ the inner randomized query cost &
+$\Omega((\chi/\epsilon)^2R(g))$ lower, where $\chi$ is the signal-to-baseline
+ratio and $R(g)$ the inner randomized query cost &
 $0<\chi\leq5/3$, $\epsilon\leq\chi/200$;
 Theorem~\ref{thm:distributional-product}\\
 Quantum plain block encoding of normalization $\alpha$ &
@@ -186,98 +229,98 @@ Corollary~\ref{cor:coherent-counting},
 \eqref{eq:sparse-quantum-gap}\\
 \bottomrule
 \end{tabular}
-\caption{Selected relative inverse-form query bounds. Lower-bound dimensions
-are selected by their constructions; the population and promise restrictions
-in the cited theorems apply. Quantum rows charge input-state preparation
-separately and use constant failure probability. The clock lower bound
-first estimates two public forms and hence lower-bounds a routine for an
-arbitrary supplied form. The composition row requires the theorem's
-oracle-preserving inner family. The rows are separate statements: their
-lower bounds must not be multiplied.}
+\caption{Selected query bounds for relative estimation of inverse
+forms. Lower-bound constructions choose their dimensions; the other
+conditions of the cited theorems apply. Quantum
+rows count input-state preparation separately and use constant failure
+probability. The clock lower bound is proved for estimating two public
+forms, and hence also bounds a routine that estimates the form for any
+given $b$. The composition row requires the theorem's oracle-preserving
+inner family. The rows are separate statements: their lower
+bounds must not be multiplied.}
 \label{tab:rates}
 \end{table}
 
 \subsection{Relationship to prior work}
-Inverse quadratic forms are standard numerical quantities.
 Li--Sra--Jegelka develop Gaussian quadrature for matrix inverse forms
 \citep{LiSraJegelka2016}, and Bizas--Mitrouli--Turek give further analytic
-and heuristic estimates \citep{BizasMitrouliTurek2025}. Those methods
-charge matrix--vector products. Our classical model instead explores
-neighborhoods of sampled coordinates, trading dimension dependence for
-exponential dependence on polynomial degree.
+and heuristic estimates \citep{BizasMitrouliTurek2025}; these methods
+count matrix--vector products. Our classical model instead explores
+neighborhoods of sampled coordinates, trading dependence on dimension for
+exponential dependence on the polynomial degree.
 
 Gharibian--Le Gall already give sparse polynomial overlap estimation from
 sampling access \citep[Theorem 4.1]{GharibianLeGall2022}.
-Montanaro--Shao relate matrix-function query complexity to approximation
-degree and construct the weighted Forrelation clocks used here
-\citep[Theorem 1.8]{MontanaroShao2023}. Cifuentes et al. classify
+Montanaro--Shao relate the query complexity of matrix functions to
+approximation degree and construct the weighted Forrelation clocks used
+here \citep[Theorem 1.8]{MontanaroShao2023}. Cifuentes et al.\ classify
 matrix-function tasks under several access and measurement models
-\citep{CifuentesEtAl2024}. Edenhofer--Hasegawa--Le Gall apply sparse
+\citep{CifuentesEtAl2024}, and Edenhofer--Hasegawa--Le Gall apply sparse
 polynomial evaluation to spectral sums, including reciprocal traces
-\citep[Theorem 3.1 and Section 3.3]{EdenhoferEtAl2026}.
-Our target is an arbitrary-vector positive inverse form with relative
-error, whose baseline and variance must be controlled. The polynomial
-principle and its approximation-theoretic origin are shared with this
-prior work. Le Gall's robustness results already cover approximate
-length-squared sampling for sparse and low-rank dequantization
-\citep{LeGall2025}; our finite-error transfer is a sufficient condition
-for the particular estimator, not a general new robustness framework.
+\citep[Theorem 3.1 and Section 3.3]{EdenhoferEtAl2026}. Our target is a positive inverse form
+with an arbitrary vector and relative error, which requires controlling
+the baseline and the variance; the polynomial method and its origin in
+approximation theory come from this prior work. Le Gall's robustness results already cover
+approximate length-squared sampling for sparse and low-rank
+dequantization \citep{LeGall2025}; our finite-error analysis, for
+approximate samples and estimator values, is only a sufficient condition
+for our estimator, not a general robustness framework.
 
-For quantum algorithms, block encodings and polynomial transformations
-are established tools \citep{GilyenEtAl2019}, and our block-access upper
-bound specializes Chakraborty--Gily\'en--Jeffery's norm estimator
-\citep[Theorem 33 in the full version]{ChakrabortyGilyenJeffery2019}. Alase et al. study
-scalar observables of linear-system solutions
-\citep{AlaseEtAl2022}. Their tight observable-query bound concerns the
-queried observable block and additive expectation error; our sharp block
-bound charges the system matrix for relative estimation of $b^*H^{-1}b$.
-Orsucci--Dunjko study positive definite solution-state preparation and
-stronger access structures that can improve conditioning dependence
-\citep{OrsucciDunjko2021}. A normalized solution state, a shifted-matrix
-oracle, and the plain block interface used here are distinct contracts.
-Section~\ref{sec:coherent} details these comparisons.
+Block encodings and polynomial transformations are established quantum
+tools \citep{GilyenEtAl2019}, and our block-access upper
+bound specializes the norm estimator of Chakraborty--Gily\'en--Jeffery
+\citep[Theorem 33 in the full version]{ChakrabortyGilyenJeffery2019}.
+Alase et al.\ study scalar observables of linear-system solutions
+\citep{AlaseEtAl2022}; their tight bound counts queries to a block of
+the observable for additive error in an expectation value, while ours
+counts queries to the system matrix for relative estimation of
+$b^*H^{-1}b$. Orsucci--Dunjko study preparation of solution states for
+positive definite systems, and stronger access structures that can
+improve the dependence on conditioning \citep{OrsucciDunjko2021};
+Section~\ref{sec:coherent} compares these different access models with
+ours.
 
-Gr\o nlund--Larsen establish exponential quantum versus SQ separation for
-linear-system solution output \citep{GronlundLarsen2025}.
-Apers--Gribling already prove full-SQ hardness for an ordinary LP optimal
-value \citep[Lemma 8.5]{ApersGribling2026}. Our optimization constructions
-therefore address parameter control, scalar normalization, genuine Newton
-realizations, and input acquisition rather than the first occurrence of
-scalar or optimization hardness. An adjacent result of Zhao et al.
-studies normalized solution observables and Forrelation embeddings under
-streaming-space and data-sample restrictions \citep[Task F.1 and
-Sections E.5--F]{ZhaoEtAl2026}. Here the input is static and classical
-storage is unrestricted; those space restrictions are not used.
-General direct-sum, composition, and XOR ingredients are also prior
-\citep{BlaisBrody2019,BenDavidBlais2020,ChakrabortyEtAl2023,BrodyEtAl2023}.
-Our contribution in that part is their realization in the specified
-optimization outputs and the proof of all interface simulations.
+Gr\o nlund--Larsen prove an exponential separation between quantum
+algorithms and $\SQ$ access for outputting linear-system solutions
+\citep{GronlundLarsen2025}, and Apers--Gribling already prove full-$\SQ$
+hardness for the optimal value of an ordinary LP
+\citep[Lemma 8.5]{ApersGribling2026}. Our optimization constructions instead
+add explicit control of condition number, sparsity, and accuracy, a
+normalization of the hard scalar, realizations as actual Newton
+quantities, and an account of the cost of acquiring the input. Zhao et al.\ study normalized solution
+observables and Forrelation embeddings under restrictions on streaming
+space and data samples \citep[Task F.1 and Sections E.5--F]{ZhaoEtAl2026};
+here the input is static and classical storage is unrestricted. General
+direct-sum, composition, and XOR results are also prior work
+\citep{BlaisBrody2019,BenDavidBlais2020,ChakrabortyEtAl2023,BrodyEtAl2023};
+we realize them in the stated optimization outputs and prove that every
+access operation can be simulated.
 
-Low-rank SQ matrix arithmetic and solution sampling are established
-\citep{ChiaEtAl2022}. The structured theorem here has a sparse full-rank
-base and a small correction, and avoids supplying normalized transformed
-columns as inputs. Cone Hessian identities and sparse implementations are
-likewise established \citep{AlizadehGoldfarb2003,GoldfarbScheinberg2005,
-RoyXiao2022,ChenGoulart2025,KapelevichAndersenVielma2024}.
-We prove the spectral and sampling conditions needed to use that algebra
-in a local-query theorem. Krylov recycling and greedy reduced bases
-\citep{ParksEtAl2006,BinevEtAl2011}, as well as sparse and low-treewidth
-elimination \citep{Vanderbei1995,FurerHoppenTrevisan2025}, supply the
-classical context for our reuse and full-output comparisons.
+Low-rank $\SQ$ matrix arithmetic and solution sampling are established
+\citep{ChiaEtAl2022}; our structured theorem instead has a sparse
+full-rank base with a low-rank correction, and does not require normalized
+transformed columns as input. Hessian identities for cones and their
+sparse implementations are likewise established
+\citep{AlizadehGoldfarb2003,GoldfarbScheinberg2005,
+RoyXiao2022,ChenGoulart2025,KapelevichAndersenVielma2024};
+we prove the spectral and sampling conditions needed to use it with
+local queries. Krylov recycling and greedy reduced
+bases \citep{ParksEtAl2006,BinevEtAl2011}, and sparse and low-treewidth
+elimination \citep{Vanderbei1995,FurerHoppenTrevisan2025}, are the
+classical background for our results on reuse and on full output.
 
 \subsection{Scope and organization}
-All oracle and ideal-arithmetic assumptions are stated in
-Section~\ref{sec:models}. Sections~\ref{sec:classical}--\ref{sec:composition}
-give classical algorithms, lower families, and composition.
-Section~\ref{sec:coherent} treats coherent access.
-Sections~\ref{sec:realizations}--\ref{sec:reuse} connect scalar outputs to
-optimization and distinguish temporal composition from reuse.
-Section~\ref{sec:structured} gives the structured cone-system comparisons.
+Section~\ref{sec:models} states all oracle and ideal-arithmetic
+assumptions. Sections~\ref{sec:classical}--\ref{sec:composition} give
+classical algorithms, lower-bound families, and composition;
+Section~\ref{sec:coherent} treats coherent access;
+Sections~\ref{sec:realizations}--\ref{sec:reuse} treat optimization
+outputs, composition over a path, and reuse; and
+Section~\ref{sec:structured} treats structured cone systems.
 
-The results are query and arithmetic statements under specified inputs.
-They do not certify a generic quantum interior-point speedup, a uniform
-bit-complexity bound, or free maintenance of iterate-dependent sampling
-oracles. The general joint classical bound and the general coherent sparse
-bound are not fully matched. These are boundaries of the classifications
-proved here; none of the optimization or structured results assumes their
-resolution.
+The results are query and arithmetic bounds; they do not establish a quantum speedup for general interior-point
+methods, a uniform bound on bit complexity, or that sampling oracles,
+which change with the iterate, can be maintained at no cost. The general
+classical upper and lower bounds do not match in their joint dependence
+on all parameters, nor do the bounds for coherent sparse access. None of the optimization or structured results depends on
+closing these gaps.

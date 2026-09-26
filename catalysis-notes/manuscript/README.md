@@ -6,7 +6,7 @@ The source entry point is [main.tex](main.tex). All section inputs are mandatory
 
 | Order | Source | Focus |
 |---|---|---|
-| Overview | [00-introduction.tex](sections/00-introduction.tex) | Ranked recommendation, selection rationale and evidence scope |
+| Overview | [00-introduction.tex](sections/00-introduction.tex) | Abstract, ranked recommendation, main results and common design rules |
 | 1 | [01-water.tex](sections/01-water.tex) | Physical water management in Fischer–Tropsch catalysis |
 | 2 | [02-cyclic-oxides.tex](sections/02-cyclic-oxides.tex) | Steam compatibility and recovery of selective oxygen delivery |
 | 3 | [03-polymer.tex](sections/03-polymer.tex) | Fresh catalyst demand during polymer ethenolysis |

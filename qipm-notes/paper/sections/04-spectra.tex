@@ -1,24 +1,28 @@
 \section{Clustered Spectra and Solver Cost}
 \label{sec:spectra}
 
-The chord law in \cref{thm:sublevel-chord-law} says when the condition
-number must diverge, but not how the eigenvalues between its two edges are
-distributed.  This section resolves that question for the logarithmic
-barrier of a degenerate LP and then asks what the resulting spectrum costs.
-The answer separates solver families.  The spectrum eventually consists of
-two intervals with parameter-independent internal condition numbers, so a
-classical Krylov method needs only polylogarithmically many matrix--vector
-products.  Quantum polynomial solvers cannot use the empty spectral gap in
-the same way: in sufficiently large dimension, plain block-encoding access
-costs $\Thetatilde(\kappa)$ in the worst case, whereas the factor access already
-defined in \cref{def:plain-factor-access} has a
-$\Thetatilde(\sqrt\kappa)$ polynomial route under norm-tight encodings.
-Clustering improves neither quantum model beyond the dependence its access
-model already provides, while it exposes a classical--quantum
-separation on the Newton systems themselves.  There is an important
-qualification.  At exact central points the path's own Newton right-hand
-sides are asymptotically orthogonal to the weak modes, so path-following
-steps can use a condition-number-free window solve after the gap opens.
+\Cref{thm:sublevel-chord-law} says when the condition number must diverge,
+but not how the eigenvalues between the extremes are distributed.  This
+section answers that question for the logarithmic barrier of a degenerate LP
+and then asks what the resulting spectrum costs classical and quantum linear
+solvers.  Near the optimum the spectrum consists of two intervals, each with
+endpoint ratio bounded independently of $\mu$
+(\cref{prop:two-cluster-hessian}), so conjugate gradients (CG) needs only
+$\polylog(\kappa)$ matrix--vector products (\cref{prop:two-cluster-cg}).
+Quantum polynomial solvers cannot exploit the empty gap between the
+intervals in the same way (\cref{thm:quantum-cluster-obstruction}): in
+sufficiently large dimension, plain block-encoding access costs
+$\Thetatilde(\kappa)$ in the worst case, whereas the factor access of
+\cref{def:plain-factor-access} admits a polynomial whose degree times
+amplitude bound is $\Thetatilde(\sqrt\kappa)$ under norm-tight encodings.
+Clustering thus improves neither quantum access model beyond its usual
+dependence on $\kappa$, while it separates CG from these quantum solvers on
+the Newton systems themselves.  There is an important qualification.  At
+exact central points, the path's own Newton right-hand sides are
+asymptotically orthogonal to the \emph{weak modes} (the bottom-cluster
+eigenvectors), so once the gap opens, path-following steps can solve on the
+top cluster alone at a cost independent of the condition number
+(\cref{prop:newton-rhs-alignment,cor:top-window-solve}).
 
 \subsection{The two-cluster tail}
 \label{sec:spectra-two-cluster}
@@ -42,7 +46,7 @@ Choose a fixed central-path tail $0<\mu\leq\bar\mu$ on which
 \end{equation}
 Strict complementarity of the central-path limit also gives
 $\underline s_N:=\inf_{0<\mu\leq\bar\mu}\min_{i\in N}s_i(\mu)>0$.
-These are instance constants, not asymptotic variables.
+These constants depend on the instance but not on $\mu$.
 
 \begin{proposition}[Two-cluster log-barrier Hessian]
 \label{prop:two-cluster-hessian}
@@ -52,8 +56,8 @@ Let
  \qquad r=\rank(P_NZ),
  \label{eq:two-cluster-hessian}
 \end{equation}
-where the equality uses \cref{sec:newton-formulations}'s reduced-Hessian notation
-with $W=Z$.  If $r>0$, let $\sigma>0$ be the smallest positive singular
+where the equality uses the reduced-Hessian notation of
+\cref{sec:newton-formulations} with $W=Z$.  If $r>0$, let $\sigma>0$ be the smallest positive singular
 value of $P_NZ$.  The largest $r$ eigenvalues of $H_\mu$ then lie in
 \begin{equation}
  \left[
@@ -67,9 +71,9 @@ If $p-r>0$, the remaining $p-r$ eigenvalues lie in
  [D_P^{-2},\,\beta^{-2}].
  \label{eq:two-cluster-bottom}
 \end{equation}
-Each nonempty interval has a $\mu$-independent internal ratio.  When both
-are nonempty, their separation grows as $\Theta(\mu^{-2})$; when $r=0$ the
-top-cluster assertion is empty.
+Each nonempty interval has endpoint ratio bounded independently of $\mu$.
+When both intervals are nonempty, their separation grows as
+$\Theta(\mu^{-2})$; when $r=0$ the statement about the top cluster is empty.
 \end{proposition}
 
 \begin{proof}
@@ -112,7 +116,7 @@ are nonempty, the lower endpoint of \eqref{eq:two-cluster-top} is
 $\Theta(\mu^{-2})$ while \eqref{eq:two-cluster-bottom} is fixed.
 \end{proof}
 
-The extremes agree with the geometry in \cref{sec:conditioning}.  At a
+The two extreme cases agree with the geometry in \cref{sec:conditioning}.  At a
 unique nondegenerate optimum---equivalently here, a singleton optimal face
 with a nondegenerate optimal basis---$r=p$: if $h\in\ker A$ and $h_N=0$,
 then the optimal basis gives $A_Bh_B=0$ and hence $h=0$.  The bottom cluster
@@ -121,45 +125,48 @@ dimension, $\ker(P_NZ)$ contains its tangent space and the bottom cluster is
 nonempty; its fixed scale and the $\mu^{-2}$ top scale recover the chord-law
 divergence.
 
-The two-window statement is specific to polyhedral log-barrier tails.
-The log-det central path of \eqref{eq:degree-two-sdp}, the degree-two SDP
-witness in \cref{prop:degree-two-witness}, has four increasingly ordered
-reduced-Hessian eigenvalues in the inherited Frobenius metric:
+The two-cluster structure is specific to the log barrier of an LP near
+the optimum.  On the log-det central path of the SDP \eqref{eq:degree-two-sdp}
+from \cref{prop:degree-two-witness}, the four reduced-Hessian eigenvalues, in
+increasing order and in the Frobenius metric, satisfy
 \[
  \lambda_1\sim\sqrt2\,\mu^{-1/2},\qquad
  \lambda_2\sim\mu^{-1},\qquad
  \lambda_3\sim\sqrt2\,\mu^{-3/2},\qquad
  \lambda_4\sim\frac47\mu^{-2}.
 \]
-To see the metric normalization, use tangent coordinates $(b,g,t,e)$
+To derive these, use tangent coordinates $(b,g,t,e)$
 for the symmetric matrix with diagonal $(1-g-b,g,b)$ and upper
 entries $(b,t,e)$. At the center $t=e=0$, write $q=ag-b^2$ and
 $A_2=\bigl(\begin{smallmatrix}a&b\\b&g\end{smallmatrix}\bigr)$.
-The off-block operator is $A_2^{-1}/b$, giving the first and third
-scales because $b\sim\sqrt{\mu/2}$ and $q\sim\mu$.
-The $(b,g)$ coordinate Hessian $K$ has Gram matrix
-$G=\bigl(\begin{smallmatrix}4&1\\1&2\end{smallmatrix}\bigr)$;
-its operator is $G^{-1}K$. Direct differentiation gives
+On the coordinates $(t,e)$, the reduced Hessian acts in the Frobenius
+metric as $A_2^{-1}/b$.  This gives the first and third scales because
+$b\sim\sqrt{\mu/2}$ and $q\sim\mu$.  In the coordinates $(b,g)$, the
+Frobenius metric has Gram matrix
+$G=\bigl(\begin{smallmatrix}4&1\\1&2\end{smallmatrix}\bigr)$, so the reduced
+Hessian on this block is $G^{-1}K$, where $K$ is the coordinate Hessian.
+Direct differentiation gives
 $\mu K_{bb}\to6$, $\mu^{3/2}K_{bg}\to-\sqrt2$, and
 $\mu^2K_{gg}\to1$. Thus the larger eigenvalue has coefficient
 $(G^{-1})_{22}=4/7$, while
-$\mu^3\det K\to4$ and $\det G=7$ give the smaller coefficient one.
-These four distinct powers fix the eventual order. In particular, there
-is no $O(1)$ window. The complete calculation, including the actual
-second derivative, the characteristic polynomial with multiplicities,
-and the full central-path tail, is verified in Lean as documented in
-\texttt{formal/FRACTIONAL\_SDP.md}. It replaces the earlier numerical
-four-window observation with exact asymptotics.
+$\mu^3\det K\to4$ and $\det G=7$ give coefficient one for the smaller
+eigenvalue.
+The four distinct powers of $\mu$ fix the order for small $\mu$.  In
+particular, no eigenvalue stays bounded, unlike the bottom cluster of
+\cref{prop:two-cluster-hessian}.  The complete calculation, including the
+actual second derivative, the characteristic polynomial with multiplicities,
+and the full central-path tail, is verified in Lean, as documented in
+\texttt{formal/FRACTIONAL\_SDP.md}.
 
 \subsection{Why conjugate gradients see the clusters}
 \label{sec:spectra-cg}
 
-Cluster-sensitive CG estimates have a long classical lineage
+Convergence bounds for CG on clustered spectra are classical
 \cite{axelsson1994-iterative-solution-methods}.  The following elementary
-construction is enough here and makes the logarithmic dependence on the
-inter-cluster gap explicit.
+construction suffices here and makes the logarithmic dependence on the gap
+between the clusters explicit.
 
-\begin{proposition}[Two intervals are Krylov-benign]
+\begin{proposition}[CG needs few iterations on two intervals]
 \label{prop:two-cluster-cg}
 Let $H\succ0$ have
 \[
@@ -167,8 +174,8 @@ Let $H\succ0$ have
  \qquad 0<a_1\leq b_1<a_2\leq b_2,
 \]
 and set $\rho_i=b_i/a_i$ and $\Lambda=b_2/a_1$.  Thus
-$\kappa(H)\leq\Lambda$, with equality only when both enclosure endpoints
-are attained.  For every $0<\epsilon\leq1/2$ there is a residual
+$\kappa(H)\leq\Lambda$, with equality only when $a_1$ and $b_2$ are
+eigenvalues of $H$.  For every $0<\epsilon\leq1/2$ there is a residual
 polynomial $q$, with $q(0)=1$ and
 $\max_{\lambda\in\operatorname{spec}(H)}|q(\lambda)|\leq\epsilon$, of
 degree
@@ -180,7 +187,8 @@ degree
  \label{eq:two-cluster-cg-degree}
 \end{equation}
 Consequently CG reaches relative $H$-norm error $\epsilon$ in
-$O_\rho(\log(\Lambda/\epsilon)\log(1/\epsilon))$ iterations.
+$O_\rho(\log(\Lambda/\epsilon)\log(1/\epsilon))$ iterations, where $O_\rho$
+hides factors depending on $\rho_1$ and $\rho_2$.
 \end{proposition}
 
 \begin{proof}
@@ -223,32 +231,37 @@ $H$-norm error over residual polynomials of its degree, so its error is no
 larger.
 \end{proof}
 
-The numerical check used a 40-variable simplex-slice LP with a
-two-coordinate active set and a 37-dimensional optimal face.  From
+The accompanying analysis scripts implement the float64 CG test below, the
+Remez computation, the right-hand-side experiments, the adaptive damped-Newton
+experiment, and the
+Netlib survey with its \texttt{adlittle} follow-up; the 80-bit check below is
+not included.  We checked \cref{prop:two-cluster-cg} numerically on the
+\emph{40-variable simplex LP}
+$\min\{x_{39}/2+x_{40} : \sum_{i=1}^{40}x_i=1,\ x\geq0\}$, whose optimal
+face, where $x_{39}=x_{40}=0$, has dimension $37$; \cref{sec:spectra-rhs}
+uses the same instance.  From
 $\mu=10^{-2}$ to $10^{-8}$, $\kappa$ grew from about $10$ to
 $7\times10^{12}$, the bottom-cluster ratio stayed below $1.006$, and the top
-ratio approached $4.004$ (from $2.44$ at the shallowest point).  CG solved
-random right-hand sides to a recursively updated residual tolerance of
-$10^{-8}$ in 3--8 iterations.  At $\mu=10^{-8}$, the reported eight-step
-recursive residual masks a postcomputed true relative residual
-$\norm{b-Hx}_2/\norm b_2\approx10^{-4}$ and relative $H$-norm error about
-$6\times10^{-6}$, a float64 loss-of-conjugacy effect.  A separate 80-bit
-check, outside the accompanying scripts, used six iterations;
-the benign iteration count therefore survives the precision check.  The
-unstructured $\sqrt\kappa$ estimate is about $2.6\times10^6$ iterations.
-The accompanying analysis scripts produce the float64 spectrum and
-recursive-residual counts.
+ratio approached $4.004$ (from $2.44$ at the shallowest point).  For random
+right-hand sides, CG reduced the recursively updated residual below
+$10^{-8}$ in 3--8 iterations.  At $\mu=10^{-8}$, however, the recursive
+residual after eight steps hides a true relative residual
+$\norm{b-Hx}_2/\norm b_2\approx10^{-4}$ and a relative $H$-norm error of
+about $6\times10^{-6}$, caused by loss of conjugacy in float64.  A separate
+80-bit check needed six iterations, so the small iteration count is not a
+precision artifact.  The unstructured $\sqrt\kappa$ estimate is about
+$2.6\times10^6$ iterations.
 
-\subsection{Quantum polynomial boundedness and the access-model gap}
+\subsection{Quantum polynomial solvers in two access models}
 \label{sec:spectra-quantum}
 
-CG evaluates its residual polynomial only on eigenvalues.  QSVT has a
-different contract: after normalization, its polynomial must be bounded on
-all of $[-1,1]$, including the empty spectral gap and the negative half of
-the interval.  This difference rules out transplanting the composite
-polynomial in \cref{prop:two-cluster-cg}.  An order-of-magnitude evaluation
-of this construction on representative intervals reaches about $10^{85}$
-inside the gap; this illustrative estimate is not used below.
+CG needs its residual polynomial to be small only at the eigenvalues.  QSVT
+requires its normalized polynomial to be bounded on all of $[-1,1]$,
+including the gap between the clusters and the negative half of the
+interval, so the composite polynomial of \cref{prop:two-cluster-cg} cannot be
+used directly.  For representative intervals, a rough evaluation of that
+polynomial inside the gap gives about $10^{85}$; we do not use this estimate
+below.
 
 Normalize $\norm{H}_2=1$ and write
 \begin{equation}
@@ -264,44 +277,45 @@ hypothesis the plain-access parameter is
 $\kappa_{\rm BE}=\alpha_H\norm{H^{-1}}$ from \cref{eq:kappa-be}, and the
 factor parameter is $\kappa_G=\alpha_G\norm{H^{-1}}^{1/2}$.
 
-\begin{theorem}[Theorem Q: clustered solves in the two access models]
+\begin{theorem}[Clustered solves in the two access models]
 \label{thm:quantum-cluster-obstruction}
 For the two-cluster spectra \eqref{eq:quantum-two-cluster-normalization}:
 \begin{enumerate}[label=\textup{(\roman*)}]
- \item In the one-sided polynomial model, a residual polynomial bounded by
+ \item In the one-sided polynomial model, where polynomials need to be bounded
+ only on $[0,1]$, a residual polynomial $q$ of degree $d$ bounded by
  $M$ on $[0,1]$, with $q(0)=1$ and
  $|q(1/\Lambda)|\leq\epsilon\leq1/2$, has degree
  \begin{equation}
   d\geq\sqrt{\frac{(1-\epsilon)\Lambda}{2M}}.
   \label{eq:markov-one-sided-no-go}
  \end{equation}
- Thus its degree--amplitude-normalization metric satisfies
+ Thus the product $dM$ of degree and amplitude bound satisfies
  $dM=\Omega(\sqrt\Lambda)$.
- \item In the fixed-polynomial plain-access model, any single polynomial
- that, for $\rho_1\geq2$, relatively inverts a bottom interval
- containing the points $y=1,2$ to accuracy at most $1/8$, and is bounded
- by $M$ on the QSVT-required symmetric interval
- $[-\Lambda,\Lambda]$, obeys
+ \item Let $\rho_1\geq2$.  In the fixed-polynomial plain-access model, let
+ $p$ be a single polynomial of degree $d$ that approximates $1/y$, in the
+ rescaled variable $y=\Lambda\lambda$, with relative error at most $1/8$ on a
+ bottom interval containing $y=1$ and $y=2$, and that is bounded by $M$ on the
+ symmetric interval $[-\Lambda,\Lambda]$ required by QSVT.  Then
  \begin{equation}
   dM\geq\frac5{16}\sqrt{\Lambda^2-4}=\Omega(\Lambda).
   \label{eq:symmetric-bernstein-no-go}
  \end{equation}
- This is a lower bound on the polynomial metric for a right-hand side
- supported on the bottom cluster, not a general degree-to-QLS-cost theorem.
- \item With factor access $H=G^\dagger G$, the one-sided construction is an
- even singular-value polynomial with
- $dM=\Otilde(\sqrt\Lambda)$.  Item~\textup{(i)}, applied to the residual of
- this construction, gives the matching
- $\Omega(\sqrt\Lambda)$ degree lower bound.
+ This bounds the polynomial cost $dM$ for a right-hand side supported on
+ the bottom cluster; it does not by itself bound the cost of a general QLS.
+ \item With factor access $H=G^\dagger G$, there is a one-sided
+ construction, implemented as an even polynomial in the singular values of
+ $G$, with $dM=\Otilde(\sqrt\Lambda)$.  Item~\textup{(i)}, applied to the
+ residual of this construction, gives the matching lower bound
+ $\Omega(\sqrt\Lambda)$ on the degree.
  \item Let $N_{\rm QLS}$ denote the Hilbert-space dimension, distinct from
  the optimal-partition index set $N$ above.  In the full query model,
  plain access has $\Thetatilde(\kappa)$ worst-case QLS cost for
  $N_{\rm QLS}\gtrsim\kappa$, even for two-point clusters.  More precisely,
  \citet[Proposition~6]{orsucci2021-on-solving-classes-of-positive} prove an
  $\Omega(\min\{\kappa,N_{\rm QLS}\})$ normalized-block-encoding lower bound
- for all algorithms.  Their Proposition~7 supplies the sparse/Grover lower
- bound $\Omega(\min\{\kappa,\sqrt{N_{\rm QLS}}\})$, whose
- linear-in-$\kappa$ regime requires $N_{\rm QLS}\geq\kappa^2$.
+ for all algorithms.  Their Proposition~7 gives the sparse/Grover lower
+ bound $\Omega(\min\{\kappa,\sqrt{N_{\rm QLS}}\})$, which is linear in
+ $\kappa$ only when $N_{\rm QLS}\geq\kappa^2$.
 \end{enumerate}
 \end{theorem}
 
@@ -332,10 +346,10 @@ states
 Since $|\xi|<2$, this yields
 \eqref{eq:symmetric-bernstein-no-go}.
 
-The metric $dM$ has the stated operational meaning only after fixing the
-input support.  For a right-hand side in the bottom cluster, normalizing a
-polynomial bounded by $M$ reduces the useful transformed amplitude by
-$\Theta(M)$, so amplitude amplification gives the $dM$ proxy.  For a general
+The quantity $dM$ measures cost only once the support of the right-hand
+side is fixed.  For a right-hand side in the bottom cluster, normalizing a
+polynomial bounded by $M$ reduces the amplitude of the useful output by
+$\Theta(M)$, so with amplitude amplification $dM$ is a proxy for the cost.  For a general
 right-hand side the success amplitude also depends on its spectral overlap.
 Indeed, on a two-point spectrum the degree-one separator
 $p(y)=1-(y-1)/\Lambda$ has $dM=O(1)$ even though the all-algorithms result in
@@ -371,8 +385,8 @@ $G^\dagger G$.  Norm-tightness gives $\alpha_G=\Theta(\norm G)=\Theta(1)$
 under \eqref{eq:quantum-two-cluster-normalization}, so
 $L_G=\Theta(\Lambda)$; it does not set $\alpha_G$ equal to one.
 
-For completeness, a $\Otilde(\sqrt\Lambda)$ one-sided polynomial follows from
-the endpoint geometry.  In $y=\Lambda\lambda$ units define
+It remains to construct the one-sided polynomial with
+$dM=\Otilde(\sqrt\Lambda)$.  In $y=\Lambda\lambda$ units define
 \[
  f_T(y)=\frac{1-e^{-Ty}}y=\int_0^T e^{-ty}\,dt,
  \qquad T=\Theta(\log(1/\epsilon)).
@@ -389,13 +403,12 @@ $0\leq t\leq T$, has degree
 Integrating its coefficients over $t$ produces a polynomial $p_y(y)$ approximating
 $f_T$ to absolute error $O(\epsilon/\Lambda)$, hence to relative error
 $O(\epsilon)$ for every $y\in[1,\Lambda]$.  Its bound is
-$M=O(T)$, so degree times subnormalization is
-$\Otilde(\sqrt\Lambda)$ under norm-tight access.  The even polynomial
+$M=O(T)$, so $dM=\Otilde(\sqrt\Lambda)$ under norm-tight access.  The even polynomial
 $q_G$ in \eqref{eq:even-factor-polynomial} has only twice the degree.  This
 makes the construction admissible in the factor-access
-polynomial model and proves item~\textup{(iii)}.  Algebraically, the
-corresponding factor route to the linear-system solution is also
-transparent.  For a full-column-rank factor, first form
+polynomial model and proves item~\textup{(iii)}.  The corresponding solve
+through the factor is algebraically simple.  For a full-column-rank factor,
+first form
 $w=(G^\dagger)^+b$ and then $x=G^+w$; an SVD verifies
 $x=(G^\dagger G)^{-1}b$.  Define the two relative output amplitudes
 \[
@@ -409,17 +422,17 @@ Each pseudoinverse application costs $\Otilde(\kappa_G)$ to constant
 relative amplitude.  The end-to-end
 $\Otilde(\kappa_G)=\Otilde(\sqrt\kappa)$ solve follows only under the
 explicit overlap hypothesis $\zeta_1,\zeta_2=\Omega(1)$; otherwise amplitude
-amplification pays the corresponding inverse overlaps.
+amplification multiplies the cost by the inverse overlaps.
 
-There is no generic factor-access QLS guarantee at
+Factor access does not give a general QLS algorithm of cost
 $\Otilde(\sqrt\kappa)$.  On the Orsucci--Dunjko two-point instance, the
 square-root factor is diagonal and its oracle is implementable with
 $O(1)$ hidden-input queries.  A generic square-root-cost factor solver would
 therefore contradict their $\Omega(\kappa)$ query lower bound.  The factor
-statement here is a polynomial-metric result and an overlap-hypothesis solve,
-not an unrestricted QLS upper bound.
-Item~\textup{(iv)} is exactly the prior-art all-algorithms grounding for the
-plain-access worst case.  Together with the standard
+statement here is a bound on the polynomial cost $dM$ together with a solve
+under the overlap hypothesis, not an unrestricted QLS upper bound.
+Item~\textup{(iv)} is the prior lower bound, valid for all algorithms, on
+which the plain-access worst case rests.  Together with the standard
 $\Otilde(\kappa_{\rm BE})$ block-encoding QLS upper bound, it establishes
 the norm-tight $\Thetatilde(\kappa)$ worst-case row below.
 \end{proof}
@@ -429,14 +442,13 @@ points are absent; this does not make the case algorithmically easy.
 Orsucci--Dunjko's all-algorithms lower bound in item~\textup{(iv)} already
 covers exact two-point clusters.
 
-The symmetric constraint is decisive.  The polynomial in the last proof is
-well behaved on $[0,\Lambda]$ but grows on the negative half; it is not a
-plain-access QSVT polynomial.  The value $f_T(0)=T\ne0$ also prevents the odd
-extension used for the usual $1/x$ target.  A discretized Remez linear
-program makes the distinction visible.  Requiring a polynomial to separate
-$p(1/\Lambda)\leq0.1$ from $p(2/\Lambda)\geq0.9$ while staying bounded by one
-gave the following minimum degrees; the computation is included in the
-accompanying analysis scripts.
+Boundedness on the symmetric interval is essential.  The polynomial in the
+last proof is well behaved on $[0,\Lambda]$ but grows on the negative half;
+it is not a plain-access QSVT polynomial.  The value $f_T(0)=T\ne0$ also
+prevents the odd extension used for the usual $1/x$ target.  A discretized
+Remez linear program shows the difference: it gives the minimum degree of a
+polynomial with $p(1/\Lambda)\leq0.1$ and $p(2/\Lambda)\geq0.9$ that is
+bounded by one on $[-1,1]$ or on $[0,1]$.
 \begin{center}
 \begin{tabular}{@{}rrrrr@{}}
 \toprule
@@ -450,11 +462,11 @@ $\Lambda$ & $d_{[-1,1]}$ & $d_{[-1,1]}/\Lambda$
 \bottomrule
 \end{tabular}
 \end{center}
-Thus the symmetric calculation is $0.94$--$1.04$ times $\Lambda$, whereas
-the one-sided relaxation is about $1.7\sqrt\Lambda$.
+Thus the minimum degree is $0.94$--$1.04$ times $\Lambda$ on the symmetric
+interval and about $1.7\sqrt\Lambda$ on $[0,1]$.
 
-Suppressing logarithmic precision factors and keeping the access model
-fixed, the result is the following solve-cost comparison.
+The following table compares two-cluster solve costs, suppressing
+logarithmic factors in the precision.
 \begin{center}
 \begin{tabular}{@{}lll@{}}
 \toprule
@@ -468,42 +480,39 @@ QLS worst case, $N_{\rm QLS}\gtrsim\kappa$
 \bottomrule
 \end{tabular}
 \end{center}
-\footnotetext{The factor row is a polynomial-metric statement and an
+\footnotetext{The factor row is a bound on the polynomial cost; it is an
 end-to-end solve cost only under the overlap hypothesis
 $\zeta_1,\zeta_2=\Omega(1)$; it is not a generic factor-access QLS
 guarantee.}
-With \cref{sec:newton-formulations}'s convention
-$D=X^{1/2}S^{-1/2}$, the normal-equations matrix is
-$H=AD^2A^\top$, and the factor $G=DA^\top$ satisfies
-$H=G^\dagger G$ and is naturally available from
-the IPM data when the corresponding factor oracle can actually be
-implemented.  One should act on that factor rather than
-compose it into an encoding of $H$ and inadvertently square the singular
+With the convention $D=X^{1/2}S^{-1/2}$ of
+\cref{sec:newton-formulations}, the normal-equations matrix is
+$H=AD^2A^\top$, and the factor $G=DA^\top$ satisfies $H=G^\dagger G$.  This
+factor is available from the IPM data when an oracle for $G$ can be
+implemented.  A solver should then act on
+$G$ directly; composing it into an encoding of $H$ would square its
 condition number.
 
-The all-algorithms plain-access construction is prior art due to Orsucci and
-Dunjko.  Somma and de Wolf's sum-of-squares separation is also prior art,
-but it is a bound for guided ground-state energy estimation, under their
-dimension condition
+The plain-access lower bound for all algorithms is due to Orsucci and
+Dunjko.  Somma and de Wolf's sum-of-squares separation is also prior work,
+but it concerns guided ground-state energy estimation, under their dimension
+condition
 $\dim\geq\log(1/\epsilon)/\gamma_{\rm guide}^2$, where
 $\gamma_{\rm guide}$ is their guide overlap, and their stated error assumptions
-\cite{somma2026-optimal-lower-bound-ground-state-energy}.  It distinguishes
-$\Omega(1/\delta)$ plain resolution from
-$\Omega(1/\sqrt\delta)$ sum-of-squares resolution; we do not claim a transfer
-of that result to QLS.  Within the polynomial model, the matching lower
-bound for the even/one-sided factor class is instead item~\textup{(i)}.
-Cluster-sensitive Krylov convergence is also classical.  What appears
-to be new here is the observation that the hard two-cluster quantum instances
-are solved by CG in $O(1)$ iterations when the clusters are points, together
-with the resulting separation on central-path Newton spectra.  The novelty
-claim is this classical-side observation and assembly, not the quantum lower
-bounds themselves.
+\cite{somma2026-optimal-lower-bound-ground-state-energy}.  It separates
+$\Omega(1/\delta)$ resolution with plain access from
+$\Omega(1/\sqrt\delta)$ resolution with sum-of-squares access; we do not claim
+that this result applies to QLS.  Within the polynomial model, the matching
+lower bound for the even (one-sided) factor polynomials is item~\textup{(i)}.
+To our knowledge, what is new is the observation that CG solves the hard
+two-cluster quantum instances in $O(1)$ iterations when the clusters are
+points, together with the resulting separation on central-path Newton
+spectra.  We do not claim the quantum lower bounds as new.
 
 \begin{openproblem}[Exact-subnormalization shift]
 \label{open:exact-subnormalization-shift}
-The sharpest access-model question left by Theorem~Q is the following.
-The shift $H\mapsto I-H$ moves the bottom cluster to an endpoint, where
-$1/\Lambda$-scale discrimination would have square-root polynomial degree.
+The shift $H\mapsto I-H$ moves the bottom cluster to an endpoint of the
+spectrum, where distinguishing eigenvalues at scale $1/\Lambda$ would need
+polynomial degree only of order $\sqrt\Lambda$.
 Can a subnormalization-one block encoding of $I-H$ be constructed from plain
 access to $H$ without paying the apparent $\Theta(\Lambda)$ uniform
 amplification cost near the new spectral edge?
@@ -513,25 +522,27 @@ Orsucci and Dunjko raise the closely related normalization problem for
 $B=I-\eta A$ (in their notation) in their Section~4.3
 \cite{orsucci2021-on-solving-classes-of-positive}.  They observe that a
 linear combination of $I$ and a normalized block encoding of $A$ yields only
-the subnormalized $pB$, that any black-box amplification of $B/\beta$ to $B$
-is in general inefficient by the lower bound of
+the subnormalized $B/\beta$ for some $\beta>1$, and that any black-box
+amplification of $B/\beta$ to $B$ is in general inefficient, by the lower
+bound of
 \cite[Theorem~73]{andras2019-quantum-singular-value-transformation-beyond}
-applied to $f(x)=\beta x$, and they leave open whether a normalized block
+applied to $f(x)=\beta x$.  They leave open whether a normalized block
 encoding of a matrix with operator norm at most one can be built from a
-sparse-matrix oracle for it, answering it positively for diagonally dominant
-$A$ and for sums of positive semidefinite local Hamiltonians.
-\Cref{open:exact-subnormalization-shift} is the promise-sensitive form of
-their black-box obstruction: the subnormalization to remove is the fixed
-factor two, the spectrum of $H$ is promised to satisfy
-\eqref{eq:quantum-two-cluster-normalization}, and the question is whether that
-promise lowers the $\Theta(\Lambda)$ uniform-amplification degree at the
-shifted edge, not whether a general normalization procedure exists.
+sparse-matrix oracle for it, and construct normalized block encodings of
+$B$ for diagonally dominant $A$ and for sums of positive semidefinite local
+Hamiltonians.
+\Cref{open:exact-subnormalization-shift} is a promise version of their
+black-box obstruction: the subnormalization to remove is the fixed factor
+two, the spectrum of $H$ is promised to satisfy
+\eqref{eq:quantum-two-cluster-normalization}, and the question is whether
+this promise lowers the $\Theta(\Lambda)$ uniform-amplification degree at
+the shifted edge, not whether a general normalization procedure exists.
 
 \subsection{The central path does not use a worst-case right-hand side}
 \label{sec:spectra-rhs}
 
-The preceding obstruction concerns arbitrary right-hand sides.  The exact
-log-barrier path generates a much more special vector.  Let
+The lower bounds above concern worst-case right-hand sides.  On the exact
+log-barrier path, the Newton right-hand side is much more special.  Let
 $P_{\rm bot}(\mu)$ denote the spectral projector of $H_\mu$ onto the bottom
 cluster in \cref{prop:two-cluster-hessian}.
 
@@ -548,9 +559,9 @@ $\mu_2=\gamma\mu$ with $0<\gamma<1$, the exact reduced Newton equations are
  \qquad r_a=-\mu v_\mu.
  \label{eq:universal-newton-rhs}
 \end{equation}
-Here $d_a$ is the affine-scaling direction formed with the current local
-barrier metric; $\gamma$ avoids collision with the singular value $\sigma$
-in \cref{prop:two-cluster-hessian}.  If the right-hand side is nonzero,
+Here $d_a$ is the affine-scaling direction computed in the barrier metric
+at the current point.  We write the centering parameter as $\gamma$ because
+$\sigma$ denotes the singular value in \cref{prop:two-cluster-hessian}.  If the right-hand side is nonzero,
 then
 \begin{equation}
  \frac{\norm{P_{\rm bot}(\mu)r}_2}{\norm r_2}=O(\mu^2)
@@ -574,8 +585,8 @@ and setting the target barrier term to zero gives
 $-Z^\top c=-\mu Z^\top X^{-1}e$.  This proves
 the right-hand sides in \eqref{eq:universal-newton-rhs}.  The reduced Hessian
 of the target barrier objective is $\mu_2H_\mu$; the affine direction uses
-the current local metric $\mu H_\mu$.  Thus the displayed system scalars are
-also exact.
+the current local metric $\mu H_\mu$.  Thus the scalar factors $\mu_2$ and $\mu$ in
+\eqref{eq:universal-newton-rhs} are also exact.
 
 For the alignment claim, recall the splitting
 $H_\mu=H_{\mu,N}+H_{\mu,B}$ in \eqref{eq:two-cluster-split}.  The bottom
@@ -648,49 +659,49 @@ is admissible with plain access and has no dependence on the remote bottom
 cluster.
 \end{proof}
 
-The contract in this corollary is the reduced-primal relative residual
+The accuracy requirement in this corollary is the relative residual of the
+reduced primal system,
 $\norm{\tau H_\mu\widetilde d-r}/\norm r$, with $\tau=\mu_2$ for centering
 and $\tau=\mu$ for the affine direction.  Here $r_c$ denotes the reduced
 primal right-hand side in \eqref{eq:universal-newton-rhs}, not the KKT
 complementarity residual denoted by $r_c$ in \cref{sec:newton-formulations}.
-This contract is distinct from the absolute OSS and MNES conventions in
-\cref{def:inexact-newton-residual}: OSS requires
+This requirement differs from the absolute residual conventions for OSS and
+MNES in \cref{def:inexact-newton-residual}: OSS requires
 an $O(\bar\mu)$ residual, while MNES requires an
 $O(\sqrt{\bar\mu/n})$ system residual chosen to produce an
-$O(\bar\mu)$ complementarity residual.  After identifying residual vectors,
-a relative tolerance $\eta_{\rm rel}$ implies an absolute requirement
+$O(\bar\mu)$ complementarity residual.  Once the two residual vectors are
+identified, a relative tolerance $\eta_{\rm rel}$ implies an absolute requirement
 $\norm{\mathrm{res}}\leq\tau_{\rm abs}$ only when
 $\eta_{\rm rel}\norm r\leq\tau_{\rm abs}$.  Here $r_a=-Z^\top c$ and
-$r_c=-(1-\gamma)Z^\top c$ are generally constant in norm, so a constant
-relative tolerance does not by itself imply either shrinking absolute
-contract.
+$r_c=-(1-\gamma)Z^\top c$ have norms independent of $\mu$, so a constant
+relative tolerance does not by itself imply either absolute requirement,
+both of which shrink with $\bar\mu$.
 
-The measured law is substantially smaller than its asymptotic bound.  On
+In experiments, the $O(\mu^2)$ law holds with a small constant.  On
 Netlib \texttt{afiro}, the dropped-bottom residual was
 $6.7\times10^{-6}$, $6.4\times10^{-10}$, and $6.7\times10^{-14}$ at
 $\mu=10^{-1},10^{-3},10^{-5}$, respectively: an instance constant of about
-$7\times10^{-4}$ multiplying $\mu^2$.  Both centering and affine columns
-agree, as \eqref{eq:universal-newton-rhs} predicts; the top-cluster RHS mass
-rounded to $1.0000$, and the solution's top mass remained at least $0.9929$.
-The symmetric 40-variable family had machine-zero weak-mode mass.  The
-accompanying analysis scripts generate these measurements.
+$7\times10^{-4}$ multiplying $\mu^2$.  The centering and affine right-hand
+sides gave the same values, as \eqref{eq:universal-newton-rhs} predicts; the
+top-cluster fraction of the right-hand side rounded to $1.0000$, and that of
+the solution was at least $0.9929$.  For the 40-variable simplex LP,
+the weak-mode weight was zero to machine precision; by the symmetry among
+$x_1,\dots,x_{38}$ it is exactly zero on the central path.
 
-An end-to-end damped-Newton run tested more than exact central points.  It
-used shrink factor $0.85$, up to four corrections per parameter value, and
-fraction-to-boundary steps.  A window solver dropped the bottom modes only
-after detecting a gap larger than two decades and otherwise used the full
-solve.  The window and exact runs agreed in final gap and correction count:
-the toy family finished at gap $1.758\times10^{-8}$ with 205 corrections in
-both modes, and \texttt{afiro} finished at relative gap
-$7.4\times10^{-10}$ with 393 corrections in both.  This does not establish
-iterate-by-iterate identity; direct instrumentation of the two runs shows
-that intermediate iterates can differ.  In a separate, independently reproduced experiment, a
-naive geometric-mean threshold without gap detection stalled on
-\texttt{afiro} at relative gap $0.98$ by splitting the early spectral
-continuum arbitrarily.  That negative case is separate from the reported
-adaptive experiment.  The operational rule is therefore: use full solves
-until a genuine cluster gap opens, then drop the weak modes.  The accompanying
-analysis scripts implement the adaptive experiment.
+We also tested the window solve away from exact central points, in a
+complete damped-Newton run with shrink factor $0.85$ for $\mu$, up to four
+corrections per value of $\mu$, and fraction-to-boundary steps.  The window
+solver dropped the bottom modes only after detecting a spectral gap of more
+than two decades; otherwise it solved the full system.  The window and exact
+runs needed the same number of corrections and reached the same final gap:
+the 40-variable simplex LP finished at gap $1.758\times10^{-8}$ with
+205 corrections in both modes, and \texttt{afiro} finished at relative gap
+$7.4\times10^{-10}$ with 393 corrections in both.  Intermediate iterates can
+differ.  In a separate experiment, a naive geometric-mean threshold without
+gap detection stalled on \texttt{afiro} at relative gap $0.98$, because it
+split the early continuous spectrum arbitrarily.  The practical rule is
+therefore to use full solves until a clear gap between clusters opens, and
+only then drop the weak modes.
 
 \subsection{A Netlib conditioning survey}
 \label{sec:spectra-netlib}
@@ -701,13 +712,12 @@ method followed the log-barrier path in $\ker A$.  We fitted
 $\kappa_{\rm red}(g)\asymp g^{-\alpha}$ over the last four grid points,
 spanning about three gap decades, counted clusters using gaps larger than
 one decade, and ran CG to $10^{-8}$ tolerance with a 4000-iteration cap at
-the deepest point.  A second computation solved directional LPs in 30 fixed
-random directions over the objective sublevel polytope.  The resulting
-$\widehat D(g)$ is a lower estimate of the diameter, not the diameter
-itself; fitting $\widehat D(g)\asymp g^\theta$ and comparing with
-$\alpha=2-2\theta$ is therefore a consistency check.  It is computationally
-independent of the path Hessian eigensolves, but is not an exact second
-measurement of the chord-law diameter.
+the deepest point.  A second computation estimated the diameter of the
+objective sublevel polytope $L(g)$ by solving directional LPs over it in 30
+fixed random directions.  The resulting $\widehat D(g)$ only bounds the
+diameter from below, so fitting $\widehat D(g)\asymp g^\theta$ and comparing
+with $\alpha=2-2\theta$ is a consistency check, computed independently of
+the Hessian eigenvalues along the path.
 
 \begin{table}[ht]
 \centering
@@ -738,68 +748,68 @@ spectral partition.}
 \label{tab:netlib-conditioning}
 \end{table}
 
-Two endpoint classes dominate \cref{tab:netlib-conditioning}.  The
+Most instances in \cref{tab:netlib-conditioning} fall into two extreme
+classes.  The
 positive-dimensional-face instances \texttt{afiro} and \texttt{adlittle}
 have $\alpha\approx2$, while the vertex-like \texttt{sc} instances,
 \texttt{seba}, \texttt{scorpion}, \texttt{beaconfd}, and \texttt{bore3d}
-have frozen exponents $\alpha\approx0$; their condition-number levels can
+have exponents $\alpha\approx0$, although their condition numbers can
 still be large.  For
-\texttt{afiro}, $\widehat D(g)$ freezes at $126.84$, so $\theta\to0$ predicts
+\texttt{afiro}, $\widehat D(g)$ levels off at $126.84$, so $\theta\to0$ predicts
 $\alpha=2.000$, matching the path fit $2.00$.  For \texttt{sc50b},
-$\widehat D/g$ freezes at $126$, so $\theta\to1$ predicts $\alpha=0$, matching its
+$\widehat D/g$ levels off at $126$, so $\theta\to1$ predicts $\alpha=0$, matching its
 condition-number plateau near $582$.
 
 The intermediate \texttt{kb2} slope is a crossover, not evidence for a
 third asymptotic class.  Its random-direction estimate of $\theta$ climbs from
-$0.08$ to $0.99$ across the available gap decades, the in-the-wild version
-of the near-degeneracy plateau in
-\cref{cor:near-degeneracy-plateau}; the measured $\alpha=0.36$ lies in the
-knee and will tend to zero.  The \texttt{scagr7} local fitted $\theta$ slopes
-range from $0.1$ to $0.6$ and may reflect a slower multiscale crossover.  We
+$0.08$ to $0.99$ across the available gap decades, which is the
+near-degeneracy plateau of \cref{cor:near-degeneracy-plateau} appearing in a
+benchmark instance; the measured $\alpha=0.36$ lies in the transition and will
+tend to zero.  For \texttt{scagr7}, local fits of $\theta$ range from $0.1$ to
+$0.6$, which may reflect a slower crossover across several scales.  We
 claim no fractional asymptotic exponent for a Netlib instance; the proved
 fractional example remains the constructed SDP in
 \cref{prop:degree-two-witness}.
 
-The instructive counterpoint is \texttt{adlittle}.  At the first float64-safe
-probe, its 81 reduced eigenvalues form one cluster with spread ratio
-$\kappa=4.3\times10^4$ (about $4.6$ decades).  The middle probe at
-$\kappa=1.85\times10^7$ is also one segment, with spread ratio
-$1.9\times10^7$ (about $7.3$ decades), and at the deepest safe probe the
-spectrum spans nine decades at $\kappa=1.31\times10^9$.  No decade gap
-appears at any of these three depths.  CG correspondingly takes 250, 985,
-and 2935 iterations;
-counts above 81 reflect finite-precision loss of conjugacy.  The deeper
-survey row heuristically reports two clusters at
-$\kappa=1.7\times10^{13}$, where float64 spectral diagnostics are already
-fragile.  This sharpens rather than contradicts
-\cref{prop:two-cluster-hessian}: the asymptotic split is real, but the safe
-probe establishes only that it has not opened through
-$\kappa\approx1.3\times10^9$.  The follow-up calculation is included in
-the accompanying analysis scripts.
+The instance \texttt{adlittle} shows that the split can appear late.  We
+examined it at three values of $\mu$ at which float64 eigenvalue
+computations are reliable.  At the largest, its 81 reduced eigenvalues form
+one cluster with spread ratio $\kappa=4.3\times10^4$ (about $4.6$ decades).
+At the middle value, $\kappa=1.85\times10^7$, they again form one cluster,
+with spread ratio $1.9\times10^7$ (about $7.3$ decades), and at the smallest
+value the spectrum spans nine decades at $\kappa=1.31\times10^9$.  No
+one-decade gap appears at any of these three values.  CG correspondingly
+takes 250, 985, and 2935 iterations; counts above 81 reflect finite-precision
+loss of conjugacy.  The deeper survey row heuristically reports two clusters
+at $\kappa=1.7\times10^{13}$, where float64 spectral diagnostics are already
+fragile.  This does not contradict \cref{prop:two-cluster-hessian}: the
+asymptotic split exists, but the reliable computations show only that it has
+not opened by $\kappa\approx1.3\times10^9$.
 
-That wall is itself visible in \texttt{brandy} and \texttt{recipelp}: at
+The limits of float64 arithmetic are visible in \texttt{brandy} and
+\texttt{recipelp}: at
 computed condition numbers above roughly $10^{15}$, roundoff produces
 negative eigenvalues for a mathematically positive-definite reduced Hessian.
 This is consistent with the classical finite-precision analysis of interior
 methods \cite{wright1998-ill-conditioning-computational-error-interior}.
 Presolve, rank reduction, and Phase-I choices affect the face approached by
 the path, so every exponent in \cref{tab:netlib-conditioning} belongs to the
-particular presolved representation.  The accompanying analysis scripts
-implement the path survey and sublevel fits; the table reports their
-deterministic cached-instance run.
+particular presolved representation.  The table reports one deterministic
+run on cached instances.
 
-\subsection{Scope of the escape}
+\subsection{Scope of the right-hand-side result}
 \label{sec:spectra-scope}
 
 The two-cluster theorem and the $O(\mu^2)$ right-hand-side fraction use the
 LP logarithmic barrier, strict complementarity on a sufficiently small tail,
 and exact centrality.  For a general barrier, it is plausible that the
-barrier's face-center first-order condition produces an analogous alignment,
-perhaps only an $O(\mu)$ fraction, but this is a conjecture: neither the
-cluster identification nor the required path-limit expansion has been proved
-in that generality.  Off-path iterates can acquire weak-mode components.
+first-order optimality condition at the barrier's center of the optimal face
+produces an analogous alignment, perhaps only an $O(\mu)$ fraction, but this
+is a conjecture: neither the two-cluster structure of the Hessian nor the
+required expansion of the path near its limit has been proved in that
+generality.  Off-path iterates can acquire weak-mode components.
 Nothing here establishes the same rate for predictor--corrector methods,
 infeasible-start variants, or unreduced primal--dual systems.  Accordingly,
-\cref{cor:top-window-solve} is an exact-path structural statement and the
-trajectory experiment is evidence for the stated adaptive rule, not a
-general convergence theorem for those variants.
+\cref{cor:top-window-solve} concerns the exact central path, and the
+damped-Newton experiment is evidence for the adaptive rule above; neither is
+a convergence theorem for those variants.

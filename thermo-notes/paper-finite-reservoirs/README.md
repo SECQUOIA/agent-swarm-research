@@ -6,7 +6,7 @@ This folder is the standalone manuscript and numerical reproduction bundle. It s
 
 The manuscript was developed in sequential stages with five independent internal reviewers after each author stage. [WORKFLOW.md](WORKFLOW.md) records the process and its current status. These are internal mathematical and scientific reviews, not external peer review or a guarantee of publication priority. Authorship and affiliations have intentionally not been assigned. Nothing in this folder has been submitted or sent externally.
 
-The manuscript is complete: 50 pages, 31 references, two figures, and all proofs included. All five author stages and two whole-paper review rounds are closed, with every accepted major and minor issue corrected. The review folder preserves 40 independent reports and the corresponding adjudication and correction records. A subsequent referee-style revision (recorded at the end of WORKFLOW.md) restructured the presentation, closed several minor proof gaps, and added citations; no theorem statement changed except for tightened hypotheses noted there.
+The manuscript is complete: 49 pages, 31 references, two figures, and all proofs included. All five author stages and two whole-paper review rounds are closed, with every accepted major and minor issue corrected. The review folder preserves 40 independent reports and the corresponding adjudication and correction records. A subsequent referee-style revision (recorded at the end of WORKFLOW.md) restructured the presentation, closed several minor proof gaps, and added citations; no theorem statement changed except for tightened hypotheses noted there.
 
 ## Build the paper
 
