@@ -143,7 +143,7 @@ are in the notes of the folder for that area.
 
 - *Done*: the main mathematical results are proved in Lean, with no unproved
   steps; software and experiments are not covered.
-- *Partial*: some results, but not the main ones, are proved in Lean.
+- *Partial*: some of the results are proved in Lean, but not all.
 - *Possible*: not done, but the main claims are mathematical statements that
   could be formalized with current libraries; this is a judgement, not a check.
 - *Not applicable*: the main claims rest on numerical evidence, experiments, or
