@@ -102,3 +102,27 @@ priority. The antecedent formalizations had internal agent reviews. Neither
 those reviews nor the local build are external peer review or a hosted CI run.
 The general individual-envelope identity and the elementary size calculations
 are distinguished from the Lean endpoints in [COVERAGE.md](COVERAGE.md).
+
+## Audit rerun on 2026-09-25
+
+Commit `fa2a6f42` split the final `PASS` message of `Verify.lean` across two
+source lines; the audited declarations and allowed axioms did not change. For
+consistency only that program, not the whole `scripts/verify.sh`, was run once
+more from this directory at `d85171b8`, with `$HOME/.elan/bin` on `PATH` and
+`LEAN_NUM_THREADS=4`:
+
+```sh
+lake env lean Verify.lean
+```
+
+It exited 0 in 5.3 s and printed
+`PASS: audited 827 bundled declarations; only propext, Classical.choice, Quot.sound are allowed.`
+All 20 named `#print axioms` lines report only those three axioms. Beforehand,
+`lake build --no-build Formal` reported all targets up to date, so the audit
+read outputs built from the current sources. The build, import check and
+kernel replay were not rerun.
+
+Because of the same rewrap, the delivery fingerprints in `../verification/SHA256SUMS` no longer
+match `formal/Verify.lean`, and this note changes `formal/VERIFICATION.md`.
+The other mismatches that `sha256sum -c` reports there, in the paper, its
+build records and `README.md`, were not examined for this note.

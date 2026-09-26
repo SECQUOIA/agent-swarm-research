@@ -1,6 +1,6 @@
 \section{Soundness of the certificate interface}
 \label{sec:soundness}
-This section proves the mathematical implications used by the checker. The results apply to accepted evidence satisfying their hypotheses; they do not assert that every convex MINLP has evidence accepted by the implementation. We separate the nonlinear support calculation, the discrete proof, and their composition so that a defect in one interface cannot be hidden by a successful check of another.
+This section proves the implications used by the checker. The results apply to accepted evidence satisfying their hypotheses; they do not assert that every convex MINLP has evidence accepted by the implementation. We treat the nonlinear support calculation, the discrete proof, and their composition separately, so that a successful check of one cannot hide a defect in another.
 
 \subsection{Rational propagation preserves feasible points}
 \label{sec:propagation}
@@ -10,7 +10,7 @@ Start with the declared box, intersect binary coordinates with $[0,1]$, and subs
  x_k\geq (u-R_k^-)/c_k\quad(c_k<0).
  \label{eq:propagate-upper}
 \end{equation}
-For a lower row $\sum_jc_jx_j\geq\ell$, use an upper bound $R_k^+$ for the other terms and divide $\ell-R_k^+$ by $c_k$, reversing the corresponding directions. The endpoints of each term are obtained by its coefficient sign. A missing endpoint gives no finite tightening in that direction. All finite operations are rational. An upper bound on an integer coordinate may be rounded down; a lower bound may be rounded up.
+For a lower row $\sum_jc_jx_j\geq\ell$, use an upper bound $R_k^+$ for the other terms and divide $\ell-R_k^+$ by $c_k$, reversing the corresponding directions. The coefficient sign determines which variable endpoint bounds each term. A missing endpoint gives no finite tightening in that direction. All finite operations are rational. An upper bound on an integer coordinate may be rounded down, and a lower bound rounded up.
 
 \begin{lemma}[Feasible-point preservation]
 \label{lem:propagation}
@@ -19,11 +19,11 @@ Any finite sequence of these operations produces a box $B$ containing every orig
 \begin{proof}
 Initially every feasible point satisfies the declared, fixed, and binary bounds. Suppose it lies in the box before an update. Its other terms are at least $R_k^-$, so the upper row implies $c_kx_k\leq u-R_k^-$. Division gives \eqref{eq:propagate-upper}. The lower-row argument is identical with an upper bound on the other terms. Integer rounding preserves each feasible integral coordinate. Intersecting with an implied bound therefore preserves the point. Induction proves the inclusion; an empty coordinate interval cannot contain such a point.
 \end{proof}
-The implementation makes at most 20 sweeps. This is a strength limit, not a soundness assumption. Bounds from integer rounding need not contain the continuous relaxation: the inclusion needed here is $F\subseteq B$. Every cut is nevertheless justified on the whole resulting box. A constant affine row is either a tautology or a contradiction. The finite-bound interface omits the former and rejects the latter; it does not issue a nonlinear infeasibility certificate merely because propagation detects a contradiction.
+The implementation makes at most 20 sweeps; this limits strength, not soundness. Bounds from integer rounding need not contain the continuous relaxation, since the inclusion needed here is $F\subseteq B$. Every cut is nevertheless justified on the whole resulting box. A constant affine row is either a tautology or a contradiction. The finite-bound interface omits the former and rejects the latter; it does not issue a nonlinear infeasibility certificate merely because propagation detects a contradiction.
 
 \subsection{Safe rational affine underestimators}
 \label{sec:safe-cuts}
-The finite-box calculation below is support minimization applied to an affine residual, an established rigorous-bounding principle \citep{jansson2004-rigorous-convex,messine2019-reliable-relaxation}. We state it with explicit rational-enclosure and unbounded-coordinate conditions because these are the replay interface.
+The finite-box calculation below is support minimization applied to an affine residual, an established rigorous-bounding principle \citep{jansson2004-rigorous-convex,messine2019-reliable-relaxation}. We state it with explicit rational-enclosure and unbounded-coordinate conditions because these conditions are what replay checks.
 Write a normalized row, including an objective epigraph row if necessary, as
 \begin{equation}
  r(x)=g(x)+q^\top x+c.
@@ -34,14 +34,14 @@ Here $q,c$ are rational and $g$ is convex on the certified box. Let $z\in B$ and
  g(x)\geq g(z)+p^\top(x-z)\quad(x\in B).
  \label{eq:g-support}
 \end{equation}
-A justified subgradient gives this inequality. The implementation uses finite symbolic derivatives in supported differentiable cases; it has no general subgradient oracle. Rationality is required of the supplied point $z$ and cut slope $a$, but not of the true values $g(z)$ or $p$.
+A justified subgradient gives this inequality. The implementation uses finite symbolic derivatives in supported differentiable cases and has no general subgradient oracle. The supplied point $z$ and cut slope $a$ must be rational; the true values $g(z)$ and $p$ need not be.
 
 Set $\phi(z)=r(z)-a^\top z$ and $d=p+q-a$. For each coordinate define
 \begin{equation}
  W_j(d_j)=\sup_{y\in B_j} d_j(z_j-y).
  \label{eq:worst-shift}
 \end{equation}
-Because $z_j\in B_j$, $W_j\geq0$. The exact formulas, including the conditions for finiteness, are in Table~\ref{tab:shift}. A sign failure in a half-line, or a nonzero residual slope on a free coordinate, makes this particular support bound infinite. This need not mean that the nonlinear function has no finite affine underestimator.
+Because $z_j\in B_j$, $W_j\geq0$. Table~\ref{tab:shift} gives the exact formulas and finiteness conditions. A sign failure on a half-line, or a nonzero residual slope on a free coordinate, makes this particular support bound infinite; the nonlinear function may still have a finite affine underestimator.
 
 \begin{table}[htbp]
 \centering
@@ -105,13 +105,13 @@ $\R$ & $d_j^-=d_j^+=0$ & $0$\\
 \bottomrule
 \end{tabular}
 \end{table}
-For a fixed coordinate, $L_j=U_j=z_j$, so the correction is zero. Exact elimination of a fixed variable avoids differentiating it; without elimination the stated support data must still be justified. Every variable in the row participates, including variables occurring only in $q^\top x$. An absent coefficient in the sparse cut means $a_j=0$, not an absent residual term.
+For a fixed coordinate, $L_j=U_j=z_j$, so the correction is zero. Exact elimination of a fixed variable avoids differentiating it; without elimination, its support data must still be justified. Every variable in the row participates, including variables occurring only in $q^\top x$. An absent coefficient in the sparse cut means $a_j=0$, not an absent residual term.
 
-Direct outward interval evaluation of the right-hand side of \eqref{eq:safe-intercept} also gives a valid sufficient test. The implementation uses this variant, with rational input conversion and exact extraction of the final interval's lower endpoint. Dependency loss can weaken the cut but cannot invalidate an actual enclosure. On an upper-unbounded coordinate the producer can choose $a_j$ below a rigorous lower bound for $p_j+q_j$; on a lower-unbounded coordinate it can choose it above a rigorous upper bound. Free coordinates require an exact residual zero. The epigraph coordinate has coefficient $-1$ and zero nonlinear derivative, so taking its slope as $-1$ meets that condition without bounding the epigraph variable.
+Direct outward interval evaluation of the right-hand side of \eqref{eq:safe-intercept} is also a valid sufficient test. The implementation uses this variant, with rational input conversion and exact extraction of the final interval's lower endpoint. Dependency loss in interval arithmetic can weaken the cut but cannot invalidate an actual enclosure. On an upper-unbounded coordinate the producer can choose $a_j$ below a rigorous lower bound for $p_j+q_j$; on a lower-unbounded coordinate it can choose it above a rigorous upper bound. Free coordinates require an exact residual zero. The epigraph coordinate has coefficient $-1$ and zero nonlinear derivative, so taking its slope as $-1$ meets that condition without bounding the epigraph variable.
 
 \begin{example}[Why the intercept must change when the slope is rounded]
 \label{ex:rounding}
-Let $r(x)=x^2-1/9$ on $[0,1]$ and $z=1/3$. Its tangent is $(2/3)x-2/9$. Replacing the slope by $a=67/100$ while retaining intercept $-2/9$ makes the cut left-hand side equal to $1/900$ at the feasible point $z$. Rounding has excluded an original feasible point. Here $d=2/3-67/100=-1/300$, $\phi(z)=-67/300$, and
+Let $r(x)=x^2-1/9$ on $[0,1]$ and $z=1/3$. Its tangent is $(2/3)x-2/9$. Replacing the slope by $a=67/100$ while keeping the intercept $-2/9$ makes the cut left-hand side equal to $1/900$ at the feasible point $z$, so rounding excludes an original feasible point. Here $d=2/3-67/100=-1/300$, $\phi(z)=-67/300$, and
 \[
  W=\max\{-1/900,1/450\}=1/450.
 \]
@@ -122,7 +122,7 @@ The safe intercept $b=-203/900$ follows from \eqref{eq:safe-intercept}. Indeed,
 \]
 The largest intercept for this fixed slope is $-1/9-(67/100)^2/4$, so the support correction is sufficient without being best possible. If the box were instead $[0,+\infty)$, the slope $67/100$ would fail the residual-sign test. Choosing $a=3/5$ gives $d=1/15$, $W=1/45$, and the valid half-line intercept $b=-2/9$. Thus bounded and unbounded coordinates require different rounding decisions. Neither construction requires $z$ to be an optimizer or an integer point.
 \end{example}
-Global underestimation is stronger than the implication needed for a feasible-set cut. For example, on $[-1,1]$ the row $x\leq0$ implies $2x\leq0$, although $2x\leq x$ fails for positive $x$. This interface deliberately uses the stronger condition because its evidence is simple to replay.
+Underestimation on the whole box is stronger than a feasible-set cut needs: on $[-1,1]$ the row $x\leq0$ implies $2x\leq0$, although $2x\leq x$ fails for positive $x$. The interface deliberately uses the stronger condition because its evidence is simple to replay.
 
 \subsection{What the discrete proof must establish}
 \label{sec:discrete-soundness}
@@ -136,7 +136,7 @@ A derived row $C$ carries a finite set $A(C)$ of assumption-row indices. Suppose
  \end{cases}
  \label{eq:incumbent-set}
 \end{equation}
-A solution cutoff is valid on $S$, not necessarily throughout $M$. The following rules implement this distinction, following the ordinary VIPR solution and assumption semantics \citep{cheung2017-vipr,wood2026-vipr-smt}.
+A solution cutoff is valid on $S$, not necessarily on all of $M$. The following rules, which follow the standard VIPR semantics of solutions and assumptions \citep{cheung2017-vipr,wood2026-vipr-smt}, respect this distinction.
 
 \begin{proposition}[Inference invariant]
 \label{prop:vipr-invariant}
@@ -167,7 +167,7 @@ Suppose all solutions and every derivation pass the preceding rules, and some as
 \begin{proof}
 Proposition~\ref{prop:vipr-invariant} proves the bound on $S$. With no supplied solutions, $S=M$. Otherwise a supplied solution attaining the finite minimum $b_M$ among the finite list belongs to $S$, so $b_M\geq\beta$. Every point of $M\setminus S$ has objective greater than $b_M$, hence at least $\beta$. The contradiction statement follows from the same invariant with $S=M$.
 \end{proof}
-Maximization uses the greatest checked solution value, a cutoff $c_M^\top y\geq b_M$, and a final upper inequality; the same proof reverses the objective order. An infeasibility claim requires an empty solution section. In particular, a cutoff cannot manufacture infeasibility by excluding feasible solutions. The stronger integer-objective cutoff $b_M-1$ is outside the admitted rules. A valid earlier bound can suffice even when later valid rows are weaker or have unused assumptions; every later row and the end of the file must still be checked. The argument establishes the semantic statement needed by the nonlinear layer, rather than merely matching a numerical endpoint in a proof header.
+Maximization uses the greatest checked solution value, a cutoff $c_M^\top y\geq b_M$, and a final upper inequality; the same proof applies with the objective order reversed. An infeasibility claim requires an empty solution section, so a cutoff cannot manufacture infeasibility by excluding feasible solutions. The stronger integer-objective cutoff $b_M-1$ is outside the admitted rules. A valid earlier bound can suffice even when later valid rows are weaker or have unused assumptions, but every later row and the end of the file must still be checked. The argument establishes the semantic statement that the nonlinear layer needs, rather than matching a numerical endpoint in a proof header.
 
 \subsection{Transfer and primal completion}
 \label{sec:bound-transfer}
@@ -184,7 +184,7 @@ Thus $\beta$ is a lower bound for original minimization, and $-\beta$ an upper b
 \begin{proof}
 For $x\in F$, define $E(x)$ by preserving every original variable, setting $t=h(x)$ if needed, and setting the constant variable to one if present. Original affine rows, integrality, and propagated bounds hold by construction and Lemma~\ref{lem:propagation}. Every nonlinear row is nonpositive at $x$, and every epigraph row is zero at $E(x)$; safe underestimation therefore proves all master cuts there. Thus $E(x)\in M$. Its master objective equals $h(x)$, including the affine constant exactly once. The master bound applied to $E(x)$ proves the result. If $M$ were empty, no such extension of a feasible $x$ could exist.
 \end{proof}
-For minimization this proves $\beta\leq\inf_{x\in F}f(x)$, including the convention $\inf\varnothing=+\infty$. The proof does not require a minimizer, a Slater point, or a finite optimum before the certificate is supplied. An unbounded relaxation or unsuccessful check provides no finite bound. The mathematical infeasibility implication is broader than the implemented public API, which reports finite bounds only.
+For minimization this proves $\beta\leq\inf_{x\in F}f(x)$, with the convention $\inf\varnothing=+\infty$. The proof does not require a minimizer, a Slater point, or a finite optimum before the certificate is supplied. An unbounded relaxation or an unsuccessful check provides no finite bound. The infeasibility implication is broader than the implemented public API, which reports finite bounds only.
 
 \begin{corollary}[Primal completion]
 \label{cor:primal}
@@ -198,4 +198,4 @@ If $U=\beta$, then $\bar x$ attains the exact optimum. The corresponding asserti
 \begin{proof}
 Feasibility gives $p^*\leq f(\bar x)$ and Theorem~\ref{thm:transfer} gives the other lower bound. The two inequalities give the gap and, in the equality case, attainment.
 \end{proof}
-The primal check must include variable bounds and integrality as well as rows and objective evaluation. A master solution only supplies the premise used in \eqref{eq:incumbent-set}. A recorded nonlinear reference value supplies neither a feasible point nor a rigorous objective enclosure.
+The primal check must include variable bounds and integrality as well as rows and objective evaluation. A master solution supplies only the premise used in \eqref{eq:incumbent-set}, and a recorded nonlinear reference value supplies neither a feasible point nor a rigorous objective enclosure.

@@ -1,6 +1,6 @@
 # A logarithmic degree bound for positive multilinear relaxation gaps
 
-Date: 2026-09-04. Status: proof independently checked by two agents; no mathematical issue identified. See `notes/review-positive-multilinear.md` and `notes/review-positive-multilinear-second.md` for review records. Companion to `results/positive-multilinear-gap.md`. This simpler O(log d) proof is retained as a preliminary result; the stronger `results/positive-multilinear-sharp-degree-growth.md` determines the sharp asymptotic growth ln d/ln ln d with leading constant one.
+Date: 2026-09-04. Status: proof independently checked by two agents; no mathematical issue identified. See `notes/review-positive-multilinear-upper.md` and `notes/review-positive-multilinear-upper-second.md` for review records. Companion to `results/positive-multilinear-gap.md`. This simpler O(log d) proof is retained as a preliminary result; the stronger `results/positive-multilinear-sharp-degree-growth.md` determines the sharp asymptotic growth ln d/ln ln d with leading constant one.
 
 ## Statement
 

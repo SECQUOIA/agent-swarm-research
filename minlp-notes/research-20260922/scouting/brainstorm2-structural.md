@@ -48,8 +48,8 @@ expected effect; what is known; risk.
   spherical codes, antenna and sensor placement, quadrature design, molecular and colloid
   models on spheres.
 - **Effect.** Very large where it applies (probe in §2.1): elec gaps drop from 170–220% to
-  0.03–0.07% with a certified bound. For knp the earlier uncertified scout LP gave dual
-  bounds 1.02–1.07 instead of the listed 4.0.
+  0.03–0.07% with a probe bound (not exactly certified; see §4). For knp the
+  earlier uncertified scout LP gave dual bounds 1.02–1.07 instead of the listed 4.0.
 - **Known.** The mathematics is classical: Delsarte, Goethals and Seidel (1977); Yudin (1992);
   Kolushov and Yudin; Andreev; universal lower bounds by Boyvalenkov, Dragnev, Hardin, Saff and
   Stoyanova (arXiv:1503.07228); moment/SDP bounds for Riesz energy by de Laat
@@ -301,10 +301,11 @@ solver-level part is recognizing a determinant in expanded Leibniz form.
 Score = (effect where it applies) x (breadth in MINLPLib and applications) x (novelty as a
 solver technique) / risk.
 
-1. **D1 PD-kernel aggregation**: probed; certified bounds cut elec gaps from about 200% to
-   below 0.1% and knp duals from 4.0 to about 1.05; about 11 open instances directly and
-   a clear application class. The theorem is classical; the new part is detection,
-   certification and use in a solver.
+1. **D1 PD-kernel aggregation**: probed; probe bounds (floating point with a Lipschitz
+   margin, not exactly certified; see §4) cut elec gaps from about 200% to
+   below 0.1%, and the earlier uncertified scout LP cut knp duals from 4.0 to about 1.05;
+   about 11 open instances directly and a clear application class. The theorem is
+   classical; the new part is detection, certification and use in a solver.
 2. **D2 Matrix-function recognition (determinants and Perron roots)**: probed; hadamard closes
    3 of 4 exactly and the fourth goes from a 254x gap to 16%. With nuclear, 22 open instances.
    Breadth in applications (design of experiments, population and epidemic models, reactor

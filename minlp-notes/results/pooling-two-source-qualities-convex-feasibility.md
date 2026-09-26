@@ -342,7 +342,8 @@ nontrivial source supply intervals. Cases exercised endpoint LPs,
 negative, zero, and positive QP minima, and infeasible interior linear
 polytopes. They also include restrictive common pool upper bounds.
 All optimization calls are numerical Gurobi solves; they are not exact
-certificates for the full algorithm.
+certificates for the full algorithm. Its archived output is
+[`stage05-two-quality-physical.txt`](../papers/pooling/verification/logs/stage05-two-quality-physical.txt).
 
 The explicit control uses two inputs of qualities zero and one, each
 with exact supply one; two products have exact demands one and qualities
@@ -355,10 +356,36 @@ checker detects this change, confirming that positive outlet lower
 bounds cannot simply be discarded.
 
 
-The second full-scope reviewer also checked 240 exact rational networks,
+The second full-scope reviewer also reported checking 240 exact rational
+networks
+([review record](../notes/review-pooling-two-source-qualities-source-intervals-independent.md#exact-arithmetic-stress-checks);
+no standalone checker script was found in the repository),
 including interior qualities `2^-80` and `1-2^-80`, zero-demand products,
 positive shared auxiliary slack, and multiple conserved coordinates.
 The checks covered 1,222 source equations, 913 product equations,
-480 output resource rows, and 2,739 vector-quality equations. These exact
-checks validate the scaling identities separately from numerical QP solves;
-the general algorithmic guarantee follows from the proof.
+480 output resource rows, and 2,739 vector-quality equations. These
+counts are the reviewer's report; that run itself was not archived.
+
+An independent reproduction (2026-09-25),
+[`check_two_quality_interval_stress.py`](../code/pooling_bypass_paths/check_two_quality_interval_stress.py)
+with [log](../code/pooling_bypass_paths/check_two_quality_interval_stress-2026-09-25.log),
+implements the check from the review description using only standard-library
+`Fraction` arithmetic and the same seed `310905`. It builds 240 random
+feasible networks with two distinct source vectors in 1 to 4 coordinates,
+non-singleton source supply intervals, sparse or dense bypass patterns,
+and lifted auxiliary `r=q^2+q(1-q)/4`; output caps and resource bounds
+are chosen with enough margin that the strengthened rows hold at this `r`,
+as in the review. Thirty cases each use `q=2^-80` and
+`q=1-2^-80`. It checks the scaled source rows (9)–(11), the output
+identities (3)–(4) and strengthened rows (6), the strengthened
+common-capacity and signed resource rows, and every conserved vector
+component. It also recovers the original flow from the scaled variables
+alone and rechecks all original bounds and balances. All checks passed:
+6,842 source rows, 3,840 output rows and recoveries, 618 capacity or
+resource rows, and 4,491 vector-component equations. The cases included
+205 zero-demand products, 31 inactive pools, and 720 positive feed lower
+bounds. The reviewer's generator was not archived, so the random
+networks and counts differ from the reviewer's; the row categories are
+this script's own. These exact checks validate the scaling identities
+separately from numerical QP solves; the general algorithmic guarantee
+follows from the proof.

@@ -88,11 +88,12 @@ structural and numerical developments listed below. Its first five-reviewer roun
 - `checks/check_developments_exact.py` checks 49 generalized crossover
   profiles, 8 generalized inversion profiles including repeated names,
   connection of three components, three even-subdivision scales on an
-  independently specified triangle with unequal conductances, 360 perturbed
-  original-network profiles, the tiny-residual family for k=0,...,10, and
-  100 exact graph-Poincare and voltage-Lipschitz samples. It uses original
-  edge-current aggregation and only the standard library. It does not claim
-  numerical planarity tests or finite samples prove the general results.
+  independently specified triangle with a pendant bus and unequal
+  conductances, 360 perturbed original-network profiles, the
+  tiny-residual family for k=0,...,10, and 100 exact graph-Poincare and
+  voltage-Lipschitz samples. It uses original edge-current aggregation
+  and only the standard library. It does not claim numerical planarity
+  tests or finite samples prove the general results.
 
 | Additional primary source | Verified material / use | Evidence |
 |---|---|---|

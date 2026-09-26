@@ -192,7 +192,8 @@ monotonicity without scaling control is insufficient.
 
 Uniform matroids have explicit rational Vandermonde representations, with
 entries of polynomial bit length even when their rank grows. Direct sums
-give partition matroids, and incidence matrices give graphic matroids.
+give partition matroids, and oriented (signed) incidence matrices give
+graphic matroids.
 Thus the stated fixed-cardinality, partition-quota, and spanning-tree or
 spanning-forest base subclasses are valid. These examples do not supply a
 rational representation for an arbitrary oracle or finite-field matroid.

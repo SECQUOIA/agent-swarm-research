@@ -27,7 +27,7 @@ where κ=2/(1−exp(−1)) and B(d) is any proven uniform degree-d gap bound. Th
 
 These statements also apply to zero-lower-bound boxes by scaling. General positive-lower-bound boxes are outside the present structural theorem.
 
-The exact fixed-k values are not determined. The inequalities in (2) are supremum statements obtained by allowing the radix, and hence the dimension, to increase.
+Apart from W(2)=2, established by the [treewidth-two theorem](positive-multilinear-treewidth-two-exact.md) on the same unit-cube class, the exact fixed-k values are not determined. The inequalities in (2) are supremum statements obtained by allowing the radix, and hence the dimension, to increase.
 
 ## A variable-radix lower construction
 

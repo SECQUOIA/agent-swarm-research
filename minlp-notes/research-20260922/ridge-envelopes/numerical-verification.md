@@ -6,13 +6,18 @@ edited. Code: `code/`. Raw records: `code/results/*.json`.
 
 ## Summary
 
+- These are numerical checks, not exact certificates: LPs are solved with
+  Gurobi tolerances of 1e-9, and every 1-D maximization below is an exact
+  reduction followed by an uncertified grid-and-refinement search with no
+  interval arithmetic (see the note after Methods). "Certified" and "exact"
+  below are meant in that sense.
 - No discrepancy was found. In 1800 box cases (15 functions `sigma`, both envelope
   sides, n = 1..5), the Theorem 1 value and an independent certified brute-force
   bracket always overlap. The largest gap between the two intervals is
   7.8e-13 R (floating-point noise), and the midpoints differ by at most 2.7e-8 R.
   R is the range of f over B.
-- Every cut `h` from (D) is valid. The maximum of `h - f` over the box, computed
-  exactly through a 1-D reduction, is at most 3.3e-14 R. On 1e5 random points
+- No cut `h` from (D) was found to be invalid. The maximum of `h - f` over the box, computed
+  through the 1-D reduction and grid search, is at most 3.3e-14 R. On 1e5 random points
   plus all vertices per instance, it is at most 1.6e-15 R. Each cut is tight at x:
   `|h(x) - value|` is at most 2.7e-15 R.
 - Corollary 3 (products of simplices) agrees with brute force in 300 cases. The
@@ -21,9 +26,12 @@ edited. Code: `code/`. Raw records: `code/results/*.json`.
   The tail-sum cuts are valid, with maximum violation 2.4e-12 R.
 - The special cases in "Computing (D)" also check out. For convex `sigma` (360
   cases), vex = f to within 5.8e-8 R. For concave `sigma` (352 cases), vex equals
-  the Lovász value `sum p_k sigma(t_k)` to within 1.3e-14 R. The S-shape
-  structure (sigma at the right nodes and one line through the left nodes) is
-  optimal in all 200 sigmoid and tanh cases, with a difference of at most 5.7e-9.
+  the Lovász value `sum p_k sigma(t_k)` to within 1.3e-14 R. Exploratory, not a
+  check of a current claim: an earlier draft conjectured an S-shape structure
+  (sigma at the right nodes and one line through the left nodes), which the
+  current `theory.md` no longer claims (it gives no closed form for S-shaped
+  `sigma`); this structure attained the (D) value within 5.7e-9 in all 200
+  sigmoid and tanh cases.
 - The envelope over the box is often much tighter than the factorable relaxation
   `vex_I sigma`. The mean gain is 0.04 to 0.15 R for most nonconvex `sigma`, and
   the worst-point gain reaches 0.25 to 1.0 R (details below).
@@ -36,7 +44,8 @@ from `theory.md`: it drops coordinates with `a_i = 0`, flips coordinates with
 computes the staircase data `(pi, t_k, p_k)` and solves (D) by a cutting-plane
 LP in `y` (Gurobi, feasibility and optimality tolerances 1e-9):
 
-- Concavity of the interpolant is imposed exactly.
+- Concavity of the interpolant is imposed as linear constraints, which hold up
+  to the LP feasibility tolerance (not exactly).
 - The chord constraints are separated on a 401-point `theta` grid per segment.
   Every local maximum is refined by golden-section search.
 - At the end, the chord violation is recomputed on a 20001-point grid with
@@ -99,13 +108,21 @@ missed maximum.
 | cut violation, exact 1-D reduction | 3.3e-14 |
 
 These worst cases do not depend on the kind of point: interior, tie, boundary
-and vertex points all give a midpoint difference of at most 3.1e-8. The tables
+and vertex points all give a lower-endpoint difference `|thm_low - bf_low|/R`
+of at most 3.1e-8 (the per-kind statistic printed by `run_verification.py`
+compares lower endpoints; the per-kind midpoint difference, recomputed from
+`code/results/box.json`, is at most 2.7e-8). The tables
 for each function are printed by `run_verification.py box`; no function exceeds
 the values above.
 
 Grid convergence (`run_verification.py grid`) was checked for n = 2 and 3. The
-gap `(grid upper - Theorem 1)/R` is always >= 0. It shrinks from about 1e-3 at
-N = 6 to 1e-6–1e-9 at N = 161 for n = 2, and to 1e-4–1e-10 at N = 41 for n = 3.
+gap `(grid upper - Theorem 1)/R` is always >= 0 up to rounding (smallest
+-3.7e-16). Over the 15 functions, at N = 6 the median gap is 3.7e-4 for n = 2
+(maximum 5.1e-3, sigmoid) and 7.4e-5 for n = 3 (maximum 2.2e-2, sin). It
+shrinks to between floating-point zero and 9.3e-6 (median 3.6e-8; largest:
+`cube_m3x`, 9.29263e-6) at N = 161 for n = 2, and to between floating-point zero
+and 1.1e-4 (median 3.6e-8) at N = 41 for n = 3 (values from
+`code/results/grid.json`).
 The slowest cases are sin and cos with n = 3, at about 1e-4 when N = 41. The
 decrease is not strictly monotone because of how the grid aligns with the
 optimal support points.
@@ -161,9 +178,12 @@ of those points.
 Sigmoid and tanh were tested on 100 interior cases each (n = 2..5). For each
 cut point k*, (D) was solved with `y_k = sigma(t_k)` for k > k* and
 `y_0..y_{k*}` collinear. The best of these restricted values matched the
-unrestricted (D) value within 5.7e-9 in every case. This supports the claim that
-an optimal psi with this structure exists. Whether the line is tangent to sigma
-was not checked separately.
+unrestricted (D) value within 5.7e-9 in every case. This is numerical evidence
+that an optimal psi with this structure exists in the tested cases. The
+structure was conjectured in an earlier draft; the current `theory.md` claims
+no closed form for S-shaped `sigma`, so this section is exploratory and does
+not check a current claim. Whether the line is tangent to sigma was not
+checked separately.
 
 ## Not covered
 

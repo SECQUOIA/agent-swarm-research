@@ -1,7 +1,10 @@
 # Candidate: contracted path pooling with fixed affine quality rank
 
-Date: 2026-09-05. Status: full candidate proof; fresh independent audits
-required. This extends the separately reviewed scalar transformation.
+Date: 2026-09-05. Status: full candidate proof. Two independent audits,
+[benders_review](review-pooling-fixed-rank-contract-exceptions-benders.md) and
+[pooling_all_two_review](review-pooling-fixed-rank-contract-exceptions-second.md),
+report PASS for the stated fixed-rank, fixed-exception theorem.
+This extends the separately reviewed scalar transformation.
 Priority for the physical class is not established.
 
 ## 1. Statement and retained assumptions

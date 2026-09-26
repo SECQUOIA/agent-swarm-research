@@ -68,5 +68,12 @@ feasible or infeasible instances analytically.
 ## Submission files
 
 `submission.zip` contains only the manuscript sources, bibliography, four
-checkers, and this README. It can be extracted and built independently.
-The compiled PDF is supplied separately as `build/main.pdf`.
+checkers, and an earlier copy of this README. It can be extracted and built independently.
+A build writes the compiled PDF to `build/main.pdf`, which Git ignores; the
+repository tracks no compiled PDF of this manuscript.
+
+The archive and the review records in `process/` cover the 2026-09-07
+version (commit `2a05c164`). The manuscript sources were revised afterwards
+in commit `aee2afbf` (2026-09-24) and again in the 2026-09-25 audit
+follow-up. The archive was not refreshed, so it does not contain the current
+sources, and no review of the later revisions is claimed.

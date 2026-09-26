@@ -78,7 +78,7 @@ SR_L = {(x, z) ∈ [0,1] × R : ∃ (g, α) ∈ [0,1]^{L+1} × {0,1}^L :
 ```
 
 where `S_L` (eqs. (7)–(8), pp. 842–843) forces `g_0 = x` and, for integral `α`,
-`g_j = G(g_{j−1})`, and `f_j(x, g) = x − Σ_{k<=j} 2^{-2k} g_k`. It uses `L` binary
+`g_j = G(g_{j−1})`, and `f_j(x, g) = x − Σ_{k=1}^{j} 2^{-2k} g_k` (empty sum for `j = 0`). It uses `L` binary
 variables. Its maximum error is `2^{-2L-2}` (Part I, Sect. 5.1.1, p. 851: "the (tightened)
 sawtooth relaxation has the same maximum error of `2^{-2L-2}` as the sawtooth
 approximation"; also Sect. 5.1.2, p. 853, and Table 1, p. 850). The sawtooth *epigraph*

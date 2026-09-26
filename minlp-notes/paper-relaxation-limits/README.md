@@ -4,11 +4,14 @@ The integrated manuscript is [main.pdf](main.pdf), with source [main.tex](main.t
 
 **Authoring status: complete.** All six authoring stages and the separate whole-paper review were accepted: **135 reports across nine rounds**. The final fifteen reports were all PASS with no requested manuscript repairs. The recorded final clean build had 111 pages. See [FINAL-REPORT.md](FINAL-REPORT.md) for the results and process, and [PROCESS.md](PROCESS.md) for stage accounting.
 
-Those reports describe the reviewed authoring snapshot. The current PDF
-includes the later source corrections from the
-[September 20 documentation follow-up](../notes/lean-verification-documentation-followup.md)
-and the topic 19 coverage updates below. It was rebuilt after the topic 19
-updates; earlier build and review records retain their original scope.
+Those reports describe the reviewed authoring snapshot of 2026-09-07. The
+manuscript sources were revised afterwards: by the source corrections of the
+[September 20 documentation follow-up](../notes/lean-verification-documentation-followup.md),
+by the topic 19 coverage updates below (2026-09-20), in commit `aee2afbf`
+(2026-09-24), and in any 2026-09-25 audit follow-up edits. The current PDF
+was last rebuilt in commit `aee2afbf`. The authoring reviews do not cover
+these later revisions; earlier build and review records retain their
+original scope.
 
 ## Lean coverage
 

@@ -12,7 +12,7 @@ Let `f` be a multilinear polynomial with positive coefficients on a box `B=∏[�
 
 Here `tbtgap` is the sum of the exact concave-minus-convex envelope gaps of the individual monomials, including their coefficients; `chgap` is the concave-minus-convex envelope gap of the entire polynomial. Dimension, degree, number of terms, coefficients, and evaluation points are unrestricted. Constant and affine terms have zero gap.
 
-Let `C_box(ρ)` be the supremum of this ratio over such positive boxes, polynomials, and points with positive hull gap. Together with the independently audited [lower construction](positive-multilinear-positive-box-lower.md), the theorem gives
+Let `C_box(ρ)` be the supremum of this ratio over such positive boxes, polynomials, and points with positive hull gap. The independently audited [lower construction](positive-multilinear-positive-box-lower.md) uses the common boxes `[1,ρ]^n`, which belong to this class; that note's narrower `C_box(ρ)` is therefore at most the supremum defined here. Together with that construction, the theorem gives
 
 \[
 \boxed{\max\{2,\rho\}\le C_{\rm box}(\rho)\le\rho+2.}
@@ -258,7 +258,12 @@ upper-bound refinement, with no claim of exact finite-dimensional optimality.
 
 The [topic-18 Lean package](../formal/topics/18-positive-box/README.md)
 formalizes the coefficient inequality, original-box transfer, the two-sided
-aspect bound, and the finite-dimensional refinement. The
+aspect bound, and the ambient-dimensional form of the finite-dimensional
+refinement: `positiveBoxAspectBound_add_orientationBeta` proves `rho+beta_N`
+for boxes of ambient dimension `N`, with fixed coordinates allowed. The
+nonfixed-coordinate statement above additionally discards fixed coordinates
+before counting `N`; that mathematical reduction is not part of the Lean
+package. The
 [coverage map](../formal/topics/18-positive-box/COVERAGE.md) states the exact
 hypotheses, including nonnegative coefficients, fixed coordinates and zero
 gaps. The [independent review](../formal/topics/18-positive-box/REVIEW.md)

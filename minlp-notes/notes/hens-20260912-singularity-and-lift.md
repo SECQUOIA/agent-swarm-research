@@ -7,16 +7,22 @@ Wrapped up early on the coordinator's instruction; section 5 lists what was not 
 
 ## 1. Summary
 
-* **heatexch_gen1/2/3 are ill-posed in the sense that the infimum is not attained and lies far below
-  the recorded primal bound.** The guarded LMTD `f(d1,d2) = (d1-d2)/log(d1/(d2+1e-6))` is unbounded
+* **heatexch_gen1 is ill-posed in the sense that the infimum is not attained and, by numerical
+  estimates, lies far below the recorded primal bound; gen2/gen3 share the guard structure.** The
+  guarded LMTD `f(d1,d2) = (d1-d2)/log(d1/(d2+1e-6))` is unbounded
   above on the feasible region, so every process-exchanger area `2q/(0.01+LMTD)` can be driven to 0.
-  For gen1 we constructed explicit points (all 120 constraints verified in float and in 50-digit
-  mpmath, max violation 1.7e-12) with objective **108,999.78** versus the MINLPLib primal bound
-  154,895.93; the "utility + fixed cost" infimum is in `[100,500, 108,846.94]`. The recorded
-  gap (100,500 to 154,896) is therefore an artifact of the guard: the best feasible objective is at
-  most 108,846.94, and no point attains it (that needs `LMTD = +inf`).
+  For gen1 we constructed explicit numerically feasible points (all 120 constraints evaluated in
+  float and in 50-digit mpmath, max violation 1.7e-12; no exact or validated feasible witness) with
+  objective about **108,999.79** (independent reconstruction `108999.783324`, rounded up) versus the
+  MINLPLib primal bound 154,895.93; the "utility + fixed cost" infimum is estimated to lie in
+  `[100,500, 108,846.94]`, where the upper end is a limiting estimate from a numerical solution
+  of relaxation c1 (section 4.1). On these estimates the recorded
+  gap (100,500 to 154,896) is an artifact of the guard: the best feasible objective is
+  estimated to be at most about 108,846.94, and no point attains it (that needs `LMTD = +inf`).
   gen2 and gen3 use the identical guard (10 and 50 occurrences) with dt variables appearing only in
-  big-M inequalities, so the same argument applies. heatexch_spec1-3 and heatexch_trigen use a
+  big-M inequalities. This is a structural warning only: no points were constructed for them, and
+  a jointly feasible limiting construction, nonattainment, and the comparison with their recorded
+  bounds were not established. heatexch_spec1-3 and heatexch_trigen use a
   guarded Chen approximation instead and are not affected.
 * **The homogeneity lift did not improve bounds on the well-posed SYNHEAT example 1** (Yee-Grossmann
   1990 2H/2C; same data as gen1) under identical settings. Gurobi 13, 4 threads: original dual
@@ -87,13 +93,14 @@ double; nothing else changed.
 | 1e-8 | eq / Ipopt | max iter | 170,085 | 4.2 / 12575 / 16950 | - | 1.2e-2 / 2.8e-2 | 4.0e-2 / 6.4e-7 |
 | 1e-9 | eq / Ipopt | max iter | 194,170 | 4025 / 21 / 26 | - | 3.1e-2 / 3.1e-2 | 1.1e-3 / 4.7e-4 |
 
-Reading: with dt fixed, the points are feasible to ~1e-12 in exact arithmetic (bound violation 0),
+Reading: with dt fixed, the polished points satisfy all constraints to ~1e-12 when evaluated in
+50-digit arithmetic (bound violation 0; numerical feasibility, not an exact feasibility certificate),
 binaries exactly integral, and the objective falls from 154,896 to 108,999.78 as `delta` shrinks
 (utility loads settle at CW 250 + 1850 kW, steam 450 kW; the NLP moves load onto the now-free
 process exchangers). The raw solver points look feasible in float (violations 1e-7) but are infeasible
-in exact arithmetic by up to 8.5e-3 on the LMTD equation, and conversely the exactly feasible polished
-points look infeasible by 8.5e-3 in double precision: near the guard the feasibility question is
-numerically undecidable at the 1e-2 level. With `d1 - d2 = 1e-6 + delta` as a constraint and dt free,
+in 50-digit arithmetic by up to 8.5e-3 on the LMTD equation, and conversely the polished
+points (feasible to ~1e-12 at 50 digits) look infeasible by 8.5e-3 in double precision: near
+the guard the feasibility question is numerically undecidable at the 1e-2 level. With `d1 - d2 = 1e-6 + delta` as a constraint and dt free,
 Ipopt hit the iteration limit at all three deltas and its points are not feasible (derivative of the
 LMTD w.r.t. `d1` is `~ -f/delta ~ 1e13`); CONOPT coped. The BARON incumbent itself verified with max
 violation 4.8e-8 (both float and mpmath), objective 154,895.93297606902.
@@ -109,10 +116,13 @@ violation 4.8e-8 (both float and mpmath), objective 154,895.93297606902.
 | c2 | all LMTD + area equations e65-e88 | **100,500.00** | 100,500.00 | 0.7 s | same; 6 x 5500 + 15 x 2100 + 80 x 450 = 100,500 |
 
 c1 is a relaxation of the original, so `inf(original) >= opt(c1) >= 100,500`. Conversely the
-constructed points give `inf(original) <= 108,999.78` rigorously, and letting `delta -> 0` in the c1
-structure gives `inf(original) <= 108,846.94` (c1m shows the EMAT margin costs 5e-3). BARON could not
+numerically feasible constructed points give the approximate upper estimate
+`inf(original) <= ~108,999.79` (not certified: residuals of 1.7e-12, and 4.5e-10 in section 8,
+remain, and no exact or validated feasible construction is supplied), and letting `delta -> 0` in
+the numerical c1 solution structure suggests `inf(original) <= ~108,846.94` (c1m shows the EMAT
+margin costs 5e-3). BARON could not
 close the c1 gap in 600 s (its relaxation of the unguarded utility LMTD `(x-70)/log(x/70)` stays at
-zero area), so the exact infimum is only located in `[100,500, 108,846.94]`.
+zero area), so the exact infimum is only estimated to lie in `[100,500, 108,846.94]`.
 
 ### 4.2 Original gen1, 300 s each (`run_gen1_solvers.py heatexch_gen1 300`)
 
@@ -127,12 +137,14 @@ BARON 100,552.2, COUENNE/SCIP/SHOT/XPRESS 100,500 (https://www.minlplib.org/heat
 Every dual bound of 100,500 is exactly the c2 value (6 units + minimum utility with zero area): the
 relaxations "see" the unbounded LMTD and give up on area. The ANTIGONE/LINDO values above 100,500 are
 not contradicted by our points (108,999.78 > 107,976) but are not proved valid either, since the true
-infimum is only known to lie in `[100,500, 108,846.94]`.
+infimum is only estimated to lie in `[100,500, 108,846.94]`.
 
-**Conclusion.** The recorded gap on heatexch_gen1 (and, by the same structure, gen2/gen3) is an
-artifact of the `1e-6` guard: the recorded primal bound is not within 30 % of the infimum, the
-infimum is not attained, and any solver reporting 154,896 as optimal is wrong only because it never
-found the near-singular region, not because the region is infeasible. The instances should be fixed
+**Conclusion.** On the numerical estimates above, the recorded gap on heatexch_gen1 is an
+artifact of the `1e-6` guard: the recorded primal bound is not within 30 % of the estimated
+infimum, the infimum is not attained, and any solver reporting 154,896 as optimal is wrong only
+because it never found the near-singular region, not because the region is infeasible. For gen2/gen3 the same
+guarded LMTD with dt only in big-M inequalities is a structural warning; the gen1 conclusions were
+not established for them. The instances should be fixed
 (e.g. `d1 = d2` handled by a Chen or Paterson approximation, or `d1 - d2 >= tol` with a lower bound on
 the log) before being used as benchmarks. Mistry and Misener (2016, section 5.2) observed the same
 symptom on gen3 (a feasible point 1 % below the MINLPLib "lower bound") and attributed it to the
@@ -218,7 +230,8 @@ with the exact (guarded) LMTD and non-isothermal mixing, which is the expected o
   (600 s, dual stuck at 100,500). gen2/gen3 were analysed structurally only (same guard, dt only in
   big-M inequalities); no explicit points were constructed for them.
 * Ipopt could not handle the `d1 - d2 = 1e-6 + delta` equality version; the certified points come
-  from the fixed-dt NLPs (Ipopt and CONOPT agree to 1e-12).
+  from the fixed-dt NLPs (Ipopt and CONOPT agree to 1e-12). "Certified" here means checked
+  numerically at 50 digits (residuals ~1e-12), not an exact or validated feasibility proof.
 * Node counts are not reported for BARON/SCIP on gen1 (GAMS `.lst` in `results/` only); Gurobi root
   bounds are parsed from its log ("Root relaxation"), BARON's from the first iteration row.
 * The literature optimum for Yee-Grossmann Example 1 was not verified against the original paper.

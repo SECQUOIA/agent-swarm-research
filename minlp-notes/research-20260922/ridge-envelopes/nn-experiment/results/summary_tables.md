@@ -38,6 +38,11 @@ Cut-loop termination (R0 status, R1 status): {('converged', 'converged'): 146, (
 
 ### Python B&B, R0 vs R1 (600 s CPU limit)
 
+Timing caveat: in 23 of the 160 records `t_sep` exceeds `time`, so the
+separation and total times in this file come from inconsistent clocks. Node
+and closed-run counts are unaffected. Rerun before using the timings in a
+paper; see "Before publication" in [`../report.md`](../report.md).
+
 | group | runs | closed R0 | closed R1 | both closed | SGM time R0 / R1 (s, shift 1) | SGM nodes R0 / R1 (shift 10) | median node ratio R1/R0 | median time ratio R1/R0 | R1 faster / slower (>10%) | open both: median rel. gap R0 / R1 |
 |---|---|---|---|---|---|---|---|---|---|---|
 | all | 80 | 59 | 53 | 53 | 18.2 / 28.4 | 328 / 210 | 0.68 | 1.55 | 1 / 47 | 1.05e+00 / 1.34e+00 |

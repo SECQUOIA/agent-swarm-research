@@ -41,9 +41,12 @@ conservation row.
   projection. For sine/cosine, the circle identity alone can include points
   outside the angle interval's arc, whose chord is not implemented here.
   For `(x^2, x^3)` on `[1,2]` the
-  relaxation volume is `3/20 = 0.1500` term by term, 0.0730 with the link
-  (numerical integration, reviewer's value; the first version said 0.1497 and
-  0.0729) and 0.0055 for the hull (Ballerstein's value).
+  relaxation volume is `3/20 = 0.1500` term by term, 0.0730 when the
+  individual term envelopes are intersected with the planar hull of
+  `t_3 = t_2^(3/2)` on `t_2 in [1,4]` (the region between that curve and its
+  chord; numerical integration, reviewer's value in
+  `review/volume.py`; the first version said 0.1497 and 0.0729) and 0.0055
+  for the hull (Ballerstein's value).
 - What this note adds is automatic detection across constraints, a
   solver-independent reformulation, and a library-wide look. A scan finds a
   variable with at least two distinct univariate subexpressions in 189 of 1,594
@@ -79,8 +82,16 @@ conservation row.
 - SCIP 10 returns a wrong optimum on `waterno2_02` and `waterno2_03` (42.343
   against 39.571; 130.84 against 115.005); its own solution checker accepts the
   better points. SCIP's numbers on this family are therefore not used for any
-  claim. Gurobi's "optimal" 28.931 on `ex8_4_7` (MINLPLib: 29.047) is a
-  tolerance artefact: the point is infeasible by `8.7e-4` in exact arithmetic.
+  claim. Gurobi's "optimal" 28.931 on `ex8_4_7` (MINLPLib: primal 29.047,
+  best listed dual bound 29.0437 from LINDO) is not a valid solve: it lies
+  below that dual bound. A rerun of the same command on 2026-09-25
+  reproduced it (28.931149, same node count) and saved the point
+  (`results_gurobi_60_ex8_4_7_rerun.jsonl`, `review/rerun_point_check.py`).
+  Under the plain-float evaluator of the original model the point violates
+  row 25 by `8.9e-4`; Gurobi's own `MaxVio` reports the same value, far
+  above its default feasibility tolerance `1e-6`. The reviewer's separate
+  reproduction returned 28.922 with a `8.7e-4` violation
+  (`review/note_model_point_check.jsonl`).
   SCIP's "optimal" 1.20585 on `ex7_3_5` (native and linked) is below the
   MINLPLib dual bound 1.206653; not investigated.
 
@@ -128,8 +139,10 @@ All 48 instances with links (the two containing `abs`, `water` and
 Solver-reported solved: 26 native, 25 linked (`ex8_4_7` and `lnts50` only native, `wastepaper4`
 only linked); shifted geometric mean time 8.2 s against 8.4 s; of the 24 solved
 by both, the linked form is faster on 10. On `water` (14 links) the 60 s dual
-bound moves from 255.0 to 267.2. No dual bound of either form exceeds the best known
-primal value. Dual bounds after 60 s on unsolved instances (all minimization
+bound moves from 255.0 to 267.2. No dual bound of either form is on the wrong
+side of the best known primal value for the instance's optimization sense
+(for the maximization instance `pricing050` the dual bounds lie above it).
+Dual bounds after 60 s on unsolved instances (all minimization
 except `pricing050`, a maximization, where the linked bound is the weaker one):
 
 | instance | links | native | linked |
@@ -148,7 +161,8 @@ except `pricing050`, a maximization, where the linked bound is the weaker one):
 `waterno2_03` is solved in 3.5 s instead of 12.1 s and `waterno2_04` in 34.6 s
 instead of 47.7 s. The links hurt on the particle-steering family `lnts*`
 (Gurobi solves `lnts50` natively in 24 s and not within 60 s, or 300 s, with
-links), on `ex8_4_7`, and at 60 s on `ghg_2veh`.
+links), on `ex8_4_7` (compared with a native solve that is itself invalid;
+see the Summary), and at 60 s on `ghg_2veh`.
 
 ### The exact hull of `(x, x^2, x^3)` in Gurobi (`gurobi_link.py` mode `moment`, `results_gurobi_60_moment.jsonl`, `compare_moment.py`)
 
@@ -179,9 +193,10 @@ Solved counts are 9 of 19 in every mode and the mean times are within noise
 (12.9, 12.1, 11.8, 11.7 s). The exact hull dominates the relation link on every
 water instance and on `ex8_4_2`, and removes the harm the link did on
 `ghg_2veh`; the link on top of the hull adds nothing consistent. All 60 s
-dual bounds are below the best known primal values. In SCIP 10 the same
-constraints (`moment_pilot.py`, 60 s) gave only small gains: dual bounds 124.3
-against 117.4 (linked) on `waterno2_04`, 139.9 against 140.6 on `waterno2_06`,
+dual bounds are on the valid side of the best known primal values for the
+optimization sense (above the primal value for the maximization instance
+`pricing050`). In SCIP 10 the same constraints (`moment_pilot.py`, 60 s)
+gave only small gains: dual bounds 124.3 against 117.4 (linked) on `waterno2_04`, 139.9 against 140.6 on `waterno2_06`,
 0.304 against 0.236 on `ex8_4_2`, and a much weaker bound on the maximization
 instance `pricing050` (-145 against -1425; an earlier version of this note
 misread this as an invalid bound). The difference is presumably Gurobi's
@@ -207,19 +222,45 @@ The 60 s data separate three cases.
 3. *Badly conditioned links.* `ex8_4_7` has exponents `{-1, 2}` on variables in
    `[660, 680]`; the first rule takes the reference exponent of smallest
    magnitude, `-1`, and writes `t_2 = t_{-1}^{-2}` with `t_{-1}` about `1/670`.
-   With that link Gurobi times out; with the reference chosen as the positive
+   With that link Gurobi times out. With the reference chosen as the positive
    exponent closest to 1 (`link_detect.reference(..., "positive")`, mode
-   `linked2`) it solves in 36 s (native: 7.5 s). Over the 46 instances run with both
-   rules they are otherwise within noise (24 solved each, mean time 8.4 s against
-   8.6 s; `wastepaper4` solves under the first rule only), so the reference
-   choice is a conditioning matter, not a lever.
+   `linked2`) Gurobi reports an optimum of 26.994 after 36 s (native: 28.931
+   after 7.5 s). This result is inconsistent with the reference bounds: it is
+   7.1% below the best dual bound listed on MINLPLib for this minimization
+   instance (29.0437, LINDO; primal 29.0473). It is not counted as a valid
+   solve; the native 28.931 is also not valid (see the Summary). A rerun of
+   the same command on 2026-09-25 (same script and settings, 60 s, 4 threads,
+   run alone rather than eight at a time) reproduced the result exactly
+   (26.99421396, 123,620 nodes, 36 s) and saved the point
+   (`results_gurobi_60_ex8_4_7_rerun.jsonl`, `review/rerun_point_check.py`).
+   In the original model that point has the same objective 26.994 and
+   satisfies all variable bounds, but it violates row 39,
+   `x61 = x50 exp(-x51 (800/x49 - 1))`, by `5.9e-5`. Because `x61` is about
+   0.008, this is a relative error of about 0.7%. Five of the nine other rows
+   of this form (rows 30–38) are violated by `9e-6` to `3.8e-5`.
+   Gurobi's `MaxVio` for the linked model reports the same `5.9e-5`, well above
+   its default feasibility tolerance `1e-6`. The violated row is an original
+   row, not a link, and the objective of the linked model matches the original
+   evaluator. The invalid solve therefore appears to come from Gurobi
+   accepting points that are infeasible by a small absolute amount on rows whose
+   variables are of order `1e-3`, not from a bug in the reformulation. This
+   diagnosis was not confirmed by a solve at tighter tolerances. Over the 46
+   instances run with both rules the results are otherwise within noise (24
+   solved under each rule as reported by Gurobi, 23 under the second rule
+   without `ex8_4_7`; mean time 8.4 s against 8.6 s; `wastepaper4` solves
+   under the first rule only). The data therefore show no benefit of either
+   reference choice. Whether the reference exponent affects conditioning on
+   `ex8_4_7` would need a validated solve against the original model. The
+   curve-hull study also excludes `ex8_4_7` as numerically unreliable
+   (`research-20260922/curve-hulls/report.md`).
 
-A heuristic suggested by this evidence is to prioritize power links with a
-positive reference exponent close to one and powers appearing in equality
-rows or with both signs; treat trigonometric links as solver specific. These
-are priorities, not necessary conditions for a useful link. In particular,
-the mixed-curvature epigraph example above rules out the earlier claim that
-one-sided epigraph uses can never gain. The heuristic comes from 48 instances
+A heuristic suggested by this evidence is to prioritize power links with
+powers appearing in equality rows or with both signs; treat trigonometric
+links as solver specific. (An earlier version also preferred a positive
+reference exponent close to one; its only support was the invalid
+`ex8_4_7` result above.) These are priorities, not necessary conditions for
+a useful link. In particular, the mixed-curvature epigraph example above
+rules out the earlier claim that one-sided epigraph uses can never gain. The heuristic comes from 48 instances
 and one run per cell; it is not a validated policy.
 
 ### Gurobi 13, 1800 s, 3 threads (`results_gurobi_1800.jsonl`, `results_gurobi_1800_moment.jsonl`)
@@ -369,5 +410,6 @@ $RUN check_scip_waterno2.py waterno2_02        # SCIP accepts the point it exclu
 $RUN polish_point.py waterno2_18 900 600       # the improved primal point
 $RUN exact_check_point.py waterno2_18 point_waterno2_18.json   # exact residuals at that point
 ./run_linked2.sh && python3 compare_rules.py    # reference-exponent rule comparison
+for m in linked2 native; do $RUN review/rerun_point_check.py ex8_4_7 $m 60 4; done > results_gurobi_60_ex8_4_7_rerun.jsonl   # ex8_4_7 points, checked in the original model
 $RUN moment_pilot.py waterno2_04 moment 60     # the moment-cone variant
 ```

@@ -111,8 +111,9 @@ uv run --frozen --no-sync python -m lbesh_research.benchmark \
 primary records, checks unchanged executable sources, and then runs the
 remaining batches sequentially. It preserves the inherited solver `PATH`.
 Initialize the separate cone environment before launching the queue. Its
-reference job executes 42 continuous roots and all 27 assignments for each
-of 14 supported small models, preserving numerical failures without retries.
+reference job executes 42 continuous roots (14 small, 14 medium and 14 large
+models) plus all 27 assignments for each of the 14 supported small models,
+preserving numerical failures without retries.
 The complete plan comprises 663 primary jobs, 768 supplementary benchmark
 jobs, and 420 cone-reference solves. The oracle diagnostic is a separate
 solver-free experiment.

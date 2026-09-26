@@ -14,8 +14,8 @@ The proof uses coordinate shattering of near-optimal supports, followed by a
 finite parameter net. This concerns distinct supports, not connected regions:
 even two Lipschitz branches can alternate infinitely often.
 
-Let `Z` be a nonempty subset of `{0,1}^m`, with `m>=1`. On a compact metric
-parameter space `T`, let every deterministic function `q_z` be `L`-Lipschitz. Let the
+Let `Z` be a nonempty subset of `{0,1}^m`, with `m>=1`. On a nonempty compact
+metric parameter space `T`, let every deterministic function `q_z` be `L`-Lipschitz. Let the
 coordinates of `xi` be independent and have densities bounded by `phi>0`.
 Write
 
@@ -51,8 +51,10 @@ E K^p <= e [1+4ML sqrt(d) m phi (m+1)^p]^(dp).         (2)
 
 This is polynomial for fixed `d,p`. The bound is deliberately coarse. It
 does not claim the best dependence on `m`, the smoothing density, or `p`.
-If `L=0`, all branches are constant on the parameter domain and `K=1`
-almost surely. The case `m=0` is also trivial. A common function may be
+If `L=0`, all branches are constant on the nonempty parameter domain; since
+the noise has densities, the minimizer is unique and `K=1` almost surely.
+Under the atomic noise of Section 4, several supports may tie everywhere, so
+uniqueness can fail; bound (5) with `delta=0` still controls the moments. The case `m=0` is also trivial. A common function may be
 subtracted from every branch before imposing the Lipschitz assumption.
 
 ## 1. A near-optimal set rarely shatters many coordinates

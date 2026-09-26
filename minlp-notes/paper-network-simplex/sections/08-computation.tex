@@ -1,11 +1,12 @@
 \section{Implementation, verification, and computational comparisons}\label{sec:computation}
 \input{tables/08-values}
 
-The implementations serve two distinct purposes: constructing small numerical
-LPs and producing exact rational hull certificates. The experiments compare
+The implementations serve two purposes: constructing small numerical LPs
+and producing exact rational hull certificates. The experiments compare
 both with strengthened versions of classical disaggregation. They show large
-model-size savings, but also cases where a simpler LP is faster and cases where
-global state merging explains most of an apparent compression advantage.
+model-size savings, but also cases where a simpler LP is faster and cases
+where global state merging explains most of an apparent compression
+advantage.
 
 \subsection{Implemented scope and certificate semantics}
 
@@ -29,24 +30,24 @@ not a complete production general-graph oracle\\\bottomrule
 \end{tabular}
 \end{table}
 
-\Cref{tab:implemented-scope} distinguishes the three usable interfaces
-from the bounded-rank verification code. The specialized separators use
-Python's standard library and rational arithmetic throughout. They check
-original flow and simplex constraints, retain the original affine expressions
-of active bounds, and return a cut with strictly positive exact violation
-or a decomposition whose positive-weight normalized flows belong to $\Flow$.
-The graph separator rejects unsupported blocks explicitly. The flat oracle
-merges unobserved labels, eliminates the residual profile, and uses the
-five-test formula when at most two labels are observed. At three labels it
-uses the 16 circuits and both flow-balance repairs of
-\cref{thm:three-state-chain} for separation. Recovery uses finite inverse
-bases at three or more observed labels.
-Its stored default is shared across unused global labels. Compatibility
-accessors can materialize the former dense state arrays, with the corresponding
-output cost. Tuple normal construction and hashing retain a dimension factor
-relative to the preindexed-mask operation count in \cref{thm:fixed-chain};
-apart from the constructor's $O(|\Obs|\log|\Obs|)$ observation sorting,
-the implemented cost is linear in $L$ at fixed observed-label count.
+\Cref{tab:implemented-scope} separates the three usable interfaces from
+the bounded-rank verification code. The specialized separators use
+Python's standard library and exact rational arithmetic. They check the
+original flow and simplex constraints, keep the original affine expressions
+of active bounds, and return either a cut with strictly positive exact
+violation or a decomposition whose positive-weight normalized flows belong
+to $\Flow$. The graph separator explicitly rejects unsupported blocks. The
+flat oracle merges unobserved labels, eliminates the residual profile, and
+uses the five-test formula when at most two labels are observed. At three
+labels it separates with the 16 circuits and both flow-balance repairs of
+\cref{thm:three-state-chain}. Recovery uses finite inverse bases at three
+or more observed labels. The recovered decomposition stores one default
+flow shared by all unused global labels; accessors can expand it into
+dense state arrays at the corresponding output cost. The implementation
+builds and hashes normals as tuples, which adds a dimension factor to the
+preindexed-mask operation count of \cref{thm:fixed-chain}. Apart from
+$O(|\Obs|\log|\Obs|)$ sorting of observations in the constructor, its cost
+is linear in $L$ for a fixed number of observed labels.
 
 The general formulation stores exact rational coefficients, including the
 observed-coordinate substitutions, but calls a numerical LP solver.
@@ -58,71 +59,72 @@ The API distinguishes \texttt{certified\_outside},
 \texttt{numerically\_feasible}, \texttt{uncertified\_outside}, and
 \texttt{solver\_failure}. The second status is not exact membership,
 and failure of exact multiplier recovery is not an infeasibility certificate.
-This is an implementation of classical Farkas projection, not a new generic
-separation theorem.
+This routine implements classical Farkas projection; it is not a new
+generic separation theorem.
 
 Code indices are zero based, with explicit states $0,\ldots,m-1$ and
-residual state $m$; this is only an indexing change from the manuscript.
-The LP baseline generator uses outgoing-minus-incoming balances, and its
-adapter negates them before calling either production model. Float inputs
-to exact interfaces mean their decimal text. The optimization experiment
-uses a small-denominator reconstruction adapter, requires error below
-$10^{-7}$ and exact aggregate balances, and then checks the returned
-decomposition exactly. This adapter is suitable for the stated synthetic
-instances; it is not a general certified rational LP optimizer.
+residual state $m$. The LP baseline generator uses outgoing-minus-incoming
+balances, and its adapter negates them before calling either production
+model. Exact interfaces interpret float inputs by their decimal text. The
+optimization experiment uses a small-denominator reconstruction adapter,
+requires error below $10^{-7}$ and exact aggregate balances, and then
+checks the returned decomposition exactly. This adapter suits the stated
+synthetic instances; it is not a general certified rational LP optimizer.
 
 The verification suite compares against independently assembled full-state
 LPs and, for small graphs, directly enumerated path--simplex vertices.
-The flat tests include arbitrary observations and zero weights,
-both three-label repairs with exact global cut checks, the four-label
-ratio-two obstruction, and sparse observed labels among many original
-simplex coordinates. They also test an interior-residual point with zero
-explicit profile and positive residual branch flow: this rules out
-incorrectly reusing a basis construction that forces the explicit profile
-sum to the full branch flow. Separate tests check every inverse basis for recovery with three
-observed labels. An independent flat audit verifies 192 exact
+The flat tests cover arbitrary observations and zero weights, both
+three-label repairs with exact global cut checks, the four-label ratio-two
+obstruction, and sparse observed labels among many original simplex
+coordinates. They also test an interior-residual point with zero explicit
+profile and positive residual branch flow, which catches an incorrect reuse
+of a basis construction that forces the explicit profile sum to equal the
+full branch flow. Separate tests check every inverse basis for recovery
+with three observed labels. An independent flat audit verifies 192 exact
 decompositions and 708 exact violated cuts, with 233 numerical path-hull
 comparisons. The general compressed audit passes 600 objective comparisons,
 758 membership comparisons, and 476 exactly checked Farkas cuts, each also
-tested by numerical full-hull support optimization. Its structural integration
-checks recover the coefficient ratios two, five, and twenty-one. These finite
-checks support the code; the preceding proofs establish the general claims.
+tested by numerical full-hull support optimization. Its structural
+integration checks recover the coefficient ratios two, five, and
+twenty-one. These finite checks support the code; the proofs establish
+the general claims.
 
 \paragraph{Formal verification.}
 The accompanying Lean development verifies simplex-vertex disaggregation
-in \cref{prop:disaggregation}, the flat-chain profile equivalences, and the
-mathematical claims of \cref{sec:fixed-chains}. These include determinant
-bounds, exact circuit counts, the unit-coefficient threshold, rational
-separation and recovery, and observed-label reduction. Coverage and
-verification records are in repository topics
-\path{formal/topics/06-network-simplex} and
-\path{formal/topics/15-flat-chain-threshold}.
-The complexity proofs use the stated rational-arithmetic and indexed-operation
-models, with bounds on rational encoding lengths. They do not certify the
-compiled rational backend, the Python implementations, historical timings,
-or novelty. This formalization does not cover the rest of the manuscript.
+(\cref{prop:disaggregation}), the flat-chain profile equivalences, and the
+mathematical claims of \cref{sec:fixed-chains}: determinant bounds, exact
+circuit counts, the unit-coefficient threshold, rational separation and
+recovery, and observed-label reduction. Its coverage and verification
+records are in the directories \path{formal/topics/06-network-simplex} and
+\path{formal/topics/15-flat-chain-threshold} of the accompanying Lean
+development. The formal complexity proofs
+use the stated rational-arithmetic and indexed-operation models, with
+bounds on rational encoding lengths. The formalization does not certify the
+compiled rational backend, the Python implementations, the reported
+timings, or novelty, and it does not cover the rest of the manuscript.
 
 \subsection{Baselines that retain the elementary reductions}
 
 For optimization with fixed weights, the full disaggregation uses only
 positive-weight state flows, block balances $Af^j=\lambda_j b$, and native
 variable bounds $0\le f^j\le\lambda_j u$. It eliminates $x,z$ by substitution
-and adds the constant $c_y^\top\bar y$ to the objective value. In additional
+and adds the constant $c_y^\top\bar y$ to the objective value; in additional
 original-coordinate rows, the fixed $y$ contribution moves to the right-hand
 side. This is one joint LP and remains valid with the aggregate budget below.
-The global-merger baseline first groups labels observed nowhere into one
-default, then applies the same construction to its positive-weight states.
-With free weights, both interfaces retain every original $y$ variable and its
-objective and constraint contributions. Both use sparse block and Kronecker
-assembly. They use no graph blocks, cycle coordinates, or observation
-rank elimination. Initial compression and observed elimination use the two
-variants of the general implementation, including their preprocessing costs.
+The global-merger baseline first groups the labels observed nowhere into one
+default state, then applies the same construction to its positive-weight
+states. With free weights, both baselines retain every original $y$ variable
+and its objective and constraint contributions. Both use sparse block and
+Kronecker assembly, and neither uses graph blocks, cycle coordinates, or
+observation rank elimination. Initial compression and observed elimination
+are the two variants of the general implementation; their timings include
+preprocessing.
 
 For point membership, $x,y,z$ are data and only state flows are LP variables.
-The positive-state full baseline removes exactly zero-weight states, checks their observations, and
-assembles state balances and aggregate equations as sparse block matrices.
-It accepts solver statuses zero and two as numerical feasibility and
-infeasibility; other statuses are failures, not successful rejections.
+The positive-state full baseline removes exactly zero-weight states, checks
+their observations, and assembles state balances and aggregate equations as
+sparse block matrices. It reads solver statuses zero and two as numerical
+feasibility and infeasibility; other statuses are failures, not rejections.
 
 An additional elementary baseline applies when precisely two states have
 positive weights $\lambda,\mu$, with $\lambda+\mu=1$. After checking
@@ -135,10 +137,10 @@ The complete remaining feasibility system is
 An observation in the first state fixes $f_e=z_{ej}$; an observation
 in the second fixes $f_e=x_e-z_{ej}$. Intersect these fixed values
 with both bounds and with each other. The second state's balance follows
-from $Ax=b$, so this one-flow network LP is exact as a formulation.
-One positive state requires only a direct check. In the numerical implementation
-the aggregate balance precheck uses tolerance $10^{-9}$; its LP answer is
-still numerical evidence. Exact input arithmetic identifies zero states and
+from $Ax=b$, so this one-flow network LP is an exact formulation. With one
+positive state, a direct check suffices. The numerical implementation uses
+tolerance $10^{-9}$ in the aggregate balance precheck, and its LP answer is
+numerical evidence. Exact input arithmetic identifies zero states and
 checks the intersected bounds.
 
 Fixed-weight linear optimization without additional coupling is also simpler
@@ -151,11 +153,11 @@ for $(e,j)$, or zero when absent, and $c^0=0$, then disaggregation gives
    \sum_{j\in\states}\lambda_j
        \min_{v\in\Flow}(c_x+c^j)^\top v.
 \end{equation}
-This follows by independently minimizing each positive-weight state flow;
+This follows by minimizing each positive-weight state flow independently;
 zero-weight terms vanish. Unobserved labels have identical costs and share
 one solve. We include this sequential network-LP baseline. With free weights
 and no side constraints, a simplex vertex suffices, so such stand-alone
-objectives should not be presented as intrinsically difficult coupled problems.
+objectives are not intrinsically difficult coupled problems.
 
 \subsection{Instances and measurement protocol}
 
@@ -238,40 +240,39 @@ Only 11 of its 128 labels are observed anywhere: the full formulation's
 5,547 variables drop to 516 under global merging, then to 255 under initial
 compression and 222 under observed elimination. Elimination removes 33 of
 48 auxiliary coordinates. It saves rows and nonzeros but is slower overall
-than initial compression in this run: its extra symbolic work is not offset
-by a solver saving. The globally merged and initially compressed
-LPs have median total times of 4.25 and 4.82 milliseconds, respectively;
+than initial compression in this run, because its extra symbolic work is not
+offset by a solver saving. The globally merged and initially compressed
+LPs have median total times of 4.25 and 4.82 milliseconds, respectively:
 global merging has the lower median despite its larger model, although the
-five-run timing ranges overlap.
-Comparing only with the full formulation would overstate the specifically
-graph-local benefit.
+five-run timing ranges overlap. Comparing only with the full formulation
+would overstate the graph-local benefit.
 
 The McCormick optimum is $\BenchMcObjective$, compared with hull optimum
 $\BenchHullObjective$. The repeated single-cut loop requires
 \BenchCutCount\ cuts and is slower than the compact LPs. Its final
 decomposition is checked exactly, and each warmup cut receives an independent
-numerical global support audit. The independent-network baseline also attains
-the same objective, but multiple solver calls have overhead; algebraic
+numerical global support audit. The independent-network baseline attains
+the same objective, but its multiple solver calls add overhead; algebraic
 separability does not guarantee the fastest implementation.
 
 \Cref{tab:computation-member} gives the analogous membership comparison.
-At 1,024 labels, global merging is faster than either general compressed
-variant and the exact separator on these instances. The full LP's much
-larger positive-state system is unnecessary when almost all labels are
-unobserved. The exact separator supplies a rational constructive certificate
-when requested, which is a different output from numerical LP feasibility.
+At 1,024 labels, global merging is faster than both general compressed
+variants and the exact separator on these instances. The much larger
+positive-state system of the full LP is unnecessary when almost all labels
+are unobserved. On request, the exact separator supplies a rational
+constructive certificate, which is a different output from numerical LP
+feasibility.
 
 The all-labels-observed control in \cref{tab:computation-ablations}
 isolates a benefit that global merging cannot provide. Both full and global
 formulations have 7,215 variables; initial compression has 495, and observed
 elimination has 367 with no auxiliary variables. Initial compression is
-substantially faster here. The aggregate-budget control retains the same
-size ordering and has objective $\BenchBudgetObjective$. Global merging is
-also faster than initial compression on that control, with median totals of
-4.33 and 5.84 milliseconds. Both remain faster than repeated cutting on this
-coupled relaxation.
-The budget and the local-label control are small targeted comparisons, not
-evidence about industrial instances.
+substantially faster here. The aggregate-budget control has the same size
+ordering and objective $\BenchBudgetObjective$. On that control, global
+merging is again faster than initial compression, with median totals of
+4.33 and 5.84 milliseconds, and both are faster than repeated cutting.
+The budget and all-labels-observed controls are small targeted comparisons,
+not evidence about industrial instances.
 
 \input{tables/08-flat}
 
@@ -279,8 +280,8 @@ The elementary reductions matter on long chains
 (\cref{tab:computation-flat}). On the 512-gadget boundary face, both
 the positive-state block LP and the one-flow LP are faster than the reduced
 exact oracle. The positive-state LP treats original coordinates as data,
-removes zero-weight states, and uses sparse block assembly. The one-flow
-substitution gives a further reduction. At that boundary point,
+removes zero-weight states, and uses sparse block assembly; the one-flow
+substitution reduces the model further. At that boundary point,
 the positive-state LP has 2,050 variables and the one-flow LP has 1,025;
 the interior three-state LP has 3,075.
 On feasible interior queries the reduced oracle is faster at the largest
@@ -290,27 +291,25 @@ from 21.02 to 58.95 milliseconds. Five measurements on a shared host do
 not support a universal speed ordering.
 
 The reduced oracle merges unobserved labels and eliminates the default
-profile coordinate before separation. The unreduced comparator retains
-that coordinate and uses a signed-subset circuit library; it supplies the
-same exact membership and decomposition outputs. The two-observed-label
-reduced oracle uses five explicit tests and has no circuit-library setup.
-For comparison, the unreduced three-coordinate library takes
-\BenchOldCold\ milliseconds to construct in the recorded cold call.
-The reduced three-observed-label library
-takes \BenchNewThreeCold\ milliseconds, with another
-\BenchNewThreeBases\ milliseconds for its inverse bases; these are separate
-from the two-label workload. Initial and observed-eliminated general models
-were measured on the eight flat cases at lengths eight and 32. They do not
-improve the total times over the dedicated exact oracle on those cases;
-their complete component and size data are included in the supplement.
-The general compressed formulations are not timed at the two larger lengths
-in this comparison.
+profile coordinate before separation. The unreduced comparator keeps
+that coordinate and uses a signed-subset circuit library; it gives the
+same exact membership and decomposition outputs. With two observed labels,
+the reduced oracle uses five explicit tests and needs no circuit library.
+In the recorded cold call, the unreduced three-coordinate library takes
+\BenchOldCold\ milliseconds to construct. The reduced three-observed-label
+library takes \BenchNewThreeCold\ milliseconds, plus
+\BenchNewThreeBases\ milliseconds for its inverse bases; these times are
+not part of the two-label workload. The initial and observed-eliminated
+general models were measured on the eight flat cases at lengths eight
+and 32 only. They do not improve on the total times of the dedicated exact
+oracle there; their complete component and size data are in the
+supplement.
 
 Rows in the tables exclude variable bounds. Nonzero and byte counts refer
 to input sparse matrices, not peak memory, solver factors, or Python rational
-objects. These measurements establish the behavior of the supplied code on
-the stated inputs. They neither compare optimized native implementations
-nor measure persistent callbacks in a larger optimizer.
+objects. These measurements describe the supplied code on the stated
+inputs. They neither compare optimized native implementations nor measure
+persistent callbacks in a larger optimizer.
 
 \subsection{A two-supplier service-transportation interpretation}
 
@@ -331,9 +330,9 @@ cost on selected route--service pairs. Its objective contribution has the
 form $\sum_{((\ell,i),j)\in\Obs}c_{\ell i,j}x_{\ell i}y_j$.
 Only pairs with a nonzero adjustment need product coordinates.
 
-The underlying graph is a union of $k$ internally disjoint length-two
-paths between the suppliers, even though the second arc on each path is
-traversed against its direction. It is therefore covered by
+The underlying undirected graph is a union of $k$ internally disjoint
+length-two paths between the suppliers; the second arc of each path is
+traversed against its direction. The network is therefore covered by
 \cref{thm:parallel-hull}. Demand conservation means that a circulation
 increase on the first supplier's arc is the opposite change on the second
 supplier's arc. The path coordinates retain these identities, while the
@@ -346,9 +345,9 @@ observations determine the useful reduction.
 This interpretation uses the common balance and capacity domain assumed
 throughout the paper. An outer resource budget or linking constraint can be
 added to the exact component hull to strengthen a relaxation, as in the
-budget experiment. The resulting intersection is not generally the convex
-hull of the additionally constrained product graph. This is a modeling
-illustration; the experiments above use synthetic networks.
+budget experiment, but the intersection is not in general the convex hull
+of the additionally constrained product graph. The interpretation is a
+modeling illustration; the experiments above use synthetic networks.
 
 \subsection{Reproduction}
 
@@ -356,25 +355,23 @@ The accompanying computational supplement contains the exact interfaces,
 numerical formulations, independent checks, measurement generator, and
 canonical raw data used in the tables. Its top-level README gives dependency
 versions, certificate semantics, and commands for the regression suite and
-independent checks. Paths in the commands below are relative to the extracted
-supplement root. The preserved directory layout is required by the benchmark
-runner's import of the unreduced flat-chain comparator.
+independent checks. The commands below are run from the root of the
+extracted supplement. The benchmark runner imports the unreduced flat-chain
+comparator, so the supplement's directory layout must be kept.
 
-To repeat the complete measurement protocol, write new results to a separate
-file:
+To repeat the complete measurement protocol without overwriting the
+reported data, write new results to a separate file:
 \begin{verbatim}
 PYTHONPATH=code python -m network_simplex_benchmarks.paper_stage06 \
   --output rerun-benchmarks.json
 \end{verbatim}
 The default is one recorded warmup followed by five rotated measurements
-per case. The reported optimization and membership measurements were collected
-separately; all methods within an optimization case use identical objectives,
-weights, and additional rows. Rerunning the generator repeats these inputs
-and protocols, but timing values depend on the machine and software.
-The supplied data preserve the reported measurements rather than replacing
-them with new timings.
+per case. The reported optimization and membership measurements were
+collected separately; all methods within an optimization case use identical
+objectives, weights, and additional rows. A rerun repeats these inputs and
+protocols, but timings depend on the machine and software.
 
-To regenerate the published tables from those canonical data, run
+To regenerate the published tables from the canonical data, run
 \begin{verbatim}
 python paper-network-simplex/verification/stage06-tables.py
 \end{verbatim}

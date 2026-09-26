@@ -31,7 +31,7 @@ complete proofs by a subagent, with numerical checks; not yet independently revi
 - **Proposition 11 is true.** The needed uniformity assumption (T_∂) is
   uniformity on compact subsets of the closed cone of admissible shapes, which
   includes shapes with vanishing active extents. Theorem 12 delivers it. The
-  proof gives free-width contraction with ratio exactly `lambda` in the `u_F`
+  proof gives free-width contraction by a factor at most `lambda` per round in the `u_F`
   gauge after one step, active widths `<= (epsilon + (G_0 + o(1)) w_k^2)/g_i`, and
   a matching lower bound for one step (Lemma B1). No statement in theory.md
   Section 5 was found to be false.
@@ -374,7 +374,18 @@ in `(P_k)`.
 2. *Interval clipping.* Some implementations replace `cv_k` by
    `max(cv_k, v_k^L)` and `cc_k` by `min(cc_k, v_k^U)`. By `(P_k)`, this changes
    the values by `o(w^2)`. Every rule is Lipschitz in its `(cv, cc)` inputs with
-   `O(1)` constants, so the expansions and `E` are unchanged.
+   `O(1)` constants, so the expansions and `E` are unchanged. In detail, by
+   induction over `k`: clipping does not change the intervals; the rule for factor
+   `k` applied to clipped inputs differs from the unclipped value by `O(1)` times
+   the input differences, which are `o_K(w^2)` by induction (the univariate
+   rule is `h^cv_Z` of a 1-Lipschitz `mid`, and `h^cv_Z` is Lipschitz with
+   constant `max_Z |h'| = O(1)` by Lemma A2; the product rule has interval
+   endpoints as coefficients); clipping is 1-Lipschitz and moves the unclipped
+   value by `(v_k^L - cv_k)^+ = o_K(w^2)`. This clipped variant is Step 6 of
+   Definition 9 of Scott, Stuber and Barton (2011), whose Theorem 4 gives the
+   finite-box isotonicity (R2) that theory.md uses; that theorem does not cover
+   the unclipped rule of A.1. The statement here is local and asymptotic
+   (uniform on compact shape sets as `w -> 0`), not a bound on arbitrary boxes.
 3. *Other univariate relaxations.* `E` depends on the rules. If
    `h^cv_Z` is replaced by a weaker convex underestimator whose gap is of
    order `w^2`, `E` changes. For example, writing `x^2` as the product `x * x`
@@ -618,8 +629,9 @@ at scale `w_0 < sqrt(2 epsilon/delta)` if `k_eps = 1`. Either way,
 
 **Remarks.**
 
-1. The contraction ratio is exactly `lambda` in the `u_F`-gauge, not only close
-   to `lambda`. The slack `delta` absorbs the (T_∂) remainder, the active
+1. The contraction factor is at most `lambda` in the `u_F`-gauge, not only close
+   to `lambda`. This is an upper bound: `lambda` is any admissible bound with
+   `Phi^F_delta(u_F) <= lambda u_F`, not a proved exact asymptotic rate. The slack `delta` absorbs the (T_∂) remainder, the active
    extents, which enter through the continuity of `Q`, and `epsilon`.
 2. Without strict complementarity (`g_i = 0` for some `i in A`), coordinate `i`
    has no first-order term. It then behaves like a free coordinate restricted to

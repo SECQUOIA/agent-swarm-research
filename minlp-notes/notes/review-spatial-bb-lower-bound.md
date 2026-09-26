@@ -294,3 +294,33 @@ Scripts in `/tmp/review/check.py` and `/tmp/review/check2.py` (conda env
   `n = 30, 60, 90`.
 - Proposition 2 node and leaf counts, `n <= 7`; middle-child `LB` equals
   `1/4 - ε` to floating precision.
+
+Provenance note (added after the 2026-09-24 repository audit): these `/tmp`
+scripts and their output were not archived in the repository. The reviewer's
+own runs above remain reviewer-reported and unarchived; they are distinct from
+the committed author checkers in `code/spatial_bb_lower_bound/`.
+
+Independent reproduction (2026-09-25): a new checker written from this list,
+[`review_lower_bound_repro.py`](../code/spatial_bb_lower_bound/review_lower_bound_repro.py),
+with saved output
+[`review_lower_bound_repro-2026-09-25.log`](../code/spatial_bb_lower_bound/review_lower_bound_repro-2026-09-25.log),
+reruns every item. It computes chord-LP bounds both exactly (rational greedy
+solver) and with HiGHS, and does not reuse the author checker's code. Results:
+all 741 vertices of `F` for `n <= 7` have value exactly `1/4`;
+`LB([1/2,1]^n) = 1/4` for `k = n-1`, `n = 2,3,4`; all leaves of the Remark 7
+trees are pruned at `ε = 0` for `n = 2..8` with `k = 1, 2`, for `(50,1)`
+(`2549` nodes, `1275` leaves) and for `(40,39)`; at `ε = 0.01` with
+`m, z ≈ (n-1)/2`, the `max` form requires about `2.2-2.4·10^14` leaves at
+`n = 400` against `80200` tree leaves, while the `min` form stays below `1.3`;
+at `k = n/3`, `n = 30, 60, 90`, the `min` form stays far below both the
+Remark 7 and Proposition 2 leaf counts; Proposition 2 has `2^{n+2}-3` nodes
+and `2^{n+1}-1` leaves for `n <= 7`, all leaves are pruned for every `k` at
+`ε = 1/8`, and the smallest middle-child bound is `1/4 - ε` to floating
+precision. The Remark 3 checks reproduce with two qualifications. The
+constraint `d >= 2c-1` fails at `(2,1)` only among pairs with `n >= 2k`; over
+all `1 <= k < n <= 12` it fails exactly at the 11 pairs with `k = n-1`, as the
+result note states. The statement above that `1/n <= d` "fails for every
+listed pair with `n >= 2k`" is not reproduced: among the 36 pairs with
+`n >= 2k`, `n <= 12`, it fails at 22 and holds at 14 (for example `(4,2)`),
+matching Issue 3's criterion `n <= k^2 + 3/4`. Issue 3's conclusion that the
+justification is invalid is unaffected.

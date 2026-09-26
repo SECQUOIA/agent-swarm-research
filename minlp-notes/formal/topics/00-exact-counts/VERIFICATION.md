@@ -11,10 +11,11 @@ original eleven-module exact-count package. No paper or result-note text changed
 | Original proof sources | PASS: all eleven unchanged from the previous verified snapshot |
 | Other six topics | PASS: their source fingerprints remain unchanged |
 | Existing certificate generators | PASS: potential-flow JSON translation and cubic finite certificate reproduction |
-| Independent specification review | PASS: shear and all six lift classes, formulation size, strict errors, coefficient data, actual labeled hull, finite rational vertices, and exact integer/binary slices |
+| Independent specification review | PASS as recorded here; no separate review report was retained: shear and all six lift classes, formulation size, strict errors, coefficient data, actual labeled hull, finite rational vertices, and exact integer/binary slices |
 
 The [run log](verification/run.log) records the completed build, audit, and
-kernel replay. The combined monotone result is
+kernel replay. It does not document the specification review, whose only
+retained record is the table row above. The combined monotone result is
 `ExactCounts.monotone_exact_box_counts`; the original theorem remains
 `ExactCounts.exact_box_counts`. The [coverage table](../../COVERAGE.md) maps the
 other claims to declarations.

@@ -451,8 +451,10 @@ The strongest candidate statement to investigate is the full feasible
 spectral approximation set (1), including rank-deficient faces, rational
 bit complexity, and objective-independent reuse. The D-, A-, and
 E-optimality ratios are consequences, not separate algorithmic inventions.
-The large worst-case exponent and absence of implementation remain
-material limits on practical significance.
+The large worst-case exponent remains a material limit on practical
+significance. Section 9's executable Lean reference producer has proved
+schoolbook bit-work bounds, but it is not an optimized solver and supplies
+no practical performance or wall-clock evidence.
 
 
 ## 9. Lean verification scope

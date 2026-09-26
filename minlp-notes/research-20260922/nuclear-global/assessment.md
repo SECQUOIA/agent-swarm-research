@@ -66,12 +66,14 @@ Context: [nuclear-bounds.md](../benchmark-observations/nuclear-bounds.md) and it
 - **Gap closing is modest.** The new root bounds lower the certified bound by
   0.2–1.3% (interval equilibrium propagation, B3) or by 2.0–4.4% for va–vf and 1.2% for nuclear14
   (root aggregate-burn relaxation, B4, a floating-point Gurobi value). For example,
-  nuclearva goes from 1.18463 to 1.16071 against a primal of 1.01430. The gap is
-  structural: every relaxation that does not solve the coupled burnup–eigenvalue
-  equilibrium loses about 13% on va–vf.
+  nuclearva goes from 1.18463 to 1.16071 against a primal of 1.01430. The gap
+  appears structural: each of the four bounds tested here (B1–B4), none of which
+  solves the coupled burnup–eigenvalue equilibrium, loses about 13% on va–vf.
+  Other relaxations were not tested.
 - **By-products:**
   - An exact power-variable reformulation. It was checked by regenerating every
-    OSiL row of 9 instances exactly, plus a 60-digit round trip on 4 instances.
+    OSiL row of 9 instances exactly (an unarchived run; see Section 1), plus a
+    60-digit round trip on 4 instances.
   - Improved primal points on nuclearva, nuclearvb, nuclearvd, nuclearve,
     nuclearvf and nuclear14 (Section 5), each checked against all OSiL rows at
     60 digits.
@@ -121,7 +123,8 @@ counterpart.
   the structured data (G, V, c, a, KF and the reload structure). It then compares
   them with the parsed file as multisets of exact rational rows, up to a sign
   per row. The files are parsed by the reviewer's independent exact parser.
-- This check passed for nuclearva, vb, vc, vd, ve, vf, 14, 14a and 14b. It found one
+- This check passed for nuclearva, vb, vc, vd, ve, vf, 14, 14a and 14b. This is
+  an unarchived observation: the run's output was not saved in `runs/`. It found one
   structural fact missing from the earlier note: in va–vf, 24 rows
   `y_{1,g} = y_{7,g}` and `y_{11,g} = y_{14,g}` (1-based nodes) tie the two
   pairs of diagonal half-nodes to the same fuel type.
@@ -364,7 +367,8 @@ decimal strings, not exact rationals.
 The Python interpreter is `~/miniconda3/envs/exact-quadratic-hull/bin/python`.
 Commands run from `code/`:
 
-- `nucmodel.py nuclearva ... nuclear14b`: exact regeneration of the rows (9 instances).
+- `nucmodel.py nuclearva ... nuclear14b`: exact regeneration of the rows (9 instances;
+  output not saved).
 - `reform.py nuclearva|nuclear14a|nuclear14b|nuclear14 1`: 60-digit round trip.
 - `symmetry.py ...`: automorphisms and pattern counts (`runs/symmetry.txt`).
 - `localsearch.py <va..vf> 6 {1,2,3}` and `localsearch.py nuclear14 2 1`:

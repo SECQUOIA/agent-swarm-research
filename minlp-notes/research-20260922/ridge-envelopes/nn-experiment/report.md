@@ -68,8 +68,19 @@ Global solve (600 s CPU):
 
 - R0 closed 59 of 80 runs, R1 closed 53; R1 closed none that R0 left open.
 - On the 53 runs both closed, R1 used fewer nodes in all 53 (median ratio 0.68)
-  but was slower in 47 (median time ratio 1.55). Separation takes 91% (R0) and
-  98% (R1) of node time; a node costs 0.087 s with R0 and 0.31 s with R1.
+  but was slower in 47 (median time ratio 1.55). Over all 80 runs per
+  relaxation, the unweighted mean of the per-run ratio `t_sep/time` is 91% (R0)
+  and 98% (R1), and the unweighted mean of per-run `time/nodes` is 0.087 s (R0)
+  and 0.31 s (R1); total CPU time divided by total nodes is 0.1034 s (R0) and
+  0.3543 s (R1). Here `time` is the reported process CPU time of the run and
+  `t_sep` the summed separation time. These shares are not reliable fractions
+  of total CPU time: in 23 of the 160 saved records `t_sep` exceeds `time`
+  (ratio up to 1.42449), which the nested `time.process_time()` intervals of
+  the committed `bnb.py` and `relax.py` cannot produce; the saved data do not
+  show which clock or code version caused this. Within the relaxation loop,
+  where `t_sep` and `t_lp` are timed by the same clock in `relax.py`,
+  separation takes on average 96% (R0) and 98% (R1) of the timed
+  separation-plus-LP time, so it remains the dominant cost.
 - At equal node counts, R1 had the smaller gap in 25 of the 27 runs not closed
   by both, never the larger. At the time limit R1 had the larger gap in all 21
   runs open in both, because it processed fewer nodes.
@@ -82,7 +93,11 @@ the same runs.
 
 ## Assessment
 
-Theorem 1 cuts are valid and give consistently tighter bounds per node, with
+Theorem 1 cuts are valid and give tighter bounds per node in almost all
+comparisons (R1's root bound is at least R0's in 158 of 160 saved root
+comparisons; for `sigmoid_d2_16_ackley` minimization, with both IBP and OBBT
+bounds, R1 is lower by 1.46e-6, -2.212798522547568 against -2.21279706136749,
+so R1 does not dominate R0 numerically in every case), with
 the largest effect on non-monotone activations (SiLU, GELU) in deeper
 networks. That is exactly the class that earlier closed forms do not cover.
 In this implementation the per-node separation cost outweighs the node
@@ -92,6 +107,27 @@ quickly. The practical case therefore rests on a much cheaper separation
 only at the root and at a few nodes), and on larger networks or embedded
 models where bound strength matters more. This is recorded as a modest
 positive result on bound strength and a negative result on solve time.
+
+## Before publication: rerun the timing experiment
+
+The node counts, closed-run counts and root-gap results above are sound. The
+branch-and-bound timings are not clean enough for a paper: in 23 of the 160
+saved records the separation time `t_sep` exceeds the total time `time`
+(see Global solve). Before these timings are used in a paper:
+
+1. Make `bnb.py` and `relax.py` report all times from one clock, and assert
+   `t_sep + t_lp <= time` for each run.
+2. Rerun the 160 branch-and-bound runs (40 networks, both senses, R0 and R1,
+   600 s CPU limit). This takes about 10 CPU-hours. Run at most about four
+   at once, one thread each, with no other load on the machine, so that the
+   timings stay comparable.
+3. Regenerate `results/summary_tables.md` and update the Global solve
+   section, the break-even estimate and the summary in
+   [`../../README.md`](../../README.md).
+
+This rerun was deliberately deferred on 2026-09-25 (audit row m29 in
+[`notes/audit-20260924-repository-issues.md`](../../../notes/audit-20260924-repository-issues.md)),
+because no paper uses these results yet.
 
 ## Caveats
 

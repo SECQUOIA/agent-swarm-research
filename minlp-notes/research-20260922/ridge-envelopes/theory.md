@@ -132,16 +132,22 @@ Because the `t_k` are distinct, `T = t_K` for a random index `K` with
 Steps 1 and 2 give `vex_B f(x) = inf { int sigma dmu : mu <=_cx T_x }`. The
 set of such laws is weakly compact (they are supported in `I`, and the convex
 order is closed under weak limits of laws on a compact interval), and
-`mu -> int sigma dmu` is weakly continuous, so the minimum in (P) is attained.
+`mu -> int sigma dmu` is weakly lower semicontinuous (portmanteau theorem:
+`sigma` is lower semicontinuous and bounded below on the compact `I`), so the
+minimum in (P) is attained.
 The proof of (ii) also shows that the envelope over `B` at `x` equals the
 envelope over the simplex `Delta_pi`: all minimizing laws can be realized in
 `Delta_pi`.
 
 *Step 3 (duality).* Let `F(lambda) = sigma(sum_k lambda_k t_k)` on the standard
 simplex `Lambda`. The map `lambda -> sum_k lambda_k v_k` is an affine bijection from
-`Lambda` onto `Delta_pi`, so `vex_{Delta_pi} f(x) = vex_Lambda F(p)`. For a
-continuous function on a compact convex set, the convex envelope is the
-supremum of affine minorants. An affine function on `Lambda` is
+`Lambda` onto `Delta_pi`, so `vex_{Delta_pi} f(x) = vex_Lambda F(p)`. `F` is
+lower semicontinuous and bounded below on the compact `Lambda`, so the convex
+hull of its epigraph is closed (in a limit of Carathéodory combinations, atoms
+whose weight tends to 0 contribute at least that weight times `min F`, which
+tends to 0). Hence `vex_Lambda F` is a closed proper convex function and equals
+the supremum of its affine minorants (Rockafellar, Theorem 12.1), which are
+the affine minorants of `F`. An affine function on `Lambda` is
 `lambda -> sum_k lambda_k y_k`, so
 
 ```
@@ -154,11 +160,23 @@ points `(t_k, y_k)`, it is concave, it satisfies `psi_y <= sigma` by the
 constraint, and `psi_y(t_k) >= y_k`. Conversely, a concave `psi <= sigma` gives a
 feasible `y_k = psi(t_k)`, because
 `sum_k lambda_k psi(t_k) <= psi(sum_k lambda_k t_k) <= sigma(sum_k lambda_k t_k)`.
-Hence the supremum equals the value of (D). If all `p_k > 0`, it is attained:
-the feasible set of `y` is closed, each `y_k <= sigma(t_k)`, and along a
-maximizing sequence each `y_k` is also bounded below because the objective is
-bounded below and every weight is positive. Combining with Step 2 proves
-(P) = (D).
+Hence the supremum equals the value of (D).
+
+It is attained when `p_0 > 0` and `p_n > 0`. The feasible set of `y` is closed
+(an intersection of closed half-spaces, one for each `lambda`), and the value is
+finite (the constant `y_k = min_I sigma` is feasible, and `y_k <= sigma(t_k)`).
+Replacing a feasible `y` by the node values `y'_k = psi_y(t_k) >= y_k` keeps it
+feasible (`psi_y` is piecewise linear with breakpoints among the `t_k`, so
+`psi_{y'} = psi_y <= sigma`) and does not decrease the objective, because
+`p >= 0`. So take a maximizing sequence of such concave-hull node vectors, with
+objective at least some `c`. Each coordinate satisfies `y_k <= sigma(t_k)`.
+The endpoint values are bounded below:
+`p_0 y_0 >= c - sum_{k != 0} p_k sigma(t_k)`, and likewise for `y_n`, since
+`p_0, p_n > 0`. Concavity of `psi_y` then bounds every interior value below:
+`y_k >= ((t_n - t_k) y_0 + (t_k - t_0) y_n)/(t_n - t_0)`. The sequence
+therefore lies in a compact set, and a limit point is an optimal `y`; its
+`psi_y` is an optimal `psi` in (D), because `psi_y(t_k) >= y_k` and `p >= 0`.
+Combining with Step 2 proves (P) = (D).
 
 *Step 4 (the functions `g_psi` and the cuts).* Let `psi` be concave with
 `psi <= sigma` on `I`. The set function `G(S) = psi(a(S))` is submodular, so its
@@ -258,7 +276,13 @@ quantile function of the block law `sum_i x_{j,i} delta_{c_{j,i}}` (comonotone
 sum of the block vertex laws).
 
 The box is the case of two-vertex blocks. Mixed domains (some box
-coordinates, some one-hot blocks, some chains) are covered in the same way.
+coordinates, some one-hot blocks, some chains) are covered in the same way,
+with the sign condition of Corollary 2 on existing order constraints: box
+coordinates (singleton chains) and one-hot blocks allow any coefficients, but
+on each connected component of the order constraints among box variables the
+coefficients must be all nonnegative or all nonpositive (reflect the
+nonpositive components as after Corollary 2; mixed signs within a component
+can fail, as shown there).
 
 ## Relation to known results
 

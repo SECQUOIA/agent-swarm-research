@@ -1,6 +1,8 @@
 # Candidate refinement: bypass maximum degree three
 
-Date: 2026-09-05. Status: two fresh independent reviews PASS.
+Date: 2026-09-05. Status: two review records PASS: one independent
+proof review and one review by the contributor who proposed the half-port
+refinement, with a separate implementation (see Status).
 
 This strengthens the verified
 [degree-four averaging construction](pooling-bypass-degree-four-hardness.md).
@@ -168,9 +170,10 @@ passed 26 original-network global solves, including shifted qualities and
 boundary cases; its [log](../code/pooling_bypass_copy/degree_three_output.txt)
 is retained. It verifies input/output degrees at most three, no parallel
 arcs, and upper flow bounds at most four. A negative control weakening
-an averaging supply changes the optimum from 10 to 20. The [first fresh review](review-pooling-bypass-degree-three.md) and
-[second fresh review](review-pooling-bypass-degree-three-second.md) both
-PASS. The second reviewer's independent constructor passed 120 projection
+an averaging supply changes the optimum from 10 to 20. The [first fresh review](review-pooling-bypass-degree-three.md), which is
+independent of the contributor who proposed the half-port idea, and the
+[second review](review-pooling-bypass-degree-three-second.md), written by
+that contributor, both PASS. The second reviewer's separate constructor passed 120 projection
 LPs and 114 fixed-composition pooling LPs, including 56 excluded
 compositions. The broader one-pool/single-quality hardness boundary was asserted
 previously; priority of this precise degree refinement is unclaimed.

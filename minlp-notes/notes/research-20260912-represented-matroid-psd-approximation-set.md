@@ -336,7 +336,8 @@ Monotonicity alone does not supply a multiplicative objective bound.
 
 Useful explicit representations include uniform matroids (rational
 Vandermonde columns), partition matroids (direct sums of such
-representations), and graphic matroids (vertex-edge incidence matrices).
+representations), and graphic matroids (oriented, i.e. signed, vertex-edge
+incidence matrices).
 Thus the result includes fixed-size experiment selection, quotas by
 experiment group, and additive information design over spanning trees or
 spanning forests. Vandermonde entries have polynomial encoding length;

@@ -99,14 +99,15 @@ with `k >= 1` are clipped to 0, and `h_0` is lowered by a small rational `δ`. L
 adds `δ s` to `g`; the resulting cost to the bound is `N(N−1)δ/2`. The values of `δ` are 2.5e−9,
 5.9e−9, 1.6e−8 and 4.3e−8. The certified bounds lie within 1e−6 (elec25), 8e−6 (elec50),
 8e−5 (elec100) and 9e−4 (elec200) of the LP values. The limiting factor is the Yudin LP itself,
-not the certification: with K = 80, the elec200 LP rises by only 0.0002.
+not the certification: with K = 80, the elec200 LP rises by only 0.0002 (an
+unarchived observation; its output was not saved).
 
 **Checks of the checker.**
 
 - Negative test: removing twice the `δ` shift, or adding 1e−6 to `h_5`, makes both positivity
   proofs fail.
-- Sanity test: a BFGS local optimum for N = 25 (243.8127603) lies above the certified bound
-  (243.6387).
+- Sanity test (unarchived run; its output was not saved): a BFGS local optimum for N = 25
+  (243.8127603) lies above the certified bound (243.6387).
 - Rejected method: the sympy Sturm-sequence root count on the degree-121 polynomial did not finish in
   about 10 minutes (gmpy2 is not installed), so it was replaced by methods (i) and (ii).
 

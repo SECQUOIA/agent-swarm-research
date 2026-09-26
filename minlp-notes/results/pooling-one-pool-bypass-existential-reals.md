@@ -232,6 +232,21 @@ algebraic solution to six digits, and three unsatisfiable systems stayed
 strictly below it. This is a sanity check of the gadgets, not part of the
 proof.
 
+Rerun (2026-09-25,
+[log](../code/pooling_existential_reals/one_pool_build_and_check-2026-09-25.log)):
+the checker now classifies each case from the Gurobi termination status and
+`ObjBound`. A case is positive if an incumbent meets the threshold, negative
+if the status is INFEASIBLE or `ObjBound` is below the threshold by more than
+`1e-6`, and otherwise inconclusive, which fails the check. OPTIMAL status alone
+does not count as negative, because it certifies only Gurobi's default relative
+gap of `1e-4`. All eight runs ended with status OPTIMAL within the 120-second
+limit. The five satisfiable systems reached their thresholds (20, 72, 72, 116, 52) to within
+`4e-8`. For the three unsatisfiable systems the bounds were
+`50.5045 < 52`, `122.2500 < 124`, and `71.0010 < 72`, with incumbents
+`50.5`, `122.25`, and `71.0`, so each negative verdict rests on a separating
+solver bound. The earlier historical runs classified negatives from the
+incumbent alone and did not retain statuses or bounds.
+
 ## Sources
 
 - M. Abrahamsen, A. Adamaszek, T. Miltzow, *The Art Gallery Problem is

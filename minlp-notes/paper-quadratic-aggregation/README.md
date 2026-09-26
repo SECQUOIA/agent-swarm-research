@@ -68,3 +68,17 @@ The archive itself does not need the surrounding repository.
 `PROCESS.md` and `process/` record the development and independent review
 workflow for this repository. They are not part of the submission source
 archive and are not claims of external journal peer review.
+
+## Version scope
+
+The committed `dist/quadratic-aggregation-source.zip`,
+`dist/source-manifest.json`, `artifacts.sha256`, and the reviews recorded in
+`PROCESS.md` and `process/` cover the 2026-09-22 version (commit `2cd1bf23`).
+The manuscript sources were revised afterwards in commit `aee2afbf`
+(2026-09-24), which also rebuilt `paper.pdf`, `formal-supplement.pdf`, and
+`build/final/`, and again in the 2026-09-25 audit follow-up
+(`sections/09-formal-overview.tex`). `paper.pdf` and `build/final/main.pdf`
+were rebuilt from those revised sources on 2026-09-25; `formal-supplement.pdf`
+does not include that file and was not rebuilt then. The archive and
+manifests were not refreshed, so they do not contain the current sources or
+match the current PDFs. No review of the later revisions is claimed.

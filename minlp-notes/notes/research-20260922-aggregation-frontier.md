@@ -1,8 +1,17 @@
 # An explicit candidate resolution of BDS Conjecture 3.1
 
-Date: 2026-09-22. Status: complete elementary proof drafted; independent
-adversarial review and deeper novelty comparison are still required. Do not
-promote this note to a verified result before those checks.
+Date: 2026-09-22. Historical status: complete elementary proof drafted;
+independent adversarial review and deeper novelty comparison are still
+required. Do not promote this note to a verified result before those checks.
+
+Current status (added 2026-09-25): this investigation was promoted to
+[the reviewed result](../results/infinite-quadratic-aggregation-hhc.md),
+whose linked reviews and Lean packages cover the scope stated there. That
+result proves HHC already for every `r>=2` by a different, direct two-point
+argument supplied in review. The `r>=6` covariance-completion construction
+below and the section "Stronger consequence awaiting independent review" are
+the historical author investigation; their dimension bound is not replaced
+here because the older proof uses a different sufficient-dimension argument.
 
 ## Main claim
 

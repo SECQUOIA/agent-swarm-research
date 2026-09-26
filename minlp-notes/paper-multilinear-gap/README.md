@@ -76,14 +76,28 @@ their transitive axiom dependencies, and replays the project declarations
 through Lean's installed kernel. See [the formal README](formal/README.md)
 for the trust boundary and endpoint commands.
 
-To check the delivered files without rebuilding, run from this folder:
+The delivery fingerprints in `verification/SHA256SUMS`, the
+[completion review](verification/completion-review.md) and the recorded
+checks cover the 2026-09-16 delivery snapshot (commit `413aaccb`). The folder
+was revised afterwards: `main.tex` and `main.pdf` on 2026-09-18,
+`formal/Verify.lean` on 2026-09-20, the manuscript, PDF and paper build
+records in commit `aee2afbf` (2026-09-24), and any 2026-09-25 audit
+follow-up edits. The fingerprints were not refreshed. In the current folder,
+`sha256sum -c verification/SHA256SUMS` therefore reports mismatches for
+`formal/Verify.lean`, `main.tex`, `main.pdf`, four paper build records
+under `verification/`, and this README, which was updated with this note; all 48 bundled proof-module entries still match. No
+review of the later revisions is claimed. To check the fingerprinted snapshot
+itself, from a clone of the original repository:
 
 ```sh
+mkdir /tmp/multilinear-20260916
+git archive 413aaccb paper-multilinear-gap | tar -x -C /tmp/multilinear-20260916
+cd /tmp/multilinear-20260916/paper-multilinear-gap
 sha256sum -c verification/SHA256SUMS
 ```
 
 A PDF rebuilt by a recipient may differ in metadata while containing the same
-mathematical text. Delivery fingerprints identify this snapshot, not every
+mathematical text. Delivery fingerprints identify one snapshot, not every
 future rebuild. Rebuilding the paper also replaces its local build records.
 
 ## Scope and provenance

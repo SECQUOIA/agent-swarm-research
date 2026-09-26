@@ -14,10 +14,15 @@ supplement includes reproducible checks and measurements. See the
 [process](PROCESS.md). Earlier September 7 completion records are historical
 and do not establish acceptance of this revision.
 
-The [current PDF](main.pdf) includes the later Lean verification account below
-and was rebuilt from clean sources for the
-[September 20 documentation follow-up](../notes/lean-verification-documentation-followup.md).
-The submission PDF and archives retain the September 9 revision.
+The submission PDF, archives and `delivery/manifest.json` retain the
+September 9 revision (commit `876ca480`), which the September 9 reviews cover.
+The manuscript sources were revised afterwards: the Lean verification account
+below was added for the
+[September 20 documentation follow-up](../notes/lean-verification-documentation-followup.md),
+and further revisions followed in commit `aee2afbf` (2026-09-24) and in any
+2026-09-25 audit follow-up edits. The [current PDF](main.pdf) was last rebuilt
+in commit `aee2afbf`. The delivery files were not refreshed, and no review of
+these later revisions is claimed.
 
 Build the manuscript from this directory with TeX Live and BibTeX:
 

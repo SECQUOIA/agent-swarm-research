@@ -420,9 +420,11 @@ claim rests on an unsuccessful search.
 - The finite-grid proof uses a rare exhaustive fallback and loose
   constants exponential in the fixed approximation exponent. It establishes
   expected polynomial complexity, not practical superiority.
-- The proofs need independent adversarial review, especially the adaptive
-  partition certificate and finite-grid cutoff calculation. No Lean proof
-  has been produced.
+- The fresh [independent review](review-20260922-approximation-exact-oracle.md)
+  checked the proofs, including the adaptive partition certificate and the
+  finite-grid cutoff and expected bit-complexity argument, and found no
+  substantive gap.
+  No Lean proof has been produced.
 
 ## 8. Targeted computational verification
 

@@ -16,8 +16,9 @@ first environment has no scipy/cvxpy.
   - (a) true for `n <= 5`, and for every `n` when `|supp v| <= 5`;
   - (b) true whenever `v0^2` is an integer (for example `v0 = 0`);
   - (c) true whenever the direction `v` is rational (`v = rho*sigma`, `sigma` integer) and
-    `dist(v0, rho*Z)^2 >= frac(v0^2)`. This contains Lemma 4 of the paper (family `F2`), and
-    two BH inequalities suffice;
+    `dist(v0, rho*Z)^2 >= frac(v0^2)`. This contains Lemma 4 of the paper (family `F2`); two
+    BH inequalities plus the nonnegativity BH inequalities `x_i >= 0`, `X_ij >= 0` (for the
+    rounding slack) suffice, and two alone suffice without rounding, as in `F2`;
   - (d) true whenever all `v_i` are equal (symmetrization argument).
 - **Structural (negative) result, exactly verified** (Section 5). General CG cuts of the
   SDP-plus-nonnegativity set `K = {z >= 0 : M(z) PSD}`, whose PSD multipliers may have rank
@@ -30,7 +31,7 @@ first environment has no scipy/cvxpy.
 - **Computational evidence** (Section 6). No counterexample was found. Every candidate was
   checked by LP over (an outer approximation of) `P_BH`, and every would-be violation was
   checked in exact arithmetic. The searches were:
-  - 6,036 "exact-part" cuts for `n = 6`;
+  - 6,036 "exact-part" cuts for `n = 6` (`code/t6.log`; see Section 6.1);
   - 50,316 perturbed limit cuts: 10,680 + 39,636 for `n = 6`, and 8,862 for `n = 7`;
   - 100,000 random structured cuts for `n = 6` and 30,000 for `n = 7`;
   - a direct E-CG separation heuristic at 397 exactly certified fractional vertices of
@@ -191,7 +192,7 @@ of strength beyond `K` is the floor on the constant. A violation at `z in P_BH` 
 `S = supp(v)`. Every coefficient involving an index outside `S` is `⌈0⌉ = 0`. So the cut is
 an inequality on the `S`-coordinates that is valid for `BQP_S`. If `|S| <= 5`, it is a
 nonnegative combination of BH inequalities on `S`, which are BH inequalities on `[n]` with
-`w_i = 0` off `S`. A counterexample therefore needs `n >= 6` and full support 6.
+`w_i = 0` off `S`. A counterexample therefore needs `n >= 6` and support at least 6.
 
 **(b) `v0^2 in Z` (in particular `v0 = 0`).** From the identity in 3.4, `F >= q_M(ŵ) >= 0` on
 `P_BH ⊆ K`.
@@ -303,7 +304,16 @@ Enumeration: `σ in {±1,…,±4}^6` up to permutation with `gcd = 1`, `a = m/(2
 mod 1 (a Bézout argument). `τ` is kept in the relevant range, and only cases with
 `f(h) < 0` at some integer `h` are retained, since the others are covered by 4(c).
 
-Result: **6,036 cuts, all implied**. The minimum over `P_BH(6)` is `>= -2.3e-13`.
+Result: **6,036 cuts, all implied**. The LP minimum over (an outer approximation of)
+`P_BH(6)` is `>= -2.9e-13` (smallest value `-2.84e-13`).
+The archived output is `code/t6.log` (rerun of `python t6.py` on 2026-09-25 with
+gurobipy 13.0.3, 336 s). The original run, whose output was not saved, reported the
+same count and a minimum of `>= -2.3e-13`; the small difference is at floating-point
+rounding level. The LP is a finite BH outer approximation of `P_BH(6)`
+(bounded separation, `|w_i| <= 6`, without `exact=True`) with floating-point LP
+tolerances. An outer approximation suffices here, because omitting valid BH inequalities
+only enlarges the relaxation, so a nonnegative minimum still supports implication, subject
+to the floating-point caveat above.
 
 ### 6.2 Perturbed limits of exact points (`code/perturb_milp.py`, `code/run_perturb.py`)
 

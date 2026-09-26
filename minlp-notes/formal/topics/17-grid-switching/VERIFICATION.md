@@ -1,13 +1,15 @@
 # Arbitrary-grid one-switch minimax and sharp grid transfer: verification record
 
-Status: complete. All checks below were run locally on 2026-09-20 from `formal/`
-and are the checks actually performed, re-run after the independent reviews and
-the fixes they prompted. Project-wide verification is CI's responsibility and
-was **not** run locally; no CI status or log was inspected. Nothing here asserts
-an unobserved CI result.
+Status: complete. The checks below were first run locally on 2026-09-20 from
+`formal/` at two recorded revisions, and all machine checks were rerun on 2026-09-25 at
+`549a5786` (see [Targeted rerun, 2026-09-25](#targeted-rerun-2026-09-25)).
+Each row names the revision it checked.
+Project-wide verification is CI's responsibility and was **not** run locally; no
+CI status or log was inspected. Nothing here asserts an unobserved CI result.
 
-The package adds twenty-three proof modules to the canonical project, 15,432
-lines, in the new namespace `GridSwitching`.
+The package adds twenty-three proof modules to the canonical project, 15,481
+lines at `549a5786` (`wc -l`; an earlier record gave 15,432, which matches no
+recorded revision), in the new namespace `GridSwitching`.
 
 | Module | Obligations |
 |---|---|
@@ -36,15 +38,30 @@ lines, in the new namespace `GridSwitching`.
 
 | Check | Result |
 |---|---|
-| Targeted module builds, `lake build --wfail` | PASS: all 23, zero errors and zero warnings |
-| Coexistence: the 23 modules imported together | PASS: no conflicting declarations |
-| Import coverage, `python3 scripts/check_imports.py` | PASS at delivery: 417 proof modules. A later recorded run reported 436 after subsequent topics were added. These are historical counts, not a count of the current tree; this documentation correction did not rerun the project-wide import check. |
-| Axiom audit over every `Formal.GridSwitching` declaration, including private helpers | PASS: **1,921** declarations. (This row read 1,869 at delivery; the count rose when the audit findings below were closed by adding proofs. Re-run today it is 1,921.) |
+| Targeted module builds, `lake build --wfail` | PASS at `549a5786`: all 23 recompiled from source, zero errors and zero warnings. Earlier: PASS at `fa3ed328`. |
+| Coexistence: the 23 modules imported together | PASS at `549a5786`: no conflicting declarations. Earlier: PASS at `fa3ed328`; the `80f36418` axiom audit also imported all 23 together. |
+| Import coverage, `python3 scripts/check_imports.py` | PASS at `549a5786`: 813 proof modules, including all 23 of this package. This static script reads the whole `Formal/` tree and builds nothing. Historical counts: 417 at delivery (`fa3ed328`) and 436 in a later recorded run. |
+| Axiom audit over every `Formal.GridSwitching` declaration, including private helpers | PASS at `549a5786`: **1,921** declarations, the same count as at `80f36418`. (This row read 1,869 at delivery, `fa3ed328`; the count rose when the audit findings below were closed by adding proofs.) |
 | Allowed axioms | Only `propext`, `Classical.choice`, `Quot.sound` |
-| Kernel replay, `LEAN_NUM_THREADS=1 lake env leanchecker` per module | PASS: all 23, zero failures |
+| Kernel replay, `LEAN_NUM_THREADS=1 lake env leanchecker` per module | PASS at `549a5786`: all 23, zero failures. Earlier: PASS at `fa3ed328`. |
 | Independent review | PASS: four reviewers, no incorrect theorem found; see [REVIEW.md](REVIEW.md) |
 
-The [run log](verification/run.log) records the invocations and their output.
+The [2026-09-25 run log](verification/run-2026-09-25.log) records every command
+and its output at `549a5786`. The earlier [run log](verification/run.log)
+records the `80f36418` axiom audit and its output. The delivery log, with the
+build, coexistence, import-coverage, audit and replay invocations at
+`fa3ed328`, was replaced in `80f36418` and is retained in git history:
+
+```sh
+git show fa3ed328:formal/topics/17-grid-switching/verification/run.log
+```
+
+Commit `80f36418` changed the proofs in six modules: `Coarsening`, `Examples`,
+`InstanceAlgorithms`, `Model`, `Rounding` and `SubsetDP`. Its axiom audit covered
+them, but no record from that time shows a warning-free build or kernel replay
+after the change. The 2026-09-25 rerun closes that gap: it rebuilt and replayed
+all 23 modules at `549a5786`, which includes those proofs and the later
+comment-only edits in `90eb77ce` and in the comment correction below.
 The audit is [`verification/AuditGridSwitching.lean`](verification/AuditGridSwitching.lean),
 the project audit of `Verify.lean` restricted to this namespace, so it covers
 module-owned private and auxiliary declarations rather than only the public API.
@@ -116,3 +133,43 @@ The targeted whitespace check passed:
 ```sh
 git diff --check -- formal/topics/17-grid-switching/README.md formal/topics/17-grid-switching/COVERAGE.md formal/topics/17-grid-switching/REVIEW.md formal/topics/17-grid-switching/VERIFICATION.md formal/Formal/GridSwitching/Coarsening.lean
 ```
+
+## Comment correction check, 2026-09-25
+
+Two comments in `UniformTransfer.lean` said that grid uniformity is used only
+once. They now say that `exists_blockMap_uniform` uses it twice: in `hcellsum`,
+to normalize each occupation row to the simplex, and in `hVnode`, to convert
+selected-cell counts into node values, as [COVERAGE.md](COVERAGE.md) already
+records under SC24. Only comments changed; no theorem statement or proof
+changed. No new Lean build, axiom audit, kernel replay, or CI inspection was
+performed, and the earlier results above were not rerun for this edit.
+
+The targeted whitespace check passed:
+
+```sh
+git diff --check -- formal/topics/17-grid-switching/README.md formal/topics/17-grid-switching/VERIFICATION.md formal/Formal/GridSwitching/UniformTransfer.lean
+```
+
+## Targeted rerun, 2026-09-25
+
+All machine checks in the table were rerun (the independent review was not repeated) from `formal/` at `549a5786`. No `.lean` file
+under `formal/` had uncommitted changes; the only uncommitted `formal/` changes
+at the time were two topic-14 Markdown files. Toolchain: Lean 4.33.1 with the
+pinned Mathlib v4.33.1. Every Lean process ran one at a time. The full commands
+and output are in [`verification/run-2026-09-25.log`](verification/run-2026-09-25.log).
+
+- **Builds.** The existing `Formal/GridSwitching` build outputs were first moved
+  out of `.lake/build`, so each module was recompiled rather than taken from
+  cache. Then, in dependency order, one call per module:
+  `LEAN_NUM_THREADS=4 lake build --wfail Formal.GridSwitching.<M>`. All 23
+  exited 0 with no warnings; 240 s in total.
+- **Coexistence.** `lake env lean` on a file importing all 23 modules: exit 0.
+- **Import coverage.** `python3 scripts/check_imports.py`: PASS, 813 proof modules.
+- **Axiom audit.** `lake env lean topics/17-grid-switching/verification/AuditGridSwitching.lean`:
+  `PASS: audited 1921 GridSwitching declarations`; every named declaration
+  depends only on `propext`, `Classical.choice` and `Quot.sound`.
+- **Kernel replay.** `LEAN_NUM_THREADS=1 lake env leanchecker Formal.GridSwitching.<M>`
+  for each of the 23 modules: all exited 0 with no output, which is
+  `leanchecker`'s success behavior; 112 s in total.
+
+Project-wide verification was not run, and no CI status or log was inspected.

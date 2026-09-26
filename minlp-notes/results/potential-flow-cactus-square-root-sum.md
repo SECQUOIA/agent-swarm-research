@@ -4,7 +4,7 @@ Date: 2026-09-05. Status: both reduction directions passed [independent mathemat
 
 ## Theorem
 
-For passive quadratic potential-based flows with one source and one sink, deciding whether the maximum source-to-sink potential difference is at least a rational threshold is polynomial-time many-one equivalent to **Square-Root Sum**. The lower bound holds on simple cactus graphs of maximum degree three, with every cycle a triangle, positive integer resistances, unit source and sink booking capacities, and all flow directions known in advance.
+For passive quadratic potential-based flows on connected cactus graphs with one source and one sink, deciding whether the maximum source-to-sink potential difference is at least a rational threshold is polynomial-time many-one equivalent to **Square-Root Sum**. The lower bound holds on simple cactus graphs of maximum degree three, with every cycle a triangle, positive integer resistances, unit source and sink booking capacities, and all flow directions known in advance.
 
 Here Square-Root Sum (SRS) has binary-encoded positive integers `a_1,...,a_n,K` and asks whether `sum sqrt(a_i) <= K`. The comparison is exact in the ordinary Turing bit model. This is an arithmetic complexity barrier, not an NP-hardness result or a hardness result for approximation.
 

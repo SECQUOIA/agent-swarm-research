@@ -11,6 +11,8 @@ This directory supplies a complete anonymous research manuscript, its standalone
 - `SHA256SUMS`: hashes of the three delivery files, with paths relative to this directory.
 - `dist/source-manifest.json`: hashes and sizes of every source-archive payload file. A copy is embedded as `source-manifest.json` inside the source archive.
 
+The `dist/` files, `SHA256SUMS`, and the reviews described under "Verification performed" cover the 2026-09-19 version (commit `8e4dac61`). The manuscript sources were revised afterwards in commit `aee2afbf` (2026-09-24), which also rebuilt `main.pdf`, and in any 2026-09-25 audit follow-up edits. The packaging script was not rerun, so the `dist/` files and manifests do not contain the current sources, and no review of the later revisions is claimed. The frozen research archive is unaffected.
+
 The bibliography and generated graphics are local. The paper does not depend on repository notes or online references to supply a definition, proof or experimental result. `evidence/coverage.md` and `evidence/literature.md` document scope and sources consulted. Internal staged authorship, five-reviewer reports, dispositions and checks remain in `process/` in the repository, outside the submission archive.
 
 ## Build and regenerate the paper

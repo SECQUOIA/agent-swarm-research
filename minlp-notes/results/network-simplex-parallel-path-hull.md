@@ -209,7 +209,8 @@ cannot extend to that larger class.
 
 [The verification script](../code/common-factor-parallel-paths-verify.py) compares
 the full subset family evaluated with exact rational arithmetic with an
-independently assembled bounded-matrix feasibility LP. All 300 instances passed
-(207 feasible, 93 infeasible); the independent reviewer reran this check.
+independently assembled bounded-matrix feasibility LP. The author reports that all 300 instances passed
+(207 feasible, 93 infeasible); the independent reviews inspected the script
+but do not record rerunning it.
 The numerical LP comparisons do not test graph preprocessing or a max-flow
 implementation and do not establish literature priority.

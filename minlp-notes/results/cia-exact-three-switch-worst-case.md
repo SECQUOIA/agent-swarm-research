@@ -1,6 +1,6 @@
 # Exact continuous CIA worst case with three switches
 
-Status: developed 2026-09-04 and [independently reviewed](../notes/review-cia-exact-three-switch-transfer.md), with an additional full proof review by root. The all-n four-block prefix argument is computer-assisted: its exact finite rational and symbolic polynomial certificates have a [separate independent audit](../notes/review-cia-general-four-block.md). The heavy-mode and transfer arguments are analytic.
+Status: developed 2026-09-04 and [independently reviewed](../notes/review-cia-exact-three-switch-transfer.md), with an additional full proof review by root reported but not separately recorded. The all-n four-block prefix argument is computer-assisted: its exact finite rational and symbolic polynomial certificates have a [separate independent audit](../notes/review-cia-general-four-block.md). The heavy-mode and transfer arguments are analytic.
 
 For every n≥5, the continuous worst-case cumulative CIA error with at most three integer-mode switches is
 

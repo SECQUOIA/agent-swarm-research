@@ -124,8 +124,10 @@ logdet G(S)-logdet M(S) <= min(p,r_S) log(alpha).          (4)
 ```
 
 If `r_S<=r` uniformly over feasible selections, (2) improves to
-`min(p,r) log(alpha)`. This does not give a dimension-free improvement for
-trace-inverse error, which can concentrate in one parameter direction.
+`min(p,r) log(alpha)`. There is no analogous rank improvement for
+trace-inverse cost: its multiplicative factor `alpha` is already dimension
+independent, and rank one can still approach that full factor, because the
+error can concentrate in one parameter direction.
 
 ## What is and is not established
 

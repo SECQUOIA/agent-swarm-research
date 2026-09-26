@@ -220,18 +220,23 @@ polynomial obstruction family.
 For a dense positive polynomial, the branch crossings solve
 `(1-x)² f''(x)=epsilon`. The linear branch has an elementary polynomial
 integral, while the other branch requires certified integration of a
-positive algebraic function. A polynomial-time quantified implementation
-of those integrals and their inverse quantiles has not been supplied here.
+positive algebraic function. This note does not supply a polynomial-time
+quantified implementation of those integrals and their inverse quantiles;
+the later [certified compiled-quantile construction](compiled-curvature-quantile-precision.md)
+supplies it for densely encoded positive rational polynomials (see below).
 The [compiled indexed-knot principle](../notes/compiled-rational-knot-formulations.md)
 would produce a compact rational formulation if such a random-access
 algorithm, with the necessary error slack, were established. Sparse huge
 degrees require separate care.
 
-A multivariate separable analogue also remains open: the potential argument
-here is one-dimensional and telescopes over an interval partition, whereas
-arbitrary convex lifts in higher dimension have general parity supports.
-The note does not assume that this scalar argument automatically gives a
-product covariance or supporting-scalarization theorem.
+This note does not prove a multivariate separable analogue: the potential
+argument here is one-dimensional and telescopes over an interval partition,
+whereas arbitrary convex lifts in higher dimension have general parity
+supports. The note does not assume that this scalar argument automatically
+gives a product covariance or supporting-scalarization theorem. The later
+[separable extension](separable-convex-graph-linear-dimension-precision.md),
+described below, covers scalar sums and independent outputs by a different
+argument; neither result covers arbitrary coupled multivariate outputs.
 
 The [bounded source audit](../notes/accuracy-dependent-curvature-precision-novelty.md)
 credits existing accuracy-dependent local mesh integrals, convex regression

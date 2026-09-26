@@ -120,6 +120,18 @@ numbered author, reviewer and correction reports document the sequential
 five-reviewer gates and final manuscript review. These records are internal
 development evidence, not external peer review or scientific citations.
 
+Version scope: the staged and final manuscript reviews cover the 2026-09-13
+version (commit `079996f8`), not the source updates of 2026-09-18 to
+2026-09-22; the topic 21 and 22 additions among them have their own Lean
+records linked above. `manuscript-source.zip` contains the
+manuscript sources of commit `2cd1bf23` (2026-09-22), and `artifacts.sha256`
+fingerprints that version's `paper.pdf` and both archives;
+`computational-supplement.zip` dates from 2026-09-13. The manuscript sources
+were revised afterwards in commit `aee2afbf` (2026-09-24), which also rebuilt
+`build/main.pdf` and `paper.pdf`, and in any 2026-09-25 audit follow-up
+edits. The archives and `artifacts.sha256` were not refreshed, and no review
+of the later revisions is claimed.
+
 `process/` and `verification/` are development records and are not needed to
 build or validate the standalone deliverables. A manuscript source submission
 needs the source files listed above; its computational attachment is the whole

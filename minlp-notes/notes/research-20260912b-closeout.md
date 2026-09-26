@@ -69,20 +69,26 @@ What is established: validity of the master bound with exact affine
 transformation of disjunct cuts (no ε-perspective), finite ε-convergence
 under stated hypotheses, and a benchmark against GDPopt (LOA, LBB), MindtPy
 (OA, ECP, LP/NLP-B&B) and six GAMS solvers on big-M and hull MINLPs over the
-27 bounded convex GDP instances of the catalog
-([gdp-instance-catalog-20260912.md](gdp-instance-catalog-20260912.md)),
+27 bounded convex GDP instances of the catalog (the generated note
+`gdp-instance-catalog-20260912.md` is not retained; its source data are
+[`gdp_catalog.json`](../code/minlp_solver_lab/gdp_catalog.json) and
+[`gdp_solve_results.json`](../code/minlp_solver_lab/gdp_solve_results.json),
+rendered by [`gdp_catalog_report.py`](../code/minlp_solver_lab/gdp_catalog_report.py)),
 120 s per run, 4 threads. Numbers are in section 5.
 
-## 3. HENS: MINLPLib `heatexch_gen*` are ill-posed; the homogeneity lift does not help
+## 3. HENS: MINLPLib `heatexch_gen1` is ill-posed (gen2/gen3 share the guard); the homogeneity lift does not help
 
 Note: [hens-20260912-singularity-and-lift.md](hens-20260912-singularity-and-lift.md).
 The guarded LMTD `(d1-d2)/log(d1/(d2+1e-6))` is unbounded above on the
 feasible region of `heatexch_gen1/2/3`, so every process-exchanger area can
-be driven to zero: explicit feasible points of `heatexch_gen1` with objective
-`108999.78` (verified at 50 digits by the agent and re-derived independently
-by the coordinator, section 8 of the note) lie far below the recorded primal
-bound `154895.93`, and the infimum, bracketed in `[100500, 108846.94]`, is
-not attained. The recorded 30 % gap is an artifact of the guard. On the
+be driven to zero: explicit numerically feasible points of `heatexch_gen1`
+with objective about `108999.79` (residuals `1.7e-12` at 50 digits for the
+agent's points and `4.5e-10` for the coordinator's independent
+reconstruction, section 8 of the note; no exact or validated feasible
+witness) lie far below the recorded primal bound `154895.93`, and the
+infimum, estimated to lie in `[100500, 108846.94]`, is not attained. On
+these estimates the recorded 30 % gap of `heatexch_gen1` is an artifact of
+the guard; for gen2/gen3 the shared guard is a structural warning only. On the
 well-posed Yee–Grossmann example, the proposed lift `A·LMTD(dt) =
 LMTD(A dt)` weakens the relaxation (root bound 49,214 versus 60,164) and is
 recorded as a negative result.

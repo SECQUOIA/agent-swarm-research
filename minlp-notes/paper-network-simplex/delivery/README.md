@@ -4,6 +4,9 @@ The current deliverables are `submission.pdf`, `latex-source.zip`, and
 `computational-supplement.zip`. Author and affiliation fields are intentionally
 empty. These files have not been submitted externally. Internal revision status
 is recorded in `../revision-20260909/STATUS.md`; package creation is not acceptance.
+These files and `manifest.json` contain the September 9 revision (commit
+`876ca480`). The manuscript sources were revised afterwards (see
+[../README.md](../README.md)), and these files were not refreshed.
 
 Each archive has its own top-level directory, concise README, and SHA-256 payload
 manifest. `manifest.json` records the input hashes, archive payload hashes, and

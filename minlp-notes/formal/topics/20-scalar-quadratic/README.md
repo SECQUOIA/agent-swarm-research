@@ -25,4 +25,5 @@ quadratic-system results remain in topic 26.
 - [Targeted verification](VERIFICATION.md).
 
 Only topic-specific checks are run locally; no project-wide verification or
-CI inspection is part of this work. Topics 21–26 remain queued.
+CI inspection is part of this work. Topics 21 and 22 have since been completed;
+topics 23–26 remain queued, as listed in the [topic index](../README.md).

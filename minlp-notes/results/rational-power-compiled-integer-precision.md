@@ -284,7 +284,7 @@ The second inequality imports its reviewed degree-independent parity-volume
 lower bound `p_conv>=Phi-A_r`, with `A_r<7r/2`. The construction itself is
 polynomial in the sparse rational input and oracle encoding, including
 `sum_i log D_i`. The degree lower bound applies to these finite exponents
-without an encoding restriction. Thus (6), removes
+without an encoding restriction. Thus (6) removes
 the dense-degree restriction on compact pure-power near-minimal precision.
 
 ## 5. Attribution and open scope

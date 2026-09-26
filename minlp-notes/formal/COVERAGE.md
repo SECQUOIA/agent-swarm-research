@@ -52,10 +52,10 @@ Literature attribution, novelty, open-problem status, and the historical checker
 reported experiment counts are not mathematical conclusions of Lean proofs.
 
 Equivalent proof routes need not match the note line by line: exact rational
-normalization proves its numerical inequalities, and the weighted-box formulation
-provides the same mathematical construction with fewer continuous variables.
-The number of inequalities, auxiliaries, and dimension-independent numerical
-literals are verified. No claim of linear serialized bit length or solver running
+normalization proves its numerical inequalities. The weighted-box formulation is
+the formulation the current note states, with `3n` continuous auxiliaries and
+`13n` inequalities; Lean verifies these counts and the dimension-independent
+numerical literals. No claim of linear serialized bit length or solver running
 time is added. The original eleven proof modules remain unchanged; completion
 proofs are in the additional modules listed above.
 

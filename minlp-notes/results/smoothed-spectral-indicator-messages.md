@@ -510,6 +510,11 @@ enumeration checks; their counts and scope are recorded in the review.
 A second [independent integrated review](../notes/review-20260922-spectral-parametric-oracle.md)
 checked the spectral conditional bounds, all-message construction, and bit
 complexity without finding a substantive gap.
+Both reviews name the former draft path
+`notes/research-20260922-oracle-all-messages.md`, which now holds only a
+promotion notice pointing here. Neither review pins the reviewed draft by
+revision or digest, so exact identity between the reviewed draft and this
+promoted text is not recorded.
 
 The coordinator also ran `python3 code/research_20260922/check_nearopt_enumeration.py`:
 3,276 exact near-optimal-count cases over 18,270 noise outcomes and 12,420

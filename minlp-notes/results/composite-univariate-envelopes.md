@@ -59,13 +59,18 @@ arguments outside the domain of `log` or a fractional power give no finite
 enclosure. If the enclosure of `g''` is nonnegative, `I` is *convex*; if
 nonpositive, *concave*. When the natural enclosure is undecided, the
 mean-value form `g''(m) + g^(3)(I)(I - m)` is tried, which is much sharper on
-small intervals: on a MINLPLib kriging function it reduced the number of
-undecided slivers from 1,973 to 231 and the model build from 46 s to 1 s.
+small intervals. In an unarchived development test on a MINLPLib kriging
+function (the expression, domain and output are not recorded in the
+repository), it reduced the number of undecided slivers from 1,973 to 231
+and the model build from 46 s to 1 s.
 Otherwise `I` is split. Intervals of width below
 `1e-7 max(1, U-L)` that remain undecided are *unknown* and carry a rigorous
 enclosure `[glo, ghi]` of `g` on `I`. Adjacent intervals with the same label
-are merged. Unknown intervals appear only around inflection points and at
-singular endpoints such as `x^0.6` at `0`.
+are merged. An interval is unknown whenever neither enclosure decides the
+sign of `g''` before the width threshold. This happens around inflection
+points and at singular endpoints such as `x^0.6` at `0`, but also wherever
+the ball enclosure of `g''` is too wide, for example for an expanded shifted
+quartic in the [independent review](../notes/review-composite-univariate-envelopes.md).
 
 At a singular endpoint the ball evaluation of `g` fails. The enclosure is
 then the union of enclosures on dyadic subintervals approaching the endpoint
@@ -193,7 +198,11 @@ individual times are not.
 
 **MINLPLib (end to end).** 107 instances where the handler applies:
 
-- *Soundness:* no run in any mode contradicts the MINLPLib reference bounds.
+- *Consistency:* none of the 317 runs with a reference comparison
+  contradicts the MINLPLib reference bounds (the `t1000` `split` error and
+  the six runs of `ex8_6_1` and `uselinear`, which lack parseable reference
+  bounds, are not compared). This is a check against reference data, not a
+  proof of soundness.
 - *Root relaxation:* on the 81 instances with a root LP bound in both modes,
   the handler reduces the root gap to the reference optimum by more than 10%
   on 35, often by orders of magnitude (`cesam2log` 861 to 0.51,
@@ -201,10 +210,11 @@ individual times are not.
   relative to the optimum), and increases it on 4, slightly.
 - *Solved within 120 s:* native 54, reformulation without the handler 53,
   with the handler 51. The handler solves 2 instances that native SCIP does
-  not (`pricing050` at the root; `arki0003`, which the reformulation alone
-  also solves) and loses 5. Where both solve, the handler is more than twice
-  as slow on 16 instances and more than twice as fast on 2. Where neither
-  solves, the final bound is better on 11 and worse on 10.
+  not (`pricing050` at the root; `arki0003`, which `split` mode, the
+  reformulation plus precomputed implied bounds, also solves) and loses 5.
+  Where both solve, the handler is more than twice as slow on 16 instances
+  and more than twice as fast on 2. Where neither solves, the final bound is
+  better on 11 and worse on 10.
 
 **Conclusion.** Proved: cut validity for every slope (Proposition 1) and the
 `n`-independent gap for separable programs (Proposition 3, cited).

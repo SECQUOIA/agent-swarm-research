@@ -3,8 +3,11 @@
 Status: complete with the PB44 source corrections in [COVERAGE.md](COVERAGE.md).
 All forty-six obligations are covered under those corrections. The package has
 nineteen proof modules in `MultilinearGap`, with the radix family in
-`MultilinearGap.Radix`. No project-wide verification or CI inspection was run
-for this follow-up.
+`MultilinearGap.Radix`. The targeted checks were last rerun on current sources
+on 2026-09-25: warning-free build of all nineteen modules, 1,214 audited
+declarations with standard axioms only, and kernel replay of all nineteen
+modules. See [the 2026-09-25 section](#targeted-rerun-on-2026-09-25). No
+project-wide verification or CI inspection was run for this follow-up.
 
 | Module | Obligations |
 |---|---|
@@ -27,6 +30,42 @@ for this follow-up.
 | `RadixHullGap.lean` | PB36, PB38-PB41, PB42 (radix map), PB43 |
 | `BilinearGraph.lean` | PB42 (bilinear map), PB44 |
 | `PositiveBoxHeadline.lean` | PB45, PB46 |
+
+## Targeted rerun on 2026-09-25
+
+The previous targeted checks ran at `90eb77ce`. Commit `748a8b28` then added
+the odd-dimensional PB44 results to `BilinearGraph.lean`, with a new import of
+`PhysicalEnvelope`: `meanSum_halfPoint`, `countFloor_halfPoint_odd`,
+`countFrac_halfPoint_odd`, the private `choose_two_convex`,
+`bilinearGraph_minimum_odd`, `bilinearGraph_hullGap_odd`,
+`bilinearGraph_termwiseGap_odd`, `bilinearGraph_cube_ratio_odd` and
+`bilinearGraph_cube_ratio_odd_ne`. Commits `748a8b28` and `fa2a6f42` also
+edited module docstrings in `BalancedMoments.lean`, `BalancedRefinement.lean`
+and `CoefficientInequality.lean`; no definitions or proofs changed there.
+The audit program now also prints axioms for the five public
+`bilinearGraph_*_odd*` theorems by name.
+
+The following checks ran on 2026-09-25 from `formal/` at `d85171b8`, with that
+audit edit in the working tree and `$HOME/.elan/bin` on `PATH`. The build and
+audit used `LEAN_NUM_THREADS=4`; each replay used `LEAN_NUM_THREADS=1` and ran
+alone.
+
+| Check | Result | Wall time |
+|---|---|---|
+| `lake build --wfail` with the nineteen explicit topic targets | Exit 0, no warnings, 8,743 jobs. Lake rebuilt only `PositiveBoxHeadline`; the other eighteen targets were already up to date with the current sources. | 26.9 s |
+| `lake env lean topics/18-positive-box/verification/AuditPositiveBox.lean` | Exit 0. `PASS: audited 1214 topic-18 declarations across 19 modules.` All 125 named prints report only `propext`, `Classical.choice`, and `Quot.sound`. | 9.0 s |
+| `lake env leanchecker` for each of the nineteen modules, one at a time | Exit 0 for every module, no output | 4.7-5.6 s each |
+
+The count rose from 1,205 to 1,214 because of the nine declarations added by
+`748a8b28`; the sweep covers all of them, including the private helper. The
+full commands, output and wall times are in
+[verification/run-2026-09-25.log](verification/run-2026-09-25.log).
+
+The odd-dimensional theorems add no obligation; the count remains forty-six.
+They are extra results that support the PB44 correction: frozen PB44 states the
+ratio `2(n-1)/n`, which holds only in even dimension. The PB44 row of
+[COVERAGE.md](COVERAGE.md) already lists these theorems and records the
+correction. [CLAIMS.md](CLAIMS.md) is frozen and was not changed.
 
 ## Historical checks
 

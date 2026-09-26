@@ -79,8 +79,9 @@ planes for multi-row models.
   and from 15 to 44 of 50 for BARON. **Most of that gain comes from the
   equal-width families built to satisfy Theorem 2** (Gurobi: 24 to 47 of 50,
   68 s to 10 s); with unequal widths Gurobi goes from 72 to 77 of 80 and from
-  10.8 s to 8.8 s mean time, and 45 of the 54 instances it solves in under 10 s
-  become slower. The bound is only modestly stronger than the exhaustive
+  10.8 s to 8.8 s mean time, and 39 of the 45 unequal-width instances it
+  solves in under 10 s without cuts become slower (45 of 54 over all 130
+  instances). The bound is only modestly stronger than the exhaustive
   closure of the tilted flow covers, and a structural scan finds an applicable
   row in only 4.8% of MINLPLib. See [Computational results](#computational-results).
 
@@ -529,7 +530,8 @@ frozen code, unmodified solvers receiving plain linear rows.
    68.5 s to 9.6 s; on the 80 instances with unequal widths 72 against 77 are
    solved and the mean time goes from 10.8 s to 8.8 s, with gains on hard
    families (`transport-random-sqrt-10x15`: 170 s against 36 s) and losses on
-   easy ones (45 of the 54 instances solved in under 10 s become slower). A
+   easy ones (39 of the 45 unequal-width instances solved in under 10 s
+   without cuts become slower; 45 of 54 over all 130 instances). A
    control with the quadratic stated directly in the objective changes Gurobi's
    times by at most about 40% and no conclusion.
 3. **SCIP 10 and BARON (1 thread).** SCIP 18 against 41 of 44; BARON 15 against
@@ -540,13 +542,16 @@ frozen code, unmodified solvers receiving plain linear rows.
    2.7 s, unequal widths 8.8 s against 14.0 s. Gurobi's own root cuts leave a
    2–7% root gap; adding the row-hull rows leaves 0.7–3.9%.
 5. **Inside the tree (measured; negative).** In a minimal best-bound spatial
-   branch-and-bound, exact row-hull separation on every node box needs 5–29
-   times fewer nodes than root cuts alone. In SCIP 10 this does not transfer: a
-   PySCIPOpt separator on node boxes reduces SCIP's nodes by a factor 1.3–3.4
-   at full depth and by 5–20% to depth 8, while the callback (column generation,
-   since branching makes local widths unequal) makes the runs 4–5 times slower
-   than root-only separation, which is the best configuration on every family
-   tested (`8x12`, four families, five seeds, 300 s).
+   branch-and-bound, exact row-hull separation on every node box needs 5–30
+   times fewer nodes than root cuts alone on nine `5x7` instances (`uniform`,
+   `random`, `uncap`, three seeds each; all run after the pricing fix). In SCIP 10 this does not transfer: a
+   PySCIPOpt separator on node boxes reduces SCIP's nodes by a factor 1.5–3.4
+   at full depth and by 2–21% to depth 8, while the callback (column generation,
+   since branching makes local widths unequal) makes the runs 4.4–6.3 times
+   slower than root-only separation, which is the best configuration on every
+   family tested (`8x12`, four families, five seeds, 300 s; family shifted
+   geometric means, not per-instance bounds; the full-depth `random-log` cell
+   has four seeds).
 6. **Against tilted flow covers.** The exhaustive closure of the
    Lim–Linderoth–Luedtke family at `z = 1` recovers 85–100% of the row-hull
    bound improvement on small instances.

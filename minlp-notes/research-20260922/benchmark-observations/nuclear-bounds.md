@@ -30,7 +30,9 @@ row by row by `code/nuc_verify.py`.
 - Normalization: `sum_i V_i phi_{i,t} k_{i,t} = 1` for every `t` (`V = 1`, or 0.5 on
   diagonal half-nodes in va–vf).
 - Peaking: `phi_{i,t} k_{i,t} <= c` (c = 1/6 va; 0.15 vb–vf; 1/12 for 14; 0.08 for 25;
-  1/24.5 for 49; 1/52 for 104).
+  1/24.5 for 49; 1/52 for 104). The fractions are approximate labels: the models
+  store 15-digit decimals (for example `.166666666666667` for va), and the
+  certificates use those decimals exactly.
 - Sign bounds: `phi, k, lam >= 0` (OSiL default lower bound 0), so `phi >= 0` is
   imposed; `lam` has no upper bound. F2/F3 also have `phi >= phi_lb > 0` and `k >= 0.12`.
 - Beginning-of-cycle `k`, three formulations:
@@ -82,17 +84,32 @@ with the valid total-burn equalities `sum_i V_i k_{i,t+1} = sum_i V_i k_{i,t} - 
 
 ## 3. Results
 
-Proven bounds are certified in exact arithmetic (`nuclear_cw_bounds.json|txt`).
+Proven bounds are certified in exact arithmetic from the rational `w` and `y`
+stored in `nuclear_cw_bounds.json`. That JSON also stores the derived certified
+values as exact fractions (`rho_bar_exact`, `beta_exact`, `bound_lamT_exact`,
+`bound_peak_exact`, `best_bound_exact`, `rowsum_bound_exact`); its float fields
+(`bound_lamT`, `best_bound`, ...) are nearest-rounded approximations. The
+generated `nuclear_cw_bounds.txt` and `nuclear_table.txt` print bounds rounded
+outward from the exact fractions (upper bounds on `lam_T` up, objective bounds
+down). They were regenerated on 2026-09-25 from the saved `w` and `y` without
+re-solving, by running `python nuc_verify.py --reuse > ../nuclear_cw_bounds.txt`
+and then `python nuc_table.py > ../nuclear_table.txt` in `code/`; the solver
+columns come from the saved `nuclear_runs/*.json`. The table below is
+identical to the regenerated `nuclear_table.txt`.
 The table reports the objective `-lam_T`; its proven-bound column is the certified
 upper bound on `lam_T` rounded up to six decimals (so the printed objective
 bound is rounded down and remains valid).
-Solver runs: 300 s, one thread, Gurobi 13.0.3 and SCIP 10.0. The "cuts"
+Solver runs: requested time limit 300 s, one thread, Gurobi 13.0.3 and SCIP 10.0
+(the saved SCIP logs and run files do not record the SCIP version). Elapsed
+times (`time` in `nuclear_runs/*.json`) stayed within 1 s of the limit except
+for three SCIP runs without cuts: nuclear104 567.9 s, nuclear10b 304.1 s and
+nuclear49a 301.9 s. The "cuts"
 configuration adds, for every `t`: `k_{i,t} <= KF`; `lam_t <= nu_t` with
 `nu_t >= sum_j G_ij w_j k_{j,t} / w_i` for all `i` (a linear form of the
 Collatz–Wielandt maximum); `sum_i V_i k_{i,t+1} = sum_i V_i k_{i,t} - a`; and
 `lam_T <=` the proven bound. All are valid by (K), (CW) and the row sums.
 
-| instance | listed primal | listed dual | listed gap | proven bound | gap (listed primal, proven bound) | Gurobi dual: no cuts / cuts | SCIP dual: no cuts / cuts | best primal in these runs (max viol) |
+| instance | listed primal | listed dual | listed gap | proven bound | gap (listed primal, proven bound) | Gurobi dual: no cuts / cuts | SCIP dual: no cuts / cuts | best primal in these runs (max row viol) |
 |---|---|---|---|---|---|---|---|---|
 | nuclearva | -1.01423 | -1e+06 | 9.86e+05 | -1.184634 | 0.168 | -1.69e+04 / -1.15500 | none / -1.18463 | -1.00694 (1.2e-07) |
 | nuclearvb | -1.03134 | -1e+06 | 9.7e+05 | -1.195181 | 0.159 | -803 / -1.16551 | none / -1.19518 | -1.02267 (4.6e-15) |
@@ -112,6 +129,11 @@ Collatz–Wielandt maximum); `sum_i V_i k_{i,t+1} = sum_i V_i k_{i,t} - a`; and
 | nuclear10a | none | -12.33361 | inf | -1.202131 | inf | -12.33432 / -1.20210 | -521 / -1.20211 | none |
 | nuclear10b | -1.16521 | -4.87040 | 3.18 | -1.202131 | 0.0317 | -12.28620 / -1.20207 | -519 / -1.20211 | none |
 | nuclear104 | none | none | inf | -1.202131 | inf | none / -1.20213 | none / -1.20213 | none |
+
+The violation column is the maximum row violation only. The nuclear14a point
+(SCIP, no cuts) also has integrality violation 2.8e-7 and bound violation
+1.0e-8; every other listed point has zero bound and integrality violation
+(`nuclear_runs/*.json`).
 
 Observations:
 - The proven bounds make every gap finite where a feasible value is known (not

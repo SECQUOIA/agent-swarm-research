@@ -14,11 +14,24 @@ The submission artifacts are:
   code, exact diagnostics, data, historical comparisons, complete local import
   dependencies, measured source versions and portable provenance manifests.
 
-All eight stages are complete, including the resumed synthesis stage and five
-independent reviews of the entire manuscript. A separate agent corrected all
-accepted minor findings, and root independently verified the final archives,
-clean 78-page build, diagnostics, table regeneration and measured-source hashes.
-No identified issue remains unresolved. The final paper has 54 references.
+**Version scope.** The two ZIP archives, the manifests
+[delivery/archive-manifest.json](delivery/archive-manifest.json) and
+[delivery/final-artifacts.json](delivery/final-artifacts.json), and the review
+record below cover the 2026-09-09 submission version (commit `876ca480`). The
+manuscript sources were revised afterwards in commit `aee2afbf` (2026-09-24),
+which also rebuilt `paper.pdf`, and in any 2026-09-25 audit follow-up
+edits. The archives and manifests were not refreshed: the source ZIP
+does not contain the current manuscript sources, and `final-artifacts.json`
+records the earlier `paper.pdf` hash. No review of the later revisions is
+claimed.
+
+For the 2026-09-09 version, all eight stages are complete, including the
+resumed synthesis stage and five independent reviews of the entire manuscript.
+A separate agent corrected all accepted minor findings, and root independently
+verified the final archives, clean 78-page build, diagnostics, table
+regeneration and measured-source hashes. No issue identified in those reviews
+remains unresolved. That version has 54 references; the current sources and
+saved build have 55.
 The final assessment is [process/assessments/stage08-round01.md](process/assessments/stage08-round01.md).
 Author,
 reviewer, assessment and correction records remain under `process/` and are

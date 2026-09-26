@@ -15,7 +15,9 @@ reviewed. A failed literature search does not establish novelty.
    "staircase" law. Dually, it is a supremum over concave minorants `psi` of
    staircase interpolations of `S -> psi(a(S))`. Every exactly concave
    `psi <= sigma` yields cuts valid on the whole box. The result also holds on
-   order polytopes and products of simplices.
+   products of simplices, and on order polytopes when the coefficients of the
+   linear form are all nonnegative or all nonpositive on each connected
+   component of the order constraints (mixed signs can fail).
    - Status: independently reviewed ([review](ridge-envelopes/review-theory.md));
      numerically verified on 1800 cases ([verification](ridge-envelopes/numerical-verification.md)).
    - Novelty ([check](ridge-envelopes/novelty.md)): the probabilistic core is
@@ -25,7 +27,9 @@ reviewed. A failed literature search does not establish novelty.
    - Practical value is modest. On neural-network optimization the cuts close
      a median 3.6% of the root gap (about 20% for SiLU and GELU) and save
      nodes, but a Python branch-and-bound is slower with them
-     ([experiment](ridge-envelopes/nn-experiment/report.md)). In MINLPLib the
+     ([experiment](ridge-envelopes/nn-experiment/report.md)). The saved
+     timings use inconsistent clocks and must be rerun before publication
+     (see the report's "Before publication" section). In MINLPLib the
      structure is mostly two-variable ([scan](ridge-envelopes/minlplib-ridge-scan.md)).
 2. **Certified finite dual bounds for the 18 open `nuclear*` MINLPLib
    instances** ([report](benchmark-observations/nuclear-bounds.md)). The bounds
@@ -48,7 +52,9 @@ reviewed. A failed literature search does not establish novelty.
      on box shapes that is positively homogeneous of degree 1. A
      Collatz–Wielandt-type constant `r*(Phi)` bounds the local linear rate from
      above, and a stall certificate shows when OBBT cannot contract at all.
-   - Exact rate `(sqrt(2a^2+4a)-a)/2` for `x^2 + y^2 + a xy` with McCormick.
+   - Exact rate `(sqrt(2a^2+4a)-a)/2` for `x^2 + y^2 + a xy` with McCormick,
+     for Jacobi OBBT rounds (all bounds from one relaxation); sequential rounds
+     contract at least as fast (0.7053 against 0.7247 at `a = 1`).
    - A row condition under which OBBT tightens nothing, even for strongly
      convex objectives.
    - The root gap after iterated OBBT is `O(epsilon)` in the contracting regime.
@@ -66,7 +72,11 @@ reviewed. A failed literature search does not establish novelty.
 4. **Certified curve-hull cuts for variables with several univariate terms**
    ([report](curve-hulls/report.md), [review](curve-hulls/review.txt)).
    - A general separator handles the convex hull of `(t, f_1(t), ..., f_k(t))`.
-     Its cut constants are certified by interval arithmetic.
+     Its cut constants are certified by outward-rounded interval arithmetic.
+     The last step that was only rounded to nearest (in `_piece_lower`) was
+     fixed on 2026-09-25. All 16,539 saved cuts were then re-certified without a
+     solver, so no run was repeated ([report](curve-hulls/report.md), Section 1).
+     The scaling version of the controls that were not rerun remains unknown.
    - On waterno2_06/09/12/18/24, root cuts raise Gurobi 13's 1800 s dual
      bounds above MINLPLib's best listed bounds (165/274/480/771/1095).
      Regenerated, reproducible runs reach 226/656/1573/3144/4442, and earlier
@@ -95,6 +105,8 @@ reviewed. A failed literature search does not establish novelty.
   McCormick ([log](log.md)).
 - Theorem 1 cuts do not speed up global optimization of small trained networks
   in a Python branch-and-bound, because separation cost outweighs node savings.
+  The timings need a clean rerun before publication
+  ([report](ridge-envelopes/nn-experiment/report.md)).
 - Iterated OBBT as an external presolve does not pay off on MINLPLib QCQPs
   with realistic incumbents (result 3).
 - Spatial-branching setting changes move node counts no more than random
@@ -114,8 +126,9 @@ reviewed. A failed literature search does not establish novelty.
 - `curve-hulls/`: result 4, with code, results and review.
 - `nuclear-global/`: follow-up to result 2 (assessment, review, code).
 - `pooling-multiattribute/`: feasibility assessment of a pooling direction.
-  Multi-attribute pooling cuts give a safe root bound on pooling_sppc0 that
-  beats MINLPLib's best listed dual bound (-93325.22 against -95124.69). A
+  Multi-attribute pooling cuts give a safe root bound on pooling_sppc0pq that
+  beats the best dual bound MINLPLib listed for the same pq variant on
+  2026-09-23 (-93325.22 against -95824.43, Gurobi). A
   claimed improvement on sppb0 was refuted by independent verification
   ([verification](pooling-multiattribute/verification.txt)). The theory
   direction (hulls with correlated qualities) is recorded as an open option;

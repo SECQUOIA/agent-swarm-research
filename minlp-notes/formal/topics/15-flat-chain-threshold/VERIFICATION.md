@@ -56,15 +56,23 @@ sha256sum -c formal/topics/15-flat-chain-threshold/verification/SOURCES.sha256
 **This manifest is a delivery-time snapshot and is not expected to match the
 current tree.** It is retained unchanged so that its evidence remains tied to
 the delivery. The comparison made during the 2026-09-20 follow-up found 206
-matching entries and 12 mismatches:
+matching entries and 12 mismatches. A rerun of the same command on 2026-09-25
+at `d85171b8` found 199 matching entries and 19 mismatches; the last seven rows
+below are the new ones, and the `Audit.lean` row gained a second reason. The
+reasons come from `git log` on each file since the manifest was added in
+`c75d5321`.
 
 | File | Reason for the mismatch |
 |---|---|
 | `formal/Formal/NetworkSimplex/ThresholdObservedRecovery.lean` | The payload-size docstring changed; its executable definitions and proofs did not. |
 | `formal/Formal.lean` | The import registry includes later topics and the new `ThreeCircuitForms` module. |
 | `formal/topics/15-flat-chain-threshold/{ALGORITHMS,COVERAGE,README,REVIEW,VERIFICATION}.md` | Topic documentation was corrected after delivery. |
-| `formal/topics/15-flat-chain-threshold/verification/{Audit.lean,modules.txt}` | The audit and module list now include `ThreeCircuitForms`. |
+| `formal/topics/15-flat-chain-threshold/verification/{Audit.lean,modules.txt}` | The audit and module list now include `ThreeCircuitForms` (`748a8b28`). Commit `fa2a6f42` also split the audit's final `PASS` message across two source lines. |
 | `README.md`, `formal/topics/README.md`, `formal/RECOMMENDED-TOPICS-PLAN.md` | Repository indexes were updated as later topics completed. |
+| `formal/topics/15-flat-chain-threshold/verification/ReviewObserved.lean` | Commit `fa2a6f42` wrapped two long `example` statements across lines. The four examples and their `decide +kernel` proofs are unchanged. |
+| `formal/README.md` | The formal index was updated as later topics completed (`367fcbc8`, `c716f120`, `17ac3204`, `6816f8b3`, `2cd1bf23`). |
+| `paper-network-simplex/sections/{01-foundations,04-bounded-rank,06-series-parallel,07-fixed-state-chains}.tex` | Manuscript prose was revised in the 2026-09-24 repository audit (`aee2afbf`). |
+| `results/network-simplex-flat-chain-fixed-states.md` | Commit `367fcbc8` added a paragraph relating this note's unreduced formulation to the sharper results in the current manuscript. |
 
 `ThreeCircuitForms.lean` and the follow-up log are new files and therefore have
 no entry in the delivery manifest. The old manifest is evidence for the original
@@ -135,3 +143,24 @@ and `Quot.sound`. Kernel replay exited 0. The commands and output are saved in
 This is separate from the unchanged delivery log of 4,197 declarations in 144
 modules. The earlier algorithm examples and generated-code checks were not
 rerun for this addition. No project-wide verification or CI inspection was run.
+
+## Audit rerun on 2026-09-25
+
+Commit `fa2a6f42` changed `Audit.lean` and `ReviewObserved.lean` only by line
+wrapping, as described in the fingerprint table above. For consistency both
+programs were run once more from `formal/` at `d85171b8`, with
+`$HOME/.elan/bin` on `PATH` and `LEAN_NUM_THREADS=4`:
+
+```sh
+lake env lean -DwarningAsError=true topics/15-flat-chain-threshold/verification/Audit.lean
+lake env lean -DwarningAsError=true topics/15-flat-chain-threshold/verification/ReviewObserved.lean
+```
+
+The audit exited 0 in 30.6 s and printed
+`PASS: audited 4261 declarations in 145 extension modules; only propext, Classical.choice, Quot.sound are allowed.`,
+matching the 2026-09-20 follow-up. `ReviewObserved.lean` exited 0 in 4.0 s with
+no output, so its four examples passed. Beforehand, `lake build --no-build` on
+the 145 listed modules reported all targets up to date, so both programs read
+outputs built from the current sources. The build, the other review programs,
+the generated-code check and kernel replay were not rerun. No project-wide
+verification or CI inspection was run.

@@ -26,9 +26,10 @@ The three ingredients are already available.
   `Rounding.D_lt_of_nodes` turn the grid-node bounds into the strict uniform bound, using that
   only finitely many node values occur.
 
-Uniformity of the grid is used exactly once, and exactly where the sources use it: it makes
-every row of the occupation matrix a point of the simplex, so that each cell supplies one unit
-of assignment capacity.
+Uniformity of the grid is used twice, both times in `exists_blockMap_uniform`. It normalizes
+the rows: every row of the occupation matrix is a point of the simplex, so that each cell
+supplies one unit of assignment capacity. It also converts counts of selected cells into node
+values of the rounded schedule, each selected cell contributing exactly `h`.
 -/
 
 namespace GridSwitching
@@ -63,8 +64,10 @@ cells, normalized by the cell width:
 
   `a j i = (W i (x j.succ) - W i (x j.castSucc)) / h`.
 
-Uniformity of the grid is used exactly here, and only here: it is what makes every row of `a` a
-point of the simplex, so that each cell supplies one unit of assignment capacity. -/
+Uniformity of the grid is used twice in `exists_blockMap_uniform`. In `hcellsum` it makes every
+row of `a` a point of the simplex, so that each cell supplies one unit of assignment capacity.
+In `hVnode` it converts the count of cells selecting a mode before a node into that mode's node
+value, `h` times the count. -/
 
 /-- SC24's selection step: a monotone block map into the original word whose cellwise word is
 uniformly within `h` of the original schedule. Both public forms of the transfer theorem are

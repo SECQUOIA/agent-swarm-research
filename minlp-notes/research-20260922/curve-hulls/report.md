@@ -15,7 +15,9 @@ this study contributes a general certified separator and a benchmark run.
   given as a sympy expression. The direction comes from a semi-infinite LP
   solved by cutting planes on `t`; the constant is certified by outward-rounded
   interval arithmetic on `f_j` and `f_j''`, assuming the float64 library
-  functions are accurate to better than `1e-14` relative. In tests, every cut
+  functions are accurate to better than `1e-14` relative. After a rounding fix
+  (2026-09-25), all 16,539 saved cuts were re-certified without a solver
+  (Section 1), so no run had to be repeated. In tests, every cut
   holds at 20,000 random curve points in 10 families. For `(t, t^2, t^3)` it
   agrees with the exact two-cone moment hull on 1,600 of 1,600 random points.
 - **Pipeline.** `code/model.py` gives every univariate term of a selected
@@ -158,11 +160,57 @@ Given a point `p` and the curve `phi(t)`:
 4. Unscale and zero coefficients contributing less than `1e-11` of the largest.
 5. Set the constant to minus a certified lower bound of `g = c.phi` over
    `[l, u]`: on each of 4,096 pieces `[a, b]`, the larger of the interval
-   extension of `g` and `min(g(a), g(b)) - M (b-a)^2/8` with `M` an interval upper
-   bound of `g''` on the piece (valid because `g` minus its chord vanishes at
-   `a, b` and has second derivative at most `M`). Operations are widened outward
-   by `4e-16` (arithmetic) or `1e-14` (library functions) relative; loose pieces
-   are bisected. The resulting shift is at most about `1e-8` of the cut's scale.
+   extension of `g` and `min(g(a), g(b)) - max(0, M) (b-a)^2/8` with `M` an
+   interval upper bound of `g''` on the piece (valid because `g` minus its chord
+   vanishes at `a, b` and has second derivative at most `max(0, M)`; the clamp
+   matters when `M < 0`, and `code/curvehull.py::_piece_lower` applies it).
+   Operations are widened outward by `4e-16` (arithmetic) or `1e-14` (library
+   functions) relative; loose pieces are bisected. The resulting shift is at
+   most about `1e-8` of the cut's scale. The other roundings on this path have
+   explicit margins: the factor `1 + 1e-15` on `max(0, M) (b-a)^2/8` covers
+   its at most five roundings, and the error term of each linear bound
+   `sum_j c_j y_j` (`_lin_lower`) is more than twice the rounding error of its
+   products, sum and final subtraction. The final
+   subtraction of `max(0, M) (b-a)^2/8` from `min(g(a), g(b))` in `_piece_lower`
+   is rounded downward (one step toward `-inf` after round-to-nearest; exact when
+   the subtrahend is 0). Before 2026-09-25 this step was only rounded to
+   nearest; see "Saved cuts after the rounding fix" below.
+
+**Saved cuts after the rounding fix (2026-09-25).** All saved cuts were
+generated before the fix. `code/cuts_rounding_check.py` rebuilds each curve from
+the funcs and interval recorded in the cut and recomputes the constant with the
+corrected code, without a solver. It covers all 30 non-empty files in
+`code/cuts/` and `code/cuts/superseded/` (16,539 cuts; output in
+`code/cuts_rounding_check.out`):
+
+- The previous code reproduces 16,536 saved constants exactly. For the other 3
+  (feedtray), it gives a constant 8.9e-16 stronger than the saved one, which
+  equals the corrected constant. The cause was not investigated; it does not
+  affect validity.
+- The corrected constant equals the saved one for 1,462 cuts. For the other
+  15,077, the saved cut is stronger, by at most 2.8e-14 absolute (ex8_4_7) and
+  1.7e-16 relative to the cut's scale `1 + sum_j |c_j| max |phi_j|`. No saved
+  cut is weaker.
+- For each of these 15,077 cuts, the saved constant itself was certified. The
+  corrected code, bisecting until every piece's bound reaches minus the saved
+  constant, certified 15,066. The other 11 (1 in chp_partload, 1 in ex8_5_4,
+  1 in ghg_2veh, 6 in ghg_3veh, 2 in super3t) touch the curve so closely that
+  the float enclosure margins exceed their slack: high-precision evaluation of
+  the distinct ones gives minimum slacks of 3e-16 to 1.3e-14. They were
+  certified with 200-bit interval arithmetic (`mpmath.iv`: branch and bound with
+  the interval extension and a second-order Taylor bound, all constants
+  converted exactly). As a control, the same check fails for all 11 when
+  their constants are strengthened by `1e-13 max(1, |c0|)`. The slack values
+  and this control are not in the saved output.
+
+Every saved cut is therefore valid under the corrected certificate, and no solver
+run had to be repeated because of this fix. This concerns the cut constants for
+the recorded curves only. It does not cover cut files that were overwritten: the
+earlier seed-0 cuts of waterno2_12/18/24 and, because `run.py` then used one file
+per instance, the cuts of all but one run of each instance with replicates (for
+example lnts100 and lnts400 seeds 0/1/2). The dual bounds remain uncertified floating-point
+Gurobi output. The scaling version of controls that were not rerun is still
+unknown (Section 2).
 
 A first version bounded `g''` from the wrong side; the random-point test caught
 it before any solver run. Speed: about 10 ms per cut.
@@ -183,8 +231,12 @@ it before any solver run. Speed: about 10 ms per cut.
   scaled in the argument. Scaling every atom to order 1 multiplied Gurobi's
   absolute tolerance on `t = g(x)` by up to `2^18` (ex8_4_7), and Gurobi accepted
   points violating the original model by `8.6e-4`. Final rule: scale down only
-  above `2^30`. All affected instances were rerun; superseded runs are in
-  `code/results_oldscale/`. An earlier version of this report said that
+  above `2^30`. The runs in `code/jobs_rescale.txt` (cuts, sub and, where used,
+  soc for gams02, chp_partload, super3t, ghg_2veh, ghg_3veh, ex8_4_2, ex8_4_7 and
+  ex7_3_5) were rerun; superseded runs are in `code/results_oldscale/`. The saved
+  result files do not record the scaling factors, so they do not identify the
+  scaling version of the other compared runs (for example the waterno2 `sub` and
+  `soc` controls and the lnts runs). An earlier version of this report said that
   waterno2 was not affected; that was wrong. The rescaling changed some waterno2
   auxiliary variables (for example `t = 4 x^2` became `t = x^2` on `[0, 0.58]`),
   so the earlier seed-0 waterno2 cuts runs used the old scaling and the seed-1
@@ -251,9 +303,13 @@ listed bounds. ghg_3veh: net negative. lnts: small and seed dependent; part of
 the lnts100 gain may come from substitution alone.
 
 **Excluded as numerically unreliable.** gams02 (presolve bounds `[6324, 15810]`,
-`x^3` about `4e12`): with the original variables fixed at MINLPLib's best point,
-the substituted model is infeasible (equality rows with `1e12` terms must cancel
-to `1e-6`), and the cuts run "proves" 1.784e8 against a known point of 8.947e7.
+`x^3` about `4e12`; equality rows with `1e12` terms must cancel to `1e-6`): the
+cuts run "proves" 1.784e8 against a known point of 8.947e7. (An earlier version
+also said that the substituted model rejects MINLPLib's best point. No saved run
+shows this: `code/modelcheck.out` reports orig, sub and sub+cuts feasible there
+with objective 89466860.66. That the known point satisfies the cuts does not
+show whether the fault lies in solver numerics, the modeling or a version
+mismatch.)
 ex8_4_7: incumbents violate the original model by `9e-4` in every mode.
 ex7_3_5: "optimal" values 1.2035–1.2046, below the listed dual 1.20665, in all
 modes; the substituted model rejects the best point.
@@ -262,11 +318,25 @@ modes; the substituted model rejects the best point.
 
 - The bold MINLPLib best point satisfies every saved cut (minimum relative slack
   `3e-15` to `0.17`, never negative) and lies inside every curve interval
-  (`code/validate.out`, `code/modelcheck_rescaled.out`).
+  (`code/validate.out`, `code/modelcheck_rescaled.out`). Exception: in
+  `modelcheck_rescaled.out` the lnts100 check failed with a JSON decode error on
+  `cuts/lnts100.json`. The file now parses and passes on rerun (2026-09-25,
+  `code/modelcheck_lnts100.out`): the best point lies in the curve interval and
+  satisfies all 101 cuts (minimum relative slack 2.2e-6), and orig, sub and
+  sub+cuts are feasible with objective 0.5545954. Its constants are certified
+  (see Section 1). The run that wrote this file is not recorded: seeds 0, 1 and 2
+  each found 101 root cuts and wrote to the same file name, and the file was last
+  modified at 13:40 on 2026-09-23, after all three runs. So the check does not
+  validate the cut set of a specific reported run.
 - Every cut holds at 2,000 random points of its curve.
 - With the original variables fixed at the best point, orig, sub and sub+cuts
-  are feasible with the same objective on every reported instance except gams02
-  and ex7_3_5 (`code/check_models.py`).
+  are feasible with the same objective on every instance with a saved successful
+  check except ex7_3_5, whose substituted model is infeasible in
+  `code/modelcheck_rescaled.out` (`code/check_models.py`; see also
+  `code/modelcheck.out`).
+  lnts100 passes on its current cut file (see above). gams02
+  passes in `modelcheck.out` (objective 89466860.66 in all three models);
+  `modelcheck_rescaled.out` has no gams02 entry.
 - Correction: for waterno2 these checks were run on cut files that are now
   superseded (`_06/_09` before the rescaling, in `code/modelcheck.out`;
   `_12/_18/_24` with the seed-1 files). With the current `model.py`, the

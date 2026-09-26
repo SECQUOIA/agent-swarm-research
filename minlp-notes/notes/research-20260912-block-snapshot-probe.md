@@ -219,6 +219,6 @@ artifacts are [validation](../code/research_20260912/results/block-snapshot-vali
 Implementation SHA-256:
 `85c328d8cab52989a308c90e54008ecc211ecb0ad1bd5b3db39b90f6ea6193ba`.
 
-A fresh independent implementation review has not yet been incorporated in
-this note. No claim of novelty or empirical process-model validity follows
+The [fresh implementation review](research-20260912-block-snapshot-independent-review.md)
+of this implementation SHA passed (see the start of this note). No claim of novelty or empirical process-model validity follows
 from these small deterministic probes.

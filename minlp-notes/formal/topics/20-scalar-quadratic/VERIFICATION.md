@@ -43,7 +43,8 @@ independent reviews. No project-wide verification or CI inspection was run.
 
 ## Related paper and documentation
 
-These targeted commands passed from `paper-integer-dimension/`:
+These targeted commands passed from `paper-integer-dimension/` on 2026-09-20,
+for the manuscript and PDF committed in `17ac3204`:
 
 ```sh
 latexmk -pdf -interaction=nonstopmode -halt-on-error -outdir=build main.tex
@@ -51,16 +52,27 @@ python verification/check_manuscript.py
 pdftotext -layout build/main.pdf build/topic20-review.txt
 ```
 
-The current [paper PDF](../../../paper-integer-dimension/build/main.pdf) has
-88 pages. The final LaTeX log has no warnings, and the manuscript checker
-found no duplicate labels, unresolved references, duplicate bibliography keys,
-or unresolved citations. PDF text on pages 3, 13 and 15 was inspected for the
-scope and proof-route updates; this was not a complete visual page review.
+The paper PDF built at that revision has 89 pages, as both saved build logs
+record (this record previously said 88); view it with
+`git show 17ac3204:paper-integer-dimension/build/main.pdf`. The final LaTeX
+log has no warnings, and the manuscript checker found no duplicate labels,
+unresolved references, duplicate bibliography keys, or unresolved citations.
+PDF text on pages 3, 13 and 15 was inspected for the scope and proof-route
+updates; this was not a complete visual page review.
 See the [build log](verification/paper-build.log),
 [final LaTeX log](verification/paper-final.log),
 [paper checks](verification/paper-checks.json), and
 [note, manuscript and PDF fingerprints](verification/paper-sources.json).
 Historical submission and review artifacts were not replaced.
+
+The current [paper PDF](../../../paper-integer-dimension/build/main.pdf) and
+manuscript sources are later replacements whose fingerprints differ from this
+record, so these paper checks do not cover them. The three result-note
+fingerprints matched through commit `c1828ee0`; the 2026-09-25 audit
+follow-up then edited `results/quadratic-inertia-one-sided-integer-complexity.md`
+and `results/mip-relaxation-binary-lower-bounds.md`, so only
+`results/quadratic-rank-integer-complexity.md` still matches. The paper changes do not affect the Lean
+verification above.
 
 The three related result notes and manuscript distinguish scalar verification
 from the remaining vector quadratic results. They state the missing `δ≥0`

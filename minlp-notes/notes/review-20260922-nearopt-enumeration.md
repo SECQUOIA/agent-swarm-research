@@ -6,6 +6,11 @@ Reviewed [the complete-message draft](research-20260922-oracle-all-messages.md),
 including its first-moment count, enumeration algorithm, parameter net,
 spectral conditional oracle, and expected bit complexity.
 
+Promoted text (pointer added 2026-09-25): the reviewed draft path now holds
+only a promotion notice; the full proof is in
+[the promoted result](../results/smoothed-spectral-indicator-messages.md).
+This review did not record a revision or digest of the draft it read.
+
 **Verdict.** The mathematical argument is correct under its stated oracle
 and spectral assumptions. It constructs the claimed complete dictionaries,
 including supports active only at ties or on the box boundary. The proof does

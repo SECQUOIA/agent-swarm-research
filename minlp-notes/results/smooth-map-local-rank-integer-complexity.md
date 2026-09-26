@@ -318,10 +318,12 @@ share the input bits across all outputs.
 
 A scalar smooth function with nonsingular Hessian at one interior point
 has coefficient `n/2`, even when that Hessian is indefinite. A product
-of `k>=2` positive variables is a concrete polynomial case: at a point
-where all variables equal `a>0`, its Hessian has zero diagonal and
-every off-diagonal entry equal to `a^(k-2)`. Its eigenvalues are
-`(k-1)a^(k-2)` once and `-a^(k-2)` with multiplicity `k-1`.
+of `k>=2` positive variables is a concrete polynomial case: at any
+point `x` of the positive orthant, its Hessian is
+`H=f(x)diag(1/x)(11^T-I)diag(1/x)`. Both diagonal factors are
+invertible, and `11^T-I` has eigenvalues `k-1` once and `-1` with
+multiplicity `k-1`, so `H` is nonsingular throughout the positive
+orthant, in particular at every interior point of any positive box.
 Thus its coefficient is `k/2`, with a compact formulation as above.
 
 A rank-deficient polynomial example in four variables is

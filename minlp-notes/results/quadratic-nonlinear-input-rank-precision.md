@@ -170,15 +170,17 @@ rational lift of the domain, retain the original `x` and impose
 
 ## The finite covariance lower bound needs only domain volume
 
-For any full-dimensional compact convex domain `Omega subset [0,1]^r`, the
-parity-support covariance proof for an ellipsoidal error budget gives
+For any full-dimensional compact convex domain `Omega subset [0,1]^r`,
+any rational quadratic map `h` on `R^r`, and any rational ellipsoid `E`
+in the output space of `h`, the parity-support covariance proof for an
+ellipsoidal error budget gives
 
 ```
-p_conv(q,Omega,tE_0)>=Phi(t)-A_r+log2 vol(Omega),        (6)
+p_conv(h,Omega,tE)>=Phi(t)-A_r+log2 vol(Omega),          (6)
 ```
 
-with the same covariance benchmark and constants as the reviewed
-ellipsoidal theorem in dimension `r`. Indeed, each support has volume
+where `Phi` is formed from `h` and `E` with the same covariance benchmark
+and constants as the reviewed ellipsoidal theorem in dimension `r`. Indeed, each support has volume
 at most `2^(A_r-Phi(t))`, while the `2^p` supports now cover volume
 `vol(Omega)` rather than one. All covariance caps and midpoint
 identities are unchanged. This is the only modification of that lower
@@ -200,7 +202,7 @@ alpha=(d+1)sqrt(d).
 
 Here `Phi` is formed from the Hessians of `q_bar` and the rational
 quadratic form defining `E_0`. The general-norm comparison, now using
-(6) for `q_bar`, gives
+(6) with `h=q_bar` and `E=E_0`, gives
 
 ```
 Phi(1) <= p_conv(q,Omega,K)+A_r-log2 vol(Omega)
@@ -251,7 +253,12 @@ passed 21 exact common-kernel quotient and affine-fiber identities and
 21 rational LDL normalization sandwiches and inverse maps. It verifies
 the new algebraic reductions, not the classical LP or rounding algorithms.
 
-For nonnegative diagonal Hessians in the original box axes, the
+For nonnegative diagonal Hessians in the original box axes and
+componentwise output tolerances, the
 [trace-allocation refinement](diagonal-psd-quadratic-linear-dimension-precision.md)
-reduces the additive overhead further to `5r+1`. It uses a different
+reduces the additive overhead further to `5r+1`. A
+[separate corollary](positive-separable-unconditional-error-precision.md)
+extends this to unconditional error bodies satisfying its oracle
+assumptions, but not to arbitrary symmetric bodies such as correlated
+ellipsoids. The refinement uses a different
 benchmark and does not contradict the Frobenius dimension-gap example.

@@ -1,7 +1,7 @@
 # AC power flow feasibility is complete for the existential theory of the reals
 
 Date: 2026-09-05. Status: independently audited (three audit notes);
-all requested corrections applied. See the status line at the end.
+requested corrections applied as recorded in the status line at the end.
 
 This applies the technique of the [pooling `∃R`-completeness
 theorem](pooling-existential-theory-of-reals.md) to power networks. The
@@ -145,19 +145,22 @@ Lemma 2, stated for `|θ_i - θ_j| ≤ γ < π/2` and proved there by a
 one-to-one property); the proof above is self-contained and includes the
 limit `π/2`. The statement fails without the real-angle limits, as the
 `n`-cycle example above shows. Lavaei and Low
-(2012, Appendix B, Case 2) use the same "resistive lines, zero reactive
-power" reduction with unit magnitudes but without angle limits, where it is
-not valid on cycles. Therefore ACPF restricted to the stated class is the
-same decision problem as RPF, and Theorem 2 follows from Theorem 1 and
-Section 1.
+(2012, Appendix B, Case 2) appear to use the same "resistive lines, zero
+reactive power" reduction with unit magnitudes but without angle limits;
+audit C reports checking this passage in the authors' copy. Without angle
+limits, the step from zero reactive injections to equal angles fails on
+cycles, as the rotating cycle profile above shows. This remark concerns
+only that step, not whether their NP-hardness conclusion holds.
+Therefore ACPF restricted to the stated class is the same decision problem
+as RPF, and Theorem 2 follows from Theorem 1 and Section 1.
 
 ## 3. Reduction from ETR-INV to RPF
 
 Start from an ETR-INV instance (Abrahamsen, Adamaszek, Miltzow 2018,
 Definition 5; `∃R`-complete by their Theorem 7), with `x = 1` replaced by
 `x·x = 1`, so that all equations are inversions `x·y = 1` (`x = y` allowed)
-and additions `x + y = z` (repeated summands allowed). Variables are
-promised to lie in `[1/2, 2]`; this range is imposed directly by voltage
+and additions `x + y = z` (repeated summands allowed). The question asks
+for a solution in `[1/2, 2]^n`; this range is imposed directly by voltage
 bounds below.
 
 Bus kinds:
@@ -184,7 +187,11 @@ gadget occurrence, the next path bus of the required kind (`v` or
 necessary (the script always extends from the end of the path, which may
 create a few more buses than strictly needed; both allocations are
 valid). In a feasible profile, the values along the path are determined
-by `V_{X_v}` through the complement equations.
+by `V_{X_v}` through the complement equations. If all occurrences of `v`
+use `5/2 - v` buses, `X_v` has no gadget line and degree one; a variable
+in no equation gives an isolated value bus with injection `0`. The RPF
+definition allows both, and both leave `v` constrained only to
+`[1/2, 2]`, as in ETR-INV. Such variables may also be dropped.
 
 **Addition `x + y = z`.** A pinned bus `A` with fixed injection `1/2` and
 three neighbours of conductance `1`: a `v = x` bus, a `v = y` bus, and a
@@ -207,8 +214,9 @@ The injection constraint of `I` is `x[(x - V_W) + (x - 1)] = -1`, i.e.
 with `xy = 1`, set `V_I = x` and `V_W = 2x - 1 + 1/x`; then
 `V_W ∈ [2√2 - 1, 7/2] ⊂ [1, 4]` (the function `2x - 1 + 1/x` on `[1/2,2]`
 has minimum `2√2 - 1` at `x = 1/√2` and maximum `7/2` at `x = 2`), and both
-pinned constraints hold. When `x = y` the two `5/2 - x` buses at `D` and
-`C_I` are distinct path buses of the same variable.
+pinned constraints hold. When `x = y` the three `5/2 - x` buses (one
+joined to `C_I`, and two joined to `D` by conductances `2` and `1`) are
+distinct path buses of the same variable.
 
 **Free injection bounds.** Every value bus and auxiliary bus has at most
 three neighbours, all voltages lie in `[1/2, 4]`, and conductances are at
@@ -259,7 +267,9 @@ path lines and one gadget line; pinned buses: two or three lines; `I`: two;
    lossless fixed-magnitude system of Bienstock and Verma (2019), in which
    only angles vary; the resistive class used here is the opposite regime.
    NP-hardness of AC-OPF for resistive networks without reactive loads is
-   due to Lavaei and Low (2012); the new statement is `∃R`-completeness.
+   usually attributed to Lavaei and Low (2012), subject to the caveat
+   after Lemma 4 about their reduction step; the new statement is
+   `∃R`-completeness.
 4. On trees the reduction does not apply: value copies require paths and
    gadgets link different variables' paths, creating cycles. Lehmann,
    Grastien, and Van Hentenryck (2016) proved (weak) NP-hardness of AC
@@ -269,7 +279,8 @@ path lines and one gadget line; pinned buses: two or three lines; `I`: two;
    in this sense the hardness is "strong", in analogy with strong
    NP-hardness.
 6. Corollary 3's algebraic-degree statement refers to the RPF voltages,
-   which are the AC magnitudes; all bus voltages of the constructed
+   which are the AC magnitudes (AC angles are equal by Lemma 4, so an ACPF
+   solution is determined only up to the common angle shift); all bus voltages of the constructed
    instance are rational functions (`v`, `5/2 - v`, `1`, `2x - 1 + 1/x`)
    of the ETR-INV solution, so the bijection argument of the pooling
    theorem applies.
@@ -287,8 +298,8 @@ six digits and maximum degree three. On instances with at most 25 buses
 the script also solves the rectangular AC model of the bus-angle-box
 variant (resistive lines, `Q_i = 0`, magnitude bounds, `e_i ≥ |f_i|`) as a
 feasibility problem and then maximizes `sum_i f_i^2` under a time limit.
-In the final run all four such instances (15, 19, 23, and 25 buses) were
-AC-feasible with a solver-reported upper bound below `10^-6` on
+The AC check was run only on satisfiable instances. In the final run all
+four such instances (15, 19, 23, and 25 buses) were AC-feasible with a solver-reported upper bound below `10^-6` on
 `sum_i f_i^2`. This is numerical consistency with Lemma 4; a positive
 tolerance bound does not prove that all angles are exactly zero. Exact
 equal-angle behavior follows from Lemma 4. Both auditors reproduced the RPF verdicts independently and one
@@ -316,9 +327,11 @@ with the same script's models.
   Trans. Power Syst. 29 (2014) 2892–2904.
 - F. Dörfler, M. Chertkov, F. Bullo, *Synchronization in complex oscillator
   networks and smart grids*, PNAS 110 (2013) 2005–2010 (arXiv:1208.0045).
-- M. Jeeninga, C. De Persis, A. J. van der Schaft, arXiv:2010.01076
-  (DC power flow with constant-power loads; feasibility by a linear
-  matrix inequality in the loads-only case).
+- M. Jeeninga, C. De Persis, A. J. van der Schaft, *DC power grids with
+  constant-power loads — Part I: A full characterization of power flow
+  feasibility, long-term voltage stability and their correspondence*,
+  arXiv:2010.01076 (feasibility by a linear matrix inequality in the
+  loads-only case).
 - M. Abrahamsen, T. Miltzow, *Dynamic Toolbox for ETRINV*, arXiv:1912.08674
   (local: `literature/papers/abrahamsen2019-dynamic-toolbox-for-etrinv`),
   used through Corollary 3 of the pooling theorem.
@@ -344,8 +357,11 @@ variant is stated separately. The follow-up audit
 Theorem 2 and Section 1 returned PASS WITH CORRECTIONS (clarifications
 only: attribution wording, the minimum-voltage justification, sign
 convention and lift argument in the crossing count, spanning-forest
-count), and the final part of audit B concurs; all applied. Theorem 1,
-the reduction, and Lemma 5 passed both original audits, one in exact
+count), and the final part of audit B concurs; all applied. Audit B's
+Part II minor findings 4 and 5 (the "promised" range wording, unused and
+isolated variable buses, and the Lavaei–Low attribution) were applied
+later, the last by qualifying the attribution rather than by a new source
+check. Theorem 1, the reduction, and Lemma 5 passed both original audits, one in exact
 arithmetic. Novelty audit: new as a
 statement about power flow; the resistive model, the zero-reactive
 reduction idea, and the oscillator uniqueness argument are credited.

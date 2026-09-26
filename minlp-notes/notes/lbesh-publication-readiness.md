@@ -31,8 +31,9 @@ failure cases, and reproducible evidence.
 | Numerical and interface details can change a comparison. | The separate Gurobi trig tolerance follow-up validates all nine witnesses and closes six gaps. The legacy initialization follow-up removes documented writer/unused-variable problems, validates 23 of 24 witnesses, and closes 11 gaps. Original records remain intact; follow-ups are separate cohorts. |
 
 The full record contains 1,464 benchmark runs and 420 cone-reference solver
-calls using independent formulations: 42 continuous roots and 27 assignments for each of 14
-small instances. Forty roots have an optimal status and two have an
+calls using independent formulations: 42 continuous roots across the 14
+small, 14 medium and 14 large instances, plus 27 assignments for each of the
+14 small instances. Forty roots have an optimal status and two have an
 inaccurate optimal status; the latter remain separately qualified numerical
 estimates. All 174 optimal fixed-assignment witnesses pass the original-model
 checker. Independent audits found no bound contradictions or disagreement

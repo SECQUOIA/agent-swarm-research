@@ -18,6 +18,19 @@ coefficients. The numerator uses the exact envelopes of the original terms.
 - Consult the [verification record](formal/VERIFICATION.md) for checks and their scope.
 - Inspect the [delivery fingerprints](verification/SHA256SUMS).
 
+The [completion review](verification/completion-review.md), the verification
+record and the delivery fingerprints cover the 2026-09-16 delivery snapshot
+(commit `413aaccb`). The manuscript sources were revised afterwards: on
+2026-09-18, in commit `aee2afbf` (2026-09-24), which also rebuilt `main.pdf`
+and the paper build records, and in any 2026-09-25 audit follow-up edits. The
+fingerprints were not refreshed, so `sha256sum --check` reports mismatches for
+`main.tex`, `main.pdf`, `formal/Verify.lean`, five build records under
+`verification/`, and this README, which was updated with this note;
+`formal/Verify.lean` changed on 2026-09-20. No review of the
+later revisions is claimed. To check the fingerprinted snapshot, extract it
+from a repository clone with
+`git archive 413aaccb paper-cubic-gap | tar -x -C <empty directory>`.
+
 The upper bound uses one marginal-preserving law for every term. Its weights
 are optimal among the specified three fixed laws for a uniform termwise
 guarantee. That does not determine the exact cubic supremum. The analytic

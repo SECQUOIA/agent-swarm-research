@@ -30,7 +30,8 @@ experiment record in [notes/row-hull-experiments.md](../../notes/row-hull-experi
 - `minlplib_qp.py` — the nine MINLPLib separable concave quadratic programs.
 - `minlplib_scan/` — structural scan of MINLPLib (separate agent).
 - `review/`, `review_code/` — scripts of the two independent reviews.
-- `results/superseded_pricing_bug/` — runs made before the pricing fix of the code review; not used.
+- `results/superseded_pricing_bug/` — runs made before the pricing fix of the code review; not used
+  for current results.
 - `test_rowhull.py` — brute-force checks, including the regression test for coinciding subset sums.
 
 ## Environment
@@ -55,6 +56,8 @@ $RUN sweep.py results/main_gurobi.jsonl --sizes g40n3d g60n3d --seeds 0 1 2 3 4 
 python3 summarize.py results/main_gurobi.jsonl          # tables of the experiment record
 python3 table.py results/main_gurobi.jsonl              # per-instance listing
 ./rerun_after_fix.sh      # what was actually run for the final tables after the pricing fix
+# plus (2026-09-25) the uniform and uncap rows of the node-count table:
+(for cap in uniform uncap; do $RUN bb.py 5 7 $cap quad 3 2>&1 | grep transport; done) > results/bb_nodes_5x7_uniform_uncap_rerun.txt
 (for cap in uniform random uncap; do $RUN bb.py 5 7 $cap quad 3; done)
 $RUN bb_cf.py 5 7 uniform quad 3
 $RUN scip_sepa.py 8 12 0 uniform quad {native|root|tree} --tl 300 [--maxdepth d]

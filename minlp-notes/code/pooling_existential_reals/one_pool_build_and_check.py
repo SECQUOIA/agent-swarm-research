@@ -153,20 +153,44 @@ def solve(inst, verbose=False, timelimit=120):
     m.optimize()
     val = m.ObjVal if m.SolCount > 0 else None
     sol = {s: xp[s].X for s in xp} if m.SolCount > 0 else None
-    return zeta, val, sol, (m.ObjBound if m.SolCount > 0 else None)
+    try:
+        bound = m.ObjBound
+    except gp.GurobiError:
+        bound = None
+    return zeta, val, sol, bound, m.Status
+
+
+STATUS_NAMES = {GRB.OPTIMAL: 'OPTIMAL', GRB.INFEASIBLE: 'INFEASIBLE',
+                GRB.TIME_LIMIT: 'TIME_LIMIT', GRB.INF_OR_UNBD: 'INF_OR_UNBD',
+                GRB.UNBOUNDED: 'UNBOUNDED', GRB.SUBOPTIMAL: 'SUBOPTIMAL',
+                GRB.NUMERIC: 'NUMERIC', GRB.INTERRUPTED: 'INTERRUPTED'}
+
+
+def classify(zeta, val, bound, status, tol=1e-6):
+    """YES: incumbent meets the threshold. NO: INFEASIBLE status, or the
+    maximization bound ObjBound is below the threshold by more than tol.
+    OPTIMAL alone is not enough: it only certifies the default relative
+    MIPGap (1e-4), which is far looser than tol. Otherwise INCONCLUSIVE."""
+    if val is not None and val >= float(zeta) - tol:
+        return 'YES'
+    if status == GRB.INFEASIBLE:
+        return 'NO'
+    if bound is not None and bound < float(zeta) - tol:
+        return 'NO'
+    return 'INCONCLUSIVE'
 
 
 def run_case(name, variables, constraints, expect):
     inst = build(variables, constraints)
-    zeta, val, sol, bound = solve(inst)
+    zeta, val, sol, bound, status = solve(inst)
     B = inst['B']
     print(f"case {name}: sources={len(inst['sources'])} attrs={len(inst['attributes'])} terms={len(inst['terminals'])} B={B} zeta={zeta}")
-    print(f"   best={val} bound={bound}")
-    feasible = val is not None and val >= float(zeta) - 1e-6
+    print(f"   status={STATUS_NAMES.get(status, status)} best={val} bound={bound} threshold={float(zeta)}")
     if sol is not None:
         print("   values:", {v: round(sol[f's_{v}'], 6) for v in variables})
-    print(f"   threshold reached: {feasible}; expected: {expect}")
-    return feasible == expect
+    verdict = classify(zeta, val, bound, status)
+    print(f"   verdict: {verdict}; expected: {'YES' if expect else 'NO'}")
+    return verdict == ('YES' if expect else 'NO')
 
 
 if __name__ == '__main__':

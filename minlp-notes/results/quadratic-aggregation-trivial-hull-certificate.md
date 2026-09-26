@@ -4,8 +4,10 @@ Date: 2026-09-21. Status: proof written by the root agent; numerical sanity
 checks passed (`code/quadratic_aggregation/check_examples.py`: the Section 5
 example, and 30 random two-quadratic systems in which every convex certificate
 is trivial and every random target point was exhibited as a midpoint of two
-points of `S`); two independent adversarial reviews passed (the first on
-Theorem 1 and Corollaries 1–3 with cosmetic corrections, the second on
+points of `S`; no saved output of this SCS-based run was located, and the
+archived PASS of `paper-quadratic-aggregation/supplement/check_examples.py`
+belongs to a different, exact-arithmetic program); two independent
+adversarial reviews passed (the first on Theorem 1 and Corollaries 1–3 with cosmetic corrections, the second on
 Corollaries 4–5 with one substantive correction to a parenthetical, all applied
 ([review record](../notes/review-quadratic-aggregation-certificate.md)).
 Novelty: the statement is Conjecture 3.3 of Blekherman, Dey and Sun (SIAM J.

@@ -1,7 +1,11 @@
 # Certified MINLP independent review
 
-Status: complete. All 49 mathematical obligations were compared with the
-actual definitions and theorem statements by independent subagents.
+Status: complete. Independent subagents compared the mathematical obligations
+named in the reviews below with the actual definitions and theorem
+statements. The first three reviews name 47 of the 49 obligations. A
+supplementary independent review on 2026-09-25 covers the other two, CM04 and
+CM34, which are exact example claims proved in `Examples.lean`. Both passed.
+The four reviews therefore cover all 49 obligations.
 
 - [Analytic review](REVIEW-ANALYSIS.md): exact suprema, cut examples,
   composition rules, quadratic and monomial recognition, linear fractions,
@@ -12,6 +16,9 @@ actual definitions and theorem statements by independent subagents.
 - [Integration review](REVIEW-INTEGRATION.md): normalization, extended-real
   infima, derivative support, master identity, explicit graph embedding,
   objective constants, and bound transfer.
+- Supplementary review,
+  `paper-certified-minlp/formal/REVIEW-CM04-CM34.md`: exact binary-leaf
+  arithmetic and curvature (CM04) and invalid-inference counterexamples (CM34).
 
 No unresolved mathematical defect or unmapped mathematical obligation was
 found. The [coverage map](COVERAGE.md) records exact premises rather than

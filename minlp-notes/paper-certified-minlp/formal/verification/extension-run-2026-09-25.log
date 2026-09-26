@@ -1,0 +1,128 @@
+Targeted check of the two changed audit programs, run locally on 2026-09-25
+from paper-certified-minlp/formal/ at revision 549a57865180dfdfd11295f520e662c80974c0f7.
+Uncommitted changes in this directory during the run: Markdown only (REVIEW.md,VERIFICATION.md,REVIEW-CM04-CM34.md); no .lean, configuration or module-list file changed.
+Toolchain: leanprover/lean4:v4.33.1; Lake version 5.0.0-src+819816b (Lean version 4.33.1).
+Every Lean process ran one at a time with LEAN_NUM_THREADS=4. Project-wide verification
+(scripts/verify.sh, including full kernel replay) was not run.
+
+## 1. Old manifest on current sources
+$ sha256sum -c verification/extension-SHA256SUMS
+CertifiedMinlp/Composition.lean: OK
+CertifiedMinlp/Coordinates.lean: OK
+CertifiedMinlp/CutCertificate.lean: OK
+CertifiedMinlp/Discrete.lean: OK
+CertifiedMinlp/DiscreteExamples.lean: OK
+CertifiedMinlp/DiscreteRows.lean: OK
+CertifiedMinlp/DiscreteSolutions.lean: OK
+CertifiedMinlp/DomainExamples.lean: OK
+CertifiedMinlp/EndToEnd.lean: OK
+CertifiedMinlp/ExactCorrections.lean: OK
+CertifiedMinlp/Examples.lean: OK
+CertifiedMinlp/IntervalArithmetic.lean: OK
+CertifiedMinlp/LinearFraction.lean: OK
+CertifiedMinlp/MasterIdentity.lean: OK
+CertifiedMinlp/ModelSemantics.lean: OK
+CertifiedMinlp/Monomial.lean: OK
+CertifiedMinlp/MonomialConcave.lean: OK
+CertifiedMinlp/MonomialHessian.lean: OK
+CertifiedMinlp/MonomialMatrix.lean: OK
+CertifiedMinlp/Propagation.lean: OK
+CertifiedMinlp/Quadratic.lean: OK
+CertifiedMinlp/QuadraticChecker.lean: OK
+CertifiedMinlp/QuadraticElimination.lean: OK
+CertifiedMinlp/QuadraticNorm.lean: OK
+CertifiedMinlp/SafeCuts.lean: OK
+CertifiedMinlp/Support.lean: OK
+CertifiedMinlp/Transfer.lean: OK
+CertifiedMinlp.lean: OK
+Verify.lean: FAILED
+lakefile.toml: OK
+lake-manifest.json: OK
+lean-toolchain: OK
+verification/ExtensionAudit.lean: FAILED
+verification/extension-modules.txt: OK
+sha256sum: WARNING: 2 computed checksums did NOT match
+exit 1
+
+## 2. Targeted build of the 24 extension modules (documented command)
+$ LEAN_NUM_THREADS=4 xargs lake build --wfail < verification/extension-modules.txt
+Build completed successfully (3313 jobs).
+exit 0; wall 1 s
+All 24 targets were already up to date: Lake's traces matched the current sources and
+no module was recompiled. These proof modules are unchanged since 875a71ab.
+
+## 3. Umbrella module needed by Verify.lean (imports all 27 modules)
+$ LEAN_NUM_THREADS=4 lake build --wfail CertifiedMinlp
+✔ [3314/3315] Built CertifiedMinlp (1.6s)
+Build completed successfully (3315 jobs).
+exit 0; wall 3 s
+Only the umbrella file was compiled; the 27 imported modules were up to date.
+
+## 4. Changed audit program: Verify.lean (all project-owned declarations)
+$ LEAN_NUM_THREADS=4 lake env lean Verify.lean
+PASS: audited 1207 project declarations; only propext, Classical.choice, Quot.sound are allowed.
+'CertifiedMinlp.rational_enclosure_cut' depends on axioms: [propext, Classical.choice, Quot.sound]
+'CertifiedMinlp.epigraph_bound_transfer' depends on axioms: [propext, Classical.choice, Quot.sound]
+'CertifiedMinlp.incumbent_cutoff_lifting' depends on axioms: [propext, Classical.choice, Quot.sound]
+'CertifiedMinlp.primal_infimum_bounds' depends on axioms: [propext, Classical.choice, Quot.sound]
+exit 0; wall 2 s
+
+## 5. Changed audit program: verification/ExtensionAudit.lean (24 extension modules)
+$ LEAN_NUM_THREADS=4 lake env lean verification/ExtensionAudit.lean
+PASS: audited 1112 declarations in 24 extension modules; only propext, Classical.choice, Quot.sound are allowed.
+'CertifiedMinlp.CertifiedModel.checked_matched_nonlinear_bound' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'CertifiedMinlp.CertifiedModel.checked_affine_bound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'CertifiedMinlp.Discrete.checked_bound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'CertifiedMinlp.rational_quadratic_check_iff_convex' depends on axioms: [propext, Classical.choice, Quot.sound]
+exit 0; wall 6 s
+
+## 6. New manifest for the current sources (same 34 files, same order)
+$ awk '{print $2}' verification/extension-SHA256SUMS | xargs sha256sum > verification/extension-SHA256SUMS-2026-09-25
+$ diff verification/extension-SHA256SUMS verification/extension-SHA256SUMS-2026-09-25
+29c29
+< 1bbef7035aa182661213f0af38d8bdf899333ba1a177d5100a82c1a50247ef40  Verify.lean
+---
+> cc2010c77d7569179fbf7a41fb4aaad7123a2b45b690056676611abc6f30088d  Verify.lean
+33c33
+< ee69a6438f87729753030a27921d4c2769a6b66b46c5675d77239e4c7b9fabb3  verification/ExtensionAudit.lean
+---
+> 2d261a8023239ead81032943347cb2d845b3c8a2b1b43966d517eac9d8d54184  verification/ExtensionAudit.lean
+exit 1 (1 = files differ; only the two audit programs changed)
+$ sha256sum -c verification/extension-SHA256SUMS-2026-09-25
+CertifiedMinlp/Composition.lean: OK
+CertifiedMinlp/Coordinates.lean: OK
+CertifiedMinlp/CutCertificate.lean: OK
+CertifiedMinlp/Discrete.lean: OK
+CertifiedMinlp/DiscreteExamples.lean: OK
+CertifiedMinlp/DiscreteRows.lean: OK
+CertifiedMinlp/DiscreteSolutions.lean: OK
+CertifiedMinlp/DomainExamples.lean: OK
+CertifiedMinlp/EndToEnd.lean: OK
+CertifiedMinlp/ExactCorrections.lean: OK
+CertifiedMinlp/Examples.lean: OK
+CertifiedMinlp/IntervalArithmetic.lean: OK
+CertifiedMinlp/LinearFraction.lean: OK
+CertifiedMinlp/MasterIdentity.lean: OK
+CertifiedMinlp/ModelSemantics.lean: OK
+CertifiedMinlp/Monomial.lean: OK
+CertifiedMinlp/MonomialConcave.lean: OK
+CertifiedMinlp/MonomialHessian.lean: OK
+CertifiedMinlp/MonomialMatrix.lean: OK
+CertifiedMinlp/Propagation.lean: OK
+CertifiedMinlp/Quadratic.lean: OK
+CertifiedMinlp/QuadraticChecker.lean: OK
+CertifiedMinlp/QuadraticElimination.lean: OK
+CertifiedMinlp/QuadraticNorm.lean: OK
+CertifiedMinlp/SafeCuts.lean: OK
+CertifiedMinlp/Support.lean: OK
+CertifiedMinlp/Transfer.lean: OK
+CertifiedMinlp.lean: OK
+Verify.lean: OK
+lakefile.toml: OK
+lake-manifest.json: OK
+lean-toolchain: OK
+verification/ExtensionAudit.lean: OK
+verification/extension-modules.txt: OK
+exit 0

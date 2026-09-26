@@ -2,8 +2,10 @@
 
 Date: 2026-09-04. Reviewer: `review_fbbt`.
 
+Historical scope note: this review audited the superseded asymmetric estimate for `ρ≥64`, now preserved in `notes/positive-box-asymmetric-upper-predecessor.md`. It does not review the current `ρ+2` theorem in `results/positive-multilinear-positive-box-sharp.md`, which has its own two reviews.
+
 Final draft read in full:
-[Sharp leading-order gap growth with the box aspect ratio](../results/positive-multilinear-positive-box-sharp.md).
+[Sharp leading-order gap growth with the box aspect ratio](positive-box-asymmetric-upper-predecessor.md).
 Its written upper proof agrees with the argument checked below; no correction
 is needed. Conditional end-strip identities are understood almost everywhere,
 as interval endpoints do not change expectations.

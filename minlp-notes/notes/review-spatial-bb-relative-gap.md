@@ -95,6 +95,28 @@ demand equality times every monomial of total degree at most three was
 checked in exact rational arithmetic: 2,660 identities per case passed.
 These checks supplement the exact tensor proof; they do not replace it.
 
+Provenance note (added after the 2026-09-24 repository audit): the program and
+raw output for these reviewer checks were not archived. The reviewer's own
+runs above remain reviewer-reported and unarchived. The committed author
+checker is `code/spatial_bb_lower_bound/check_relative_gap.py`.
+
+Independent reproduction (2026-09-25): a new checker written from this
+section and the fractional-cardinality lemma,
+[`review_relative_gap_repro.py`](../code/spatial_bb_lower_bound/review_relative_gap_repro.py),
+with saved output
+[`review_relative_gap_repro-2026-09-25.log`](../code/spatial_bb_lower_bound/review_relative_gap_repro-2026-09-25.log),
+reruns the three configurations (`r = 2`, two nine-variable blocks, demand
+`7/2`, `q0 = 1`). It does not use the author checker. In each configuration
+it reproduces exactly 2,660 exact demand-times-monomial identities
+(`2 · C(21,3)`, all monomials of total degree at most three with repeated
+powers). The 190-index moment matrix passes an exact rational PSD test, and
+its floating-point smallest eigenvalue lies between `-1e-14` and zero. Instead
+of the single cross-block localizer described above, it checks all 162
+lower-slack-times-upper-slack localizers across the two blocks, with the 19
+global linear multipliers; all pass exact PSD tests. The evaluation blocks
+use restricted boxes chosen by the reproduction, because the review does not
+record its boxes.
+
 ## Relative threshold and product counting
 
 Every block's true penalty optimum is `1/4`, so

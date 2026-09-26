@@ -78,7 +78,9 @@ def main():
             r = rng.randrange(min(k,z))
             R = rng.sample(range(k+m+z),r)
             count += verify(k,m,z,R,rng)
-    print(f"Passed {count} exact SDP-RLT point checks, including degenerate intervals.")
+    print(f"Passed {count} SDP-RLT point checks, including degenerate intervals: "
+          "exact rational affine, RLT, equality and objective identities; "
+          "floating-point PSD eigenvalue check (tolerance 1e-10).")
 
 
 if __name__ == '__main__':

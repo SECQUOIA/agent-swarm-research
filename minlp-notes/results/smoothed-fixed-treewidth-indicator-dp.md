@@ -511,7 +511,9 @@ scalar envelopes against support enumeration. Those computations support
 specific algebraic identities and conventions. They do not verify CAD
 construction, higher moments, or the arbitrary-treewidth theorem. No Lean
 formalization or computational test proves the probability argument.
-Fresh integrated adversarial review remains pending. A targeted Python scan
+The fresh [integrated correctness review](../notes/review-20260922-fixed-treewidth-result.md)
+of the theorem and proof found no substantive gap; it is not a priority
+review. A targeted Python scan
 of this file's local Markdown links and trailing whitespace passed. No
 project-wide checks or CI inspection were used for this result.
 

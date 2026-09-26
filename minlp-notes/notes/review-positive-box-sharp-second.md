@@ -2,7 +2,9 @@
 
 Date: 2026-09-04. Reviewer: `review_extension`. Status: passed. This is a mathematical audit, not a certification of literature priority.
 
-Reviewed [the sharp positive-box theorem](../results/positive-multilinear-positive-box-sharp.md). The upper bound
+Historical scope note: this review audited the superseded asymmetric estimate for `rho>=64`, now preserved in `notes/positive-box-asymmetric-upper-predecessor.md`. It does not review the current `rho+2` theorem in `results/positive-multilinear-positive-box-sharp.md`, which has its own two reviews.
+
+Reviewed [the sharp positive-box theorem](positive-box-asymmetric-upper-predecessor.md). The upper bound
 
 ```
 2+(rho+1)/(1-3/sqrt(rho)),  rho>=64,

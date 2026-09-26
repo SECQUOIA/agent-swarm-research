@@ -131,8 +131,9 @@ Control diagonals and nonterminal state diagonals are \(1+\theta^2\);
 the terminal state diagonal is one. The largest absolute off-diagonal row
 sum is \(3\theta+\theta^2\), so Gershgorin proves (4). Its graph is a
 bandwidth-two chain of triangles sharing individual state vertices, with an
-initial pendant edge, maximum degree four, and pathwidth and treewidth two
-for \(n\ge2\). The recurrence contraction coefficient is \(\theta\).
+initial pendant edge, maximum degree at most four (three for \(n=2\), four
+for \(n\ge3\)), and pathwidth and treewidth two for \(n\ge2\). The
+recurrence contraction coefficient is \(\theta\).
 
 For fixed \(\theta\), every entry of \(K\), every linear coefficient, and
 every indicator penalty belongs to a finite rational alphabet independent of

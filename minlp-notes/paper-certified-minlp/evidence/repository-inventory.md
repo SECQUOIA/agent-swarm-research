@@ -66,7 +66,8 @@ machine do not rank competing algorithms.
 - `formal/`: standalone pinned Lean/mathlib project with 27 modules. The 24
   added modules passed targeted warning-free builds and a transitive audit of
   1,112 declarations. Current hashes are in
-  `formal/verification/extension-SHA256SUMS`. The earlier three-module,
+  `formal/verification/extension-SHA256SUMS-2026-09-25`; the historical
+  `extension-SHA256SUMS` records commit `875a71ab`. The earlier three-module,
   95-declaration kernel replay is historical. No project-wide verification or
   CI inspection was run for the extension.
 - `supplement/certified-minlp-core.tar.gz`: 6,478,681 bytes, current portable

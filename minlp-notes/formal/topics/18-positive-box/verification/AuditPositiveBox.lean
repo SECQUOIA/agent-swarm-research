@@ -198,6 +198,12 @@ open MultilinearGap
 #print axioms MultilinearGap.two_le_of_forall_mem_boxAspectRatios
 #print axioms MultilinearGap.two_le_boxAspectSupremum
 #print axioms MultilinearGap.two_le_commonAspectBoxSupremum
+-- PB44 correction (odd n = 2m+1: ratio 2n/(n+1) for m > 0, see COVERAGE.md)
+#print axioms MultilinearGap.bilinearGraph_minimum_odd
+#print axioms MultilinearGap.bilinearGraph_hullGap_odd
+#print axioms MultilinearGap.bilinearGraph_termwiseGap_odd
+#print axioms MultilinearGap.bilinearGraph_cube_ratio_odd
+#print axioms MultilinearGap.bilinearGraph_cube_ratio_odd_ne
 
 /-! ## Tier H: the headline, and the boundedness that makes it meaningful -/
 

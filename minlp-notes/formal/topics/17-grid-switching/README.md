@@ -11,8 +11,9 @@ and the supporting algorithm and certificate claims of
 [Section 10](../../../paper-switching-control/sections/10-instance-algorithms.tex)
 on which they depend.
 
-All thirty-seven frozen obligations are discharged by Lean theorems. Four
-independent reviewers, one per tier, found no incorrect theorem; the thirteen
+The package accounts for all thirty-seven frozen obligations: the thirty-six
+mathematical obligations are proved by Lean theorems, and SC29 is recorded as a
+scope statement with no theorem. Four independent reviewers, one per tier, found no incorrect theorem; the thirteen
 findings they did raise are closed and recorded.
 
 - [Mathematical obligations](CLAIMS.md), frozen before the proofs.

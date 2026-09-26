@@ -35,11 +35,19 @@ are none). We assume
 - (R1) validity: `phi_B(x) <= f(x)` for `x in X ∩ B`;
 - (R2) isotonicity: `B' ⊆ B` implies `phi_{B'}(x) >= phi_B(x)` for `x in B'`.
 
-McCormick, alphaBB and the usual factorable relaxations satisfy (R1)–(R2)
-(for composite McCormick relaxations with natural interval extensions,
-(R2) is Theorem 4 ("McCormick relaxations are partition monotonic") of Scott,
+McCormick, alphaBB and the usual factorable relaxations satisfy (R1)–(R2),
+with the qualification for composite McCormick relaxations below. For composite McCormick relaxations with natural interval extensions, (R2) is
+Theorem 4 ("McCormick relaxations are partition monotonic") of Scott,
 Stuber and Barton, "Generalized McCormick relaxations", J. Global Optim. 51
-(2011) 569–606, checked in the open PDF). Where the tangent maps are computed by convex programs, we
+(2011) 569–606, checked in the open PDF. That theorem is proved for their
+standard procedure (Definition 9), whose Step 6 clips each factor's convex and
+concave relaxations to the factor's interval bounds; their Remark 2 warns that
+omitting Step 6 can violate Theorem 4. Section 4b therefore uses the clipped
+procedure; for the unclipped composition rule, (R2) is not established here.
+The relaxations of Section 4 (exact convex squares and McCormick estimators of
+products of two variables) satisfy (R2) directly, for all nested boxes of
+`R^n`: the convex (concave) envelope of a function over a smaller box is at
+least (at most) its envelope over a larger box. Where the tangent maps are computed by convex programs, we
 also assume `phi_B` is convex and continuous on its domain.
 
 **OBBT operator.** For a cutoff `U`, let
@@ -48,7 +56,8 @@ also assume `phi_B` is convex and continuous on its domain.
 T_U(B) = box hull of { x in B : phi_B(x) <= U }
 ```
 
-(the empty set if there is no such `x`). One round of OBBT with exact LP/convex
+(the box hull is the smallest closed box containing the set, so every `T_U(B)`
+is compact; `T_U(B)` is the empty set if there is no such `x`). One round of OBBT with exact LP/convex
 solves computes `T_U(B)` when `phi_B` is the relaxation that the solver builds on `B`
 and all `2n` bound problems are solved on that one relaxation ("Jacobi" rounds).
 Solvers often tighten one variable at a time and rebuild the relaxation in between
@@ -256,8 +265,13 @@ Setting this to 0: `t = (-a + sqrt(a^2 + a^2 + 4a))/2 = (sqrt(2a^2 + 4a) - a)/2 
 One checks `rho(a) > a/2` for `0 < a < 2` (equivalent to `2a^2 + 4a > 4a^2`, i.e.
 `a < 2`), so this case applies, and `xi_2 = -a/2` lies in `[-1, 1]`. By the
 symmetries `(xi_1, xi_2) -> (xi_2, xi_1)` and `xi -> -xi` of `Q(1, .)`, all four
-extents equal `rho(a)`: `Phi(1) = rho(a) 1`. Theorem 4 (with `u = 1`, zero
-remainder, `Phi_delta(1) -> Phi(1)` as `delta -> 0`) gives the upper bound on the
+extents equal `rho(a)`: `Phi(1) = rho(a) 1`. For the upper bound, let the
+initial box `B` lie in a cube `C = [-w, w]^2`. `C` need not lie in the original
+`B_0`, but the relaxation (exact squares plus McCormick of `xy`) is defined on
+every box of `R^2` and satisfies (R2) for all nested boxes (Section 1), so
+Lemma 1(b) with `R^2` in place of `B_0` gives `T_U^k(B) ⊆ T_U^k(C)`. Theorem 4
+applied on `C` (with `u = 1`, zero remainder, hence every `w` allowed, and
+`Phi_delta(1) -> Phi(1)` as `delta -> 0`) gives the upper bound on the
 rate, and the lower-bound remark gives the matching lower bound for every
 initial box containing a neighborhood of 0. QED.
 
@@ -328,7 +342,23 @@ for products, the McCormick composition rule of McCormick (1976) / Mitsos,
 Chachuat and Barton (2009); for univariate factors,
 `cv_k = h^cv(mid(cv_a, cc_a, argmin))`, `cc_k = h^cc(mid(cv_a, cc_a, argmax))`,
 with `h^cv, h^cc` the convex and concave envelopes of `h_k` on `[v_a^L, v_a^U]`.
+As in Step 6 of Definition 9 of Scott, Stuber and Barton (2011), each factor's
+relaxations are then clipped to its interval, `cv_k := max(cv_k, v_k^L)` and
+`cc_k := min(cc_k, v_k^U)`, before they are used by later factors.
 The relaxed objective is `phi_B = cv_m`.
+
+With this clipping, (R2) holds for all boxes `B ⊆ B_0` by their Theorem 4,
+provided the relaxations are defined on `B_0` (their Assumption 1: the natural
+interval of each univariate argument over `B_0` lies in the domain of `h_k`) and
+each `h_k` is Lipschitz on that interval (so that exact ranges satisfy their
+Assumption 4; envelopes satisfy their Assumption 5). Clipping changes the
+values near `x*` only by `o(w^2)` ([proofs-12-11.md](proofs-12-11.md), property
+(P_k) and Remark 2 of A.4), so Theorem 12 below holds for the clipped and the
+unclipped rule alike. This expansion is local and asymptotic; it gives no
+finite-box monotonicity. The finite-box uses of Lemma 1(b) for composite
+McCormick relaxations, in Theorems 4 and 6, Corollary 9 and Proposition 11, are
+therefore justified for the clipped rule; for the unclipped rule they need
+(R2) as an additional assumption.
 
 **Theorem 12 (second-order tangent expansion).** Full proof:
 [proofs-12-11.md](proofs-12-11.md) (C^2 univariate factors suffice, with `o(w^2)`
@@ -426,19 +456,24 @@ enough that `sqrt(2 epsilon/delta) <= wbar`, then
 L(B_inf) >= f* - (2 G / delta) epsilon - epsilon.
 ```
 
-In the sharp case of Proposition 2, `L(B_inf) >= f* - tau (4 epsilon/kappa)^2 = f* - O(epsilon^2)`.
+In the sharp case of Proposition 2, if some iterate satisfies Proposition 2's
+entry condition `w(B_k) <= kappa/(4 tau)`, then
+`L(B_inf) >= f* - tau (4 epsilon/kappa)^2 = f* - O(epsilon^2)`.
 
 *Proof.* By Theorem 4(b), `B_inf ⊆ B' := x* + w D(u)` with `w = sqrt(2 epsilon/delta)`.
 By (R2), `phi_{B_inf} >= phi_{B'}` on `B_inf`, so
 `L(B_inf) >= inf_{xi in D(u)} phi_{B'}(x* + w xi) >= f* - G w^2 - delta w^2/2`, using the
 remainder bound `delta w^2/2` from the proof of Theorem 4, and `delta w^2/2 = epsilon`. For the
-sharp case, (S) gives `phi_B(x) >= f* - tau w(B)^2` for all `x in B`, and Proposition 2
-bounds `w(B_inf)` by `4 epsilon/kappa`. QED.
+sharp case, (S) gives `phi_B(x) >= f* - tau w(B)^2` for all `x in B ∋ x*`. From the
+entry iterate on, the widths decrease and Proposition 2 gives
+`w_{j+1} <= (2 tau/kappa) w_j^2 + 2 epsilon/kappa <= w_j/2 + 2 epsilon/kappa`, so
+`w(B_inf) <= 4 epsilon/kappa` (this limit bound needs no further condition on
+`epsilon`). QED.
 
 So, in the contracting regime, the gap left at the root is proportional to
 the incumbent's suboptimality `epsilon`, and an exactly optimal incumbent
-closes it in the limit. This matches Castro (2023, reported in
-`literature.md`): with the optimal cutoff the gap fell from 3.5% to 0.0003%,
+closes it in the limit. This is consistent with Castro (2023, reported in
+`literature.md`; his instances are not shown to satisfy the hypotheses above): with the optimal cutoff the gap fell from 3.5% to 0.0003%,
 with a cutoff 20% worse it stayed at 3.5%. It also shows why OBBT should be
 repeated after incumbent improvements.
 
@@ -461,8 +496,8 @@ Theorem 4.
 [proofs-12-11.md](proofs-12-11.md), where the needed uniformity is the expansion below
 on compact sets of admissible shapes (`d_A^- = 0`) including shapes with small or zero
 active extents, with `Q` continuous there (Theorem 12 supplies it); after one
-preliminary step the free widths contract with ratio exactly `lambda` in the `u_F`
-gauge. As in Theorem 4, the local boxes (of admissible shape) must lie in `B_0`.
+preliminary step the free widths contract by a factor at most `lambda` per round in the `u_F`
+gauge (`lambda` is the chosen admissible bound, not a proved exact asymptotic rate). As in Theorem 4, the local boxes (of admissible shape) must lie in `B_0`.
 Suppose `x*`
 lies on the boundary of `B_0`: `x*_i = l_i` for `i` in an index set `A`, with
 `partial_i f(x*) = g_i > 0` for `i in A` (strict complementarity), and `x*` is
@@ -476,7 +511,7 @@ uniformly for shapes in compact sets with `d_i^- = 0` for `i in A`, where
 `g_i = 0` for `i in F` and `Q` is continuous. Let `Phi^F` be the tangent map in the free
 coordinates obtained from `Q` with zero extents in `A`. If `Phi^F_delta(u_F) <= lambda u_F`
 for some `u_F >> 0`, `delta > 0`, `lambda < 1`, then locally the free widths contract
-linearly with ratio close to `lambda` down to `O(sqrt(epsilon))`, and the active widths
+linearly with ratio at most `lambda` (after one preliminary step, in the `u_F` gauge) down to `O(sqrt(epsilon))`, and the active widths
 satisfy `width_i(B_{k+1}) <= (epsilon + O(w_k^2)) / g_i`, that is, they shrink
 quadratically relative to the free widths, down to `O(epsilon)`.
 
@@ -484,9 +519,10 @@ quadratically relative to the free widths, down to `O(epsilon)`.
 with `G'` a bound on `-Q`, and `xi_A >= 0`, so `xi_i <= (epsilon/w + w G' + o(w))/g_i` for
 `i in A`. In scaled units the active extents are `O(w + epsilon/w)`; once they are
 small, continuity of `Q` lets the free extents follow `Phi^F` up to an error that
-vanishes with them, and the argument of Theorem 4 applies. A full proof needs a
-uniformity statement for `Q` near shapes with vanishing active extents. The complete proof is in
-[proofs-12-11.md](proofs-12-11.md). Numerical check (`code/proofs_checks/prop11_obbt.py`):
+vanishes with them, and the argument of Theorem 4 applies. This needs a
+uniformity statement for `Q` near shapes with vanishing active extents; the complete proof in
+[proofs-12-11.md](proofs-12-11.md) states it as Assumption (T_∂), which Theorem 12 supplies,
+and proves the precise bounds (B.3). Numerical check (`code/proofs_checks/prop11_obbt.py`):
 for `x1 + x2^2 + x3^2 + x2 x3 + 0.5 x1 x2` with `x1` at its lower bound, the free-width
 ratio is 0.724745 (= rho(1)); for `epsilon` from 1e-3 to 1e-7 the final free width is
 `2.3094 sqrt(epsilon)` and the active width `2.333 epsilon`, as predicted.

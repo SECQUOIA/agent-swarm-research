@@ -4,6 +4,11 @@ Date: 2026-09-22. Reviewer: `review_spectral_parametric_oracle`.
 
 Reviewed source: [Exact smoothed message construction from additive approximation oracles](research-20260922-oracle-all-messages.md).
 
+Promoted text (pointer added 2026-09-25): the reviewed draft path now holds
+only a promotion notice; the full proof is in
+[the promoted result](../results/smoothed-spectral-indicator-messages.md).
+This review did not record a revision or digest of the draft it read.
+
 **Verdict.** The complete-message theorem is correct under its stated assumptions. I found no substantive mathematical correction. The proof supplies the conditional bounds, restricted approximation oracle, enumeration procedure, and bit bounds needed for the claimed algorithm; a bound on the expected representation size alone would not suffice. The polynomial dependence on numerical spectral and coefficient bounds, fixed treewidth, bounded prescribed parameter domain, and supplied polynomial-size decomposition are essential qualifications. This review does not establish priority or practical efficiency.
 
 ## 1. Conditional spectral bounds

@@ -57,3 +57,35 @@ outside the mathematical verification claim.
 No project-wide build, project-wide verification, full-project kernel replay,
 or CI status/log inspection was run. CI handles project-wide verification
 under the [local verification rule](../../../AGENTS.md).
+
+## Audit rerun on 2026-09-25
+
+Commit `fa2a6f42` split the audit's final `PASS` message across two source
+lines; the declaration selection and axiom check did not change. For
+consistency the audit was run once more from `formal/` at `d85171b8`, with
+`$HOME/.elan/bin` on `PATH` and `LEAN_NUM_THREADS=4`:
+
+```sh
+lake env lean -DwarningAsError=true topics/13-many-leaf-reciprocal/verification/Audit.lean
+```
+
+It exited 0 in 17.6 s and printed
+`PASS: audited 1936 declarations in 67 extension modules; only propext, Classical.choice, Quot.sound are allowed.`,
+matching the [delivery audit log](verification/axioms.log). Beforehand,
+`lake build --no-build` on the 67 listed modules reported all targets up to
+date, so the audit read outputs built from the current sources. The build and
+examples were not rerun.
+
+The [source fingerprints](verification/SOURCES.sha256) are a delivery-time
+snapshot. Checked from the repository root with
+`sha256sum -c formal/topics/13-many-leaf-reciprocal/verification/SOURCES.sha256`,
+they now report three mismatches:
+
+| File | Reason for the mismatch |
+|---|---|
+| `formal/topics/13-many-leaf-reciprocal/VERIFICATION.md` | This dated section was added to the record. |
+| `formal/topics/13-many-leaf-reciprocal/verification/Audit.lean` | The message rewrap in `fa2a6f42` described above. |
+| `results/common-factor-reciprocal-anchor-full-hull.md` | Commit `367fcbc8` corrected the result note: the hull statement allows real endpoints, and exact rational evaluation assumes rational endpoints and coordinates. |
+
+No Lean proof source, toolchain file or `lake-manifest.json` differs. No project-wide
+verification or CI inspection was run.

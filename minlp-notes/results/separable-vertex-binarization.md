@@ -180,11 +180,20 @@ two solution methods for the same problem, with three qualifications.
    symmetry handling solves the original `P_30` in 11 nodes. The experiments
    therefore use the asymmetric family `P_n^w` with costs
    `c_i x_i(1-x_i)`, `c_i = 1 + i/n`. The separable and SDP+RLT lower bounds
-   extend to it: for `1 <= c_i <= 2` a weighted node bound is at most twice
-   the unweighted one, so a tree that proves tolerance `eps` for `P_n^w`
-   proves tolerance `1/8 + eps/2 < 1/4` for `P_n`. The SOS variant was not
-   checked. Theorem 3 holds for `P_n^w` with optimal value `min_i c_i / 4`
-   and pruning by bound in every node `t_j = 1`.
+   extend to it. On a node box, a separable relaxation `sum g_i` of the
+   weighted objective has `g_i` convex and `g_i <= c_i x_i(1-x_i)`, hence
+   `g_i <= c_i l_i`, where `l_i >= 0` is the chord of `x_i(1-x_i)` on the
+   box. With `c_i <= 2`, the weighted node bound is therefore at most twice
+   the unweighted chord bound `LB(B)` of the
+   [separable lower-bound note](spatial-bb-exponential-lower-bound.md). For
+   SDP+RLT the weighted bound is likewise at most twice the unweighted
+   SDP+RLT bound, because the box RLT inequalities make every lifted term
+   `x_i - X_ii` nonnegative. A tree that proves tolerance `eps` for `P_n^w`
+   (optimal value at least `1/4`) thus has unweighted node bound at least
+   `1/8 - eps/2` at every leaf, which is tolerance `1/8 + eps/2 < 1/4` for
+   `P_n`, and the corresponding unweighted lower-bound theorem applies.
+   The SOS variant was not checked. Theorem 3 holds for `P_n^w` with
+   optimal value `min_i c_i / 4` and pruning by bound in every node `t_j = 1`.
 2. The repository's lower-bound notes already record a non-separable clique
    cut that closes the root gap of the original `P_n`. The lower bounds are
    about relaxation classes, not about every conceivable cut.
@@ -213,9 +222,12 @@ Findings, in the order in which they limit the claim:
 2. **Asymmetric lower-bound family: exponential gain with Gurobi, large gain
    with SCIP, little with BARON.** Original model: Gurobi and SCIP reach the
    120 s limit from `n = 24`, BARON from `n = 18`, all with dual bound `0`.
-   Reformulated: Gurobi solves `n = 400` in 0.5 s; SCIP solves up to
-   `n = 120` in about 2 s and fails at `n = 400`; BARON solves only
-   `n <= 18`. The gain depends on the solver's integer cuts.
+   Reformulated: Gurobi solves `n = 400` in 0.5 s; SCIP solves the tested
+   sizes `n = 24, 30, 60, 120` in 0.8–2.2 s, where the original model times
+   out, and fails at `n = 400`; BARON solves only `n <= 18`. At the smaller
+   sizes the reformulation is slower with SCIP: 1.49 s against 0.71 s at
+   `n = 12`, and 35.2 s (240,326 nodes) against 27.1 s at `n = 18`. The
+   gain depends on the solver's integer cuts.
 3. **Symmetric family.** SCIP solves the original model instantly through
    symmetry handling (11 nodes at `n = 30`; a timeout with
    `misc/usesymmetry = 0`). The lower bounds do not cover symmetry
@@ -226,7 +238,7 @@ Findings, in the order in which they limit the claim:
    the instances. The
    [univariate envelope handler](composite-univariate-envelopes.md) does.
 5. **Box-constrained nonconvex QP (`m = 0` rule).** No benefit with Gurobi on
-   six `spar` instances, and one instance became 20 times slower.
+   six `spar` instances, and one instance became about 28 times slower.
 6. **Solver errors.** One Gurobi run on a reformulated quartic instance and
    three BARON runs on original power-cost instances report `optimal` with
    wrong values. They are documented in the experiment record and are not

@@ -1,6 +1,6 @@
 # Polynomial additive potential optimization with bounded cycle rank in every block
 
-Date: 2026-09-05. Status: passed [first independent mathematical review](../notes/review-potential-flow-bounded-cycle-rank.md), [second independent mathematical review](../notes/review-potential-flow-bounded-cycle-rank-second.md), and root proof review. A [separate bounded novelty audit](../notes/potential-flow-bounded-cycle-rank-novelty.md) found no matching open-literature theorem. These are internal research checks, not external peer review, and novelty remains provisional.
+Date: 2026-09-05. Status: passed [first independent mathematical review](../notes/review-potential-flow-bounded-cycle-rank.md) and [second independent mathematical review](../notes/review-potential-flow-bounded-cycle-rank-second.md). A root proof review was also reported, but no separate record of it is retained; the two linked reviews are the documented independent reviews. A [separate bounded novelty audit](../notes/potential-flow-bounded-cycle-rank-novelty.md) found no matching open-literature theorem. These are internal research checks, not external peer review, and novelty remains provisional.
 
 This extends the [cactus theorem](potential-flow-cactus-additive-optimization.md) to interacting cycles, including arbitrarily subdivided theta and K4 blocks, while allowing arbitrarily many such blocks.
 

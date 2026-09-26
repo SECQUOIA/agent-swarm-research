@@ -38,7 +38,7 @@ the cuts raise solved instances within 300 s from 96 to 124 of 130 (Gurobi 13),
 transportation and network-flow families; most of the gain comes from
 equal-width families built to fit the closed form (with unequal widths Gurobi
 goes from 72 to 77 of 80). They make easy instances slower; separating them on node boxes inside SCIP
-was measured and does not pay (4–5 times slower than root-only). They are only
+was measured and does not pay (4.4–6.3 times slower than root-only). They are only
 modestly stronger than the exhaustive closure of published tilted flow covers,
 and apply structurally to 4.8% of MINLPLib
 An independent code review found invalid cuts caused by a
@@ -56,9 +56,10 @@ redundant relations. The hull theory is known (Ballerstein 2013); the automatic,
 solver-independent reformulation is neutral or harmful on most of the 48
 MINLPLib instances it applies to, but on the open water-network instances
 `waterno2_06/09/12/18` it raises Gurobi's 30-minute dual bounds above the best
-values listed by MINLPLib (uncertified single runs; BARON confirms the
-direction but not the values) and yields a `waterno2_18` point with objective
-5178.16 against the listed 5269.64, with all residuals bounded exactly in
+values listed by MINLPLib (uncertified single runs; BARON shows the same
+direction on three of the four instances but not the values, and on
+`waterno2_06` its bound falls from 73.7 to 72.8) and yields a `waterno2_18`
+point with objective 5178.16 against the listed 5269.64, with all residuals bounded exactly in
 rational arithmetic by `5.8e-11`. Replacing the link by the classical exact
 hull of `(x, x^2, x^3)` (two cone constraints) raises those 30-minute bounds
 further, by 21% to 130%, and also lifts `ghg_2veh` and `ex8_4_2` above their
@@ -72,7 +73,10 @@ The [certified-MINLP repair and replay record](notes/certified-minlp-repair-and-
 tracks the September 13 correction of the certificate pipeline: one exact
 expression interpretation, rigorous nonlinear cuts, independent rational VIPR
 proof replay, and separate complete/partial verdicts. It supersedes the earlier
-269/289 acceptance claim and links the current experiments and limitations.
+269/289 acceptance claim and records the historical 188/92/9 replay and its
+limitations. The [certified-MINLP paper](paper-certified-minlp/README.md)
+reports the later primary uniform campaign on the same 289 models: 203
+verified, 19 rejected, and 67 missing artifacts.
 A [small complete example](code/minlp_solver_lab/certify/examples/quadratic/README.md)
 can be replayed without a numerical solver. The
 [solver discrepancy audit](notes/certified-minlp-solver-discrepancies.md)
@@ -91,9 +95,10 @@ computational study with modest impact and qualified claims. See the
 
 The [September 12 evening closeout](notes/research-20260912b-closeout.md)
 preserves the historical GDP and certified-MINLP results, superseded by their
-respective development records. Its separate demonstration that MINLPLib's
-`heatexch_gen1/2/3` are ill-posed (their guarded LMTD is unbounded) retains its
-own scope.
+respective development records. Its separate observation that MINLPLib's
+`heatexch_gen1/2/3` share an unbounded guarded LMTD expression retains its own
+scope: for `heatexch_gen1` numerical estimates indicate an ill-posed model, and
+for `heatexch_gen2/3` only the structure was checked.
 
 The [September 12 closeout](notes/research-20260912-closeout.md) collects the
 current continuation's results, independent reviews, software, source-access
@@ -306,9 +311,9 @@ by that record.
   (2026-09-21, theorem and corollaries independently reviewed): proves
   Conjecture 3.3 of Blekherman, Dey and Sun (SIAM J. Optim. 2024): under hidden
   hyperplane convexity and nonemptiness, the convex hull of `{f_i < 0}` is the whole space if and
-  only if no nonzero nonnegative aggregation has a positive semidefinite quadratic part
-  other than a negative constant. Only hyperplanes near infinity need convex
-  images; corollaries for closed systems, complete aggregation certification,
+  only if every nonzero nonnegative aggregation with positive semidefinite quadratic part
+  is a negative constant function (`A_lambda = 0`, `b_lambda = 0`, `c_lambda < 0`).
+  Only hyperplanes near infinity need convex images; corollaries for closed systems, complete aggregation certification,
   an SDP decision procedure, triviality of the Shor relaxation exactly when the
   hull is trivial, and checkable hypotheses for two or three quadratics (PDLC of
   the quadratic parts, with the scope qualification in Corollary 5); an example
@@ -405,9 +410,10 @@ Research was reopened on 2026-09-04 and closed on 2026-09-05. Entries marked
   oracle access. Circuit compilation and interpolation are established;
   the comparison against arbitrary convex lifts is the candidate
   contribution. For a [scalar sum of dense positive polynomials](results/separable-convex-graph-linear-dimension-precision.md),
-  the reviewed bound improves to `p_out<=p_conv+12r`, with no degree
-  overhead; independent scalar outputs admit `9r`. The same theorem gives
-  finite, unrestricted-size comparisons for all continuous convex
+  the reviewed bound `p_out<=p_conv+12r` removes the degree-dependent
+  overhead; independent scalar outputs admit `9r`. This is not uniformly
+  smaller than the sparse bound, which is smaller at low degrees. The same
+  theorem gives finite, unrestricted-size comparisons for all continuous convex
   separable functions. A [scalar curvature algorithm](results/compiled-curvature-quantile-precision.md)
   supplies the compact construction through certified indexed knots.
   The broader [dense convex polynomial theorem](results/convex-polynomial-compiled-integer-precision.md)
@@ -572,7 +578,9 @@ Research was reopened on 2026-09-04 and closed on 2026-09-05. Entries marked
   (2026-09-05 continuation): half the noncommutative rank of the Hessian
   space gives the exact leading integer-dimension coefficient as accuracy
   improves, for arbitrary convex lifts and for matching compact MILPs.
-  This unifies and strengthens the graph and scalar laws below. Two proof
+  This generalizes the common-accuracy, two-sided leading asymptotic rank
+  laws of the graph and scalar results below; it does not replace their
+  finite or one-sided bounds. Two proof
   audits passed; a separate primary-source audit
   found no matching theorem. The reviewed
   [rational construction](results/quadratic-ncrank-rational-construction.md)
@@ -628,12 +636,12 @@ Research was reopened on 2026-09-04 and closed on 2026-09-05. Entries marked
   bypass structure then permits exact standard economic optimization.
   Both full audits passed.
 - [Contracted degree-two pooling with common throughput bounds](results/pooling-contracted-common-capacity-algorithm.md)
-  admits polynomial exact feasibility with arbitrary common lower and upper
+  with one pool admits polynomial exact feasibility with arbitrary common lower and upper
   pool bounds and individual arc lower bounds. It requires exact source and
   product contracts and scalar or affine-rank-one qualities. Both extension
   audits passed; witnesses may have polynomial algebraic degree.
 - [Pooling feasibility with two source-quality vectors](results/pooling-two-source-qualities-convex-feasibility.md)
-  is polynomial with arbitrary bypass topology, variable source supplies,
+  is polynomial for one pool with arbitrary bypass topology, variable source supplies,
   exact product contracts, and restrictive upper pool capacities. Two final
   proof audits passed. A shared convex quadratic constraint gives exact
   rational feasibility; positive outlet or common pool lower bounds are
@@ -777,8 +785,12 @@ Research was reopened on 2026-09-04 and closed on 2026-09-05. Entries marked
   relaxations needs `2^{Ω(n)}` leaves to certify a fixed tolerance when the
   knapsack level is a constant fraction of `n`, whatever the branching rule;
   a matching `O(2^n)` tree exists, and fixed levels are polynomial. One
-  independent review passed with corrections (applied); a novelty search
-  found no prior spatial-B&B tree-size lower bound of this kind.
+  independent review passed with corrections (applied). An initial novelty
+  search found no prior spatial-B&B tree-size lower bound of this kind; a
+  later comparison identified Coniglio's spatial lower bound under midpoint
+  branching and Jarre's binary-SDP lower bound, so the tentative novelty
+  claim is restricted to this arbitrary-split, fixed-gap separable-relaxation
+  model.
 - [Positive multilinear gap](results/positive-multilinear-gap.md):
   A [standalone paper and Lean bundle](paper-multilinear-gap/README.md)
   contains the conjecture disproof, exact dyadic gap, and sharp leading
@@ -798,10 +810,10 @@ Research was reopened on 2026-09-04 and closed on 2026-09-05. Entries marked
 - [Cubic positive multilinear gaps](results/positive-cubic-gap.md):
   exact certificates show that degree three already permits ratios above two;
   a reviewed [analytic family](results/positive-cubic-analytic-family.md)
-  proves `483/223 <= R(3) <= 31/12`, with a small certified improvement of
+  proves `R(3) >= 483/223`, with a small certified improvement of
   the lower bound to `1610000/743033` recorded in its proof.
   The [improved upper bound](results/positive-cubic-rounding-upper-bound.md)
-  uses a reviewed mixture of three global couplings. The
+  `R(3) <= 31/12` uses a reviewed mixture of three global couplings. The
   [focused cubic paper and Lean package](paper-cubic-gap/README.md) collects
   these bounds, fixed-mixture optimality, and exact finite witnesses with
   a complete mathematical claim map and verification records.
@@ -811,7 +823,8 @@ Research was reopened on 2026-09-04 and closed on 2026-09-05. Entries marked
   A [simple explicit witness](results/positive-cubic-two-level-family.md)
   uses 52 variables, homogeneous cubic terms, unit coefficients, and strictly
   interior means. [Equal means](results/positive-multilinear-equal-marginals.md)
-  always give ratio at most two, as a reviewed consequence of classical envelopes.
+  (equal normalized coordinate values on the unit cube) always give ratio at
+  most two, as a reviewed consequence of classical envelopes.
 - [Frequency-two multilinear gaps](results/positive-multilinear-frequency-two-gap.md):
   sharp ratio `3/2` when each variable occurs in at most two nonlinear terms,
   with an odd-girth refinement and exactness for bipartite dual graphs.
@@ -943,10 +956,11 @@ Research was reopened on 2026-09-04 and closed on 2026-09-05. Entries marked
   [integer-anchor extension](results/common-factor-integer-anchor-hull.md) has an exact
   rational oracle polynomial in the encoded range, and also permits binary leaves.
 - [Observation-sensitive network–simplex hulls](notes/network-simplex-observed-rank-elimination.md)
-  (2026-09-07 continuation): a sparse exact extended formulation needs one
-  auxiliary coordinate per independent cycle entirely unobserved by an active
-  simplex label. If every such unobserved subgraph is a forest, an explicit
-  original-variable hull suffices on arbitrary graphs. Independent proof and
+  (2026-09-07 continuation): a sparse exact extended formulation can be built
+  using one auxiliary coordinate per independent cycle entirely unobserved by
+  an active simplex label; necessity is not claimed. If every such unobserved
+  subgraph is a forest, an explicit original-variable hull suffices on
+  arbitrary graphs. Independent proof and
   implementation reviews passed. Reduced RLT reconstruction and simplex
   disaggregation are established and credited. The
   [general compressed implementation](code/network_simplex_compressed/README.md)
@@ -973,9 +987,11 @@ Research was reopened on 2026-09-04 and closed on 2026-09-05. Entries marked
   proof audits and original-state witness checks passed. The number of states
   grows. Conversely, [fixed-state flat chains](results/network-simplex-flat-chain-fixed-states.md)
   admit an explicit original-variable separator and a state-count-only
-  coefficient bound even with arbitrarily many cycles. Two explicit simplex
-  coordinates need only 41 precomputed circuit tests. This positive theorem and
-  the simple-graph negative extension both passed independent review.
+  coefficient bound even with arbitrarily many cycles. With two observed
+  labels, the [residual-eliminated manuscript version](paper-network-simplex/sections/07-fixed-state-chains.tex)
+  needs only five profile tests after original-domain and zero-row checks; the
+  note's earlier unreduced formulation uses 41 circuit tests. This positive
+  theorem and the simple-graph negative extension both passed independent review.
 - [Sparse network–simplex hull obstruction](results/network-simplex-universality.md):
   arbitrary rational polytopes arise as coordinate sections already with two
   simplex coordinates on four-layer networks. Even unit capacities and unit flow

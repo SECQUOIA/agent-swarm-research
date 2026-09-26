@@ -278,9 +278,13 @@ record and independent proof audit are linked from
 
 ## Numerical verification
 
-`code/quadratic_rank/check_one_sided.py` directly solves the zero-binary
-square epigraph LP at depths zero through five and checks its error
-against `2^(-2L-4)`. It also checks the opposite square hypograph error
+`code/quadratic_rank/check_one_sided.py` solves a strengthened zero-binary
+square epigraph LP at depths `L=0,...,5` and checks its error
+against `2^(-2L-4)`. That LP has `L` folds, the epigraph inequalities of
+every level zero through `L`, and the tangents `t>=0`, `t>=2x-1`. It is
+not the construction used in the proof, which has `L+1` folds and only the
+final-level epigraph inequality; the script does not check that
+construction separately. It also checks the opposite square hypograph error
 `2^(-2L-2)` and the signed error allocation for `3u²-5v²`. All checks
 passed on 2026-09-05; they support rather than replace the proof.
 

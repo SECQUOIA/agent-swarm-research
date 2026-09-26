@@ -237,6 +237,13 @@ review does not duplicate the independent numerical auditor's role.
 Final reviewed SHA-256 values:
 
 - Results note: `7d55fb9e688165818ebbdb4624d463998dd4f0ecd03c3b3c5ed0ea97fade38a3`.
+  Provenance caveat (added 2026-09-25): this recorded digest does not match
+  the only preserved version of `notes/lbesh-study-results.md` (SHA-256
+  `b974bbd353029f4f3d50251be7f7474a6b379e9013ba5d81b3dece1b41ccbd15`, the
+  single version in Git history before the 2026-09-25 wording corrections
+  and the copy in `paper-lbesh/supplement/publication_bundle_v1.tar.gz`). Which bytes this
+  review examined is not established; the mismatch may be a transcription
+  error or a digest of an unretained intermediate version.
 - Theory note: `7f1a0d0ee7c9d5719bcc58755dab9ba7961205730e61a2c070ecae8b1508909e`.
 - Final analysis: `7662bd25a0f66672e959a9a1f222014a178eff6b0b355f39ba0726ed98f6d34c`.
 - Final independent query audit: `4c25566982957200dd5246885ce8b36ebf9fea3cb928904c810b3fa5e0e4b3dd`.

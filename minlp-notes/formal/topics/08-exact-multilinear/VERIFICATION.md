@@ -46,3 +46,25 @@ Source, dependency, and documentation fingerprints are in
 `verification/SHA256SUMS`. Check them from `formal/` with
 `sha256sum -c topics/08-exact-multilinear/verification/SHA256SUMS`.
 The [coverage table](COVERAGE.md) states the precise mathematical scope.
+
+## Fingerprint note (2026-09-25)
+
+`sha256sum -c` on this topic's manifest now reports
+`Formal/CubicGap/Envelope.lean`, `Formal/CubicGap/Results.lean` and
+`Formal/MultilinearGap/EnvelopeBounds.lean` as mismatches.
+Commit `6fe57343` moved the `CubicGap.hullGap` definition from
+`CubicGap/Results.lean` into `CubicGap/Envelope.lean` and marked it
+`noncomputable`, retaining its body and explicit typeclass parameters. It also
+narrowed the import in `MultilinearGap/EnvelopeBounds.lean` from
+`Formal.CubicGap.Results` to `Formal.CubicGap.Envelope`. This removes
+unrelated cubic example modules from that import path without changing any
+theorem statement or mathematical definition. The later full canonical runs at
+`413aaccb` (160 proof modules, 15,019 audited declarations) and `c31ceb7e`
+(171 proof modules, 15,240 audited declarations) built these files with
+warnings treated as failures, audited their declarations and replayed them in
+the kernel. The files have not changed since `6fe57343`.
+The check also reports `Formal.lean` and `Verify.lean`, the project import
+registry and axiom audit, and the documentation files `README.md`,
+`VERIFICATION.md` and `topics/README.md` under `formal/`. These were updated as
+later topics were added; they are not proof sources. It also reports
+`topics/08-exact-multilinear/VERIFICATION.md`, which gained this note.

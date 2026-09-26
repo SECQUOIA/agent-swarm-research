@@ -6,10 +6,13 @@ general and seeded bounds, exact finite-grid results, exact small-budget
 instance algorithms, and certified coarsening. It includes complete proofs,
 exact computer-assisted certificates, and a reproducible public-data study.
 The author field is empty so the responsible researchers can supply authorship.
-The current PDF includes the later Lean-driven proof clarifications and was
-rebuilt from clean sources for the
-[September 20 documentation follow-up](../notes/lean-verification-documentation-followup.md).
-The staged review snapshots and their verification records remain historical.
+The staged review snapshots and their verification records (completed
+2026-09-07) remain historical. The manuscript sources were revised afterwards:
+Lean-driven proof clarifications for the
+[September 20 documentation follow-up](../notes/lean-verification-documentation-followup.md),
+commit `aee2afbf` (2026-09-24), and any 2026-09-25 audit follow-up edits.
+The current PDF was last rebuilt in commit `aee2afbf`. The staged reviews do
+not cover these later revisions.
 
 Build from this directory with TeX Live, `latexmk`, and BibTeX:
 

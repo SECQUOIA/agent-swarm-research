@@ -223,10 +223,17 @@ exponent `17n/384` were verified with exact rational arithmetic.
 ## Independent review and known escape cuts
 
 [Independent audit](../notes/review-spatial-bb-relative-gap.md): PASS with no
-corrections. In addition to the tensor proof, the reviewer checked 2,660 exact
-demand-times-monomial identities in each of three two-block configurations,
-full 190-index moment matrices including repeated powers, and a cross-block
-localizer. The audit verifies asymmetry even after using the demand equations.
+corrections. In addition to the tensor proof, the reviewer reports checking
+2,660 exact demand-times-monomial identities in each of three two-block
+configurations, full 190-index moment matrices including repeated powers, and
+a cross-block localizer. The reviewer's own program and output were not
+archived. A new independent checker
+([script](../code/spatial_bb_lower_bound/review_relative_gap_repro.py),
+[2026-09-25 output](../code/spatial_bb_lower_bound/review_relative_gap_repro-2026-09-25.log))
+reproduces these checks: exactly 2,660 exact identities in each
+configuration, exact rational PSD tests of the 190-index moment matrices, and
+exact PSD tests of all 162 cross-block lower-times-upper slack localizers with
+linear multipliers. The audit verifies asymmetry even after using the demand equations.
 
 One [known Boolean-quadric clique inequality](../notes/spatial-bb-known-clique-cut.md)
 per block makes the root bound exact. This is a concrete polynomial-size

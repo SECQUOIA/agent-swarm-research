@@ -581,8 +581,9 @@ all 663 primary records and returned zero audit warnings:
   --plots
 ```
 
-The complete repetition-only export is preserved separately in
-`analysis_repeats_v1`. After the quadratic conic batch completed, the following
+The complete primary-plus-repetitions export (663 primary and 2 x 132
+repetition records, without the later conic batch) is preserved separately
+in `analysis_repeats_v1`. After the quadratic conic batch completed, the following
 combined command revalidated all 936 records, again returning zero warnings:
 
 ```bash

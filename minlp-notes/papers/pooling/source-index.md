@@ -1,8 +1,8 @@
 # Development provenance and disposition of companion notes
 
-The manuscript is self-contained with respect to these unpublished repository notes. They are development provenance, not bibliography entries or proof dependencies. Five rank-one results have been incorporated with complete proofs; eight tangential model comparisons were removed. The source files themselves are retained unchanged in the repository. No public availability or authorship is inferred.
+The manuscript is self-contained with respect to these unpublished repository notes. They are development provenance, not bibliography entries or proof dependencies. Five rank-one results have been incorporated with complete proofs; eight tangential model comparisons were removed. The source files remain in the repository but are not frozen: some were revised after the author pass, for example `results/common-factor-reciprocal-anchor-hulls.md` and `results/common-factor-reciprocal-anchor-full-hull.md`, most recently in commit `367fcbc8` (2026-09-20). No public availability or authorship is inferred.
 
-The paths below are relative to the repository root. SHA256 hashes identify the exact source bytes inspected in the September 9, 2026 author pass. Section labels are stable across later theorem renumbering.
+The paths below are relative to the repository root. SHA256 hashes identify the exact source bytes inspected in the September 9, 2026 author pass; they match the versions in commit `876ca480` (2026-09-09). A current file whose hash differs is a later revision, not the inspected source. Section labels are stable across later theorem renumbering.
 
 ## s6:margin-note: Linear optimization over rank-one matrices with row and column sum bounds is strongly NP-hard.
 

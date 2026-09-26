@@ -42,3 +42,27 @@ and canonical source fingerprints. The [delivery fingerprints](../verification/S
 cover the paper, scripts, proof sources, and recorded checks. Paper build
 and link results are in [paper-build.json](../verification/paper-build.json)
 and [bundle-check.json](../verification/bundle-check.json).
+
+## Audit rerun on 2026-09-25
+
+Commit `fa2a6f42` split the final `PASS` message of `Verify.lean` across two
+source lines; the audited declarations and allowed axioms did not change. For
+consistency only that program, not the whole `scripts/verify.sh`, was run once
+more from this directory at `d85171b8`, with `$HOME/.elan/bin` on `PATH` and
+`LEAN_NUM_THREADS=4`:
+
+```sh
+lake env lean Verify.lean
+```
+
+It exited 0 in 5.4 s and printed
+`PASS: audited 1247 bundled declarations; only propext, Classical.choice, Quot.sound are allowed.`
+All 13 named `#print axioms` lines report only those three axioms. Beforehand,
+`lake build --no-build Formal` reported all targets up to date, so the audit
+read outputs built from the current sources. The build, import check and
+kernel replay were not rerun.
+
+Because of the same rewrap, the [delivery fingerprints](../verification/SHA256SUMS) no longer
+match `formal/Verify.lean`, and this note changes `formal/VERIFICATION.md`.
+The other mismatches that `sha256sum -c` reports there, in the paper, its
+build records and `README.md`, were not examined for this note.

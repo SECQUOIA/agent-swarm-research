@@ -385,6 +385,10 @@ finite-description consequences, with the classical ingredients credited.
   2,601 exact rational ray identities and six finite-family outside
   witnesses. It works with Gram matrices, avoiding numerical square roots.
   These checks test the witness formulas, not HHC, irreducibility, or novelty.
+  The archived output is from the manuscript supplement's version of this
+  checker (`paper-quadratic-aggregation/supplement/check_infinite_aggregation.py`,
+  same checks with added assertions):
+  [`exact-checks.log`](../paper-quadratic-aggregation/build/stage07/exact-checks.log).
 
 The earlier mathematical review separately re-derived HHC, the multiplier
 cone, the hull formula, and the boundary obstruction. Subsequent Lean

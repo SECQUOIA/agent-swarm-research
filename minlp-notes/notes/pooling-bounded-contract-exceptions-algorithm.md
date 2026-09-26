@@ -1,7 +1,12 @@
 # Candidate: polynomial pooling optimization with bounded contract exceptions
 
-Date: 2026-09-05. Status: complete scalar-quality candidate; fresh
-independent audits requested. Separate literature priority is provisional.
+Date: 2026-09-05. Status: complete scalar-quality candidate. Two
+independent audits,
+[benders_review](review-pooling-bounded-contract-exceptions-benders.md) and
+[pooling_all_two_review](review-pooling-bounded-contract-exceptions-second.md),
+report PASS for the stated scalar model and exact optimization conclusion
+(fixed number of exceptional external nodes, redundant common pool bounds).
+Separate literature priority is provisional.
 
 The proposed theorem allows one pool, arbitrarily many pool feeds and
 outlets, and degree-two bypasses. All but a fixed number of external

@@ -42,7 +42,15 @@ run, largely because the original direct-rational spacing and large separator
 certificates are retained. Runtime varies by machine. `--quick` skips three
 expensive separator replays but is **not** the full paper validation.
 
-`results/validation.json` records the completed suite. A successful software
+`results/validation.json` records a completed full run of an earlier
+`validate.py`, from before the stage-5 correction that added verification of
+`source-manifest.json`; it therefore has no `source_manifest_files` entry and
+is not a report from the current checker. A full passing run of the current
+`validate.py` (same SHA-256) on an extracted copy of this supplement, with 159
+archive-manifest and 11 source-manifest files verified, is kept outside the
+supplement in the repository record
+`paper-correlated-measurements/verification/final-root/validation.json`.
+A new run of `validate.py` replaces `results/validation.json`. A successful software
 check is finite evidence for the implemented instances; the manuscript contains
 the general proofs. None of these checks is external peer review or Lean
 verification. The PSD approximation-set fixtures are tiny proof checks, not an

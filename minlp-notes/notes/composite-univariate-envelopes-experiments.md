@@ -15,7 +15,9 @@ bounds, curvature certification and model construction. Modes:
 - `native`: the model as given.
 - `split`: every accepted composite univariate subexpression gets an
   auxiliary variable `w` with the native constraint `w == g(x)`; no handler.
-  This isolates the effect of the reformulation.
+  Like `hybrid`, it also gets a separate presolve pass whose implied bounds
+  are imposed on accepted univariate arguments, so it measures the
+  reformulation together with those bounds, not the reformulation alone.
 - `hybrid`: `split` plus the envelope handler (cuts, propagation, completion
   heuristic). SCIP keeps feasibility, branching and NLP heuristics.
 - `uenv` (separable families only): the handler alone enforces `w == g(x)`.
@@ -122,9 +124,13 @@ sweep uses the 108 with at most 1,100 accepted candidates; the seven left
 out are `arki0016`, `arki0017`, `arki0018`, the four `eg_*_s`. `t1000`
 failed in `split` mode by harness timeout and is excluded, leaving 107.
 
-Soundness. `consistency.py` compares every run's dual and primal bound with
-the MINLPLib reference bounds at `1e-3` relative tolerance: no violation in
-324 runs. The reviewer's check at `1e-4` on the earlier sweep also found none.
+Consistency. `consistency.py` compares each run's dual and primal bound
+with the MINLPLib reference bounds at `1e-3` relative tolerance. Of the 324
+records in `minlplib_v3.jsonl` it compares 317: it skips the `t1000` `split`
+error record and all six runs of `ex8_6_1` and `uselinear`, which have no
+parseable reference bounds. It found no violation in the 317. This is a
+consistency check against reference data, not a proof that every run is
+sound. The reviewer's check at `1e-4` on the earlier sweep also found none.
 
 Aggregate (final sweep `minlplib_v3.jsonl`, idle machine, 12 concurrent
 single-thread runs):
@@ -141,7 +147,9 @@ only by native 5 (`ann_peaks_exp`, `ex1233`, `ex8_5_6`, `heatexch_spec2`,
 twice as slow on 16; neither solved: hybrid's final dual bound is closer to
 the reference optimum by more than 0.02 (relative, capped at 1) on 11 and
 farther on 10; 61 similar. `arki0003` is also solved by `split` alone, so
-that gain comes from the reformulation, not from the envelopes. `pricing050`
+that gain comes from the `split` pipeline (reformulation plus the
+precomputed implied bounds), not from the envelopes; isolating the
+reformulation would need a comparison with matched bounds. `pricing050`
 is solved at the root in 17 s only with the envelopes; native stops at 17%
 gap and `split` at 10%.
 

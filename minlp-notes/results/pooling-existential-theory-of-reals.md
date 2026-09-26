@@ -158,8 +158,9 @@ containing it, so it equals the displayed sum of group totals. Each group
 total is bounded by the corresponding node capacity, so the profit is at most
 `ζ`, with equality exactly when all bounds are tight. ∎
 
-Consequently, a flow has profit at least `ζ` if and only if it is feasible
-and every forced node is saturated. In the rest of the proof "saturated"
+Consequently, among feasible pooling flows (which also satisfy the quality
+constraints), profit is at least `ζ` exactly when every forced node is
+saturated. In the rest of the proof "saturated"
 refers to this situation.
 
 ### 4.2 Variable gadget

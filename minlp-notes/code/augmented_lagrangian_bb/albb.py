@@ -1,6 +1,9 @@
 """Augmented-Lagrangian lower bounds in spatial branch-and-bound: prototype and node counts.
 
-Supports results/augmented-lagrangian-exact-local-bounds.md.
+Exploratory prototype.  Its docstring previously cited
+results/augmented-lagrangian-exact-local-bounds.md, which is not in the repository; there is no
+accompanying results note.  Saved outputs: run_examples.log (this script) and run_random_n3.log,
+run_random_n4.log (random_instances.py), all in this directory.
 
 Two node lower-bounding schemes for  min f(z) s.t. g_j(z) <= 0, h_k(z) = 0, z in box:
 
@@ -12,7 +15,7 @@ Two node lower-bounding schemes for  min f(z) s.t. g_j(z) <= 0, h_k(z) = 0, z in
                  AL(z) = f + lam^T h + (rho/2)|h|^2 + (1/(2 rho)) sum_j [max(0, mu_j + rho g_j)^2 - mu_j^2]
              with multipliers (mu, lam) supplied from the incumbent.  AL <= f on the feasible set,
              so min_Z AL is a valid lower bound for every mu >= 0, rho > 0.  Convexity of AL on Z is
-             certified with a structured interval-Hessian bound (Lemma 3 of the note), the convex
+             certified with a structured interval-Hessian bound (implemented below), the convex
              program is solved by L-BFGS-B and the value is certified by the gradient inequality
              (one gradient evaluation).  Near a nondegenerate KKT point the certificate succeeds,
              alpha = 0, and the bound is exact.

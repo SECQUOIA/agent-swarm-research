@@ -1,6 +1,12 @@
 # LB-ESH: mathematical contracts and quantitative separation results
 
-Date: 2026-09-19. Author development note; independent review pending.
+Date: 2026-09-19. Author development note. Status (updated 2026-09-25): the
+qualified mathematical claims were independently reviewed in
+[the theory review](lbesh-review-theory.md), which finds the derivations sound
+under the stated exact-arithmetic, compactness, and oracle assumptions; it is
+not an implementation or benchmark certification. That review's recorded
+SHA-256 (`7f1a0d0e…`) identifies this note before this status update, which
+changed only these status lines.
 This note replaces the convergence and LP-exit claims in
 [the original method note](lbesh-20260912-method.md) where they differ.
 It develops the mathematical algorithm, not a claim that the floating-point

@@ -131,7 +131,9 @@ its incident arcs. Finite bounds make the remaining fibers compact.
 Consequently fixed `p,J` pooling is in NP even with unrestricted input
 count, attribute count, affine quality rank, and bypass graph. This proves
 an upper bound rather than a polynomial algorithm: the fiber basis is
-still guessed. The two-pool/two-output hardness construction therefore
+still guessed. With `r=pJ=4`, the two-pool/two-output pooling decision
+problem of the
+[two-pool/two-output hardness note](pooling-two-pools-two-outputs-hardness.md)
 is therefore NP-complete. The original two independent reviewers checked
 this output-fraction parameterization and the affine-rank corollary; the
 first identified the required zero-flow check before removing pools.

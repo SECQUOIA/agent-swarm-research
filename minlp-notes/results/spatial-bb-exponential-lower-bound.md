@@ -261,8 +261,15 @@ leaves. If a solver fathoms only on a strict inequality, take
   CORRECTIONS. The reviewer found that the theorem statement had `max` where
   the proof gives `min`, that the exponential claim needs `k, n-k = Θ(n)`,
   and that the Remark 3 condition was misstated; all corrections above were
-  applied. The reviewer's own LP checks covered the `k = 1` and `k = n-1`
-  trees up to `n = 50` and the cover counterexample to the `max` form.
+  applied. The reviewer reports LP checks of the `k = 1` and `k = n-1`
+  trees up to `n = 50` and of the cover counterexample to the `max` form;
+  those reviewer scripts were not archived. A new independent checker
+  ([script](../code/spatial_bb_lower_bound/review_lower_bound_repro.py),
+  [2026-09-25 output](../code/spatial_bb_lower_bound/review_lower_bound_repro-2026-09-25.log))
+  reproduces the reviewer's listed checks with exact and HiGHS chord-LP
+  bounds. It does not reproduce one wording in the review's check list: the
+  invalid justification `1/n <= d` fails at 22 of the 36 pairs with
+  `n >= 2k`, `n <= 12`, not at all of them.
 
 - [Second independent review](../notes/review-spatial-bb-second.md): core
   results pass; the underestimator bound now uses an infimum to allow arbitrary

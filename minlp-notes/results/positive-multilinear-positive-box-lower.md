@@ -12,6 +12,10 @@ C_box(ρ) >= max{2,ρ}.                                    (1)
 
 Combined with the independently reviewed [matching upper bound](positive-multilinear-positive-box-sharp.md),
 this gives the sharp asymptotic `C_box(ρ)~ρ`, with leading constant one.
+That note uses `C_box(ρ)` for the broader class of positive boxes whose
+coordinate ratios `r_i/ℓ_i` are at most ρ. Its upper bound therefore also
+bounds the common-box supremum defined here, and the lower bound (1) also
+holds for its broader supremum.
 The construction below has actual
 gap ratio tending to ρ while ρ stays fixed and its dimension grows. It gives
 more than a lower bound based on perturbing zero box endpoints.

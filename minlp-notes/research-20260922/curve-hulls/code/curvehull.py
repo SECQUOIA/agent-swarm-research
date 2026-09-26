@@ -242,6 +242,8 @@ class Curve:
             terms = np.where(c >= 0, c * lo, c * hi)
         terms = np.where(c == 0, 0.0, terms)
         s = terms.sum(0)
+        # The rounding errors of the products, the sum and the subtraction below total at most about
+        # (n + 1) 2^-53 sum|terms| for n = len(c); err is more than twice that (1e-300 covers underflow).
         err = (np.abs(terms).sum(0)) * (len(c) + 2) * 2.3e-16 + 1e-300
         return s - err
 
@@ -253,8 +255,12 @@ class Curve:
         d2hi = -self._lin_lower(-c, Dlo, Dhi)  # upper bound of g''
         h = b - a
         with np.errstate(invalid="ignore"):
+            # the factor 1 + 1e-15 covers the <= 5 roundings (relative 2^-53 each) in computing m
             m = np.maximum(0.0, d2hi) * (h * h / 8.0) * (1 + 1e-15)
+            # round the subtraction downward: one step toward -inf from the round-to-nearest result
+            # (subtracting m = 0 is exact)
             taylor = np.minimum(ga, gb) - m
+            taylor = np.where(m > 0, np.nextafter(taylor, -np.inf), taylor)
         taylor = np.where(np.isnan(taylor), -np.inf, taylor)
         out = np.maximum(direct, taylor)
         return np.where(np.isnan(out), -np.inf, out)

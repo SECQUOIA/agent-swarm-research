@@ -150,7 +150,10 @@ moment hierarchies require separate analysis.
   rational arithmetic. Numerical PSD eigenvalues supplement the exact
   spectrum in the proof. Cases include all admissible `k,m,z` and restricted
   sets of size below `min(k,z)` for `n<=9`, larger asymmetric instances,
-  and degenerate intervals.
+  and degenerate intervals. The
+  [2026-09-25 rerun output](../paper-relaxation-limits/verification/repository-checks/check_sdp_rlt_strengthening-2026-09-25.txt)
+  labels the PSD check as floating-point; the older saved transcript
+  `check_sdp_rlt_strengthening.txt` beside it keeps the earlier "exact" wording.
 - [Original separable result](spatial-bb-exponential-lower-bound.md) and its
   [second review](../notes/review-spatial-bb-second.md) supply the optimum and
   explicit matching upper certificate.

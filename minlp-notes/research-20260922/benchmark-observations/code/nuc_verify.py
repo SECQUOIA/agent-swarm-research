@@ -6,13 +6,22 @@ Proves (per instance, by checking the rows of the OSiL file):
   (B) k_{i,t+1} = k_{i,t} - a phi_{i,t} k_{i,t}, a > 0, and phi, k >= 0 by bounds, so k_{i,T} <= k_{i,1};
   (K) k_{i,1} <= KF (fresh reactivity, 1.2) at every feasible point (family-specific argument, see report);
 then  lam_T <= rho(G diag(k_T)) <= KF * max_i (G w)_i / w_i  for any rational w > 0 (exact arithmetic).
+
+The JSON keeps the certified values as exact fractions (`*_exact`); the float fields are nearest-rounded
+approximations. The printed bounds are rounded outward from the exact values. `--reuse` re-evaluates the
+certificates w and y saved in ../nuclear_cw_bounds.json exactly instead of searching for new ones.
 """
-import sys, json
+import sys, json, math
 from fractions import Fraction as F
 import numpy as np
 from nuc_struct import structure, NAMES, LISTED
 
 def fr(s): return F(s)
+
+def dec(q, d, up):
+    """rational q as a d-decimal string, rounded up (ceiling) if up else down (floor)."""
+    n = math.ceil(q * 10 ** d) if up else math.floor(q * 10 ** d)
+    return f"{'-' if n < 0 else ''}{abs(n) // 10 ** d}.{abs(n) % 10 ** d:0{d}d}"
 
 def knap_max(a, V, c):
     """exact max a^T p s.t. V^T p = 1, 0 <= p <= c (V > 0): greedy by a_j / V_j. Returns (value, p)."""
@@ -56,7 +65,8 @@ def peak_y(G, V, c, iters=40):
     return [F(float(v)).limit_denominator(10 ** 9) for v in best]
 
 
-def analyse(name):
+def analyse(name, cert=None):
+    """cert: saved record with rational certificates "w" and "y" to re-evaluate (skips the numerical search)."""
     M, lamT, phiT, kT, G = structure(name)
     N = len(phiT)
     isbin = lambda j: M.vtype[j] == "B"
@@ -197,15 +207,21 @@ def analyse(name):
         rep["max_age"] = max(d(k) for k in kaps)
     # ---- certified Collatz-Wielandt bound
     Gf = np.array([[float(g) for g in row] for row in Gx])
-    ev, V = np.linalg.eig(Gf + 1e-9); v = np.abs(np.real(V[:, np.argmax(np.real(ev))]))
-    v = v / v.max()
-    w = [F(float(max(x, 1e-12))).limit_denominator(10 ** 12) for x in v]
+    if cert:
+        w = [F(x) for x in cert["w"]]
+    else:
+        ev, V = np.linalg.eig(Gf + 1e-9); v = np.abs(np.real(V[:, np.argmax(np.real(ev))]))
+        v = v / v.max()
+        w = [F(float(max(x, 1e-12))).limit_denominator(10 ** 12) for x in v]
+    assert len(w) == N and all(x > 0 for x in w)
     ratios = [sum(Gx[i][j] * w[j] for j in range(N)) / w[i] for i in range(N)]
     rho_bar = max(ratios)
     rep["rho_numpy"] = float(max(abs(np.linalg.eigvals(Gf))))
     rep["rho_bar_certified"] = float(rho_bar)
     rep["bound_lamT"] = float(KF * rho_bar)
     rep["rowsum_bound"] = float(KF * max(sum(r) for r in Gx))
+    rep["rho_bar_exact"] = str(rho_bar); rep["bound_lamT_exact"] = str(KF * rho_bar)
+    rep["rowsum_bound_exact"] = str(KF * max(sum(r) for r in Gx))
     rep["w"] = [str(x) for x in w]
     # ---- (P) peaking rows at T: phi_{i,T} k_{i,T} <= c ; lam_T >= 0 ; normalization weights V
     assert fr(M.vlb[lamT]) >= 0
@@ -219,24 +235,35 @@ def analyse(name):
             a, b, _ = Q[0]; i = node[a] if a in node else node[b]
             cpk[i] = fr(M.cub[r]) if cpk[i] is None else min(cpk[i], fr(M.cub[r]))
     assert all(x is not None for x in cpk)
-    y = peak_y(Gf, [float(v) for v in Vn], [float(x) for x in cpk])
+    y = [F(v) for v in cert["y"]] if cert else peak_y(Gf, [float(v) for v in Vn], [float(x) for x in cpk])
+    assert len(y) == N and all(v >= 0 for v in y)
     beta = dinkelbach(Gx, y, Vn, cpk)
     rep["peak_c"] = float(max(cpk)); rep["beta_certified"] = float(beta)
     rep["bound_peak"] = float(KF * beta)
     rep["y"] = [str(v) for v in y]
-    rep["best_bound"] = min(rep["bound_peak"], rep["bound_lamT"])
+    rep["beta_exact"] = str(beta); rep["bound_peak_exact"] = str(KF * beta)
+    best = min(KF * beta, KF * rho_bar)
+    rep["best_bound"] = float(best); rep["best_bound_exact"] = str(best)
     p, dual = LISTED[name]
     rep["listed_primal"], rep["listed_dual"] = p, dual
     return rep
 
 if __name__ == "__main__":
-    names = sys.argv[1:] or NAMES
+    args = sys.argv[1:]
+    certs = None
+    if "--reuse" in args:
+        args.remove("--reuse")
+        certs = {r["name"]: r for r in json.load(open("../nuclear_cw_bounds.json"))}
+    names = args or NAMES
     out = []
+    # printed bounds are rounded outward: upper bounds on lam_T (rho_bar, beta) up, objective bounds down
+    up6 = lambda k: dec(F(r[k]), 6, True)
+    obj = lambda k, d=6: dec(-F(r[k]), d, False)
     for nm in names:
-        r = analyse(nm); out.append(r)
+        r = analyse(nm, certs[nm] if certs else None); out.append(r)
         print(f"{nm:11s} fam={r['family']} N={r['nodes']:3d} T={r['T']:2d} KF={r['KF']} phi_lb={r['phi_lb_min']:.3g} "
-              f"k_lb={r['k_lb_min']:.3g} rho={r['rho_numpy']:.6f} rho_bar={r['rho_bar_certified']:.6f} "
-              f"bound(obj)>= {-r['bound_lamT']:.6f} rowsum-bound {-r['rowsum_bound']:.4f} listed p/d {r['listed_primal']} / {r['listed_dual']}"
+              f"k_lb={r['k_lb_min']:.3g} rho={r['rho_numpy']:.6f} rho_bar<= {up6('rho_bar_exact')} "
+              f"bound(obj)>= {obj('bound_lamT_exact')} rowsum-bound {obj('rowsum_bound_exact', 4)} listed p/d {r['listed_primal']} / {r['listed_dual']}"
               + (f" max_age={r['max_age']}" if 'max_age' in r else "")
-              + f"\n            peak c={r['peak_c']:.4g} beta={r['beta_certified']:.6f} peak-bound(obj)>= {-r['bound_peak']:.6f}  BEST >= {-r['best_bound']:.6f}")
+              + f"\n            peak c={r['peak_c']:.4g} beta<= {up6('beta_exact')} peak-bound(obj)>= {obj('bound_peak_exact')}  BEST >= {obj('best_bound_exact')}")
     json.dump(out, open("../nuclear_cw_bounds.json", "w"), indent=1)

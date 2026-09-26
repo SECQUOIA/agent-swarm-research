@@ -105,10 +105,11 @@ exists. `orig` is the direct model with `w_i == f_i(x_i)` and finite bounds on
    limit for BARON from `n = 25` (`cknap`) or `n = 50` (`power`), for SCIP
    from `n = 50` or `n = 100`, and for Gurobi at `n = 100`. `power 50/5` is solved by SCIP in 21.7 s and by Gurobi in
    1.8 s, against 0.3 s and 0.1 s on the original.
-4. **Sigmoid (`pilot.jsonl`).** Gurobi solves both forms in under a second.
-   On the original SCIP stops at 42–46% gap and BARON at 11–15% (`n = 25`);
-   on the reformulation SCIP reaches 3.6–11.4% and BARON 3.3–3.5% (`m <= 2`; the `m = 5` run is missing). The runs
-   at `n >= 50` for SCIP and BARON were not completed in the pilot.
+4. **Sigmoid (`pilot.jsonl`).** Gurobi solves both forms in at most 1.2 s.
+   Over all tested sizes (`n = 25, 50, 100`, `m = 1, 2, 5`), SCIP stops at
+   42–75% gap on the original and 3.6–11.4% on the reformulation; BARON
+   stops at 11–20% on the original and 3.3–3.8% on the reformulation. At
+   `n = 25` alone the original gaps are 42–46% (SCIP) and 11–15% (BARON).
 5. **Quartic (`pilot_quartic.jsonl`).** The reformulation lowers Gurobi's gap
    from 30–104% to 3–19% but no solver finishes `n >= 20` in either form, and
    SCIP and BARON get worse. The
@@ -140,10 +141,12 @@ exists. `orig` is the direct model with `w_i == f_i(x_i)` and finite bounds on
 - `code/vertex_binarization/results/boxqp.jsonl`
   (`side_checks/boxqp_binarize.py`, six `spar` box-QP instances from
   github.com/sburer/BoxQP_instances, Gurobi, 4 threads): declaring the
-  variables with `Q_ii >= 0` binary changes five instances by at most 20%
-  in time and makes `spar060-020-1` slower, 2.1 s and 70,663 nodes against
-  0.1 s and 1 node. Pairwise second-order cuts change nothing material. There
-  is no evidence of a benefit.
+  variables with `Q_ii >= 0` binary changes the time of five instances by
+  -16% to +27% in `bin` and -4% to +33% in `bin2` (the largest increase is
+  `spar080-025-1`: 0.557 s originally, 0.708 s in `bin` and 0.742 s in
+  `bin2`) and makes `spar060-020-1` about 28 times slower in `bin`, 2.11 s
+  and 70,663 nodes against 0.076 s and 1 node. Pairwise second-order cuts
+  (`bin2`) change nothing material. There is no evidence of a benefit.
 
 ## Review findings and their resolution
 

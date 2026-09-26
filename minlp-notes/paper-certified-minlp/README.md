@@ -5,10 +5,17 @@ Lower Bounds for Convex Mixed-Integer Nonlinear Optimization through Rational
 Outer Approximations**, and its source/reproduction materials. Read `main.pdf`.
 No public repository upload or DOI is claimed. The paper's mathematical proofs
 are self-contained; repository research notes are not needed to read or build it.
-The current PDF includes the clarified formal-coverage wording and was rebuilt
-from clean sources for the
+The current `main.pdf` was last rebuilt in commit `aee2afbf` (2026-09-24),
+which revised the manuscript sources, including Section 6. An earlier rebuild
+added the clarified formal-coverage wording for the
 [September 20 documentation follow-up](../notes/lean-verification-documentation-followup.md).
-Existing source archives and verification fingerprints retain their earlier scope.
+The dated review records in `process/` (stages 1–6 and the R1–R3 clarity
+revision, 2026-09-13 to 2026-09-14) cover earlier manuscript versions; no
+review of the later revisions, including `aee2afbf` and any 2026-09-25 audit
+follow-up edits, is claimed. The source
+archive, `PAPER-SHA256SUMS` and `paper-source-archive.json` were produced on
+2026-09-18 (commit `2071ed80`) and were not refreshed, so they do not contain
+the current sources. The formal fingerprints retain the scope stated below.
 
 ## Reading the empirical evidence
 
@@ -88,15 +95,26 @@ including executable structured-proof and rational PSD checkers. See
 [coverage](formal/COVERAGE.md) and [current checks](formal/VERIFICATION.md).
 The existing Python pipeline and benchmark artifacts are not formally verified.
 
-During local repository work, run targeted checks only. CI handles project-wide
-verification; do not run it locally or inspect CI. For full standalone
-reproduction, install Elan, Git and Python 3, then run from `formal/`:
+During local repository work, run targeted checks only. Project-wide
+verification is assigned to CI; do not run it locally or inspect CI. The
+committed workflow, `.github/workflows/lean.yml`, builds only the canonical
+`formal/` project, so CI verification of this standalone project is assigned
+but not configured. For full standalone reproduction, install Elan, Git and
+Python 3, then run from `formal/`:
 
 ```bash
-sha256sum -c verification/extension-SHA256SUMS
+sha256sum -c verification/extension-SHA256SUMS-2026-09-25
 lake exe cache get
 bash scripts/verify.sh
 ```
+
+The fingerprint manifest `extension-SHA256SUMS-2026-09-25` records the
+current sources; both audit programs passed on them on 2026-09-25. The
+historical manifest `verification/extension-SHA256SUMS` records commit
+`875a71ab` (2026-09-17). Commit `fa2a6f42` (2026-09-20) later wrapped
+log-message lines in `Verify.lean` and `verification/ExtensionAudit.lean`,
+so on current sources that manifest reports mismatches for those two files;
+see [formal/README.md](formal/README.md).
 
 The exact Lean 4.33.1 and mathlib 4.33.1 dependencies are pinned. The accepted
 proof sources, import audit, transitive axiom audit, and kernel-replay scripts

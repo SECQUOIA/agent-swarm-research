@@ -72,11 +72,17 @@ section were updated to match these results. From `paper-correlated-measurements
 latexmk -pdf -interaction=nonstopmode -halt-on-error -outdir=build main.tex
 ```
 
-This passed and regenerated the [66-page manuscript](../../../paper-correlated-measurements/build/main.pdf)
-and its [build log](../../../paper-correlated-measurements/build/main.log), with
-no LaTeX warnings, undefined references or overfull boxes. Pages 1 and 27,
-containing the updated scope statements, were rendered and inspected.
-[Paper build hashes](verification/paper-build.json) record the sources and PDF.
+This passed at commit `6816f8b3` and regenerated the 66-page manuscript and its
+build log recorded in that commit, with no LaTeX warnings, undefined references
+or overfull boxes. Pages 1 and 27, containing the updated scope statements,
+were rendered and inspected. [Paper build hashes](verification/paper-build.json)
+record the sources and PDF of that revision; view them with
+`git show 6816f8b3:paper-correlated-measurements/build/main.pdf` and
+`git show 6816f8b3:paper-correlated-measurements/build/main.log`. The current
+[PDF](../../../paper-correlated-measurements/build/main.pdf) and
+[build log](../../../paper-correlated-measurements/build/main.log) are later
+rebuilds whose hashes differ from this record; this build check does not cover
+them.
 Historical paper snapshots and computational experiments were not changed.
 
 Local Markdown links in the topic package and changed source documents were

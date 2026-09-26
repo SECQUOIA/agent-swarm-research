@@ -2,7 +2,7 @@
 
 Status: mathematically proved and independently audited on 2026-09-04, including integer and signed common factors. Computational checks cover the fixed-total specialization. Publication novelty is **not established**: a targeted search found a close existing bounded-LP basis-enumeration method, though no exact match to the moving-matrix/moving-product-bound theorem below. The result is a structural tractability theorem, not a claim of a compact conic hull.
 
-Independent audit: [common-factor audit](../notes/review-common-factor.md), sections 1 and 5. Broader investigation: [common-factor investigation](../notes/common-factor-investigation.md).
+Independent audit: [common-factor audit](../notes/review-common-factor.md), Section 1, including its follow-up audit paragraph on the integer and signed corollaries. Broader investigation: [common-factor investigation](../notes/common-factor-investigation.md).
 
 ## Model and result
 

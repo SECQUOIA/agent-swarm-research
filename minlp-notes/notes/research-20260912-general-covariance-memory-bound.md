@@ -3,8 +3,11 @@
 Date: 2026-09-12. Status: independently derived by `dense_exact_review` alongside
 the root researcher's derivation. The proof below supplies an explicit extension
 of the [noisy Markov bound](research-20260912-noisy-markov-memory.md) to general
-block covariances. A further fresh proof review and the root's primary-literature
-audit remain necessary. Inverse decay, weighted conjugation, and local conditional
+block covariances. A fresh
+[independent mathematical review](research-20260912-general-covariance-memory-independent-review.md)
+passes the theorem, and a bounded
+[primary-source priority audit](research-20260912-covariance-decay-priority-audit.md)
+maps its relation to prior work without certifying priority. Inverse decay, weighted conjugation, and local conditional
 factorizations are established methods; no novelty is claimed for those tools.
 
 **Result.** Exponential decay of off-diagonal covariance blocks and a uniform

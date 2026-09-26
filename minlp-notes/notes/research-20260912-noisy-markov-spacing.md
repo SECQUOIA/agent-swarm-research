@@ -1,7 +1,18 @@
 # Minimum sampling gaps and finite-horizon spectral certificates
 
-Date: 12 September 2026. Status: bound and helper accepted by fresh independent review; constrained
-solver and certificate integration are under separate review.
+Date: 12 September 2026. Status: bound and helper accepted by fresh independent review. Later
+bounded reviews accepted the
+[numerical producer](research-20260912-spacing-producer-independent-review.md)
+(`noisy_markov_spacing_design.py`), the
+[exact certifier](research-20260912-spacing-certificate-independent-review.md),
+its [integer-scoring integration](research-20260912-spacing-integer-integration-review.md),
+and the [refined-pair integration](research-20260912-refined-spacing-integration-review.md).
+The first review covers helper SHA-256 `6e2fa178...`; the current helper
+`noisy_markov_spacing_bound.py` has SHA-256
+`a8bdac20548764c11bdd29b476c4a37722af088aa63af0b0e29b46d5d0b08371`, and its
+optional `refined_pairs` mode is covered by the refined-pair integration
+review. The numerical producer alone supplies no true-likelihood
+certificate; the separate exact certifier does.
 The [independent review](research-20260912-noisy-markov-spacing-independent-review.md)
 checks 22,734 exact models and independently enumerates 1,428 row-pricing
 problems. This is an extension of the [reviewed noisy-Markov bound](research-20260912-noisy-markov-memory.md),

@@ -46,7 +46,9 @@ regular `m`-gon with `V_0 = 0`. In polar form `r_k = sin(k pi/m)/cos(pi/2m)` and
 `|i - j| = (m ± 1)/2`. For even `N`, use `m = N - 1` and duplicate vertex 1 (a
 zero-length edge, allowed because `theta_1 = theta_2`). 60-digit check: maximum
 row violation 1.6e-61 (3.1e-61 for N = 100), no bound violation, exactly `m`
-rows with `|d^2 - 1| < 1e-40`; the objective equals `-A_reg(m)` to 20 digits,
+rows with `|d^2 - 1| < 1e-40` for odd `N` (for even `N` the duplicated vertex
+adds two more, giving `m + 2`: 51 for N = 50 and 101 for N = 100); the
+objective equals `-A_reg(m)` to 20 digits,
 where `A_reg(m) = (m/2) R^2 sin(2 pi/m)`, `R = 1/(2 cos(pi/2m))`.
 
 Dual bounds. Reinhardt, "Extremale Polygone gegebenen Durchmessers",
@@ -102,10 +104,14 @@ uncertified.
 ## 3. mpbp_06 and waternd_shamir
 
 `code/scip_check.py`: SCIP 10.0 through PySCIPOpt 6.2.1 reading the OSiL, one
-thread, default settings. `code/grb_check.py`: Gurobi 13.0.3 with a separate
-model builder (`grb_build.py`), `NonConvex = 2`, one thread. Every incumbent was
+thread, default settings. The SCIP library version is as reported by the author;
+the saved JSON records only the PySCIPOpt version 6.2.1 (under the key `scip`),
+and the SCIP logs do not print a version. `code/grb_check.py`: Gurobi 13.0.3
+with a separate model builder (`grb_build.py`), `NonConvex = 2`, one thread.
+Every SCIP incumbent was
 evaluated by `osil_eval` in float and 50-digit arithmetic over all bounds, rows
-and integrality.
+and integrality; the Gurobi incumbent was evaluated in float only
+(`mpbp_06_gurobi.json`).
 
 | Instance | Run | Status | Time | Nodes | Objective | Max violation |
 |---|---|---|---|---|---|---|

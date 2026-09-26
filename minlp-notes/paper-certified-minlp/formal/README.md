@@ -10,9 +10,11 @@ checker or any saved benchmark certificate.
 ## Reproduce
 
 During repository development, use targeted builds for the changed modules.
-Project-wide verification is handled by CI: do not run it locally or inspect
-CI status or logs. The full reproduction commands below describe the CI and
-standalone reproduction entry point, not required local development checks.
+Project-wide verification is assigned to CI: do not run it locally or inspect
+CI status or logs. The committed workflow, `.github/workflows/lean.yml`, covers
+only `formal/`, so no CI job currently runs this standalone project. The full
+reproduction commands below are the standalone reproduction entry point, not
+required local development checks.
 The [current verification record](VERIFICATION.md) records targeted checks
 separately from the historical verification log. The [inventory](CLAIMS.md)
 and [independent reviews](REVIEW.md) accompany the source package.
@@ -21,7 +23,7 @@ Install Elan, Git, and Python 3, then run from this directory:
 
 ```bash
 lake exe cache get
-sha256sum -c verification/extension-SHA256SUMS
+sha256sum -c verification/extension-SHA256SUMS-2026-09-25
 bash scripts/verify.sh
 ```
 
@@ -49,8 +51,15 @@ mathlib declarations. One replay worker bounds memory use.
 [The baseline log](verification/run.log) and its original source manifest
 record the earlier three-module verification. They do not verify the current
 extension and their old manifest is not a fingerprint of the current umbrella
-import. The current source manifest is
-[extension-SHA256SUMS](verification/extension-SHA256SUMS).
+import. The current extension manifest,
+[extension-SHA256SUMS-2026-09-25](verification/extension-SHA256SUMS-2026-09-25),
+fingerprints the same 34 files at `549a5786`. It was written after both audit
+programs passed on those sources; see the [run log](verification/extension-run-2026-09-25.log)
+and the [verification record](VERIFICATION.md). The historical manifest,
+[extension-SHA256SUMS](verification/extension-SHA256SUMS), records the sources
+committed in `875a71ab`. On current sources its check reports two mismatches,
+`Verify.lean` and `verification/ExtensionAudit.lean`, whose long log-message
+lines were wrapped in `fa2a6f42`.
 
 ## Meaning and limitations
 

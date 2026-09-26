@@ -13,10 +13,11 @@ the standard pooling problem with a single quality is polynomially solvable
 when (a) all in-degrees of pools and outputs are at most two, or (b) all
 out-degrees of inputs and pools are at most two. Both questions are answered
 negatively here: each restricted class is strongly NP-hard, already with all
-numerical data in `{-2,-1,0,1,2}`, two input quality values, two output
-quality bounds, every pool having exactly two inputs and two outputs, and
-the one layer that is not of degree one (outputs in the first class, inputs
-in the second) of degree at most three (Theorem 3). Since
+numerical data except the objective threshold in `{-2,-1,0,1,2}`, two
+input quality values, two output quality bounds, every pool having exactly
+two inputs and two outputs, and the one layer that is not of degree one
+(outputs in the first class, inputs in the second) of degree at most three
+(Theorem 3). Since
 the problem is polynomially solvable when every pool has in-degree one or
 out-degree one (row 14 of the Boland et al. table, attributed there to
 Haugland's Proposition 3; see Remark 2 for the short argument), the

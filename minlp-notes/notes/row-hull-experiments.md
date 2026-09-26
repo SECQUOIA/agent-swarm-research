@@ -189,23 +189,31 @@ about them as about the cuts.
 A minimal best-bound spatial branch-and-bound written for this comparison
 (`bb.py`: `T` term-wise chords, `R` plus root row-hull cuts, `L` plus exact
 row-hull separation on every node box; times are for a Python loop and mean
-nothing; `results/superseded_pricing_bug/bb_nodes_5x7.txt` for `uniform` and
-`uncap`, which the pricing fix did not change, `results/bb_nodes_5x7_random_rerun.txt`
-for `random`, identical to the earlier counts):
+nothing). All nine rows are from the code after the pricing fix:
+`results/bb_nodes_5x7_random_rerun.txt` for `random` (identical node counts to
+the pre-fix run) and `results/bb_nodes_5x7_uniform_uncap_rerun.txt` for
+`uniform` and `uncap` (rerun 2026-09-25). The `uncap` counts are unchanged from
+the pre-fix run (`results/superseded_pricing_bug/bb_nodes_5x7.txt`). The
+`uniform` counts changed by up to 5%: `R` 1732, 614, 904 became 1681, 630, 949
+and `L` 191, 21, 87 became 187, 21, 85, with unchanged root bounds. Both `R`
+and `L` call `RowSeparator.separate` at the root, so the root cut sets can
+differ even when the root bound does not:
 
 ```
-transport-uniform-quad-5x7-s0 T: nodes 6631 root 16.5143 ub 18.3010 done 32s | R: nodes 1732 root 18.0863 ub 18.3012 done 26s | L: nodes 191 root 18.0863 ub 18.3010 done 87s
-transport-uniform-quad-5x7-s1 T: nodes 2064 root 19.9891 ub 21.2925 done 6s | R: nodes 614 root 21.0236 ub 21.2926 done 7s | L: nodes 21 root 21.0236 ub 21.2925 done 7s
-transport-uniform-quad-5x7-s2 T: nodes 4650 root 18.4228 ub 19.7321 done 16s | R: nodes 904 root 19.4663 ub 19.7322 done 15s | L: nodes 87 root 19.4663 ub 19.7321 done 47s
+transport-uniform-quad-5x7-s0 T: nodes 6631 root 16.5143 ub 18.3010 done 17s | R: nodes 1681 root 18.0863 ub 18.3011 done 15s | L: nodes 187 root 18.0863 ub 18.3010 done 103s
+transport-uniform-quad-5x7-s1 T: nodes 2064 root 19.9891 ub 21.2925 done 5s | R: nodes 630 root 21.0236 ub 21.2926 done 7s | L: nodes 21 root 21.0236 ub 21.2925 done 9s
+transport-uniform-quad-5x7-s2 T: nodes 4650 root 18.4228 ub 19.7321 done 12s | R: nodes 949 root 19.4663 ub 19.7322 done 8s | L: nodes 85 root 19.4663 ub 19.7321 done 56s
 transport-random-quad-5x7-s0 T: nodes 3424 root 66.9214 ub 73.8926 done 9s | R: nodes 1769 root 72.5482 ub 73.8934 done 15s | L: nodes 198 root 72.5482 ub 73.8926 done 80s
 transport-random-quad-5x7-s1 T: nodes 10342 root 90.3980 ub 98.7034 done 28s | R: nodes 5230 root 97.0146 ub 98.7035 done 44s | L: nodes 254 root 97.0146 ub 98.7034 done 92s
 transport-random-quad-5x7-s2 T: nodes 5409 root 54.6570 ub 62.4904 done 14s | R: nodes 1455 root 60.8378 ub 62.4908 done 11s | L: nodes 105 root 60.8378 ub 62.4904 done 39s
-transport-uncap-quad-5x7-s0 T: nodes 123 root 61.8436 ub 67.0538 done 1s | R: nodes 52 root 65.8691 ub 67.0542 done 1s | L: nodes 7 root 65.8691 ub 67.0551 done 4s
-transport-uncap-quad-5x7-s1 T: nodes 323 root 72.0899 ub 79.1144 done 2s | R: nodes 104 root 76.0172 ub 79.1144 done 1s | L: nodes 20 root 76.0172 ub 79.1144 done 10s
-transport-uncap-quad-5x7-s2 T: nodes 144 root 65.5842 ub 72.7264 done 1s | R: nodes 43 root 72.3551 ub 72.7264 done 1s | L: nodes 5 root 72.3551 ub 72.7264 done 2s
+transport-uncap-quad-5x7-s0 T: nodes 123 root 61.8436 ub 67.0538 done 0s | R: nodes 52 root 65.8691 ub 67.0542 done 1s | L: nodes 7 root 65.8691 ub 67.0551 done 3s
+transport-uncap-quad-5x7-s1 T: nodes 323 root 72.0899 ub 79.1144 done 1s | R: nodes 104 root 76.0172 ub 79.1144 done 1s | L: nodes 20 root 76.0172 ub 79.1144 done 6s
+transport-uncap-quad-5x7-s2 T: nodes 144 root 65.5842 ub 72.7264 done 0s | R: nodes 43 root 72.3551 ub 72.7264 done 1s | L: nodes 5 root 72.3551 ub 72.7264 done 1s
 ```
 
-The ratio of `R` to `L` nodes ranges from 5 to 29. On the three `uniform`
+The ratio of `R` to `L` nodes ranges from 5 to 30 over all nine rows
+(`uniform` 9.0, 30.0, 11.2; `random` 8.9, 20.6, 13.9; `uncap` 7.4, 5.2, 8.6).
+On the three `uniform`
 instances, recomputing only the closed-form inequality of Proposition 3 on
 every node box (`bb_cf.py`, mode `C`, printed to the terminal only) needed 564,
 243 and 586 nodes.
@@ -232,10 +240,13 @@ transport-uniform-quad-8x12    | 1/5   285 474178    0  0.9 | 5/5    23  21323  
 
 Root-only separation is the best configuration on every family. Separating to
 depth 3 costs about the same and changes nodes by less than 10%; to depth 8 it
-reduces nodes by 5–20% and adds 8–12 s; on every node it reduces nodes by a
-factor 1.3–3.4 but the callback takes 65–127 s and the runs are 4–5 times
-slower than root-only, losing three `uniform-log` solves. The 5–29 fold node
-reductions of the minimal branch-and-bound do not transfer to SCIP, whose own
+reduces nodes by 2–21% and adds 4–9 s; on every node it reduces nodes by a
+factor 1.5–3.4 but the callback takes 65–127 s and the runs are 4.4–6.3 times
+slower than root-only, losing three `uniform-log` solves. These ratios compare
+the family shifted geometric means in the table (recomputed from the JSONL),
+not individual instances; the full-depth `random-log` cell has four seeds and
+root-only has five. The large node reductions of the minimal branch-and-bound
+(5–30 fold on the nine rows above) do not transfer to SCIP, whose own
 branching, propagation and cuts already exploit much of what the local row
 hull adds. Whether a native implementation with cheap local separation would
 change this is untested; the closed form is not available at nodes.
@@ -342,13 +353,17 @@ change this is untested; the closed form is not available at nodes.
 
 ## Checks
 
-- `test_rowhull.py`: 216 checks against brute-force vertex enumeration
-  (separation equals the exact membership value, every cut valid at every
-  vertex, pricing lower bounds with and without interval merging, closed form
-  equals the hull for equal widths including inequality rows and indicators,
-  closed form valid for general widths). Command:
-  `uv run --project ../minlp_solver_lab python -m pytest -q test_rowhull.py` (216 passed,
-  including the regression test for coinciding subset sums).
+- `test_rowhull.py`: 216 parametrized checks against brute-force vertex
+  enumeration (separation equals the exact membership value, every cut valid
+  at every vertex, pricing lower bounds with and without interval merging,
+  closed form equals the hull for equal widths including inequality rows and
+  indicators, closed form valid for general widths). Command:
+  `uv run --project ../minlp_solver_lab python -m pytest -q test_rowhull.py` (216 passed
+  on 2026-09-21, including the regression test for coinciding subset sums).
+  A pricing regression test
+  (`test_pricing_downward_endpoint_jump_after_inverse_rounding`) was added on
+  2026-09-22, so the current file has 217 tests; the 216-pass output above
+  predates it.
 - The cut loop reproduces the brute-force row-hull bound of the first prototype
   (`proto_general.py`, 42.7869 on `uncap 5x7 seed 0`).
 - The [independent theory review](review-row-hull-theory.md) wrote its own
@@ -399,7 +414,8 @@ Code and experiment review ([report](review-row-hull-code-experiments.md)):
    point": no exact arithmetic is used.
 2. **Numbers.** "47 of 53" was the subset also solved with cuts (now stated as
    45 of 54 for the final runs); the BARON mean time counted a wrong-optimum
-   run at its own time (now 144 s); the node ratio range is 5–29, not 7–30; the
+   run at its own time (now 144 s); the node ratio range was 5–29, not 7–30 (5–30 after the 2026-09-25 rerun of
+   `uniform` and `uncap` with the current code); the
    cut loop range was understated; `total_time` does not include instance
    generation. All corrected above.
 3. **Fairness.** The headline counts are driven by the `uniform` families; the

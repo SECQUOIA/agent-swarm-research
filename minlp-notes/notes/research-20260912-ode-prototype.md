@@ -93,7 +93,16 @@ not establish novelty merely by producing mathematically validated ODE cuts.
 Fixed broad state intervals need not give exact relaxation trajectories even
 when the parameter box shrinks to a singleton. For the dimerization model with
 rate fixed to one, one invariant sweep still leaves numerical half-horizon
-state widths about `0.188603` and `0.0943015`. Consequently parameter branching
+state widths about `0.188603` and `0.0943015`. These are the widths of the
+numerical (`solve_ivp`) solution of the relaxation ODE, recomputed on
+2026-09-25 with `run_case` from `code/research_20260912/ode_support_experiment.py`
+(parameter box `[1, 1]`, fixed state box, one row sweep, horizon 1/2, 30 steps);
+the certified 30-step cut widths are `0.188603` and `0.0943033`. The run and its
+driver source are saved in
+[`ode_rate_one_fixed_box.json`](../code/research_20260912/results/ode_rate_one_fixed_box.json).
+The obstruction itself is established analytically by the fixed-box example
+in [the validated polynomial tubes note](research-20260912-validated-polynomial-tubes.md).
+Consequently parameter branching
 alone cannot be asserted to converge for this prototype.
 
 To use it in a convergent global optimizer, state intervals must also tighten.

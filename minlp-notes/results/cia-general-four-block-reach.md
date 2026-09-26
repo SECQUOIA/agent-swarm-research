@@ -127,7 +127,7 @@ for the distinguished index:
 | `{0,3}` | `0`, `1`, `3`, `4` |
 | `{3,4}` | `0`, `3`, `5` |
 
-The last case exists only for `n>=6`. These ten types cover all choices of `S,P,z`.
+The final type, maximizing pair `{3,4}` with distinguished index `z=5`, exists only for `n>=6`; the other two `{3,4}` types (`z=0`, `z=3`) exist for `n=5`. These ten types cover all choices of `S,P,z`.
 
 Within a type, keep every index in `S union P union {z}` individually labeled.
 All other modes can be permuted. The necessary linear system and objective are
