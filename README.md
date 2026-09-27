@@ -12,16 +12,15 @@ drafts.
 Everything here was written by AI agents during the runs described in the
 paper: notes, checks, code, review records, Lean proofs, and paper drafts. The
 authors of the paper have not edited it and, except where the paper says
-otherwise, have not verified its claims. It stands as it was before any human
-input on its content; the authors' part in producing it was limited to the
-process and editorial instructions described in the paper. The drafts are not
-final papers: the authors intend to take them further, and later versions may
-include human input.
+otherwise, have not verified its claims. It contains no scientific input from
+the authors; their part in producing it was limited to the process and
+editorial instructions described in the paper. The drafts are not final
+papers: the authors intend to take them further.
 
 The paper describes this repository at tag `paper-v1`: a snapshot of the
 agents' output as of 25 September 2026. The runs continue, so the source
 repositories have moved on since, and later versions of this repository may
-add topics, results, and human input.
+add topics and results, some with the authors' scientific input.
 
 The compiled PDF of the power-flow draft (M10), which the source repository
 does not track, was built from the sources here and added.
