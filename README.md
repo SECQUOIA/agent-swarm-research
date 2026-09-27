@@ -18,8 +18,10 @@ process and editorial instructions described in the paper. The drafts are not
 final papers: the authors intend to take them further, and later versions may
 include human input.
 
-This is a snapshot of 25 September 2026. The runs continue, so the source
-repositories have moved on since.
+The paper describes this repository at tag `paper-v1`: a snapshot of the
+agents' output as of 25 September 2026. The runs continue, so the source
+repositories have moved on since, and later versions of this repository may
+add topics, results, and human input.
 
 The compiled PDF of the power-flow draft (M10), which the source repository
 does not track, was built from the sources here and added.
@@ -39,9 +41,9 @@ Each folder is a copy of the committed content of the notes repository for one r
 
 ## Research inventory
 
-The 53 potential papers in the corpus, as listed in the paper's appendix,
-with the same IDs and status values. The paper also states the claimed
-contribution of each. Items marked *Notes only* have no draft; their results
+The 45 potential papers and 8 proposed experimental programs in the corpus,
+as listed in the paper's appendix, with the same IDs and status values. The
+paper also states the claimed contribution of each. Items marked *Notes only* have no draft; their results
 are in the notes of the folder for that area.
 
 ### Mixed-integer nonlinear programming
