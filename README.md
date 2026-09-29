@@ -11,18 +11,18 @@ links to the drafts.
 
 ## What this is
 
-Everything here was written by AI agents during the runs described in the
-paper: notes, checks, code, review records, Lean proofs, and paper drafts. The
-authors of the paper have not edited it and, except where the paper says
-otherwise, have not verified its claims. It contains no scientific input from
-the authors; their part in producing it was limited to the process and
-editorial instructions described in the paper. The drafts are not final
-papers: the authors intend to take them further.
+At tag `paper-v1` (commit `84c6be7`), the version the paper describes, the
+folders contain only material written by AI agents during the runs described in
+the paper: notes, checks, code, review records, Lean proofs, and paper drafts.
+This snapshot holds the agents' output as of 25 September 2026. The authors
+of the paper have not edited it and, except where the paper says otherwise,
+have not verified its claims. It contains no scientific input from the authors;
+their part in producing it was limited to the process and editorial
+instructions described in the paper. The drafts are not final papers: the
+authors intend to take them further.
 
-The paper describes this repository at tag `paper-v1` (commit `84c6be7`): a
-snapshot of the agents' output as of 25 September 2026. The runs continue, so
-the agents' notes repositories have moved on since, and later versions of this
-repository may add topics and results, some with the authors' scientific input.
+The runs continue, and later versions of this repository may add topics and
+results, some with the authors' scientific input.
 
 ## Folders
 
