@@ -7,7 +7,10 @@ different univariate functions of the same variable (`t_s^2 + t_c^2 = 1`,
 
 Sources: local base `literature/` (cited as `[[slug]] p.N`), web search, and
 open full texts fetched during this check (listed in section 6). Nothing in
-`literature/` was modified; the two theses below are not yet ingested.
+`literature/` was modified during the original check. The 2026-09-26 library
+review later added a metadata-only Ballerstein record. It did not recover
+the original thesis; the source statements below retain their original
+text-extraction provenance and have not been rechecked against its PDF.
 
 ## 1. Short answer
 
@@ -40,7 +43,7 @@ open full texts fetched during this check (listed in section 6). Nothing in
 
 ## 2. Closest prior art, with exact statements
 
-### 2.1 Ballerstein 2013, thesis Chapter 5 (not in local base; open access)
+### 2.1 Ballerstein 2013, thesis Chapter 5 (metadata in local base; PDF not retained)
 
 Martin Ballerstein, "Convex Relaxations for Mixed-Integer Nonlinear
 Programs", Diss. ETH No. 21024, 2013, doi:10.3929/ethz-a-009959194. Chapter 5

@@ -5,6 +5,155 @@ engineering. Mathematical review and novelty assessment are recorded separately.
 “Independently reviewed” means checked by another research agent, not peer-reviewed
 by a journal. An unsuccessful literature search does not establish novelty.
 
+The [second September 28 continuation](research-20260928b/README.md) is
+complete at the user's requested scope; its
+[closing record](research-20260928b/closing-research-results.md) collects
+the results and limits. Its main line is a complexity theory of
+branch-and-bound with nonlinear relaxations: rigorous node-count lower
+bounds for adaptive spatial trees, with the `eps`-exponent equal to half
+the dimension of the optimal set; separate theories for McCormick-type
+relaxations and objective-cutoff propagation; a Lean-verified
+4-competitive branching rule in one dimension and exponential lower
+bounds for node-local rules in higher dimension; sharp thresholds for
+linear-size B&B in random sparse regression, unchanged by stronger
+lifted relaxations; superpolynomial certification cost for box-relaxation
+B&B in binary least squares at logarithmic SNR; and class-number bounds
+for integer branching. SCIP 10 node counts follow the predicted
+exponents, while MINLPLib studies show that the branching-point theory
+does not change practical performance. The continuation also found that
+a published exactness theorem for the Boolean relaxation of sparse
+regression (Pilanci–Wainwright–El Ghaoui 2015) is false as stated, and
+proved split-inequality separation for integer QP strongly NP-complete.
+The [synthesis](research-20260928b/bb-complexity/SYNTHESIS.md) separates
+proved results, empirical evidence, and open questions.
+
+The [September 28 continuation](research-20260928/README.md) is complete
+at the user's requested scope. Its
+[closing record](research-20260928/closing-research-results.md) collects
+the results, verification, and limitations; no new directions are underway.
+Its leading candidates give an unconditional `O(log^3(r)/r^2)` error bound
+for sparse ordinary box quadratic modules and sharp rate boundaries for
+convex private recourse. The ordinary-module bound per total coefficient
+norm is uniform in the number of bags. The companion full-preordering rate
+is inverse-square, with a matching fixed quadratic example; July 2025 and
+February 2026 author presentations already state that rate, so its
+originality is not claimed here. Affine recourse can instead force a sharp
+inverse-order gap, even with private linear programs. Reviewed extensions
+cover finite-state variables, large private convex blocks, and rational
+certificates with quantitative slack. Regular projected recourse multipliers
+restore inverse-square convergence; global geometric repair also gives
+quantitative bounds with polynomial constraints. These are results about
+specified hierarchies, not general MINLP runtime bounds. Other completed work concerns
+graph-constrained switching, exact arithmetic, and the limitations of local
+certificates. Publication priority remains unestablished.
+
+The [September 27 continuation](research-20260927/README.md) has finished
+its current directions at the user's request. The
+[closing record](research-20260927/closing-research-results.md) collects
+the final reviewed results, corrections, and remaining limits. No new
+directions are underway. Its structural results concern exact
+quadratic and second-order cone optimization when the constraint Hessians
+have a small matrix span, including unbounded mixed-integer models and
+algebraic output. A stronger common-range restriction gives fixed-parameter
+algorithms, and a general convex semialgebraic theorem bounds finite
+mixed-integer values even without attainment. Related results identify
+sharp rationality and output-size boundaries. The continuation index
+separates proposed contributions from established prior
+work and modest supporting findings.
+New independently reviewed
+[lower](research-20260927/unconstrained-quartic-posslp-reduction.md) and
+[upper](research-20260927/strong-convex-quartic-posslp-upper.md) bounds
+show that exact unconstrained minimum and minimizer-coordinate order
+comparisons are PosSLP-complete for rational quartics with a supplied
+positive definite rational Hessian Gram. Real SOS membership and global
+nonnegativity are also complete; rational SOS membership has the lower
+bound, with its zero-minimum case requiring separate treatment.
+The [synthesis](research-20260927/exact-convex-quartic-complexity.md)
+states the certificate and output distinctions. This classifies exact
+arithmetic, without claiming NP-hardness or a numerical-approximation
+lower bound. Primary audits credit established exact SDP/SOCP hardness
+and earlier Newton-circuit PosSLP reductions. Priority is unestablished.
+A [reviewed strengthening](research-20260927/rational-optimizer-posslp-coordinate-comparison.md)
+keeps coordinate comparison PosSLP-complete even when the bounded unique
+optimizer is rational, the minimum is known to be zero, and short
+rational square factors are supplied. Its quaternion compiler and
+quartic realization have separate fresh proof reviews. This is an
+exact-arithmetic classification, not a numerical approximation lower bound.
+A reviewed [algorithmic consequence](research-20260927/mixed-quartic-integer-constraint-rank-oracle.md)
+solves globally strongly convex quartic MINLP over arbitrary mixed
+linear constraints in expected fixed-parameter time, with a PosSLP
+oracle, parameterized by the number of integer variables plus the rank
+of the continuous constraint matrix. Its
+[integer candidate search](research-20260927/mixed-linear-strong-quartic-candidate-list.md)
+uses ordinary rational computation; exact continuous selection uses
+the oracle. The continuous dimension is unrestricted, and the returned
+continuous optimizer is represented implicitly.
+A separate reviewed [rational-witness lower bound](research-20260927/strict-convex-quartic-rational-witness-lower-bound.md)
+gives a compact, strictly feasible sublevel set of one such quartic in
+\(n\) variables, with bounded coordinates, where every rational feasible
+point needs \(\Omega(n2^{n/2})\) denominator bits. The input has
+polynomial size. This is an unconditional obstruction to expanded
+rational output; it does not exclude short certificates in other formats.
+A reviewed [rational-optimizer family](research-20260927/rational-convex-quartic-minimizer-height.md)
+has a unique rational minimizer in a fixed coordinate box, yet its
+denominators have exponentially many bits in the dimension. The
+quartic, its rational square factors, and its strict Hessian certificate
+all have polynomial size. Its [optimal moment and maximal-rank Gram certificates](research-20260927/rational-circle-optimal-gram-height.md)
+also require long expanded rational entries, while a short lower-rank
+Gram remains available. The literature comparison separates this
+restricted construction from established large-output SDP examples.
+One new [strongly convex integer quartic](research-20260927/convex-quartic-irrational-zero.md)
+has minimum zero at a unique irrational point, resolving negatively the
+rational-witness possibility marked unknown in the inspected November
+2025 arXiv version of a paper. Global convexity and the irrational
+singleton are now verified in Lean as well as independently reviewed.
+A general construction realizes exactly the algebraic numbers with one
+real conjugate and provides a short rational convexity certificate.
+Priority remains unestablished. This example alone is a witness
+obstruction; the separate reduction above addresses exact decision.
+A subsequent [integer quartic family](research-20260927/cyclic-quartic-exponential-degree.md)
+has short coefficients but an exponentially large zero field, with
+reviewed rational convexity certificates. It separates exact algebraic
+output size from local numerical conditioning and identifies sharp
+degree bounds in the first few dimensions.
+Another reviewed [small integer quartic](research-20260927/ternary-rational-sos-convex-counterexample.md)
+has a strict rational convexity certificate and minimum zero, while
+every polynomial SOS certificate must use a real coefficient field
+containing \(2^{1/5}\). It separates rational convexity certification
+from exact rational SOS certification, in the smallest dimension
+under its stated Gram assumption.
+A reviewed [quintic-tower construction](research-20260927/exponential-least-sos-field.md)
+strengthens this to exponential degree: in \(3k\) variables, every
+algebraic polynomial SOS or Gram certificate has a coefficient of
+degree at least \(5^k\), while the input and its rational Hessian
+certificate have polynomial size. The exact least coefficient field
+is \(\mathbb Q(2^{1/5^k})\). This bounds explicit algebraic certificate
+output. A [constructive companion](research-20260927/tower-sos-coefficient-encoding.md)
+gives polynomial-size shared root circuits for those same certificates.
+After increasing a rational scale, the family also has
+[short rational-function certificates](research-20260927/rational-tower-quadratic-denominator.md)
+with an everywhere-positive common denominator of minimum degree two.
+A reviewed [denominator comparison](research-20260927/rational-radial-exponent-obstruction.md)
+shows that fixed radial multipliers can need arbitrarily high
+rational SOS order in this strict convexity class, while adapted
+quadratic denominators retain short certificates. A
+[quantitative refinement](research-20260927/rational-radial-height-lower-bound.md)
+forces order at least \(\Omega(\log L/\log\log L)\) for binary input
+length \(L\), while the adapted certificate has size \(O(L)\).
+
+The [September 25 research batch](research-20260925/README.md) has completed
+[publication preparation](research-20260925/publication-readiness.md), and
+was then paused at the user's request. Its reviewed results include an
+exact three-variable counterexample and a compact SDP for a family of missing
+quadratic cuts; penalty encoding lower bounds, a fixed-quadratic-count upper
+bound, and calibration inapproximability; and a quantitative accuracy
+obstruction for a specified subset moment relaxation on uniformly conditioned
+stars. The penalty encoding construction and its dual formulas have targeted
+Lean coverage. The handoff includes scoped contribution assessments, fresh
+adversarial reviews, versioned sources, and a reproduction guide. The notes
+distinguish proved results from possible applications, classical consequences,
+unresolved questions, and qualified novelty claims. Papers have not been written.
+
 The September 21 continuation adds two solver-oriented results with code,
 experiments, independent reviews and their negative findings.
 [Envelopes of composite univariate subexpressions](results/composite-univariate-envelopes.md):

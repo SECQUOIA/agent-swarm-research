@@ -58,8 +58,11 @@ planes for multi-row models.
   depends on `gamma_i` only through `delta_i`, and a fixed charge with the same
   `delta_i` has the same hull. What is added here is the observation that their
   description is the row hull of *arbitrary* concave terms, the single-inequality
-  and extended forms, inequality rows (2(b)), and indicators together with
-  concave variable costs (2(c)). The tilted flow covers of Lim, Linderoth and
+  and extended forms, and its extensions to inequality rows (2(b)) and
+  indicators with concave variable costs (2(c)). Inequality balances and setup
+  indicators already occur in the flow hulls of Wolsey and Yaman (2021); the
+  candidate contribution is their use with arbitrary concave variable costs.
+  The tilted flow covers of Lim, Linderoth and
   Luedtke (2018), specialized to this set, are a strict subfamily of the
   linearizations.
 - **General widths (Propositions 3–5).** The same inequality with residual
@@ -566,8 +569,11 @@ frozen code, unmodified solvers receiving plain linear rows.
   constraints with indicator variables*, Math. Program. 172 (2018): tilted flow
   cover and tilted `(l,S)` inequalities for concave single-node flow and
   lot-sizing sets with indicators; facet conditions; BARON experiments. Closest
-  prior work. No complete description, no extended formulation, no general
-  separation.
+  prior work. Their Theorems 2–3 give complete descriptions of the local
+  four-dimensional sets, and Section 5 gives separation for tilted `(l,S)`
+  inequalities. They do not give a complete hull description or separator
+  for the general concave single-node flow set. The journal PDF was supplied
+  and read in the 2026-09-26 inbox review (PDF pp. 6–15).
 - Dey, Kocuk, *Convexification of a separable function over a polyhedral
   ground set*, arXiv 2510.16595 (2025): graph of `x_j^kappa` over a row and
   other polytopes; NP-hardness; conic relaxations; exact hulls in low
@@ -577,6 +583,13 @@ frozen code, unmodified solvers receiving plain linear rows.
   one flow.
 - Padberg, Van Roy, Wolsey (1985): lifted flow covers describe the
   constant-capacity single-node flow set; equivalent to Theorem 2 (above).
+  Wolsey and Yaman (2021), *Convex hull results for generalizations of the
+  constant capacity single node flow set*, Theorem 1 and Corollary 1, give
+  upper- and lower-balance hulls, and Theorem 2 gives a two-sided one-node
+  hull under its stated assumptions (local full text, PDF pp. 6–11). Thus
+  an inequality row or a setup indicator alone does not make a new hull
+  result; the comparison here concerns the mapping to arbitrary concave
+  variable costs.
   Kim, Tawarmalani, Richard (2022) permute `x` alone and do not give the joint
   hull of a vector of terms ([check](../notes/row-hull-ktr-overlap-check.md)).
 - Keha, de Farias, Nemhauser (2006); Zhao, de Farias (2013): cuts for a
@@ -606,11 +619,13 @@ observation that this description is the row hull of arbitrary separable
 concave terms (no indicators needed), its single-inequality and extended forms,
 Theorem 2(c) with concave variable costs, the residual-interval inequality of
 Proposition 3, the interval dynamic program for valid separation on general
-rows, and the computational use as solver-independent root cuts. Wolsey and
-Yaman (2021) on generalizations of the constant-capacity flow set was seen in
-abstract only. The literature agent could not access
-several items (listed in the experiment record), and an unsuccessful search
-does not establish novelty.
+rows, and the computational use as solver-independent root cuts. These
+remain candidate contributions under a bounded source comparison. The
+2026-09-26 review read Wolsey and Yaman (2021): their flow hulls already
+cover inequality balances and setup indicators under stated assumptions,
+while the arbitrary concave-cost mapping is a separate comparison. Several
+other source-access gaps remain (see the literature run records); an
+unsuccessful search does not establish novelty.
 
 ## Limitations
 

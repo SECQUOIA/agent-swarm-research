@@ -1,0 +1,250 @@
+"""Tables for robust-branching.md from the SCIP runs; writes results/summary.md.
+
+    python3 summarize.py
+
+Inputs: results/minlplib.jsonl, results/synthetic.jsonl. Aggregation follows
+../minlplib-branching/branching-point-study.md, Section 2.4: per instance a shifted geometric
+mean (shift 10 nodes, 1 s) over the 3 seeds, then a shifted geometric mean over instances;
+unsolved runs enter with their count at the limit (time = limit); 95% bootstrap CI over
+instances; two-sided Wilcoxon signed-rank p on per-instance log ratios; win/loss = ratio beyond
+10%; "separated" = all 3 seeds of one setting beyond all 3 of the other by more than 10%.
+"""
+import importlib.util
+import json
+import math
+import os
+from collections import defaultdict
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+RES = os.path.join(HERE, "results")
+_spec = importlib.util.spec_from_file_location(
+    "bpstudy", os.path.join(HERE, "..", "minlplib-branching", "analyze.py"))
+bp = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(bp)
+sgm, wilcoxon_p, boot_ci, solved, obj_check = bp.sgm, bp.wilcoxon_p, bp.boot_ci, bp.solved, bp.obj_check
+SEEDS = (0, 1, 2)
+TLIM = 60.0
+ORDER = ["default", "rclamp", "c10", "lp", "lp_rclamp", "x_default", "x_rclamp", "x_lp", "x_lp_rclamp",
+         "x_recenter", "x_inc", "x_noclamp"]
+
+PAIRS = [  # (setting, reference, what differs)
+    ("rclamp", "default", "P: clamp 0.2 -> U[0.1,0.3] per node (SCIP selection, SCIP pull)"),
+    ("c10", "default", "P: clamp 0.2 -> 0.1 (control)"),
+    ("rclamp", "c10", "P: clamp 0.1 -> U[0.1,0.3]"),
+    ("lp", "default", "P: midpull 0.75 -> 0 (as in the earlier study)"),
+    ("lp_rclamp", "lp", "P: LP point, clamp 0.2 -> U[0.1,0.3]"),
+    ("x_default", "default", "reproduction check: plugin selection vs SCIP's own"),
+    ("x_rclamp", "x_default", "X: clamp 0.2 -> U[0.1,0.3] (SCIP pull)"),
+    ("x_lp", "x_default", "X: midpull 0.75 -> 0"),
+    ("x_lp_rclamp", "x_lp", "X: LP point, clamp 0.2 -> U[0.1,0.3]"),
+    ("x_recenter", "x_lp", "X: LP point, clip -> recentring (0.2)"),
+    ("x_inc", "x_lp", "X: LP point, incumbent coordinate if inside"),
+    ("x_noclamp", "x_lp", "X: LP point, clamp 0.2 -> 0"),
+    # added after review: plugin rules against SCIP's default (different selection and pull)
+    ("x_recenter", "default", "recentring (plugin, midpull 0) vs SCIP default"),
+    ("x_recenter", "x_default", "recentring vs plugin with SCIP's point"),
+    ("x_inc", "default", "incumbent rule (plugin, midpull 0) vs SCIP default"),
+]
+
+
+def load(path):
+    return [json.loads(ln) for ln in open(path)] if os.path.exists(path) else []
+
+
+def by_inst(runs):
+    D = defaultdict(lambda: defaultdict(dict))
+    for r in runs:
+        D[r["inst"]][r["setting"]][r["seed"]] = r
+    return D
+
+
+def val(r, key):
+    if key == "time":
+        return r["time"] if solved(r) else r.get("tlim", TLIM)
+    return r.get("nodes")
+
+
+def inst_sgm(rs, key):
+    shift = 10.0 if key == "nodes" else 1.0
+    vals = [val(r, key) for r in rs]
+    if any(v is None for v in vals):
+        return None
+    return sgm(vals, shift)
+
+
+def compare(D, s, ref, insts, key="nodes", require_solved=False):
+    logs, wins, losses, sepw, sepl, n = [], 0, 0, 0, 0, 0
+    for i in insts:
+        a, b = D[i].get(s, {}), D[i].get(ref, {})
+        if any(k not in a or k not in b for k in SEEDS):
+            continue
+        ra, rb = [a[k] for k in SEEDS], [b[k] for k in SEEDS]
+        if require_solved and not all(solved(r) for r in ra + rb):
+            continue
+        va, vb = inst_sgm(ra, key), inst_sgm(rb, key)
+        if va is None or vb is None:
+            continue
+        shift = 10.0 if key == "nodes" else 1.0
+        lr = math.log((va + shift) / (vb + shift))
+        logs.append(lr)
+        n += 1
+        wins += lr < -math.log(1.1)
+        losses += lr > math.log(1.1)
+        xa = [val(r, key) + shift for r in ra]
+        xb = [val(r, key) + shift for r in rb]
+        sepw += max(xa) * 1.1 < min(xb)
+        sepl += min(xa) > 1.1 * max(xb)
+    if not logs:
+        return None
+    lo, hi = boot_ci(logs)
+    return dict(n=n, ratio=math.exp(sum(logs) / n), lo=lo, hi=hi, p=wilcoxon_p(logs),
+                wins=wins, losses=losses, sepw=sepw, sepl=sepl)
+
+
+def seed_noise(D, s, insts):
+    """Seed k against seed 0 of the same setting: win/loss counts and aggregate ratio."""
+    out = []
+    for k in (1, 2):
+        logs = []
+        for i in insts:
+            r0, rk = D[i].get(s, {}).get(0), D[i].get(s, {}).get(k)
+            if r0 and rk and r0.get("nodes") is not None and rk.get("nodes") is not None:
+                logs.append(math.log((rk["nodes"] + 10) / (r0["nodes"] + 10)))
+        if logs:
+            out.append((k, math.exp(sum(logs) / len(logs)), sum(x < -math.log(1.1) for x in logs),
+                        sum(x > math.log(1.1) for x in logs)))
+    return out
+
+
+def main():
+    lines = ["# Summary tables (generated by summarize.py)", ""]
+    runs = load(os.path.join(RES, "minlplib.jsonl"))
+    D = by_inst(runs)
+    insts = sorted(D)
+    settings = [s for s in ORDER if any(r["setting"] == s for r in runs)]
+    lines += ["## MINLPLib: status", "",
+              "| Setting | Runs | Optimal | Time limit | Other | Max depth (median over runs) | CPU h |",
+              "|---|---|---|---|---|---|---|"]
+    for s in settings:
+        rs = [r for r in runs if r["setting"] == s]
+        st = defaultdict(int)
+        for r in rs:
+            st[r["status"]] += 1
+        other = {k: v for k, v in st.items() if k not in ("optimal", "timelimit")}
+        md = sorted(r.get("max_depth", 0) for r in rs if "max_depth" in r)
+        cpu = sum(r.get("time", 0) or 0 for r in rs) / 3600
+        lines.append(f"| {s} | {len(rs)} | {st['optimal']} | {st['timelimit']} | {other or ''} | "
+                     f"{md[len(md) // 2] if md else '-'} | {cpu:.2f} |")
+    # correctness
+    M = bp.meta()
+    worst_p, worst_d, below = 0.0, 0.0, []
+    for r in runs:
+        if r["status"] != "optimal" or r["inst"] not in M:
+            continue
+        c = obj_check(r, M[r["inst"]])
+        if "dprimal" in c:
+            worst_p = max(worst_p, c["dprimal"])
+            if c["dprimal"] < -1e-6:
+                below.append((r["inst"], r["setting"], r["seed"], c["dprimal"]))
+        if "ddual" in c:
+            worst_d = max(worst_d, c["ddual"])
+    per = defaultdict(list)
+    for b in below:
+        per[b[0]].append(b[3])
+    rng_txt = "; ".join(f"{i} {min(v):.1e}..{max(v):.1e} ({len(v)} runs)" for i, v in sorted(per.items()))
+    lines += ["", f"Correctness (optimal runs): worst primal deviation above the MINLPLib best known "
+              f"{worst_p:.2e} (relative); worst dual bound above the best known {worst_d:.2e}; "
+              f"{len(below)} optimal runs end below the best known by more than 1e-6 relative: {rng_txt}.", ""]
+    # comparisons
+    for key in ("nodes", "time"):
+        lines += [f"## MINLPLib: pairwise comparison, {key}", "",
+                  "| Setting | Reference | Change | Inst. | Ratio | 95% CI | Wilcoxon p | Wins / losses | "
+                  "Separated wins / losses | Ratio, both solved (inst.) |",
+                  "|---|---|---|---|---|---|---|---|---|---|"]
+        for s, ref, what in PAIRS:
+            c = compare(D, s, ref, insts, key)
+            c2 = compare(D, s, ref, insts, key, require_solved=True)
+            if c is None:
+                continue
+            lines.append(f"| {s} | {ref} | {what} | {c['n']} | {c['ratio']:.3f} | {c['lo']:.2f}-{c['hi']:.2f} | "
+                         f"{c['p']:.3g} | {c['wins']} / {c['losses']} | {c['sepw']} / {c['sepl']} | "
+                         + (f"{c2['ratio']:.3f} ({c2['n']})" if c2 else "-") + " |")
+        lines.append("")
+    # subgroups: continuous-heavy instances (study's default trace, seed 0) and instances whose
+    # LP values often sit on a bound (this study's x_lp plugin counters)
+    tr = {r["inst"]: r["trace"] for r in load(os.path.join(HERE, "..", "minlplib-branching", "results",
+                                                               "trace.jsonl"))
+          if r["setting"] == "default" and "trace" in r}
+    cont = [i for i in insts if i in tr and tr[i]["n"] + tr[i]["n_infbound"] >= tr[i]["nint"]
+            and tr[i]["n"] + tr[i]["n_infbound"] > 0]
+    atb = []
+    for i in insts:
+        cs = [D[i]["x_lp"][k].get("plugin") for k in SEEDS if k in D[i].get("x_lp", {})]
+        cs = [c for c in cs if c]
+        if cs and sum(c["cont"] for c in cs) > 0 and \
+                sum(c["lp_at_bound"] for c in cs) >= 0.1 * sum(c["cont"] for c in cs):
+            atb.append(i)
+    lines += ["## MINLPLib: subgroups (nodes)", "",
+              f"- continuous-heavy: at least half of default's seed-0 branchings are continuous "
+              f"({len(cont)} instances);",
+              f"- LP value on a bound in at least 10% of x_lp's continuous branchings ({len(atb)} instances).", "",
+              "| Setting | Reference | Subgroup | Inst. | Ratio | 95% CI | Wilcoxon p | Wins / losses | Separated |",
+              "|---|---|---|---|---|---|---|---|---|"]
+    for s, ref, _ in PAIRS:
+        for name, grp in (("continuous-heavy", cont), ("LP at bound", atb)):
+            c = compare(D, s, ref, grp, "nodes")
+            if c:
+                lines.append(f"| {s} | {ref} | {name} | {c['n']} | {c['ratio']:.3f} | {c['lo']:.2f}-{c['hi']:.2f} | "
+                             f"{c['p']:.3g} | {c['wins']} / {c['losses']} | {c['sepw']} / {c['sepl']} |")
+    lines += [""]
+    lines += ["## MINLPLib: seed noise (seed k vs seed 0 of the same setting; nodes)", "",
+              "| Setting | k | Ratio | Wins / losses beyond 10% |", "|---|---|---|---|"]
+    for s in ("default", "rclamp", "x_default", "x_lp", "x_lp_rclamp"):
+        for k, ratio, w, l in seed_noise(D, s, insts):
+            lines.append(f"| {s} | {k} | {ratio:.3f} | {w} / {l} |")
+    lines += ["", "## MINLPLib: plugin counters (sum over instances and seeds)", "",
+              "| Setting | ext. branchings | continuous | no LP | LP value at bound | point moved off LP value | "
+              "recentred | incumbent | child < 1% |", "|---|---|---|---|---|---|---|---|---|"]
+    for s in settings:
+        cs = [r["plugin"] for r in runs if r["setting"] == s and "plugin" in r]
+        if not cs:
+            continue
+        t = {k: sum(c.get(k, 0) for c in cs) for k in cs[0]}
+        lines.append(f"| {s} | {t['ext']} | {t['cont']} | {t['nolp']} | {t['lp_at_bound']} | {t['clamped']} | "
+                     f"{t['recentred']} | {t['inc']} | {t['small_child']} |")
+    lines += ["", "## MINLPLib: nodes per instance (seeds 0/1/2; * = not solved)", ""]
+    lines.append("| Instance | " + " | ".join(settings) + " |")
+    lines.append("|---|" + "---|" * len(settings))
+    for i in insts:
+        cells = []
+        for s in settings:
+            rr = D[i].get(s, {})
+            cells.append("/".join((str(rr[k].get("nodes", "-")) + ("" if solved(rr[k]) else "*")) if k in rr else "?"
+                                  for k in SEEDS))
+        lines.append(f"| {i} | " + " | ".join(cells) + " |")
+    # synthetic
+    syn = load(os.path.join(RES, "synthetic.jsonl"))
+    if syn:
+        lines += ["", "## Synthetic kink instances in SCIP (mean nodes over seeds; [min-max])", ""]
+        S = defaultdict(lambda: defaultdict(list))
+        for r in syn:
+            S[(r["inst"], r["eps"])][r["setting"]].append(r)
+        ss = [s for s in ORDER if any(s in v for v in S.values())]
+        lines.append("| Instance | eps | " + " | ".join(ss) + " |")
+        lines.append("|---|---|" + "---|" * len(ss))
+        for (inst, eps) in sorted(S, key=lambda k: (k[0].split(":")[0], float(k[0].split(":")[1]), -k[1])):
+            cells = []
+            for s in ss:
+                rs = S[(inst, eps)].get(s, [])
+                ns = [r.get("nodes") for r in rs if r.get("nodes") is not None]
+                bad = sum(not solved(r) for r in rs)
+                cells.append(f"{sum(ns) / len(ns):.0f} [{min(ns)}-{max(ns)}]" + (f" ({bad} uns.)" if bad else "")
+                             if ns else "-")
+            lines.append(f"| {inst} | {eps:g} | " + " | ".join(cells) + " |")
+    with open(os.path.join(RES, "summary.md"), "w") as fh:
+        fh.write("\n".join(lines) + "\n")
+    print("\n".join(lines[:80]))
+
+
+if __name__ == "__main__":
+    main()

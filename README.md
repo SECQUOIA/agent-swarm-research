@@ -37,7 +37,7 @@ results, some with the authors' scientific input.
 
 ## Research inventory
 
-The 45 potential papers and 8 proposed experimental programs in the corpus,
+The 56 potential papers and 8 proposed experimental programs in the corpus,
 with the IDs and status values used in the paper. The paper also states the
 claimed contribution of each. Items marked *Notes only* have no draft; their
 results are in the notes of the folder for that area.
@@ -45,7 +45,9 @@ results are in the notes of the folder for that area.
 This inventory reflects the current state of the repository. The paper's
 inventory (Appendix C) describes the repository at tag `paper-v1`, and its
 links point to that commit. The two lists may differ as the runs add topics,
-drafts, and Lean proofs. For the inventory as the paper describes it, see the
+drafts, and Lean proofs. Items M23–M33 were added after `paper-v1` and are
+not in the paper, and M18 has since gained a full paper and a new title. For
+the inventory as the paper describes it, see the
 paper or
 [this README at `paper-v1`](https://github.com/SECQUOIA/agent-swarm-research/blob/paper-v1/README.md#research-inventory).
 
@@ -70,11 +72,22 @@ paper or
 | M15 | Exact convex hulls for a reciprocal factor shared by many variables | Notes only | Done |
 | M16 | Ill-posed heat-exchanger network instances in MINLPLib | Notes only | Not applicable |
 | M17 | Convex envelopes of two-variable monomials with real exponents on a wedge | Notes only | Possible |
-| M18 | Exact indicator quadratic optimization at low treewidth | Notes only | Not applicable |
+| M18 | Sparse indicator quadratics: exact complexity and smoothed separator messages | [Full paper](minlp-notes/paper-sparse-indicator-quadratics/paper.pdf) | Not applicable |
 | M19 | Convex envelopes of univariate functions of a linear form | Notes only | Possible |
 | M20 | Contraction theory of iterated optimality-based bound tightening | Notes only | Possible |
 | M21 | Joint relaxation of several nonlinear terms in one variable | Notes only | Not applicable |
 | M22 | Separable concave terms on few linear rows | Notes only | Possible |
+| M23 | Encoding and calibration of exact norm penalties in mixed-integer convex optimization | [Full paper](minlp-notes/paper-exact-penalties/main.pdf) | Partial |
+| M24 | Exact optimization of convex quadratic and second-order cone programs with a small Hessian span | Notes only | Not applicable |
+| M25 | Exact arithmetic complexity of strongly convex quartic optimization | Notes only | Not applicable |
+| M26 | Irrational minimizers and certificate coefficient fields for strongly convex quartics | Notes only | Partial |
+| M27 | Convergence rates of sparse moment–sum-of-squares hierarchies with private convex recourse | Notes only | Possible |
+| M28 | Phase transitions of perspective branch-and-bound in random sparse regression | Notes only | Not applicable |
+| M29 | Instance-dependent node complexity of spatial branch-and-bound | Notes only | Possible |
+| M30 | Relaxation-intrinsic lower bounds for integer branch-and-bound: class number, random closest-vector problems, and MIMO detection | Notes only | Possible |
+| M31 | Competitive branching points for spatial branch-and-bound | Notes only | Partial |
+| M32 | Separating split inequalities for integer quadratic programming is NP-complete | Notes only | Not applicable |
+| M33 | A priori integrality-gap bounds for shortest paths in graphs of convex sets | Notes only | Possible |
 
 ### Quantum interior-point methods
 

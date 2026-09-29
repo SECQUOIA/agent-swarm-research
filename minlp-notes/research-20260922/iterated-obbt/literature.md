@@ -20,7 +20,18 @@ available), Wechsung–Schaber–Barton (2014), Bompadre–Mitsos (2012), Kannan
 thesis, and the primary ANTIGONE JOGO paper. A negative search does not prove
 novelty.
 
-## 0. Bottom line
+**Access update, 2026-09-27.** The historical access statement above describes
+the initial pass. The [cluster follow-up](literature-cluster.md) read the
+Wechsung and Kannan theses. The 2026-09-26 library and inbox reviews then
+packaged Kannan’s thesis and the journal originals of both Caprara papers,
+Kannan–Barton (2017), and Wechsung–Schaber–Barton (2014). The latter is now
+read directly: its second-order prefactor thresholds appear on PDF pages 8–9
+([[wechsung2014-the-cluster-problem-revisited]] p.8-9). These sources
+confirm the distinctions below between fixed-point results, clustering, and
+OBBT contraction rates. They do not establish the absence of a rate theorem
+in all literature.
+
+## 0. Findings
 
 **Known (with proofs):**
 
@@ -68,14 +79,16 @@ novelty.
   relaxations, and the tangent-map / cone-spectral-radius characterization in
   `theory.md`.
 - Finite termination, and the complexity of computing the OBBT fixed point.
-- A justified adaptive stopping rule. All published and implemented rules are
-  heuristics: round caps, absolute or relative improvement tolerances, or a box
-  volume factor of 0.95.
+- A stopping rule with a certified bound on the remaining tightening. The
+  inspected rules use round caps, improvement tolerances, or a box-volume
+  factor of 0.95. Some have a finite-termination argument (see Ryoo–Sahinidis
+  below); that does not bound the distance to the OBBT limit.
 
 The ingredients of `theory.md` Propositions 2–3 are classical: the
 `sqrt(epsilon/gamma)` radius of the near-optimal set (Kannan–Barton 2017,
 Lemma 8) and the marginals bound `(U - L)/lambda` (Ryoo–Sahinidis 1995,
-Theorem 2). Nobody has combined them into a statement about iterated OBBT.
+Theorem 2). No such combined statement about iterated OBBT was found in the
+sources inspected.
 Propositions 2–3 should therefore be presented as elementary consequences, not
 as new principles. Theorems 4 and 6 and Propositions 7–8 have no counterpart
 that I found.
@@ -299,9 +312,10 @@ No published rate for iterated OBBT was found. The closest pieces are:
 - **Cluster literature without domain reduction.**
   - Du–Kearfott (1994) exclude acceleration procedures ("no acceleration
     procedures", abstract).
-  - Wechsung–Schaber–Barton (2014) and Bompadre–Mitsos (2012) analyze the
-    convergence order of bounding and relaxations only (from abstracts and
-    Kannan–Barton's summaries; full texts not read).
+  - Wechsung–Schaber–Barton (2014) analyze bound convergence order and
+    prefactors; the journal original is now read (PDF pp. 8–9).
+    Bompadre–Mitsos (2012) was assessed from abstracts and Kannan–Barton’s
+    summaries; that original remains unread in this review.
   - Schichl–Neumaier (SINUM 2004, preprint p. 6) and Schichl–Markót–Neumaier
     (JOGO 2014, pp. 5–6) state that constraint propagation has overestimation
     order 1 and "suffer[s] from the cluster effect".
@@ -334,8 +348,8 @@ No published rate for iterated OBBT was found. The closest pieces are:
   `O(epsilon)` at sharp minima; exact model rates) appear unpublished. The
   sharp-minimum case is a two-line consequence of the marginals bound. The
   other statements need the new argument in `theory.md`. Caveats: the Torino
-  technical report, the Locatelli–Schoen chapter, and Kannan's and Wechsung's
-  theses were not read.
+  technical report and Locatelli–Schoen chapter remain unread. Kannan’s and
+  Wechsung’s theses were subsequently read in the cluster follow-up.
 
 ## 3. Solver practice (question 3)
 

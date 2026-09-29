@@ -12,15 +12,21 @@ and examples with no reduction at all (Caprara, Locatelli and Monaci, COAP
 2016, Theorem 1 and Section 3.1), and FBBT fixed points (Belotti et al.
 2012). Proposition 2 below is a two-line consequence of the marginals-based
 range-reduction bound `(U - L)/lambda` (Ryoo and Sahinidis 1995/1996) and is
-not claimed as new. No counterpart was found for Theorems 4 and 6 or
-Propositions 3, 7 and 8. A [second check](literature-cluster.md) read Wechsung's (2014) and Kannan's
+not claimed as new. No counterpart was found in the sources read for
+Theorems 4 and 6 or Propositions 7 and 8. Proposition 3 is an elementary
+OBBT consequence whose scalar threshold has a known cluster-analysis analogue.
+A [second check](literature-cluster.md) read Wechsung's (2014) and Kannan's
 (2018) theses, both Kannan–Barton papers, Du–Kearfott (1994),
 Bompadre–Mitsos–Chachuat (2013) and Neumaier's and Schichl–Markót–Neumaier's
 exclusion-region work: none defines a limit like `Q`, a map like `Phi` or a
 constant like `r*`, and none analyzes bound-tightening rates; the scalar
 threshold of Proposition 3 coincides with their cluster thresholds. Not
 read: Bompadre–Mitsos (2012, closed access; used through restatements),
-Locatelli–Schoen Section 5.5, the 2008 Caprara–Locatelli report.
+Locatelli–Schoen Section 5.5, the 2008 Caprara–Locatelli report. The
+2026-09-26 inbox review checked the journal originals of Caprara–Locatelli
+(2010), Caprara–Locatelli–Monaci (2016), Wechsung–Schaber–Barton (2014),
+and Kannan–Barton (2017). It confirmed these attribution boundaries; it did
+not establish publication priority for the remaining claims.
 
 ## 1. Setting
 

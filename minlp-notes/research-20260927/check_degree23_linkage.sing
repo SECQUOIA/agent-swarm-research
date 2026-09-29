@@ -1,0 +1,69 @@
+// Exact projective liaison computation over Q. Run through the Python checker.
+LIB "elim.lib";
+option(redSB);
+ring r=0,(x0,x1,x2,x3,x4,x5),dp;
+ideal R=x5,x1^2-x0^2,x2^2-x0^2,x3^2-x0^2,
+        x4*x0,x4*x1,x4*x2,x4*x3;
+ideal C=x1^2-x0^2+x4*x2+2*x5*x0,
+        x2^2-x0^2+x4*x3+3*x5*x1,
+        x3^2-x0^2+x4*x1+5*x5*x2,
+        x4*x0+x5*(x3+x4+x5),
+        x4*(x1+2*x2+3*x3)
+          +x5*(17*x0+2*x1+3*x2+5*x3+7*x4+11*x5);
+poly g=17*x0^2+2*x0*x1+3*x0*x2+5*x0*x3
+       -x1*x3-2*x2*x3-3*x3^2
+       +28*x0*x5+x1*x5+x2*x5-5*x3*x5+4*x5^2;
+ideal SC=std(C);
+if (dim(SC)!=1 || mult(SC)!=32) { print("FAIL CI degree"); quit; }
+if (string(hilb(SC,2))!="1,5,10,10,5,1,0")
+  { print("FAIL CI Hilbert series"); quit; }
+ideal G=quotient(C,R);
+ideal SG=std(G);
+if (dim(SG)!=1 || mult(SG)!=23) { print("FAIL residual degree"); quit; }
+if (string(hilb(SG,2))!="1,5,9,7,1,0")
+  { print("FAIL residual Hilbert series"); quit; }
+ideal RR=std(quotient(C,G));
+if (size(reduce(RR,std(R))) || size(reduce(std(R),RR)))
+  { print("FAIL double colon"); quit; }
+list LR=sat(R,maxideal(1)); ideal SR=std(LR[1]);
+list LG=sat(G,maxideal(1)); ideal SGR=std(LG[1]);
+if (size(reduce(SR,std(R))) || size(reduce(std(R),SR))
+    || size(reduce(SGR,SG)) || size(reduce(SG,SGR)))
+  { print("FAIL homogeneous saturation"); quit; }
+list LX=sat(G,ideal(x5)); ideal SX=std(LX[1]);
+if (size(reduce(SX,SG)) || size(reduce(SG,SX)))
+  { print("FAIL x5 saturation"); quit; }
+if (dim(std(G+ideal(x5)))!=0)
+  { print("FAIL residual point at infinity"); quit; }
+if (size(reduce(ideal(g),SG))) { print("FAIL extra quadric"); quit; }
+ideal J=std(C+ideal(g));
+ideal B=x0,x1,x2,x3,x5;
+ideal GB=std(intersect(G,B));
+if (size(reduce(J,GB)) || size(reduce(GB,J)))
+  { print("FAIL quadratic base scheme"); quit; }
+if (mult(J)!=24 || string(hilb(J,2))!="1,5,9,7,2,0")
+  { print("FAIL quadratic base degree"); quit; }
+print("Projective checks: CI 32, residual 23, quadratic base 24; saturated.");
+
+ring a=0,(a0,a1,a2,a3,t),dp;
+map phi=r,a0,a1,a2,a3,t,1;
+ideal CA=phi(C); ideal SA=std(CA);
+if (vdim(SA)!=23) { print("FAIL affine dimension"); quit; }
+ring al=0,(a0,a1,a2,a3,t),lp;
+ideal GL=fglm(a,SA);
+poly p=35322*t^23+446281*t^22+3018384*t^21+11564409*t^20
+ +18094533*t^19-67552532*t^18-639183589*t^17-1244475851*t^16
+ +5950924931*t^15+15175261186*t^14-76546491920*t^13
+ -166276862068*t^12+693652544605*t^11+1444377655494*t^10
+ -3665631274652*t^9-7553612572726*t^8+12542377095833*t^7
+ +23727902760526*t^6-31667595318852*t^5-42645028190069*t^4
+ +61893646405560*t^3+24095940707001*t^2-61141031978091*t
+ +22501016846117;
+if (size(GL)!=5 || GL[1]/leadcoef(GL[1])!=p/leadcoef(p))
+  { print("FAIL eliminant"); quit; }
+int i;
+for(i=2;i<=5;i++)
+  { if(leadmonom(GL[i])!=var(6-i)) { print("FAIL shape basis"); quit; } }
+print("Affine checks: shape basis with specified degree-23 eliminant.");
+print("DEGREE23_LINKAGE_PASS");
+quit;

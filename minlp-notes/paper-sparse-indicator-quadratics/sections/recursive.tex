@@ -1,0 +1,304 @@
+\section{Direct recursions under diagonal dominance}\label{sec:recursive}
+The main spectral construction solves each requested message directly.
+The alternative algorithms here compose child messages. Their stronger
+numerical assumption gives an invariant box, which makes unrestricted
+support elimination compatible with recursively retained formulas.
+Neither algorithm needs bounded degree or bounded branching. Parametric
+message recursion and support pruning on tree decompositions are established
+\cite{BhathenaTrees,BhathenaStructured}. The particular expected bounds below
+combine the invariant box with penalty-noise count and moment bounds.
+
+\subsection{An invariant box}
+Assume, in addition to symmetry,
+\begin{equation}\label{eq:SDD}
+ 0<d\le Q_{ii}\le D_0,\qquad
+ \sum_{j\ne i}|Q_{ij}|\le\rho Q_{ii},\quad 0\le\rho<1,
+ \qquad |c_i|\le C.
+\end{equation}
+For bit-complexity statements, the supplied bounds $d,D_0,\rho,C$ are
+rational and their encodings are included in the input length $\ell$.
+Strict diagonal dominance makes $Q$ positive definite. If $C>0$, set
+\begin{equation}\label{eq:SDDbox}
+ M=\frac{C}{2d(1-\rho)},\qquad I=[-M,M].
+\end{equation}
+If $C=0$, every unrestricted support optimizer is zero and selecting the
+negative noisy penalties solves the global problem directly; the prescribed
+invariant box is the singleton zero.
+
+\begin{lemma}\label{lem:invariant}
+For every fixed support, every conditional continuous optimizer whose
+boundary coordinates lie in $I$ has all its free coordinates in $I$.
+A boundary-excluded branch with $k$ boundary coordinates satisfies, on $I^k$,
+\[
+ |\partial q/\partial t_s|\le2\rho D_0M,
+ \qquad \|\nabla q\|\le2\sqrt{k}\rho D_0M.
+\]
+\end{lemma}
+\begin{proof}
+If there is a free active coordinate, let $X$ be their maximum absolute
+value. Its stationarity equation gives
+$X\le C/(2d)+\rho\max\{X,M\}$. If $X>M$, it follows that
+$(1-\rho)X\le C/(2d)=(1-\rho)M$, a contradiction. Inactive coordinates
+are zero; deleting unused edges only decreases the off-diagonal row sums.
+Differentiating the exact conditional optimum gives
+$\partial q/\partial t_s=2\sum_{i\text{ internal}}Q_{si}x_i(t)$.
+The invariant box and \eqref{eq:SDD} give the displayed bounds.
+\end{proof}
+
+The assertion holds for every support, even one that never wins. This is
+stronger than a bound on the global optimizer alone. Penalties do not enter
+the stationarity equations, so the box is uniform over all noise outcomes.
+
+\subsection{Bounded-block scalar recursion}
+Suppose every biconnected block of the support graph has at most $b_0$
+vertices, counting a bridge as a two-vertex block. Blocks need not be cliques.
+Root each component's block-cut tree at a vertex. Assign each edge cross
+term to its unique block, and each diagonal, linear, and penalty term to
+its vertex. A block message $H_B(t)$ excludes its parent vertex's own costs.
+Represent a scalar envelope by distinct full quadratic formulas necessary
+on open subintervals of $I$, with one support representative each and an
+ordered list of its formula intervals. Deduplicate identical formulas;
+isolated touches need no separate formula. Continuity preserves values on
+the whole closed interval.
+
+Write $p_u=\lambda_u+\xi_u$. The active vertex message and inactive atom are
+\begin{align}
+ F_u(t)&=Q_{uu}t^2+c_ut+p_u+\sum_{B\text{ child of }u}H_B(t),
+                                                        \label{eq:vertexactive}\\
+ A_u&=F_u(0)-p_u.\label{eq:vertexinactive}
+\end{align}
+For \eqref{eq:vertexactive}, merge child breakpoint lists while maintaining
+the running sum of their current quadratic coefficients; update only the
+children that change at a breakpoint. This avoids repeatedly summing all
+children at a high-degree vertex. Each resulting polynomial is the full
+conditional value of a genuine combination of child supports. For
+\eqref{eq:vertexinactive}, store one best descendant representative at zero.
+Switching the vertex bit to zero removes precisely $p_u$, and descendants
+interact with the rest only through this fixed zero coordinate. Active zero
+remains allowed, as required by the original model.
+
+At a block $B$ with parent vertex $v$, choose for each
+$u\in B\setminus\{v\}$ either a retained active quadratic or the inactive
+atom. Add the block's cross terms, set inactive coordinates to zero, and
+minimize unrestrictedly over the active block coordinates. The resulting
+Schur complement is a full quadratic in $x_v$. Construct and prune the lower
+envelope of these candidates using Lemma~\ref{lem:DS}.
+
+\begin{theorem}[Block recursion]\label{thm:block}
+Under \eqref{eq:SDD}, the preceding recursion constructs exact scalar
+messages and an optimizer for every penalty vector. With independent noise
+densities at most $\phi$, its expected arithmetic, comparison, and
+quadratic-root operation count is
+\begin{equation}\label{eq:blockcontinuous}
+ O_{b_0}\!\left(n^2(2+8n\phi\rho D_0M^2)^{b_0-1}\right).
+\end{equation}
+For rational data and the endpoint grid with $N\ge4n2^n$, its expected
+bit cost is a factor polynomial in the rational input length and $\log N$ times
+\begin{equation}\label{eq:blockgrid}
+ O_{b_0}\!\left(n^2(3+8n\phi\rho D_0M^2)^{b_0-1}\right),
+ \qquad \phi=1/(2\sigma).
+\end{equation}
+A smallest admissible power-of-two grid uses $O(n+\log(n+1))$ random bits
+per coordinate. The continuous statement is an arithmetic-model result,
+not a bit-complexity claim for arbitrary real samples.
+\end{theorem}
+\begin{proof}
+Every vertex polynomial and block candidate is the exact unrestricted
+conditional value of a genuine complete support. Positive definiteness
+makes each eliminated matrix, a Schur complement of a principal matrix,
+positive definite. Thus no candidate can fall below the true conditional
+value anywhere, even outside the intervals that led to its construction.
+Conversely fix a true conditional optimum with parent value in $I$.
+Lemma~\ref{lem:invariant} puts its child boundary values in $I$. Replace
+child descendants by retained representatives attaining their envelopes
+there, using the inactive atom when appropriate. These replacements preserve
+value and feasibility. The enumerated tuple then has the true value at those
+block coordinates, and its unrestricted minimum is no larger. Candidate
+validity gives the reverse inequality. This proves block coverage; the
+vertex step follows directly from the sum in \eqref{eq:vertexactive}.
+Open-interval coverage extends to breakpoints and endpoints by continuity.
+Induction proves all messages. At a root, compare its inactive atom with the
+minima of its active quadratics on $I$; the invariant box contains every
+support optimizer. Stored choices and linear support solves recover an
+optimizer.
+
+Let $K_u$ count retained active formulas at $u$. The candidate count at
+block $B$ is at most
+\begin{equation}\label{eq:blockcandidates}
+ N_B=\prod_{u\in B\setminus\{v\}}(K_u+1).
+\end{equation}
+After subtracting the common vertex terms, its active support branches have
+Lipschitz constant $L=2\rho D_0M$ on length $T=2M$, by
+Lemma~\ref{lem:invariant}. Apply the scalar bounds to the full deterministic
+support family, not to a random pruned family. Under continuous noise,
+distinct descendant supports give different noisy polynomials almost surely:
+at any fixed parameter, their difference contains $\xi_i$ with coefficient
+$1$ or $-1$ for a bit on which the supports differ. Conditioning on the
+remaining coordinates
+makes equality a null event, and there are finitely many pairs. Thus the
+necessary-formula count is bounded by the scalar unique-support interval
+count. Theorem~\ref{thm:scalar} gives
+$\E(K_u+1)\le2+8n\phi\rho D_0M^2$.
+For grid noise, Theorem~\ref{thm:scalargrid} and
+$4m2^m/N\le1$ for every subtree size $m\le n$ give
+$\E(K_u+1)\le3+8n\phi\rho D_0M^2$.
+Sibling vertex subtrees within one block have disjoint noise coordinates,
+so their counts in \eqref{eq:blockcandidates} are independent. Fix all
+representative-selection rules deterministically. This proves the corresponding
+$(b_0-1)$st power bound on $\E N_B$. Ancestor and descendant counts
+need not be independent.
+
+There are $O(n)$ blocks. Each candidate requires bounded-dimensional Schur
+elimination. Every formula has a support representative, hence each list
+has at most $2^n$ entries and all logarithmic sorting factors are $O_{b_0}(n)$.
+Lemma~\ref{lem:DS} bounds each block envelope by $2N_B-1$ pieces.
+All vertex merges process at most $2\sum_B N_B$ such child pieces.
+Their sorting, envelope construction, and support bookkeeping therefore
+fit the coarse deterministic bound
+\[
+ O_{b_0}\!\left(n\left(n+\sum_BN_B\right)\right).
+\]
+Taking expectations proves \eqref{eq:blockcontinuous} and the operation
+part of \eqref{eq:blockgrid}; only first moments and sibling independence
+were used.
+
+For the bit statement, every stored full polynomial is an original
+fixed-support Schur complement with rational coefficients of uniformly
+polynomial bit length, as in Theorem~\ref{thm:main}. The same is true of
+partial vertex sums, since they include original factors only once.
+Breakpoints are roots of differences of two such quadratics; they have
+algebraic degree at most two and polynomial-size defining coefficients.
+Exact sorting, comparison, sign testing, and root operations thus have
+polynomial bit cost. Algebraic breakpoints only locate intervals; stored
+coefficients remain rational, so recursion creates no tower of algebraic
+extensions. Rational support recovery has the same polynomial bit bound.
+\end{proof}
+
+The theorem gives explicit block estimates under stronger hypotheses than
+the spectral theorem. For $b_0=2$, the graph is a forest; Bhathena et al.\
+\cite{BhathenaTrees} already solve the unperturbed problem on arbitrary trees
+in quadratic arithmetic time and memory. The present smoothed bound under
+diagonal dominance is no improvement in that case. The perturbation certificate
+\eqref{eq:certificate}--\eqref{eq:certgap} applies unchanged.
+
+\subsection{Simultaneous arrangements at fixed treewidth}
+Bounded block size can be dropped under the same diagonal-dominance
+assumption. The price is a width-dependent algebraic exponent and a
+higher-moment argument instead of the explicit scalar operation bound.
+
+Root a width-$w$ decomposition after contracting adjacent bags when one
+contains the other. There are at most $n$ nonempty bags: every nonroot bag
+introduces a vertex absent from its parent, and running intersection assigns
+each vertex to a unique highest bag. Every separator has size at most $w$.
+Assign each objective term to its highest containing bag, as in
+\eqref{eq:message}. The containing bags of an edge form a connected subtree,
+so this owner is unique. Each subtree contains all terms involving its
+internal vertices and no terms involving only its parent separator.
+
+For each boundary indicator mode, fix inactive coordinates to zero. Its
+$k\le w$ active coordinates range over $I^k$; active zero is allowed.
+Retain only distinct full support quadratics that uniquely minimize on some
+relative open subset of this box, after merging identical polynomials.
+Store one support representative per formula. For $k=0$, retain one minimum
+constant. This pruning preserves the envelope on the closed box: outside
+pairwise equality sets the minimum formula is unique, and such points are
+dense in the relative interior. A subsequence of their winners is constant
+when approaching any box point, so continuity gives coverage there.
+
+\begin{theorem}[Direct fixed-width recursion]\label{thm:recursive}
+Under \eqref{eq:SDD}, there is an exact recursive algorithm with deterministic
+bit work
+\begin{equation}\label{eq:CADwork}
+ P_w(\ell)(1+n+\mathcal K)^{a(w)},
+\end{equation}
+where $\mathcal K$ is the sum of its final dictionary sizes over all bags
+and boundary modes, $P_w$ is a polynomial, and $a(w)$ is a fixed computable
+constant. Choose an integer $p\ge\max\{1,a(w)\}$ before sampling, and
+let $N$ be the smallest power of two with $N\ge2n(n+1)^p$.
+Under the grid \eqref{eq:noisegrid}, expected bit work is polynomial in
+input length and the numerical parameters $d^{-1},D_0,C,(1-\rho)^{-1}$,
+and $\sigma^{-1}$ at fixed $w$. The algorithm constructs every mode's
+formula envelope on its closed box and a global optimizer, correctly for
+every draw, with $O_w(\log(n+1))$ random bits per coordinate.
+\end{theorem}
+\begin{proof}
+The case $w=0$ is separable, so assume $w\ge1$ and $C>0$.
+Suppose child dictionaries have been constructed, and fix a bag indicator
+mode. The active bag coordinates have dimension at most $w+1$. Lift each
+child's appropriate dictionary to these coordinates, and form all pairwise
+quadratic differences \emph{within each child}, together with box boundaries.
+There are $O_w(1+\sum_j K_j^2)$ polynomials. Remove identically zero
+differences and use a fixed rule for identical restricted polynomials.
+A sign-invariant CAD in this fixed dimension has polynomial size and bit
+cost \cite[Introduction]{ArnonCAD}. On each full-dimensional cell in the
+relative open box, its sample point selects one minimum formula per child.
+The selected tuple is minimizing throughout the cell. Thus a simultaneous
+arrangement discovers the required tuples without a Cartesian product over
+arbitrarily many children. In dimension zero, select a tuple at the one point.
+
+For each discovered tuple, add its full child polynomials and the owned bag
+terms. Set inactive variables to zero and unrestrictedly minimize over the
+active bag coordinates forgotten from the parent separator. Do not impose
+the cell as an optimization constraint. The resulting full quadratic is
+the exact conditional value of a genuine internal support: child interiors
+are disjoint with no cross edges, and elimination is a positive-definite
+Schur complement. In particular this candidate is everywhere at least the
+true message value, even if its optimizer leaves its discovery cell.
+
+For the reverse inequality, fix a parent boundary point and an optimal
+conditional support. Its bag coordinates $y$ lie in the invariant box.
+Every child envelope is covered there, including at switching surfaces.
+Approach $y$ by full-dimensional arrangement cells in the bag's relative
+box. The parent coordinates may vary in this limit as well. There are
+finitely many tuples, so some subsequence uses one fixed tuple. Continuity
+makes its child polynomials attain all child envelope values at $y$.
+At $y$ their sum with the owned terms equals the true conditional optimum.
+Unrestricted elimination of forgotten coordinates yields a candidate no
+larger than that optimum at the fixed parent boundary point. Candidate
+validity proves equality. Dimension zero requires only direct evaluation.
+This argument covers boundary points, lower-dimensional ties, and optima
+that themselves win on no open cell.
+
+Repeat over the $2^{w+1}$ bag modes and group candidates by parent boundary
+mode. A second CAD on each candidate family retains just its uniquely
+winning distinct polynomials on relative full-dimensional cells. The density
+and continuity argument preceding the theorem proves that pruning preserves
+all values on the closed box. At the root, one minimum constant gives the
+optimum; its support linear system recovers a rational optimizer.
+
+Every local CAD, candidate list, and pruning operation has work polynomial
+in $1+\sum_jK_j$ for fixed $w$. Summing over at most $n$ bags and at most
+$2^w$ outgoing modes proves \eqref{eq:CADwork} for a fixed computable
+exponent. Uniform coefficient bit lengths follow from genuine-support Schur
+complements of the original input. Algebraic CAD sample coordinates select
+labels only: they are never substituted into the stored coefficients.
+Thus the recursion retains rational coefficients and the uniform bit bound.
+This also explains why no recursively growing algebraic extension is hidden
+in \eqref{eq:CADwork}.
+
+For the expectation, each final dictionary is bounded by the all-active-label
+count of its full support family. Lemma~\ref{lem:invariant} supplies a
+common Lipschitz bound $L_w=2w\rho D_0M$, an upper bound on
+$2\sqrt{k}\rho D_0M$ for $k\le w$. Theorem~\ref{thm:parammoments}
+gives each dictionary's $p$th moment at most $eJ^p$, where
+\[
+ J=[1+8wML_wn\phi(n+1)^p]^w,\qquad \phi=1/(2\sigma).
+\]
+There are at most $2^wn$ dictionaries. Applying convexity to these counts
+and $1+n$ deterministic unit terms gives
+\[
+ \E(1+n+\mathcal K)^p\le e[(1+n+2^wn)J]^p.
+\]
+Since $p\ge a(w)$, this bounds the expectation of \eqref{eq:CADwork}.
+No independence among message dictionaries is used. The bit count follows
+from the chosen power-of-two grid.
+\end{proof}
+
+This algorithm returns formula envelopes and one representative support at
+each value, rather than every tied label as in Theorem~\ref{thm:main} and
+Corollary~\ref{cor:subdivision}. Its polynomial degree depends on $w$;
+no fixed-parameter bound with width-independent degree, or practical
+performance advantage, is claimed. The standard CAD machinery and exact
+support elimination are classical. The stated expectation follows from
+their combination with the interval-mass moment bound, not from the planar
+first moment alone.

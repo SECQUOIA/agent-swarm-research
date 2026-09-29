@@ -104,16 +104,20 @@ the "Computing (D)" section, Corollary 2 (order polytopes), and Corollary 3
 - **Nothing in TRX covers nonconvex `sigma` for the concave envelope, or nonconcave
   `sigma` for the convex envelope.** The draft's concave-`sigma` special case is exactly TRX Cor. 3.14.
 
-### 3. He and Tawarmalani; He, Liu and Tawarmalani
+### 3. He and Tawarmalani
 
 - He and Tawarmalani, "Tractable relaxations of composite functions", Math. Oper. Res. 47 (2022)
-  1110–1140, Theorem 2 as quoted in He–Liu–Tawarmalani, Prop. 4.4: if the outer function is
+  1110–1140, Theorem 2 as restated in He–Tawarmalani (2024), Proposition 4.4: if the outer function is
   concave-extendable from `vert(Q)` and supermodular over `vert(Q)`, then its concave
   envelope over a product of simplices `Q` is the minimum of staircase-simplex
   interpolations.
-- He, Liu and Tawarmalani, "MIP relaxations in factorable programming" (SIAM J. Optim. 2024,
-  arXiv 2310.08424; local copy `literature/papers/he2024-mip-relaxations-in-factorable-programming`),
-  Sec. 4.2.1 and Remark 5.4, use the same supermodularity hypotheses.
+- He and Tawarmalani, "MIP relaxations in factorable programming" (SIAM J. Optim. 2024,
+  arXiv 2310.07168; local copy `literature/papers/he2024-mip-relaxations-in-factorable-programming`),
+  Section 4.2.1, Proposition 4.4 and Remark 5.4 use the same supermodularity
+  hypotheses. The earlier version of this note conflated this paper with
+  He, Liu and Tawarmalani, *Convexification Techniques for Fractional
+  Programs* (arXiv 2310.08424), a separate work. The correction was checked
+  against both local source texts on 2026-09-27.
 - For `phi(z) = sigma(sum z_j)`, supermodularity together with concave-extendability
   holds essentially only for convex `sigma` on the concave-envelope side. **These
   papers give no envelope of `sigma(a^T x)` for S-shaped or multi-inflection

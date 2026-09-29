@@ -8,7 +8,7 @@ and 8). This check supplements `literature.md`, which did not read these sources
 
 | Source | Access | What was read |
 |---|---|---|
-| Wechsung, Schaber, Barton, JOGO 58 (2014) | Journal PDF blocked (MIT DSpace bot wall). Its text is Chapter 2 of Wechsung's thesis, "Published as [178]" (thesis p. 28, footnote 5) | Thesis Ch. 2 in full (pp. 29–41) |
+| Wechsung, Schaber, Barton, JOGO 58 (2014) | Initially journal PDF blocked; user-supplied journal PDF added and read in the 2026-09-26 inbox review | Initially thesis Ch. 2 (pp. 29–41); journal PDF pp. 8–9 confirms the prefactor thresholds |
 | Wechsung, PhD thesis, MIT 2014 (`yoric.mit.edu/wp-content/uploads/2014/04/WechsungThesis.pdf`) | Open | Ch. 1 §1.1.2, §1.2.2; Ch. 2; App. A; grep of the rest |
 | Kannan & Barton, JOGO 69 (2017), author manuscript (MIT OA) | Open | Full text: §§1–3, Lemmas 1–3 and 8, Theorem 3, Corollary 4, Remarks 5 and 9, Conclusion |
 | Kannan & Barton, JOGO 71 (2018) | Open | Domain-reduction passages, Examples 6 and 16–18, Conclusion |

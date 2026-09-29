@@ -34,6 +34,7 @@ verification. Do not run project-wide verification locally or check CI.
 | 29 | Infinite aggregation: HHC, spectral goodness, indispensable strict rays, finite closed-hull obstruction | `InfiniteAggregation`, 18 modules | [Package](29-infinite-aggregation/README.md); complete, independently reviewed |
 | 30 | Exact aggregation hulls, finite SDP lifts and weak-system hull equality | `InfiniteAggregation`, ten new modules | [Package](30-infinite-aggregation-hull/README.md); complete, independently reviewed |
 | 31 | Finite aggregation accuracy, rational constructions and coefficient-size bounds | `InfiniteAggregation`, fifteen new modules | [Package](31-aggregation-accuracy/README.md); complete, independently reviewed |
+| 33 | Relaxation-minimizer branching in 1D: at most `4N - 5` internal nodes and `8N - 9` nodes (Theorem 1), ratio below 4 | `CompetitiveBranching`, six modules in [`Formal/CompetitiveBranching`](../Formal/CompetitiveBranching) | [Package](33-competitive-branching/README.md); complete, targeted checks passed, [independently reviewed](33-competitive-branching/reviews/statement-review.md) |
 
 The [recommended-topic sequence](../RECOMMENDED-TOPICS-PLAN.md) lists all later
 topics and their order. Topics 00–22 are complete within their listed scopes;

@@ -299,7 +299,7 @@ Details and page references are in [novelty.md](novelty.md).
   activations by Tjandraatmadja et al. (NeurIPS 2020, Appendix A, Theorem 2).
   TRX Theorem 3.3 and Corollary 3.4 give the order-polytope geometry of
   Corollary 2 for supermodular functions; He and Tawarmalani (MOR 2022) and
-  He, Liu and Tawarmalani (SIAM J. Optim. 2024) use the staircase on products
+  He and Tawarmalani (SIAM J. Optim. 2024, arXiv 2310.07168) use the staircase on products
   of simplices, again under supermodularity.
 - ReLU: Anderson, Huchette, Ma, Tjandraatmadja and Vielma, Math. Program. 2020.
 - Convex, concave and S-shaped `sigma` over a box: Carrasco and Muñoz, Math.

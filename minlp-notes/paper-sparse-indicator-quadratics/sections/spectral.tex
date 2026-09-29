@@ -1,0 +1,216 @@
+\section{Exact messages at fixed treewidth}\label{sec:spectral}
+We now provide the restricted additive oracle and its bit bound for
+\eqref{eq:message}. This also fixes the numerical dependence of the main
+result.
+
+\subsection{Uniform conditional bounds}
+For $k=|S|$ and any $A\subseteq I$, principal submatrices inherit
+\eqref{eq:spectral}, and $\|Q_{AS}\|_2\le H$. Thus on $[-R,R]^k$,
+\begin{align}
+ \|x_A(t)\|_2&\le\frac{C\sqrt n+2H\sqrt{k}R}{2\mu}
+                    \le M_k:=\frac{nC+2HkR}{2\mu},\label{eq:boundx}\\
+ \|\nabla q_A(t)\|_2&=\|2Q_{SA}x_A(t)\|_2
+                    \le L_k:=2HM_k.\label{eq:boundL}
+\end{align}
+The second formula follows by differentiating \eqref{eq:branch}.
+The bounds are rational, uniform over all supports, and unchanged when
+some indicator bits are fixed. The term involving $R$ is needed: a
+coordinate bound for the global optimizer alone need not bound conditional
+optimizers with a prescribed boundary.
+
+\subsection{A restricted grid oracle}
+Fix a rational boundary $t$ and an accuracy $\varepsilon>0$. First suppose
+$M_k>0$. Let $B$ be the least positive even integer satisfying
+\begin{equation}\label{eq:gridB}
+ B^2\varepsilon\ge HnM_k^2.
+\end{equation}
+This choice gives $B\le2+M_k\sqrt{Hn/\varepsilon}$.
+The square root is used only for this bound; $B$ is found by integer
+comparisons of the rational inequality. Use the coordinate grid
+\[
+ G_B=\{-M_k+2M_kj/B:0\le j\le B\}.
+\]
+Each vertex $i\in I$ has an inactive state $(z_i,x_i)=(0,0)$ and active
+states $(1,a)$ for $a\in G_B$. Since $B$ is even, active zero is included
+and is distinct from inactive zero. Fixed bits delete incompatible states.
+
+The grid objective is a sum of the unary costs
+\[
+ Q_{ii}x_i^2+(c_i+2(Q_{IS}t)_i)x_i+(\lambda_i+\xi_i)z_i
+\]
+and the edge costs $2Q_{ij}x_ix_j$ for $i<j$ in $I$ with $Q_{ij}\ne0$.
+Restrict every bag
+of the supplied decomposition to $I$; empty bags are harmless. Assign each
+unary and edge cost to one bag containing its variables, exactly once.
+For a bag $u$ and an assignment $s$ of its local states, let $a_u(s)$
+be its assigned cost. Root this tree, write $B_u$ for its bag, and let
+$D_u(s)$ be its optimal subtree cost conditional on $s$. The recurrence is
+\begin{equation}\label{eq:DP}
+ D_u(s)=a_u(s)+\sum_{v\text{ child of }u}
+       \min_{r:\ r|_{B_u\cap B_v}=s|_{B_u\cap B_v}}D_v(r).
+\end{equation}
+The running-intersection property makes different child interiors disjoint
+and ensures that the separator agreement is sufficient for compatibility.
+Induction from the leaf bags shows that \eqref{eq:DP} computes the stated
+conditional minimum of the factors assigned to each subtree. Minimizing at the root gives the
+exact grid optimum. Each child table is first minimized over its states at
+each separator assignment. Reading these projected tables at the parent
+avoids a product of two bag tables. With at most $B+2$ states per vertex,
+the arithmetic operation count is
+\begin{equation}\label{eq:DPcost}
+ O\bigl((b+n^2)(B+2)^{w+1}\bigr).
+\end{equation}
+Back-pointers recover the minimizing support. No balance or degree bound
+on the decomposition is needed.
+
+\begin{lemma}[Certified additive oracle]\label{lem:gridoracle}
+Solve this grid problem under any fixed-bit restrictions. For its support
+$A$, return the exact noisy value $F_A(t)$ from \eqref{eq:noisybranch}.
+This return satisfies \eqref{eq:oracle}.
+\end{lemma}
+\begin{proof}
+Choose a truly optimal support $A^*$ for the restricted continuous problem
+and its unique continuous minimizer. It lies in $[-M_k,M_k]^I$ by
+\eqref{eq:boundx}. Round active coordinates to $G_B$ and keep inactive
+coordinates zero. The error $e$ has
+$\|e\|_2^2\le nM_k^2/B^2$. Stationarity on $A^*$ cancels the linear
+term in this error, so the objective increase is
+\[
+ e^TQ_{II}e\le H\|e\|_2^2\le HnM_k^2/B^2\le\varepsilon.
+\]
+The optimal grid solution is no worse. Reoptimizing continuously on its
+support can only decrease its cost, and preserves the fixed bits. Its exact
+support value is therefore a feasible upper bound within $\varepsilon$ of
+the restricted optimum.
+\end{proof}
+
+If $M_k=0$, every support minimizer is zero. Each free bit then minimizes
+its noisy penalty $\lambda_i+\xi_i$ independently and fixed bits are retained; this gives an exact
+oracle directly. Every restriction in this particular model is feasible
+because an active bit permits zero. The empty-cell convention in
+Lemma~\ref{lem:enumeration} is needed for the more general family $Z$.
+
+\subsection{The algorithm and its expected bit complexity}
+\begin{theorem}[Complete spectral messages]\label{thm:main}
+Fix $w$. Given \eqref{eq:problem}--\eqref{eq:spectral}, a width-$w$
+decomposition with $b$ bags, rational $R\ge0$, and rational $\sigma>0$,
+let each $\xi_i$ independently be uniform on the grid \eqref{eq:noisegrid},
+where $N$ is the smallest power of two at least
+$2n$. There is an algorithm that, for every noise realization, constructs
+a rational quadratic dictionary for every rooted subtree message on its
+box $[-R,R]^{|S|}$ and returns a global optimizer of
+\eqref{eq:problem}. Each dictionary includes every support optimal anywhere
+on its box. The algorithm uses $n\log_2N=O(n\log(n+1))$ random bits.
+
+More explicitly, put
+\begin{equation}\label{eq:mainparameters}
+ K=w+1,\quad M=\frac{nC+2HKR}{2\mu},\quad L=2HM,\quad
+ \varepsilon=\frac{\sigma}{6n},\quad
+ J_*=(1+12nKRL/\sigma)^K.
+\end{equation}
+Let $B$ be the least positive even integer satisfying \eqref{eq:gridB}
+with $M$ in place of $M_k$ (take $B=2$
+if $M=0$). If $\ell$ is the total binary input length, a polynomial $P_w$
+independent of the numerical values bounds the expected number of bit
+operations by
+\begin{equation}\label{eq:explicitwork}
+ P_w(\ell)\,bJ_*\,(B+2)^{w+1},\qquad
+ B+2\le4+Mn\sqrt{6H/\sigma}.
+\end{equation}
+In particular, this is polynomial in the input length and the numerical
+quantities $C,H,\mu^{-1},R,\sigma^{-1}$ at fixed $w$.
+\end{theorem}
+\begin{proof}
+Sample the noise once. For each requested message, use
+Theorem~\ref{thm:dictionary} with $\phi=1/(2\sigma)$, $\tau=1/N$,
+and the common bounds $M,L$. They dominate \eqref{eq:boundx}--\eqref{eq:boundL}
+for every separator. Use the midpoint net described in
+\eqref{eq:netsize}, or one point for a singleton box or $L=0$. Its
+cardinality is at most $J_*$. At each point the restricted oracle is
+Lemma~\ref{lem:gridoracle}. Form the union of its outputs and construct
+the noisy branch $F_A$ in \eqref{eq:noisybranch} for each retained support.
+Equations
+\eqref{eq:dictionaryexact} and \eqref{eq:envelope} prove correctness for
+every sample. Minimizing the noisy constants $F_A$ in the empty-boundary
+dictionary gives a global minimizing support;
+\eqref{eq:optimizer} gives its rational optimizer. Affine minimizer maps may
+also be stored with every branch.
+
+We detail the bit bound. Every input rational has bit length at most $\ell$,
+and $n,b\le O(\ell)$. The quantities $M,L,\varepsilon$ have polynomial
+bit length. So do $\log B$, the coordinate subdivision count's logarithm,
+the net coordinates, and the sampled penalties. This follows directly
+from their formulas: products, reciprocals of positive rationals, and
+integer ceilings increase encoding length polynomially. The choice of $B$
+uses binary search with rational comparisons and polynomially many bit
+operations.
+
+Grid unary and edge costs are rational of polynomial bit length. A finite
+entry in \eqref{eq:DP} is the value of an assignment to a subset of the
+original factors, each occurring once. There are only $O(n^2)$ such factors.
+A common denominator formed from their denominators has polynomial bit
+length; summing any subset also has polynomial bit length. Taking minima
+selects values and introduces no new denominators. Thus all additions and
+comparisons in the grid dynamic program have uniformly polynomial bit
+cost, including during rare runs with large enumerations.
+
+For exact branch construction, clear denominators in a principal system
+$Q_{AA}u=d$. The resulting integer matrix and right-hand sides have
+polynomial bit length. Each determinant is a sum of at most $n!$ products
+of $n$ such integers, so its bit length is polynomial in $\ell$. Since
+$Q_{AA}$ is nonsingular, rational elimination (or determinant formulas)
+gives polynomial-size coefficients in \eqref{eq:optimizer} and
+\eqref{eq:branch}. Adding the rational noise penalties gives the same
+bit bound for $F_A$. These systems can be solved in polynomial bit time.
+No numerical conditioning estimate is being used as a substitute for exact
+arithmetic.
+
+The expected total number of oracle calls is at most
+$bJ_*(1+en)$ by \eqref{eq:dictionarysize}. The calls have the deterministic
+cost \eqref{eq:DPcost} times a polynomial bit factor. Creating partial
+assignments, heap operations, deduplication, exact support evaluations,
+and branch construction add a polynomial factor per output or call, as
+established after Theorem~\ref{thm:dictionary}. All these factors are
+absorbed by $P_w(\ell)$. Linearity of expectation sums the work of the
+messages even though their interiors overlap and use the same noise.
+Finally \eqref{eq:gridB} and \eqref{eq:mainparameters} give the displayed
+bound on $B+2$ and hence \eqref{eq:explicitwork}.
+\end{proof}
+
+At a rational boundary point, evaluating the retained noisy branches $F_A$ and choosing
+the smallest returns both the exact value and a conditional optimizer.
+The theorem gives the message on the entire prescribed box, not only at
+the net points. The net is used to find the dictionary, not to interpolate
+its values. It gives no dictionary on an unbounded boundary domain.
+Exceptional noise samples may require exponentially many outputs; both
+termination and exactness still hold for them. The expectation concerns
+running time, not correctness.
+
+\subsection{An additive certificate for the original objective}
+Let $v_0$ denote the optimum without noise. If $(\widehat x,\widehat z)$
+is the exact perturbed optimizer, define
+\begin{equation}\label{eq:certificate}
+ \mathrm{LB}=v_\xi-\sum_i\max\{\xi_i,0\},\qquad
+ \mathrm{UB}=v_\xi-\xi^T\widehat z.
+\end{equation}
+For every feasible $(x,z)$, its perturbed value is at least $v_\xi$ and
+$\xi^Tz\le\sum_i\max\{\xi_i,0\}$. The unperturbed value is therefore at
+least $\mathrm{LB}$. Evaluating at $(\widehat x,\widehat z)$ proves
+\begin{equation}\label{eq:certgap}
+ \mathrm{LB}\le v_0\le\mathrm{UB},\qquad
+ \mathrm{UB}-\mathrm{LB}
+ =\sum_i\bigl(\max\{\xi_i,0\}-\xi_i\widehat z_i\bigr)
+ \le\sum_i|\xi_i|\le n\sigma.
+\end{equation}
+Choosing $\sigma=\eta/n$ gives an always-valid additive gap at most $\eta$
+with polynomial expected work in $1/\eta$ under fixed structural and
+numerical bounds. This standard perturbation certificate is not a relative
+approximation guarantee. Exact optimization of the original rational
+instance does not follow by taking an unspecified infinitesimal noise.
+
+The exact-rational reference \path{checks/spectral_reference.py} uses the valid
+message-specific bounds $M_k,L_k$ and mesh in place of their common upper
+bounds. Independent finite checks include support reoptimization and tie-only labels.
+This is a constructive complexity result: repeated grid solves and the powers
+in \eqref{eq:explicitwork} can be large. Neither a practical solver speedup
+nor applicability to additional nonlinear constraints follows from the theorem.

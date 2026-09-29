@@ -819,3 +819,9 @@ import Formal.MatroidSpectral.TrialLabels
 import Formal.MatroidSpectral.UniformRepresentation
 import Formal.MatroidSpectral.ExecutionCostBounds
 import Formal.MatroidSpectral.ExecutionTrialLabels
+import Formal.CompetitiveBranching.Model
+import Formal.CompetitiveBranching.Lemmas
+import Formal.CompetitiveBranching.Counting
+import Formal.CompetitiveBranching.Theorem1
+import Formal.CompetitiveBranching.Competitive
+import Formal.CompetitiveBranching.Pruning
