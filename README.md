@@ -1,11 +1,13 @@
 # Research output of AI agent swarms
 
-This repository holds the research corpus described in the paper "AI Agent
-Swarms as Researchers: Progress, Challenges, and Open Questions" by Sergey
-Gusev and David E. Bernal Neira. The paper's research inventory (appendix) lists
-the potential papers in the corpus, with IDs such as M1 or Q12. The
-[inventory below](#research-inventory) repeats that list and links to the
-drafts.
+This repository holds the research corpus described in the paper
+[AI Agent Swarms as Researchers: Progress, Challenges, and Open
+Questions](https://arxiv.org/abs/2609.35719) by Sergey Gusev and David E.
+Bernal Neira. To cite this work, see [Citation](#citation). The paper's
+research inventory (Appendix C) lists the potential papers and proposed
+experimental programs in the corpus, with IDs such as M1 or Q12. The
+[inventory below](#research-inventory) is the current version of that list and
+links to the drafts.
 
 ## What this is
 
@@ -17,33 +19,35 @@ the authors; their part in producing it was limited to the process and
 editorial instructions described in the paper. The drafts are not final
 papers: the authors intend to take them further.
 
-The paper describes this repository at tag `paper-v1`: a snapshot of the
-agents' output as of 25 September 2026. The runs continue, so the source
-repositories have moved on since, and later versions of this repository may
-add topics and results, some with the authors' scientific input.
-
-The compiled PDF of the power-flow draft (M10), which the source repository
-does not track, was built from the sources here and added.
+The paper describes this repository at tag `paper-v1` (commit `84c6be7`): a
+snapshot of the agents' output as of 25 September 2026. The runs continue, so
+the agents' notes repositories have moved on since, and later versions of this
+repository may add topics and results, some with the authors' scientific input.
 
 ## Folders
 
-Each folder is a copy of the committed content of the notes repository for one research area.
-
-| Folder | Field | Source commit |
-|---|---|---|
-| `minlp-notes` | Mixed-integer nonlinear programming | `3cd905d5` |
-| `qipm-notes` | Quantum interior-point methods | `5c152d2` |
-| `thermo-notes` | Molecular thermodynamics | `3485e1d` |
-| `transport-notes` | Transport theory | `de45280` |
-| `aggregation-kinetics-notes` | Aggregation kinetics | `c69aeed` |
-| `catalysis-notes` | Heterogeneous catalysis (proposed experimental programs) | `57e3202` |
+| Folder | Field |
+|---|---|
+| `minlp-notes` | Mixed-integer nonlinear programming |
+| `qipm-notes` | Quantum interior-point methods |
+| `thermo-notes` | Molecular thermodynamics |
+| `transport-notes` | Transport theory |
+| `aggregation-kinetics-notes` | Aggregation kinetics |
+| `catalysis-notes` | Heterogeneous catalysis (proposed experimental programs) |
 
 ## Research inventory
 
 The 45 potential papers and 8 proposed experimental programs in the corpus,
-as listed in the paper's appendix, with the same IDs and status values. The
-paper also states the claimed contribution of each. Items marked *Notes only* have no draft; their results
-are in the notes of the folder for that area.
+with the IDs and status values used in the paper. The paper also states the
+claimed contribution of each. Items marked *Notes only* have no draft; their
+results are in the notes of the folder for that area.
+
+This inventory reflects the current state of the repository. The paper's
+inventory (Appendix C) describes the repository at tag `paper-v1`, and its
+links point to that commit. The two lists may differ as the runs add topics,
+drafts, and Lean proofs. For the inventory as the paper describes it, see the
+paper or
+[this README at `paper-v1`](https://github.com/SECQUOIA/agent-swarm-research/blob/paper-v1/README.md#research-inventory).
 
 ### Mixed-integer nonlinear programming
 
@@ -151,3 +155,27 @@ are in the notes of the folder for that area.
   modelling assumptions, or require a framework that current formal libraries
   do not provide, such as complexity classes, quantum query models, or limit
   theorems for stochastic processes.
+
+## Citation
+
+If you use this repository or refer to its contents, please cite the paper:
+
+> Sergey Gusev and David E. Bernal Neira. AI Agent Swarms as Researchers:
+> Progress, Challenges, and Open Questions. arXiv:2609.35719, 2026.
+> https://arxiv.org/abs/2609.35719
+
+```bibtex
+@misc{gusev2026swarms,
+  title         = {{AI} Agent Swarms as Researchers: Progress, Challenges, and Open Questions},
+  author        = {Gusev, Sergey and Bernal Neira, David E.},
+  year          = {2026},
+  eprint        = {2609.35719},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CY},
+  url           = {https://arxiv.org/abs/2609.35719}
+}
+```
+
+## License
+
+This repository is released under the [MIT License](LICENSE).
