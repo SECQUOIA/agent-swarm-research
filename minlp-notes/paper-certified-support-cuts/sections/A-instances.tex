@@ -1,0 +1,140 @@
+\section{Work limits, modes, test sets and detailed results}\label{app:software}\label{app:instances}
+
+\paragraph{Separator limits.}
+Table~\ref{tab:limits} lists the limits of the two implementations, and
+Table~\ref{tab:modes} the modes of campaigns 3 to~5. The default limits of
+the second implementation are those of modes \code{all} and \code{auto}; the
+other modes raise the limits listed in Table~\ref{tab:modes}, including the
+number of root callbacks, and set the allowance to $\min\{s,\,0.5\,T\}$ with
+the listed $s$.
+
+\begin{table}[ht]
+\centering\footnotesize
+\caption{Work limits of the separators. ``Allowance'' is the cumulative
+separator time per run for a total budget $T$; ``sides'' are signed row sides
+(an equality has two).}\label{tab:limits}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Setting & Campaign 1 (lifted cuts) & Campaigns 2--5 (original variables)\\
+\midrule
+Blocks & expressions of 1--2 variables, stars & sides with 1--4 variables\\
+       & with 2--4 leaves; at most 64 blocks & at most 32 blocks, largest first\\
+Sides per block & --- & 6 nonlinear, 16 affine\\
+Nonpolynomial sides & one variable & one variable\\
+Polynomial degree in discovery & 8 (one variable), 4 (pairs) & total degree 8\\
+Root callbacks & 5 & 3\\
+Cuts (total / per callback) & 24 / 6 & 12 / 4\\
+Support calls per run & not capped & 24\\
+Directions per block and callback & LP exchange, 3 rounds & one per source side, then up to 3 LPs\\
+Samples & 65 / $13\times13$ / 128 Halton points & 33 / $7\times7$ / $3^d$ grid points,\\
+        & plus corners & plus exact vertices and centroid\\
+LP time limit & 0.1\,s & 0.05\,s (HiGHS, one thread)\\
+Exact quadratic oracle & polytope ($d=2$); star & polytope ($\le2{,}000$ subsets); star\\
+Star blocks & --- & campaign 5: center, $\le16$ leaves\\
+Subdivision & 128 cells, depth 16 & 128 cells, depth 16\\
+Bernstein & 1--2 variables, $\le1{,}024$ coefficients & same, degree $\le32$ per variable\\
+Ball arithmetic & 128 bits & 128 bits\\
+Allowance & $\min\{2\,\mathrm s,0.15\,T\}$ & $\min\{1\,\mathrm s,0.05\,T\}$\\
+Violation threshold (all / auto) & $10^{-5}$ / $5\cdot10^{-4}$ & $10^{-5}$ / $5\cdot10^{-4}$\\
+Cut flags & global, removable, forced & global, removable, forced\\
+Relative gap limit & $10^{-4}$ & $10^{-4}$\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[ht]
+\centering\scriptsize\setlength{\tabcolsep}{3pt}
+\caption{Modes of campaigns 3 to 5. ``First directions'' are the directions
+tried before the LP search: remainder ($a=0$), whole row ($a$ equal to the
+side's coefficients of the block variables) or block (all sides of the block
+summed), see Section~\ref{sec:blocks}. $n$ is the number of copies of a
+constructed instance and $k$ the number of leaves per star; ``star'' blocks
+have up to 16 leaves. In the text, base limits are those of
+\code{all-diag-mech} and wide limits those of \code{frozen-wide}.}\label{tab:modes}
+\begin{tabular}{@{}lllrrrrrr@{}}
+\toprule
+Mode & First directions & Blocks & Max & Cuts & Per & Call- & Support & $s$\\
+ & & & blocks & & callback & backs & calls & \\
+\midrule
+\code{all}, \code{auto} & remainder & $\le4$ var. & 32 & 12 & 4 & 3 & 24 & 1\,s\\
+\code{all-diag} & remainder & $\le4$ & 128 & 200 & 50 & 10 & 500 & 30\,s\\
+\code{all-diag-rowdir} & whole row & $\le4$ & 128 & 200 & 50 & 10 & 500 & 30\,s\\
+\code{all-diag-mech} & remainder & $\le4$ & $n$ & $4n$ & $n$ & 10 & $20n$ & 60\,s\\
+whole row, base (Part 3P) & whole row & $\le4$ & $n$ & $4n$ & $n$ & 10 & $20n$ & 60\,s\\
+\code{frozen-wide} & remainder & $\le4$ & $n$ & $16n$ & $4n$ & 10 & $40n$ & 60\,s\\
+\code{rowdir-wide} & whole row & $\le4$ & $n$ & $16n$ & $4n$ & 10 & $40n$ & 60\,s\\
+\code{frozen-}, \code{rowdir-cap32} & remainder; whole row & $\le4$ & $n$ & $32n$ & $8n$ & 40 & $80n$ & 150\,s\\
+\code{frozen-}, \code{rowdir-cap64} & remainder; whole row & $\le4$ & $n$ & $64n$ & $16n$ & 40 & $160n$ & 150\,s\\
+\code{rowdir-star4} & whole row & $\le4$ & $nk$ & $4nk$ & $nk$ & 10 & $10nk$ & 60\,s\\
+\code{agg-star4} & block, whole row & $\le4$ & $nk$ & $4nk$ & $nk$ & 10 & $10nk$ & 60\,s\\
+\code{agg-star} & block, whole row & star, then $\le4$ & $nk$ & $4nk$ & $nk$ & 10 & $10nk$ & 60\,s\\
+\midrule
+\multicolumn{9}{@{}l}{SCIP parameter modes (no certified cuts):}\\
+SCIP-nolocks (\code{baseline-novarlocks}) & \multicolumn{8}{l}{\code{constraints/nonlinear/checkvarlocks = d} (implicit discreteness off)}\\
+SCIP-extra (\code{baseline-extra}) & \multicolumn{8}{l}{\code{separating/eccuts/freq = 0}, \code{separating/interminor/freq = 0},}\\
+ & \multicolumn{8}{l}{\code{nlhdlr/quadratic/useintersectioncuts}, \code{separating/rlt/detecthidden},}\\
+ & \multicolumn{8}{l}{\code{separating/rlt/hiddenrlt} set to true}\\
+no aggregation (\code{*-noaggr}) & \multicolumn{8}{l}{\code{presolving/donotaggr} and \code{presolving/donotmultaggr} set to true}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Selection.}
+The models come from a copy of MINLPLib \citep{BussieckDrudMeeraus2003,Vigerske2026MINLPLib}
+in OSiL format downloaded on 2026-09-21 (1{,}632 files), with the library
+metadata file of 2026-09-12; both are archived with their hashes. Campaign~1
+drew its 24 models from the 279 models with at most 80 variables, 120
+constraints and 150{,}000 bytes of OSiL, a quadratic or general nonlinear
+constraint and at least two nonfixed bounded variables, after excluding 123
+names, in the order of the SHA-256 hash of a fixed prefix and the name.
+Campaigns~2 and~3 use the 422 models with at most 120 variables, 180
+constraints and 250{,}000 bytes of OSiL, at least two nonfixed bounded
+variables and at least one nonlinear function, after excluding the 160 names
+used or excluded by the first campaign and 7 models whose expressions the
+importer does not support (\code{tanh}, \code{log10}, \code{signpower},
+\code{gammaFn}, \code{erf}); the strata contain 85, 208 and 129 models.
+Campaign~2 took the first ten per stratum in the order of
+SHA-256(\code{convexification-holdout-v2:} + name). The structure-selected
+sample of campaign~3 ranks the qualifying models of the remaining pool by
+SHA-256(\code{convexification-structure-v3:} + name) and takes the first 30.
+\input{sections/A-instances-D}
+
+\begin{table}[ht]
+\centering\footnotesize\setlength{\tabcolsep}{3pt}
+\caption{Separator funnel, summed over the runs of a part and mode: support
+calls, failed certifications, certified rows below the violation threshold,
+rows rejected by the stored-row check, and cuts added; then the separator
+callback time and its main parts (discovery; direction search, that is,
+sampling and direction LPs; certification). No row was ever discarded by safe rounding.
+In the constructed families the separator runs only at the root, so full and root runs
+have the same funnel; the times shown are those of the root runs. In Part~5S,
+1{,}469 (blocks of at most four variables) and 611 (stars) of the added cuts
+repeat a row already added in the same run, because overlapping blocks of a
+star share a source row. The three timed parts
+do not add up to the total, which also contains untimed work.}\label{tab:funnel}
+\begin{tabular}{@{}llrrrrrrrrr@{}}
+\toprule
+& & Support & Failed & Below & Stored-row & Cuts & \multicolumn{4}{c}{Callback time (s)}\\
+\cmidrule(l){8-11}
+Part & Mode & calls & cert. & thresh. & rejected & added & total & discovery & directions & certif.\\
+\midrule
+3A full & \code{all} & 684 & 57 & 461 & 15 & 151 & 19.1 & 6.3 & 2.5 & 8.6\\
+3B full & \code{all} & 884 & 14 & 646 & 45 & 179 & 32.9 & 4.4 & 3.9 & 23.0\\
+3B root & \code{all-diag} & 1{,}618 & 19 & 1{,}039 & 202 & 358 & 45.1 & 2.3 & 9.6 & 30.4\\
+4B2 root & \code{all-diag}, no aggr. & 1{,}572 & 17 & 1{,}058 & 47 & 450 & 38.6 & 2.1 & 8.6 & 25.7\\
+4D root & \code{all} & 176 & 2 & 149 & 11 & 14 & 18.4 & 15.7 & 0.4 & 1.8\\
+4D root & \code{all-diag} & 6{,}352 & 313 & 5{,}042 & 106 & 891 & 188.4 & 53.6 & 22.8 & 69.8\\
+\midrule
+3C & remainder, base & 3{,}462 & 0 & 391 & 71 & 3{,}000 & 73.6 & 10.6 & 9.6 & 32.0\\
+4C2 & remainder, wide & 13{,}502 & 0 & 1{,}189 & 313 & 12{,}000 & 240.4 & 10.3 & 31.1 & 121.3\\
+4C3 & whole row, wide & 15{,}534 & 0 & 3{,}181 & 353 & 12{,}000 & 269.2 & 10.3 & 32.6 & 140.1\\
+4C4 & remainder, wide & 14{,}186 & 0 & 1{,}939 & 247 & 12{,}000 & 261.9 & 10.2 & 36.5 & 129.6\\
+4C4 & whole row, wide & 15{,}204 & 0 & 2{,}989 & 215 & 12{,}000 & 274.8 & 10.7 & 36.6 & 137.7\\
+5C-b & whole row, cap $64n$ & 25{,}340 & 0 & 5{,}282 & 286 & 19{,}772 & 459.7 & 10.7 & 68.2 & 233.6\\
+5S & block, $\le4$ var. & 10{,}576 & 0 & 2{,}496 & 65 & 8{,}015 & 1{,}700.3 & 32.6 & 27.1 & 1{,}557.1\\
+5S & block, stars & 15{,}187 & 0 & 6{,}697 & 48 & 8{,}442 & 1{,}696.6 & 32.3 & 26.8 & 1{,}496.6\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\input{sections/B-tables}

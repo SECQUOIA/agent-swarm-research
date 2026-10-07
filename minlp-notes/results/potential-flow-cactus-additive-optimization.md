@@ -161,7 +161,7 @@ Vuffray, Misra, and Chertkov's [robust monotonicity paper](https://arxiv.org/abs
 
 On 2026-09-05, the deterministic 20-instance run used two cycle blocks, a bridge, an attached off-path cycle, four different objective-terminal pairs, arbitrary balanced shifts of interval loads, and rational resistances. It checked 32 feasible faces, including two nondegenerate one-dimensional faces. The largest amount by which a full-space numerical objective exceeded the face search was `1.09e-7`; this is within the numerical comparison tolerance `2e-5`. Exact rational balance/bounds checks, original/core objective agreement after interval disaggregation, and the Lipschitz bound checks passed. The maximum recorded physical residual was `1.21e-12`.
 
-Run with `/home/sgusev/miniconda3/envs/minlp-notes/bin/python code/potential_flow_mpd/cactus_nomination_faces.py`. These small numerical checks support the combinatorial reduction and implementation; the theorem rests on the independent analytical reviews and the cited real-algebraic algorithms.
+Run with `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python code/potential_flow_mpd/cactus_nomination_faces.py`. These small numerical checks support the combinatorial reduction and implementation; the theorem rests on the independent analytical reviews and the cited real-algebraic algorithms.
 
 ## Significance and literature scope
 

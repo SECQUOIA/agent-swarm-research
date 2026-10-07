@@ -1,0 +1,1978 @@
+\section{Proofs for core noise and recourse}
+\label{app:recourse}
+
+This appendix proves every result of Section~\ref{sec:recourse}. The
+first six subsections build the common machinery: external tools,
+finite-law transfer, the exact fallback, certified cells, the all-scale
+count, and the projected-growth tail. The remaining subsections prove
+the theorems in the order of Section~\ref{sec:recourse}.
+
+\subsection{Conventions and external tools}
+\label{app:recourse-tools}
+
+Norms are Euclidean unless marked otherwise; $\norm\cdot_\infty$ is
+the maximum norm. $\operatorname{Leb}$ is Lebesgue measure,
+$\operatorname{Leb}^*$ its outer measure, $B(c,r)$ the open Euclidean
+ball, and $v_k\le2^k$ the volume of the unit ball in $\R^k$. For a
+rational number, vector, or matrix $r$, $\langle r\rangle$ is its bit
+length (Definition~\ref{def:models-rational}). For a
+core-noise instance (Definition~\ref{def:recourse-instance}) we write
+$x=(v,z)$, $\kappa_+=\kappa+\sigma>0$, and
+\[
+ X_C=\{x\in X:\ v\in C\}
+\]
+for a set $C\subseteq\R^k$. Every instance has a description of $X$ by
+at most $L$ explicit rational inequalities: the $2n$ box inequalities in
+type~(B), and the rows of $Ex\le e$ together with the supplied box in
+type~(P). A bound is \emph{base-computable} if it is computed from the
+instance before sampling, in time polynomial in $L$. The letter $b$
+denotes the largest bit length of a sampled coefficient. A point of
+the grid $G_M$ is $\sigma(2j-M+1)/(M-1)$, so its numerator and
+denominator are those of $\sigma$ multiplied by integers of absolute
+value less than $M$; since $M$ is a power of two, $b\le L+2\log_2M$. We
+use the following tools.
+
+\paragraph{Convex values.}
+Lemma~\ref{lem:convex-value} supplies the convex value interface. We
+use it in this form. Let $Q$ be a polyhedron given by explicit rational
+inequalities and contained in a supplied rational box, and let $\phi$ be
+an explicitly encoded rational polynomial of degree at most $D$ that is
+convex on $Q$. Given a rational $\eta>0$, one decides whether $Q$ is
+empty and, if not, computes a rational $x\in Q$ and a rational $\ell$
+with
+\begin{equation}
+ \ell\le\min_Q\phi\le\phi(x)\le\ell+\eta,
+ \label{eq:recourse-cv}
+\end{equation}
+in bit work $P_D(L_Q+\langle\eta\rangle)$, where $L_Q$ is the bit length
+of $Q$, its box, and $\phi$. The tolerance enters through its bit
+length $\langle\eta\rangle$, not only through $\log(1/\eta)$: a rational
+close to $1$ can have long numerator and denominator. Every tolerance
+used below has bit length polynomial in $L$ and the query precision.
+Rational linear programs, including
+feasibility problems, are solved exactly in polynomial time
+\citep[Theorem~(6.4.12) and Section~6.5]{GroetschelLovaszSchrijver1988},
+and quadratic programs on nonempty bounded rational polytopes with
+rational data and a positive semidefinite objective Hessian have
+rational optimal solutions computable in polynomial time
+\citep{KozlovTarasovKhachiyan1980}.
+
+\paragraph{Block quantifier elimination.}
+We use formulas
+\begin{equation}
+ \Phi(t)=Q_1x^{(1)}\,Q_2x^{(2)}\ \Psi\bigl(t,x^{(1)},x^{(2)}\bigr),
+ \qquad Q_1,Q_2\in\{\exists,\forall\},
+ \label{eq:recourse-two-block}
+\end{equation}
+with one free variable $t$, blocks of $n_1$ and $n_2$ real variables,
+and a Boolean combination $\Psi$ of at most $s$ atoms $g\vartriangleright0$,
+$\vartriangleright\in\{<,=,>\}$, whose polynomials have degree at most
+$d\ge2$. Put
+\begin{equation}
+ H(s,d,n_1,n_2)=(sd)^{c_{\rm QE}(n_1+1)(n_2+1)}.
+ \label{eq:recourse-H}
+\end{equation}
+
+\begin{theorem}[Block quantifier elimination]
+\label{thm:recourse-qe}
+There are an algorithm and an explicit absolute constant $c_{\rm QE}$
+with the following properties, where $H$ is given by
+\eqref{eq:recourse-H}.
+\begin{enumerate}[label=(\alph*)]
+\item For arbitrary real coefficients, $\Phi(t)$ is equivalent to a
+quantifier-free formula in $t$ that is a Boolean combination of at most
+$H$ atoms $h(t)\vartriangleright0$ with $\deg h\le H$.
+\item If all coefficients are integers of bit length at most
+$\tau\ge2$, the algorithm computes such a formula, with integer
+coefficients of bit length at most $(\tau+1)H$, in at most
+$\tau^{c_{\rm QE}}H$ bit operations.
+\end{enumerate}
+\end{theorem}
+
+This is the case of one free variable and two quantifier blocks of
+Renegar's theorem \citep[Theorem~1.1]{Renegar1992QE}, whose bounds have
+the form $(sd)^{2^{O(\omega)}\ell\prod_jn_j}$ for $\omega$ blocks and
+$\ell$ free variables, with bit cost of order
+$\tau\log\tau\log\log\tau$ times the same factor and output coefficient
+length linear in $\tau$ times that factor; see also
+\citet[Chapter~14]{BasuPollackRoy2006}. Part~(a) uses the statement of
+that theorem in the real-number model, whose coefficients are arbitrary
+reals; it is applied below with noise values and thresholds as
+coefficients. Part~(b) uses the separate statement for integer
+coefficients in the bit model, and it is applied only after denominators
+are cleared. Two features matter below.
+The format factor $H$ does not depend on the sizes of the coefficients,
+and the coefficient length $\tau$ enters the bit cost and output length
+only polynomially, with an absolute exponent. A general
+cylindrical-decomposition bound, doubly exponential in the number of
+variables, would not suffice.
+
+\begin{theorem}[Univariate real algebraic numbers]
+\label{thm:recourse-univariate}
+There is an absolute constant $c_U$ with the following property. Given
+nonzero integer polynomials $P,P_1,\ldots,P_N$ in one variable, of
+degree at most $\delta$ and coefficient bit length at most $\tau$, and
+an integer $q\ge0$, one computes the squarefree part of $P$, disjoint
+rational isolating intervals for all real roots of $P$, the sign of
+every $P_j$ at every such root, and refinements of all isolating
+intervals to width at most $2^{-q}$, in $(N+\delta+\tau+q)^{c_U}$ bit
+operations \citep[Chapters~8 and~10]{BasuPollackRoy2006}.
+\end{theorem}
+
+\begin{theorem}[Lattice reduction]
+\label{thm:recourse-lll}
+Given a basis of a lattice $\mathcal L\subseteq\Z^{s+1}$ of rank $s$
+with entries of bit length at most $\tau$, the LLL algorithm with
+parameter $3/4$ computes, in time polynomial in $s+\tau$, a basis whose
+first vector $\mathbf b_1$ satisfies
+$\norm{\mathbf b_1}\le2^{(s-1)/2}\lambda_1(\mathcal L)$, where
+$\lambda_1$ is the length of a shortest nonzero lattice vector
+\citep{LenstraLenstraLovasz1982}.
+\end{theorem}
+
+\paragraph{Classical analytic facts.}
+We use: (F1) a finite convex function on $\R^k$ is differentiable almost
+everywhere, and it is differentiable at every point where its
+subdifferential is a singleton; a finite concave function has a
+nonempty superdifferential at every interior point of its domain; and
+$y\in\partial\phi(c)$ if and only if $\phi(c)+\phi^*(y)=y^{\mathsf T}c$
+\citep[Theorems~23.4, 23.5, 25.1, 25.5]{Rockafellar1970}. (F2) If
+$S\subseteq\R^k$ and $\varphi:S\to\R^k$ has Lipschitz constant $\ell$,
+then $\operatorname{Leb}^*(\varphi(S))\le\ell^k\operatorname{Leb}^*(S)$,
+since $k$-dimensional Hausdorff measure equals Lebesgue outer measure on
+$\R^k$ and does not increase by more than the factor $\ell^k$ under an
+$\ell$-Lipschitz map; the covering proof applies to maps defined only
+on $S$ \citep[Section~2.4]{EvansGariepy2015}. (F3) If $\phi$ is
+convex and differentiable on $\R^k$ with $\kappa$-Lipschitz gradient,
+then $\phi(y+u)\le\phi(y)+\nabla\phi(y)^{\mathsf T}u+\frac\kappa2\norm u^2$,
+and, if $\inf\phi>-\infty$,
+$\phi(y)-\inf\phi\ge\norm{\nabla\phi(y)}^2/(2\kappa)$; the second
+inequality follows from the first with $u=-\nabla\phi(y)/\kappa$.
+
+\subsection{Finite laws and one-dimensional sections}
+\label{app:recourse-sections}
+
+\begin{lemma}[Section counts]
+\label{lem:recourse-sections}
+Let $\Phi(t)$ be a formula \eqref{eq:recourse-two-block} with arbitrary
+real coefficients, and let $H$ be as in \eqref{eq:recourse-H}. Then
+$\{t\in\R:\Phi(t)\}$ and its complement are each a union of at most
+$2H^2+1$ intervals, some of which may be single points.
+\end{lemma}
+
+\begin{proof}
+By Theorem~\ref{thm:recourse-qe}(a), $\Phi$ is a Boolean combination of
+at most $H$ atoms $h(t)\vartriangleright0$ with $\deg h\le H$. An
+identically zero polynomial has constant sign. The nonzero polynomials
+have at most $H^2$ real roots in total. Between consecutive roots, and
+at each root, every sign is constant, so the truth value of $\Phi$ is
+constant on each of the at most $H^2+1$ open intervals and $H^2$ points
+determined by the roots. Both sets are unions of some of these pieces.
+\end{proof}
+
+\begin{lemma}[Replacing continuous marginals by grid marginals]
+\label{lem:recourse-replacement}
+Let $E\subseteq\R^k$ be a Borel set such that, for every coordinate
+$j$ and every fixed value of the other $k-1$ coordinates, the section
+$\{t:(\ldots,t,\ldots)\in E\}$ is a union of at most $C$ intervals or
+points. Let $\Pr_{\rm cont}$ be the uniform law on $[-\sigma,\sigma]^k$
+and $\Pr_{\rm grid}$ the uniform law on $G_M^k$. Then
+$\abs{\Pr_{\rm grid}(E)-\Pr_{\rm cont}(E)}\le2kC/M$.
+\end{lemma}
+
+\begin{proof}
+Let $F_c(t)=(t+\sigma)/(2\sigma)$ on $[-\sigma,\sigma]$ and let $F_g$
+be the distribution function of the uniform law on $G_M$. For the grid
+points $t_j=-\sigma+2\sigma j/(M-1)$ and
+$t_j\le t<t_{j+1}$ we have $F_g(t)=(j+1)/M$ and
+$j/(M-1)\le F_c(t)<(j+1)/(M-1)$. Hence
+$-\frac{j+1}{M(M-1)}\le F_g(t)-F_c(t)\le\frac{M-1-j}{M(M-1)}$, so
+$\abs{F_g-F_c}\le1/M$ everywhere; the same holds for left limits, since
+$F_c$ is continuous. The probability of an interval or point, with any
+convention at its endpoints, is a difference of two such values, so
+the two laws differ by at most $2/M$ on it and by at most $2C/M$ on a
+union of $C$ of them.
+
+For $0\le j\le k$ let $\nu_j$ be the product law whose first $j$
+coordinates are uniform on $G_M$ and whose remaining coordinates are
+uniform on $[-\sigma,\sigma]$. Then $\nu_0=\Pr_{\rm cont}$ and
+$\nu_k=\Pr_{\rm grid}$. The laws $\nu_{j-1}$ and $\nu_j$ differ only in
+coordinate $j$. By Fubini's theorem, $\nu_j(E)-\nu_{j-1}(E)$ is the
+average, over the other coordinates distributed according to their
+common marginals, of the difference of the two one-dimensional laws on
+the section of $E$. Each such difference is at most $2C/M$ in absolute
+value, whatever the values of the other coordinates. Summing over $j$
+proves the claim.
+\end{proof}
+
+Every event to which we apply Lemma~\ref{lem:recourse-replacement} is
+defined by a formula \eqref{eq:recourse-two-block} in which one noise
+coordinate is the free variable and all other noise coordinates and
+thresholds are real coefficients. It is semialgebraic, hence Borel, and
+Lemma~\ref{lem:recourse-sections} gives the section bound. The bound
+covers ties and exact algebraic relations among the noise values; no
+almost-sure statement replaces it.
+
+\subsection{The selected point and the exact fallback}
+\label{app:recourse-fallback}
+
+\begin{lemma}[The selected point]
+\label{lem:recourse-selected-point}
+Let $(X,f,\kappa,\sigma)$ be a core-noise instance and $\gamma\in\R^k$.
+\begin{enumerate}[label=(\alph*)]
+\item The set $\argmin_Xf_\gamma$ is nonempty and compact, and the
+lexicographically least core $a$ among its points exists.
+\item The fiber $S(\gamma)$ is nonempty, compact, and convex. Its point
+$p$ of least norm is unique, and $x^\sharp=(a,p)$ is a global minimizer.
+\item Let
+$\operatorname{LexGT}(v',v)$ be the formula
+$(v'_1>v_1)\vee\bigl(v'_1=v_1\wedge\bigl((v'_2>v_2)\vee(v'_2=v_2\wedge
+(\cdots\vee(v'_{k-1}=v_{k-1}\wedge v'_k>v_k)\cdots))\bigr)\bigr)$, with
+$2k-1$ atoms, and put
+\[
+ \operatorname{Sel}(x',x)=\operatorname{LexGT}(v',v)\vee
+ \bigl(v'=v\wedge\norm{z'}^2\ge\norm z^2\bigr).
+\]
+For each coordinate index $i$ of $\R^n$, the formula
+\begin{equation}
+ \exists x\ \forall x':\ x\in X\wedge x_i=t\wedge
+ \bigl[x'\notin X\vee f_\gamma(x')>f_\gamma(x)\vee
+ \bigl(f_\gamma(x')=f_\gamma(x)\wedge\operatorname{Sel}(x',x)\bigr)\bigr]
+ \label{eq:recourse-singleton}
+\end{equation}
+holds exactly for $t=x^\sharp_i$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+(a) $X$ is compact and $f_\gamma$ is continuous. Minimizing $v_1$ over
+the compact optimal set, then $v_2$ over the compact set of minimizers,
+and so on, produces the lexicographically least core.
+
+(b) In type~(B), $S(\gamma)=\argmin_{z\in[0,1]^m}f_\gamma(a,z)$, because
+$a$ is an optimal core; this set is convex because $f(a,\cdot)$ is
+convex on $[0,1]^m$. In type~(P), let $X_a=\{z:(a,z)\in X\}$. The
+function $z\mapsto f(a,z)+\frac\alpha2\norm a^2$ is the restriction of
+the convex function $f+\frac\alpha2\norm v^2$ to an affine slice of $X$,
+so $f_\gamma(a,\cdot)$ is convex on $X_a$ and
+$S(\gamma)=\argmin_{X_a}f_\gamma(a,\cdot)$ is convex. Compactness and
+nonemptiness are clear, and the least-norm point of a nonempty compact
+convex set is unique.
+
+(c) Let $x$ satisfy the matrix of \eqref{eq:recourse-singleton}. Every
+feasible $x'$ has $f_\gamma(x')\ge f_\gamma(x)$, so $x$ is a global
+minimizer. If its core $v$ differed from $a$, then $a$ would be
+lexicographically smaller, and a global minimizer $x'$ with core $a$
+would violate the bracket. Hence $v=a$, $z\in S(\gamma)$, and the
+competitors $(a,z')$ with $z'\in S(\gamma)$ force
+$\norm z\le\norm{z'}$; thus $z=p$. Conversely $x^\sharp$ satisfies the
+matrix: a competitor of equal value is a global minimizer, so its core
+is lexicographically at least $a$, and if its core equals $a$ its
+residual lies in $S(\gamma)$ and has norm at least $\norm p$.
+\end{proof}
+
+\begin{lemma}[Exact fallback with a base-only exponential factor]
+\label{lem:recourse-fallback}
+Fix $D$. There are an absolute constant $c_F$ and a polynomial $p_D$
+such that every core-noise instance has a base-computable integer
+$\Xi_0\le2^{p_D(L)}$ with the following property. For every rational
+$\gamma\in[-\sigma,\sigma]^k$ whose entries have bit length at most
+$b$, and every integer $q\ge0$, one computes a rational $\tilde x\in X$
+with $\norm{\tilde x-x^\sharp(\gamma)}_\infty\le2^{-q}$ and bit length
+at most $(L+b+q+1)^{c_F}$, using at most $\Xi_0(L+b+q+1)^{c_F}$ bit
+operations. Consequently, with a base-computable rational
+$G\ge\max\{1,\sup_X\norm{\nabla f_\gamma}\}$ valid for all
+$\gamma\in[-\sigma,\sigma]^k$, one obtains within the same bound a
+rational $x_q\in X$ and $\ell_q$ satisfying
+\eqref{eq:recourse-core-output}.
+\end{lemma}
+
+\begin{proof}
+Clear the denominators of \eqref{eq:recourse-singleton}. Its polynomials
+have degree at most $d=\max\{D,2\}$ and integer coefficients of bit
+length $\tau\le c(L+kb)$ for an absolute $c$, because the products of
+all denominators of $f$, of the description of $X$, and of $\gamma$ have
+total length at most $L+kb$. The formula has two blocks of $n$
+variables, one free variable, and $s\le4L+4n+2$ atoms. Apply
+Theorem~\ref{thm:recourse-qe}(b) to each of the $n$ formulas. With
+$H=H(s,d,n,n)$, the cost is at most $n\tau^{c_{\rm QE}}H$, and each
+output formula has at most $H$ atoms of degree at most $H$ with
+coefficients of bit length at most $(\tau+1)H$.
+
+Fix $i$ and the output formula $\Phi_i(t)$. By
+Lemma~\ref{lem:recourse-selected-point}(c) its solution set is
+$\{x^\sharp_i\}$. Some atom polynomial of $\Phi_i$ is nonconstant and
+vanishes at $x^\sharp_i$: otherwise every atom would keep its sign on a
+neighborhood of $x^\sharp_i$, and $\Phi_i$ would hold on that
+neighborhood. Let $P$ be the product of the nonconstant atom
+polynomials; its degree is at most $H^2$ and its coefficient length is
+at most $H^2((\tau+1)H+\log(H+1))$. Theorem~\ref{thm:recourse-univariate}
+isolates the real roots of the squarefree part of $P$ and determines the
+signs of all atom polynomials at each root; evaluating the Boolean
+combination identifies the unique root satisfying $\Phi_i$. Refining
+its isolating interval to width $2^{-q-2}$ and rounding the midpoint to
+a dyadic number with $q+3$ fractional bits gives $w_i$ with
+$\abs{w_i-x^\sharp_i}\le2^{-q-1}$; since $\abs{x^\sharp_i}$ is bounded
+by the supplied box, $w_i$ has $O(q+L)$ bits. These steps cost
+$(H^3+\tau H^3+q)^{c_U}$ per coordinate.
+
+In type~(B), clip $w$ to the box: the result $\tilde x$ is feasible and
+no farther from $x^\sharp$ in any coordinate. In type~(P), solve the
+rational linear feasibility problem $\{x\in X:\norm{x-w}_\infty\le2^{-q-1}\}$;
+it contains $x^\sharp$, and any solution $\tilde x$ satisfies
+$\norm{\tilde x-x^\sharp}_\infty\le2^{-q}$ and has bit length polynomial
+in $L+q$. Since $\log H$ is polynomial in $L$ for fixed $D$, all costs
+are at most $\Xi_0(L+b+q+1)^{c_F}$ for a base-computable
+$\Xi_0\le2^{p_D(L)}$ and an absolute $c_F$; here $\Xi_0$ absorbs every
+power of $H$ and the factor $n$.
+
+For the last statement, take $G=\max\{1,G_f+k\sigma\}$, where $G_f$
+bounds $\norm{\nabla f}$ on the supplied box by coefficient sums and
+$k\sigma\ge\norm\gamma$. Apply the first part with
+precision $q+1+\lceil\log_2(nG)\rceil=q+O(L)$. Then
+$\norm{\tilde x-x^\sharp}\le\sqrt n\,2^{-q-1}/(nG)\le2^{-q}/(2G)$; since $X$
+is convex, $\abs{f_\gamma(\tilde x)-f_\gamma^*}\le2^{-q-1}$. Put
+$x_q=\tilde x$ and $\ell_q=f_\gamma(\tilde x)-2^{-q-1}$. Then
+\eqref{eq:recourse-core-output} holds, and
+$\norm{v_q-a}\le\norm{\tilde x-x^\sharp}\le2^{-q}$.
+\end{proof}
+
+The base factor $\Xi_0$ depends only on the format of the instance:
+its dimension, the number of inequalities describing $X$, and $D$. The
+sampled coefficient length $b$ and the precision $q$ enter only
+polynomially. This lets the grid size be chosen after $\Xi_0$, with
+$\log M$ polynomial in $L$; if the fallback cost were
+$2^{\poly(L+b)}$, the grid choice would be circular.
+
+\subsection{Certified cells}
+\label{app:recourse-cells}
+
+For $j\ge0$ and $h=2^{-j}$, a \emph{cell of level $j$} is a box
+$C=\prod_{i=1}^k[l_i,l_i+h]$ with $l_i\in h\Z\cap[0,1-h]$; its
+\emph{children} are the $2^k$ cells of level $j+1$ inside it. Put
+\[
+ e_h=\frac{\kappa_+kh^2}8,\qquad \varepsilon_h=4e_h=\frac{\kappa_+kh^2}2 .
+\]
+A \emph{cell oracle} receives a draw $\gamma$ and a cell $C$ of side $h$.
+It returns $\bot$ only if $X_C=\emptyset$; otherwise it returns a
+rational number $\operatorname{LB}(C)$ and a rational point
+$\omega_C\in X_C$ with
+\begin{equation}
+ \operatorname{LB}(C)\le f_\gamma(x)\ \ (x\in X_C),\qquad
+ f_\gamma(\omega_C)\le\operatorname{LB}(C)+2e_h .
+ \label{eq:recourse-cell-oracle}
+\end{equation}
+
+\begin{lemma}[Cell oracles]
+\label{lem:recourse-cell-oracle}
+Instances of both types have cell oracles. For a cell of level $j$ the
+oracle uses at most $2^kP_D(L+b+j)$ bit operations, and its outputs
+have bit length at most $P_D(L+b+j)$.
+\end{lemma}
+
+\begin{proof}
+\emph{Type~(B).} For each corner $w$ of $C$, apply
+\eqref{eq:recourse-cv} to the convex polynomial $z\mapsto f_\gamma(w,z)$
+on $[0,1]^m$ with accuracy $e_h$ (if $m=0$, evaluate $f_\gamma(w)$); it returns $z_w$ and $\ell_w$ with
+$\ell_w\le V_\gamma(w)\le f_\gamma(w,z_w)\le\ell_w+e_h$, where
+$V_\gamma(w)=\min_zf_\gamma(w,z)$. Put
+$\operatorname{LB}(C)=\min_w\ell_w-e_h$ and $\omega_C=(w^*,z_{w^*})$
+for a corner $w^*$ attaining the minimum. The second inequality in
+\eqref{eq:recourse-cell-oracle} is immediate. For the first, let
+$(v,z)\in X_C$. Choose independent random corner coordinates
+$W_i\in\{l_i,l_i+h\}$ with $\Pr\{W_i=l_i+h\}=(v_i-l_i)/h$, so that
+$\E W_i=v_i$ and $\operatorname{Var}W_i\le h^2/4$. Replace the core
+coordinates one at a time. Conditionally on $W_1,\ldots,W_{i-1}$, the
+function $\varphi(u)=f_\gamma(W_1,\ldots,W_{i-1},u,v_{i+1},\ldots,v_k,z)$
+satisfies $\varphi''\le\Lambda$ on $[l_i,l_i+h]$, so
+$\varphi(u)\le\varphi(v_i)+\varphi'(v_i)(u-v_i)+\frac\Lambda2(u-v_i)^2$
+there, and $\E\varphi(W_i)\le\varphi(v_i)+\Lambda h^2/8$. Summing over
+$i$, $\E f_\gamma(W,z)\le f_\gamma(v,z)+e_h$, since $\Lambda\le\kappa_+$.
+Some corner $w$ therefore has $V_\gamma(w)\le f_\gamma(w,z)\le
+f_\gamma(v,z)+e_h$, and
+$\operatorname{LB}(C)\le\ell_w-e_h\le f_\gamma(v,z)$.
+
+\emph{Type~(P).} Put
+$\phi_C(x)=f_\gamma(x)+\frac{\kappa_+}2\sum_i(v_i-l_i)(v_i-l_i-h)$. Since
+$\kappa_+=\alpha+\sigma$, $\phi_C$ equals $f+\frac\alpha2\norm v^2$ plus
+the convex function $\frac\sigma2\norm v^2$ plus an affine function, so
+it is convex on $X$. On $X_C$ each product $(v_i-l_i)(v_i-l_i-h)$ lies
+in $[-h^2/4,0]$, hence $f_\gamma-e_h\le\phi_C\le f_\gamma$ there. Apply
+\eqref{eq:recourse-cv} to $\phi_C$ on the polyhedron
+$X_C=X\cap\{l\le v\le l+h\}$ with accuracy $e_h$. If $X_C$ is empty,
+return $\bot$. Otherwise it returns $\omega_C\in X_C$ and $\ell_C$ with
+$\ell_C\le\min_{X_C}\phi_C\le\phi_C(\omega_C)\le\ell_C+e_h$; put
+$\operatorname{LB}(C)=\ell_C$. Then $\operatorname{LB}(C)\le
+\min_{X_C}f_\gamma$ and $f_\gamma(\omega_C)\le\phi_C(\omega_C)+e_h\le
+\operatorname{LB}(C)+2e_h$.
+
+In both types the data of each convex call have bit length
+$P_D(L+b+j)$, and the tolerance $e_h=\kappa_+k\,2^{-2j-3}$ is positive,
+because $\kappa_+\ge\sigma>0$, and has $\langle e_h\rangle\le2j+P_D(L)$.
+\end{proof}
+
+The type~(P) construction is the classical secant underestimator of
+$\alpha$BB branch and bound \citep{AndroulakisMaranasFloudas1995}. The
+type~(B) construction needs only the diagonal bound $\Lambda$ and convex
+residual fibers. We add $\sigma$ to the curvature parameter so that
+$e_h>0$ also when $\kappa=0$; this changes $1+\kappa/\sigma$ by at most a
+factor two.
+
+\paragraph{Refinement.}
+Given a draw, a final level $J$, and a cap $N$, the \emph{refinement}
+proceeds as follows. Level $0$ consists of the single cell $[0,1]^k$.
+For $j\ge1$, if $2^k$ times the number of cells retained at level $j-1$
+exceeds $N$, stop with the outcome \textsc{cap}; otherwise generate all
+children of the retained cells. At every level call the cell oracle on
+each generated cell, discard the cells that return $\bot$, set the
+incumbent $x_{\rm inc}$ to a witness of least value among all witnesses
+produced so far and $U=f_\gamma(x_{\rm inc})$, and then, in a second
+pass using this final value of $U$, retain exactly the cells with
+$\operatorname{LB}(C)\le U$. The list work at a level is linear in the
+number of generated cells.
+
+\begin{lemma}[Invariants of the refinement]
+\label{lem:recourse-refinement}
+After level $j$ has been completed, with $h=2^{-j}$:
+\begin{enumerate}[label=(\alph*)]
+\item $U-2e_h\le f_\gamma^*\le U=f_\gamma(x_{\rm inc})$ and
+$U\le f_\gamma^*+2e_h$;
+\item for every global minimizer $x^*=(v^*,z^*)$ of $f_\gamma$, some
+retained cell contains $v^*$;
+\item some retained cell contains the core of $x_{\rm inc}$;
+\item every retained cell $C$ satisfies
+$f_\gamma(\omega_C)\le f_\gamma^*+4e_h$ and
+$C\subseteq v(\omega_C)+[-h,h]^k$, where $v(\omega_C)$ is the core of
+$\omega_C$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+(b) At level $0$ the single cell contains $v^*$ and its lower bound is
+at most $f_\gamma(x^*)=f_\gamma^*\le U$. If a retained cell of level
+$j-1$ contains $v^*$, one of its children does; that child is generated,
+and \eqref{eq:recourse-cell-oracle} gives
+$\operatorname{LB}\le f_\gamma^*\le U$, so it is retained.
+
+(c) The incumbent was produced as a witness $\omega_{C_0}$ of a cell
+$C_0$ generated at some level $j_0\le j$, and it has remained the
+incumbent since. At level $j_0$, \eqref{eq:recourse-cell-oracle} gives
+$\operatorname{LB}(C_0)\le f_\gamma(x_{\rm inc})=U$, so $C_0$ is
+retained. Induction over the levels after $j_0$, exactly as in (b) with
+$x_{\rm inc}$ in place of $x^*$, proves (c).
+
+(a) The cells retained at level $j$, together with all cells discarded
+at levels $0,\ldots,j$, cover $[0,1]^k$; this follows by induction,
+since the children of a retained cell cover it. A cell discarded at
+level $j'\le j$ either has $X_C=\emptyset$ or has
+$\operatorname{LB}(C)>U_{j'}\ge U$, where $U_{j'}$ is the incumbent
+value at level $j'$; incumbent values never increase. A cell retained
+at level $j$ has $\operatorname{LB}(C)\ge f_\gamma(\omega_C)-2e_h\ge
+U-2e_h$, because $\omega_C$ was a candidate for the incumbent. Hence
+every feasible point has value at least $U-2e_h$. Finally, the
+retained cell containing $v^*$ from (b) has
+$f_\gamma(\omega_C)\le\operatorname{LB}(C)+2e_h\le f_\gamma^*+2e_h$,
+so $U\le f_\gamma^*+2e_h$.
+
+(d) A retained cell has $f_\gamma(\omega_C)\le\operatorname{LB}(C)+2e_h
+\le U+2e_h\le f_\gamma^*+4e_h$ by (a). Since $v(\omega_C)\in C$ and $C$
+has side $h$, every point of $C$ differs from $v(\omega_C)$ by at most
+$h$ in each coordinate.
+\end{proof}
+
+All four invariants hold for every draw and for every admissible answer
+of the convex value calls; no growth or probability assumption is used.
+
+\subsection{An all-scale count}
+\label{app:recourse-count}
+
+For a draw $\gamma\in\R^k$ and $0<h\le1$ define the projected
+near-optimal set, its padded hull, and the count proxy
+\begin{align*}
+ S_h(\gamma)&=\{v:\ \exists z\ (v,z)\in X,\
+  f_\gamma(v,z)\le f_\gamma^*+\varepsilon_h\},\\
+ K_h(\gamma)&=\conv S_h(\gamma)+[-h,h]^k,\\
+ \mathfrak d(K)&=\max\{\abs{\det(y_1-y_0,\ldots,y_k-y_0)}:\
+  y_0,\ldots,y_k\in K\},\\
+ A(\gamma)&=\sup_{0<h\le1}\mathfrak d(K_h(\gamma))/h^k,\qquad
+ W(\gamma)=\max\{1,A(\gamma)\}.
+\end{align*}
+The set $S_h(\gamma)$ is nonempty and compact, being the projection of
+a compact sublevel set, so $K_h(\gamma)$ is a compact convex body with
+nonempty interior. We allow $A(\gamma)=+\infty$.
+
+\begin{lemma}[Simplex volume]
+\label{lem:recourse-simplex}
+For every compact convex $K\subseteq\R^k$ with nonempty interior,
+$\mathfrak d(K)/k!\le\vol(K)\le2^k\mathfrak d(K)$.
+\end{lemma}
+
+\begin{proof}
+The simplex with vertices attaining $\mathfrak d(K)$ lies in $K$ and has
+volume $\mathfrak d(K)/k!$. For the upper bound, fix such vertices
+$y_0,\ldots,y_k$; since $\mathfrak d(K)>0$, the edges $y_i-y_0$ form a
+basis. Write $y\in K$ as $y=y_0+\sum_i\lambda_i(y_i-y_0)$. Replacing
+$y_i$ by $y$ multiplies the determinant by $\lambda_i$, so maximality
+gives $\abs{\lambda_i}\le1$. Thus $K$ lies in the parallelepiped
+$y_0+\{\sum_i\lambda_i(y_i-y_0):\lambda\in[-1,1]^k\}$ of volume
+$2^k\mathfrak d(K)$.
+\end{proof}
+
+\begin{lemma}[Cell count]
+\label{lem:recourse-cell-count}
+For every draw and every run of the refinement, at most $2^kW(\gamma)$
+cells are retained at each completed level, and at most $4^kW(\gamma)$
+cells are generated at each level.
+\end{lemma}
+
+\begin{proof}
+Let $h=2^{-j}$. By Lemma~\ref{lem:recourse-refinement}(d), the core of
+the witness of each retained cell lies in $S_h(\gamma)$, and the cell
+lies in $K_h(\gamma)$. Distinct cells of level $j$ have disjoint
+interiors and volume $h^k$. By Lemma~\ref{lem:recourse-simplex} their
+number is at most $\vol(K_h)/h^k\le2^k\mathfrak d(K_h)/h^k\le2^kA$. The
+next level has at most $2^k$ times as many cells, and level $0$ has one.
+\end{proof}
+
+We now bound the tail of $W$. Write $c=-\gamma$, so that
+$f_\gamma(x)=f(x)-c^{\mathsf T}v$; the uniform laws on
+$[-\sigma,\sigma]^k$ and on $G_M^k$ are symmetric, so $c$ and $\gamma$
+have the same law. Define, for $c\in\R^k$,
+\[
+ \Psi(c)=\max_{x\in X}\bigl(c^{\mathsf T}v-f(x)\bigr)
+ =-\min_X f_{-c},\qquad
+ \Upsilon(c)=\Psi(c)+\frac{\norm c^2}{2\kappa_+}.
+\]
+
+\begin{lemma}[A conjugate pushforward measure]
+\label{lem:recourse-conjugate}
+\begin{enumerate}[label=(\alph*)]
+\item $\Psi$ is finite and convex, and every subgradient of $\Psi$ lies
+in $[0,1]^k$. The conjugate $\Upsilon^*$ is finite and differentiable
+on $\R^k$, $\nabla\Upsilon^*$ is $\kappa_+$-Lipschitz, and
+$y\in\partial\Upsilon(c)$ if and only if $\nabla\Upsilon^*(y)=c$.
+\item $\nu(E)=\operatorname{Leb}\{y:\nabla\Upsilon^*(y)\in E\}$ is a Borel
+measure, and $\nu(\prod_i[\alpha_i,\beta_i])\le
+\prod_i(1+(\beta_i-\alpha_i)/\kappa_+)$.
+\item For every $c\in\R^k$ and $0<h\le1$,
+$\vol(K_h(-c))\le\nu\bigl(B(c,4\kappa_+kh)\bigr)$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+(a) $\Psi$ is a maximum of affine functions of $c$ over a compact index
+set, hence finite and convex. If $s\in\partial\Psi(c)$ and $u\in\R^k$,
+then $s^{\mathsf T}u\le\Psi(c+u)-\Psi(c)\le\sum_i\max\{u_i,0\}$, because
+every core lies in $[0,1]^k$. Taking $u=\pm\epsilon e_i$ gives
+$0\le s_i\le1$. The function $\Upsilon$ is $(1/\kappa_+)$-strongly
+convex. For fixed $y$, the function $c\mapsto y^{\mathsf T}c-\Upsilon(c)$
+is strongly concave and continuous, so it has a unique maximizer
+$c(y)$ and $\Upsilon^*(y)$ is finite. By (F1),
+$\partial\Upsilon^*(y)=\{c:y\in\partial\Upsilon(c)\}$ is the set of
+these maximizers, namely $\{c(y)\}$, so $\Upsilon^*$ is differentiable
+with $\nabla\Upsilon^*(y)=c(y)$. If $y_j\in\partial\Upsilon(c_j)$ for
+$j=1,2$, then $y_j-c_j/\kappa_+\in\partial\Psi(c_j)$, and monotonicity of
+$\partial\Psi$ gives
+$(y_1-y_2)^{\mathsf T}(c_1-c_2)\ge\norm{c_1-c_2}^2/\kappa_+$; hence
+$\norm{c_1-c_2}\le\kappa_+\norm{y_1-y_2}$.
+
+(b) $\nabla\Upsilon^*$ is continuous, so $\nu$ is a Borel measure. If
+$\nabla\Upsilon^*(y)=c$, then
+$y\in\partial\Upsilon(c)=\partial\Psi(c)+c/\kappa_+\subseteq[0,1]^k+c/\kappa_+$.
+For a box $E$ the preimage therefore lies in $[0,1]^k+E/\kappa_+$, a box
+with the stated volume.
+
+(c) Let $\gamma=-c$ and $v\in S_h(\gamma)$, with a residual $z$ such that
+$(v,z)\in X$ and $f(v,z)-c^{\mathsf T}v\le-\Psi(c)+\varepsilon_h$. Put
+$y_0=v+c/\kappa_+$ and $r(y)=\Upsilon(c)+\Upsilon^*(y)-c^{\mathsf T}y\ge0$.
+Since $\Psi(c')\ge c'^{\mathsf T}v-f(v,z)$ for all $c'$,
+\[
+ \Upsilon^*(y_0)\le\sup_{c'}\Bigl(y_0^{\mathsf T}c'-c'^{\mathsf T}v+f(v,z)
+ -\frac{\norm{c'}^2}{2\kappa_+}\Bigr)=f(v,z)+\frac{\norm c^2}{2\kappa_+},
+\]
+and therefore $r(y_0)\le\Psi(c)+f(v,z)-c^{\mathsf T}v\le\varepsilon_h$.
+The function $r$ is convex, has $\kappa_+$-Lipschitz gradient
+$\nabla\Upsilon^*-c$, and has infimum zero. By (F3),
+$\norm{\nabla r(y_0)}\le\sqrt{2\kappa_+\varepsilon_h}=\kappa_+\sqrt kh$,
+and for $u\in[-h,h]^k$, where $\norm u\le\sqrt kh$,
+\[
+ r(y_0+u)\le\varepsilon_h+\kappa_+\sqrt kh\norm u+\frac{\kappa_+}2\norm u^2
+ \le2\kappa_+kh^2.
+\]
+The sublevel set $\{r\le2\kappa_+kh^2\}$ is convex and contains
+$S_h(\gamma)+c/\kappa_+ +[-h,h]^k$, hence also
+$K_h(\gamma)+c/\kappa_+$. On it, (F3) gives
+$\norm{\nabla\Upsilon^*(y)-c}=\norm{\nabla r(y)}\le2\kappa_+\sqrt kh<4\kappa_+kh$.
+Thus $K_h(\gamma)+c/\kappa_+\subseteq\{y:\nabla\Upsilon^*(y)\in
+B(c,4\kappa_+kh)\}$, and translation invariance of volume proves (c).
+\end{proof}
+
+\begin{lemma}[Disjoint balls]
+\label{lem:recourse-vitali}
+Let $\mathcal F$ be a family of open balls $B(c,r_c)$, one for each
+center $c$ in a set $E\subseteq\R^k$, with $0<r_c\le R_*$, all contained
+in a bounded set. There is a countable disjoint subfamily
+$\{B(c_j,r_j)\}$ with $E\subseteq\bigcup_jB(c_j,5r_j)$.
+\end{lemma}
+
+\begin{proof}
+Put $\mathcal F_0=\mathcal F$. While $\mathcal F_i\ne\emptyset$, let
+$\rho_i$ be the supremum of the radii in $\mathcal F_i$, choose
+$B(c_i,r_i)\in\mathcal F_i$ with $r_i>\rho_i/2$, and let
+$\mathcal F_{i+1}$ consist of the balls of $\mathcal F_i$ disjoint from
+it. The chosen balls are disjoint. A ball $B(c,r_c)$ removed at step $i$
+meets $B(c_i,r_i)$ and has $r_c\le\rho_i<2r_i$, so
+$\norm{c-c_i}<r_i+r_c<3r_i$. If some ball $B(c,r_c)$ were never chosen
+or removed, then $\rho_i\ge r_c$ for all $i$, and infinitely many
+disjoint chosen balls of radius greater than $r_c/2$ would lie in a
+bounded set, which is impossible.
+\end{proof}
+
+\begin{lemma}[Weak first-moment tail]
+\label{lem:recourse-weak-tail}
+For every $s>0$,
+\[
+ \Pr_{\rm cont}\{A>s\}\le\frac{a_k}s,\qquad
+ a_k=(180k^3)^k\Bigl(1+\frac{\kappa_+}\sigma\Bigr)^k .
+\]
+\end{lemma}
+
+\begin{proof}
+Let $R_*=4\kappa_+k$, $Q=[-\sigma,\sigma]^k$, and
+$E_s=\{c\in Q:A(-c)>s\}$. For $c\in E_s$ choose $h\in(0,1]$ with
+$\mathfrak d(K_h(-c))>sh^k$. By Lemmas~\ref{lem:recourse-simplex}
+and~\ref{lem:recourse-conjugate}(c), the ball $B(c,r_c)$ with
+$r_c=R_*h\le R_*$ satisfies
+\[
+ \nu(B(c,r_c))\ge\vol(K_h(-c))\ge\frac{\mathfrak d(K_h(-c))}{k!}
+ >\frac{s\,r_c^k}{k!R_*^k}.
+\]
+All these balls lie in $Q_*=[-\sigma-R_*,\sigma+R_*]^k$.
+Lemma~\ref{lem:recourse-vitali} selects disjoint balls $B(c_j,r_j)$
+whose fivefold enlargements cover $E_s$. Therefore
+\[
+ \operatorname{Leb}^*(E_s)\le\sum_jv_k5^kr_j^k
+ <\frac{5^kv_kk!R_*^k}{s}\sum_j\nu(B(c_j,r_j))
+ \le\frac{5^kv_kk!R_*^k}{s}\,\nu(Q_*).
+\]
+By Lemma~\ref{lem:recourse-conjugate}(b),
+$\nu(Q_*)\le(1+2\sigma/\kappa_++8k)^k$. Dividing by $(2\sigma)^k$ and
+using $v_k\le2^k$, $k!\le k^k$, and
+$\kappa_+/\sigma+2+8k\kappa_+/\sigma\le9k(1+\kappa_+/\sigma)$ gives
+\[
+ \Pr_{\rm cont}\{A>s\}\le\frac{5^k2^kk^k(2k)^k}{s}
+ \Bigl(\frac{\kappa_+}\sigma+2+\frac{8k\kappa_+}\sigma\Bigr)^k
+ \le\frac{(180k^3)^k(1+\kappa_+/\sigma)^k}{s}.\qedhere
+\]
+\end{proof}
+
+The bound has the power $s^{-1}$ in every core dimension. It is the
+weak-type estimate for the centered maximal function of the locally
+finite measure $\nu$; the conjugate construction converts near-optimal
+sets at every scale into balls of comparable $\nu$-mass.
+
+\begin{lemma}[The count event is a two-block formula]
+\label{lem:recourse-count-formula}
+There is a base-computable $C_W\le2^{P_D(L)}$ such that, for every
+power of two $M$ and every $s\ge1$,
+$\Pr_{\rm grid}\{W>s\}\le a_k/s+C_W/M$.
+\end{lemma}
+
+\begin{proof}
+For $s\ge1$, $\{W>s\}=\{A>s\}$, and $A(\gamma)>s$ holds if and only if
+there are $h\in(0,1]$ and $y_0,\ldots,y_k\in K_h(\gamma)$ with
+$\abs{\det(y_1-y_0,\ldots,y_k-y_0)}>sh^k$. By Carath\'eodory's theorem,
+$y_i\in K_h(\gamma)$ if and only if
+$y_i=\sum_{l=0}^k\lambda_{il}v_{il}+u_i$ with $\lambda_{il}\ge0$,
+$\sum_l\lambda_{il}=1$, $v_{il}\in S_h(\gamma)$, and
+$\norm{u_i}_\infty\le h$. Since minima over $X$ are attained,
+$v_{il}\in S_h(\gamma)$ if and only if some $z_{il}$ has
+$(v_{il},z_{il})\in X$ and
+$f_\gamma(v_{il},z_{il})\le f_\gamma(x')+\kappa_+kh^2/2$ for every
+$x'\in X$. One universal block $x'$ serves all $(k+1)^2$ comparisons.
+
+The determinant is not expanded into $k!$ monomials. Instead introduce
+existential matrices $Q$ and $R$ with
+$(y_1-y_0,\ldots,y_k-y_0)=QR$, $Q^{\mathsf T}Q=I$, $R$ upper triangular,
+$R_{ii}>0$, and product chains $\pi_1=R_{11}$,
+$\pi_i=\pi_{i-1}R_{ii}$, $\epsilon_1=h$, $\epsilon_i=\epsilon_{i-1}h$,
+and require $\pi_k>s\,\epsilon_k$. A nonsingular real matrix has such a
+factorization, and then $\pi_k$ equals the absolute value of its
+determinant; conversely these equations force $\abs{\det}=\pi_k$. The
+strict inequality forces nonsingularity.
+
+The resulting formula has the form \eqref{eq:recourse-two-block} with
+one existential block of $O(k^2(k+m))$ variables, one universal block
+of $n$ variables, $O(k^2(k+L))$ atoms, and degree at most $\max\{D,2\}$;
+the free variable is one noise coordinate, and the other noise
+coordinates and $s$ are real coefficients. By
+Lemma~\ref{lem:recourse-sections}, every section of $\{A>s\}$ is a
+union of at most $C=2H^2+1$ intervals or points, with $H$ from
+\eqref{eq:recourse-H}, uniformly in $s$ and in the fixed coordinates.
+Lemmas~\ref{lem:recourse-replacement} and~\ref{lem:recourse-weak-tail}
+give the claim with $C_W=2kC$. Since $\log H$ is polynomial in $L$ for
+fixed $D$, so is $\log C_W$.
+\end{proof}
+
+The formula also shows that $\{A>s\}$ is semialgebraic, so $A$ and $W$
+are measurable, including the event $\{W=\infty\}$, whose probability
+is at most $C_W/M$ under the grid law.
+
+\subsection{Projected growth}
+\label{app:recourse-growth}
+
+For a draw $\gamma$ let $g(\gamma)$ be the supremum of the numbers
+$t\ge0$ for which some $x^*=(v^*,z^*)\in X$ satisfies
+\begin{equation}
+ f_\gamma(x)-f_\gamma(x^*)\ge t\norm{v-v^*}^2\qquad(x\in X).
+ \label{eq:recourse-growth}
+\end{equation}
+Such an $x^*$ is a global minimizer. Residual ties are allowed; if the
+core projection of $X$ is a single point, $g=+\infty$.
+
+\begin{lemma}[Projected-growth tail]
+\label{lem:recourse-growth}
+\begin{enumerate}[label=(\alph*)]
+\item For $t>0$ the set $G_t$ of draws admitting \eqref{eq:recourse-growth}
+is closed, and $g(\gamma)\ge t$ if and only if $\gamma\in G_t$. If
+$g(\gamma)>0$, all global minimizers have the same core $a(\gamma)$, and
+$f_\gamma(x)-f_\gamma^*\ge t\norm{v-a(\gamma)}^2$ on $X$ for every
+finite $t\in(0,g(\gamma)]$.
+\item $\Pr_{\rm cont}\{g<t\}\le kt/\sigma$ for every $t>0$.
+\item There is a base-computable $C_g\le2^{P_D(L)}$ with
+$\Pr_{\rm grid}\{g<t\}\le kt/\sigma+C_g/M$ for every $t>0$ and every
+power of two $M$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+(a) Let $\gamma_l\to\gamma$ with witnesses $x^*_l$. A subsequence of the
+witnesses converges in the compact set $X$, and \eqref{eq:recourse-growth}
+passes to the limit; so $G_t$ is closed. If $g(\gamma)\ge t$, then
+$\gamma\in G_{t'}$ for all $t'<t$; letting $t'\uparrow t$ and passing to
+a convergent subsequence of witnesses shows $\gamma\in G_t$; the
+converse holds by definition. If \eqref{eq:recourse-growth} holds with
+$t>0$ and witness $x^*$, then $f_\gamma(x^*)=f_\gamma^*$, and every global
+minimizer $x$ has $0\ge t\norm{v-v^*}^2$, so its core is $v^*$. Hence
+$v^*=a(\gamma)$, and \eqref{eq:recourse-growth} is the displayed
+inequality. If $g(\gamma)>0$, every finite $t\in(0,g(\gamma)]$ has
+$\gamma\in G_t$, which gives the last claim.
+
+(b) Translate the core coordinates by $(\frac12,\ldots,\frac12)$; this
+changes $f_\gamma$ by a constant and leaves \eqref{eq:recourse-growth}
+unchanged, and afterwards every core lies in $[-\frac12,\frac12]^k$.
+Write $c=-\gamma$ and define the finite convex function
+\[
+ \Psi_t(c)=\max_{x\in X}\bigl(c^{\mathsf T}v-f(x)+t\norm v^2\bigr).
+\]
+As in Lemma~\ref{lem:recourse-conjugate}(a), every subgradient lies in
+$[-\frac12,\frac12]^k$, and the core of every maximizer at $c$ is a
+subgradient. Let $c$ be a point where $\Psi_t$ is differentiable, with
+gradient $a$. Then every maximizer $\bar x$ has core $a$, and for
+$y=c+2ta$ and every $x\in X$,
+\[
+ f(x)-f(\bar x)\ge c^{\mathsf T}(v-a)+t(\norm v^2-\norm a^2)
+ =y^{\mathsf T}(v-a)+t\norm{v-a}^2 .
+\]
+Hence the draw $-y$ satisfies \eqref{eq:recourse-growth} with witness
+$\bar x$. At differentiability points put $\hat c=c+2t\nabla\Psi_t(c)$;
+then $\norm{\hat c-c}_\infty\le t$ and $-\hat c\in G_t$.
+
+Let $P(y)$ be the unique minimizer of
+$\Psi_t(c)+\norm{c-y}^2/(4t)$. Its optimality condition is
+$y-P(y)\in2t\,\partial\Psi_t(P(y))$. If $y,y'$ are two points, adding the
+two monotonicity inequalities gives
+$\norm{P(y)-P(y')}^2\le(y-y')^{\mathsf T}(P(y)-P(y'))$, so $P$ is
+$1$-Lipschitz. If $c$ is a differentiability point, then $c$ satisfies
+the optimality condition for $y=\hat c$, so $P(\hat c)=c$.
+
+Let $Q=[-\sigma,\sigma]^k$, $t<\sigma$, $Q'=[-\sigma+t,\sigma-t]^k$, and
+let $\widetilde G=\{c\in Q:-c\in G_t\}$, a closed set. For every
+differentiability point $c\in Q'$ we have $\hat c\in\widetilde G$ and
+$P(\hat c)=c$. By (F1), the differentiability points have full measure, so
+$P(\widetilde G)$ contains $Q'$ up to a null set. By (F2),
+$\operatorname{Leb}(\widetilde G)\ge\operatorname{Leb}^*(P(\widetilde G))
+\ge(2\sigma-2t)^k$. The uniform law of $c$ equals that of $\gamma$, so
+$\Pr_{\rm cont}\{g<t\}\le1-(1-t/\sigma)^k\le kt/\sigma$. For
+$t\ge\sigma$ the bound is trivial.
+
+(c) $G_t$ is defined by
+$\exists x^*\,\forall x:\ x^*\in X\wedge\bigl[x\notin X\vee
+f_\gamma(x)-f_\gamma(x^*)-t\norm{v-v^*}^2\ge0\bigr]$, a formula
+\eqref{eq:recourse-two-block} with two blocks of $n$ variables, at most
+$2L+2$ atoms, and degree at most $\max\{D,2\}$. Its complement is
+$\{g<t\}$. Lemmas~\ref{lem:recourse-sections}
+and~\ref{lem:recourse-replacement} and part~(b) give the claim with
+$C_g=2k(2H^2+1)$.
+\end{proof}
+
+The proof refines the classical observation that a linear tilt in
+general position has a unique maximizer because convex conjugates are
+differentiable almost everywhere. Here the conjugate includes the
+growth term $t\norm v^2$, and the proximal map turns differentiability
+into a quantitative bound.
+
+\subsection{Proof of Theorem~\ref{thm:recourse-core}}
+\label{app:recourse-core-proof}
+
+\paragraph{Base choices.}
+Let $\Xi_0$ be the fallback factor of Lemma~\ref{lem:recourse-fallback}
+and let $C_W,C_g$ be the constants of
+Lemmas~\ref{lem:recourse-count-formula} and~\ref{lem:recourse-growth}.
+Choose, before sampling,
+\begin{equation}
+ \begin{gathered}
+ \Xi\ge\max\{2,\Xi_0\}\ \text{with}\ \log\Xi\le P_D(L),\qquad
+ g_0=\frac\sigma{2k\Xi},\qquad
+ \Theta=4k+\frac{k^2\kappa_+}{g_0},\qquad N=4^k\Xi,\\
+ M=\text{the least power of two with }M\ge2\Xi\max\{C_W,C_g,1\}.
+ \end{gathered}
+ \label{eq:recourse-core-params}
+\end{equation}
+All these numbers have bit length polynomial in $L$; in particular
+$\log M\le P_D(L)$ and $b\le P_D(L)$. With $\beta=C_W/M\le1/(2\Xi)$,
+Lemmas~\ref{lem:recourse-count-formula} and~\ref{lem:recourse-growth}
+give
+\begin{equation}
+ \Pr\{W>s\}\le\frac{a_k}s+\beta\ \ (s\ge1),\qquad
+ \Pr\{g<g_0\}\le\frac{kg_0}\sigma+\frac{C_g}M\le\frac1\Xi .
+ \label{eq:recourse-core-tails}
+\end{equation}
+Neither the grid nor any other choice depends on $q$.
+
+\paragraph{The evaluator.}
+For a query $q$, let $J$ be the least integer $j\ge0$ with
+$2e_{2^{-j}}\le2^{-q}$ and $\Theta2^{-j}\le2^{-q}$; then
+$J\le q+P_D(L)$. Run the refinement with final level $J$ and cap $N$.
+If it stops with \textsc{cap}, use the fallback. Otherwise let $H_J$ be
+the coordinate hull of the cells retained at level $J$, that is, the
+smallest box containing them, with widths $w_1,\ldots,w_k$. If
+$\sum_iw_i^2\le2^{-2q}$, return $x_q=x_{\rm inc}$ and
+$\ell_q=U-2e_{2^{-J}}$. Otherwise use the fallback. The \emph{fallback}
+returns the output of Lemma~\ref{lem:recourse-fallback} for this draw
+and this $q$.
+
+\paragraph{Correctness on every draw.}
+On the fallback branch, Lemma~\ref{lem:recourse-fallback} gives
+\eqref{eq:recourse-core-output}. On the ordinary branch,
+Lemma~\ref{lem:recourse-refinement}(a) gives
+$\ell_q\le f_\gamma^*\le f_\gamma(x_q)=\ell_q+2e_{2^{-J}}\le\ell_q+2^{-q}$.
+By Lemma~\ref{lem:recourse-refinement}(b) and~(c), the box $H_J$
+contains $a(\gamma)$ and the core $v_q$ of $x_{\rm inc}$, so
+$\norm{v_q-a(\gamma)}^2\le\sum_iw_i^2\le2^{-2q}$. Neither statement
+uses uniqueness, growth, or probability. On the ordinary branch, $x_q$
+is a witness that the cell oracle produced at a level at most $J$,
+possibly an earlier one, and $\ell_q$ is computed from its value; both
+have bit length $P_D(L+q)$.
+
+\paragraph{When the ordinary branch fails.}
+If the cap is reached before level $j$, then more than $2^k\Xi$ cells
+were retained at level $j-1$, so $W>\Xi$ by
+Lemma~\ref{lem:recourse-cell-count}. Suppose next that
+$g(\gamma)\ge g_0$. By Lemma~\ref{lem:recourse-growth}(a) the optimal
+core $a$ is unique and $f_\gamma(x)-f_\gamma^*\ge g_0\norm{v-a}^2$. With
+$h=2^{-J}$, every retained cell $C$ has
+$f_\gamma(\omega_C)-f_\gamma^*\le4e_h$ by
+Lemma~\ref{lem:recourse-refinement}(d), hence
+$\norm{v(\omega_C)-a}\le h\sqrt{\kappa_+k/(2g_0)}$, and every point of
+$C$ is within $h$ of $v(\omega_C)$ in each coordinate. Therefore
+$w_i\le2h(1+\sqrt{\kappa_+k/(2g_0)})$ for all $i$, and, using
+$\sqrt k\le k$ and $\sqrt y\le1+y$,
+\[
+ \Bigl(\sum_iw_i^2\Bigr)^{1/2}\le2\sqrt kh\Bigl(1+\sqrt{\frac{\kappa_+k}{2g_0}}\Bigr)
+ \le h\Bigl(4k+\frac{k^2\kappa_+}{g_0}\Bigr)=\Theta h\le2^{-q}.
+\]
+So the hull test passes. The fallback is used only on the event
+$\{W>\Xi\}\cup\{g<g_0\}$, which does not depend on $q$.
+
+\paragraph{Work.}
+Without the cap, each level $j\le J$ generates at most
+$4^k\min\{W,\Xi\}$ cells: at most $4^kW$ by
+Lemma~\ref{lem:recourse-cell-count}, and at most $N=4^k\Xi$ because the
+cap was not reached. Each cell costs $2^kP_D(L+b+j)$ by
+Lemma~\ref{lem:recourse-cell-oracle}, and the hull is computed in one
+pass. With $J\le q+P_D(L)$ and $b\le P_D(L)$, the ordinary work, and
+the work spent before a fallback, is at most
+$8^k\min\{W,\Xi\}P_D(L+q)$. The fallback costs at most
+$\Xi P_D(L+q)$. Hence every query costs at most $\Omega(\gamma)P_D(L+q)$
+with
+\[
+ \Omega=8^k\min\{W,\Xi\}+\Xi\,\mathbf1\{W>\Xi\ \text{or}\ g<g_0\}.
+\]
+By \eqref{eq:recourse-core-tails},
+$\E\min\{W,\Xi\}=\int_0^\Xi\Pr\{\min\{W,\Xi\}>s\}\,ds
+\le1+\int_1^\Xi(a_k/s+\beta)\,ds\le1+a_k\ln\Xi+\beta\Xi$ and
+$\Xi\Pr\{W>\Xi\}\le a_k+\beta\Xi$. With $\beta\Xi\le\frac12$ and
+$\Xi\Pr\{g<g_0\}\le1$,
+\[
+ \E\,\Omega\le8^k(2+a_k\ln\Xi)+a_k+2 .
+\]
+Since $1+\kappa_+/\sigma\le2(1+\kappa/\sigma)$, we have
+$a_k\le(360k^3)^k(1+\kappa/\sigma)^k$, and $\ln\Xi\le P_D(L)$. This
+proves $\E\,\Omega\le k^{O(k)}(1+\kappa/\sigma)^kP_D(L)$.
+\qed
+
+\begin{remark}[Low core dimension]
+\label{rem:recourse-low-dim}
+For $k\le2$ a direct count suffices. If $g>0$, the retained witnesses
+lie within $h\sqrt{\kappa_+k/(2g)}$ of $a$, so at most
+$4^k(3+\sqrt{2k\kappa_+/g})^k\le512\max\{1,\kappa_+/g\}^{k/2}$ cells are
+generated per level. With $Z=\max\{1,\kappa_+/g\}^{k/2}$,
+Lemma~\ref{lem:recourse-growth} gives
+$\Pr\{Z>s\}\le k\kappa_+s^{-2/k}/\sigma+C_g/M$. Its truncated moment is
+bounded for $k=1$ and logarithmic in the cap for $k=2$, which yields the
+bound $(1+\kappa/\sigma)P_D(L+q)$. For $k\ge3$ the truncated moment grows
+like a positive power of the cap, and the fallback term does as well;
+this is why Lemmas~\ref{lem:recourse-conjugate}--\ref{lem:recourse-count-formula}
+are needed.
+\end{remark}
+
+\subsection{Proof of Corollary~\ref{cor:recourse-joint}}
+\label{app:recourse-joint}
+
+Let $f$ be convex on $X$. Choose $\Xi\ge\max\{2,\Xi_0\}$, $g_0=\sigma/(2k\Xi)$,
+and $M$ the least power of two with $M\ge2\Xi C_g$, so that
+$\Pr\{g<g_0\}\le1/\Xi$ by Lemma~\ref{lem:recourse-growth}.
+
+For a query $q$ put $\epsilon=2^{-q}$,
+$\delta=\min\{\epsilon,g_0\epsilon^2/(128k)\}$, and
+$\zeta=\epsilon/(8k)$. First apply \eqref{eq:recourse-cv} to $f_\gamma$
+on $X$ with accuracy $\delta$, obtaining $y\in X$ and $\ell_0$ with
+$\ell_0\le f_\gamma^*\le U:=f_\gamma(y)\le\ell_0+\delta$.
+
+For a coordinate $i$ and a dyadic rational $\theta$, an \emph{upper
+probe} applies \eqref{eq:recourse-cv} to $f_\gamma$ on the polyhedron
+$X\cap\{v_i\ge\theta\}$ with accuracy $\delta$. It \emph{succeeds} if
+this polyhedron is empty or the returned lower bound exceeds $U$;
+otherwise it fails and returns a witness $x_\theta\in X$ with
+$v_i(x_\theta)\ge\theta$ and $f_\gamma(x_\theta)\le U+\delta$. If an
+upper probe succeeds at $\theta$, then every point of $X$ with
+$v_i\ge\theta$ has value greater than $U$; hence every global minimizer
+and $y$ itself have $v_i<\theta$.
+
+The upper probe fails at $\theta=0$, because the lower bound is at most
+$f_\gamma^*\le U$, and it succeeds at $\theta=2$. Binary search
+maintains a failing $\mathrm{lo}$ with its witness and a succeeding
+$\mathrm{hi}$, halving $\mathrm{hi}-\mathrm{lo}$ until it is at most
+$\zeta$; set $u_i=\mathrm{hi}$. Lower probes on
+$X\cap\{v_i\le\theta\}$, started from a succeeding $\theta=-1$ and a
+failing $\theta=1$, give $l_i$ in the same way. No monotonicity of the
+probe outcomes is needed. The box $\prod_i[l_i,u_i]$ contains the core
+of $y$ and every optimal core. If $\sum_i(u_i-l_i)^2\le\epsilon^2$,
+return $y$ and $\ell_0$; then \eqref{eq:recourse-core-output} holds.
+Otherwise return the fallback of Lemma~\ref{lem:recourse-fallback}.
+
+Suppose $g(\gamma)\ge g_0$. The witness at the final $\mathrm{lo}$ of
+the upper search has value at most $U+\delta\le f_\gamma^*+2\delta$, so
+its core is within $\sqrt{2\delta/g_0}\le\epsilon/(8\sqrt k)$ of $a$.
+Hence $u_i\le\mathrm{lo}+\zeta\le a_i+\epsilon/(8\sqrt k)+\zeta$, and
+symmetrically $l_i\ge a_i-\epsilon/(8\sqrt k)-\zeta$. Then
+$u_i-l_i\le\epsilon/(4\sqrt k)+2\zeta\le\epsilon/(2\sqrt k)$, and the
+test passes. The fallback is used only on $\{g<g_0\}$.
+
+The ordinary branch makes $1+O(k(q+\log k))$ convex value calls on
+polyhedra of bit length $P_D(L)+O(q+\log k)$, with tolerance
+$\langle\delta\rangle\le2q+P_D(L)$. Since $k\le L$, its work is at most
+$P_D(L+q)$, with a polynomial independent of $k$ and of the numerical
+values of $\sigma$ and $\kappa$. With $\Omega=1+\Xi\mathbf1\{g<g_0\}$,
+every query costs at most $\Omega(\gamma)P_D(L+q)$, and
+$\E\,\Omega\le2$.
+\qed
+
+\subsection{Proof of Corollary~\ref{cor:recourse-qp}}
+\label{app:recourse-qp}
+
+\begin{lemma}[Height of a lexicographic quadratic optimizer]
+\label{lem:recourse-qp-height}
+Let $X=\{x\in\R^n:Ex\le e\}$ be a nonempty bounded polytope and
+$q(x)=\frac12x^{\mathsf T}Ax+c^{\mathsf T}x+c_0$, with rational data and
+$A=A^{\mathsf T}$, so that $\nabla q(x)=Ax+c$. Let
+$\Delta_0$ be a positive integer making $\Delta_0A$, $\Delta_0c$,
+$\Delta_0E$, and $\Delta_0e$ integral, and let $C\ge1$ bound the
+absolute values of their entries. Then the lexicographically least
+global minimizer $x^*$ of $q$ on $X$, for any fixed order of the
+coordinates, has a common denominator at most
+$U_Q=n!\,(n\cdot n!\,C^{n+1})^n$.
+\end{lemma}
+
+\begin{proof}
+Let $I$ be the set of rows active at $x^*$, and let $R$ be a maximal
+linearly independent subset of those rows. The smallest face of $X$
+containing $x^*$ has affine hull $\{x:Rx=e_R\}$, and $x^*$ lies in its
+relative interior, so $x^*\pm\epsilon w$ is feasible for small
+$\epsilon$ and every $w\in\ker R$. Thus $w^{\mathsf T}(Ax^*+c)=0$ for
+$w\in\ker R$. Let $N$ be an integer matrix whose columns span $\ker R$,
+and put
+\[
+ S=\{x\in X:\ Rx=e_R,\ N^{\mathsf T}(Ax+c)=0\}\ni x^* .
+\]
+For $x,y\in S$ and $w=x-y\in\ker R$ we have
+$w^{\mathsf T}(Ay+c)=0=w^{\mathsf T}(Ax+c)$, hence $w^{\mathsf T}Aw=0$ and
+$q(x)-q(y)=w^{\mathsf T}(Ay+c)+\frac12w^{\mathsf T}Aw=0$. Thus every point
+of $S$ is a global minimizer, and $x^*$ is the lexicographically least
+point of $S$. A lexicographically least point of a polytope is a
+vertex: one endpoint of any segment through it inside the polytope is
+lexicographically smaller.
+
+Choose $N$ from minors: if $\Delta_0R$ has rank $\rho$, fix a
+nonsingular $\rho\times\rho$ submatrix, set one free coordinate equal to
+its determinant and the other free coordinates to zero, and solve for
+the pivot coordinates by the adjugate. The entries of $N$ are at most
+$\rho!C^\rho\le n!C^n$. The equations $N^{\mathsf T}(\Delta_0Ax+\Delta_0c)=0$
+then have integer coefficients bounded by $C_1=n\cdot n!C^{n+1}$, as do
+the scaled rows of $E$. The vertex $x^*$ of $S$ is the unique solution
+of $n$ linearly independent equations among these, and Cramer's rule
+writes it with the common denominator $\abs{\det}\le n!C_1^n=U_Q$.
+\end{proof}
+
+\begin{proof}[Proof of Corollary~\ref{cor:recourse-qp}]
+Order the core coordinates first; then the core of the lexicographically
+least global minimizer is $a(\gamma)$. Write
+$f_\gamma(x)=\frac12x^{\mathsf T}Ax+c^{\mathsf T}x+c_0$, where $A$ is the
+constant symmetric Hessian of $f$ and only $c$ depends on $\gamma$. For
+the grid $G_M$, every sampled coefficient has denominator dividing
+$(M-1)$ times the denominator of $\sigma$, and its absolute value is at
+most $\sigma$. Hence one base-computable $\Delta_0$ and $C$ serve all
+draws in Lemma~\ref{lem:recourse-qp-height}, and $\log U_Q$ is
+polynomial in $L$. Query Theorem~\ref{thm:recourse-core}, or
+Corollary~\ref{cor:recourse-joint} for type~(P) with $\alpha=0$, at
+precision $t$ with $2^{-t}\le1/(4U_Q^2)$, so $t\le P(L)$. Each interval
+$[v_{t,i}-2^{-t},v_{t,i}+2^{-t}]$ contains $a_i$, a rational with
+denominator at most $U_Q$; distinct such rationals differ by at least
+$1/U_Q^2$, which exceeds the width $2^{1-t}$. The midpoint is within
+$1/(4U_Q^2)<1/(2U_Q^2)$ of $a_i$, so by Legendre's theorem $a_i$ is a
+convergent of its continued fraction; enumerating the convergents with
+denominator at most $U_Q$ and keeping the one in the interval recovers
+$a_i$ in polynomial time \citep{Schrijver1986}. Then
+$X_a=\{z:(a,z)\in X\}$ is a nonempty bounded rational polyhedron on
+which the quadratic $f_\gamma(a,\cdot)$ is convex, by residual convexity
+in type~(B) and by Lemma~\ref{lem:recourse-selected-point}(b) in
+type~(P). In type~(P) the set $X_a$ can be lower dimensional, and
+convexity on $X_a$ does not make the constant Hessian of
+$f_\gamma(a,\cdot)$ positive semidefinite on $\R^m$; for example, $-z^2$
+is convex on $\{0\}$. We therefore first pass to the affine hull of
+$X_a$. Lemma~\ref{lem:recourse-relative}, applied to $X_a$, gives a
+rational point $z_0$, a rational matrix $B'$ of full column rank $m'$,
+and the polytope $\mathcal R'=\{w:z_0+B'w\in X_a\}$, which contains a
+ball about the origin and satisfies $X_a=z_0+B'\mathcal R'$. If $m'=0$,
+put $z^*=z_0$. Otherwise the rational quadratic
+$w\mapsto f_\gamma(a,z_0+B'w)$ is convex on $\mathcal R'$, which has
+nonempty interior, so its constant Hessian $B'^{\mathsf T}A_{zz}B'$ is
+positive semidefinite, where $A_{zz}$ is the residual block of $A$.
+Solve this convex quadratic program over $\mathcal R'$ exactly
+\citep{KozlovTarasovKhachiyan1980}, obtaining a rational optimal $w^*$,
+and put $z^*=z_0+B'w^*$. Since $a$ is an optimal core,
+$\min_{X_a}f_\gamma(a,\cdot)=f_\gamma^*$, so $(a,z^*)$ is a global
+minimizer with value $f_\gamma^*=f_\gamma(a,z^*)$. The core query has
+precision polynomial in $L$, and its output, even on the fallback
+branch, is a rational of polynomial length; reconstruction, the linear
+programs of Lemma~\ref{lem:recourse-relative}, and the exact quadratic
+program cost polynomial time. The expected work is that of one query.
+\end{proof}
+
+\subsection{Error bounds and regularized selection}
+\label{app:recourse-analytic}
+
+The following lemmas are the forms of the shared error-bound and
+selector tools (Lemma~\ref{lem:integer-hoffman},
+Lemma~\ref{lem:selector}, and Lemmas~\ref{lem:points-cubic-transverse}
+and~\ref{lem:points-cubic-slice}) needed here, with real coefficients, supplied
+minor margins, and an inexact objective. We include their short proofs.
+
+\begin{lemma}[Hoffman bound with a minor margin]
+\label{lem:recourse-hoffman}
+Let $B$ and $T$ be real matrices with $s$ columns and entries in
+$[-C,C]$, $C\ge1$, and suppose every nonzero square minor of the stacked
+matrix $\bigl[\begin{smallmatrix}B\\T\end{smallmatrix}\bigr]$ has
+absolute value at least $\mu\in(0,1]$. Let $Q=\{x:Bx\le\beta\}$ and
+$Z=\{x\in Q:Tx=t\}\ne\emptyset$, with arbitrary real $\beta$ and $t$.
+Then $\dist(x,Z)\le(sC)^{s-1}\mu^{-1}\norm{Tx-t}$ for every $x\in Q$.
+For integer matrices one may take $\mu=1$.
+\end{lemma}
+
+\begin{proof}
+Let $w$ be the projection of $x$ onto the closed convex set $Z$; we may
+assume $x\ne w$. Since $Z$ is polyhedral, $x-w=B_I^{\mathsf T}\lambda
++T^{\mathsf T}\nu$ with $\lambda\ge0$ and $I$ the rows of $B$ active at
+$w$. Replace the rows of $T$ by a basis of its row space, and then
+remove rows of $B_I$ until all remaining rows are linearly independent:
+if a nontrivial combination of the remaining rows vanishes, it involves
+some row of $B_I$, and subtracting a suitable multiple keeps all
+$\lambda$ coefficients nonnegative while making one zero. We obtain an
+independent row matrix $R$ with $r\le s$ rows, each a row of $B_I$ or
+of $T$, and $x-w=R^{\mathsf T}\omega$ with nonnegative coefficients on
+the rows from $B_I$. By the Cauchy--Binet formula, $\det(RR^{\mathsf T})$
+is the sum of the squares of the $r\times r$ minors of $R$; at least
+one is nonzero, so $\det(RR^{\mathsf T})\ge\mu^2$. Every eigenvalue of
+$RR^{\mathsf T}$ is at most $\norm R_F^2\le s^2C^2$, so its least
+eigenvalue is at least $\mu^2(sC)^{-2(r-1)}$, and
+$\norm\omega\le(sC)^{s-1}\mu^{-1}\norm{x-w}$. Finally
+$\norm{x-w}^2=\omega^{\mathsf T}R(x-w)$. A row of $B_I$ contributes
+$\omega_i(B_ix-\beta_i)\le0$, since $B_iw=\beta_i$ and $x\in Q$; a row
+of $T$ contributes $\omega_i(T_ix-t_i)$, since $T_iw=t_i$. Hence
+$\norm{x-w}^2\le\norm\omega\norm{Tx-t}$, which gives the claim.
+\end{proof}
+
+\begin{lemma}[Cubic transverse estimate and slice]
+\label{lem:recourse-transverse}
+Let $\varphi$ be a real cubic polynomial on $\R^{n_0}$ and $Y\subseteq\R^{n_0}$
+a convex set on which $\nabla^2\varphi\succeq0$. Let $c\in Y$,
+$\rho\ge\sup_{x\in Y}\norm{x-c}$, and $M\ge\sup_Y\norm{\nabla^2\varphi}$.
+Let $y$ minimize $\varphi$ on $Y$, let $x\in Y$, $d=x-y$, and
+$E=\varphi(x)-\varphi(y)$.
+\begin{enumerate}[label=(\alph*)]
+\item $\bigl(d^{\mathsf T}\nabla^2\varphi(c)d\bigr)^2\le108M\rho^2E$.
+\item Let $K$ be a subspace contained in $\ker\nabla^2\varphi(\xi)$ for
+every $\xi\in Y$, $\Pi$ the orthogonal projection onto $K^\perp$, and
+$g=\nabla\varphi(c)$. For $x',y'\in Y$,
+$\abs{\varphi(x')-\varphi(y')-g^{\mathsf T}(x'-y')}\le M\rho\norm{\Pi(x'-y')}$.
+In particular $\abs{g^{\mathsf T}d}\le E+M\rho\norm{\Pi d}$.
+\item If moreover $\ker\nabla^2\varphi(c)=K$, then
+$\argmin_Y\varphi=\{x\in Y:\nabla^2\varphi(c)(x-y)=0,\ g^{\mathsf T}(x-y)=0\}$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+(a) Put $a_0=d^{\mathsf T}\nabla^2\varphi(y)d\ge0$,
+$b_0=d^{\mathsf T}\nabla^2\varphi(x)d\ge0$, and $u=a_0+b_0$. Since
+$\varphi$ is cubic, $\nabla^2\varphi(x)-\nabla^2\varphi(y)=\mathcal T[d]$
+for the constant symmetric third-derivative tensor $\mathcal T$, and
+exact Taylor expansion gives
+$E=\nabla\varphi(y)^{\mathsf T}d+\frac12a_0+\frac16(b_0-a_0)\ge u/6$,
+because $\nabla\varphi(y)^{\mathsf T}d\ge0$ by first-order optimality on
+the convex set $Y$. Symmetry of $\mathcal T$ gives
+$d^{\mathsf T}\nabla^2\varphi(c)d=a_0+(c-y)^{\mathsf T}
+(\nabla^2\varphi(x)-\nabla^2\varphi(y))d$. For positive semidefinite
+$P$, $\norm{Pd}\le\sqrt{\norm P\,d^{\mathsf T}Pd}$; with
+$\norm{c-y}\le\rho$ this gives
+$d^{\mathsf T}\nabla^2\varphi(c)d\le u+\rho\sqrt M(\sqrt{a_0}+\sqrt{b_0})
+\le u+\rho\sqrt{2Mu}$. Since $\norm d\le2\rho$, $u\le8M\rho^2$, so
+$u\le2\rho\sqrt{2Mu}$. As $c\in Y$, the left side is nonnegative, and
+$(d^{\mathsf T}\nabla^2\varphi(c)d)^2\le18M\rho^2u\le108M\rho^2E$.
+
+(b) For $\xi\in Y$, $\nabla\varphi(\xi)-g=\int_0^1\nabla^2\varphi(c+\theta(\xi-c))
+(\xi-c)\,d\theta$. Each Hessian on $Y$ is symmetric with $K$ in its
+kernel, so its range lies in $K^\perp$; hence $\nabla\varphi(\xi)-g\in
+K^\perp$ and $\norm{\nabla\varphi(\xi)-g}\le M\rho$. Integrating along
+the segment from $y'$ to $x'$ gives
+$\varphi(x')-\varphi(y')-g^{\mathsf T}(x'-y')=\int_0^1
+(\nabla\varphi(y'+\theta(x'-y'))-g)^{\mathsf T}\Pi(x'-y')\,d\theta$.
+
+(c) If $x$ is a minimizer, then $E=0$, so (a) and positive
+semidefiniteness give $\nabla^2\varphi(c)d=0$; thus $d\in K$, $\Pi d=0$,
+and (b) gives $g^{\mathsf T}d=0$. Conversely, the two equations give
+$\Pi d=0$ and then $\varphi(x)-\varphi(y)=g^{\mathsf T}d=0$ by (b).
+\end{proof}
+
+\begin{lemma}[Gradient rows under global convexity]
+\label{lem:recourse-bregman}
+Let $D\ge2$ and let $\varphi$ be a real polynomial on $\R^{n_0}$ of degree
+at most $D$ that is convex on all of $\R^{n_0}$. Let $Y\subseteq\R^{n_0}$ be
+convex, $y$ a minimizer of $\varphi$ on $Y$ with $\norm y_\infty\le\rho$,
+$\rho\ge1$, and $x\in Y$ with $E=\varphi(x)-\varphi(y)\in[0,1]$. Let
+$V\ge\sup\{\abs{\varphi(\xi)}:\norm\xi_\infty\le\rho+2\}$ and
+$G\ge\sup\{\norm{\nabla\varphi(\xi)}_1:\norm\xi_\infty\le\rho\}$. Then
+every coefficient of the polynomial $\xi\mapsto\nabla\varphi(\xi)^{\mathsf T}(x-y)$
+has absolute value at most
+\[
+ C_\varphi E^{1/D},\qquad
+ C_\varphi=B_{D-1}^{n_0}\bigl(1+J_D(V+G(1+\rho)+C_D3^D)\bigr),
+\]
+where $C_D=(D+1)D^D$, $J_D=(D+1)D^{D+1}$, and $B_r=(r+1)2^rr^r$.
+\end{lemma}
+
+\begin{proof}
+Let $d=x-y$ and let
+$\beta(u)=\varphi(y+u)-\varphi(y)-\nabla\varphi(y)^{\mathsf T}u$, which is
+convex and nonnegative on $\R^{n_0}$ with $\beta(0)=0$. Since
+$\nabla\varphi(y)^{\mathsf T}d\ge0$ and $\beta(d)\ge0$, we have
+$0\le\nabla\varphi(y)^{\mathsf T}d\le E$ and $\beta(d)\le E$; convexity
+gives $0\le\beta(\theta d)\le E$ for $\theta\in[0,1]$. Two
+interpolation facts are used. If a univariate polynomial of degree at
+most $D$ is bounded by $E$ at the nodes $j/D$, $0\le j\le D$, then it is
+bounded by $C_DE(1+\abs\theta)^D$ at every real $\theta$, because each
+Lagrange basis polynomial has denominator at least $D^{-D}$ and
+numerator at most $(1+\abs\theta)^D$. If a polynomial $\pi$ of degree
+at most $D$ is bounded by $K$ on $[0,\bar\theta]$, then
+$\abs{\pi'(0)}\le J_DK/\bar\theta$, by interpolating at the nodes
+$j\bar\theta/D$.
+
+Fix $\xi\in[0,1]^{n_0}$ and let $\pi(\theta)=\beta(\xi-y+\theta d)$. By
+midpoint convexity,
+$0\le\pi(\theta)\le\frac12\beta(2(\xi-y))+\frac12\beta(2\theta d)$. Here
+$\beta(2(\xi-y))\le2V+2G(1+\rho)$, because $\norm{2\xi-y}_\infty\le\rho+2$
+and $\norm{\xi-y}_\infty\le1+\rho$, and
+$\beta(2\theta d)\le C_DE(1+2\abs\theta)^D$. If $E>0$, then on
+$[0,E^{-1/D}]$ we have $E(1+2\theta)^D\le(E^{1/D}+2)^D\le3^D$, so
+$\abs\pi\le K:=V+G(1+\rho)+C_D3^D/2$ there and
+$\abs{\pi'(0)}\le J_DKE^{1/D}$. If $E=0$, then $\beta(\theta d)=0$ on
+$[0,1]$ and hence for all $\theta$, so $\pi$ is bounded on $\R$ and
+constant, and $\pi'(0)=0$. Since
+$\pi'(0)=(\nabla\varphi(\xi)-\nabla\varphi(y))^{\mathsf T}d$, in both cases
+$\abs{\nabla\varphi(\xi)^{\mathsf T}d}\le(1+J_DK)E^{1/D}$ on $[0,1]^{n_0}$.
+
+Finally, a polynomial of degree at most $r$ in each of $n_0$ variables
+that is bounded by $K'$ on $[0,1]^{n_0}$ has all coefficients bounded by
+$B_r^{n_0}K'$: interpolate on the grid $\{0,1/r,\ldots,1\}^{n_0}$, and note that
+each univariate Lagrange basis polynomial on these nodes has
+coefficients at most $2^rr^r$. Apply this with $r=D-1$.
+\end{proof}
+
+\begin{lemma}[Regularized selection with an inexact objective]
+\label{lem:recourse-selection}
+Let $Y\subseteq\R^{n_0}$ be compact and convex, $\varphi$ convex and
+continuous on $Y$, $S=\argmin_Y\varphi$, $\varphi^*=\min_Y\varphi$, and $p$
+the least-norm point of $S$. Let $R_x\ge\max\{1,\sup_Y\norm x\}$,
+$\Gamma\ge1$, and $D_e\ge2$, and suppose
+$\dist(x,S)\le\Gamma(\varphi(x)-\varphi^*)^{1/D_e}$ whenever $x\in Y$ and
+$\varphi(x)-\varphi^*\le1$. For $0<e\le1$ put
+\[
+ \tau=\frac{e^{2D_e-2}}{2^{3D_e-2}R_x^{D_e}\Gamma^{D_e}} .
+\]
+Then every $\hat x\in Y$ with
+$\varphi(\hat x)+\tau\norm{\hat x}^2\le\min_Y(\varphi+\tau\norm\cdot^2)+\tau e^2/4$
+satisfies $\norm{\hat x-p}\le e$.
+\end{lemma}
+
+\begin{proof}
+Let $x_\tau$ minimize $\varphi+\tau\norm\cdot^2$ on $Y$. Comparison with
+$p$ gives $\norm{x_\tau}\le\norm p$ and
+$\varphi(x_\tau)-\varphi^*\le\tau R_x^2\le1$. Let $s$ be the point of $S$
+nearest to $x_\tau$ and $\epsilon_d=\norm{x_\tau-s}$. Comparison with $s$
+gives $\varphi(x_\tau)-\varphi^*\le\tau(\norm s^2-\norm{x_\tau}^2)\le
+2R_x\tau\epsilon_d$, and the error bound gives
+$\epsilon_d^{D_e}\le\Gamma^{D_e}2R_x\tau\epsilon_d$, so
+$\epsilon_d\le(2R_x\tau\Gamma^{D_e})^{1/(D_e-1)}=e^2/(8R_x)$. Since $p$
+is the projection of the origin onto $S$, $p^{\mathsf T}(s-p)\ge0$, and
+\[
+ \norm{x_\tau-p}^2\le2\norm p^2-2p^{\mathsf T}x_\tau
+ =2p^{\mathsf T}(p-s)+2p^{\mathsf T}(s-x_\tau)\le2R_x\epsilon_d\le e^2/4 .
+\]
+The function $\varphi+\tau\norm\cdot^2$ is $2\tau$-strongly convex, so
+$\tau\norm{\hat x-x_\tau}^2\le\tau e^2/4$. The triangle inequality gives
+$\norm{\hat x-p}\le e$.
+\end{proof}
+
+\begin{lemma}[Relative coordinates]
+\label{lem:recourse-relative}
+For a nonempty bounded rational polytope $X=\{x\in\R^n:Ex\le e\}$ one
+computes in polynomial time an integer $n'\ge0$, a rational $x_0\in X$,
+a rational $n\times n'$ matrix $B$ of rank $n'$, and rationals $r>0$ and
+$R_0\ge1$, all of polynomial bit length, such that
+$\mathcal R=\{w:x_0+Bw\in X\}$ satisfies $X=x_0+B\mathcal R$ and
+$B(0,r)\subseteq\mathcal R\subseteq B(0,R_0)$.
+\end{lemma}
+
+\begin{proof}
+For each row $i$ solve the linear program $\max\{e_i-E_ix:x\in X\}$. Let
+$I_0$ be the rows whose maximum slack is zero; then
+$\operatorname{aff}X=\{x:E_{I_0}x=e_{I_0}\}$. If every row lies in
+$I_0$, $X$ is a point and $n'=0$. Otherwise average optimal solutions
+for the rows outside $I_0$ to get $\bar x\in X$ with positive slack in
+all of them. Let the columns of $B$ be a rational basis of
+$\ker E_{I_0}$. The linear program
+$\max\{\varrho:\ E_i(\bar x+Bw)+\varrho\norm{E_iB}_1\le e_i\ (i\notin I_0),
+\ 0\le\varrho\le1\}$ has a positive optimum $r$ at a rational point $w^*$;
+put $x_0=\bar x+Bw^*$. Every $u$ with $\norm u_\infty\le r$ keeps
+$x_0+Bu$ in $X$, so the closed, and hence the open, Euclidean ball of
+radius $r$ lies in $\mathcal R$. Coordinate linear programs bound
+$\abs{w_j}$ on $\mathcal R$ by rationals $m_j$. Put $R_0=1+\sum_jm_j$;
+then $\norm w\le\norm w_1\le\sum_jm_j<R_0$ on $\mathcal R$, so
+$\mathcal R\subseteq B(0,R_0)$.
+\end{proof}
+
+\subsection{Proof of Theorem~\ref{thm:recourse-convexified}}
+\label{app:recourse-convexified}
+
+Throughout this subsection the instance has type~(P), $\kappa=\alpha$,
+and we assume $D\ge2$ (a degree bound can always be raised). Put
+$G_\alpha=f+\frac\alpha2\norm v^2$, $\beta=\alpha+1$, and
+$G_\beta=G_\alpha+\frac12\norm v^2$. For a draw $\gamma$ with selected
+core $a$ define the surrogate
+\[
+ \psi_a(x)=f_\gamma(x)+\frac\beta2\norm{v-a}^2
+ =G_\beta(x)+(\gamma-\beta a)^{\mathsf T}v+\frac\beta2\norm a^2,
+ \qquad S_a=\{a\}\times S(\gamma).
+\]
+
+\begin{lemma}[The convex surrogate]
+\label{lem:recourse-surrogate}
+In case~(i) $\psi_a$ is convex on $X$; in case~(ii) it is convex on
+$\R^n$. Moreover $\min_X\psi_a=f_\gamma^*$, $\argmin_X\psi_a=S_a$,
+$\psi_a(x)-f_\gamma^*\ge\frac\beta2\norm{v-a}^2$ on $X$, and the
+least-norm point of $S_a$ is $x^\sharp(\gamma)$.
+\end{lemma}
+
+\begin{proof}
+$\psi_a$ equals $G_\alpha$ plus the convex function $\frac12\norm v^2$
+plus an affine function. On $X$, $\psi_a(x)\ge f_\gamma(x)\ge f_\gamma^*$,
+with equality exactly when $f_\gamma(x)=f_\gamma^*$ and $v=a$, that is,
+on $S_a$. The least-norm point of $\{a\}\times S(\gamma)$ is $(a,p)$.
+\end{proof}
+
+\begin{lemma}[A uniform error bound with rational rows]
+\label{lem:recourse-convexified-error}
+Let $D_e=4$ in case~(i) and $D_e=D$ in case~(ii). There is a
+base-computable rational $\Gamma\ge1$ of polynomial bit length such
+that, for every $\gamma\in[-\sigma,\sigma]^k$ and every $x\in X$ with
+$E=\psi_a(x)-f_\gamma^*\le1$,
+\[
+ \dist(x,S_a)\le\Gamma E^{1/D_e}.
+\]
+\end{lemma}
+
+\begin{proof}
+Put $N=k(\sigma+\beta)$, so that $\norm{\gamma-\beta a}\le N$. Fix
+$y\in S_a$ and write $d=x-y$ and $d_v=v-a$ for its core part. By
+Lemma~\ref{lem:recourse-surrogate}, $\norm{d_v}\le\sqrt{2E/\beta}\le
+2E^{1/D_e}$ when $E\le1$.
+
+\emph{Case~(i).} Take $x_0,B,r,R_0,\mathcal R,n'$ from
+Lemma~\ref{lem:recourse-relative}. If $n'=0$, then $X$ is a point and
+$\Gamma=1$ works. Otherwise let $B_v$ be the first $k$ rows of $B$, so
+that the core of $x_0+Bw$ is $v_0+B_vw$. The function
+$h(w)=G_\beta(x_0+Bw)$ is an explicit rational cubic; put
+$H(w)=\nabla^2h(w)$, $H_0=H(0)$, $g_0=\nabla h(0)$, and $K=\ker H_0$. Since
+$h$ is convex on the full-dimensional set $\mathcal R$, $H\succeq0$ on
+$\mathcal R$. For $w\in\mathcal R$ the point $w'=-(r/R_0)w$ lies in
+$B(0,r)\subseteq\mathcal R$, and $0$ is a convex combination of $w$ and
+$w'$ with weights $\theta/(1+\theta)$ and $1/(1+\theta)$, $\theta=r/R_0$.
+As $H$ is affine, $H_0\succeq\frac\theta{1+\theta}H(w)$, that is,
+\[
+ 0\preceq H(w)\preceq\beta_0H_0\quad(w\in\mathcal R),\qquad
+ \beta_0=1+R_0/r .
+\]
+Hence $K\subseteq\ker H(w)$ on $\mathcal R$. Let
+$M_0=\max\{1,\max_i\sum_j\abs{(H_0)_{ij}}\}\ge\norm{H_0}$ and
+$M=\beta_0M_0$. If $H_0\ne0$, let $\Delta_H$ be a positive integer with
+$\Delta_HH_0$ integral, let $C_H\ge1$ bound its entries, and put
+$\lambda_0=1/(\Delta_H(n'C_H)^{n'-1})$; the product of the positive
+eigenvalues of $\Delta_HH_0$ is a sum of principal minors, hence a
+positive integer, and each eigenvalue is at most $n'C_H$, so every
+positive eigenvalue of $H_0$ is at least $\lambda_0$. Put
+$C_\perp=\max\{1,108MR_0^2/\lambda_0^2\}$, or $C_\perp=1$ if $H_0=0$.
+
+Let $w,u\in\mathcal R$ represent $x,y$, put $d'=w-u$, and let $\Pi$
+project onto $K^\perp$. The reduced surrogate
+$\tau_a(w)=\psi_a(x_0+Bw)=h(w)+(\gamma-\beta a)^{\mathsf T}(v_0+B_vw)+{\rm const}$
+is a cubic, convex on $\mathcal R$, with Hessian $H$ and minimizer $u$,
+and $E=\tau_a(w)-\tau_a(u)$. Lemma~\ref{lem:recourse-transverse}(a) with
+$c=0$ and $\rho=R_0$ gives $(d'^{\mathsf T}H_0d')^2\le108MR_0^2E$; if
+$H_0\ne0$, then $d'^{\mathsf T}H_0d'\ge\lambda_0\norm{\Pi d'}^2$, so
+$\norm{\Pi d'}\le C_\perp E^{1/4}$, and if $H_0=0$ then $\Pi=0$.
+Lemma~\ref{lem:recourse-transverse}(b), applied to $h$, gives
+$\abs{h(w)-h(u)-g_0^{\mathsf T}d'}\le MR_0\norm{\Pi d'}$. Since
+$E=h(w)-h(u)+(\gamma-\beta a)^{\mathsf T}B_vd'$ and $B_vd'=d_v$,
+\[
+ \abs{g_0^{\mathsf T}d'}\le E+N\norm{d_v}+MR_0\norm{\Pi d'} .
+\]
+Let $J=[H_0;g_0^{\mathsf T};B_v]$, a known rational matrix. For $E\le1$,
+$\norm{Jd'}\le M_0\norm{\Pi d'}+\abs{g_0^{\mathsf T}d'}+\norm{d_v}\le
+C_{\rm res}E^{1/4}$ with $C_{\rm res}=3+2N+(M_0+MR_0)C_\perp$.
+
+Let $\mathcal R_a=\{w\in\mathcal R:x_0+Bw\in S_a\}$ be the reduced
+optimal set. Then $\mathcal R_a=\{w\in\mathcal R:J(w-u)=0\}$. Indeed, if
+$w$ is optimal, that is, $w\in\mathcal R_a$, then $E=0$ and the bounds
+give $Jd'=0$. Conversely, $Jd'=0$ gives $d'\in K$, so
+$h(w)-h(u)=g_0^{\mathsf T}d'=0$ by
+Lemma~\ref{lem:recourse-transverse}(b), and $B_vd'=0$, so $E=0$ and $w$
+is optimal. Clear
+the denominators of $J$ and of the rows $EB$ describing $\mathcal R$ by
+a positive integer $\Delta_J$, and let $C_J\ge1$ bound the entries of the
+two integer matrices. Lemma~\ref{lem:recourse-hoffman} with $\mu=1$ gives
+$\dist(w,\mathcal R_a)\le(n'C_J)^{n'-1}\Delta_J\norm{Jd'}$. Since
+$x=x_0+Bw$, the claim holds with
+$\Gamma=B_F(n'C_J)^{n'-1}\Delta_JC_{\rm res}$, where $B_F\ge\max\{1,\norm B\}$
+is a rational bound, for example $B_F=\max\{1,\sum_{i,j}\abs{B_{ij}}\}$.
+
+\emph{Case~(ii).} Let $\rho\ge1$ bound $\norm x_\infty$ on the supplied
+box. Writing $f=\sum_\nu f_\nu x^\nu$, the numbers
+\[
+ V=\sum_\nu\abs{f_\nu}(\rho+2)^{\abs\nu}+N(\rho+2)+\tfrac\beta2k(\rho+3)^2,
+ \qquad
+ G=\sum_\nu\abs{f_\nu}\abs\nu\rho^{\abs\nu-1}+k\sigma+\beta k(\rho+1)
+\]
+bound $\abs{\psi_a}$ on $\{\norm\xi_\infty\le\rho+2\}$ and
+$\norm{\nabla\psi_a}_1$ on $\{\norm\xi_\infty\le\rho\}$, uniformly in $a$
+and $\gamma$. Lemma~\ref{lem:recourse-bregman}, applied to $\psi_a$ on
+$Y=X$, bounds every coefficient of $\xi\mapsto\nabla\psi_a(\xi)^{\mathsf T}d$
+by $C_\psi E^{1/D}$, with $C_\psi$ computed from $V$, $G$, $\rho$, $n$, $D$.
+For a polynomial $\varphi$ of degree at most $D$ let $N_\varphi$ be the
+matrix whose rows are indexed by the monomials $\xi^\mu$ of degree at
+most $D-1$, with row $\mu$ equal to $((\mu_i+1)\varphi_{\mu+e_i})_{i\le n}$;
+then $N_\varphi d$ is the coefficient vector of
+$\nabla\varphi(\xi)^{\mathsf T}d$. Since $\psi_a-G_\beta$ is affine,
+$N_{\psi_a}$ and $N_{G_\beta}$ differ only in the row $\mu=0$, by
+$((\gamma-\beta a)^{\mathsf T},0)$. Let $J=[N_{G_\beta};\,(I_k\ 0)]$,
+a known rational matrix with at most $(n+1)^{D-1}+k$ rows. The vector
+$N_{\psi_a}d$ has at most $\binom{n+D-1}{D-1}\le(n+1)^{D-1}$ entries, each
+of absolute value at most $C_\psi E^{1/D}$, so its norm is at most
+$(n+1)^{\lceil(D-1)/2\rceil}C_\psi E^{1/D}$. The integer exponent makes
+the constant $C_{\rm res}$ in the next display rational. Then, for
+$E\le1$,
+\[
+ \norm{Jd}\le(n+1)^{\lceil(D-1)/2\rceil}C_\psi E^{1/D}+N\norm{d_v}+\norm{d_v}
+ \le C_{\rm res}E^{1/D},\qquad
+ C_{\rm res}=(n+1)^{\lceil(D-1)/2\rceil}C_\psi+2N+2 .
+\]
+The optimal set is $S_a=\{x\in X:J(x-y)=0\}$: if $E=0$ the bound gives
+$Jd=0$; conversely $Jd=0$ gives $d_v=0$ and $N_{G_\beta}d=0$, hence
+$N_{\psi_a}d=0$, so $\nabla\psi_a(\xi)^{\mathsf T}d=0$ for all $\xi$ and
+$\psi_a(x)=\psi_a(y)$. Lemma~\ref{lem:recourse-hoffman}, applied after
+clearing the denominators of $J$ and of the rows of $X$, gives the claim
+with $\Gamma=(nC_J)^{n-1}\Delta_JC_{\rm res}$.
+
+In both cases the constants depend only on the instance, not on
+$\gamma$ or $a$, and their bit lengths are polynomial in $L$ for fixed
+$D$.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:recourse-convexified}]
+Use the grid and the core evaluator of Theorem~\ref{thm:recourse-core}
+with $\kappa=\alpha$, or of Corollary~\ref{cor:recourse-joint} if
+$\alpha=0$. For a query $q$ let $\epsilon=2^{-q}$, let $R_x\ge
+\max\{1,\sup_X\norm x\}$ be a rational bound from the supplied box, and
+put
+\[
+ \tau=\frac{\epsilon^{2D_e-2}}{2^{3D_e-2}R_x^{D_e}\Gamma^{D_e}},\qquad
+ \eta_q=\frac{\tau\epsilon^2}8,\qquad
+ \delta_q=\frac{\tau\epsilon^2}{16\beta k}.
+\]
+Query the core evaluator with accuracy $\delta_q$; it returns a rational
+$b$ with $\norm{b-a}\le\delta_q$. Apply \eqref{eq:recourse-cv} on $X$ to
+the explicit rational convex polynomial
+$\Phi_b(x)=G_\beta(x)+(\gamma-\beta b)^{\mathsf T}v+\tau\norm x^2$ with
+accuracy $\eta_q$, and return its point $\hat x\in X$. Let
+$\Phi_a=\psi_a-\frac\beta2\norm a^2+\tau\norm x^2$. On $X$,
+$\abs{\Phi_b-\Phi_a}=\beta\abs{(a-b)^{\mathsf T}v}\le\beta\sqrt k\,\delta_q$,
+so
+$\Phi_a(\hat x)-\min_X\Phi_a\le\eta_q+2\beta\sqrt k\,\delta_q\le\tau\epsilon^2/4$.
+By Lemmas~\ref{lem:recourse-surrogate}, \ref{lem:recourse-convexified-error},
+and~\ref{lem:recourse-selection} with $e=\epsilon$,
+$\norm{\hat x-x^\sharp(\gamma)}\le\epsilon$. The core query has precision
+$\log(1/\delta_q)\le(2D_e+2)q+P_D(L)$ and costs at most
+$\Omega(\gamma)P_D(L+q)$. The convex solve has data of bit length
+$P_D(L+q)$ and tolerance $\langle\eta_q\rangle\le(2D_e+2)q+P_D(L)$, so it
+costs $P_D(L+q)$. The random
+factor is that of the core evaluator, so its expectation has the stated
+bound.
+\end{proof}
+
+The completion never reads an exact algebraic record of $a$: it uses
+only the short rational output $b$. The surrogate is optimized on the
+fixed domain $X$, so no continuity of residual optimizers in the core is
+needed.
+
+\begin{proof}[Proof of Corollary~\ref{cor:recourse-affine-power}]
+Each $w_j(a_j^{\mathsf T}x-b_j)^{p_j}$ is convex because $p_j$ is even
+and $w_j>0$, and $\frac12x^{\mathsf T}Ax$ is convex because
+$A\succeq0$; so the representation is convex on $\R^n$. For fixed $D$,
+expanding the right side produces at most $\binom{n+D}D$ monomials, so
+the identity with $f+\frac\alpha2\norm v^2$ is checked in polynomial
+time, and $A\succeq0$ is checked by exact symmetric Gaussian elimination.
+\end{proof}
+
+\subsection{Residual cubic fibers}
+\label{app:recourse-fiber}
+
+\begin{proof}[Proof of Proposition~\ref{prop:recourse-fiber}]
+If $m=0$, the residual space consists of the empty vector. Then
+$S_v=\{()\}$, all matrix and kernel assertions are vacuous, and part~(c)
+holds with $\Gamma=1$. In the rest of the proof assume $m\ge1$.
+
+(a) Since $f$ is cubic, $H$ is affine in $(v,z)$. For each
+$v\in[0,1]^k$, $f(v,\cdot)$ is convex on $[0,1]^m$, so $H(v,z)\succeq0$
+there, by continuity at the boundary. The reflection
+$(v,z)\mapsto(2c_A-v,\mathbf1-z)$ maps $A\times[0,1]^m$ onto itself, and
+affinity gives $H(v,z)+H(2c_A-v,\mathbf1-z)=2H_A$. Both terms are
+positive semidefinite, so $0\preceq H(v,z)\preceq2H_A$, and
+$K_A:=\ker H_A\subseteq\ker H(v,z)$. If the free coordinates of $v$ lie in
+$[\delta,1-\delta]$ with $\delta<\frac12$, then
+$w=(v-2\delta c_A)/(1-2\delta)\in A$ and $v=2\delta c_A+(1-2\delta)w$, so
+$H(v,c_z)=2\delta H_A+(1-2\delta)H(w,c_z)\succeq2\delta H_A$; for
+$\delta=\frac12$, $v=c_A$. Every $v$ in the relative interior of $A$ has
+such a $\delta>0$, so $\ker H(v,c_z)\subseteq K_A$.
+
+(b) Apply Lemma~\ref{lem:recourse-transverse}(c) to $\varphi=f(v,\cdot)$
+on $Y=[0,1]^m$ with $c=c_z$, $\rho=\sqrt m/2$, and $K=K_A$; part~(a)
+gives the kernel hypotheses. Since $\ker H(v,c_z)=K_A=\ker H_A$, the
+condition $H(v,c_z)(z-y)=0$ is equivalent to $H_A(z-y)=0$. A square
+submatrix of $J_A(v)$ contains the row $g_A(v)^{\mathsf T}$ at most once;
+its determinant is constant if it does not, and otherwise a linear
+combination, with constant coefficients, of the entries of $g_A(v)$,
+which have degree at most two in $v$.
+
+(c) Let $M_A=\max\{1,\max_j\sum_l\abs{(H_A)_{jl}}\}$ and $M_*=2M_A$, so
+that $\norm{H(v,z)}\le M_*$ on $A\times[0,1]^m$. If $H_A\ne0$, let
+$\lambda_0^A$ be the rational lower bound on its positive eigenvalues
+from principal minors, as in the proof of
+Lemma~\ref{lem:recourse-convexified-error}, and put
+$C_\perp=\max\{1,27M_*m/(2\delta\lambda_0^A)^2\}$; if $H_A=0$ put
+$C_\perp=1$. Let $C_B\ge1$ bound the absolute values of the entries of
+$H_A$ and of $g_A(v')$ for all $v'\in[0,1]^k$, by coefficient sums. Fix
+$z\in[0,1]^m$ with gap $E\le1$, $y\in S_v$, $d=z-y$, and $\Pi$ the
+projection onto $K_A^\perp$. We first show
+$\norm{\Pi d}\le C_\perp E^{1/4}$. If $H_A=0$, then $K_A=\R^m$ and
+$\Pi=0$, so there is nothing to prove. If $H_A\ne0$, part~(a) gives
+$d^{\mathsf T}H(v,c_z)d\ge2\delta\,d^{\mathsf T}H_Ad
+\ge2\delta\lambda_0^A\norm{\Pi d}^2$, and
+Lemma~\ref{lem:recourse-transverse}(a) with $\rho^2=m/4$ gives
+$(d^{\mathsf T}H(v,c_z)d)^2\le27M_*mE$; together these give the claim.
+Part~(b) of that lemma, with $\rho=\sqrt m/2\le m$, gives
+$\abs{g_A(v)^{\mathsf T}d}\le E+M_*m\norm{\Pi d}$. Using $m$ in place of
+$\sqrt m/2$ makes the constant $\Gamma$ defined next rational. With
+$T=[H_A;g_A(v)^{\mathsf T}]$ and
+$H_Ad=H_A\Pi d$,
+$\norm{Td}\le\bigl(1+(M_A+M_*m)C_\perp\bigr)E^{1/4}$.
+By part~(b), $S_v=\{z\in[0,1]^m:Tz=Ty\}$. Write
+$[0,1]^m=\{z:z\le\mathbf1,\,-z\le0\}$. Up to sign, every nonzero square
+minor of the stacked matrix of box rows and $T$ is a nonzero square
+minor of $J_A(v)$, hence at least $\mu$ in absolute value.
+Lemma~\ref{lem:recourse-hoffman} gives
+\[
+ \dist(z,S_v)\le\Gamma E^{1/4},\qquad
+ \Gamma=(mC_B)^{m-1}\mu^{-1}\bigl(1+(M_A+M_*m)C_\perp\bigr).
+\]
+All quantities in this formula are rational and computed by arithmetic
+on $f$, $A$, $\delta$, and $\mu$, so $\Gamma$ is computed in time, and
+has bit length, polynomial in $L+\langle\delta\rangle+\langle\mu\rangle$.
+\end{proof}
+
+\begin{lemma}[Uniform heights of the minors]
+\label{lem:recourse-minor-heights}
+There are base-computable positive integers $\Delta$ and $B$, with
+$\log\Delta+\log B$ polynomial in $L$, such that for every face $A$ and
+every square submatrix of $J_A(v)$, the polynomial $\Delta\det(\cdot)$,
+with the fixed coordinates of $A$ substituted, has integer coefficients
+of absolute value at most $B$ in the free coordinates.
+\end{lemma}
+
+\begin{proof}
+Let $d_0$ be the product of the denominators of the coefficients of
+$f=\sum_\nu f_\nu x^\nu$, and $d=8d_0$. Entries of $H_A$ are values at
+points with coordinates in $\{0,\frac12,1\}$ of second derivatives of
+degree at most one, so $d$ clears them. Entries of $g_A(v)$ are
+first $z$-derivatives, of degree at most two, evaluated at $z=c_z$; after
+substituting the fixed coordinates of $A$, their coefficients are
+cleared by $d$. Let $C_0=\max\{d,\lceil6d\sum_\nu\abs{f_\nu}\rceil\}$.
+Then $C_0$ bounds the entries of $dH_A$, the entries $d$ of $d\,I_m$,
+and the sum of the absolute coefficients of each entry of $d\,g_A$ on
+every face. A minor of order $r'\le m$ is a sum of $r'!$ signed products
+of $r'$ entries, at most one from the row $g_A^{\mathsf T}$. Multiplied
+by $d^{r'}$, each product is an integer polynomial whose coefficient
+absolute values sum to at most $C_0^{r'}$. Hence $\Delta=d^m$ and
+$B=d^mm!\,C_0^m$ work.
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:recourse-examples}]
+(a) Here $\partial_z^2f=2v\ge0$. For $v>0$ the unique residual
+minimizer is $z=0$, and at $z=1$ the gap is $v$ while the distance is
+one; a bound $1\le\Gamma v^\theta$ for all $v\in(0,1]$ is impossible.
+The Hessian of $f+\frac\alpha2v^2$ is
+$\bigl[\begin{smallmatrix}\alpha&2z\\2z&2v\end{smallmatrix}\bigr]$, whose
+determinant at $(0,\frac12)$ is $-1$. A function convex on the square
+has positive semidefinite Hessian on the closed square, so no $\alpha$
+works.
+
+(b) The fibers are affine. For $v>0$ the coefficient of $z$ is
+$-v^2<0$, so the unique residual minimizer is $z=1$ and the projected
+value is $\gamma v-v^2=v(\gamma-v)>0$ on $(0,1]$, while $f_\gamma(0,z)=0$
+for all $z$. Thus the optimal set is $\{0\}\times[0,1]$, $a=0$, $p=0$,
+and $(b_j,1)\to(0,1)$. The Hessian of $f_\gamma+\frac\alpha2v^2$ is
+$\bigl[\begin{smallmatrix}\alpha-2z&-2v\\-2v&0\end{smallmatrix}\bigr]$,
+with determinant $-4v^2<0$ for $v>0$. For $f=-v^2z$, $\Lambda=0$ is a
+valid coordinate bound, and when $\sigma>1$ the draws $\gamma\in(1,\sigma]$
+have probability at least $(\sigma-1)/(2\sigma)-2/M>0$ under the grid
+law for large $M$.
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:recourse-face}}
+\label{app:recourse-face}
+
+Fix $i$ and $\gamma_{-i}$, and let
+\[
+ V_i(s)=\min\Bigl\{f(v,z)+\sum_{l\ne i}\gamma_lv_l:\ (v,z)\in X,\ v_i=s\Bigr\},
+ \qquad s\in[0,1].
+\]
+The $i$-th coordinates of the optimal cores of $f_{\gamma+\theta e_i}$
+are exactly the minimizers of $V_i(s)+(\gamma_i+\theta)s$ on $[0,1]$. The
+function $V_i$ is continuous, and Lipschitz with constant
+$G_i=\sup_X\abs{\partial f/\partial v_i}$: moving the $i$-th coordinate
+of a minimizer at $s'$ to $s$ stays in the product box. For every fixed
+$(v_{-i},z)$, the function $s\mapsto f(v,z)-\bar\Lambda s^2/2$ is concave
+on $[0,1]$, because $\partial_{v_i}^2f\le\Lambda\le\bar\Lambda$; as a
+minimum of concave functions, $V_i-\bar\Lambda s^2/2$ is concave.
+
+\emph{Monotonicity.} If $s_0$ minimizes $V_i+\gamma_is$ and $s_1$
+minimizes $V_i+(\gamma_i-t)s$, adding the two optimality inequalities
+gives $-ts_1\le-ts_0$, so $s_0\le s_1$.
+
+\emph{Interior contacts.} If $s_0\in(0,1)$ minimizes $V_i+\vartheta s$,
+then $V_i$ is differentiable at $s_0$ with $V_i'(s_0)=-\vartheta$.
+Indeed, a supergradient $\zeta$ of the concave function
+$V_i-\bar\Lambda s^2/2$ at $s_0$ gives
+$V_i(s)\le V_i(s_0)+(\zeta+\bar\Lambda s_0)(s-s_0)+\frac{\bar\Lambda}2(s-s_0)^2$,
+while minimality gives $V_i(s)\ge V_i(s_0)-\vartheta(s-s_0)$. Comparing
+both sides of $s_0$ gives $\zeta+\bar\Lambda s_0=-\vartheta$, and $V_i$ is
+squeezed between two functions with derivative $-\vartheta$ at $s_0$.
+For two such points $s_0\le s_1$, concavity of $V_i-\bar\Lambda s^2/2$
+gives $V_i'(s_1)-V_i'(s_0)\le\bar\Lambda(s_1-s_0)$.
+
+(a) Let $b$ be an optimal core of $f_{\gamma-te_i}$ with
+$b_i<t/\bar\Lambda\le\frac12$, and suppose an optimal core of $f_\gamma$
+has $a_i>0$. By monotonicity $0<a_i\le b_i<\frac12$, so both are
+interior contacts, with slopes $-\gamma_i$ and $-(\gamma_i-t)$. Then
+$t=V_i'(b_i)-V_i'(a_i)\le\bar\Lambda(b_i-a_i)<\bar\Lambda b_i<t$, a
+contradiction. The second rule follows by applying the first to
+$s\mapsto V_i(1-s)$, which has the same semiconcavity.
+
+(b) Let $\theta_i^0=\sup_{0<s\le1}(V_i(0)-V_i(s))/s$, finite because
+$V_i$ is Lipschitz. The coordinate $0$ is optimal for the tilt
+$\gamma_i$ exactly when $V_i(0)\le V_i(s)+\gamma_is$ for all $s$, that
+is, when $\gamma_i\ge\theta_i^0$. If $\gamma_i-t>\theta_i^0$, then for
+$s>0$, $V_i(s)+(\gamma_i-t)s>V_i(s)+\theta_i^0s\ge V_i(0)$, so every
+optimal core of $f_{\gamma-te_i}$ has $i$-th coordinate $0$. Hence the
+first situation in~(b) forces $\gamma_i\in[\theta_i^0,\theta_i^0+t]$.
+With $\theta_i^1=\inf_{0\le s<1}(V_i(s)-V_i(1))/(1-s)$, the coordinate
+$1$ is optimal exactly when $\gamma_i\le\theta_i^1$, and
+$\gamma_i+t<\theta_i^1$ forces every optimal core of $f_{\gamma+te_i}$ to
+have $i$-th coordinate $1$. Both thresholds depend only on
+$\gamma_{-i}$. \qed
+
+\begin{corollary}[Certified face rules]
+\label{cor:recourse-face-rules}
+Let $r_f=t/(8\bar\Lambda)$, and let $\hat b^{(i,\pm)}$ be rational
+vectors within distance $r_f$ of the selected cores of
+$f_{\gamma\pm te_i}$. Fix $v_i=0$ if $\hat b^{(i,-)}_i+r_f<t/\bar\Lambda$,
+and fix $v_i=1$ if $\hat b^{(i,+)}_i-r_f>1-t/\bar\Lambda$. Then every fixed
+value is correct for every optimal core of $f_\gamma$, no coordinate is
+fixed twice, and under the grid law the probability that the selected
+core $a(\gamma)$ has a coordinate in $\{0,1\}$ that is not fixed is at
+most $kt/\sigma+2k/M$.
+\end{corollary}
+
+\begin{proof}
+The rules imply the hypotheses of Lemma~\ref{lem:recourse-face}(a) for
+the exact selected cores, so they are sound; two sound rules for the same
+coordinate would contradict the existence of an optimal core. Suppose
+$a_i=0$ and the first rule does not fire. Then the selected core $b$ of
+$f_{\gamma-te_i}$ has $b_i\ge t/\bar\Lambda-2r_f>0$, so
+$\gamma_i\in[\theta_i^0,\theta_i^0+t]$ by Lemma~\ref{lem:recourse-face}(b).
+Conditionally on $\gamma_{-i}$, an interval of length $t$ contains at
+most $t(M-1)/(2\sigma)+1$ grid points, so this has probability at most
+$t/(2\sigma)+1/M$. The case $a_i=1$ is symmetric. A union bound over
+$i$ and both endpoints gives the claim.
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:recourse-lattice}}
+\label{app:recourse-lattice}
+
+Every nonconstant monomial of degree at most two is $2$-Lipschitz on
+$[0,1]^r$ in the maximum norm. Since both $a$ and $\hat a$ lie in
+$[0,1]^r$, this gives
+$\abs{T\chi_j(\hat a)-T\chi_j(a)}\le2T\norm{\hat a-a}_\infty\le\frac12$ and
+$\abs{\omega_j-T\chi_j(a)}\le1$ for every $j$. The lattice $\mathcal L$
+consists of the vectors $(h,h^{\mathsf T}\omega)$ with $h\in\Z^s$.
+
+(a) If the test accepts, then
+$\lambda_1(\mathcal L)\ge2^{-(s-1)/2}\norm{\mathbf b_1}>4sB$ by
+Theorem~\ref{thm:recourse-lll}. Suppose $0<\norm h_\infty\le B$ and
+$\abs{h^{\mathsf T}\chi(a)}\le sB/T$. Then
+$\abs{h^{\mathsf T}\omega}\le\norm h_1+T\abs{h^{\mathsf T}\chi(a)}\le2sB$
+and $\norm h\le sB$, so the nonzero lattice vector $(h,h^{\mathsf T}\omega)$
+has length at most $\sqrt5sB<4sB$, a contradiction.
+
+(b) Let $(h,h^{\mathsf T}\omega)\ne0$. If $\norm h>R_s$, its length
+exceeds $R_s$. Otherwise $0<\norm h_\infty\le R_s$, and
+$\abs{h^{\mathsf T}\omega}\ge T\abs{h^{\mathsf T}\chi(a)}-\norm h_1\ge
+T\eta_0-sR_s>R_s$. Hence $\norm{\mathbf b_1}\ge\lambda_1(\mathcal L)>R_s=2^s4sB$,
+and $\norm{\mathbf b_1}^2>2^{2s}(4sB)^2\ge2^{s-1}(4sB)^2$.
+
+Constructing and rounding $\omega$ costs time polynomial in
+$s+\log T+\langle\hat a\rangle$. The resulting basis entries have
+$O(\log T)$ bits, so Theorem~\ref{thm:recourse-lll} gives the remaining
+cost bound; the acceptance test is an exact integer comparison. \qed
+
+Part~(b) must be stated with the larger height $R_s$: a short lattice
+vector can have coefficients much larger than $B$, so margins over the
+height-$B$ family alone would not imply acceptance.
+
+\subsection{Proof of Proposition~\ref{prop:recourse-margin-probability}}
+\label{app:recourse-margin}
+
+\begin{lemma}[Quadratic sublevel sets]
+\label{lem:recourse-sublevel}
+For every nonzero integer polynomial $\psi$ of degree at most two in $r$
+variables and every $0<\eta<1$,
+$\operatorname{Leb}\{x\in[0,1]^r:\abs{\psi(x)}\le\eta\}\le8\sqrt\eta$.
+\end{lemma}
+
+\begin{proof}
+For a univariate quadratic with leading coefficient $\ell\ne0$,
+completing the square shows that $\{\abs{\cdot}\le\eta\}$ has total
+length at most $2\sqrt{2\eta/\abs\ell}$; the two-interval case is
+largest when the inner endpoints meet. If some square coefficient
+$\psi_{ii}$ is nonzero, then $\abs{\psi_{ii}}\ge1$, and slicing along
+$x_i$ with Fubini's theorem gives the bound $2\sqrt{2\eta}$. If all
+square coefficients vanish but some $\psi_{ij}\ne0$, use the coordinates
+$\varsigma=(x_i+x_j)/\sqrt2$ and $u=(x_i-x_j)/\sqrt2$. Then
+$x_ix_j=(\varsigma^2-u^2)/2$, other terms are at most linear in
+$\varsigma$, and every slice in $\varsigma$ has leading coefficient of
+absolute value at least $\frac12$, hence length at most $4\sqrt\eta$;
+the projection of the cube along $\varsigma$ has measure $\sqrt2$, which
+gives $4\sqrt2\sqrt\eta$. If $\psi$ is a nonconstant linear polynomial,
+slicing along a variable with a nonzero integer coefficient gives
+$2\eta\le2\sqrt\eta$. A nonzero integer constant has empty sublevel set.
+\end{proof}
+
+\begin{lemma}[Contact slopes]
+\label{lem:recourse-contact}
+Let $\Phi:[0,1]^r\to\R$ be continuous with $\Phi-\frac U2\norm\cdot^2$
+concave, and let $\mathcal C$ be the set of interior points $a$ at which
+$\Phi(x)\ge\Phi(a)+s^{\mathsf T}(x-a)$ for all $x\in[0,1]^r$ and some $s$.
+Then $s=s(a)$ is unique, $s$ is locally $U$-Lipschitz on $\mathcal C$,
+and $\operatorname{Leb}^*(s(E\cap\mathcal C))\le U^r\operatorname{Leb}(E)$ for
+every measurable $E$ in the interior of the cube.
+\end{lemma}
+
+\begin{proof}
+As in the one-dimensional argument of Section~\ref{app:recourse-face},
+a supergradient of the concave function at $a$ and the lower support
+force $s(a)=\zeta+Ua$, and then
+$0\le\Phi(x)-\Phi(a)-s(a)^{\mathsf T}(x-a)\le\frac U2\norm{x-a}^2$. Let
+$a,a'\in\mathcal C$, $\varrho=\norm{a-a'}$, $\Delta s=s(a')-s(a)$, and
+suppose the closed ball of radius $\varrho$ about $a$ lies in the cube.
+For $\norm u=\varrho$, the lower support at $a'$ and the upper support at
+$a$, evaluated at $a+u$, give
+$\Delta s^{\mathsf T}u\le\Phi(a)-\Phi(a')-s(a')^{\mathsf T}(a-a')+\frac U2\varrho^2
+\le U\varrho^2$, using the upper support at $a'$ evaluated at $a$.
+Taking $u=\varrho\Delta s/\norm{\Delta s}$ gives
+$\norm{\Delta s}\le U\varrho$. If $B(a_0,3\varrho_0)$ lies in the
+interior, every pair of points of $\mathcal C\cap B(a_0,\varrho_0)$
+satisfies the ball condition, so $s$ is $U$-Lipschitz there. Cover the
+interior by countably many such balls $B_l$, disjointify
+$E_l=E\cap B_l\setminus\bigcup_{l'<l}B_{l'}$, apply (F2) on each piece,
+and sum: $\operatorname{Leb}^*(s(E\cap\mathcal C))\le
+U^r\sum_l\operatorname{Leb}(E_l)=U^r\operatorname{Leb}(E)$.
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:recourse-margin-probability}]
+Identify the relative interior of $A$ with the interior of
+$[0,1]^r$ through the free coordinates $x=v_F$, and put
+$\Phi(x)=\min_{z\in[0,1]^m}f(v(x),z)$, where $v(x)$ has the fixed
+coordinates of $A$. For every $z$, $x\mapsto f(v(x),z)-\frac U2\norm x^2$
+is concave, so $\Phi-\frac U2\norm\cdot^2$ is concave. If a global
+minimizer of $f_\gamma$ has core $a$ in the relative interior of $A$,
+then $x_a=a_F$ minimizes $\Phi(x)+\gamma_F^{\mathsf T}x$ over the cube,
+so $x_a\in\mathcal C$ with $s(x_a)=-\gamma_F$. With
+$E=\{x:\abs{\psi(x)}\le\eta\}$ in the interior, the event therefore
+implies $-\gamma_F\in s(E\cap\mathcal C)$. Conditionally on the noise of
+the fixed coordinates, Lemmas~\ref{lem:recourse-contact}
+and~\ref{lem:recourse-sublevel} bound its probability by
+$U^r8\sqrt\eta/(2\sigma)^r$.
+
+For the grid law, the event is defined by
+\[
+ \exists(a,z)\ \forall x':\ a\in\operatorname{relint}A\wedge z\in[0,1]^m
+ \wedge\abs{\psi(a_F)}\le\eta\wedge
+ \bigl[x'\notin X\vee f_\gamma(x')\ge f_\gamma(a,z)\bigr],
+\]
+a formula \eqref{eq:recourse-two-block} with two blocks of $n$
+variables, $O(n)$ atoms, and degree at most three, in which $\psi$, $\eta$,
+and all noise coordinates but one are real coefficients.
+Lemmas~\ref{lem:recourse-sections} and~\ref{lem:recourse-replacement}
+give the extra term $C_m/M$ with $C_m=2k(2H^2+1)$, independent of $\psi$
+and $\eta$.
+\end{proof}
+
+\begin{corollary}[A uniform margin event]
+\label{cor:recourse-margin-union}
+Let $R\ge1$ be an integer, $s_*=\binom{k+2}2$, and
+\[
+ A_*=8\cdot3^k\max\{1,U/(2\sigma)\}^k(2R+1)^{s_*},\qquad
+ C_{\rm tail}=3^k(2R+1)^{s_*}C_m .
+\]
+Call a draw \emph{bad} if, for some face $A$ with $r\ge1$ free
+coordinates, some global minimizer of $f_\gamma$ has core $a$ in the
+relative interior of $A$ and some nonzero integer polynomial $\psi$ of
+degree at most two in the free coordinates, with coefficients of
+absolute value at most $R$, has $\abs{\psi(a_F)}\le\eta$. Then
+$\Pr_{\rm grid}\{\text{bad}\}\le A_*\sqrt\eta+C_{\rm tail}/M$.
+\end{corollary}
+
+\begin{proof}
+There are at most $3^k$ faces and at most $(2R+1)^{s_*}$ polynomials per
+face. Apply Proposition~\ref{prop:recourse-margin-probability} to each
+pair and add. Faces with $r=0$ contribute nothing, since a nonzero
+integer constant has absolute value at least $1>\eta$. The family is
+used only in this union bound; no algorithm enumerates it.
+\end{proof}
+
+\subsection{Proofs of Proposition~\ref{prop:recourse-completion} and Theorem~\ref{thm:recourse-cubic}}
+\label{app:recourse-cubic-proof}
+
+\paragraph{Base choices.}
+Let $\Xi\ge\max\{2,\Xi_0\}$ be as in \eqref{eq:recourse-core-params};
+the same fallback factor $\Xi_0$ serves all instances below, because
+they have the same format. Choose, in this order,
+\begin{gather*}
+ \bar\Lambda=\max\{1,\Lambda\},\qquad
+ t=\min\Bigl\{\frac12,\frac{\sigma}{16k\Xi}\Bigr\},\qquad
+ r_f=\frac t{8\bar\Lambda},\\
+ \Delta,B\ \text{from Lemma~\ref{lem:recourse-minor-heights}},\qquad
+ s_*=\binom{k+2}2,\qquad R=2^{s_*}4s_*B,\\
+ U\ge\max\Bigl\{1,\sum_{i,j}\sup_X\abs{\partial_{v_i}\partial_{v_j}f}\Bigr\}
+ \ \text{by coefficient sums},\qquad
+ \eta=\min\Bigl\{\frac14,\frac1{(16A_*\Xi)^2}\Bigr\},\\
+ T=\text{the least power of two with }T>(s_*+1)R/\eta,
+\end{gather*}
+with $A_*$ from Corollary~\ref{cor:recourse-margin-union}. Finally let
+$M$ be the least power of two that satisfies \eqref{eq:recourse-core-params}
+for each of the $2k+1$ base objectives $f$ and $f\pm tv_i$ and also
+$(2k+C_{\rm tail})/M\le1/(8\Xi)$. The base objectives $f\pm tv_i$ have
+the same residual convexity and coordinate bound $\Lambda$ as $f$, and
+input length polynomial in $L$. Every requirement on $M$ is a lower
+bound, so one grid serves all of them. All quantities have bit length
+polynomial in $L$ and precede sampling. On a draw $\gamma$, the core
+evaluator of Theorem~\ref{thm:recourse-core} for the base objective
+$f\pm tv_i$ approximates the selected core of $f_{\gamma\pm te_i}$; the
+draw is not resampled.
+
+\paragraph{Base stage.}
+(1) For each $i$, query the core evaluators of $f_{\gamma\pm te_i}$ with
+accuracy $r_f$ and apply the rules of
+Corollary~\ref{cor:recourse-face-rules}. Let $A$ be the face defined by
+the fixed coordinates, $F$ its free coordinates, and $r=\abs F$.
+(2) If $r=0$, accept with $\delta=\frac12$ and $\mu=\min\{1,1/\Delta\}$.
+Otherwise query the core evaluator of $f_\gamma$ with accuracy $1/(4T)$,
+clip the free coordinates of the answer to $[0,1]$ to obtain $\hat a$,
+and run the test of Lemma~\ref{lem:recourse-lattice} with these $B$ and
+$T$ and $s=\binom{r+2}2$. If it rejects, reject. If it accepts, put
+$\xi=sB/T$, $\delta=\min\{\frac12,\xi\}$, and $\mu=\min\{1,\xi/\Delta\}$.
+(3) On acceptance compute $\Gamma$ from
+Proposition~\ref{prop:recourse-fiber}(c) for $A$, $\delta$, and $\mu$.
+The outcome is a deterministic function of the draw.
+
+\paragraph{Acceptance is sound.}
+By Corollary~\ref{cor:recourse-face-rules}, $a(\gamma)\in A$. If $r=0$,
+then $a(\gamma)$ is the vertex $A$; the minors of $J_A$ are rational
+constants with denominators dividing $\Delta$, so the nonzero ones have
+absolute value at least $1/\Delta\ge\mu$, and the margin condition on
+free coordinates is vacuous. If $r\ge1$ and the test accepts, then
+$\hat a\in[0,1]^r$ by clipping, and $\norm{\hat a-a_F}_\infty\le1/(4T)$
+because clipping to a box containing $a_F$ does not increase any
+coordinate error. So Lemma~\ref{lem:recourse-lattice}(a) applies: every
+nonzero integer quadratic of height at most $B$ in the free coordinates
+has absolute value greater than $\xi$ at $a_F$. These
+include $v_i$ and $1-v_i$ for $i\in F$, so the free coordinates of $a$
+lie in $(\xi,1-\xi)$, and $a$ lies in the relative interior of $A$ with
+margin $\delta$. By Lemma~\ref{lem:recourse-minor-heights}, each square
+minor of $J_A$ is either identically zero on $A$, hence zero at $a$, or
+equal to $\Delta^{-1}$ times a nonzero integer quadratic of height at
+most $B$, hence of absolute value greater than $\xi/\Delta\ge\mu$ at $a$.
+Proposition~\ref{prop:recourse-fiber}(c) therefore gives
+\begin{equation}
+ \dist(z,S(\gamma))\le\Gamma\bigl(f(a,z)-\min f(a,\cdot)\bigr)^{1/4}
+ \quad\text{for } z\in[0,1]^m \text{ with gap at most } 1,
+ \label{eq:recourse-accepted-bound}
+\end{equation}
+since $S(\gamma)=S_a$. No probability was used. The supplied margins
+$\delta$ and $\mu$ are rationals with
+$\langle\delta\rangle+\langle\mu\rangle=O(\log s+\log B+\log T+\log\Delta)
+=\poly(L)$, so $\Gamma$ is computed in time $\poly(L)$.
+
+\paragraph{Completion after acceptance.}
+For a query $q$ put $\epsilon=2^{-q}$, $e=\epsilon/2$,
+$R_z=\max\{1,\lceil\sqrt m\rceil\}$, a rational
+$G\ge\max\{1,\sup_X\norm{\nabla_vf}\}$, and
+\[
+ \tau=\frac{e^6}{1024R_z^4\Gamma^4},\qquad
+ \eta_q=\frac{\tau e^2}8,\qquad
+ d_q=\min\Bigl\{e,\frac{\tau e^2}{16G}\Bigr\}.
+\]
+Query the core evaluator of $f_\gamma$ with accuracy $d_q$, set the
+coordinates fixed by $A$ to their exact values, and clip the others to
+$[0,1]$. This gives a rational $b\in A$ with $\norm{b-a}\le d_q$, since
+$a\in A\cap[0,1]^k$. Apply \eqref{eq:recourse-cv} to the rational convex
+cubic $Q_b(z)=f(b,z)+\tau\norm z^2$ on $[0,1]^m$ with accuracy $\eta_q$,
+and return $(b,\hat z)$. Since $\abs{f(b,z)-f(a,z)}\le G\norm{b-a}$ for
+all $z$, the function $Q_a(z)=f(a,z)+\tau\norm z^2$ satisfies
+$Q_a(\hat z)-\min Q_a\le\eta_q+2Gd_q\le\tau e^2/4$.
+Lemma~\ref{lem:recourse-selection}, with $\varphi=f(a,\cdot)$ on
+$[0,1]^m$, the bound \eqref{eq:recourse-accepted-bound}, and $D_e=4$,
+gives $\norm{\hat z-p}\le e$. Hence
+$\norm{(b,\hat z)-(a,p)}\le\sqrt2\,e<\epsilon$. The core query has
+precision $\log(1/d_q)\le8q+\poly(L)$, and the convex solve has data of
+bit length $\poly(L+q)$ and tolerance $\langle\eta_q\rangle\le8q+\poly(L)$.
+This proves
+Proposition~\ref{prop:recourse-completion}.
+
+\paragraph{Rejection is rare.}
+Suppose that no coordinate of $a(\gamma)$ in $\{0,1\}$ is missed by the
+face rules and that the draw is not bad in the sense of
+Corollary~\ref{cor:recourse-margin-union}. Since the rules are sound,
+$A$ is then the smallest face containing $a$, and $a$ lies in its
+relative interior. If $r=0$ the stage accepts. Otherwise every nonzero
+integer quadratic of height at most $R$ in the free coordinates has
+absolute value greater than $\eta$ at $a_F$. Because $s\le s_*$, we have
+$R_s=2^s4sB\le R$ and $T\eta>(s_*+1)R\ge(s+1)R_s$, so
+Lemma~\ref{lem:recourse-lattice}(b) shows that the test accepts. By
+Corollaries~\ref{cor:recourse-face-rules}
+and~\ref{cor:recourse-margin-union},
+\[
+ \Pr\{\text{reject}\}\le\frac{kt}\sigma+\frac{2k}M+A_*\sqrt\eta
+ +\frac{C_{\rm tail}}M\le\frac1{16\Xi}+\frac1{16\Xi}+\frac1{8\Xi}
+ =\frac1{4\Xi}.
+\]
+
+\paragraph{The same selector on rejection.}
+On rejection, return the output of Lemma~\ref{lem:recourse-fallback} for
+$f_\gamma$ with precision $q+\lceil\log_2n\rceil$; its $\infty$-accuracy
+is at most $2^{-q}/n$, so its Euclidean accuracy is at most $2^{-q}$.
+Its singleton formulas
+\eqref{eq:recourse-singleton} define $x^\sharp(\gamma)$ itself: global
+optimality, the lexicographically least core, and the least residual
+norm within that core. So the ordinary and fallback branches approximate
+the same point at every precision, including on draws with several
+optimal cores. The cost is at most $\Xi P(L+q)$.
+
+\paragraph{Work.}
+Let $\Omega_0$ and $\Omega_{i,\pm}$ be the random factors of
+Theorem~\ref{thm:recourse-core} for the base objectives $f$ and
+$f\pm tv_i$. The base stage makes $2k+1$ core queries of precision
+$\poly(L)$, one LLL reduction, and polynomial arithmetic for $\Gamma$; a
+completion makes one core query of precision $\poly(L)+O(q)$ and one
+convex solve. Every query therefore costs at most $\Omega(\gamma)P(L+q)$
+for a fixed polynomial $P$, where
+\[
+ \Omega=\Omega_0+\sum_{i,\pm}\Omega_{i,\pm}+\Xi\,\mathbf1\{\text{reject}\}.
+\]
+By Theorem~\ref{thm:recourse-core} and the rejection bound,
+$\E\,\Omega\le(2k+1)k^{O(k)}(1+\Lambda/\sigma)^k\poly(L)+\frac14$. No
+independence between the factors and the rejection event is used. The
+numbers $U$, $B$, $T$, and $\Gamma$ enter only through their bit lengths;
+the numerical factor remains $(1+\Lambda/\sigma)^k$. This proves
+Theorem~\ref{thm:recourse-cubic}. \qed
+
+\begin{proof}[Proof of Remark~\ref{rem:recourse-value-certificate}]
+Let $x_q$ be the returned point at accuracy $2^{-q-1}/G$ and $\ell_{q+1}$
+the lower bound from Theorem~\ref{thm:recourse-core}. Then
+$\ell_{q+1}\le f_\gamma^*\le f_\gamma(x_q)\le f_\gamma^*+2^{-q-1}\le
+\ell_{q+1}+2^{-q}$, because $X$ is convex and $\norm{\nabla f_\gamma}\le G$
+on $X$.
+\end{proof}
+
+\begin{proof}[Proof of Remark~\ref{rem:recourse-quartic}]
+For $f(v,y)=v^2/2+F(y)$ and every draw $\gamma$, the objective separates:
+the core part $v^2/2+\gamma v$ has a unique minimizer on $[0,1]$, and the
+residual part has the unique minimizer $y^*$ of $F$. So
+$x^\sharp(\gamma)=(a(\gamma),y^*)$ on every draw. The residual fibers are
+convex because $F$ is convex on its box, and $\partial_v^2f=1$. A query
+with $q=2$ returns a point within $1/4$ of $x^\sharp(\gamma)$, which
+locates the designated coordinate of $y^*$ to within $1/4$ and decides
+the source instance, as in Theorem~\ref{thm:points-quartic-lower}. An
+evaluator that is correct on every draw with polynomial expected work
+would thus give a Las Vegas algorithm with expected polynomial running
+time: since $M$ is a power of two, a draw uses $\log_2M$ fair coins, and
+with $\sigma=1$ the factor $(1+\Lambda/\sigma)^k$ equals $2$.
+\end{proof}

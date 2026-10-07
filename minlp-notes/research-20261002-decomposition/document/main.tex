@@ -1,0 +1,711 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern,amsmath,amssymb,amsthm,mathtools,booktabs,longtable,array}
+\usepackage[margin=1in]{geometry}
+\usepackage[hyphens]{url}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{microtype}
+\hypersetup{pdftitle={Decomposition-aware global optimization: certified coordinate grids, conditional recourse, and structural limits},pdfauthor={}}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+\newcommand{\R}{\mathbb R}
+\newcommand{\Z}{\mathbb Z}
+\newcommand{\E}{\mathbb E}
+\newcommand{\norm}[1]{\lVert#1\rVert}
+\newcommand{\dist}{\operatorname{dist}}
+\newcommand{\poly}{\operatorname{poly}}
+\newcommand{\OPT}{f^*}
+\newcommand{\pathref}[2]{\href{run:#1}{\texttt{\detokenize{#2}}}}
+\title{Decomposition-aware global optimization:\\
+certified coordinate grids, conditional recourse, and structural limits}
+\author{}
+\date{}
+\begin{document}
+\maketitle
+\begin{abstract}
+Sparse factorization can make global optimization useful without making
+every sparse problem easy. This report develops a complete certified grid
+algorithm on supplied tree decompositions. A unary interpolation correction
+makes finite-state dynamic programming a valid continuous lower bound;
+coordinate min-marginals then remove regions that cannot improve a feasible
+incumbent. Under global quadratic growth, the surviving geometric grids
+have state counts independent of the requested accuracy. For rational
+mixed-integer box quadratics this gives an exact algorithm with running
+time $f(p,\kappa)\poly(I)$, where $p$ is maximum bag size, $I$ is binary
+input length, and $\kappa$ is upper coordinate curvature divided by growth.
+The growth constant is not required as input, and certificate validity does
+not depend on it. Stationary-face recovery also gives finite exact output
+for arbitrary nonunique rational box quadratics, without a favorable
+general complexity bound. The approximation result extends to explicitly encoded
+fixed-degree polynomials, with different exact-output obligations. We
+separate these proved guarantees from implementation evidence and from
+extensions that require additional recourse, geometric, or certification
+structure. The report is a technical synthesis of repository results;
+priority and competitive general-purpose performance are not asserted.
+\end{abstract}
+\tableofcontents
+
+\section{The solver capability and its limits}\label{sec:scope}
+
+The main capability is a global bound for a factorized objective on a
+product domain, computed by finite tables that agree exactly on shared
+coordinates. It can be used as a complete solver for that domain or as a
+component of a larger constrained solver. The relevant parameter is
+\emph{maximum bag size and conditioning together}. Small graph width
+alone is not the claim. Large tables, weak growth, or a poor decomposition
+can make the algorithm impractical even when the theorem applies.
+
+The dependency chain starts with coordinate curvature, which yields a
+corrected-grid lower bound and safe min-marginal filtering. Global growth
+then gives localization, bounded state counts, and a quantitative output
+guarantee.
+The first two implications hold without uniqueness or growth. Growth is
+used to bound work, not to justify the answer. Rational arithmetic and
+quadratic height bounds convert the final implication into an exact
+mixed-integer quadratic algorithm. Polynomial objectives require their
+own output argument.
+
+This distinction also places the result relative to earlier repository
+work. The September 29 affine-message existence bounds were centered at
+an optimizer and left an algorithmic issue on branching decompositions.
+Shared-coordinate grids subsequently supplied an optimizer-independent
+algorithm, and min-marginal filtering removed the accuracy exponent from
+its state bound. This does not prove that an older overlapping-cell
+affine-message representation has the same properties. In particular,
+counterexamples based on separator-copy drift or accumulated interpolation
+error still apply to the representations they concern.
+
+The current external comparison also sets a sharp boundary. Del Pia and
+Khajavirad give an exact $O(n^2)$ algorithm on forests, but prove strong
+NP-hardness of continuous box QP at treewidth two, even with bounded
+coefficients; quartic path problems are also strongly NP-hard
+\cite{DelPiaKhajavirad2026}. The forest result needs no growth promise.
+The conditioned theorem here therefore complements that work and does
+not dominate it. Bienstock and Mu\~noz treat broader constrained polynomial
+models with scaled feasibility and objective tolerances
+\cite{BienstockMunoz2018}; the constrained extension below obtains exact
+feasibility under narrower integral structure.
+
+\section{Model, decomposition, and arithmetic}\label{sec:model}
+
+Let
+\begin{equation}\label{eq:model}
+\min_{x\in X}F(x),\qquad F(x)=\sum_{a\in\mathcal A}f_a(x_{S_a}),
+\qquad X=\prod_{i=1}^n X_i,
+\end{equation}
+where $X_i=[a_i,b_i]$ or $[a_i,b_i]\cap\Z$. Integer endpoints are
+rounded inward, empty domains rejected, and fixed coordinates substituted
+before the construction. The zero-dimensional case is immediate.
+Thereafter $n\ge1$ and $s=\max_i(b_i-a_i)>0$.
+
+A supplied tree $T$ has bags $B_t$, maximum size $p$, and $N$ nodes.
+Every factor scope is contained in a bag to which the factor is assigned
+once, and the bags containing any coordinate form a connected subtree.
+The decomposition and assignments can be checked directly. The input
+length $I$ includes these data. A variable can occur in arbitrarily many
+bags; no occurrence bound is assumed.
+
+A valid upper coordinate-curvature bound is $L>0$ such that
+\begin{equation}\label{eq:semiconcavity}
+t\longmapsto F(x_1,\ldots,t,\ldots,x_n)-\frac L2t^2
+\quad\hbox{is concave on each coordinate interval.}
+\end{equation}
+The condition is on the full continuous hull, including fractional points
+between integer labels, and on the \emph{sum} of all factors. For a quadratic
+with Hessian $H$, $L=\max_i\max\{H_{ii},0\}$ is valid when positive.
+If every diagonal is nonpositive, successive endpoint replacement does
+not increase the objective. Endpoint dynamic programming is then exact,
+with at most two labels per coordinate, without a growth assumption.
+
+The quantitative analysis assumes a unique optimizer $x^*$ and
+\begin{equation}\label{eq:growth}
+F(x)-\OPT\ge g\norm{x-x^*}^2\quad(x\in X),\qquad
+\OPT=F(x^*),\qquad \kappa=\max\{1,L/g\}.
+\end{equation}
+This is global growth in the original Euclidean coordinates. Near-tied
+integer assignments may make $g$ small even if the continuous extension is
+strongly convex. Rescaling coordinates can change $L/g$ and is not a
+free invariance of the theorem.
+
+The lower-bound arguments first use exact factor evaluations and exact
+arithmetic. The bit-complexity theorem applies to explicit rational
+quadratics; Section~\ref{sec:polynomial} states its polynomial extension.
+An arbitrary real-valued oracle does not supply a bit-complexity theorem.
+
+\section{A corrected grid is a continuous certificate}\label{sec:bound}
+
+Work in a current product subbox $B\subseteq X$. For each coordinate take
+a finite feasible grid $G_i$ containing both current endpoints. At a node
+$v\in G_i$, let $\ell_i(v)$ be the largest adjacent interval length.
+For integer coordinates ignore intervals of length one; set $\ell_i(v)=0$
+if no other adjacent interval remains. Define
+\begin{equation}\label{eq:correction}
+d_i(v)=\frac L8\ell_i(v)^2,\qquad
+D(y)=\sum_i d_i(y_i),\qquad Q(y)=F(y)-D(y),\qquad
+b=\min_{y\in\prod_iG_i}Q(y).
+\end{equation}
+Assign each unary correction to one containing bag. This changes no
+factor scope or graph edge.
+
+\begin{lemma}[Interpolation and conditional interpolation]\label{lem:round}
+For every $x\in B$, there is a distribution on grid assignments $Y$ with
+$\E Y=x$ and $\E Q(Y)\le F(x)$. Thus $b\le\min_B F$.
+Writing
+\[
+m_i(v)=\min\{Q(y):y_i=v,\ y\in\textstyle\prod_kG_k\},
+\]
+every adjacent pair $a,b'\in G_i$ satisfies
+\begin{equation}\label{eq:conditional}
+\min\{m_i(a),m_i(b')\}\le F(x)
+\quad\hbox{whenever }x\in B,\ x_i\in[a,b'].
+\end{equation}
+If $y$ minimizes $Q$, then $F(y)-b=D(y)$.
+\end{lemma}
+\begin{proof}
+Independently round each coordinate of $x$ to the endpoints of its
+containing grid interval with probabilities preserving its mean. A grid
+coordinate remains fixed. If an interval has endpoints $u,v$, its
+rounding variance is $(x_i-u)(v-x_i)\le(v-u)^2/4$.
+Concavity in~\eqref{eq:semiconcavity} gives, conditionally on all other
+coordinates,
+\[
+\E F(x\hbox{ with coordinate }i\hbox{ rounded})
+\le F(x)+\frac L2\operatorname{Var}(Y_i).
+\]
+Successive independent rounds keep these variances unchanged, so their
+errors add. For a genuinely rounded interval of length $\Delta$, both
+endpoint corrections are at least $L\Delta^2/8$, which dominates
+$L\operatorname{Var}(Y_i)/2$. Integer unit intervals have no feasible
+interior point, so omitting them causes no missing rounding error.
+Coordinates already on their grids have zero variance and nonnegative
+correction. Subtracting the corrections proves $\E Q(Y)\le F(x)$.
+The minimum is no larger than this expectation. If $x_i\in[a,b']$,
+the same rounding has $Y_i\in\{a,b'\}$, so its expected corrected value
+is at least the left side of~\eqref{eq:conditional}. The last equality
+is the definition of $b$ at its minimizing assignment.
+\end{proof}
+
+\subsection{One tree computation supplies all coordinate bounds}
+
+Let $q_t$ be the sum of factors and negative unary corrections assigned
+to bag $B_t$. For an oriented tree edge $t\to u$, let
+$S_{tu}=B_t\cap B_u$. The message recurrence is
+\begin{equation}\label{eq:messages}
+M_{t\to u}(x_{S_{tu}})=
+\min_{x_{B_t\setminus S_{tu}}}
+\left[q_t(x_{B_t})+
+\sum_{v\in\mathcal N(t)\setminus\{u\}}
+M_{v\to t}(x_{B_v\cap B_t})\right].
+\end{equation}
+All variables range over their coordinate grids. Empty separators have
+one scalar state. Two tree passes compute both orientations. Set
+\begin{equation}\label{eq:calibrated}
+A_t(x_{B_t})=q_t(x_{B_t})+
+\sum_{v\in\mathcal N(t)}M_{v\to t}(x_{B_v\cap B_t}).
+\end{equation}
+Induction on a cut tree edge proves that $M_{t\to u}$ minimizes exactly
+the factors in the $t$ component for the fixed separator labels. Running
+intersection makes the remaining component variables disjoint once those
+labels are fixed. Hence $A_t$ is the exact global corrected min-marginal
+at bag $t$. Its minimum is $b$, and minimizing it with $x_i=v$ gives
+$m_i(v)$ for any containing bag. Stored argmin choices recover a global
+minimizer.
+
+If $K=\max_i|G_i|$, all messages and coordinate min-marginals require
+\begin{equation}\label{eq:dpwork}
+O\bigl(p(N+|\mathcal A|)K^p\bigr)
+\end{equation}
+table operations, plus factor evaluation and index costs. Incoming
+messages are accumulated by sums, and outgoing sums use exclusions;
+there is no product over the children of a bag. This is the familiar
+finite-state junction-tree computation, used here for an explicit
+continuous lower bound. Variable elimination, tree agreement and
+reparameterization are established tools; see, for example,
+\cite{Dechter1999,WainwrightJaakkolaWillsky2005}.
+
+\subsection{Filtering and the certificate for the original domain}
+
+Maintain a feasible point realizing a nonincreasing upper bound $U$.
+After finding $y\in\arg\min Q$, replace $U$ by $\min\{U,F(y)\}$.
+Retain a coordinate interval $[a,b']$ exactly when
+\begin{equation}\label{eq:retain}
+\min\{m_i(a),m_i(b')\}\le U.
+\end{equation}
+Replace each coordinate domain by the hull of its retained intervals;
+a singleton stays a singleton. Use $y$ as the next center.
+
+\begin{proposition}[Safe filtering history]\label{prop:filter}
+Every global optimizer, the incumbent, and $y$ survive the filter.
+The last grid bound, together with all preceding filtering records,
+is a valid lower bound on the original box. This assertion uses neither
+growth nor uniqueness.
+\end{proposition}
+\begin{proof}
+The conditional bound~\eqref{eq:conditional} makes every interval
+containing a coordinate of a global optimizer or the incumbent pass
+\eqref{eq:retain}. Also $m_i(y_i)\le Q(y)=b\le\OPT\le U$, so every
+coordinate of $y$ survives. Taking hulls can only reintroduce points.
+Any point removed from the original box has a first stage at which one
+of its coordinates is excluded. At that stage its containing discarded
+interval has conditional lower bound greater than the stage's $U$.
+Its objective is therefore greater than the final nonincreasing $U$.
+The last grid lower bound applies to all surviving points, and is at
+most $\OPT\le U$. Together the two statements bound every original
+point. Keeping only the final restricted grid would omit the first part
+of this argument and is insufficient.
+\end{proof}
+
+The certificate records input factors, curvature evidence, grids,
+corrections, directed messages or enough data to recompute them,
+coordinate filtering decisions, and feasible upper bounds. A checker
+can recompute the finite minima exactly. Growth estimates influence
+neither the checking rule nor its validity.
+
+\section{Why filtering removes the accuracy exponent}\label{sec:rate}
+
+At stage $j$ use $h_j=s2^{-j}$ and a center $c$ in the current box.
+For a fixed $0<\theta\le1/4$, build outward from $c_i$. At distance $t$
+take a continuous step $h_j+\theta t$ or an integer step
+$\max\{1,\lfloor h_j+\theta t\rfloor\}$, clipping at an endpoint.
+The relevant adjacent length satisfies
+\begin{equation}\label{eq:mesh}
+\ell_i(v)\le h_j+\theta|v-c_i|.
+\end{equation}
+For an integer interval of length at least two this follows from the
+floor step; unit intervals have zero correction. Clipping only decreases
+the length. Thus for every grid assignment $z$,
+\begin{equation}\label{eq:penaltyenergy}
+D(z)\le\frac L4nh_j^2+
+\frac{L\theta^2}{2}\left(\norm{z-x^*}^2+\norm{c-x^*}^2\right).
+\end{equation}
+
+\begin{lemma}[Contraction]\label{lem:contraction}
+Suppose $\theta^2\le1/(8\kappa)$. Put
+$B_0=\max\{1,4L/(11g)\}\le\kappa$. If $y_j$ is the stage's corrected
+minimizer, and the initial center is any feasible point, then
+\begin{align}
+E_j:=\norm{y_j-x^*}^2
+&\le\frac{4L}{15g}nh_j^2+\frac{E_{j-1}}{15},\label{eq:contract}\\
+E_j&\le B_0nh_j^2,\qquad
+F(y_j)-b_j=D(y_j)\le\frac{7L}{8}nh_j^2.\label{eq:stagegap}
+\end{align}
+Here $E_{-1}$ denotes the initial center's squared error.
+\end{lemma}
+\begin{proof}
+The restricted box still contains $x^*$. Lemma~\ref{lem:round} and
+growth give $gE_j\le F(y_j)-\OPT\le D(y_j)$. Since
+$L\theta^2/2\le g/16$, absorbing the first distance term in
+\eqref{eq:penaltyenergy} proves~\eqref{eq:contract}.
+Initially $E_{-1}\le ns^2$, and
+$4L/(15g)+1/15\le B_0$. At later stages $h_{j-1}=2h_j$, so induction
+uses $4L/(15g)+4B_0/15\le B_0$. At all stages
+$E_{j-1}\le4B_0nh_j^2$. Substitution into~\eqref{eq:penaltyenergy}
+gives
+\[
+D(y_j)\le\frac L4(1+10\theta^2 B_0)nh_j^2
+\le\frac{7L}{8}nh_j^2,
+\]
+where $\theta^2B_0\le1/4$ is a deliberately loose bound. Filtering
+does not alter any step of this proof, because it retains the optimizer
+and the next center.
+\end{proof}
+
+\begin{lemma}[Localization of retained intervals]\label{lem:localize}
+After stage $j$, the retained continuous domain in coordinate $i$ lies
+within distance $5\sqrt{n\kappa}\,h_j$ of $(y_j)_i$. The integer domain
+lies within distance $1+5\sqrt{n\kappa}\,h_j$.
+\end{lemma}
+\begin{proof}
+An interval passing~\eqref{eq:retain} has an endpoint $v$ and a complete
+grid assignment $z$ with $z_i=v$ and $Q(z)=m_i(v)\le U_j$.
+By~\eqref{eq:stagegap}, $U_j-\OPT\le7Lnh_j^2/8$. Consequently
+\[
+g\norm{z-x^*}^2
+\le\frac{9L}{8}nh_j^2+
+\frac{L\theta^2}{2}\bigl(\norm{z-x^*}^2+4B_0nh_j^2\bigr).
+\]
+Absorb as before to obtain
+\begin{equation}\label{eq:witnessradius}
+\norm{z-x^*}^2\le
+\left(\frac{6L}{5g}+\frac{4B_0}{15}\right)nh_j^2
+\le\frac{22}{15}\kappa nh_j^2.
+\end{equation}
+The qualifying endpoint is within
+$(\sqrt{22/15}+1)\sqrt{n\kappa}\,h_j$ of $(y_j)_i$.
+Its continuous interval length is at most
+$h_j+\theta(\sqrt{22/15}+2)\sqrt{n\kappa}\,h_j$, by comparison
+with the previous center. Since $\theta\sqrt\kappa\le1/\sqrt8$
+and $n,\kappa\ge1$, their sum is below
+$5\sqrt{n\kappa}\,h_j$. Taking the hull preserves this radius.
+An integer interval with positive correction obeys the same bound.
+A unit interval may survive through its good endpoint while its other
+endpoint is bad; its physical length contributes the stated extra one.
+\end{proof}
+
+\begin{lemma}[Uniform state bound]\label{lem:states}
+Under the hypotheses of Lemma~\ref{lem:contraction}, every stage has at
+most
+\begin{equation}\label{eq:statecap}
+K(\theta,n)=100\theta^{-1}\lceil\log_2(n+2)\rceil
+\end{equation}
+nodes per coordinate, independent of its stage number and accuracy.
+\end{lemma}
+\begin{proof}
+Stage zero has at most three nodes per coordinate since $h_0=s$.
+For continuous grids, the successive unclipped distances are
+$t_k=h((1+\theta)^k-1)/\theta$. A side of radius $R$ therefore needs
+at most $1+\lceil\log(1+\theta R/h)/\log(1+\theta)\rceil$ steps.
+For integer grids put $H=\max\{h,1\}$. Every nonfinal integer step is
+at least $(H+\theta t)/3$: if $h\ge1$, use
+$\lfloor u\rfloor\ge u/2$; if $h<1$ split at $\theta t=2$.
+Thus $t+H/\theta$ grows by a factor at least $1+\theta/3$.
+The same count holds with $H$ and $\log(1+\theta/3)$.
+
+At the next stage $h=h_j/2$. Lemma~\ref{lem:localize} bounds
+$\theta R/h$ in the continuous case and $\theta R/H$ in the integer
+case by quantities below $1+8\sqrt n$. Since
+$\log(1+\theta/3)\ge\theta/4$ for $\theta\le1/4$, summing both
+side counts and the center is bounded by~\eqref{eq:statecap}.
+The constant 100 includes ceilings and is not an optimized practical
+recommendation.
+\end{proof}
+
+\subsection{A capped schedule needs no supplied growth constant}
+
+For $\varepsilon>0$, choose the smallest nonnegative integer $J$ with
+\begin{equation}\label{eq:stagebudget}
+\frac{7Lns^2}{8}\,4^{-J}\le\varepsilon.
+\end{equation}
+This uses rational comparisons, not logarithm oracles. Try
+$\theta=2^{-\mu}$ for $\mu=2,3,\ldots$, restarting from the original
+box and its lower endpoint vector as center each time. Run stages zero
+through $J$. While generating a grid,
+abort the trial before any coordinate exceeds~\eqref{eq:statecap},
+before allocating that trial's bag tables. Stop only when the verified
+global gap $U-b$ is at most $\varepsilon$.
+
+The first trial with $\theta^2\le1/(8\kappa)$ has
+$2^\mu\le6\sqrt\kappa$, passes the cap, and succeeds by
+Lemma~\ref{lem:contraction}. Earlier trials remain sound even when their
+guessed resolution is unsuitable. The caps bound their work by a geometric
+sum of state spaces. Without caps an earlier unsuccessful trial could
+pay an accuracy-dependent power before the successful one was reached.
+
+The decisive absorption is
+\begin{equation}\label{eq:logabsorb}
+\lceil\log_2(n+2)\rceil^p\le(C_0p)^p(n+2)
+\end{equation}
+for an absolute $C_0$. It follows from
+$\sup_{t\ge0}t^pe^{-t}=(p/e)^p$, adjusting the logarithm base and
+ceiling. A power of the accuracy bits could not be absorbed this way;
+the state bound has removed precisely that dependence.
+
+\begin{theorem}[Certified quadratic approximation]\label{thm:approx}
+For an explicit rational mixed-integer box quadratic with supplied
+decomposition and~\eqref{eq:growth}, the capped algorithm returns a
+rational feasible point and an independently checkable gap at most
+$2^{-q}$ in
+\begin{equation}\label{eq:fpt}
+f(p,\kappa)(I+q+1)^C
+\end{equation}
+bit operations, where $C$ is absolute. Neither $g$ nor $\kappa$ is an
+input. Certificate validity needs neither growth nor uniqueness.
+\end{theorem}
+\begin{proof}
+The preceding lemmas prove correctness and bound state counts and stages.
+It remains to bound arithmetic. After fixed-coordinate substitution,
+choose a common positive denominator $D$ for coefficients, endpoints,
+and $L$. Its bit length is polynomial in $I$.
+For a fixed trial let $K$ be its cap, allowing one extra candidate for
+abort detection. At stage $j$, the unclipped continuous displacement is
+\[
+h_j\frac{(2^\mu+1)^k-2^{\mu k}}{2^{\mu(k-1)}}.
+\]
+All grid coordinates have denominators dividing
+$A_j=D2^{j+\mu K}$. Indeed inherited centers and endpoints have the
+previous common denominator, which divides this one; new displacements
+have the displayed denominator; clipping selects an inherited endpoint;
+integer floors stay integral. Denominators do not multiply over stages.
+
+All quadratic values, corrections, and message entries have denominators
+dividing $8DA_j^2$. Their numerators have bit length polynomial in
+$I+j+\mu K$, since coordinates stay in the original box and each message
+is a sum of a subset of factor and correction values at some assignment.
+Factor evaluations, message arithmetic, comparisons, backtracking,
+certificate storage and checking have the same polynomial bit bound.
+The stage budget is $O(I+q+1)$. Combine~\eqref{eq:dpwork},
+\eqref{eq:statecap},~\eqref{eq:logabsorb}, and
+$2^\mu=O(\sqrt\kappa)$, summing the earlier capped trials. All factors
+depending on $p,\kappa$ belong to $f$, and the remaining polynomial
+exponent is absolute.
+\end{proof}
+
+Approximation also terminates without growth. For a sufficiently fine
+trial $\theta\le h_J/s$, each corrected interval at stage $J$ is at
+most $2h_J$, so the gap is at most $Lnh_J^2/2\le4\varepsilon/7$.
+Before that stage continuous grids have at most $s/h_j+3$ nodes, and
+integer grids at most $2s/h_j+3$ when $h_j\ge1$ or $s+2$ otherwise.
+These fit the cap for sufficiently small $\theta$. This observation
+gives termination, but not the growth-based rate.
+
+\section{Exact output is a separate theorem}\label{sec:exact}
+
+\subsection{Rational quadratics}
+
+Write the quadratic, after substituting fixed coordinates, as
+\[
+F(x)=(x^{\mathsf T}Hx+h^{\mathsf T}x+k)/D,
+\]
+where $H$ is symmetric integral, $h,k$ are integral, and all endpoints
+have denominators dividing the positive integer $D$. Include factors of
+two from off-diagonal normalization when selecting $D$. Put
+\begin{equation}\label{eq:height}
+C_H=\max\{1,\max_{ij}|H_{ij}|\},\quad
+\Delta=(2nC_H)^n,\quad R=D\Delta,\quad V=DR^2.
+\end{equation}
+These numbers have polynomial bit length; they are not enumerated.
+
+\begin{lemma}[Rational height]\label{lem:height}
+The problem has a global optimizer with a common coordinate denominator
+at most $R$, and its optimum value has reduced denominator at most $V$.
+Every isolated global optimizer satisfies the coordinate bound.
+\end{lemma}
+\begin{proof}
+Fix the integer assignment of a global optimizer. Among optimizers in
+that slice select one whose smallest containing continuous-box face has
+minimum dimension. Write $S$ for its free continuous coordinates and
+$A$ for integer and bound-active coordinates; $x_A=t_A/D$ with integral
+$t_A$. The free Hessian is positive semidefinite by local optimality.
+If singular, a free null direction has both zero first-order change and
+zero quadratic change. Move along it until a free coordinate hits a box
+bound. The objective stays optimal and the face dimension decreases,
+a contradiction. Thus $2H_{SS}$ is positive definite, and stationarity is
+\[
+(2H_{SS})(Dx_S)=-Dh_S-2H_{SA}t_A.
+\]
+Cramer's rule gives common denominator $D\det(2H_{SS})$, bounded by
+$D|S|!(2C_H)^{|S|}\le R$; an empty determinant is one.
+Evaluating the integer-coefficient quadratic at a common-denominator
+point gives reduced value denominator at most $DR^2=V$.
+For an isolated optimizer a singular free Hessian would itself yield
+a short segment of optimizers, so the same argument applies directly.
+\end{proof}
+
+\begin{lemma}[Uniqueness supplies qualitative quadratic growth]
+A quadratic with a unique optimizer on a compact mixed box has some
+$g>0$ satisfying~\eqref{eq:growth}.
+\end{lemma}
+\begin{proof}
+Otherwise a sequence $x_j\ne x^*$ has ratio
+$(F(x_j)-F(x^*))/\norm{x_j-x^*}^2\to0$. Compactness and uniqueness
+force $x_j\to x^*$, and hence their integer coordinates eventually
+equal those of $x^*$. Write $t_j=\norm{x_j-x^*}$ and take a subsequence
+with $u_j=(x_j-x^*)/t_j\to u$, $\norm u=1$. The exact quadratic
+expansion is
+\[
+\frac{F(x_j)-F(x^*)}{t_j^2}
+=\frac{\nabla F(x^*)^{\mathsf T}u_j}{t_j}
++\frac12u_j^{\mathsf T}\nabla^2F\,u_j.
+\]
+First-order optimality in the fixed integer slice makes the first term
+nonnegative. Its boundedness implies $\nabla F(x^*)^{\mathsf T}u=0$,
+and the limiting quadratic term is nonpositive. The limit direction is
+in the continuous-box tangent cone with zero integer components, so
+$x^*+\tau u$ is feasible for all sufficiently small positive $\tau$.
+Optimality forces the same quadratic term nonnegative. It is zero,
+and the entire short ray is optimal, contradicting uniqueness.
+\end{proof}
+
+This qualitative lemma does not bound conditioning usefully. A small
+input can encode an exponentially weak growth margin.
+
+\begin{theorem}[Exact rational quadratic output]\label{thm:exact}
+Under the hypotheses of Theorem~\ref{thm:approx}, the unique optimizer
+and exact optimum value can be found and certified in
+$f_1(p,\kappa)(I+1)^{C_1}$ bit operations for absolute $C_1$, without
+receiving $g$. Every unique rational mixed-box QP has such a positive
+$g$, although its conditioning may be poor.
+\end{theorem}
+\begin{proof}
+Distinct rationals with denominators at most $K$ differ by at least
+$1/K^2$. An interval $[b,U]$ of width at most $1/(4V^2)$ therefore
+isolates the unique possible optimum value of height at most $V$.
+Continued fractions reconstruct this rational in polynomial bit time.
+Around each coordinate of the feasible incumbent use a reconstruction
+window of radius $1/(4R^2)$. Its length is below $1/R^2$, so there is
+at most one rational of denominator at most $R$ inside it. If all
+coordinates reconstruct, check the original bounds, integrality, and
+exact equality of the candidate's objective to the isolated value.
+Accept only after those checks. Acceptance is globally valid even before
+the incumbent is known to be close.
+
+Call the approximation algorithm with $\varepsilon=2^{-q}$ for
+$q=1,2,4,8,\ldots$. When
+\[
+\varepsilon\le\min\{1/(4V^2),\ g/(32R^4)\},
+\]
+growth places the incumbent within $1/(\sqrt{32}R^2)<1/(4R^2)$ of
+$x^*$. Every coordinate reconstructs correctly and the check succeeds.
+The required $q$ is $\poly(I)+O(\log\kappa)$, using $g\ge L/\kappa$;
+doubling overshoots by at most two. The approximate bit bound and
+polynomial reconstruction cost prove the claim. The height constants
+come from the original problem, not from refined hull endpoints.
+\end{proof}
+
+Only the optimal value is guaranteed to have denominator at most $V$.
+Arbitrary continuous feasible values do not occupy a fixed value lattice.
+The reconstruction and equality checks cannot be replaced by rounding
+an arbitrary small objective gap to zero.
+
+\begin{proposition}[Exact acceptance using the candidate's denominator]
+\label{prop:candidateheight}
+Suppose $b\le\OPT$ is a certified original-domain lower bound and $x$
+is feasible. Write $F(x)=a/W$ in lowest terms, with $W>0$. If
+\[
+F(x)-b<\frac1{VW},
+\]
+then $x$ is globally optimal. This implication requires neither uniqueness
+nor a growth constant.
+\end{proposition}
+\begin{proof}
+The optimum is rational with reduced denominator at most $V$ by
+Lemma~\ref{lem:height}. If $F(x)>\OPT$, the difference of the two
+rationals is at least $1/(VW)$. Since $b\le\OPT$, that contradicts
+the displayed strict inequality.
+\end{proof}
+
+This rule uses the denominator of the actual candidate; it does not
+assume that a feasible value has denominator at most $V$. It allows the
+implementation to verify candidates from reconstruction or exact
+stationarity recovery independently of how they were generated. A large
+candidate denominator can demand a very small certified gap, and the
+rule alone supplies no running-time bound for finding an accepted point.
+
+\begin{theorem}[Finite exact recovery without uniqueness]
+\label{thm:generalfinite}
+Every nonempty bounded rational mixed-box QP admits finite exact output
+by the default geometric conditioning schedule, endpoint snapping and
+rational stationary-face recovery. The implementation succeeds with
+sufficiently large finite round, stage, table, LP-pivot and time limits.
+No growth constant or optimizer is supplied. This statement gives no
+general polynomial or fixed-parameter running-time bound.
+\end{theorem}
+\begin{proof}
+The height bound $R$ can also bound vertices of every stationary
+polytope formed by fixing original integer labels and bounds and imposing
+a subset of free-gradient equations. In scaled coordinates $u=Dx$, a
+vertex matrix consists of integer stationary rows and unit bound rows.
+Expansion along the latter leaves a possibly nonprincipal Hessian minor.
+The same determinant estimate used in~\eqref{eq:height} bounds such a
+minor too. Thus each vertex has a common coordinate denominator at most
+$R$, including its original-bound slacks. The implementation's sharper
+row-product bound has the same nonprincipal-minor property.
+
+If no coordinates remain, direct evaluation is exact. Otherwise $n\ge1$.
+Let $S$ be the entire optimal set, $\tau=1/(4nR)$, and suppose a feasible
+point $y$ is within $\tau/2$ of a nearest optimizer $s$. Their integer
+labels agree. Snap each continuous coordinate within $\tau$ of an
+original endpoint to that endpoint. Original endpoint separations are
+at least $1/D>2\tau$, so the rule is unambiguous and snaps every
+coordinate active at $s$ correctly. Let $J_0$ be the interior continuous
+coordinates at $s$, and $J\subseteq J_0$ those left free after snapping.
+
+Let $P$ retain the original box, fix the labels and active coordinates
+of $s$, and impose $\nabla_{J_0}F=0$. This nonempty bounded polytope
+has constant objective $F(s)$: differences of its points are supported
+on $J_0$, and subtracting their gradient equations annihilates the free
+Hessian action. Let $q(x)$ sum the nonnegative slacks of the additional
+endpoints selected in $J_0\setminus J$. Then
+\[
+q(s)\le3n\tau/2=3/(8R)<1/R.
+\]
+A positive minimum of $q$ at a vertex of $P$ would be at least $1/R$,
+by the common denominator bound. Therefore some $s'\in P$ meets all
+selected endpoints simultaneously. The implemented selected-face
+stationarity system is feasible. Every feasible solution $x$ of that
+system has the same value as $s'$: for $d=x-s'$, both free gradients
+vanish, $d$ is supported on $J$, and $H_{JJ}d_J=0$. Exact quadratic
+expansion gives $F(x)=F(s')=\OPT$, without a nonsingularity assumption.
+
+The unconditional approximation argument after
+Theorem~\ref{thm:approx} reaches every positive accuracy with sufficiently
+large finite caps. Compactness implies that feasible objective values
+tending to $\OPT$ approach $S$ in distance. Thus sufficiently accurate
+incumbents satisfy the preceding recovery premise. Exact LP finds a
+recovery point even for singular faces, and a gap below $1/V^2$ makes
+Proposition~\ref{prop:candidateheight} accept it. Each successful finite
+prefix uses finite resources. The proof supplies existence of such caps,
+not a useful bound on them for arbitrary optimal sets.
+\end{proof}
+
+This specializes the earlier stationary-polytope recovery mechanism to
+the implemented denominator bound. It returns one rational optimizer
+and value. A compact representation of every optimizer, or an efficient
+width-and-set-growth bound for discovering an unknown optimal set, is
+a separate question.
+
+\subsection{Explicit polynomial factors}\label{sec:polynomial}
+
+Suppose the factors are explicit rational monomial lists of fixed degree
+$d\ge2$. A valid rational curvature certificate can be computed by
+differentiating twice in each coordinate, evaluating the resulting
+monomials by interval arithmetic on the full continuous hull, and summing
+their upper endpoints. A sharper checked bound may replace this one.
+Its certificate must have polynomial verification cost; include the
+accepted $L$ and any such certificate in $I$. The quantitative parameter
+uses the bound actually accepted.
+
+\begin{corollary}[Polynomial approximation and native-integer exactness]
+At fixed numerical degree $d$, under~\eqref{eq:growth}, the pruned-grid
+algorithm returns a certified $2^{-q}$ approximation in
+$f_d(p,\kappa)(I+q+1)^C$ bit operations with exponent independent of
+$p,\kappa$. If every coordinate is a native integer, it also returns an
+exact optimizer in $f_d(p,\kappa)(I+1)^C$ bit operations.
+\end{corollary}
+\begin{proof}
+The interpolation, filtering, and growth proofs use coordinate
+semiconcavity, not a quadratic expansion. For arithmetic, polynomial
+values at stage $j$ have denominators dividing $DA_j^d$, and values
+including corrections have a common denominator $8DA_j^{\max\{d,2\}}$.
+Explicit fixed-degree evaluation is polynomial in input and coordinate
+bit length, which proves the approximation statement.
+
+For native integers choose a common denominator $Q_0$ of the original
+objective coefficients. Every feasible value lies in $Q_0^{-1}\Z$.
+A certified gap less than $1/Q_0$ at a feasible incumbent excludes every
+strictly better integer value. It suffices to take
+$q=1+\lceil\log_2Q_0\rceil=O(I)$. The checker verifies feasibility,
+the original objective value, coefficient denominators, and the complete
+pruning certificate. Growth is unnecessary for this stopping rule's
+validity.
+\end{proof}
+
+The result does not automatically give exact continuous polynomial
+coordinates. For example $x^3-6x$ on $[1,2]$ has optimizer $\sqrt2$ and
+value $-4\sqrt2$. Nor does uniqueness imply quadratic growth for
+polynomials: $x^4$ at zero is a counterexample. Arbitrarily large
+binary-encoded exponents or general circuits also need a separate
+evaluation-size analysis. A rational lattice rescaling can alter the
+conditioning parameter, so the native-integer theorem is not silently a
+metric-preserving lattice theorem.
+
+\section{Extensions and the remaining structural questions}\label{sec:extensions}
+\input{extensions}
+
+\section{Initial implementation and historical evidence}\label{sec:computation}
+\input{computation}
+
+\section{Completed implementation and new evidence}\label{sec:completion}
+\input{completion}
+
+\section{Evidence map and interpretation}\label{sec:evidence}
+\input{evidence}
+
+\bibliographystyle{plain}
+\bibliography{references}
+\end{document}

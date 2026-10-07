@@ -179,7 +179,7 @@ is introduced in Stage 5.
 Author checker:
 
 ```
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python verification/check_stage05_author.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python verification/check_stage05_author.py
 ```
 
 The run completed successfully. `verification/check_stage05_author.json`

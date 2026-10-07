@@ -10,7 +10,7 @@ import hashlib
 import json
 import tarfile
 
-EXPECTED = 'f0399194ca1c9c57421965e236302c62e10eb72846ab807f936f18d9927d4b26'
+EXPECTED = '96c50c412dbea4386d530419570c0215685a40c43a96aac4a6b9c9c4aca8131e'
 MANIFEST = 'code/minlp_solver_lab/results/lbesh_development/publication_manifest_v1.json'
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('archive', type=Path)

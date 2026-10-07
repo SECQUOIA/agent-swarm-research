@@ -1,0 +1,564 @@
+\section{Exact comparisons with one sign test}
+\label{sec:upper}
+
+Branch-and-bound methods for mixed-integer nonlinear programs make exact
+decisions. A node is pruned when its relaxation value is at least the
+incumbent value. Bound activity at a relaxation optimizer informs branching
+decisions. Two subproblems are ranked by their optimal values. Approximate
+values and points do not settle such decisions by themselves. For the
+classes studied here, a nonzero difference can be as small as
+$2^{-2^{\poly(L)}}$, so a sign certified by approximation can require
+exponentially many printed bits.
+
+For globally strongly convex explicit polynomials, this section reduces every
+order or equality comparison of a polynomial observable at the minimizer to
+the sign of one integer arithmetic circuit, that is, to one instance of
+$\PosSLP$. The circuit is built in polynomial time without oracle calls. The lower bounds of
+Section~\ref{sec:reductions} show that the order comparisons are also
+$\PosSLP$-hard for certified quartics. In that class the order comparisons
+are therefore equivalent to $\PosSLP$ under polynomial-time many-one
+reductions.
+
+The proof has four parts. An ordinary algorithm computes a starting point
+with polynomially many bits. Newton's method, run as a shared rational
+circuit, reaches doubly exponential accuracy with polynomially many gates. A
+real-algebraic separation bound, used only in the analysis, determines how
+much accuracy is needed. Finally, the observable is shifted by half of the
+separation gap and division is removed without changing signs. The same
+method gives an upper bound for zeros of strongly monotone maps that are not
+gradients, for polyhedra on which a gap between zero and nonzero optimal
+slacks is supplied, and, with an elementary separation bound, for the
+certified cube-root circuits of Section~\ref{sec:reductions}. The last
+subsection compiles an adaptive polynomial-time computation with exact sign
+tests into a single sign test.
+
+\subsection{Conventions}
+\label{sec:upper-conventions}
+
+We use the input and circuit models of Section~\ref{sec:models}. The
+following points are used repeatedly.
+
+\begin{enumerate}[label=(\roman*)]
+\item \emph{Input.} Rational numbers are written in binary. An explicit
+sparse polynomial is the list of its nonzero coefficients together with their
+exponent vectors, written in unary, and the dimension $n$ is written in unary
+as well; a polynomial map
+$T=(T_1,\ldots,T_n)$ is the list of its components. We write $L\ge2$ for the
+total binary length of the input, including the curvature bound, the
+observable, thresholds, constraints and certificates. Thus every printed
+numerator and denominator has absolute value at most $2^L$, every listed
+polynomial has at most $L$ terms, and the dimension $n$ and the numerical
+degree $D$ are at most $L$. If an encoding only guarantees
+$D\le\poly(L)$, the results hold after replacing $L$ by that polynomial.
+Sparse polynomials with binary exponents and no polynomial degree bound are
+not covered: evaluating them at a short rational point can already produce
+exponentially many bits.
+\item \emph{Circuits.} An \emph{integer circuit} is a directed acyclic graph
+whose sources are the constants $0$ and $1$ and whose other nodes are binary
+$+$, $-$ and $\times$ gates; its size is its number of nodes. A
+\emph{rational circuit} also allows rational constants written in binary and
+division by nonzero values. A circuit for a vector has several output nodes,
+and all nodes may be shared. Circuit values can have exponentially many bits;
+they are never expanded. $\PosSLP$ asks whether the output of an integer
+circuit is positive.
+\item \emph{Reductions.} A problem \emph{reduces to one $\PosSLP$
+instance} if a deterministic polynomial-time algorithm, making no oracle
+calls, maps every input to an integer circuit whose output is positive
+exactly when the answer is yes. For a promise problem this is required only on
+inputs satisfying the promise. A supplied curvature bound is a promise and is
+not checked. The certificate formats below are checked in polynomial time;
+an invalid certificate is mapped to the circuit $0$, so these formats define
+ordinary languages.
+\item \emph{Comparisons.} We write ${\bowtie}$ for one of the relations
+$>,\ge,<,\le,=,\ne$. A rational threshold is absorbed into the observable:
+the value comparison $\min f\bowtie r$ uses $h=f-r$, and the coordinate
+comparison $p_j\bowtie r$ uses $h=X_j-r$.
+\end{enumerate}
+
+\subsection{Three tools}
+\label{sec:upper-tools}
+
+The first tool says how close to zero a nonzero algebraic quantity defined
+by a short real formula can be. It is used only in proofs; the reductions
+never perform quantifier elimination. For an integer $N$, its bit size is
+$\lceil\log_2(|N|+1)\rceil$.
+
+\begin{lemma}[Algebraic separation]
+\label{lem:separation}
+There is an absolute integer constant $c_0\ge1$ with the following property.
+Let $\Phi(y,z)$ be a quantifier-free formula in real variables $y\in\R^s$,
+$s\ge1$, and $z\in\R$, that is, a Boolean combination of conditions
+$P(y,z)>0$, $P(y,z)=0$ and $P(y,z)<0$, where every polynomial
+$P\in\Z[y,z]$ that occurs has total degree at most $d\ge2$ and coefficients
+of bit size at most $\tau\ge1$. Suppose that the set
+$\{z\in\R:\exists y\in\R^s\ \Phi(y,z)\}$ consists of a single point
+$\alpha$. Then $\alpha$ is algebraic, and the following hold.
+\begin{enumerate}[label=(\alph*)]
+\item \emph{Polynomial-size formulas.} If $s,d,\tau\le L^c$ for integers
+$L\ge2$ and $c\ge1$, then $\alpha=0$ or $|\alpha|\ge2^{-2^{e}}$ with
+$e=c(c_0+2)L^{c+1}$.
+\item \emph{Explicit form.} If $\alpha\ne0$, then
+$|\alpha|\ge2^{-2\tau d^{c_0s}}$. For fixed $d$, the exponent is linear in
+$\tau$, with a factor that depends only on $s$.
+\end{enumerate}
+\end{lemma}
+
+The proof in Appendix~\ref{app:upper-separation} applies a one-block
+quantifier-elimination theorem with bounds on degrees and coefficient bit
+sizes \citep[Theorem~2.27]{Basu2014}. Some polynomial of the eliminated
+formula must vanish at $\alpha$, because otherwise the formula would define a
+neighborhood of $\alpha$; an elementary root bound then gives the estimate.
+The lemma does not require the defining system to have finitely many complex
+solutions. For instance, $f(x,y)=(x^2+y^2)^2+x^2+y^2$ satisfies
+$\nabla^2f\succeq2I$ on $\R^2$, yet its complex critical locus contains the
+curve $x^2+y^2=-1/2$. Only the real projection matters. Form~(a) is used
+for problems with polynomially many variables. Form~(b) keeps the dependence
+on $\tau$ linear and the dependence on $s$ single exponential for fixed $d$,
+which is what the parameterized algorithms of Section~\ref{sec:constraints}
+need.
+
+The second tool removes division from a rational circuit. The rule
+$(N_a/Q_a)/(N_b/Q_b)=(N_aQ_b)/(Q_aN_b)$ can produce a negative denominator,
+which would reverse the sign of the final numerator; detecting this needs a
+sign test. Squaring the divisor's numerator avoids the problem.
+
+\begin{lemma}[Division elimination with positive denominators]
+\label{lem:denominator-clearing}
+Let $C$ be a rational circuit with $\sigma$ nodes whose rational constants
+have total bit length $b$. In time polynomial in $\sigma+b$, and without
+sign tests, one can construct an integer circuit of size $O(\sigma+b)$ that
+contains, for every node $v$ of $C$, two nodes $N_v,Q_v$ with the following
+property. If every division gate of $C$ divides by a nonzero value, then
+$Q_v>0$ and the value of $v$ equals $N_v/Q_v$ for every node $v$. In that
+case the value of $v$ is positive if and only if $N_v>0$, so the sign of any
+node of $C$ is decided by one $\PosSLP$ instance.
+\end{lemma}
+
+Tracking numerators and denominators is standard in $\PosSLP$ reductions
+\citep{AllenderEtAl2009,EtessamiStewartYannakakis2012}. Division by a node
+with numerator $N_b$ and denominator $Q_b$ is implemented as
+\begin{equation}
+ \frac{N_a/Q_a}{N_b/Q_b}=\frac{N_aQ_bN_b}{Q_aN_b^2},
+ \label{eq:upper-division}
+\end{equation}
+whose denominator is positive whenever $Q_a>0$ and $N_b\ne0$. The full
+proof is in Appendix~\ref{app:upper-clearing}. We state the lemma once
+because every result in this section and several in
+Sections~\ref{sec:constraints} and~\ref{sec:heights} use it.
+
+The third tool is a short circuit for a very accurate approximation of the
+optimizer. It is uniform in the observable: one circuit serves every
+observable up to a stated encoding length. This uniformity is used when many
+observables are tested at the same point, as in the active-set certificates
+of Section~\ref{sec:constraints} and the circuit Grams of
+Theorem~\ref{thm:circuit-gram}.
+
+\begin{lemma}[Shared Newton point]
+\label{lem:newton-circuit}
+Let an input of length $L$ consist of $n\ge1$, a rational $\mu>0$, and
+either
+\begin{enumerate}[label=(\alph*)]
+\item an explicit sparse polynomial $f\in\Q[X_1,\ldots,X_n]$ with the
+promise $\nabla^2f(x)\succeq\mu I$ for all $x\in\R^n$, in which case put
+$T=\nabla f$; or
+\item an explicit sparse polynomial map $T\colon\R^n\to\R^n$ with the promise
+$\ip{T(x)-T(y)}{x-y}\ge\mu\norm{x-y}^2$ for all $x,y\in\R^n$.
+\end{enumerate}
+Then $T$ has a unique zero $p$. Given in addition an integer $L'\ge L$,
+written in unary, one can construct in deterministic time polynomial in
+$L'$, without oracle calls, a shared rational circuit with outputs
+$\hat x\in\Q^n$ in which every division is by a nonzero value, such that the
+following holds for every explicit sparse polynomial
+$h\in\Q[X_1,\ldots,X_n]$ of encoding length at most $L'$:
+\[
+ h(p)=0\ \text{ or }\ |h(p)|\ge g_{L'},
+ \qquad
+ |h(\hat x)-h(p)|\le g_{L'}/8,
+ \qquad
+ g_{L'}:=2^{-2^{e(L')}},
+\]
+where $e(L'):=(c_0+3)L'^2$ and $c_0$ is the constant of
+Lemma~\ref{lem:separation}.
+\end{lemma}
+
+The circuit consists of an ordinary rational starting point $x_0$ with
+$\norm{x_0-p}\le\mu/(4\Lambda)$, where $\Lambda=2^{10L'^2}$ bounds the
+relevant derivatives, followed by $e(L')+1$ exact Newton steps
+\[
+ x_{t+1}=x_t-J_T(x_t)^{-1}T(x_t).
+\]
+In case~(a), the starting point comes from polynomial-time convex value
+optimization (Lemma~\ref{lem:convex-value}) and strong convexity. In
+case~(b) no objective is available, and we use the ellipsoid method with the
+cuts $\{y:T(x)^{\mathsf T}(y-x)\le0\}$; every such cut keeps a fixed ball
+around $p$, which forces the method to reach a point with small residual
+(Lemma~\ref{lem:upper-warm-start}). The Newton error contracts as
+$\norm{x_{t+1}-p}\le(\Lambda/2\mu)\norm{x_t-p}^2$, so after $e(L')+1$ steps
+it is at most $2^{-6\cdot2^{e(L')}}$. Each step solves a linear system whose
+matrix has a positive definite symmetric part; Gaussian elimination without
+pivoting has positive pivots, so no sign test is needed. Sharing the nodes of
+earlier steps keeps the size polynomial, although the expanded coordinates
+of $\hat x$ can have exponentially many bits. The proof is in
+Appendices~\ref{app:upper-newton} and~\ref{app:upper-warm}.
+
+\subsection{Strongly convex objectives}
+\label{sec:upper-convex}
+
+\begin{theorem}[Exact comparison at a strongly convex minimizer]
+\label{thm:exact-upper}
+Let the input consist of $n\ge1$, explicit sparse polynomials
+$f,h\in\Q[X_1,\ldots,X_n]$, a relation ${\bowtie}$, and one of the following.
+\begin{enumerate}[label=(\alph*)]
+\item A rational $\mu>0$, with the promise $\nabla^2f(x)\succeq\mu I$ for
+every $x\in\R^n$.
+\item A Hessian certificate: an explicit list $w(X,v)=(w_1,\ldots,w_m)$ of
+distinct monomials of the form $X^\beta v_i$ that contains each of
+$v_1,\ldots,v_n$, and a rational symmetric $m\times m$ matrix $M$. The
+certificate is valid if $M\succ0$ and
+$v^{\mathsf T}\nabla^2f(X)\,v=w(X,v)^{\mathsf T}Mw(X,v)$ as polynomials in
+$(X,v)$.
+\end{enumerate}
+Let $p$ be the unique minimizer of $f$ on $\R^n$. Deciding
+$h(p)\bowtie0$ reduces to one $\PosSLP$ instance: in case~(a) on all
+promised inputs, and in case~(b) on all inputs, where the language consists of
+the inputs with a valid certificate and $h(p)\bowtie0$. No lower bound on
+$|h(p)|$ is assumed.
+\end{theorem}
+
+\begin{proof}[Proof outline]
+Apply Lemma~\ref{lem:newton-circuit}(a) with $L'=L$ and put
+$\hat\alpha=h(\hat x)$ and $g=g_L$, computed by $e(L)$ squarings of $1/2$.
+Since $\alpha=h(p)$ is zero or at least $g$ in absolute value, and
+$|\hat\alpha-\alpha|\le g/8$, each rational circuit in the following table
+is positive exactly when its relation holds. Its absolute value is at least
+$3g/8$ in the four order rows and at least $15g^2/64$ in the two equality
+rows, so it is never zero.
+\begin{center}
+\begin{tabular}{ll@{\qquad}ll}
+\toprule
+Relation & Circuit & Relation & Circuit\\
+\midrule
+$\alpha>0$ & $\hat\alpha-g/2$ & $\alpha<0$ & $-\hat\alpha-g/2$\\
+$\alpha\ge0$ & $\hat\alpha+g/2$ & $\alpha\le0$ & $-\hat\alpha+g/2$\\
+$\alpha=0$ & $g^2/4-\hat\alpha^2$ & $\alpha\ne0$ & $\hat\alpha^2-g^2/4$\\
+\bottomrule
+\end{tabular}
+\end{center}
+Lemma~\ref{lem:denominator-clearing} turns the selected rational circuit into
+an integer circuit with the same sign. For case~(b), the identity is checked
+by sparse coefficient comparison, $M\succ0$ by rational symmetric
+elimination, and then $\mu=\det M/(\tr M)^{m-1}$ is a rational lower bound
+for the least eigenvalue of $M$ (Lemma~\ref{lem:models-det-trace}). Since $w$
+contains every $v_i$, $v^{\mathsf T}\nabla^2f(X)v\ge\mu\norm{w}^2\ge\mu\norm v^2$.
+Case~(a) then applies with $L$ replaced by the polynomially larger length of
+the input together with $\mu$. Details are in
+Appendix~\ref{app:upper-convex-proof}.
+\end{proof}
+
+The theorem decides the sign of $\min f-r$ and of $p_j-r$, including the
+equality cases, with no promise that these numbers are nonzero. For quartics
+with the full basis $w=(v,X\otimes v)$, the strict and weak comparisons are
+$\PosSLP$-hard (Section~\ref{sec:reductions}), and
+Theorem~\ref{thm:quartic-complete} records the resulting classification.
+Equality has only the upper bound: none of the lower reductions in this paper
+produces equality instances. The certificate in~(b) is a sufficient format,
+not a recognition algorithm for strong convexity. Degree four is the first
+degree at which the theorem has content: a globally convex polynomial of
+degree at most three is quadratic (Lemma~\ref{lem:models-low-degree}), and
+then $p$ and $h(p)$ are obtained by rational linear algebra.
+
+For certified quartics, nonnegativity of $f$ and membership in the cone of
+real sums of squares both mean $\min f\ge0$, and the existence of a positive
+definite polynomial Gram matrix means $\min f>0$; these equivalences are
+recorded with Theorem~\ref{thm:quartic-complete}, and Theorem~\ref{thm:circuit-gram}
+gives the corresponding circuit Gram. The three certificate questions
+therefore inherit the one-instance upper bound. Rational sum-of-squares
+membership is different: when $\min f=0$ it is not determined by the sign of
+the minimum (Section~\ref{sec:fields}), and no matching upper bound is claimed
+for it.
+
+\begin{corollary}[Comparing two minima]
+\label{cor:upper-two-minima}
+Let $f_1\in\Q[X_1,\ldots,X_{n_1}]$ and $f_2\in\Q[Y_1,\ldots,Y_{n_2}]$ each
+satisfy the hypotheses of Theorem~\ref{thm:exact-upper}, both with
+promises~(a) or both with certificates~(b). For each relation ${\bowtie}$,
+deciding $\min f_1\bowtie\min f_2$ reduces to one $\PosSLP$ instance.
+\end{corollary}
+
+\begin{proof}
+Use disjoint variables and put $F(X,Y)=f_1(X)+f_2(Y)$ and
+$h(X,Y)=f_1(X)-f_2(Y)$. The Hessian of $F$ is block diagonal, so
+$\nabla^2F\succeq\min\{\mu_1,\mu_2\}I$. With certificates, check both, map
+invalid inputs to the circuit $0$, and take
+$\mu_i=\det M_i/(\tr M_i)^{m_i-1}$. The minimizer of $F$ is the pair of minimizers,
+and there $h$ equals $\min f_1-\min f_2$. Apply
+Theorem~\ref{thm:exact-upper}(a) to $F$ and $h$.
+\end{proof}
+
+The proof needs only a curvature bound for the sum. A block-separated sum
+need not have a positive definite Hessian Gram on the full joint basis, and
+none is required.
+
+\begin{proposition}[Circuit witnesses for strict inequalities]
+\label{prop:upper-circuit-witness}
+Under the hypotheses of Theorem~\ref{thm:exact-upper}(a), the point $\hat x$
+of Lemma~\ref{lem:newton-circuit} with $L'=L$ is a rational vector with a
+shared circuit of size polynomial in $L$, constructed without oracle calls
+and without knowing any sign. If $h(p)>0$, then $h(\hat x)>0$. In particular,
+if $\min f<0$ then $f(\hat x)<0$.
+\end{proposition}
+
+\begin{proof}
+If $h(p)>0$, then $h(p)\ge g_L$ and $h(\hat x)\ge7g_L/8>0$. Apply this to
+$h=-f$ for the last claim.
+\end{proof}
+
+Thus every strictly feasible instance $\{f<0\}\ne\emptyset$ has a short
+feasible witness in the shared-circuit format, built by the same algorithm
+on every input. Three limits matter. Checking that $f(\hat x)<0$ is again a
+$\PosSLP$ question. The expanded numerators and denominators of $\hat x$ can
+be exponentially long, and Section~\ref{sec:heights} shows that for some
+strictly feasible quartics every rational feasible point has exponentially
+many bits. When $\min f=0$, the set $\{f\le0\}$ is the single point $p$,
+which can be irrational (Theorem~\ref{thm:singleton-field}); then no rational
+witness exists at all.
+
+\subsection{Zeros of strongly monotone polynomial maps}
+\label{sec:upper-monotone}
+
+The same comparison holds at the zero of a polynomial map that is not a
+gradient. Such maps describe equilibria of games and variational models
+without a potential. The only new ingredient is the starting point, because
+there is no objective whose value can be minimized.
+
+\begin{theorem}[Zeros of strongly monotone maps]
+\label{thm:upper-monotone}
+Let the input consist of $n\ge1$, an explicit sparse polynomial map
+$T=(T_1,\ldots,T_n)$, an explicit sparse polynomial $h$, a relation
+${\bowtie}$, and one of the following.
+\begin{enumerate}[label=(\alph*)]
+\item A rational $\mu>0$, with the promise
+$\ip{T(x)-T(y)}{x-y}\ge\mu\norm{x-y}^2$ for all $x,y\in\R^n$.
+\item A certificate $(w,M)$ as in Theorem~\ref{thm:exact-upper}(b), valid if
+$M\succ0$ and $v^{\mathsf T}J_T(X)\,v=w(X,v)^{\mathsf T}Mw(X,v)$ as
+polynomials.
+\end{enumerate}
+Then $T$ has a unique zero $p$, and deciding $h(p)\bowtie0$ reduces to one
+$\PosSLP$ instance, in the same sense as in Theorem~\ref{thm:exact-upper}.
+\end{theorem}
+
+The Jacobian $J_T$ need not be symmetric; the certificate controls only its
+symmetric part, which suffices because
+$\ip{T(x)-T(y)}{x-y}=\int_0^1(x-y)^{\mathsf T}J_T(y+\theta(x-y))(x-y)\,d\theta$.
+Existence of the zero is proved, not assumed. The proof
+(Appendix~\ref{app:upper-monotone-proof}) uses Lemma~\ref{lem:newton-circuit}(b);
+the Newton steps solve the nonsymmetric system directly by elimination
+without pivoting.
+
+\begin{example}[Maps that are not gradients]
+\label{ex:upper-nongradient}
+For a rational skew-symmetric matrix $A$ and rational $b$, the cubic map
+$T(x)=(1+\norm x^2)x+Ax-b$ has
+$J_T(x)=(1+\norm x^2)I+2xx^{\mathsf T}+A$, hence
+$v^{\mathsf T}J_T(x)v=\norm v^2+\norm{x\otimes v}^2+2(x^{\mathsf T}v)^2$.
+A positive definite certificate on $(v,x\otimes v)$ is $I\oplus(I+2\,dd^{\mathsf T})$,
+where $d$ selects the coordinates $x_iv_i$. If $A\ne0$, then $J_T$ is not
+symmetric and $T$ is not a gradient. The antisymmetric part of the Jacobian
+can also vary with $x$. In two variables, let
+\[
+ T(x,y)=(1+x^2+y^2)\,(x,y)+(x^2y/2,\,0).
+\]
+With $z=(xv_1,xv_2,yv_1,yv_2)$ one checks
+$v^{\mathsf T}J_T v=\norm v^2+z^{\mathsf T}Q_0z$ for
+\[
+ Q_0=\begin{pmatrix}3&1/4&1/2&2\\1/4&1&0&0\\1/2&0&1&0\\2&0&0&3\end{pmatrix},
+\]
+whose leading principal minors are $3$, $47/16$, $43/16$ and $65/16$. Here
+$(J_T)_{12}-(J_T)_{21}=x^2/2$, so $T$ is not the sum of a gradient and a
+constant linear map.
+\end{example}
+
+For cubic maps with the full basis $w=(v,X\otimes v)$, the gradients of the
+certified quartics of Section~\ref{sec:reductions} are instances of
+Theorem~\ref{thm:upper-monotone}(b). Hence strict and weak comparisons at
+zeros of certified cubic maps are $\PosSLP$-complete, while equality again
+has only the upper bound. Cubic degree is the first degree with content: a
+strongly monotone polynomial map of degree at most two is affine
+(Lemma~\ref{lem:models-low-degree}), and its zero is rational. Constrained
+variational inequalities with such maps are treated in
+Section~\ref{sec:constraints}.
+
+\subsection{Polyhedra with a supplied slack gap}
+\label{sec:upper-slack}
+
+On a polyhedron the minimizer lies on an unknown face. This paper gives no
+deterministic polynomial-time method with a $\PosSLP$ oracle that finds this
+face for general strongly convex quartics; Section~\ref{sec:constraints}
+discusses that open case and several structured classes. The
+difficulty disappears when the input bounds the nonzero optimal slacks away
+from zero. Then ordinary approximation finds the full active set, and the
+remaining problem is an unconstrained comparison on an affine subspace.
+
+\begin{proposition}[Supplied slack gap]
+\label{prop:upper-slack-gap}
+Let the input consist of explicit sparse $f,h\in\Q[X_1,\ldots,X_n]$, a
+rational $\mu>0$ with the promise $\nabla^2f\succeq\mu I$ on $\R^n$, a
+rational polyhedron $P=\{x:Ax\le b\}$ with rows $a_i^{\mathsf T}$, a rational
+$\delta>0$, and a relation ${\bowtie}$. When $P\ne\emptyset$, let $p_P$ be
+the minimizer of $f$ on $P$, and assume the promise that every slack
+$b_i-a_i^{\mathsf T}p_P$ is either $0$ or at least $\delta$. Then deciding
+whether $P\ne\emptyset$ and $h(p_P)\bowtie0$ reduces to one $\PosSLP$
+instance. The reduction also computes the set of active rows at $p_P$ by an
+ordinary polynomial-time algorithm.
+\end{proposition}
+
+The proof (Appendix~\ref{app:upper-slack}) decides emptiness by linear
+programming, obtains a feasible rational point whose distance to $p_P$ is at
+most $\delta/(8\max_i\norm{a_i}_1)$ from convex value optimization, and
+reads off the active set $S$ as the rows with slack below $\delta/2$. If
+$d\in\ker A_S$, then $p_P\pm\theta d\in P$ for small $\theta>0$, so
+$\nabla f(p_P)^{\mathsf T}d=0$; hence $p_P$ minimizes $f$ on the affine space
+$\{x:A_Sx=b_S\}$. In a chart of this space with an identity block, the
+restricted function keeps the modulus $\mu$, and the Newton machinery
+applies. The chart is never expanded into monomials, so unary degree is
+allowed. No multiplier bound, strict complementarity or Slater point is
+needed. The slack gap is a promise that the algorithm does not check, and
+it is a real restriction: Lemma~\ref{lem:separation} only guarantees nonzero
+slacks of size $2^{-2^{\poly(L)}}$, which cannot be printed in polynomially
+many bits. The proposition gives no deterministic $\mathrm P^{\PosSLP}$
+bound for general polyhedra.
+
+\subsection{Nested cube roots}
+\label{sec:upper-roots}
+
+The lower bounds of Section~\ref{sec:reductions} pass through a language of
+certified cube-root circuits, in which every gate is the real cube root of an
+affine combination of earlier gates and their squares, and supplied positive
+intervals certify every gate. Its comparison problem has an upper bound by
+the same scheme with two elementary substitutions. For a circuit with $k$
+gates, multiplication by a common denominator turns the gate values into
+algebraic integers in a field of degree at most $3^k$, and all conjugates of
+the gate values are bounded by $2^{3L}$; the norm of the scaled difference
+between the output gate $\xi_o$ and the threshold $r$ then separates
+$\xi_o-r$ from zero by $2^{-2^{6L}}$. Newton's iteration for the cube root,
+started at the upper end of the certified range, replaces the warm start. Theorem~\ref{thm:reductions-root-language} states the resulting
+classification: strict and weak comparisons are $\PosSLP$-complete, and
+equality has the upper bound only. The upper bound is a tailored instance of
+the classical approximation-and-separation argument, not a new result about
+general radical circuits.
+
+\subsection{One sign test for adaptive sign tests}
+\label{sec:upper-closure}
+
+Several algorithms in this paper make many exact comparisons, and later
+comparisons depend on earlier answers; examples are the exact quadratic
+programming steps of Section~\ref{sec:constraints}. Such an algorithm is a
+polynomial-time Turing reduction to $\PosSLP$. The next theorem converts it
+into a reduction to one instance.
+
+\begin{theorem}[Compiling sign tests]
+\label{thm:posslp-closure}
+\leavevmode
+\begin{enumerate}[label=(\alph*)]
+\item Let $C$ be a circuit with Boolean input nodes $u_1,\ldots,u_m$,
+constants $0$ and $1$, binary $+$, $-$ and $\times$ gates, and unary threshold
+gates $H(v)=1$ if $v>0$ and $H(v)=0$ otherwise. Let $S\ge1$ be its number of
+nodes. Suppose that for every $u\in\{0,1\}^m$ all node values are integers
+and the output is $0$ or $1$. In time polynomial in $S$, without oracle calls,
+one can construct an integer circuit $C'$ of size $O(S^2)$ with the same
+input nodes and no threshold gates such that $C'(u)>0$ exactly when
+$C(u)=1$, for every $u\in\{0,1\}^m$.
+\item Let $\Pi$ be a decision or promise problem decided by a deterministic
+oracle Turing machine with oracle $\PosSLP$ that halts within a polynomial
+number of steps on every input and for all oracle answers. Then $\Pi$
+reduces to one $\PosSLP$ instance. Consequently, $\mathrm P^{\PosSLP}$ is the
+class of problems that are polynomial-time many-one reducible to $\PosSLP$.
+\item In particular, from integer circuits $C_1,\ldots,C_k$ and a Boolean
+circuit $\beta$ with $k$ inputs one can construct in polynomial time one
+integer circuit whose output is positive exactly when
+$\beta([C_1>0],\ldots,[C_k>0])=1$.
+\end{enumerate}
+\end{theorem}
+
+The proof is in Appendix~\ref{app:upper-closure}. In~(a), all exact values
+have absolute value at most $2^{2^S}$, and distinct integers are at least
+one apart. Each threshold gate is replaced by a rational map that is within
+$2^{-2^{2S+4}}$ of the correct bit whenever its input is within $1/4$ of the
+exact integer. The map first shrinks the magnitude from $[1,2^{2^{S+2}}]$ to
+$[1,2]$ by the scaled steps $x\mapsto2\sigma x/(\sigma+x^2)$ with
+$\sigma=2^{2^{S+2}},2^{2^{S+1}},\ldots,2^{2^1}$, and then applies
+$x\mapsto2x/(1+x^2)$, the classical inverse Newton iteration for the sign
+function, $2S+5$ times. An absolute-error induction over the original gates
+shows that the errors never exceed $1/4$; all denominators are positive, so
+the final pair $P/Q$ gives the integer output $2P-Q$. For~(b), the oracle
+machine is unrolled into such a circuit. Each possible query is evaluated by
+a padded universal interpreter: the query string is parsed by a Boolean
+circuit, each instruction slot selects its operands by sums of earlier slot
+values multiplied by address indicators, and malformed queries evaluate to
+the answer no. The interpreter enumerates addresses, not answer transcripts,
+so its size is polynomial although later queries depend on earlier answers.
+Part~(c) is the special case of a nonadaptive query list.
+
+The theorem changes the form of reductions; it gives no polynomial-time
+algorithm for $\PosSLP$. It applies to deterministic computations with a
+worst-case time bound. It does not remove randomness from Las Vegas
+algorithms, does not turn the nondeterministic classes
+$\mathrm{UP}^{\PosSLP}$ or $\mathrm{NP}^{\PosSLP}$ into deterministic ones,
+and compiles one output bit at a time; a vector output such as an active set
+is a polynomial list of separate instances. The exact separation of distinct
+integers is essential, and the proof uses the full lengths of the compressor
+and refinement schedules; no claim is made for shorter schedules.
+
+The main application in this paper concerns constrained problems. For
+strongly convex objectives on boxes with structured Hessians and for
+separable objectives on network-flow polyhedra, Section~\ref{sec:constraints}
+decides exact predicates at the constrained minimizer by deterministic
+algorithms that solve exact quadratic subproblems on shared circuits and ask
+adaptive sign queries. Their warm starts are ordinary computations, and the
+number of later operations is bounded by a polynomial in the input length
+that does not depend on the expanded sizes of the circuit values. Part~(b)
+therefore compiles each such predicate into one $\PosSLP$ instance
+(Corollary~\ref{cor:structured-single-sign}). The randomized
+constraint-rank algorithm of Theorem~\ref{thm:constraints-rank} is not
+covered, because its running time is bounded only in expectation.
+
+\subsection{Relation to prior work}
+\label{sec:upper-prior}
+
+The combination of Newton approximation by short arithmetic circuits, an
+algebraic separation bound and numerator-denominator division elimination is
+established. Allender, B\"urgisser, Kjeldgaard-Pedersen and Miltersen showed
+that Square Root Sum lies in $\mathrm P^{\PosSLP}$ by a polynomial-time
+Turing reduction and characterized
+$\mathrm P^{\PosSLP}$ as the Boolean part of constant-free polynomial-time
+real computation \citep{AllenderEtAl2009}. Etessami, Stewart and Yannakakis
+gave polynomial-time many-one reductions to $\PosSLP$ for threshold
+comparisons of least fixed points of probabilistic polynomial systems with
+the same architecture \citep[Appendix~C]{EtessamiStewartYannakakis2012}.
+Exact semidefinite feasibility has comparable arithmetic-circuit reductions
+\citep{TarasovVyalyi2008}. The warm start for strongly convex objectives uses
+the elementary estimate $\norm p\le\norm{\nabla f(0)}/\mu$ to fix an explicit
+box, and then applies the polynomial-time convex value interface of
+Lemma~\ref{lem:convex-value}, which rests on the ellipsoid method.
+For merely convex polynomial programs on unbounded domains,
+\citet{SlotSteurerWiedmer2025} give radius and objective-gap approximation
+bounds; see Section~\ref{sec:points}. The warm start for monotone maps uses
+the rounded central-cut ellipsoid method of
+\citet[Section~3.2]{GroetschelLovaszSchrijver1988}.
+
+This section proves a one-instance upper bound for explicit globally strongly
+convex objectives and strongly monotone maps of polynomially bounded degree,
+for arbitrary polynomial observables and all six relations, including
+equality, together with checked certificate languages. The lower bounds of
+Section~\ref{sec:reductions} give matching $\PosSLP$ completeness for strict
+and weak value and coordinate comparisons on certified quartics, and for
+coordinate comparisons on their certified cubic gradient maps. Equality has
+only the upper bound. The probabilistic polynomial systems of
+Etessami, Stewart and Yannakakis form a different input class, and no
+reduction between the two classes is used here. For Theorem~\ref{thm:posslp-closure}, the rational sign
+iteration and its scaled variants are classical numerical tools, and the
+oracle characterization of $\mathrm P^{\PosSLP}$ is known; the statement
+proved here is the uniform compilation of adaptive integer sign tests into
+one instance, with the error budget and interpreter given in full. This
+compilation also converts the Square Root Sum oracle upper bound into a
+one-instance upper bound. We make no priority claim for it.

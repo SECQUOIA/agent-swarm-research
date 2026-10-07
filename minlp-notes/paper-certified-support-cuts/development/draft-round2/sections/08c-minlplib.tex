@@ -1,0 +1,129 @@
+\subsection{MINLPLib models}\label{sec:minlplib}
+
+Part~A repeats the 30 models of campaign~2 (ten per stratum, selected by a
+hash ordering from 422 eligible models with at most 120 variables) with a
+300-second budget, seeds 0, 1 and~2, and root runs. Part~B uses a sample
+selected by structure: from the 392 eligible models not used in campaign~2,
+the 111 on which discovery finds a block that the \code{auto} rule admits,
+ranked by a hash, of which we take the first 30, with seeds 0 and~1. The root
+runs of both parts include mode \code{all-diag}, whose raised limits test
+whether the frozen limits, rather than the cuts, bound their effect. SCIP
+solves most of these models in about a second, so they can show validity and
+cost but hardly a benefit. Part~D, in campaign~4, addresses this: its pool
+consists of the 322 MINLPLib models with more than 120 and at most 1{,}000
+variables that are not convex by the library's metadata, contain a quadratic
+or polynomial function and were not used before; 85 of them have a block that
+\code{auto} admits, 58 of these are not solved by SCIP within 60 seconds, and
+Part~D takes the first 20 of those in a fixed hash order
+(Appendix~\ref{app:instances}). Table~\ref{tab:minlplib} summarizes the full
+runs; Tables~\ref{tab:partA}, \ref{tab:partB} and~\ref{tab:partD} in
+Appendix~\ref{app:instances} give the results per model.
+
+\begin{table}[t]
+\centering\footnotesize
+\caption{Full runs on MINLPLib models (300\,s). Times are shifted geometric
+means (shift 1\,s) over the runs solved by every mode of the part; ``SCIP
+excl.'' is SCIP's solving time minus the separator callback; ``ratio'' is the
+median per-run ratio of the total time to the baseline. ``Bounds'' counts
+final dual bounds better/worse than the baseline at relative tolerance
+$10^{-4}$ over all paired runs. In Part~D only two models were solved, and
+times are not comparable.}\label{tab:minlplib}
+\begin{tabular}{@{}llrrrrrr@{}}
+\toprule
+Part & Mode & Solved & Cuts (runs) & Time (s) & SCIP excl.\ (s) & Ratio & Bounds\\
+\midrule
+A (30 models, 3 seeds) & baseline & 80/90 & --- & 1.05 & 0.99 & --- & ---\\
+  & \code{all}  & 80/90 & 151 (33) & 1.27 & 0.99 & 1.34 & 2/4\\
+  & \code{auto} & 80/90 & 37 (15)  & 1.21 & 0.99 & 1.29 & 3/3\\
+\midrule
+B (30 models, 2 seeds) & baseline & 52/60 & --- & 1.33 & 1.27 & --- & ---\\
+  & \code{all}  & 52/60 & 179 (40) & 1.87 & 1.25 & 2.66 & 2/0\\
+  & \code{auto} & 52/60 & 145 (38) & 1.82 & 1.23 & 2.55 & 2/0\\
+\midrule
+D (20 models, 1 seed) & baseline & 2/20 & --- & & & & ---\\
+  & \code{all}  & 2/20 & 14 (2) & & & & 5/1\\
+  & \code{auto} & 2/20 & 14 (2) & & & & 4/0\\
+  & \code{baseline-extra} & 1/20 & --- & & & & 7/7\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Parts A and B.} In every part and seed, all modes solved the same
+models. In Part~A, cuts were added on 11 of the 30 models in mode \code{all}
+and on 5 in mode \code{auto}. The final dual bounds of the 90 paired runs were
+better in 2 and worse in 4 for \code{all}, and better in 3 and worse in 3 for
+\code{auto}; between seeds, the baseline itself differed in 3 of 30
+comparisons, so these differences are within run-to-run variation. In
+Part~B, cuts were added on 20 of the 30 models; the final bounds were better
+in 2 of 60 comparisons in each cut mode, both on \code{kall\_circles\_c8a} at
+the time limit, and never worse. At the root the cuts had a visible effect on
+four models of Part~B and none of Part~A. They closed the root gap of
+\code{pooling\_bental4tp} in every cut mode and that of
+\code{pooling\_bental4pq} in modes \code{auto} and \code{all-diag}, which were
+then solved at the root, and they improved the root bounds of \code{ex3\_1\_4}
+(from $-6$ to $-5.79$, and to $-5.69$ with raised limits; the optimum is $-4$)
+and of \code{pointpack04}. In two root runs, \code{auto} ended with a worse root
+bound, on \code{pointpack04} and on \code{pooling\_haverly2pq}, where the bound
+fell from $-617.7$ to $-857.1$ (the optimum is $-600$). Valid cuts cannot
+weaken an LP relaxation, but they change SCIP's later separation and cut
+selection, and the bound at the end of the root node need not improve.
+Raising the limits at the root (\code{all-diag}) added more cuts, 403 in
+Part~A and 358 in Part~B, but improved the root bound beyond the tolerance on
+only one more model in each part (\code{cvxnonsep\_psig20r} and
+\code{pooling\_bental4pq}). None of these effects changed a full solve. The cut
+modes were 15--20\% slower than the baseline in shifted geometric mean on
+Part~A and 37--41\% on Part~B, and slower per run by median factors of 1.3 and
+2.5--2.7. SCIP's own solving time, without the separator callback, was
+unchanged (Table~\ref{tab:minlplib}), and the node counts summed over the
+commonly solved runs differed by less than 3\%. The cuts are therefore neutral
+for SCIP on these models, and the slowdown is the cost of the separator
+(Section~\ref{sec:funnel}).
+
+\paragraph{Presolve and the stored-row check (Part B2).} In campaign~3 the
+stored-row check discarded 20\% (\code{all}) and 36\% (\code{all-diag}) of the
+certified and violated rows of the Part~B root runs. Reruns that recorded the
+cause showed that presolve had aggregated or fixed a block variable in 74--85\%
+of these cases, so that SCIP stored the cut in other columns. Part~B2 repeats
+the root runs with SCIP's aggregation and multi-aggregation disabled in every
+mode. The rejected share fell to 5\% and 9.5\%; the remaining rejections come
+from variables that presolve fixed and from SCIP's own coefficient handling
+(integer snapping and coefficients below $10^{-9}$ dropped). Against SCIP with
+the same presolve setting, mode \code{all} improved the root bound on 3 models
+and worsened it on none, and \code{all-diag} improved it on 6 models
+(including \code{pooling\_bental4tp}, \code{pooling\_bental4pq},
+\code{ex3\_1\_4}, \code{sep1} and \code{pointpack04}) and worsened it on one
+(\code{pooling\_haverly1tp}). Disabling aggregation, however, weakened SCIP's
+own root bound on 6 of the 30 models, so the setting is not a free remedy. On
+\code{kall\_circlespolygons\_c1p12}, where 127 of 152 violated rows had been
+rejected before, 104 cuts now reached the LP, and the root bound stayed at $0$
+against an optimum of $0.34$. Trying the support of each whole row first
+(\code{all-diag-rowdir}) gave the same cuts and bounds on every model.
+
+\paragraph{SCIP's disabled separators.} With its disabled-by-default nonconvex
+separators switched on at the root (\code{baseline-extra}), SCIP improved the
+root bound on 12 of the 30 Part~B models and worsened it on one
+(\code{sep1}). It closed the root gap completely on five pooling and small
+nonconvex models and by more than 95\% on two more, and these seven include
+the four models on which the certified cuts had an effect; it solved 13 models
+at the root against 8. Intersection cuts and interminor cuts were productive
+on 26 and 21 models, edge-concave cuts on none. On these models, SCIP's own
+alternatives are clearly stronger than the certified cuts.
+
+\paragraph{Larger models (Part D).} In mode \code{all} the separator stopped
+during block discovery on 12 of the 20 models, exactly those on which
+discovery had taken more than the one-second allowance in the scan (1.0 to
+7.7\,s). On six of the other eight it completed discovery and added no cut:
+every certified support either fell below the violation threshold or, on three
+models, was rejected by the stored-row check because presolve had fixed or
+aggregated a block variable (11 of the 25 violated rows). With raised limits
+at the root (\code{all-diag}), the separator added 891 cuts on 13 models and
+improved the root bound on one model (\code{multiplants\_mtg1c}, closing 4\%
+of its root gap), while the root bound was worse on five, by at most 3\% of the
+gap; the variant with whole-row directions behaved the same. In the full runs
+the cut modes solved the same two models as the baseline. All final-bound
+differences in Table~\ref{tab:minlplib} occurred on models that received no
+cut, so they reflect the changed timing of a time-limited run, not the cuts.
+SCIP's disabled separators improved the root bound on 8 of the 20 models,
+worsened it on 3, and in full runs lost one of the two solved models. On
+models of this size the frozen separator rarely gets past discovery, and
+where it does its cuts are not stronger than SCIP's relaxation.

@@ -1,293 +1,600 @@
 \section{Right-hand-side perturbations}\label{sec:perturbation}
-The worst-case bounds concern a fixed equality. We now perturb its
-right-hand side and prove a finite-grid encoding guarantee. This changes
-the optimization problem; exactness is asserted for the sampled instance.
-The conditioning principle is classical: avoiding convex boundaries
-controls distance to feasibility changes
-\citep{DunaganSpielmanTeng2011}; spherical uniform-noise boundary estimates
-are also known \citep[Theorem~3.3 and Corollary~3.4 of the inspected preprint]{BuergisserAmelunxen2012}.
-The contribution in this section is the explicit finite-grid
-exact-penalty guarantee, including its bit length and its feasibility
-alternative. We prove the cube estimate and grid transfer used for this
-application; the Gaussian result later uses
-\citet[Lemma~2.3.4]{DunaganSpielmanTeng2011}.
+The coefficient in Theorem~\ref{thm:lower} explodes because the
+right-hand side of the relaxed equality lies within $\delta_d$ of the
+boundary of the residual image of an improving slice, that is, of the
+set of right-hand sides attainable on that slice. This section shows
+that a margin from such boundaries controls the coefficient: if the
+perturbed problem is feasible and its right-hand side keeps distance more
+than $\gamma$ from the boundaries of all residual images, the coefficient
+$M/\gamma$ is exact at multiplier zero (Lemma~\ref{lem:rhsmargin}). A right-hand side sampled from a fine
+rational grid has such a margin with high probability, which gives a
+coefficient of polynomial encoding length
+(Theorem~\ref{thm:gridsmoothing}). The principle is classical in
+conditioning theory \citep{DunaganSpielmanTeng2011,BuergisserAmelunxen2012}:
+a right-hand side far from the boundaries of the convex residual images
+is far from any change in the set of feasible integer assignments, and
+random perturbations rarely come close to such boundaries. We prove the
+cube estimate and its transfer to the grid; the Gaussian variant in
+Section~\ref{sec:gaussian} uses \citet[Lemma~2.3.4]{DunaganSpielmanTeng2011}.
 
-There are at most $K\ge1$ nonempty compact convex native slices $X_z$.
-On each slice, $r_z:X_z\to\R^m$ is affine and $f_z$ is continuous
-and convex, with supplied common bounds
-$L\le f_z\le U$ and range $M=U-L$. All slices, maps and objectives
-are fixed before sampling. For a right-hand side $b$, let
+Perturbing the right-hand side changes the problem. All guarantees in
+this section concern the sampled instance, which may be infeasible and
+may have a different optimal integer assignment from the original one.
+
+\subsection{Setting}\label{sec:perturbation-setting}
+Let $\mathcal Z$ be a finite index set with $|\mathcal Z|\le K$, where
+$K\ge1$. For each $z\in\mathcal Z$, let $X_z$ be a nonempty compact
+convex subset of a Euclidean space (the slice), let
+$r_z:X_z\to\R^m$ be affine, with $m\ge1$, and let $f_z:X_z\to\R$ be
+continuous and convex. Bounds $\underline f\le\overline f$ with
+\[
+ \underline f\le f_z(x)\le\overline f\qquad(z\in\mathcal Z,\ x\in X_z)
+\]
+are supplied, and $M=\overline f-\underline f$ denotes the objective range.
+The slices, maps and objectives are fixed before any sampling. For a
+right-hand side $b\in\R^m$, let
 \begin{equation}\label{eq:rhsmodel}
  \begin{aligned}
- v(b)&=\min\{f_z(x):z\in Z,\ x\in X_z,\ r_z(x)=b\},\\
- p_\rho(b)&=\min_{z\in Z,\,x\in X_z}
+ v(b)&=\min\{f_z(x):z\in\mathcal Z,\ x\in X_z,\ r_z(x)=b\},\\
+ p_\rho(b)&=\min_{z\in\mathcal Z,\,x\in X_z}
              \{f_z(x)+\rho\norm{r_z(x)-b}_\infty\},
  \end{aligned}
 \end{equation}
-where $v(b)=+\infty$ if infeasible. At a feasible $b$, $\rho_*(b)$ denotes
-the optimized threshold of Section~\ref{sec:geometry} for residual
-$r_z(x)-b$ and the infinity norm. Each image $C_z=r_z(X_z)$ is
-compact and convex. Boundaries are ambient topological boundaries;
-a lower-dimensional closed convex set is its own boundary.
-Distance to the empty set is $+\infty$.
+with $v(b)=+\infty$ if no point is feasible. We call $b$ \emph{feasible}
+if $v(b)<\infty$, and we write $v_z(b)$ for the minimum of $f_z$ over
+$\{x\in X_z:r_z(x)=b\}$ (with $v_z(b)=+\infty$ if this set is empty).
+
+This is the setting of Section~\ref{sec:geometry}: the native set is the
+disjoint union of the slices, the objective is $f_z$ on slice $z$, the
+residual is $r_z(x)-b$, and the norm is the infinity norm. In particular,
+$p_\rho(b)=L_\rho(0)$ for this instance. For a feasible $b$, we write
+$\rho_*[b]$ for the least penalty of this instance, with the multiplier
+optimized; the square brackets distinguish it from the fixed-multiplier
+threshold $\rho_*(\lambda)$. For infeasible $b$ the least penalty is not
+defined; where the distribution of $\rho_*[b]$ over random $b$ is
+discussed, any nonnegative value may be assigned to infeasible $b$.
+
+For example, in the model of Section~\ref{sec:upper} with convex slices,
+each integer assignment $z$ with a nonempty slice gives such a slice,
+with $f_z$ the objective and $r_z$ the left-hand side of the linking
+equality for this fixed $z$. Then $K$ can be taken as the product of the
+numbers of allowed values of the integer variables, so $\log K$ is
+polynomial in the input length, but $K$ itself can be exponential in the
+number of integer variables. The present setting needs neither a Slater condition nor
+quadratic data.
+
+The \emph{residual image} $C_z=r_z(X_z)$ is the set of right-hand sides
+attainable on slice $z$; it is nonempty, compact and convex, and the
+problem with right-hand side $b$ has a feasible point in slice $z$
+exactly when $b\in C_z$.
+Boundaries $\partial C$ are topological boundaries in $\R^m$. Thus a
+closed convex set with empty interior, such as a singleton, is its own
+boundary, and every right-hand side in it has margin zero: arbitrarily
+small perturbations leave it. Distances are
+$\operatorname{dist}_\infty(b,S)=\inf_{y\in S}\norm{b-y}_\infty$, and
+similarly $\operatorname{dist}_2$, with distance $+\infty$ to the empty
+set. The latter convention matters only in Lemma~\ref{lem:cubetube},
+where $C=\varnothing$ or $C=\R^m$ is allowed.
 
 \subsection{A deterministic boundary-margin bound}
+The idea is a convex repair. Suppose every residual image has boundary
+distance greater than $\gamma$ from $b$. On a slice whose image contains
+$b$, the whole cube $b+[-\gamma,\gamma]^m$ then consists of attainable
+right-hand sides; in particular, this image is full-dimensional. A native
+point $x$ at residual distance $t=\norm{r_z(x)-b}_\infty>0$ can be
+repaired by mixing it with a point $x'$ whose residual lies on the far
+side of $b$ at distance $\gamma$. The mixture has residual exactly $b$,
+and convexity bounds the cost of the repair by $(M/\gamma)t$. On a slice
+whose image does not contain $b$, every residual is at distance more than
+$\gamma$ from $b$, so the penalty $(M/\gamma)t$ exceeds the whole
+objective range.
+
 \begin{lemma}\label{lem:rhsmargin}
-Suppose $v(b)<\infty$, $d>0$, and
-$\operatorname{dist}_\infty(b,\partial C_z)>d$ for every slice.
-Then $p_{M/d}(b)=v(b)$. Every strictly larger coefficient is
-minimizer-set exact at multiplier zero.
+In the setting of Section~\ref{sec:perturbation-setting}, let $b\in\R^m$
+be feasible and let $\gamma>0$ satisfy
+$\operatorname{dist}_\infty(b,\partial C_z)>\gamma$ for every
+$z\in\mathcal Z$. Then $p_{M/\gamma}(b)=v(b)$, that is, the coefficient
+$M/\gamma$ is exact at multiplier zero for right-hand side $b$; in
+particular $\rho_*[b]\le M/\gamma$. Every coefficient $\rho>M/\gamma$ is
+minimizer-exact at multiplier zero.
 \end{lemma}
 \begin{proof}
-On a feasible slice, the cube $b+[-d,d]^m$ is contained in $C_z$:
-otherwise a segment from $b$ to a point outside the image would cross
-its boundary within distance $d$. For a native point $x$ with
-$t=\norm{r_z(x)-b}_\infty>0$, choose $x'\in X_z$ with
+We show that $f_z(x)+(M/\gamma)\norm{r_z(x)-b}_\infty\ge v(b)$ for every
+slice $z$ and every $x\in X_z$, first on slices whose image contains $b$
+and then on the others.
+
+\emph{Slices with $b\in C_z$.} First, $b+[-\gamma,\gamma]^m\subseteq C_z$.
+Otherwise some $y$ with $\norm{y-b}_\infty\le\gamma$ lies outside $C_z$.
+Since $C_z$ is closed and contains $b$, the last point of $C_z$ on the
+segment from $b$ to $y$ lies on $\partial C_z$, at infinity-norm distance
+at most $\gamma$ from $b$, a contradiction.
+
+Now let $x\in X_z$ with $t=\norm{r_z(x)-b}_\infty>0$. The point
+$b-(\gamma/t)(r_z(x)-b)$ lies in $b+[-\gamma,\gamma]^m\subseteq C_z$, so
+some $x'\in X_z$ satisfies
 \[
- r_z(x')=b-\frac d t(r_z(x)-b).
+ r_z(x')=b-\frac\gamma t\,(r_z(x)-b).
 \]
-Then $x_b=(dx+tx')/(d+t)$ is feasible at $b$. Convexity gives
+The convex combination $x_b=(\gamma x+tx')/(\gamma+t)$ lies in $X_z$, and
+since $r_z$ is affine, $r_z(x_b)=b$. Convexity of $f_z$ and
+$f_z(x')\le\overline f$ give
 \[
- v_z(b)\le\frac d{d+t}f_z(x)+\frac t{d+t}U,
- \qquad f_z(x)\ge v_z(b)-\frac{U-v_z(b)}d t
-                 \ge v(b)-\frac Md t.
+ v_z(b)\le f_z(x_b)\le\frac\gamma{\gamma+t}f_z(x)
+                    +\frac t{\gamma+t}\overline f .
 \]
-The last inequality also holds at $t=0$. On an infeasible slice, a
-closest image point lies on its boundary, so $t>d$ everywhere and
-$f_z(x)+(M/d)t\ge L+M\ge v(b)$.
-A primal optimum attains the lower bound $v(b)$. Increasing the
-coefficient strictly adds a positive amount to every nonzero-residual
-point. If $M=0$, the zero coefficient gives equality of values and a
-positive coefficient gives the asserted minimizer-set conclusion.
+Rearranging, and using $v(b)\le v_z(b)$ and
+$\overline f-v_z(b)\le\overline f-\underline f=M$,
+\[
+ f_z(x)\ge v_z(b)-\frac{\overline f-v_z(b)}{\gamma}\,t
+       \ge v(b)-\frac M\gamma\,t .
+\]
+This inequality also holds at $t=0$, since then $x$ is feasible and
+$f_z(x)\ge v(b)$.
+
+\emph{Slices with $b\notin C_z$.} A closest point of the compact set
+$C_z$ to $b$ lies on $\partial C_z$, so
+$\operatorname{dist}_\infty(b,C_z)=\operatorname{dist}_\infty(b,\partial C_z)>\gamma$.
+Hence every $x\in X_z$ has $t=\norm{r_z(x)-b}_\infty>\gamma$ and
+\[
+ f_z(x)+\frac M\gamma\,t\ge\underline f+M=\overline f\ge v(b).
+\]
+
+Thus $p_{M/\gamma}(b)\ge v(b)$, and a feasible optimum attains $v(b)$
+with zero penalty, so equality holds. If $\rho>M/\gamma$, every point
+with nonzero residual has penalized value strictly greater than $v(b)$,
+so the minimizers are exactly the optimal feasible points.
 \end{proof}
-Neither differentiability nor computed multipliers are required.
-The relation between convex exact penalties and multiplier bounds is
-classical; see \citet[Theorem~4.2]{FriedlanderTseng2007} for a polar-gauge
+The argument needs neither differentiability nor computed multipliers.
+It is a right-hand-side analogue of Lemma~\ref{lem:slices}: the margin
+$\gamma$ replaces the multiplier bound on slices whose image contains
+$b$ by the convex repair, and it gives the residual separation $\gamma$
+on the other slices. The relation between exact penalties and multiplier bounds in
+convex optimization is classical; see
+\citet[Theorem~4.2]{FriedlanderTseng2007} for a polar-gauge
 characterization under a nonempty compact solution set.
-Convexity of the objective is essential: on $[-1,1]$ with $r(x)=x$,
-$b=0$ and $f(x)=-\sqrt{|x|}$, the image-boundary distance and objective
-range are both one, but the balanced pair $x=\pm t$ gives average
-augmented value $-\sqrt t+\rho t<0$ for small $t>0$, at every multiplier.
-No finite penalty closes that dual gap.
+
+Convexity of the objective is essential. Take one slice $X=[-1,1]$ with
+$r(x)=x$, right-hand side $b=0$ and $f(x)=-\sqrt{|x|}$. The image
+$[-1,1]$ has boundary distance one from $b$, and the objective range is
+one. For $0<t\le1$, the balanced mixture of $x=t$ and $x=-t$ with equal
+weights has average penalized value $-\sqrt t+\rho t$, independently of
+the multiplier. This is negative for small $t$, so by
+Proposition~\ref{prop:mixture}, $D_\rho<0=v$ for every $\rho\ge0$: no
+finite penalty is value-exact.
 
 \subsection{Convex-boundary tubes in a cube}
+The next lemma bounds the probability that a uniform point of a cube
+falls near the boundary of a closed convex set. The bound is linear in
+the tube width and does not depend on the set.
+
 \begin{lemma}\label{lem:cubetube}
-Let $Q=b_0+[-\sigma,\sigma]^m$, $\sigma>0$, and let $B$ be uniform
-on $Q$. For any closed convex $C\subseteq\R^m$ and $d\ge0$,
+Let $Q=b_0+[-\sigma,\sigma]^m$ with $\sigma>0$, and let $B$ be uniform on
+$Q$. For every closed convex set $C\subseteq\R^m$ and every $\gamma\ge0$,
 \begin{equation}\label{eq:cubetube}
- \Pr\{\operatorname{dist}_\infty(B,\partial C)\le d\}
-       \le\min\{1,2md/\sigma\}.
+ \Pr\{\operatorname{dist}_\infty(B,\partial C)\le\gamma\}
+       \le\min\{1,2m\gamma/\sigma\}.
 \end{equation}
-The same upper bound holds with Euclidean distance in the event.
+The same bound holds with $\operatorname{dist}_2$ in place of
+$\operatorname{dist}_\infty$.
 \end{lemma}
 \begin{proof}
-Fix $r>0$ and $S_i=[-r,r]e_i$. Addition $A+S_i$ and erosion
-$A\ominus S_i=\{x:x+S_i\subseteq A\}$ preserve convexity and
-closedness. On a line parallel to $e_i$, a section of a closed convex
-set is an interval, possibly empty, a point, a ray or the whole line.
-Addition extends each finite endpoint by $r$. Erosion removes at most
-$r$ at each finite endpoint, possibly deleting a short interval.
-After clipping to the corresponding section of $Q$, either operation
-changes length by at most $2r$. Thus Fubini's theorem gives
-\begin{align*}
- \operatorname{vol}(((A+S_i)\setminus A)\cap Q)&\le2r(2\sigma)^{m-1},\\
- \operatorname{vol}((A\setminus(A\ominus S_i))\cap Q)&\le2r(2\sigma)^{m-1}.
-\end{align*}
-Only changed portions inside $Q$ are measured, so no infinite volumes
-are subtracted. Successive additions give $A+[-r,r]^m$; successive
-erosions give $A\ominus[-r,r]^m$, since
-$(A\ominus S)\ominus T=A\ominus(S+T)$. Telescoping the nested sets
-bounds each resulting shell inside $Q$ by $2mr(2\sigma)^{m-1}$.
+The plan is to cover the tube by an outer shell and an inner shell of the
+set, bound the volume of each shell inside $Q$ one coordinate direction
+at a time, and let the shell width decrease to $\gamma$.
 
-Take $r>d$. A point within distance $d$ of $\partial C$ is in
-$C+[-r,r]^m$ and is not in $C\ominus[-r,r]^m$: a nearby boundary
-point has exterior points arbitrarily close to it, one of which lies
-in that cube about the given point. Hence the closed $d$-tube lies
-in the union of the two shells. Dividing their volume bound by
-$(2\sigma)^m$ and letting $r\downarrow d$ proves \eqref{eq:cubetube},
-including $d=0$. This argument covers unbounded and lower-dimensional
-sets. For $C=\varnothing$ or $\R^m$, the boundary is empty and the
-claim is immediate. Finally, distance in the infinity norm is no greater
-than Euclidean distance, so the latter event is contained in the former.
+If $C=\varnothing$ or $C=\R^m$, the boundary is empty and the event is
+empty. Otherwise $\partial C$ is nonempty. Fix $w>0$ and let
+$S_i=[-w,w]e_i$ for $i=1,\ldots,m$. For a closed convex set $E$, the
+addition $E+S_i$ and the erosion $E\ominus S_i=\{x:x+S_i\subseteq E\}$
+are again closed and convex.
+
+\emph{One-dimensional fact.} Let $I\subseteq\R$ be a closed convex set
+(empty, a point, a closed interval, a closed ray or $\R$) and let $W$ be
+an interval of length $2\sigma$. Then
+\[
+ \bigl|((I+[-w,w])\setminus I)\cap W\bigr|\le2w,\qquad
+ \bigl|(I\setminus(I\ominus[-w,w]))\cap W\bigr|\le2w,
+\]
+where $|\cdot|$ is length. Indeed, addition extends $I$ by $w$ at each
+finite endpoint, and erosion removes at most $w$ at each finite endpoint
+(possibly deleting a short interval entirely); there are at most two
+endpoints.
+
+\emph{Shell volumes.} On each line parallel to $e_i$, the section of
+$E+S_i$ is the section of $E$ plus $[-w,w]$, the section of $E\ominus S_i$
+is the section of $E$ eroded by $[-w,w]$, and the section of $Q$ is an
+interval of length $2\sigma$. The one-dimensional fact and Fubini's
+theorem over the $(m-1)$-dimensional face of $Q$ orthogonal to $e_i$ give
+\begin{align*}
+ \operatorname{vol}\bigl(((E+S_i)\setminus E)\cap Q\bigr)
+   &\le2w(2\sigma)^{m-1},\\
+ \operatorname{vol}\bigl((E\setminus(E\ominus S_i))\cap Q\bigr)
+   &\le2w(2\sigma)^{m-1}.
+\end{align*}
+We measure set differences intersected with $Q$, which have finite volume.
+Successive additions of $S_1,\ldots,S_m$ to $C$ give $C+[-w,w]^m$.
+Successive erosions give $C\ominus[-w,w]^m$, because
+$(E\ominus S)\ominus T=E\ominus(S+T)$. The intermediate sets are closed
+and convex, so the bounds apply at each step, and telescoping over the
+$m$ steps gives
+\[
+ \operatorname{vol}\bigl(((C+[-w,w]^m)\setminus C)\cap Q\bigr)\le2mw(2\sigma)^{m-1},
+ \quad
+ \operatorname{vol}\bigl((C\setminus(C\ominus[-w,w]^m))\cap Q\bigr)\le2mw(2\sigma)^{m-1}.
+\]
+
+\emph{Tube containment.} Let $w>\gamma$ and let
+$\operatorname{dist}_\infty(x,\partial C)\le\gamma$. Since $\partial C$ is
+closed, there is $y\in\partial C$ with $\norm{x-y}_\infty\le\gamma$. As
+$y\in C$, we get $x\in C+[-w,w]^m$. As $y$ is a boundary point, there is
+an exterior point $u\notin C$ with $\norm{u-y}_\infty<w-\gamma$; then
+$\norm{u-x}_\infty<w$, so $x+[-w,w]^m\not\subseteq C$ and
+$x\notin C\ominus[-w,w]^m$. Hence the tube lies in the union of the two
+shells. Dividing their total volume bound $4mw(2\sigma)^{m-1}$ by
+$\operatorname{vol}(Q)=(2\sigma)^m$ gives probability at most $2mw/\sigma$.
+Letting $w\downarrow\gamma$ proves \eqref{eq:cubetube}, including
+$\gamma=0$. Only closedness and convexity of $C$ were used, so unbounded
+and lower-dimensional sets are covered.
+
+Finally, $\norm{\cdot}_\infty\le\norm{\cdot}_2$, so the Euclidean event
+is contained in the infinity-norm event.
 \end{proof}
-The coefficient $2m$ is sharp for bounds of the form $c_m d/\sigma$.
-For $C=[-a,a]^m$, $0<a<\sigma$, and small $d>0$, the tube probability
-is $((a+d)^m-(a-d)^m)/\sigma^m$. Its derivative at zero is
-$(2m/\sigma)(a/\sigma)^{m-1}$; let $a\uparrow\sigma$.
+The coefficient $2m$ is sharp for bounds of the form $c_m\gamma/\sigma$.
+Let $C=b_0+[-a,a]^m$ with $0<a<\sigma$, and let $0<\gamma\le a$ with
+$a+\gamma\le\sigma$. The tube is the cube of radius $a+\gamma$ minus the
+open cube of radius $a-\gamma$, both centred at $b_0$ and contained in $Q$,
+so its probability is $((a+\gamma)^m-(a-\gamma)^m)/\sigma^m$. Its
+derivative at $\gamma=0$ is $(2m/\sigma)(a/\sigma)^{m-1}$, which tends to
+$2m/\sigma$ as $a\uparrow\sigma$.
 
 \subsection{Rational-grid exactness and its encoding}
-For an integer $q\ge1$, sample each coordinate of $G$ independently
-and uniformly from
+To obtain rational right-hand sides of controlled encoding length, we
+sample from a finite grid and couple the grid sample with a uniform point
+of $Q$. For an integer $q\ge1$, let $h=2\sigma/q$ and sample each
+coordinate of $G$ independently and uniformly from the $q$ cell centres
 \begin{equation}\label{eq:centergrid}
- b_{0i}-\sigma+(j+1/2)h,\qquad
- j=0,\ldots,q-1,\qquad h=2\sigma/q.
+ b_{0i}-\sigma+(j+1/2)h,\qquad j=0,\ldots,q-1.
 \end{equation}
-Adding independent uniform jitter from $[-h/2,h/2]^m$ makes
-$B=G+J$ uniform on $Q$, with $\norm{B-G}_\infty\le\sigma/q$.
-The distance function is one-Lipschitz, so Lemma~\ref{lem:cubetube} gives
+Let $U$ be uniform on $[-h/2,h/2]^m$ and independent of $G$. Then
+$B=G+U$ is uniform on $Q$, and $\norm{B-G}_\infty\le h/2=\sigma/q$.
+Since $\operatorname{dist}_\infty(\cdot,\partial C)$ is one-Lipschitz in
+the infinity norm,
+\[
+ \{\operatorname{dist}_\infty(G,\partial C)\le\gamma\}\subseteq
+ \{\operatorname{dist}_\infty(B,\partial C)\le\gamma+\sigma/q\},
+\]
+and Lemma~\ref{lem:cubetube} gives, for every closed convex $C$ and
+$\gamma\ge0$,
 \begin{equation}\label{eq:gridtube}
- \Pr\{\operatorname{dist}_\infty(G,\partial C)\le d\}
-       \le\min\{1,2m(d/\sigma+1/q)\}.
+ \Pr\{\operatorname{dist}_\infty(G,\partial C)\le\gamma\}
+       \le\min\{1,2m(\gamma/\sigma+1/q)\}.
 \end{equation}
-This rounding term is necessary: in dimension one, an interval whose
-two endpoints are distinct grid points has boundary probability $2/q$
-at $d=0$, exactly the displayed correction. A continuous null-set
-argument alone cannot justify a grid guarantee.
+The rounding term $2m/q$ is necessary. Convex boundaries have Lebesgue
+measure zero, but grid points can lie on them with positive probability:
+for $m=1$, an interval whose two endpoints are distinct grid points has
+boundary probability $2/q$ at $\gamma=0$, exactly the correction in
+\eqref{eq:gridtube}.
 
 \begin{theorem}\label{thm:gridsmoothing}
-Let $b_0,\sigma,\epsilon,L,U$ be rational, with $\sigma>0$ and
-$0<\epsilon<1$. If
+Assume the setting of Section~\ref{sec:perturbation-setting}. Let
+$b_0\in\Q^m$ and let $\sigma,\epsilon,\underline f,\overline f$ be
+rational with $\sigma>0$ and $0<\epsilon<1$. Let $G$ be sampled from the
+grid \eqref{eq:centergrid} with
 \begin{equation}\label{eq:gridsmoothing}
  q\ge\left\lceil\frac{4mK}{\epsilon}\right\rceil,\qquad
- d=\frac{\sigma\epsilon}{4mK},\qquad
- \bar\rho=\frac{4mKM}{\sigma\epsilon},
+ \gamma=\frac{\sigma\epsilon}{4mK},\qquad
+ \bar\rho=\frac M\gamma=\frac{4mKM}{\sigma\epsilon}.
 \end{equation}
-then with probability at least $1-\epsilon$ the sampled problem is
-infeasible or $p_{\bar\rho}(G)=v(G)$. On the same event, whenever it
-is feasible, every coefficient larger than $\bar\rho$ is minimizer-set
-exact at multiplier zero.
+Then, with probability at least $1-\epsilon$, either the sampled problem
+is infeasible or $p_{\bar\rho}(G)=v(G)$. On the same event, if the
+sampled problem is feasible, every coefficient $\rho>\bar\rho$ is
+minimizer-exact at multiplier zero.
 \end{theorem}
 \begin{proof}
-A union bound over the fixed images gives failure probability at most
-$2mK(d/\sigma+1/q)\le\epsilon$ for simultaneous strict boundary
-distance greater than $d$. Apply Lemma~\ref{lem:rhsmargin}.
-\end{proof}
-Choose $q$ as the smallest power of two meeting the bound. Then
-$\log_2 q=O(\log m+\log K+\log(1/\epsilon))$ and exact uniform
-sampling uses $m\log_2q$ independent random bits. The grid points and
-$\bar\rho$ have encoding length polynomial in the supplied rational
-data, $m$ and $\log K$. An integer coefficient strictly larger than
-$\bar\rho$ has the same bound. For boxed integer variables, the product
-of their numbers of allowed integer values supplies $K$, with
-polynomially bounded $\log K$. Neither computing this coefficient nor
-sampling requires enumerating slices. No efficient recognition of the
-structural promises or global optimization procedure is asserted.
-
-An endpoint grid with $q+1$ points per coordinate,
-$b_{0i}-\sigma+jh$ for $0\le j\le q$, has a similar bound.
-Its jitter cells tile the larger cube of radius $\sigma+h/2$, giving
+By \eqref{eq:gridtube} and a union bound over the at most $K$ images,
 \[
- \Pr\{\operatorname{dist}_\infty(G,\partial C)\le d\}
- \le\min\left\{1,\frac{2m(d+h/2)}{\sigma+h/2}\right\}
- \le\min\{1,2m(d/\sigma+1/q)\}.
+ \Pr\{\operatorname{dist}_\infty(G,\partial C_z)\le\gamma
+      \text{ for some }z\in\mathcal Z\}
+ \le2mK\Bigl(\frac\gamma\sigma+\frac1q\Bigr)
+ \le2mK\Bigl(\frac\epsilon{4mK}+\frac\epsilon{4mK}\Bigr)=\epsilon.
 \]
-Thus the theorem also holds for that convention, with the appropriate
-uniform grid sampling. For either grid, the Euclidean boundary event
-obeys the same estimate by inclusion and infinity-norm jitter; this
-observation alone does not replace the cube margin used by the penalty.
+On the complementary event every boundary distance exceeds $\gamma$, and
+Lemma~\ref{lem:rhsmargin} applies whenever $G$ is feasible.
+\end{proof}
+In words: with probability at least $1-\epsilon$, the grid sample has
+boundary distance greater than $\gamma=\sigma\epsilon/(4mK)$ from every
+residual image; then either no slice is feasible, or
+$\rho_*[G]\le\bar\rho=M/\gamma$.
 
-\subsection{Feasibility, stability and the original instance}
-The infeasibility alternative cannot be dropped. For example, a finite
-union of lower-dimensional images is hit with probability zero under
-continuous full-dimensional noise. If a known slice satisfies
-$Q\subseteq C_{z_0}$, every centered-grid sample is feasible and the
-theorem gives unconditional exactness probability $1-\epsilon$.
-More generally, if feasibility has probability at least $p_0>0$, then
-the conditional failure probability given feasibility is at most
-$\epsilon/p_0$. To obtain conditional failure at most $\epsilon$, use
-$\epsilon p_0$ in the construction.
+\begin{remark}[Encoding]\label{rem:gridencoding}
+Choose $q$ as the smallest power of two with
+$q\ge\lceil4mK/\epsilon\rceil$. Then
+$\log_2q=O(1+\log m+\log K+\log(1/\epsilon))$, and exact uniform sampling
+uses $m\log_2q$ independent random bits. The grid points and $\bar\rho$
+have encoding length polynomial in the supplied rational data
+$b_0,\sigma,\epsilon,\underline f,\overline f$, in $m$ and in $\log K$; an
+integer coefficient strictly larger than $\bar\rho$, such as
+$\lfloor\bar\rho\rfloor+1$, has the same bound, although $\bar\rho$ is
+numerically of order $K$. Neither computing $\bar\rho$ nor sampling
+requires enumerating the slices. The construction does not check the
+structural assumptions of Section~\ref{sec:perturbation-setting} and
+does not solve the sampled problem.
+\end{remark}
 
-At a feasible point $b$ with all image-boundary distances greater than $d$, the
-set of feasible integer assignments is unchanged throughout
-$b+[-d/2,d/2]^m$. Every point there retains boundary margin greater
-than $d/2$. Applying the repair inequality in both directions shows
-that each feasible slice value is $2M/d$-Lipschitz in the infinity
-norm on that cube. Taking the minimum over the same finite collection
-of slice values preserves this Lipschitz bound. The coefficient $2M/d$
-is value-exact throughout the cube, and every larger one is minimizer-set
-exact there.
+\begin{remark}[Endpoint grid]\label{rem:endpointgrid}
+Theorem~\ref{thm:gridsmoothing} also holds for the grid with $q+1$ points
+$b_{0i}-\sigma+jh$, $0\le j\le q$, per coordinate. Its jitter cells tile
+the cube of radius $\sigma+h/2$, so Lemma~\ref{lem:cubetube} for that cube
+gives
+\[
+ \Pr\{\operatorname{dist}_\infty(G,\partial C)\le\gamma\}
+ \le\min\left\{1,\frac{2m(\gamma+h/2)}{\sigma+h/2}\right\}
+ \le\min\{1,2m(\gamma/\sigma+1/q)\}.
+\]
+With $q+1$ points per coordinate, the random-bit count of
+Remark~\ref{rem:gridencoding} no longer applies. For either grid the
+Euclidean boundary event obeys the same estimate, but it pairs only with
+a Euclidean penalty: a Euclidean margin greater than $\gamma$ does not
+give an infinity-norm margin greater than $\gamma$.
+\end{remark}
+
+\subsection{Feasibility, local stability and the original instance}
+\label{sec:perturbation-stability}
+\paragraph{The infeasibility alternative.}
+Theorem~\ref{thm:gridsmoothing} cannot guarantee feasibility. For
+example, if no residual image meets $Q$, every sample is infeasible. If
+some slice satisfies $Q\subseteq C_{z_0}$, every grid point is feasible,
+and the theorem gives exactness at multiplier zero with probability at
+least $1-\epsilon$ unconditionally. More generally, if the grid sample is
+feasible with probability at least $p_0>0$, then the conditional failure
+probability given feasibility is at most $\epsilon/p_0$.
+
+This bound concerns the grid actually used; refining the grid can lower
+its feasibility probability. For a recipe valid for every grid size,
+suppose that $B$ uniform on $Q$ is feasible with probability at least a
+known rational $p_0>0$. Under the jitter coupling, if $B\in C_z$ and $G\notin C_z$,
+then the segment from $G$ to $B$ crosses $\partial C_z$, so
+$\operatorname{dist}_\infty(B,\partial C_z)\le\sigma/q$.
+Lemma~\ref{lem:cubetube} and a union bound give
+\[
+ \Pr\{G\text{ feasible}\}\ge p_0-\frac{2mK}q .
+\]
+Running the construction with $\epsilon p_0/2$ in place of $\epsilon$
+(so $q\ge\lceil8mK/(\epsilon p_0)\rceil$ and $\bar\rho=8mKM/(\sigma\epsilon p_0)$)
+gives $\Pr\{G\text{ feasible}\}\ge p_0(1-\epsilon/4)$, while the failure
+probability is at most $\epsilon p_0/2$. Hence the conditional failure
+probability given feasibility is at most
+$\epsilon/(2-\epsilon/2)<\epsilon$.
+
+\paragraph{Local stability.}
+Let $b$ be feasible with
+$\operatorname{dist}_\infty(b,\partial C_z)>\gamma$ for every $z$. By the
+first step of the proof of Lemma~\ref{lem:rhsmargin}, every residual
+image $C_z$ that contains $b$ contains the whole cube
+$b+[-\gamma,\gamma]^m$, while every other image has distance greater than
+$\gamma$ from $b$. Hence the set of slices (integer assignments) that are
+feasible for the right-hand side is the same at every point of the open cube
+of radius $\gamma$ about $b$. We use the smaller cube
+$b+[-\gamma/2,\gamma/2]^m$ because, by the one-Lipschitz property of the
+distance, every point $b'$ of it keeps margin greater than $\gamma/2$.
+Applying the repair inequality of Lemma~\ref{lem:rhsmargin} at $b'$ with
+margin $\gamma/2$ to an optimal point for $b''$, and then with the roles
+exchanged, gives
+\[
+ |v_z(b')-v_z(b'')|\le\frac{2M}\gamma\norm{b'-b''}_\infty
+\]
+for every slice $z$ whose image contains $b$ and all $b',b''$ in the
+cube. A minimum over
+the same finite collection of slice values keeps this Lipschitz bound, so
+$v$ is $2M/\gamma$-Lipschitz in the infinity norm on the cube. By
+Lemma~\ref{lem:rhsmargin} with margin $\gamma/2$, the coefficient
+$2M/\gamma$ is exact at multiplier zero at every point of the cube, and
+every larger coefficient is minimizer-exact at multiplier zero there.
 Lipschitz value bounds across discrete choices under uniform Slater
 conditions also appear in mixed-integer optimal control
 \citep[Theorem~3]{GugatHante2017}.
 
-This local conclusion does not recover the original optimum at $b_0$.
-In the chain example, moving the right-hand side from zero to
-$\delta_n$ makes the improving binary assignment feasible and changes the
-optimum from zero to $-1$. Shorter penalty encodings after perturbation
-can therefore accompany a change in the optimal integer assignment.
+\paragraph{The original instance.}
+The local conclusion does not recover the optimum at $b_0$. The chain of
+Section~\ref{sec:lower} fits the present setting with $m=1$, two slices
+and $M=1$: the slice with binary variable zero has residual image
+$[-1,1]$ and cost $0$, and the improving slice (binary variable one) has
+residual image $[\delta_d,1]$ and cost $-1$. The right-hand side $0$ lies
+within $\delta_d$ of the boundary of $[\delta_d,1]$, so
+Lemma~\ref{lem:rhsmargin} gives only coefficients above $1/\delta_d$,
+the zero-multiplier threshold of Section~\ref{sec:lower}; this is why the
+coefficient explodes. Moving the right-hand side to $\delta_d$ makes the
+improving assignment feasible, and the optimum becomes $-1$ instead of
+$0$. Short penalties after perturbation can therefore come with a
+different optimal integer assignment.
 
 \subsection{Numerical size: unavoidable tails and slice dependence}
-Let an anchor slice have residual image $[0,1]$ and cost zero, and let
-$K-1$ singleton slices have images $j/K$, $1\le j\le K-1$, and cost
-$-1$. At a non-atom $b\in(0,1)$, the primal value is zero. For a
-singleton at distance $t>0$, choose an anchor point with opposite
-residual of magnitude $s>0$. The balanced mixture with weights
-$s/(s+t)$ and $t/(s+t)$ gives augmented value
+\label{sec:numerical-size}
+The coefficient $\bar\rho=4mKM/(\sigma\epsilon)$ of
+Theorem~\ref{thm:gridsmoothing} has short encoding but can be
+numerically large. The following examples show which parts of this size
+are unavoidable:
+\begin{itemize}
+ \item[(a)] the order $K/\epsilon$ is necessary: some instances satisfy
+ $\Pr\{\rho_*[B]>T\}\ge(K-1)/T$ for $T\ge K$
+ (Example~\ref{ex:tail});
+ \item[(b)] a lower bound of order $K$ can hold almost surely, not just
+ with small probability (Example~\ref{ex:slicecount});
+ \item[(c)] two slices can give $\mathbb E\rho_*[B]=+\infty$ while
+ $\mathbb E\log(1+\rho_*[B])$ is finite (Example~\ref{ex:infinitemean});
+ \item[(d)] an exceptional grid point can have infinite threshold, so
+ the high-probability guarantee cannot be turned into a bound on
+ expectations (Example~\ref{ex:atom}).
+\end{itemize}
+In all examples $m=1$, so the norm is the absolute value, and
+$\underline f=-1$, $\overline f=0$, $M=1$. All thresholds are optimized
+thresholds $\rho_*[b]$ unless we say otherwise; since exactness at
+multiplier zero implies value-exactness, lower bounds on $\rho_*[b]$ also
+bound the zero-multiplier threshold. The examples list their slices
+explicitly, as the slice model allows; they are not derived from a
+succinct mixed-integer encoding.
+
+The lower bounds use one balanced mixture
+(Proposition~\ref{prop:mixture}). Suppose a slice with cost $-1$ has a
+singleton residual image at distance $t>0$ from $b$, and a cost-zero
+slice contains a point whose residual $r_z(x)-b$ has the opposite sign
+and magnitude $s>0$. Put weight
+$s/(s+t)$ on the singleton point and weight $t/(s+t)$ on the cost-zero
+point. The residuals cancel, and the average penalized value is
 \begin{equation}\label{eq:tailmixture}
- \frac{s}{s+t}(-1+2\rho t),
+ \frac{s}{s+t}(-1+2\rho t)
 \end{equation}
-independently of the multiplier. Thus the optimized-dual threshold is
-at least $1/(2t)$. If $B$ is uniform on $[0,1]$, the disjoint intervals
-$|B-j/K|<1/(2T)$ have total length $(K-1)/T$ for $T\ge K$.
-Consequently
+for every multiplier. If $v(b)=0$, this mixture shows
+$\rho_*[b]\ge1/(2t)$.
+
+\begin{example}[The order $K/\epsilon$ is necessary]\label{ex:tail}
+Let an anchor slice have residual image $[0,1]$ and cost zero, and let
+$K-1$ singleton slices, $K\ge2$, have images $\{j/K\}$,
+$1\le j\le K-1$, and cost $-1$. At every right-hand side
+$b\in(0,1)$ that is not one of the points $j/K$, the primal value is
+zero, and \eqref{eq:tailmixture} with the nearest singleton at distance
+$t$ gives $\rho_*[b]\ge1/(2t)$. Let $B$ be uniform on $[0,1]$. For
+$T\ge K$, the intervals $|B-j/K|<1/(2T)$ are disjoint, lie in $(0,1)$ and
+have total length $(K-1)/T$. Consequently
 \begin{equation}\label{eq:penaltytail}
- \Pr\{\rho_*(B)>T\}\ge(K-1)/T\qquad(T\ge K).
+ \Pr\{\rho_*[B]>T\}\ge\frac{K-1}T\qquad(T\ge K).
 \end{equation}
-The order $K/\epsilon$ in a high-probability numerical bound is therefore
-necessary in this slice model, even with robust feasibility and optimized
-multipliers.
-For the centered grid on $[0,1]$, if $K$ divides $q$ and $q\ge2K$,
-each of the $K-1$ singleton images has two adjacent centers at distance
-$1/(2q)$. These $2(K-1)$ centers are distinct, so
-$\Pr\{\rho_*(G)\ge q\}\ge2(K-1)/q$.
+Let $0<\epsilon<(K-1)/K$. For $K\le T<(K-1)/\epsilon$,
+\eqref{eq:penaltytail} gives $\Pr\{\rho_*[B]>T\}>\epsilon$, and for
+$T<K$ the same holds by monotonicity. Hence the $(1-\epsilon)$-quantile
+of $\rho_*[B]$ is at least $(K-1)/\epsilon$. Here $b_0=1/2$,
+$\sigma=1/2$ and $M=1$, so Theorem~\ref{thm:gridsmoothing} gives the
+coefficient $8K/\epsilon$; the order $K/\epsilon$ cannot be improved, even
+though every sample is feasible and the multiplier is optimized.
 
-For an almost-sure slice-count obstruction, put singleton images at
-$j/J$, $j=0,\ldots,J$, with cost $-1$, and retain the anchor. There
-are $K=J+2$ slices. Between neighboring grid points, the singleton
-residual magnitudes $u,v>0$ satisfy $u+v=1/J$. Their balanced mixture
-has cost $-1$ and mean absolute residual
-$2uv/(u+v)\le1/(2J)$. Thus $\rho_*(b)\ge2J$ for almost every
-$b\in[0,1]$. These examples concern a specified collection of slices;
-no succinct encoding of every such collection is assumed.
+The grid sample of Theorem~\ref{thm:gridsmoothing} behaves the same way.
+On $[0,1]$ the cell centres are $(i+1/2)/q$; let $K$ divide $q$, so that
+no centre is a singleton image. If $q\ge2K$, each singleton image $j/K$
+has two adjacent centres at distance $1/(2q)$, and these $2(K-1)$ centres
+are distinct; hence $\Pr\{\rho_*[G]\ge q\}\ge2(K-1)/q$. More generally,
+for $K\le T\le q$, each singleton image has at least $q/T-1$ centres at
+distance less than $1/(2T)$, these sets are disjoint for different $j$,
+and at each such centre $\rho_*[G]>T$. Hence
+$\Pr\{\rho_*[G]>T\}\ge(K-1)(1/T-1/q)$. If $\epsilon\le(K-1)/(2K)$ and
+$q\ge4K/\epsilon$, then $T=(K-1)/(2\epsilon)$ satisfies $K\le T\le q$, and
+$\Pr\{\rho_*[G]>T\}\ge2\epsilon-(K-1)/q>\epsilon$. So the
+$(1-\epsilon)$-quantile of $\rho_*[G]$ is at least $(K-1)/(2\epsilon)$,
+and the order $K/\epsilon$ is necessary for the grid result as well.
+\end{example}
 
-Even two slices can give an infinite mean numerical penalty. Take an
-anchor image $[-1,1]$ of cost zero and a singleton at zero of cost $-1$.
-For $b\in(-1,1)\setminus\{0\}$, \eqref{eq:tailmixture} and the
-multiplier $\lambda=-\rho\operatorname{sign}(b)$ prove
+\begin{example}[An almost-sure slice-count obstruction]\label{ex:slicecount}
+Keep the anchor slice with image $[0,1]$ and cost zero, and use $J+1$
+singleton slices, $J\ge1$, with images $\{j/J\}$, $j=0,\ldots,J$, and
+cost $-1$. There are $K=J+2$ slices. Let $b\in(0,1)$ lie strictly between
+the neighbouring singleton images $j/J$ and $(j+1)/J$, and let
+$g_1=b-j/J>0$ and $g_2=(j+1)/J-b>0$ be its distances to them, so
+$g_1+g_2=1/J$. The primal value is zero. Put weight $g_2/(g_1+g_2)$ on
+the lower singleton and $g_1/(g_1+g_2)$ on the upper one. The residuals
+cancel, the cost is $-1$, and the mean absolute residual is
+\[
+ \frac{2g_1g_2}{g_1+g_2}=2Jg_1g_2\le\frac1{2J}.
+\]
+Hence $\rho_*[b]\ge2J=2(K-2)$ for every $b\in(0,1)$ other than the
+singleton images, that is, for almost every $b\in[0,1]$.
+\end{example}
+
+\begin{example}[Infinite mean with two slices]\label{ex:infinitemean}
+Take an anchor slice with image $[-1,1]$ and cost zero and a singleton
+slice with image $\{0\}$ and cost $-1$. For $b\in(-1,1)\setminus\{0\}$,
+the primal value is zero, and \eqref{eq:tailmixture} with $t=|b|$ gives
+$\rho_*[b]\ge1/(2|b|)$. Conversely, at $\rho=1/(2|b|)$ and multiplier
+$\lambda=-\rho\operatorname{sign}(b)$, the singleton's penalized value is
+$-1+\lambda(-b)+\rho|b|=-1+2\rho|b|=0$, and the anchor's penalized value
+$\lambda e+\rho|e|$ at residual $e$ is nonnegative. Hence
 \begin{equation}\label{eq:infinitemean}
- \rho_*(b)=\frac1{2|b|}.
+ \rho_*[b]=\frac1{2|b|}.
 \end{equation}
-Indeed, at that threshold the anchor's augmented objective is nonnegative
-and the singleton's is zero. The zero-multiplier threshold is instead
-$1/|b|$. Uniform continuous noise on $[-1,1]$ gives
-$\mathbb E\rho_*(B)=+\infty$, while
-$\mathbb E\log(1+\rho_*(B))<\infty$ by integration near zero.
-The finite-grid theorem is a high-probability statement; its exceptional
-atoms can even require an infinite threshold. Consider the convex quadratic
-slice $0\le t\le1$, $t^2\le s\le1$, with cost $-t$ and image coordinate
-$s$, and a second singleton slice with image $\{-1\}$ and cost zero.
-At right-hand side zero the primal value is zero. Mixing $(t,s)=(u,u^2)$
-with the singleton, using weights $1/(1+u^2)$ and $u^2/(1+u^2)$,
-gives cost $-u/(1+u^2)$ and mean absolute residual $2u^2/(1+u^2)$.
-Its threshold ratio is $1/(2u)$, unbounded as $u\downarrow0$.
-Thus $\rho_*(0)=+\infty$. A rational grid containing zero gives this
-event positive probability, so no finite expected threshold or
-penalty-encoding requirement follows in general. The boundary-margin
-condition properly excludes that atom; refined Slater also fails there.
+The zero-multiplier threshold is instead $1/|b|$. For $B$ uniform on
+$[-1,1]$, we get $\mathbb E\rho_*[B]=+\infty$, while
+$\mathbb E\log(1+\rho_*[B])<\infty$ because $\log(1+1/(2|b|))$ is
+integrable near zero.
+\end{example}
 
-\subsection{A Gaussian companion in the Euclidean norm}
-The deterministic repair proof works with any norm when its ball and
-its distance are used consistently. For Gaussian noise, use the Euclidean
-norm for both. Let $B=b_0+\sigma\xi$, $\xi\sim\mathcal N(0,I_m)$.
-\citet[Lemma~2.3.4]{DunaganSpielmanTeng2011} bound each of the inner
-and outer Euclidean tubes of a convex body by
-$4m^{1/4}d/\sigma$. Their sum and a union bound give
+\begin{example}[An exceptional grid point with infinite threshold]
+\label{ex:atom}
+Take a convex quadratic slice
+$\{(\alpha,\beta):0\le\alpha\le1,\ \alpha^2\le\beta\le1\}$ with cost
+$-\alpha$ and residual $\beta$, so its image is $[0,1]$, and a singleton
+slice with image $\{-1\}$ and cost zero. At right-hand side $0$ the
+constraint $\beta=0$ forces $\alpha=0$, so the primal value is zero. For
+$0<u\le1$, mix the point $(\alpha,\beta)=(u,u^2)$ with weight
+$1/(1+u^2)$ and the singleton with weight $u^2/(1+u^2)$. The residuals
+cancel, the cost is $-u/(1+u^2)$, and the mean absolute residual is
+$2u^2/(1+u^2)$. By Corollary~\ref{cor:ratio}, $\rho_*[0]$ is at least the
+ratio $1/(2u)$ for every such $u$, so $\rho_*[0]=+\infty$: no finite
+penalty is value-exact. A rational grid containing $0$, for instance the
+grid \eqref{eq:centergrid} with $b_0=0$ and odd $q$, gives this
+right-hand side positive probability. Hence $\mathbb E\rho_*[G]=+\infty$
+(with any nonnegative value assigned to infeasible samples), and no
+almost-sure bound on the threshold or its encoding holds. The margin
+condition of Lemma~\ref{lem:rhsmargin} excludes this point, since $0$
+lies on the boundary of $[0,1]$. The refined Slater condition also fails
+there: on $\beta=0$ the inequality $\alpha^2\le\beta$ cannot hold strictly.
+\end{example}
+
+\subsection{A Gaussian companion in the Euclidean norm}\label{sec:gaussian}
+Lemma~\ref{lem:rhsmargin} and its proof hold for any norm on $\R^m$,
+provided the same norm defines both the margin and the penalty: replace
+the cube $b+[-\gamma,\gamma]^m$ by the ball of radius $\gamma$. For
+Gaussian noise we use the Euclidean norm for both. There is no grid
+here, so this result has no encoding statement.
+
+\begin{proposition}\label{prop:gaussian}
+Assume the setting of Section~\ref{sec:perturbation-setting}, but with
+the Euclidean norm in the penalty of \eqref{eq:rhsmodel}. Let
+$B=b_0+\sigma\xi$ with $\xi\sim\mathcal N(0,I_m)$, $\sigma>0$ and
+$0<\epsilon<1$. Then for every $\gamma\ge0$,
 \begin{equation}\label{eq:gaussiantube}
- \Pr\{\min_z\operatorname{dist}_2(B,\partial C_z)\le d\}
-       \le 8K m^{1/4}d/\sigma.
+ \Pr\{\min_{z\in\mathcal Z}\operatorname{dist}_2(B,\partial C_z)\le\gamma\}
+       \le\frac{8Km^{1/4}\gamma}\sigma .
 \end{equation}
-This also covers lower-dimensional compact images. To see this, replace
-$C$ by its parallel body $C+\eta\mathbb B_2$, $\eta>0$. For a
-lower-dimensional $C$, the distances to these boundaries converge to
-$\operatorname{dist}_2(\cdot,C)$ as $\eta\downarrow0$: outside $C$
-use the distance to a parallel body, and at a point of $C$ use a normal
-to its affine hull. Apply the convex-body bound at any radius greater
-than $d$, then let $\eta\downarrow0$ and the radius decrease to $d$.
-Thus, with probability at least $1-\epsilon$, the sampled instance is
-infeasible or the Euclidean zero-multiplier coefficient
+Consequently, with probability at least $1-\epsilon$, either the sampled
+problem is infeasible or the coefficient
 \begin{equation}\label{eq:gaussianpenalty}
  \frac{8MKm^{1/4}}{\sigma\epsilon}
 \end{equation}
-is value-exact. A larger coefficient gives minimizer-set exactness.
-This is a direct Gaussian conditioning corollary, with a different
-noise model and norm from the rational-grid encoding result.
+is exact at multiplier zero for the Euclidean penalty; every larger
+coefficient is then minimizer-exact at multiplier zero.
+\end{proposition}
+\begin{proof}
+First let $C$ be a nonempty compact convex set with nonempty interior.
+\citet[Lemma~2.3.4]{DunaganSpielmanTeng2011} bound the probabilities of
+the outer tube $\{\operatorname{dist}_2(B,\partial C)\le\gamma\}\setminus C$
+and of the inner tube $\{\operatorname{dist}_2(B,\partial C)\le\gamma\}\cap C$
+each by $4m^{1/4}\gamma/\sigma$. Hence
+$\Pr\{\operatorname{dist}_2(B,\partial C)\le\gamma\}\le8m^{1/4}\gamma/\sigma$.
+
+Now let $C$ be nonempty, compact and convex with empty interior, so
+$\partial C=C$. For $\eta>0$, the parallel body
+$C_\eta=C+\eta\mathbb B_2$ is compact and convex with nonempty interior.
+We claim $\operatorname{dist}_2(x,\partial C_\eta)\le|\operatorname{dist}_2(x,C)-\eta|$.
+Let $p$ be the projection of $x$ onto $C$, and let $u$ be a unit vector
+in the normal cone of $C$ at $p$: take $u=(x-p)/\norm{x-p}_2$ if
+$x\notin C$, and a unit normal to the affine hull of $C$ if $x\in C$
+(it exists because $C$ has empty interior). Then $p+su$ has projection
+$p$ and distance $s$ from $C$ for every $s\ge0$. So $p+\eta u\in C_\eta$,
+while $p+su\notin C_\eta$ for $s>\eta$; thus $p+\eta u\in\partial C_\eta$.
+Since $x=p+\operatorname{dist}_2(x,C)\,u$, the claim follows. Hence
+$\operatorname{dist}_2(x,C)\le\gamma$ implies
+$\operatorname{dist}_2(x,\partial C_\eta)\le\gamma+\eta$, and the
+first case gives
+\[
+ \Pr\{\operatorname{dist}_2(B,\partial C)\le\gamma\}
+ \le\Pr\{\operatorname{dist}_2(B,\partial C_\eta)\le\gamma+\eta\}
+ \le\frac{8m^{1/4}(\gamma+\eta)}\sigma .
+\]
+Letting $\eta\downarrow0$ gives the same bound as for convex bodies.
+
+A union bound over the at most $K$ images proves \eqref{eq:gaussiantube}.
+With $\gamma=\sigma\epsilon/(8Km^{1/4})$, the right-hand side equals
+$\epsilon$. On the complementary event, every Euclidean boundary distance
+exceeds $\gamma$, and the Euclidean version of Lemma~\ref{lem:rhsmargin}
+shows that $M/\gamma$, which equals \eqref{eq:gaussianpenalty}, is exact
+at multiplier zero whenever $B$ is feasible, and that every larger
+coefficient is minimizer-exact at multiplier zero.
+\end{proof}

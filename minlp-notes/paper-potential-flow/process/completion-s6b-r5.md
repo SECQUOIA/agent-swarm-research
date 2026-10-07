@@ -65,7 +65,7 @@ The inventory contains 308 distinct linked research/code/data rows and maps all 
 
 I extracted the actual final archive to `/tmp/s6b-r5-kx8os182/potential-flow-paper-a`. Its manifest lists 63 payload files; every hash matched, with no unlisted payload other than `manifest.json`. The archive has the complete A source and PDF, selected scientific code and rational fixtures, replay/build evidence and instructions. It contains no Paper B, managed literature PDF, raw external INP dataset, research-agent report, or temporary build file. Files named `check_*review.py` are diagnostic programs, not reviewer prose. The dataset attribution clearly identifies synthetic quadratic proxy data.
 
-Commands and results, using `/home/sgusev/miniconda3/envs/minlp-notes/bin/python`:
+Commands and results, using `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python`:
 
 ```sh
 # From the extracted archive root:
@@ -83,7 +83,7 @@ The A-only build passed: zero errors, undefined references, undefined citations,
 The read-only coverage command was run with a temporary working directory:
 
 ```sh
-python -S /home/sgusev/repo/minlp-notes-potential-flow/paper-potential-flow/verification/check_coverage.py
+python -S /workspace/minlp-notes-potential-flow/paper-potential-flow/verification/check_coverage.py
 ```
 
 It printed `PASS: 308 inventory files and 13 planned sections.` All build, download, rendering, extraction, replay and packaging outputs stayed outside the checkout. A first attempted PyMuPDF render failed because `fitz` was unavailable; Poppler's `pdftoppm` was used successfully instead. These replays establish the saved finite witness/diagnostic claims, not every universal theorem or the general theoretical algorithms' implementation.

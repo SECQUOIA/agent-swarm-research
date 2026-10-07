@@ -37,7 +37,7 @@ All raw results, rejected rows, generated vector figures/TeX tables, and command
 The complete reproduction command was run repeatedly with the configured qipm Python and single-threaded BLAS. Two consecutive final runs produced identical hashes for every input, script, raw numerical result, TeX table, and vector figure in the manifest. The final command was:
 
 ```sh
-OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 /home/sgusev/miniconda3/envs/qipm/bin/python repro/reproduce.py
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 /workspace/local-home/miniconda3/envs/qipm/bin/python repro/reproduce.py
 ```
 
 `make` passed after assembly and final citation additions. Logs are `stage5-reproduction.log`, `stage5-reproduction-repeat.log`, and `stage5-build.log`. The current extracted reading text is `stage5-manuscript-text.txt`.

@@ -1,0 +1,97 @@
+\section{What a cost budget can guarantee}\label{sec:allocation}
+
+The allocation results in this section are elementary accounting and
+scheduling facts. They place useful limits on the performance claims one
+can derive from a guarded enhancement. No publication priority is claimed
+for them.
+
+\begin{proposition}[Cost on the enhanced execution]\label{prop:ledger}
+Let $N$ be the time charged to native work on one enhanced execution and
+$E$ the time charged to optional enhancement work. Admit a new enhancement
+only when $E<b+\eta N$, where $b,\eta\ge0$. If each admitted operation
+adds at most $\delta$ to $E$, and every increment of $E$ belongs to such
+an admitted operation, then at every completed operation
+\begin{equation}\label{eq:ledger}
+ E\le b+\eta N+\delta,\qquad
+ N+E\le(1+\eta)N+b+\delta.
+\end{equation}
+If each cost has an enforced upper bound $r$ and admission instead
+requires $E+r\le b+\eta N$, the final overshoot $\delta$ can be removed.
+\end{proposition}
+\begin{proof}
+Immediately before the last admitted operation, the admission condition
+holds. That operation adds at most $\delta$; later native work only
+increases the right-hand side. If no operation was admitted, the result
+is immediate. An advance reservation that includes the complete eventual
+cost prevents the final overshoot.
+\end{proof}
+
+The charge must include discovery, model assembly, screening, optimization,
+verification, and callback bookkeeping. A time limit on an auxiliary LP
+does not bound surrounding Python or symbolic work. An implementation
+without an enforced bound on the whole operation must record overshoot
+rather than claim that~\eqref{eq:ledger} holds with its nominal LP limit.
+If rejected entry or admission checks incur an unreserved cost $J$, that
+cost must be added separately to the total. The proposition gives no
+bound on $J$ without an additional premise limiting it.
+
+The quantity $N$ refers to native work along the enhanced trajectory.
+Let $N_0$ denote the work in an independent baseline run. Nothing in
+Proposition~\ref{prop:ledger} connects $N$ and $N_0$. An abstract example
+makes the missing premise clear. At the first decision a deterministic
+search procedure has two legal choices. Its default ordering finds a
+complete proof in one unit. Adding a redundant row changes the ordering
+and leads to a proof after $M$ units. The row costs $b>0$ to obtain.
+The enhancement budget is respected, but the runtime ratio is $M+b$,
+which is unbounded as $M$ grows. This is a counterexample in an abstract
+search model, not a constructed SCIP instance or a prediction of SCIP
+behavior.
+
+An independent, unchanged baseline provides a different guarantee.
+
+\begin{proposition}[Protected baseline scheduling]\label{prop:portfolio}
+In an ideal preemptible work model, run independent solvers $A$ and $H$
+with separate states and fixed random tapes. Suppose by total work time
+$t$, solver $A$ has received at least $(1-\eta)t-h$ work and $H$ at
+least $\eta t-h$, for $0<\eta<1$ and $h\ge0$. If their standalone
+completion requirements are $T_A,T_H$, the first answer arrives by
+\begin{equation}\label{eq:portfolio}
+ \min\left\{\frac{T_A+h}{1-\eta},\frac{T_H+h}{\eta}\right\}.
+\end{equation}
+Alternatively, run $H$ for at most $b$ charged work, then, if necessary,
+start unchanged $A$ from its initial state. The total work is at most
+$b+T_A$, provided startup is charged.
+\end{proposition}
+\begin{proof}
+At either time in~\eqref{eq:portfolio}, the corresponding solver has
+received its required work. For serial rescue, either $H$ finishes within
+$b$, or its cost at most $b$ is followed by exactly the independent
+baseline execution.
+\end{proof}
+
+The assumptions exclude interference from shared memory exhaustion,
+cache contention, uncharged startup, and wall-clock-dependent decisions.
+Injecting a new incumbent or rows into the baseline can change its work
+requirement and needs a separate argument. This report does not deploy
+a solver portfolio or claim the scheduling bound for its experiments.
+
+There is also no universally correct first action from an arbitrary
+reward history. Suppose two actions each cost one unit and two possible
+environments have identical observable histories. Only the first action
+reveals a proof in one environment; only the second does so in the other.
+A deterministic selector fails to choose correctly first in one
+environment. A randomized first choice succeeds with probability at most
+one half in at least one environment. Structural information or a
+statistical assumption can distinguish the cases; history alone cannot.
+This observation does not rule out learning or competitive scheduling.
+
+These limits suggest a small interface for optional solver actions.
+Each action declares its model, node domain, relaxation, cutoff, and cost
+allowance. It returns a verified inference, a verified upper bound on
+benefit in a stated mathematical measure, or an unresolved status.
+A selector may rank unresolved actions heuristically, but must not turn
+a ranking into a validity claim. The ledger charges selection as well as
+optimization. An OBBT width reduction, a support-cut violation, and a
+decomposition lower-bound improvement are different measures; converting
+them to expected seconds saved requires a separately validated model.
+The present implementation and comparison concern the OBBT case.

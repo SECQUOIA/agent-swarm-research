@@ -15,7 +15,7 @@ I copied the entire reproduction package, excluding bytecode caches, into:
 I created empty `figures/` and `tables/` directories there and ran:
 
 ```sh
-OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 /home/sgusev/miniconda3/envs/qipm/bin/python repro/reproduce.py
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 /workspace/local-home/miniconda3/envs/qipm/bin/python repro/reproduce.py
 ```
 
 The isolated run finished with `All reproduction checks passed.` No network or parent-repository import was needed. Comparing the new and supplied manifests found **no artifact hash differences** across their recorded inputs, scripts, numerical outputs, tables, and figures. Thus the empty-output-directory run regenerated the complete numerical artifact set, rather than merely reading the supplied figures.

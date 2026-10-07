@@ -154,7 +154,7 @@ the projector identity here also verifies the claimed implementation without
 relying on an implicit left-versus-right convention.
 
 A fresh diagnostic using
-`/home/sgusev/miniconda3/envs/qipm/bin/python` checked 24 endpoint instances
+`/workspace/local-home/miniconda3/envs/qipm/bin/python` checked 24 endpoint instances
 with `rho` in `{1.1,2,10,100}` and `delta` equal to `{1e-2,1e-4,1e-6}/rho`.
 Checks included basis orthogonality, normal-matrix factorization, the Newton
 equation, primal-direction feasibility and parameter independence, both full

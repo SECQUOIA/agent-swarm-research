@@ -1,0 +1,140 @@
+% Plan: development/outline.md, section 5, "§1 Introduction"; contributions
+% and qualifiers in section 3. Numbers from data/numbers.json. Round-1
+% revision: items G1-04 to G1-09 of development/reviews/round1/adjudication.md.
+% Round-2 revision: items G1-10 to G1-14 of
+% development/reviews/round2/adjudication.md. Round-3 revision: opus-writing 3,
+% 5-8, sol-referee 1 and the optional lnts50 cut of opus-referee 8
+% (development/reviews/round3/).
+\section{Introduction}\label{sec:intro}
+
+We examine 43 nonconvex instances of the mixed-integer nonlinear programming (MINLP) library MINLPLib \citep{bussieck2003-minlpliba-collection-of-test-models,vigerske2014-minlplib-2} that the library does not mark as solved, and ask what can be proved about them when the stored decimal data are read as rational numbers and feasibility is exact.
+For 31 of them we prove a dual bound and exhibit an exactly feasible point within a relative gap of at most \sci{3.1}{-9}.
+Applying the same standard to the library's records and to solver output, we prove 22 listed per-solver dual bounds invalid under a stated hypothesis on how MINLPLib's pages display numbers, and we report a seed-dependent error in SCIP~10 (\cref{sec:intro-contrib}).
+
+\subsection{Benchmark records are not proofs}\label{sec:intro-records}
+
+Benchmark libraries record what solvers have reported; they rarely record what has been proved.
+MINLPLib, a standard benchmark library for MINLP solvers and methods, lists on its 1,633 instance pages solution points with their maximal absolute constraint violation, dual bounds reported by individual solvers, and solved marks \citep{vigerske2026-minlplib-documentation-database-snapshot-2026}.
+The library adjusts the points so that integrality and variable bounds hold exactly, but algebraic rows may keep residuals; points whose violation lies below the feasibility tolerance define the best primal bound.
+The dual bounds carry no proof.
+In the words of the library's FAQ, they ``are just the best value as computed in some run with some option settings on some machine at some time in the past'' \citep{vigerske2026-minlplib-a-library-of-mixed}.
+The solved mark, shown as the letter S on the instance pages, means that ``at least 3 solvers claim global optimality (up to a relative optimal tolerance (gap) of $10^{-6}$)'' for the best known point, or that at least three solvers claim infeasibility \citep{vigerske2026-minlplib-documentation-database-snapshot-2026}.
+No formula for the gap is documented.
+The solved mark is a consensus label, not a check.
+When MINLPLib~2 was assembled, the maintainer noted ``No way to verify correctness of bound!'' \citep[slide 23, PDF p.~38]{vigerske2014-towards-minlplib-2-0}, and a reported bound was trusted when at least two other solvers confirmed it \citep[p.~140]{vigerske2014-minlplib-2}.
+
+These records, and solver claims of the same kind, nevertheless serve as reference values.
+The SCIP~8 study counts a run on a MINLPLib instance as failed when its bounds contradict the bounds on the MINLPLib page \citep[\S3.3, author manuscript p.~23]{bestuzheva2025-global-optimization-of-mixed-integer}.
+A machine-learning approach to global optimization calls a result on a MINLPLib model optimal when its gap is below 0.1\%, while noting that its solutions may be infeasible \citep[pp.~24, 32]{bertsimas2025-towards-a-practical-global-optimization}.
+The public CAMINO benchmark data record Gurobi bounds that equal the recorded objective values \citep{ghezzi2026-camino-benchmark-results-for-nonconvex}.
+A study of optimization over trained Kolmogorov--Arnold networks (KANs) reports SCIP optima at zero gap \citep{karia2025-deterministic-global-optimization-over-trained}.
+Uses that need only tolerance-level reference values are consistent with these records.
+A conclusion about exact optimality is not: a gap measured against a listed point that is feasible only within a tolerance can compare a dual bound with a value below the optimum, and a reported bound can be invalid.
+\Cref{box:camshape800} shows what the records of one instance say.
+
+\begin{infobox}[label={box:camshape800}]{What the records of \inst{camshape800} say}
+\inst{camshape800} is a discretized cam-design problem from the COPS collection \citep{dolan2004-benchmarking-optimization-software-with-cops-2}, with 1,599 continuous variables and 1,600 rows.
+Its optimal value is a rational number $v_{800}$ with
+\[
+  -4.27427414195420 \;\le\; v_{800} \;\le\; -4.27427414195419,
+\]
+attained at an explicit rational point (\cref{thm:camshape-opt}).
+The proof is a discrete comparison argument with exact rational checks.
+MINLPLib's best listed dual bound, $-5.12584096$, is valid but lies more than 0.85 below $v_{800}$.
+The best listed point, p2, has listed violation $3\cdot10^{-10}$: it violates 722 rows by more than $10^{-12}$, most of them by about $10^{-10}$.
+Its objective lies at least \sci{3.27}{-5} below $v_{800}$, so no exactly feasible point attains it; it is a tolerance artifact (\cref{sec:semantics-categories}).
+Under the library's rules p2 defines the best primal bound, so the gap between the listed bounds compares a valid but weak dual bound with a value below the optimum.
+\end{infobox}
+
+\subsection{Approach and main observations}\label{sec:intro-approach}
+
+We take as the model of an instance its stored OSIL file, read every decimal string in it as the rational number it denotes, and call a point feasible only if it satisfies every row, bound and integrality requirement exactly (\cref{sec:semantics-model}).
+A closure (a certified relative gap of at most $10^{-6}$, MINLPLib's tolerance; \cref{def:sem-certificate}) then needs two certificates: a dual bound that is valid for every exactly feasible point, and an exactly feasible point whose objective value is enclosed rigorously.
+We built each dual bound from the structure of its model and evaluated it in exact rational or outward-rounded arithmetic.
+Apart from named exceptions, separately written code rechecks every computer-assisted dual certificate, for some families only for a slightly weaker bound or, for \inst{eg_disc2_s}, only on part of the domain (\cref{sec:semantics-protocol} states how these implementations were produced and what ``separately written'' means).
+
+Three observations stand out; we return to them in \cref{sec:conclusion}.
+\begin{enumerate}
+\item Once a bound fitted to the structure of the model was in place, 12 closures needed no branching and 15 more branched in at most three dimensions, among them the \inst{ex6_2_5} bound, with 131,111 two-dimensional boxes.
+  The \inst{pindyck} certificate divides one box in $\R^{112}$ into 9 leaves, and the three \inst{eg} certificates branch on their 7 original variables, with up to 1,114,361 leaves.
+  We do not test why general-purpose solvers did not find such bounds; \cref{sec:interpretation} offers an interpretation.
+\item Fifteen closures exploit the stage structure of the model: eleven split the objective along the stages (\cref{lem:split-bound}), and the four \inst{catmix} certificates bound the value functions of a backward dynamic program (\cref{lem:split-minorant}); in both, every stage problem is small enough to be minimized rigorously (\cref{sec:split}).
+\item Exact feasibility decides questions that tolerance-feasible data leave open.
+  Some listed dual bounds are invalid under every feasibility tolerance, which an exactly feasible point proves (\cref{sec:audit}).
+  Some listed and published optimal values hold only within tolerances.
+  Along long chains of coupled rows, a tolerance can lower the objective by far more than its own size: on \inst{camshape}, points that violate each row and bound by at most $\varepsilon$ lie at most $0.61\,n^2\varepsilon$ below the optimum (proved for the values $\varepsilon\le10^{-8}$ of \cref{tab:camshape-deficit}), and explicit tolerance-feasible points reach about 87\% of this bound (numerical evidence).
+  SCIP~10 returns wrong optimal values on some subproblems; in the 15 wrong runs that we traced, the error is triggered by the decimal identity $0.7^3=0.343$, which fails after rounding to binary64 (\cref{sec:solvers-invalid}).
+\end{enumerate}
+
+\subsection{Contributions}\label{sec:intro-contrib}
+
+The certificates are built per instance; we implemented no general solver and claim no general solver capability.
+
+\begin{description}
+\item[C1 (certificates under exact semantics).]
+For 31 instances that are not marked solved (snapshot of \cref{sec:semantics-model}) we prove a dual bound that is valid for every exactly feasible point of the stored OSIL model, and we exhibit an exactly feasible point within a relative gap of at most \sci{3.1}{-9} (\cref{tab:closures}).
+They come from 14 instance families; 28 are continuous and three mixed-integer.
+We chose the instances by judged tractability, so 31 is not a solve rate (\cref{sec:results-selection}).
+For nine of them (\inst{camshape100}--\inst{camshape800}, \inst{hvycrash} and \inst{lnts50}--\inst{lnts400}) we characterize the optimal value exactly and prove that it is attained.
+To our knowledge, within the search described in \cref{sec:intro-prior} and \cref{app:literature}, no rigorous certificate had been published for any of these 31 stored models.
+For seven of them, floating-point closures or near-closures had been reported: for six on the same model, for \inst{dtoc5} on a copy under assumed variable bounds; \cref{sec:results-prior} credits these and the other earlier results by name.
+For the five \inst{waterno2} instances we prove dual bounds 1.68 to 6.21 times the best listed ones, leaving relative gaps of at most 10.82\% (\cref{tab:unclosed}); we claim no priority for period decomposition.
+For \inst{ann_cumene_tanh} we prove a dual bound within 0.195\% of an exactly feasible point; it also holds for \inst{ann_cumene_exp}, which writes $\tanh$ through $\exp$ and which SCIP and LINDO closed in floating point \citep{vigerske2026-minlplib-a-library-of-mixed}; our bound is weaker than their values.
+The six KAN instances in our set have no exactly feasible point (\cref{prop:kan-infeasible}); for the model $\RP$ without their partition-of-unity rows and its network relaxation $\Rnet$ we enclose the optimal values (\cref{thm:kan-enclosure}); these enclosures say nothing about points that satisfy the OSIL rows only within a tolerance.
+
+\item[C2 (audit of listed dual bounds).]
+We screened all 11,086 per-solver dual bounds on MINLPLib's 1,633 instance pages against the 2,816 listed points.
+Under a stated hypothesis on how the pages display numbers (\cref{hyp:audit-display}), we prove 22 listed bounds on 18 instances invalid: 19 on 15 instances from the screen, each proved again by a second implementation, and three LINDO bounds on \inst{rocket100}, \inst{rocket200} and \inst{rocket400} outside it.
+Only \inst{rocket100} needs \cref{hyp:audit-display} itself; the other 21 refutations need only that each display arises from the reported number by decimal roundings or truncations (\cref{sec:audit-hyp}).
+Four margins exceed 1\% of the displayed value and eleven lie below $10^{-6}$; no refutation contradicts a solved mark, and we attribute no cause.
+To our knowledge, within the search of \cref{app:literature}, this is the first systematic screen of MINLPLib's listed per-solver bounds that refutes listed bounds only by proving that an exactly feasible point exists below them; earlier checks compared bounds with other solvers or with reference values (\cref{sec:intro-records,sec:intro-prior}).
+
+\item[C3 (solver and published claims).]
+SCIP 10.0.2, 10.0.3, 10.1.0 and a development snapshot \citep{hojny2025-the-scip-optimization-suite-10} return wrong optimal values on subproblems of \inst{waterno2_06} for some random seeds; exactly feasible rational witnesses, which SCIP~10.0.2's feasibility check accepts, refute these claims, and a reproducer with 15 variables shows the same error (\cref{sec:solvers-invalid}).
+Assuming that CAMINO used the current MINLPLib files and recorded AMPL's \texttt{bestbound}, its bounds for Gurobi 13.0.0 on \inst{eg_disc2_s}, \inst{eg_disc_s} and \inst{eg_int_s} \citep{ghezzi2026-camino-benchmark-results-for-nonconvex} exceed the objective values of exactly feasible points by at least 4.33\%, 7.48\% and 80.5\%.
+Assuming that the \texttt{.nl} file of QPLIB\_8803 encodes the MINLPLib model \inst{optcdeg2}, MINOTAUR~0.4.1's infeasibility report for it is contradicted by an exactly feasible point.
+Both claims are invalid as recorded; the causes are unknown.
+We also catalogue listed and published optimal values that no exactly feasible point attains (\cref{sec:solvers-tolerance}).
+In one-hour runs of BARON 26.5.27, Gurobi 13.0.2 and SCIP 10.0.3 on the GAMS files of all 43 instances, all 79 final dual bounds with a globality guarantee for the unmodified models of the non-KAN instances are weaker than our certified bounds, and five final dual bounds improve the best listed dual bound.
+Where \cref{tab:sem-gams} compares the GAMS and OSIL forms only at sample points, this comparison assumes that the two forms define the same model; elsewhere the forms are identical, except for \inst{catmix}, to whose GAMS form \cref{prop:catmix-transport} transfers our bounds.
+\Cref{sec:solvers-campaign} discusses the 30 other finite bounds: values without a globality guarantee, bounds on models that SCIP modified, and values on the KAN instances, for which our bounds concern $\Rnet$.
+Only BARON's runs on \inst{camshape100} and \inst{camshape200} ended with a relative gap of at most $10^{-6}$; they are tolerance-level closures (\cref{prop:baron-camshape}).
+The runs check the status of current solvers on these instances; they do not rank them.
+
+\item[C4 (reproducibility).]
+The archive that accompanies this paper (\archiveDOI) holds the models with their SHA-256 hashes, the certificate data, the exact point definitions, and the first and the separately written implementations.
+A number file gives the exact value, source and rounding direction of every generated certified display (bounds, primal ends, gaps and derived margins), and a claim register maps each result to its checkers and inputs.
+Replay commands come in three tiers of effort (\cref{sec:repro,app:repro}); the archive separates replay of stored certificates from regeneration, which may produce a different valid certificate (\cref{sec:semantics-protocol}).
+\end{description}
+
+\subsection{Prior work and what is classical}\label{sec:intro-prior}
+
+Other benchmark libraries check points against tolerances and compare solver results: MIPLIB uses arbitrary-precision solution checkers with explicit tolerances and removed numerically inconsistent instances \citep{koch2011-miplib-2010-mixed-integer-programming,gleixner2021-miplib-2017-data-driven-compilation}, and PAVER automates the analysis of benchmark data \citep{bussieck2014-paver-2-0-an-open}.
+COPS, CUTE and CUTEst, QPLIB and the COCONUT collections record reference values and residuals with varying levels of checking \citep{dolan2004-benchmarking-optimization-software-with-cops-2,bongartz1995-cute-constrained-and-unconstrained-testing,gould2015-cutest-a-constrained-and-unconstrained,furini2018-qplib-a-library-of-quadratic,shcherbina2003-benchmarking-global-optimization-and-constraint}.
+The benchmark records inspected in our search do not supply nonlinear dual-bound certificates that a user can check.
+
+The closest precedent for certificates on MINLPLib is \citet{halbig2024-computing-optimality-certificates-for-convex}, who compute optimality certificates for 17 of 67 selected convex MINLPLib instances; their certificates rest on convexity, and all our instances are nonconvex.
+Their computational construction and verification solve the auxiliary optimization problems with Gurobi; here we require exact or outward-rounded verification on the stored nonconvex models.
+Wrong answers of global solvers are well documented.
+\citet{neumaier2005-a-comparison-of-complete-global} record false global and infeasibility claims of complete solvers, and \citet{nowak2008-lago-a-heuristic-branch-and} report a wrong BARON root bound on \inst{bayes2_10}.
+\citet{vigerske2017-scip-global-optimization-of-mixed} discard runs in which SCIP computed a wrong dual bound, and \citet{montanher2018-a-computational-study-of-global} and \citet{bestuzheva2025-global-optimization-of-mixed-integer} count wrong or inconsistent results in large studies.
+Feasibility-tolerance artifacts in solver comparisons are a known concern among developers \citep[Berthold's contribution, \S3.6]{bonami2018-designing-and-implementing-algorithms-for}.
+These studies decide conflicts by comparison with reference values or other solvers, not by exact feasibility.
+
+Rigorous global optimization supplies the tools: interval branch and bound with existence tests \citep{kearfott2003-globsol-history-composition-and-advice,kearfott2011-interval-computations-rigour-and-non,neumaier2004-complete-search-in-continuous-global}, safe LP and SDP bounds by directed rounding \citep{neumaier2004-safe-bounds-in-linear-and,jansson2006-vsdp-verified-semidefinite-programming,jansson2007-rigorous-error-bounds-for-the}, rigorous search frameworks \citep{domes2009-gloptlab-a-configurable-framework-for}, and certified minima for difficult test functions \citep{vanaret2014-certified-global-minima-for-a}.
+Current interval solvers such as IbexOpt combine reliable affine and Taylor relaxations and certify LP-derived lower bounds by interval post-processing \citep{araya2025-hybridizing-two-linear-relaxation-techniques}.
+By default IbexOpt relaxes equality rows by a tolerance; in its rigor mode it returns a box that is proved to contain a point satisfying the equalities exactly \citep{ibex2026-ibexopt-ibex-documentation}.
+We did not run such a solver, because this study builds instance-specific certificates rather than comparing methods; its lower bounds would be a natural rigorous baseline for ours, and whether they reach our bounds on these instances is open.
+Exact rational LP and MIP solvers and checkable MIP certificates \citep{applegate2007-exact-solutions-to-linear-programming,cook2011-an-exact-rational-mixed-integer,cook2013-a-hybrid-branch-and-bound,cheung2017-verifying-integer-programming-results,eifler2023-a-computational-status-update-for} set the precedent, which we follow, of treating input data as rationals.
+Recent work certifies propagation and dual proof analysis in an exact MIP solver \citep{borst2024-certified-constraint-propagation-and-dual}, builds VIPR certificates from black-box floating-point ILP solvers \citep{szeider2026-vipr-certificate-construction-from-black}, and analyses the numerical correctness of branch-and-bound decisions \citep{hoen2025-analyzing-the-numerical-correctness-of}; these certify or check linear MIP results, whereas our obligations are nonlinear and sometimes transcendental.
+In recent MINLP work the global bound remains solver output: Xpress Global withholds a global-optimality claim when it imposes artificial bounds \citep{belotti2025-solving-minlps-to-global-optimality}, \citet{merx2026-from-computational-certification-to-exact} pairs a solver-reported $\varepsilon$-global bound with exactly recovered coordinates, and a closure of the seven-electron Thomson problem, a MINLPLib model family, rests on subproblems solved by a global solver \citep{kuznetsov2024-convexification-and-global-optimization-of}.
+
+Every mechanism in our certificates is classical: Lagrangian decomposition, Krotov- and Mangasarian-type sufficiency and relaxed dynamic programming, LP formulations for polynomial optimization of bounded treewidth, discrete Sturm comparison, the Gibbs tangent-plane test, hidden convexity, SDP relaxations of optimal power flow, Taylor models, affine arithmetic and safe per-box LP bounds, interval existence tests and rational PSD certificates; \cref{app:literature-scope} gives the references.
+What is new are the instance-specific constructions, their exact or outward-rounded evaluation on the stored models, and what they show about benchmark data and solver claims; the exact \inst{camshape} envelope, the scalar \inst{lnts} characterization and the curved \inst{optcdeg2} split are examples.
+Our search for prior results covered the 43 instance names, their source models and copies, and the literature cited above, up to 2026-10-04.
+It is a bounded search, not a proof of priority; \cref{app:literature} describes it and lists the sources we could not read.
+
+\subsection{Organization}\label{sec:intro-org}
+
+\Cref{sec:semantics} fixes the semantics and the verification protocol, \cref{sec:results} summarizes the results, \cref{sec:split,sec:other,sec:points} give the certificates and the exactly feasible points, \cref{sec:audit,sec:solvers} the audit and the solver and published claims, \cref{sec:interpretation} an interpretation and recommendations, and \cref{sec:repro,sec:conclusion} reproduction, limitations and conclusions.
+\Cref{app:semantics,app:splitproofs} treat the reading of the models and the proofs for \cref{sec:split-framework}; the supplementary material, whose numbers carry the prefix~S, gives the certificates by family and all further details.

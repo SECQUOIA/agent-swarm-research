@@ -1,0 +1,368 @@
+\section{Cutoff changes and cached witnesses}\label{sec:cutoff}
+
+During search the incumbent improves and the cutoff $U$ decreases. Since
+$T_{U'}(B)\subseteq T_U(B)$ for $U'\le U$, a lower cutoff can make
+further tightening possible, and certificates computed for the old cutoff
+may expire. This section answers three questions about stored primal
+information. At which cutoff does a certificate expire? Which
+current-round witnesses can be produced for a new cutoff without solving
+a new support problem? How do stored points behave when the box changes?
+
+Primal witnesses give upper bounds on the possible benefit of tightening.
+Stored dual solutions give the opposite information, a guaranteed
+reduction, for a relaxation whose constraint matrix does not change.
+Section~\ref{sec:constraints} treats dual information and combines both
+kinds in a bracket for one frozen relaxation. Throughout this section, a
+\emph{lifted pool} $\widehat W$ is a finite set of complete lifted points
+with stored objective values. When a lifted pool is used on one box $B$,
+all of its points lie in $R(B)$; mixing and frontiers also require
+$R(B)$ to be convex and the objective $v$ to be affine, as in the
+reference family.
+
+\subsection{Cutoff thresholds of a protected box}\label{sec:cutoff-thresholds}
+
+Let $P=[a,b]$ be a protected box with a lifted pool
+$\widehat W\subseteq R(P)$ whose projections attain every endpoint of
+$P$, and write $q_z=v(z)$ for $z\in\widehat W$. The $2n$ \emph{faces} of
+$P$ are $\{x\in P:x_i=a_i\}$ and $\{x\in P:x_i=b_i\}$; when $a_i=b_i$ the
+two coincide, which does no harm below. The certificate of
+Theorem~\ref{thm:protected} remains valid at every cutoff
+$U'\ge U_{\widehat W}=\max_{z\in\widehat W}q_z$, the largest stored value.
+This threshold can be larger than necessary, because an expensive point
+may be redundant. The exact threshold for reusing part of the pool is
+\begin{equation}\label{eq:face-threshold}
+ \tau_{\widehat W}(P)=\max_F\ \min\{q_z:z\in\widehat W,\ \pi(z)\in F\},
+\end{equation}
+where $F$ ranges over the faces of $P$. Each inner minimum is over a
+nonempty set because $\widehat W$ attains every face.
+
+\begin{proposition}[Face threshold of a pool]\label{prop:face-threshold}
+For a cutoff $U'$, the subpool $\{z\in\widehat W:q_z\le U'\}$ attains every
+face of $P$ if and only if $U'\ge\tau_{\widehat W}(P)$. Convex
+combinations do not lower this threshold: the projection of
+$\conv(\widehat W)\cap\{v\le U'\}$ has box hull $P$ if and only if
+$U'\ge\tau_{\widehat W}(P)$.
+\end{proposition}
+\begin{proof}
+The subpool attains a face $F$ exactly when some pool point on $F$ has
+value at most $U'$, that is, when the inner minimum
+in~\eqref{eq:face-threshold} is at most $U'$. Requiring this for all
+faces gives the first claim. For the second, the subpool is contained in
+$\conv(\widehat W)\cap\{v\le U'\}$, which proves one direction.
+Conversely, let $\bar z=\sum_z\lambda_zz$ be a convex combination with
+$v(\bar z)\le U'$ whose projection lies on the face $x_i=b_i$. Every
+$z\in\widehat W$ has $x_i(z)\le b_i$, and the weighted average equals
+$b_i$, so every $z$ with $\lambda_z>0$ lies on that face. Hence
+$v(\bar z)=\sum_z\lambda_zq_z$ is at least the inner minimum for that
+face. The same argument applies to every face.
+\end{proof}
+
+For example, let $R(P)=P=[0,1]^2$ with no auxiliary variables,
+$v(x)=x_1+x_2$, and $\widehat W$ the four corners. Then
+$U_{\widehat W}=2$ but $\tau_{\widehat W}(P)=1$, because the three
+corners $(0,0)$, $(1,0)$ and $(0,1)$ attain all four faces. Mixing can
+produce witnesses for a \emph{smaller} box at a lower cutoff, but such a
+box needs its own check on its rebuilt relaxation
+(Section~\ref{sec:cutoff-mixing}).
+
+The pool threshold depends on the stored points. The following threshold
+depends only on the box and the relaxation.
+
+\begin{proposition}[Exact expiry cutoff of a box]\label{prop:box-threshold}
+Let $P$ be a nonempty box in a lifted family. For each face $F$ of $P$ let
+$\mu_F(P)=\min\{v(z):z\in R(P),\ \pi(z)\in F\}$, with value $+\infty$
+when no lift projects to $F$, and let $\tau(P)=\max_F\mu_F(P)$. Then
+\[
+ T_U(P)=P\quad\Longleftrightarrow\quad U\ge\tau(P).
+\]
+Moreover, $\tau(P)\le\tau_{\widehat W}(P)$ for every lifted pool
+$\widehat W\subseteq R(P)$ that attains every face of $P$.
+\end{proposition}
+\begin{proof}
+Because $R(P)$ is compact and $v$ continuous, $K_U(P)=\pi(R_U(P))$, and
+the minimum defining $\mu_F(P)$ is attained when finite. A face $F$ is
+therefore attained by a point of $K_U(P)$ exactly when
+$\mu_F(P)\le U$. If $K_U(P)$ is nonempty, Proposition~\ref{prop:fixed-box}
+turns this face-by-face statement into the claimed equivalence. If
+$K_U(P)$ is empty, then $T_U(P)=\emptyset\ne P$, and every face has
+$\mu_F(P)>U$. Pool points are feasible for the face problems, which gives
+$\tau(P)\le\tau_{\widehat W}(P)$.
+\end{proof}
+
+The quantities $\mu_F(P)$ are the finite-box counterparts of the face
+values of Corollary~\ref{cor:face-test}. The two thresholds have
+different costs and uses. The face threshold $\tau_{\widehat W}(P)$ uses
+only the stored coordinates and objective values, without an optimization
+solve. When the incumbent value drops below it, the stored certificate
+expires. This is an exact event at which reconsidering OBBT is justified;
+it does not show that tightening will pay off. The box threshold
+$\tau(P)$ requires up to $2n$ face-restricted minimizations of the
+objective, comparable to one OBBT round. It gives a positive statement:
+if the current box is $P$ and the cutoff $U$ falls below $\tau(P)$, the
+next exact round either finds $K_U(P)$ empty or, since some face is no
+longer attained and $K_U(P)$ is compact, moves at least one endpoint
+strictly. The size of that movement is not bounded below by this
+argument; Section~\ref{sec:constraints} gives guaranteed reductions from
+dual information. For cutoffs between $\tau(P)$ and
+$\tau_{\widehat W}(P)$ the pool is inconclusive. None of these thresholds
+is necessary for the existence of a different protected box inside $P$.
+Proposition~\ref{prop:threshold-con} is the single-direction counterpart
+of $\tau(P)$ for one frozen support problem.
+
+\subsection{Witnesses at a lower cutoff in one relaxation}\label{sec:cutoff-mixing}
+
+A stored current-round witness whose value exceeds a new cutoff can be
+moved below it by convex combination with any relaxed point of lower
+value.
+
+\begin{proposition}[Mixing to a new cutoff]\label{prop:mixing}
+Let $R(B)$ be convex with an affine objective $v$, and let $a,z\in R(B)$
+with $v(a)\le U'<v(z)$. Then
+\begin{equation}\label{eq:mixing}
+ \theta=\frac{U'-v(a)}{v(z)-v(a)}\in[0,1),\qquad
+ z_{U'}=a+\theta(z-a)
+\end{equation}
+satisfies $z_{U'}\in R(B)$ and $v(z_{U'})=U'$.
+\end{proposition}
+\begin{proof}
+The point $z_{U'}$ is a convex combination of two points of the convex
+set $R(B)$. Since $v$ is affine,
+$v(z_{U'})=v(a)+\theta(v(z)-v(a))=U'$.
+\end{proof}
+
+The anchor $a$ needs only relaxation feasibility. A minimizer of $v$ over
+$R(B)$, with value $L(B)$, or a lift of the new incumbent are natural
+choices. The original coordinates move to
+$x(a)+\theta\bigl(x(z)-x(a)\bigr)$, and
+Proposition~\ref{prop:current-round} then bounds the frozen round at the
+new cutoff without a new support solve. The construction is confined to
+one frozen relaxation, and the hull of mixed points is generally not
+protected.
+
+\begin{example}[Mixed witnesses at a new cutoff]\label{ex:mixing-hull}
+Relax $s=x^2$ on $[-1,1]$ by the square rows $s\ge2|x|-1$ and $s\le1$,
+with objective $v=s$.
+Mixing the graph points $(\pm1,1)$ with the anchor $(0,0)$ to the cutoff
+$U'=1/4$ gives $\theta=1/4$ and the points $(\pm1/4,1/4)$, which are
+feasible on $[-1,1]$. On their hull $[-1/4,1/4]$ the secant reads
+$s\le1/16$, so both stored lifts fail the rebuilt check. Their projections
+nevertheless have feasible rebuilt lifts $(\pm1/4,1/16)$, so this hull is
+protected at cutoff $1/4$. On $[-1,1]$ the mixed points bound
+the decrease of each endpoint in the frozen round at cutoff $1/4$ by
+$3/4$; the exact round gives $[-5/8,5/8]$, a decrease of $3/8$.
+
+A hull of mixed points need not be protected. Mixing the same graph
+points with the relaxation minimizer $(0,-1)$ to cutoff $0$ gives
+$\theta=1/2$ and points $(\pm1/2,0)$. These attain the supports of the
+current cutoff relaxation. On their hull $[-1/2,1/2]$, however,
+$\phi(\pm1/2)=1/4>0$, so no feasible lift at cutoff $0$ reaches either
+face. The hull is not fixed, and the next round gives $[-1/4,1/4]$.
+\end{example}
+
+\subsection{The cutoff frontier of a cached pool}\label{sec:cutoff-frontier}
+
+A nonempty lifted pool $\widehat W=\{z_1,\ldots,z_k\}\subseteq R(B)$ with
+values $q_j=v(z_j)$ supplies the current-round witnesses
+\[
+ \mathcal C_U=\conv(\widehat W)\cap\{v\le U\}\subseteq R_U(B)
+\]
+at every cutoff $U$. The best ceilings that the pool can give are the
+coordinate extrema over $\mathcal C_U$. They require no new support
+solve, because they are attained at explicit points. The proof below is
+standard extreme-point reasoning; its use here is to generate the
+candidates from a retained pool.
+
+\begin{proposition}[Exact frontier of a pool]\label{prop:frontier}
+If $\mathcal C_U$ is nonempty, which holds exactly when $\min_jq_j\le U$,
+every minimum and maximum of an original or lifted coordinate over
+$\mathcal C_U$ is attained at one of the following points:
+\begin{enumerate}[label=(\alph*)]
+\item a pool point $z_j$ with $q_j\le U$;
+\item for a pair with $q_j<U<q_l$, the mixture of $z_j$ and $z_l$ with
+  value exactly $U$.
+\end{enumerate}
+There are at most $k+k(k-1)/2$ such points.
+\end{proposition}
+\begin{proof}
+Let $\Lambda_U=\{\lambda\in\R^k:\lambda\ge0,\ \sum_j\lambda_j=1,\
+\sum_j\lambda_jq_j\le U\}$. Because $v$ is affine, the map
+$\lambda\mapsto\sum_j\lambda_jz_j$ sends $\Lambda_U$ onto $\mathcal C_U$,
+and $\Lambda_U$ is nonempty exactly when some $q_j\le U$. A coordinate is
+a linear function of $\lambda$, so its extrema over the polytope
+$\Lambda_U$ are attained at vertices. Let $\lambda$ be a vertex with
+support $J=\{j:\lambda_j>0\}$. If $|J|\ge2$ and the cutoff inequality is
+slack, a nonzero $h$ supported on $J$ with $\sum_jh_j=0$ gives
+$\lambda\pm\epsilon h\in\Lambda_U$ for small $\epsilon>0$, which is
+impossible at a vertex. If the cutoff is tight and $|J|\ge3$, a nonzero
+$h$ supported on $J$ satisfies the two equations $\sum_jh_j=0$ and
+$\sum_jh_jq_j=0$, with the same contradiction. If the cutoff is tight,
+$J=\{j,l\}$ and $q_j=q_l$, the first equation implies the second, and
+again a perturbation exists. Hence either $\lambda$ is a unit vector
+$e_j$ with $q_j\le U$, or $J=\{j,l\}$, $q_j\ne q_l$, and the cutoff is
+tight. In the latter case two positive weights average $q_j$ and $q_l$ to
+$U$, so $U$ lies strictly between them and the image of $\lambda$ is the
+stated mixture.
+\end{proof}
+
+The proof covers repeated points, equal values, and degenerate hulls. The
+proposition optimizes over the convex hull of the pool, not over the
+whole relaxation; an empty frontier says only that the pool cannot
+supply a witness at that cutoff.
+
+The frontier also describes exactly how the pooled ceilings respond to
+the cutoff. Fix a coordinate $i$ and let
+$g(U)=\max\{x_i(z):z\in\mathcal C_U\}$ for $U\ge q_{\min}=\min_jq_j$.
+The pooled ceiling on the decrease of $u_i$ is $u_i-g(U)$.
+
+\begin{proposition}[Cutoff response of a pool]\label{prop:cutoff-response}
+For a nonempty pool, the function $g$ is nondecreasing, concave, and
+continuous on $[q_{\min},\infty)$. It is affine between consecutive
+distinct values among $q_1,\ldots,q_k$ and constant for
+$U\ge\max_jq_j$. The coordinate minimum over $\mathcal C_U$ has the same
+properties with \emph{nonincreasing} and \emph{convex} in place of
+\emph{nondecreasing} and \emph{concave}.
+\end{proposition}
+\begin{proof}
+The set $\Lambda_U$ grows with $U$, so $g$ is nondecreasing. If $\lambda$
+and $\lambda'$ are optimal at $U$ and $U'$, then for $t\in[0,1]$ the
+combination $t\lambda+(1-t)\lambda'$ is feasible at $tU+(1-t)U'$, which
+gives concavity. A concave function is continuous on the interior of its
+interval. At $q_{\min}$, let $\Delta>0$ be the gap to the next larger
+pool value; if there is none, $g$ is constant. For
+$q_{\min}<U<q_{\min}+\Delta$, every $\lambda\in\Lambda_U$ puts total
+weight $\epsilon\le(U-q_{\min})/\Delta$ on points with $q_j>q_{\min}$.
+Writing $c=\max_j|x_i(z_j)|$, this gives $g(U)\le g(q_{\min})+2c\epsilon$,
+and continuity follows. On an open interval between consecutive distinct
+pool values, the sets of eligible points and of straddling pairs in
+Proposition~\ref{prop:frontier} do not change. There $g$ is the maximum of
+finitely many affine functions of $U$: constants for eligible points, and
+for a pair $(j,l)$ the coordinate
+$x_i(z_j)+\frac{U-q_j}{q_l-q_j}\bigl(x_i(z_l)-x_i(z_j)\bigr)$. Hence $g$
+is convex there; being also concave, it is affine, and by continuity it
+is affine on the closed interval. For $U\ge\max_jq_j$, $\Lambda_U$ is the
+whole simplex. The statements for the minimum follow by applying these
+arguments to $-x_i$.
+\end{proof}
+
+Proposition~\ref{prop:cutoff-response} turns a pool into an exact
+screening rule for future incumbents. For a tolerance $\delta\ge0$, the
+upper direction of $x_i$ is screened at cutoff $U$ when
+$g(U)\ge u_i-\delta$. Because $g$ is nondecreasing and continuous, the
+set of such cutoffs is empty or an interval $[\sigma_i,\infty)$. The
+threshold $\sigma_i$ is found by evaluating $g$ at the distinct pool
+values and solving one affine equation. When the incumbent value falls
+below $\sigma_i$, the pool can no longer screen this direction, and a
+support solve or new witnesses are needed. The computation involves no
+optimization problem; at each pool value it evaluates at most
+$k+k(k-1)/2$ candidates.
+
+\begin{example}[A frontier and its cutoff response]\label{ex:frontier}
+Let $R(B)=B=[0,2]\times[0,3]$ with no auxiliary variables, $v(x)=x_2$,
+and the pool $z_1=(0,0)$, $z_2=(2,3)$, $z_3=(1,1)$ with values $0,3,1$.
+At $U=2$ the frontier consists of $z_1$, $z_3$, the mixture
+$(4/3,2)$ of $z_1$ and $z_2$, and the mixture $(3/2,2)$ of $z_3$ and $z_2$.
+The best pooled witness for the upper endpoint of $x_1$ uses the anchor
+$z_3$, not the point of lowest value. For this endpoint,
+\[
+ g(U)=\begin{cases}U,&0\le U\le1,\\ (U+1)/2,&1\le U\le3,\\ 2,&U\ge3.\end{cases}
+\]
+At $U=2$ the pooled ceiling on the decrease of $u_1=2$ is $1/2$, whereas
+the exact decrease is $0$ because $(2,0)\in R_2(B)$. The pool bounds the
+round correctly but not tightly. With tolerance $\delta=1/4$, the pool
+screens this direction exactly for the cutoffs $U\ge5/2$.
+\end{example}
+
+\paragraph{Changed boxes.}
+Before a pool is used on a new box, every point must pass the rows of
+the relaxation built on that box. For the filtered pool,
+Propositions~\ref{prop:frontier} and~\ref{prop:cutoff-response} are again
+exact. They are not exact for the old convex hull intersected with the
+new rows: mixtures of excluded points can be feasible, and additional
+inequalities create coefficient vertices with more than two positive
+weights. Under lifted monotonicity, a point feasible on a box $P$ remains
+feasible on every box containing $P$, so the witnesses of a protected
+box can join the pool at every containing node without a check. Points
+computed on a parent box need not be feasible on a child box; in
+Example~\ref{ex:halving}, the witness $(r/2,0)$ from $[-r,r]$ fails on
+$[-r/2,r/2]$.
+
+\subsection{Continuing after a cutoff decrease}\label{sec:cutoff-continue}
+
+When the cutoff decreases, a solver can either continue tightening from
+its current box or restart from the starting box. Continuing yields boxes
+contained in the restart iterates. If the current box was obtained by a
+finite number of relaxation-sound steps at compatible cutoffs, both
+sequences have the same intersection, by monotonicity alone.
+
+\begin{proposition}[Continuing versus restarting]\label{prop:continue}
+Let $U'\le U$, let $B_k'=T_{U'}^k(B_0)$, and let
+$C_0\subseteq B_0$ be obtained from $B_0$ by $m\ge0$
+relaxation-sound steps at cutoffs at least $U'$, for example by OBBT
+at the old cutoff $U$. Then $C_k=T_{U'}^k(C_0)$ satisfies
+\[
+  B_{k+m}'\subseteq C_k\subseteq B_k'\qquad(k\ge0).
+\]
+In particular, $\bigcap_k C_k=\bigcap_k B_k'$.
+\end{proposition}
+\begin{proof}
+A relaxation-sound step $C\to C'$ at cutoff $U''\ge U'$ gives
+$C'\supseteq T_{U''}(C)\supseteq T_{U'}(C)$. Induction and
+monotonicity give $C_0\supseteq T_{U'}^m(B_0)$, and hence
+$C_k\supseteq T_{U'}^{k+m}(B_0)$. The upper inclusion follows from
+$C_0\subseteq B_0$ and monotonicity. The two bounding subsequences have
+the same intersection, proving the last statement.
+\end{proof}
+
+If the iterates are nonempty and~\eqref{eq:closed-family} holds at the new
+cutoff, the common intersection is also the greatest fixed box, by
+Proposition~\ref{prop:fixed-limit}. These extra assumptions are needed
+for that identification, not for the equality of intersections.
+
+After an incumbent improvement, therefore, no tightening is lost by
+resuming from the current box. A box that is protected at the new cutoff,
+for example one whose face threshold $\tau_{\widehat W}(P)$ does not
+exceed it, still bounds all remaining movement.
+
+\subsection{Conditions for reuse}\label{sec:cutoff-reuse}
+
+Table~\ref{tab:reuse} collects the conditions under which stored primal
+information remains valid. The entries restate
+Propositions~\ref{prop:current-round}, \ref{prop:face-threshold}
+and~\ref{prop:box-threshold}, Theorem~\ref{thm:protected},
+Corollary~\ref{cor:original-points}, and the residual certificates of
+Section~\ref{sec:residual}.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.2\linewidth}>{\raggedright\arraybackslash}p{0.23\linewidth}>{\raggedright\arraybackslash}p{0.25\linewidth}>{\raggedright\arraybackslash}p{0.24\linewidth}@{}}
+\toprule
+Information & Bounds & Valid for & Recheck or expiry\\
+\midrule
+Pool in $K_U(B)$ & movement in the frozen round on $B$ &
+the same box and rows; lower cutoffs through mixing and the frontier &
+any change of box or rows\\
+\addlinespace
+Protected box $P$ with lifted pool $\widehat W$ & all movement of
+relaxation-sound steps; relaxation bound through $L(P)$ &
+boxes containing $P$; cutoffs at least $\tau_{\widehat W}(P)$ with the
+stored pool, or at least $\tau(P)$ with a recomputed pool; the same
+family &
+box not containing $P$; cutoff below the threshold; new rows violated by
+a witness; rounding of fractional faces\\
+\addlinespace
+Hull of original feasible points $S$ & movement under every reduction
+valid for the original problem & boxes containing $S$; cutoffs at least
+$\max_{x\in S}f(x)$ & cutoff below $\max_{x\in S}f(x)$; box not
+containing $S$\\
+\addlinespace
+Residual and comparison matrix & total movement of exact Jacobi
+iteration & one cutoff and one family, inside the invariant region on
+which the matrix is verified & leaving that region; a change of cutoff
+or family without a new residual bound and comparison matrix\\
+\bottomrule
+\end{tabular}
+\caption{Conditions for reusing stored primal information. A failed or
+expired condition makes the certificate inapplicable; it does not show
+that further tightening is useful.}\label{tab:reuse}
+\end{table}

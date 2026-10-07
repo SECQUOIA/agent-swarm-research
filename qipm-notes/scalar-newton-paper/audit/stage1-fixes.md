@@ -35,7 +35,7 @@ No theorem scope, complexity bound, or proof constant changed.
 Validation:
 
 - The existing diagnostic passed under
-  `/home/sgusev/miniconda3/envs/qipm/bin/python
+  `/workspace/local-home/miniconda3/envs/qipm/bin/python
   scalar-newton-paper/scripts/verify_classical.py`. It checks polynomial
   residuals, complex and support-restricted moments, the sharp variance
   witness, the raw rejection law, and arithmetic-error transfer.

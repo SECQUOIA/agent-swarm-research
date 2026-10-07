@@ -1,0 +1,2721 @@
+\section{Quadratic arithmetic contrasts}
+\label{app:qc}
+
+Convex quadratic programming over a rational polyhedron is the arithmetic
+baseline for this paper. Its optimal value and a minimum-norm optimizer are
+rational, and the classical ellipsoid analysis computes them exactly in
+polynomial time~\cite{KozlovTarasovKhachiyan1980}. The main text shows how far
+this picture breaks for quartic objectives: exact comparison becomes
+$\PosSLP$-complete, and exact optimizers can have exponential degree or
+exponentially long rational coordinates. Convex quadratic \emph{constraints}
+lie between these two regimes. This appendix records what they do to the
+arithmetic of values, points, and certificates. The results calibrate the
+quartic theorems: some phenomena of the main text already occur for convex
+quadratic constraints, and others do not.
+
+The structural parameter throughout is the dimension $k$ of the span of the
+constraint Hessians. Section~\ref{app:qc-degree} proves that the optimal value
+and a canonical optimizer lie in one number field whose degree is at most
+$\mathcal B(n,k)=\max_{0\le s\le\min(k,n)}2^s\binom ns$, with coefficient
+heights $L^{O(k+1)}$, and that this degree bound is attained. The remaining
+sections use these bounds and contrast them with lower bounds in specified
+output formats. Table~\ref{tab:qc-summary} lists the results.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{3.6cm}
+  >{\raggedright\arraybackslash}X
+  >{\raggedright\arraybackslash}p{2.3cm}@{}}
+\toprule
+Question & Answer & Result\\
+\midrule
+Degree and height of value and canonical optimizer
+ & one field of degree at most $\mathcal B(n,k)$; heights $L^{O(k+1)}$;
+   degree attained by strictly feasible rational instances
+ & Thms.~\ref{thm:qc-degree}, \ref{thm:qc-height}, \ref{thm:qc-sharp}\\
+Coefficients in a number field of degree $D$
+ & height and separation bounds linear in $D$ and in the input height
+ & Thm.~\ref{thm:qc-height}\\
+Rational feasible points
+ & always exist, are dense, and are computable when $k\le2$; an irrational
+   singleton exists when $k=3$
+ & Thm.~\ref{thm:qc-span-two}, Prop.~\ref{prop:qc-span-three}\\
+Singleton spectrahedra
+ & one scalar variable: exactly the totally real numbers, minimum size
+   $2\deg\alpha$; corank one: exactly one real embedding
+ & Thms.~\ref{thm:qc-pencil}, \ref{thm:qc-corank-one}\\
+Expanded output length
+ & short inputs force degree $n^{\Omega(k)}$ and dense coefficient lists of
+   minimal polynomials of the value and of an input coordinate, also for a
+   singleton cut out by ellipsoids
+ & Thms.~\ref{thm:qc-blocks}, \ref{thm:qc-sparse},
+   Cor.~\ref{cor:qc-feasible-output}\\
+One convex quartic row
+ & value degree $3^n$
+ & Prop.~\ref{prop:qc-quartic}\\
+Common field from approximations
+ & primitive element and coordinate polynomials with polynomial overhead
+ & Thm.~\ref{thm:qc-recovery}\\
+Optimality and infeasibility certificates
+ & one field, at most $k$ curved reductions; rational infeasibility
+   aggregates of length $L^{O(k+1)}$, exponential in $k$ when necessary
+ & Thms.~\ref{thm:qc-certificate}, \ref{thm:qc-rational-infeasibility}\\
+Affine data in a number field
+ & exact optimizer in the input field in polynomial time
+ & Thm.~\ref{thm:qc-number-field-qp}\\
+Nonconvex integer rows
+ & exponentially long integer output already in dimension two
+ & Prop.~\ref{prop:qc-pell}\\
+\bottomrule
+\end{tabularx}
+\caption{Quadratic arithmetic contrasts proved in this appendix. Here $n$ is
+the number of continuous variables, $k$ the dimension of the span of the
+native constraint Hessians, and $L$ the total binary input length.}
+\label{tab:qc-summary}
+\end{table}
+
+\subsection{Setting, output contracts, and heights}
+\label{app:qc-setting}
+
+\begin{definition}[Native PSD quadratic systems]
+\label{def:qc-native}
+A \emph{native PSD quadratic system} is
+\begin{equation}
+\label{eq:qc-system}
+F=\{x\in\R^n: Ax\le b,\ g_i(x)\le0\ (1\le i\le m)\},\qquad
+g_i(x)=\tfrac12x^{\mathsf T}Q_ix+a_i^{\mathsf T}x+c_i,
+\end{equation}
+where $Q_i$ is a symmetric positive semidefinite matrix for every $i$. An
+affine equality is written as two opposite rows. The \emph{Hessian span} of
+the system is $k=\dim\Span\{Q_1,\ldots,Q_m\}$. An objective
+$f(x)=\tfrac12x^{\mathsf T}Q_0x+a_0^{\mathsf T}x+c_0$ with $Q_0\succeq0$ may
+be added; its Hessian is not counted in $k$.
+\end{definition}
+
+Unless a field is named, all data are rational and explicitly encoded, every
+matrix entry counted. The total binary length is $L\ge\max\{2,n,m\}$. Printed
+input lengths in this appendix refer to this native matrix encoding. The
+explicit format of Definition~\ref{def:models-polynomial} lists only nonzero
+coefficients but attaches an exponent vector of $O(n)$ bits to each of the at
+most $(n+1)(n+2)/2$ monomials of a quadratic. The two lengths are
+polynomially related, so bounds polynomial in $L$, such as $L^{O(k+1)}$, hold
+in either format; the output lower bounds below state the input length in
+both formats. The span dimension $k$ is computed by rational rank. It
+differs from the number of rows, from the rank of $\sum_iQ_i$, and from the
+dimension of the span of the complete polynomials $g_i$: the rows
+$\norm{x}^2+2x_j-1$, $1\le j\le n$, have $k=1$.
+
+The word \emph{native} matters. Positive semidefiniteness is required of the
+polynomials as written, not of the set $F$. Squaring the second-order cone
+constraints $\norm{(1,1)}_2\le t$ and $\norm{(t,t)}_2\le2$ gives
+$2-t^2\le0$ and $2t^2-4\le0$; the pair forces $t=\sqrt2$, while the first
+squared row has a negative Hessian. The rational-point theorem of
+Section~\ref{app:qc-rational} does not apply to such rows.
+
+If $F\ne\varnothing$ and $f$ attains its infimum on $F$, the optimal set is
+nonempty, closed and convex. Its unique point of least Euclidean norm in the
+original coordinates is the \emph{canonical optimizer}, denoted $p$, and
+$\theta=f(p)$ is the optimal value. For $f=0$, $p$ is the minimum-norm
+feasible point. Other points of a positive-dimensional optimal face can be
+transcendental and are not described by the results below.
+
+\paragraph{Output contracts.}
+The exact representations are those of
+Definition~\ref{def:models-representations}. Two algebraic variants are kept
+apart: a \emph{coordinatewise} representation gives each coordinate's
+minimal polynomial and isolating interval, and a \emph{common-field}
+representation gives one primitive irreducible integer polynomial $P$ of
+degree $d$, a rational interval isolating one real root $\alpha$ of $P$, and
+rational polynomials $b_1,\ldots,b_n$ of degree less than $d$ with
+$x_j=b_j(\alpha)$. Coordinatewise output does not bound the degree of the
+field generated by all coordinates: square roots of $n$ distinct primes have
+degree two each and generate a field of degree $2^n$. The common-field format
+lets a verifier evaluate any rational polynomial at the point by univariate
+arithmetic modulo $P$.
+
+Five quantities are kept separate: the bit-operation time of an algorithm;
+the expanded length of an output in a named format; algebraic degrees; the
+data and verification cost of a certificate; and the accuracy $2^{-q}$
+requested from an approximation oracle. Two degrees must be distinguished.
+The degree of one scalar bounds from below the length of a dense list of
+that scalar's minimal polynomial. The degree of the field generated by all
+coordinates bounds from below the length of a common-field representation,
+but not of a coordinatewise one, whose separate minimal polynomials can be
+short when the joint degree is large. Neither degree bounds implicit
+descriptions. A circuit over the rationals computes only rational numbers, so
+for irrational coordinates the compact alternatives are implicit systems,
+towers of radicals, or circuits with root-selection gates. Lower bounds in
+this appendix always name the format that they constrain.
+
+\paragraph{Heights.}
+For a number field $M$ and a place $u$ of $M$, let $\abs{\cdot}_u$ be the
+absolute value extending the ordinary or $\ell$-adic absolute value of $\Q$,
+and let $n_u=[M_u:\Q_u]$. Archimedean places carry the ordinary modulus, with
+$n_u=2$ at complex places, and $\sum_{u\mid\infty}n_u=[M:\Q]$. The product
+formula $\prod_u\abs{x}_u^{n_u}=1$ holds for $x\in M^\times$; equivalently
+$\sum_un_u\log\abs{x}_u=0$. The absolute logarithmic Weil height
+of $x\in M$ and the affine and projective heights of a vector $y\in M^r$ are
+\[
+\height(x)=\frac1{[M:\Q]}\sum_un_u\log\max(1,\abs{x}_u),\qquad
+\height_{\rm aff}(y)=\frac1{[M:\Q]}\sum_un_u\log\max\bigl(1,\max_j\abs{y_j}_u\bigr),
+\]
+and, for $y\ne0$,
+$\height_{\rm proj}(y)=[M:\Q]^{-1}\sum_un_u\log\max_j\abs{y_j}_u$. These
+quantities do not depend on the field $M$ containing the
+entries~\cite{BombieriGubler2006}.
+
+\begin{lemma}[Height calculus]
+\label{lem:qc-heights}
+Let $M$ be a number field and $x,x_1,\ldots,x_r\in M$.
+\begin{enumerate}[label=(\alph*),leftmargin=*]
+\item $\height(x_1x_2)\le\height(x_1)+\height(x_2)$,
+$\height(x^{-1})=\height(x)$ for $x\ne0$,
+$\height(x_1+\cdots+x_r)\le\sum_j\height(x_j)+\log r$, and
+$\height_{\rm proj}(y)\le\height_{\rm aff}(y)\le\sum_j\height(y_j)$. If
+$y_i,y_j\ne0$ are entries of $y$, then $\height(y_i/y_j)\le\height_{\rm proj}(y)$.
+\item For a rational number $a/b$ in lowest terms,
+$\height(a/b)=\log\max(\abs a,\abs b)$.
+\item If $M\subset\R$ through a fixed real embedding and $x\ne0$, then
+$\abs{\log\abs x}\le[M:\Q]\height(x)$.
+\item For an $r\times r$ matrix $G$ with entries in $M$,
+$\height(\det G)\le\sum_{i,j}\height(G_{ij})+\log r!$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+For (a), use
+\[
+\begin{gathered}
+\max(1,\abs{x_1x_2}_u)\le\max(1,\abs{x_1}_u)\max(1,\abs{x_2}_u),\\
+\sum_un_u\log\max(1,\abs{x}_u^{-1})=\sum_un_u\log\max(1,\abs{x}_u),
+\end{gathered}
+\]
+the second by the product formula. At an archimedean place $\abs{\sum_jx_j}_u\le r\max_j\abs{x_j}_u$, at the other
+places the maximum suffices, and the archimedean weights sum to $[M:\Q]$. The
+two vector inequalities are immediate from the definitions. For the ratio,
+$\height(y_i/y_j)$ is the projective height of $(y_j,y_i)$, and the
+maximum over two entries is at most the maximum over all entries. For (b),
+a prime $\ell$ dividing $b$ contributes $v_\ell(b)\log\ell$, the other primes
+contribute nothing, and these contributions sum to $\log\abs b$; the
+archimedean term adds $\log\max(1,\abs{a/b})$. For (c), the
+real place contributes $n_u\log\max(1,\abs x)\le[M:\Q]\height(x)$; apply this
+also to $x^{-1}$. For (d), expand the determinant. At an archimedean place,
+$\abs{\det G}_u\le r!\prod_{i,j}\max(1,\abs{G_{ij}}_u)$; at the other places
+the factor $r!$ is absent. Summing with the weights gives the claim.
+\end{proof}
+
+We also use the following elementary passage from an annihilating
+polynomial to a minimal polynomial. If $\vartheta$ is a root of a nonzero
+$R\in\Z[w]$ of degree $e$ with all coefficients bounded by $\exp(W)$, $W\ge0$,
+then the primitive minimal polynomial $m_\vartheta\in\Z[w]$ of $\vartheta$
+divides $R$ by Gauss's lemma. Its leading coefficient divides that of $R$, and
+its roots are roots of $R$, hence bounded by $1+\exp(W)$ by Cauchy's bound.
+Expanding $m_\vartheta$ over its roots gives
+\begin{equation}
+\label{eq:qc-minpoly-height}
+\log\norm{m_\vartheta}_\infty\le W+\deg m_\vartheta\,\bigl(\log2+\log(1+\exp W)\bigr)
+\le(\deg m_\vartheta+1)(W+2).
+\end{equation}
+Finally, for a polynomial $\sum_{i=0}^e\pi_iw^i$ with $\pi_e\ne0$, every
+complex root $z$ satisfies Fujiwara's bound
+$\abs z\le2\max_{i<e}\abs{\pi_i/\pi_e}^{1/(e-i)}$: if $\abs z$ were larger,
+the terms $\abs{\pi_iz^i}$ with $i<e$ would sum to less than
+$\abs{\pi_e}\abs z^e\sum_{j\ge1}2^{-j}$. The same bound holds at every
+archimedean place, and at a nonarchimedean place the ultrametric inequality
+gives $\abs z_u\le\max(1,\max_{i<e}\abs{\pi_i/\pi_e}_u)$.
+
+\subsection{Degree, height, and separation at fixed Hessian span}
+\label{app:qc-degree}
+
+This subsection proves the bounds that the rest of the appendix uses. They
+explain why convex quadratic constraints are arithmetically mild when their
+Hessians span few directions, even with arbitrarily many variables and rows,
+no bounds, and no constraint qualification. The proof restricts to the active
+rows at the canonical optimizer, compresses the multipliers to at most $k$,
+and passes the resulting nonsingular polynomial system through two ordered
+limits. Two elimination arguments are needed: a root count gives the sharp
+degree, and a finite multiplication-matrix construction gives the height.
+
+\paragraph{Setting over a number field.}
+Let $K\subset\R$ be a number field of degree $D$, with the embedding fixed;
+$K=\Q$ is the main case. In this subsection the data of~\eqref{eq:qc-system}
+and of the objective $f$ lie in $K$, and $Q_0,Q_1,\ldots,Q_m\succeq0$ in the
+fixed embedding. The span dimension of the $Q_i$ over $K$ equals the real span
+dimension $k$, because the rank of the matrix of Hessian entries does not
+depend on the field. Assume that $F\ne\varnothing$ and that $f$ attains its
+infimum on $F$, and let $p$ and $\theta$ be the canonical optimizer and the
+optimal value. Let $S\ge2$ bound $n$, the number of rows, and the number of
+listed input scalars, and let $B\ge1$ bound the absolute heights of the input
+scalars. For $K=\Q$ one may take $S=L$ and $B=L$.
+
+\begin{lemma}[Active restriction]
+\label{lem:qc-restriction}
+Let $I_a$ and $I_q$ be the affine rows and the quadratic rows that are active
+at $p$. Choose $\mathcal J\subseteq I_q$ such that $\{Q_j:j\in\mathcal J\}$ is a
+basis of $\Span\{Q_i:i\in I_q\}$, and write $Q_i=\sum_{j\in\mathcal J}
+\gamma_{ij}Q_j$ with $\gamma_{ij}\in K$. Let $H$ be the affine space defined
+by the active affine rows taken as equalities and by the equations
+\begin{equation}
+\label{eq:qc-differences}
+g_i(x)-\sum_{j\in\mathcal J}\gamma_{ij}g_j(x)=0\qquad(i\in I_q),
+\end{equation}
+whose left sides are affine. Let $x=x_0+Vu$, $u\in\R^d$, be a parametrization
+of $H$ with $x_0\in K^n$ and $V\in K^{n\times d}$ of full column rank, and put
+$r_i(u)=g_i(x_0+Vu)$ for $i\in I_q$, $\tilde f(u)=f(x_0+Vu)$, and
+$N(u)=\norm{x_0+Vu}^2$. Then the following hold.
+\begin{enumerate}[label=(\alph*),leftmargin=*]
+\item $p=x_0+Vu^*$ for a unique $u^*$, and $r_i(u^*)=0$ for $i\in I_q$.
+\item The polynomials $r_i$, $i\in I_q$, span a space of dimension at most
+$k$ over $K$.
+\item On $C=\{u\in\R^d:r_i(u)\le0\ (i\in I_q)\}$ one has $\tilde f\ge\theta$,
+and $u^*$ is the unique minimizer of $N$ on $\{u\in C:\tilde f(u)=\theta\}$.
+\item There is an absolute constant $c_0$ such that every entry of $x_0$ and
+$V$, and every coefficient of $r_i$, $\tilde f$ and $N$, has height at most
+$S^{c_0}(B+1)$. These bounds do not depend on which rows are active.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+Every active row vanishes at $p$, so $p\in H$ and (a) holds. Each difference
+in~\eqref{eq:qc-differences} is affine and vanishes on $H$, so it vanishes
+identically after substitution. Hence $r_i=\sum_j\gamma_{ij}r_j$ as
+polynomials, proving (b).
+
+For (c), let $F_2=\{x\in H:g_i(x)\le0\ (i\in I_q)\}$, the image of $C$. Let
+$y\in F_2$ and $z_t=p+t(y-p)$ for $0<t\le1$. The active affine rows hold on
+$H$, the rows in $I_q$ hold at $z_t$ by convexity, and every inactive row is
+strictly slack at $p$ and therefore at $z_t$ for small $t$. Thus $z_t\in F$
+for small $t$. If $f(y)<\theta$, convexity gives $f(z_t)<\theta$, a
+contradiction. If $f(y)=\theta$ and $y\ne p$ with $\norm y\le\norm p$, then
+$z_t$ is optimal for small $t$, and strict convexity of the squared norm
+gives $\norm{z_t}<\norm p$, again a contradiction.
+
+For (d), the $\gamma_{ij}$ solve a $K$-linear system whose matrix consists of
+Hessian entries. Cramer's rule and Lemma~\ref{lem:qc-heights}(d) bound their
+heights by $2(S^2B+S\log S)$. The coefficients of~\eqref{eq:qc-differences}
+are sums of at most $S+1$ products of these numbers with input scalars. The
+vectors $x_0$ and the columns of $V$ are Cramer quotients of minors of order
+at most $n\le S$ of the equation matrix of $H$, after choosing the free
+coordinates among the original ones. The restricted coefficients are sums of
+at most $S^2$ products of three such numbers. Each of these finitely many
+steps multiplies the preceding height bound by a fixed polynomial in $S$ and
+adds a term of order $S\log S$, by Lemma~\ref{lem:qc-heights}(a),(d).
+\end{proof}
+
+If $d=0$, then $p=x_0\in K^n$, and all statements below are immediate. Assume
+$d\ge1$ from now on.
+
+\begin{lemma}[Ordered regularization]
+\label{lem:qc-ordered}
+For $\varepsilon>0$, the function $f_\varepsilon=\tilde f+\varepsilon N$ has
+a unique minimizer $u_\varepsilon$ on $C$, and $x_0+Vu_\varepsilon\to p$ as
+$\varepsilon\downarrow0$. For fixed $\varepsilon>0$ and $\delta>0$,
+$f_\varepsilon$ has a unique minimizer $u_{\varepsilon,\delta}$ on
+$C_\delta=\{u:r_i(u)\le\delta\ (i\in I_q)\}$, and
+$u_{\varepsilon,\delta}\to u_\varepsilon$ as $\delta\downarrow0$. The point
+$u^*$ satisfies every inequality of $C_\delta$ strictly.
+\end{lemma}
+
+\begin{proof}
+The Hessian of $f_\varepsilon$ is $\nabla^2\tilde f+2\varepsilon V^{\mathsf T}V$,
+which is positive definite because $V$ has full column rank. Hence
+$f_\varepsilon$ is strongly convex and has unique minimizers on the nonempty
+closed convex sets $C$ and $C_\delta$. Comparison with $u^*$ and
+Lemma~\ref{lem:qc-restriction}(c) give
+\[
+\theta\le\tilde f(u_\varepsilon),\qquad
+\tilde f(u_\varepsilon)+\varepsilon N(u_\varepsilon)\le\theta+\varepsilon\norm p^2,
+\]
+so $N(u_\varepsilon)\le\norm p^2$ and $\tilde f(u_\varepsilon)\to\theta$.
+Every accumulation point $\bar u$ of $u_\varepsilon$ lies in $C$, has
+$\tilde f(\bar u)=\theta$ and $N(\bar u)\le\norm p^2$, so $\bar u=u^*$ by
+Lemma~\ref{lem:qc-restriction}(c). For fixed $\varepsilon$, the points
+$u_{\varepsilon,\delta}$ lie in the compact set
+$\{u:f_\varepsilon(u)\le f_\varepsilon(u_\varepsilon)\}$, since
+$u_\varepsilon\in C_\delta$. An accumulation point as $\delta\downarrow0$ lies
+in $C$ and does not exceed the minimum value on $C$, so it equals
+$u_\varepsilon$. The last assertion holds because $r_i(u^*)=0<\delta$.
+\end{proof}
+
+Only the ordered limits, first $\delta\downarrow0$ and then
+$\varepsilon\downarrow0$, are used below. No convergence along a joint
+schedule of the two parameters is asserted.
+
+For a set $J\subseteq I_q$ with $\abs J=s$, consider the square system in
+$(u,\lambda)\in\R^{d}\times\R^{s}$
+\begin{equation}
+\label{eq:qc-kkt}
+\Phi_J(u,\lambda;\varepsilon,\delta)=
+\Bigl(\nabla f_\varepsilon(u)+\sum_{j\in J}\lambda_j\nabla r_j(u),\
+(r_j(u)-\delta)_{j\in J}\Bigr)=0 .
+\end{equation}
+Write $\tilde Q_i$, $\tilde a_i$ and $\tilde c_i$ for the Hessian, linear
+coefficient vector and constant of $r_i$ for $i\in I_q$, and of $\tilde f$ for
+$i=0$.
+
+\begin{lemma}[Small regular support]
+\label{lem:qc-kkt}
+For $\varepsilon,\delta>0$ there is $J\subseteq I_q$ with
+$s=\abs J\le\min(k,d)$ and $\lambda\in\R^J_{>0}$ such that
+$(u_{\varepsilon,\delta},\lambda)$ solves~\eqref{eq:qc-kkt} and the Jacobian
+of $\Phi_J$ with respect to $(u,\lambda)$ is nonsingular there. For every
+sequence $\varepsilon_\ell\downarrow0$ there are sequences
+$\delta_{\ell,\nu}\downarrow0$ and one set $J$ such that this holds for all
+pairs $(\varepsilon_\ell,\delta_{\ell,\nu})$, after passing to a subsequence
+in $\ell$.
+\end{lemma}
+
+\begin{proof}
+By Lemma~\ref{lem:qc-ordered}, $u^*$ is a strict feasible point of the convex
+problem $\min\{f_\varepsilon(u):u\in C_\delta\}$, so the convex
+Karush--Kuhn--Tucker conditions hold at its minimizer: $-\nabla f_\varepsilon$
+is a nonnegative combination of the gradients of the rows with
+$r_i=\delta$~\cite{Rockafellar1970}. Choose such a representation with
+minimal support $J$. Its gradients are linearly independent: a dependence
+$\sum_j\eta_j\nabla r_j=0$ with some $\eta_j>0$ lets us replace $\lambda$ by
+$\lambda-\tau\eta$ for the largest $\tau$ keeping $\lambda\ge0$, which
+removes an index. By Lemma~\ref{lem:qc-restriction}(b), the gradients of the
+$r_i$ at one point span at most $k$ dimensions, so $s\le\min(k,d)$.
+
+The Jacobian of~\eqref{eq:qc-kkt} is
+$\left(\begin{smallmatrix}M&G\\G^{\mathsf T}&0\end{smallmatrix}\right)$ with
+$M=\tilde Q_0+2\varepsilon V^{\mathsf T}V+\sum_{j\in J}\lambda_j\tilde Q_j\succ0$
+and $G=(\nabla r_j(u_{\varepsilon,\delta}))_{j\in J}$ of full column rank. If
+$Mx+Gy=0$ and $G^{\mathsf T}x=0$, then $x^{\mathsf T}Mx=0$, so $x=0$ and then
+$y=0$. For the last assertion, there are finitely many subsets $J$: choose one
+that occurs along a sequence $\delta_{\ell,\nu}\downarrow0$ for each $\ell$,
+and then pass to a subsequence of $\ell$ on which this choice is constant.
+\end{proof}
+
+The support is fixed before any output is chosen. The multipliers may be
+unbounded along the sequences; no bound on them is used.
+
+\paragraph{The degree bound.}
+The next lemma turns a uniform count of nonsingular roots into one polynomial
+identity that holds at every real nonsingular root, including roots at
+exceptional parameter values. Counting the roots of individual rational
+specializations would not suffice: rational numbers can converge to a
+transcendental number.
+
+\begin{lemma}[One identity at all regular roots]
+\label{lem:qc-parameter}
+Let $K\subset\R$ be a field, $t=(t_1,\ldots,t_r)$ and $y=(y_1,\ldots,y_N)$
+indeterminates, and $\Phi_1,\ldots,\Phi_N,\Gamma\in K[t,y]$. Let $\mathbb K=K(t)$
+and suppose that $\Phi(t,\cdot)$ has at most $\beta$ nonsingular common zeros
+in $\overline{\mathbb K}^N$. If some real $(t^\circ,y^\circ)$ is a common zero
+with $\det\partial_y\Phi(t^\circ,y^\circ)\ne0$, then there is a nonzero
+$R\in K[t,w]$ with $\deg_wR\le\beta$ such that $R(t,\Gamma(t,y))=0$ at every
+real common zero $(t,y)$ of $\Phi$ with $\det\partial_y\Phi(t,y)\ne0$.
+\end{lemma}
+
+\begin{proof}
+Let $\Delta=\det\partial_y\Phi$ and
+$E=\mathbb K[y,\Delta^{-1}]/(\Phi_1,\ldots,\Phi_N)$. After extension of
+scalars to $\overline{\mathbb K}$, the maximal ideals of $E$ correspond to
+the common zeros $z$ with $\Delta(z)\ne0$. At such a zero the differentials of
+the $\Phi_i$ span the cotangent space, so the $\Phi_i$ generate the maximal
+ideal of the local ring of $\overline{\mathbb K}^N$ at $z$, and the local ring of
+$E\otimes\overline{\mathbb K}$ at $z$ is the field $\overline{\mathbb K}$. Thus
+every point of the affine scheme defined by $E\otimes\overline{\mathbb K}$ is
+an isolated reduced point. A Noetherian ring with this property has finitely
+many points and is the product of its residue fields, so
+$\dim_{\mathbb K}E$ equals the number of nonsingular common zeros, which is at
+most $\beta$.
+
+The algebra $E$ is not zero. Otherwise $\Delta^e\in(\Phi)$ in
+$\mathbb K[y]$ for some $e$, and clearing denominators gives
+$c(t)\Delta^e=\sum_ih_i\Phi_i$ with $0\ne c\in K[t]$ and $h_i\in K[t,y]$. By the
+implicit function theorem there is a real analytic branch $y(t)$ of
+nonsingular zeros on a neighborhood of $t^\circ$, so $c$ vanishes on an open
+set, which is impossible.
+
+Multiplication by the class of $\Gamma$ on the $\mathbb K$-vector space $E$
+has a monic characteristic polynomial $\chi\in\mathbb K[w]$ of degree
+$\dim E\le\beta$, and $\chi(\Gamma)=0$ in $E$ by the Cayley--Hamilton
+theorem. Clearing denominators gives a nonzero $R\in K[t,w]$ with
+$\deg_wR=\dim E$ and an identity
+$c_2(t)\Delta^{e'}R(t,\Gamma)=\sum_i\hat h_i\Phi_i$ in $K[t,y]$, with
+$c_2\ne0$. Hence $R(t,\Gamma(t,y))=0$ at every real nonsingular common zero
+with $c_2(t)\ne0$. At a nonsingular zero with $c_2(t)=0$, the implicit
+function theorem gives a branch of nonsingular zeros over a neighborhood of
+$t$, on which $c_2\ne0$ on a dense set. Continuity extends the identity to the
+given zero.
+\end{proof}
+
+\begin{lemma}[Ordered limits]
+\label{lem:qc-ordered-limits}
+Let $R\in K[\varepsilon,\delta,w]$ be nonzero. Suppose that
+$R(\varepsilon_\ell,\delta_{\ell,\nu},w_{\ell,\nu})=0$ for nonzero reals
+$\varepsilon_\ell\to0$ and $\delta_{\ell,\nu}\to0$, where
+$w_{\ell,\nu}\to w_\ell$ as $\nu\to\infty$ and $w_\ell\to w^*$ as
+$\ell\to\infty$, all limits finite. Then there is a nonzero $P\in K[w]$ with
+$\deg P\le\deg_wR$ and $P(w^*)=0$.
+\end{lemma}
+
+\begin{proof}
+Write $R=\delta^aS(\varepsilon,w)+\delta^{a+1}R_1$ with $S\ne0$, where $a$
+is the least exponent of $\delta$ with a nonzero coefficient. Dividing by
+$\delta_{\ell,\nu}^a$ and letting $\nu\to\infty$ gives
+$S(\varepsilon_\ell,w_\ell)=0$ for every $\ell$; this remains true if
+$S(\varepsilon_\ell,\cdot)$ is the zero polynomial. Write
+$S=\varepsilon^bP(w)+\varepsilon^{b+1}S_1$ with $P\ne0$, divide by
+$\varepsilon_\ell^b$, and let $\ell\to\infty$. Then $P(w^*)=0$. A nonzero
+constant cannot vanish at $w^*$, so $P$ is not constant.
+\end{proof}
+
+We use the following classical root count.
+
+\begin{theorem}[Multihomogeneous B\'ezout bound~\cite{MorganSommese1987,DedieuMalajovichShub2005}]
+\label{thm:qc-bezout}
+Let $\mathbb F$ be an algebraically closed field of characteristic zero and
+$\Phi_1,\ldots,\Phi_N\in\mathbb F[Y,Z]$, where $Y$ and $Z$ are groups of $N_1$
+and $N_2$ variables with $N_1+N_2=N$. If $\deg_Y\Phi_i\le e_i$ and
+$\deg_Z\Phi_i\le e'_i$, then the number of isolated common zeros of $\Phi$ in
+$\mathbb F^N$, and in particular the number of nonsingular ones, is at most the
+coefficient of $U^{N_1}T^{N_2}$ in $\prod_{i=1}^N(e_iU+e'_iT)$.
+\end{theorem}
+
+The isolated-root upper bound is stated in
+\cite[Section~5, Theorem~5.1]{DedieuMalajovichShub2005}.
+Additional positive-dimensional components of the zero set are allowed in
+this statement. For an algebraically closed field of characteristic zero and
+countable transcendence degree, such as an algebraic closure of $K(t)$, the
+statement follows from the case $\mathbb F=\C$ by embedding the field in $\C$.
+
+\begin{theorem}[Joint degree]
+\label{thm:qc-degree}
+In the setting of this subsection,
+\[
+[K(p_1,\ldots,p_n):K]\le\mathcal B(n,k)=\max_{0\le s\le\min(k,n)}2^s\binom ns,
+\]
+and $\theta\in K(p_1,\ldots,p_n)$. For $K=\Q$, the value and the canonical
+optimizer lie in one number field of degree at most $\mathcal B(n,k)\le
+\min\{3^n,(2n)^k\}$.
+\end{theorem}
+
+\begin{proof}
+Fix the nested sequences and the support $J$ of Lemma~\ref{lem:qc-kkt}. In
+the system~\eqref{eq:qc-kkt}, each of the $d$ stationarity equations has degree
+at most one in $u$ and at most one in $\lambda$, and each of the $s$ active
+equations has degree at most two in $u$ and zero in $\lambda$. By
+Theorem~\ref{thm:qc-bezout}, the number of nonsingular zeros over an algebraic
+closure of $K(\varepsilon,\delta)$ is at most
+\[
+[U^dT^s](U+T)^d(2U)^s=2^s\binom ds .
+\]
+For $c\in K^n$, apply Lemma~\ref{lem:qc-parameter} with parameters
+$t=(\varepsilon,\delta)$, unknowns $y=(u,\lambda)$, and output
+$\Gamma=c^{\mathsf T}(x_0+Vu)$. Lemmas~\ref{lem:qc-ordered}
+and~\ref{lem:qc-kkt} provide the nonsingular real zeros and the ordered
+limits, and Lemma~\ref{lem:qc-ordered-limits} gives a nonzero
+$P_c\in K[w]$ of degree at most $2^s\binom ds$ with $P_c(c^{\mathsf T}p)=0$.
+Every coordinate of $p$ is therefore algebraic over $K$. The extension
+$K(p)/K$ is finite and separable, so by the primitive element theorem some
+$c\in K^n$ gives $K(p)=K(c^{\mathsf T}p)$. Hence
+$[K(p):K]\le2^s\binom ds\le\mathcal B(n,k)$, using $s\le\min(k,d)$ and
+$d\le n$. The value $\theta=f(p)$ lies in $K(p)$ because $f$ has coefficients
+in $K$. Finally $2^s\binom ns\le(2n)^s$, and the sum over all $s$ is $3^n$.
+\end{proof}
+
+The same support $J$ serves all linear forms $c^{\mathsf T}p$. This is why
+the bound concerns the joint field and not only individual coordinates;
+separate coordinate bounds would not bound the degree of their compositum.
+The maximum in $\mathcal B(n,k)$ is needed: for $n=k=3$ the terms are
+$1,6,12,8$. The count $2^s\binom ds$ is the classical generic degree of
+quadratically constrained critical points~\cite{NieRanestad2009}; what the
+proof adds is its validity at the canonical optimizer of every convex
+instance, through the span compression and the ordered limits, without
+genericity or a constraint qualification.
+
+\paragraph{The height bound.}
+For a polynomial $\Psi$ with coefficients in $K$ and a place $v$ of $K$, let
+$\norm\Psi_v$ be the sum of the $v$-absolute values of its coefficients if
+$v$ is archimedean and their maximum otherwise. Both norms are
+submultiplicative, and the second also satisfies the ultrametric inequality.
+
+\begin{lemma}[Ordered elimination with local norms]
+\label{lem:qc-elimination}
+Let $G_1,\ldots,G_s,A,\Gamma\in K[\varepsilon,\delta,\lambda_1,\ldots,\lambda_s]$
+have total degree at most $a\ge1$ in $\lambda$. For each place $v$ let
+$C_v\ge1$ bound $\norm{G_i}_v$, $\norm A_v$ and $\norm\Gamma_v$, with $C_v=1$
+for all but finitely many $v$, and put
+\[
+E=\frac1D\sum_vn_v\log C_v,\qquad \mathfrak z=(a+1)^s,\qquad T=a(s+1).
+\]
+Suppose that for nonzero reals $\varepsilon_\ell\to0$ and
+$\delta_{\ell,\nu}\to0$ there are real roots $\lambda_{\ell,\nu}$ of
+$G(\varepsilon_\ell,\delta_{\ell,\nu},\cdot)=0$ with nonsingular Jacobian in
+$\lambda$ and $A\ne0$, such that $w_{\ell,\nu}=\Gamma/A$ at these roots
+converges to $w_\ell$ as $\nu\to\infty$, and $w_\ell\to w^*$, all limits
+finite. Then there is a nonzero $P\in K[w]$ with $\deg P\le\mathfrak z$, $P(w^*)=0$,
+and
+\[
+\height_{\rm aff}(\text{coefficients of }P)\le W_0:=\mathfrak z(T+1)E+\log\mathfrak z!+\mathfrak z\log3 .
+\]
+\end{lemma}
+
+\begin{proof}
+Introduce a deformation parameter $\beta$ and the polynomials
+$\Phi_i=G_i+\beta\lambda_i^{a+1}$. Over $K(\varepsilon,\delta,\beta)$, for a
+monomial order that compares total degree in $\lambda$ first, the leading
+monomials $\lambda_i^{a+1}$ are pairwise coprime, so the $\Phi_i$ form a
+Gr\"obner basis and the monomials $\lambda^\alpha$ with all $\alpha_i\le a$
+form a basis $\mathcal M$ of the quotient, with $\abs{\mathcal M}=\mathfrak z$. The same
+holds after specializing $\varepsilon,\delta$ to real numbers and $\beta$ to a
+nonzero real number, because the leading coefficients are $\beta$.
+
+Let $M_A$ and $M_\Gamma$ be the matrices of multiplication by $A$ and
+$\Gamma$ on this basis. A basis monomial times $A$ or $\Gamma$ has degree at
+most $T$ in $\lambda$, and each replacement of $\lambda_i^{a+1}$ by
+$-G_i/\beta$ lowers the degree by at least one. Hence at most $T$ replacements
+occur along any branch of the reduction, the matrices $\beta^TM_A$ and
+$\beta^TM_\Gamma$ have polynomial entries in $(\varepsilon,\delta,\beta)$, and
+each entry has $v$-norm at most $C_v^{T+1}$: at an archimedean place each
+replacement multiplies the coefficient sum by at most $C_v$, and at the other
+places the maximum is multiplicative. Form
+\[
+\mathcal H=\det\bigl(w\beta^TM_A-\beta^TM_\Gamma-\zeta\beta^TI_{\mathfrak z}\bigr).
+\]
+Its coefficient of $\zeta^{\mathfrak z}$ is $(-\beta^T)^{\mathfrak z}\ne0$, its
+degree in $w$ is at most $\mathfrak z$, and expanding the determinant gives
+$\norm{\mathcal H}_v\le\mathfrak z!\,3^{\mathfrak z}C_v^{\mathfrak z(T+1)}$ at
+archimedean places and $\norm{\mathcal H}_v\le C_v^{\mathfrak z(T+1)}$ at the
+others.
+
+Let $\mathcal H_\kappa$ be the coefficient of the least power $\zeta^\kappa$
+occurring in $\mathcal H$. Fix one selected pair
+$(\varepsilon_\ell,\delta_{\ell,\nu})$ and its root $\lambda_{\ell,\nu}$. The
+real implicit function theorem continues the root to a real root
+$\lambda(\beta)$ of $\Phi$ for small $\beta$, with $A\ne0$. For small
+$\beta\ne0$, evaluation at $\lambda(\beta)$ is a ring homomorphism on the
+quotient, so the vector of basis monomials evaluated at $\lambda(\beta)$ is a
+nonzero common left eigenvector of the specialized multiplication matrices,
+with eigenvalues $A(\lambda(\beta))$ and $\Gamma(\lambda(\beta))$. Hence the
+specialized determinant equals $\beta^T(wA-\Gamma-\zeta)\,\Psi(w,\zeta)$ for
+a polynomial $\Psi$. It is divisible by $\zeta^\kappa$, and $wA-\Gamma-\zeta$
+is coprime to $\zeta$ because $A\ne0$, so $\zeta^\kappa$ divides $\Psi$.
+Taking the coefficient of $\zeta^\kappa$ shows
+$\mathcal H_\kappa(\varepsilon_\ell,\delta_{\ell,\nu},\beta,\Gamma/A)=0$ along
+the branch, even if the specialized coefficient vanishes identically. This
+step removes factors coming from roots at which $A=\Gamma=0$.
+
+Let $\mathcal R(\varepsilon,\delta,w)$ be the coefficient of the least power
+of $\beta$ in $\mathcal H_\kappa$. Dividing by that power and letting
+$\beta\to0$ along the branch gives
+$\mathcal R(\varepsilon_\ell,\delta_{\ell,\nu},w_{\ell,\nu})=0$ for all
+selected pairs. Lemma~\ref{lem:qc-ordered-limits} now gives $P$ with
+$P(w^*)=0$. Each extraction selects a subvector of coefficients, so no local
+norm increases, and
+\[
+\height_{\rm aff}(\text{coefficients of }P)\le
+\frac1D\sum_vn_v\log\max\bigl(1,\norm{\mathcal H}_v\bigr)\le W_0,
+\]
+because the archimedean weights sum to $D$.
+\end{proof}
+
+Deforming a polynomial system to obtain a finite quotient, and reading the
+values of a function from multiplication matrices, are classical elimination
+devices~\cite{Canny1990,GrigorievPasechnik2005}. The lemma records the
+explicit bound, place by place, that the following theorem needs.
+
+\begin{theorem}[Height and separation]
+\label{thm:qc-height}
+There is an absolute constant $c$ such that, in the setting of this
+subsection, with $W=(B+1)S^{c(k+1)}$:
+\begin{enumerate}[label=(\roman*),leftmargin=*]
+\item $\height(\theta)\le W$ and $\height(p_j)\le W$ for every $j$; more
+generally $\height(c^{\mathsf T}p)\le W$ for every $c\in K^n$ whose entries
+have height at most $B$;
+\item if $\theta\ne0$, then $\abs{\log\abs\theta}\le DW$; the same holds for
+every nonzero $p_j$;
+\item for $K=\Q$, the primitive minimal polynomials of $\theta$, of each
+$p_j$, and of each $c^{\mathsf T}p$ as in (i) have degree at most
+$\mathcal B(n,k)$ and coefficient bit length at most $L^{c(k+1)}$, and every
+nonzero one of these numbers lies in
+$[2^{-L^{c(k+1)}},2^{L^{c(k+1)}}]$ in absolute value.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+Assume $d\ge1$. Fix $J$ and the sequences of Lemma~\ref{lem:qc-kkt}, and write
+$M(\varepsilon,\lambda)=\tilde Q_0+2\varepsilon V^{\mathsf T}V+
+\sum_{j\in J}\lambda_j\tilde Q_j$ and
+$\mu(\varepsilon,\lambda)=\tilde a_0+2\varepsilon V^{\mathsf T}x_0+
+\sum_{j\in J}\lambda_j\tilde a_j$, so that the stationarity equations
+in~\eqref{eq:qc-kkt} read $Mu+\mu=0$. Let $\Delta=\det M$ and
+$\rho=-\operatorname{adj}(M)\mu$. At the selected roots $M\succ0$ and
+$u=\rho/\Delta$. Put
+\[
+G_j=\tfrac12\rho^{\mathsf T}\tilde Q_j\rho+\Delta\tilde a_j^{\mathsf T}\rho
++(\tilde c_j-\delta)\Delta^2\quad(j\in J),\qquad A=\Delta^2,
+\]
+and, for the outputs, $\Gamma_f=\tfrac12\rho^{\mathsf T}\tilde Q_0\rho+
+\Delta\tilde a_0^{\mathsf T}\rho+\tilde c_0\Delta^2$ and
+$\Gamma_c=\Delta(c^{\mathsf T}x_0\Delta+c^{\mathsf T}V\rho)$ for $c\in K^n$.
+Then $G_j=\Delta^2(r_j(u)-\delta)$, $\Gamma_f/A=\tilde f(u)$ and
+$\Gamma_c/A=c^{\mathsf T}x$. Along the root branch
+$u(\lambda)=-M^{-1}\mu$, one has $\partial u/\partial\lambda_i=
+-M^{-1}\nabla r_i(u)$, and because $r_j(u)=\delta$ at the root,
+\[
+\frac{\partial G_j}{\partial\lambda_i}=
+-\Delta^2\,\nabla r_j(u)^{\mathsf T}M^{-1}\nabla r_i(u),
+\]
+which is negative definite as a matrix in $(j,i)$. So the selected multiplier
+vectors are nonsingular roots of $G$ with $A\ne0$. The ordered limits of
+Lemma~\ref{lem:qc-ordered} give $\Gamma_f/A\to\theta$ and
+$\Gamma_c/A\to c^{\mathsf T}p$.
+All these polynomials have degree at most $a=2d$ in $\lambda$.
+
+Let $\mathcal S$ be the list of scalars consisting of the entries of
+$\tilde Q_i,\tilde a_i,\tilde c_i$ for $i\in\{0\}\cup J$, of
+$2V^{\mathsf T}V$, $2V^{\mathsf T}x_0$, $x_0$, $V$, $c^{\mathsf T}x_0$ and
+$c^{\mathsf T}V$, and the constants $1,2,\tfrac12$. For a place $v$ let $U_v=\max(1,\max_{\sigma\in\mathcal S}
+\abs\sigma_v)$. At an archimedean place each entry of $M$ and $\mu$ has norm
+at most $(s+2)U_v$, so $\Delta$ and every entry of $\rho$ have norm at most
+$\Pi_v=d!((s+2)U_v)^d$, and every $G_j$, $A$, $\Gamma_f$, $\Gamma_c$ has norm
+at most $(d+1)^2U_v^2\Pi_v^2$. At a nonarchimedean place the same polynomials
+have norm at most $U_v^{2d+2}$. Hence, with
+$H_{\mathcal S}=\sum_{\sigma\in\mathcal S}\height(\sigma)$,
+\[
+E\le(2d+2)H_{\mathcal S}+2\log((d+1)!)+2d\log(s+2).
+\]
+By Lemma~\ref{lem:qc-restriction}(d), $\abs{\mathcal S}\le S^{c_0+3}$ and
+$H_{\mathcal S}\le S^{2c_0+3}(B+1)$. Lemma~\ref{lem:qc-elimination}, with
+$\mathfrak z=(2d+1)^s$ and $T=2d(s+1)$, gives annihilators $P$ of $\theta$ and of each
+$c^{\mathsf T}p$ with
+\[
+\height_{\rm aff}(\text{coefficients of }P)\le
+(2d+1)^s\bigl[(2d(s+1)+1)E+s\log(2d+1)+\log3\bigr].
+\]
+Since $d\le S$ and $s\le k$, this is at most $(B+1)S^{c(k+1)}$ for an
+absolute $c$.
+
+Let $\vartheta$ be a root of $P=\sum_i\pi_iw^i$ of degree $e$. By Fujiwara's
+bound at archimedean places and the ultrametric bound at the others,
+$\log\max(1,\abs\vartheta_u)\le\log2\,[u\mid\infty]+
+\log\max_i\abs{\pi_i}_u-\log\abs{\pi_e}_u$ at every place $u$ of a field
+containing $\vartheta$. Summing with the weights and using the product formula
+for $\pi_e$ gives $\height(\vartheta)\le\height_{\rm proj}(P)+\log2$, which
+proves (i) after enlarging $c$. For (ii), remove a power of $w$ from $P$ so
+that its constant coefficient $\pi'_0$ is nonzero. Each ratio $\pi'_i/\pi'_0$ lies
+in $K$ and has height at most $\height_{\rm proj}(P)$ by
+Lemma~\ref{lem:qc-heights}(a), hence absolute value at most
+$\exp(D\height_{\rm proj}(P))$ by Lemma~\ref{lem:qc-heights}(c). Fujiwara's
+bound applied to $P$ and to its reversal gives
+$\abs{\log\abs\vartheta}\le D\height_{\rm proj}(P)+\log2$. For $K=\Q$,
+clearing denominators turns $P$ into a primitive integer polynomial whose
+largest coefficient has logarithm $\height_{\rm proj}(P)$. Then
+Theorem~\ref{thm:qc-degree} and~\eqref{eq:qc-minpoly-height} give (iii), with
+$S,B\le L$ and $\mathcal B(n,k)\le(2L)^k$.
+\end{proof}
+
+The degree factor $D$ enters (ii) linearly. The elimination is carried out
+over $K$ with local norms, so the field is never encoded by a quantified
+primitive element, and neither $D$ nor $B$ is raised to a power depending on
+$k$. Convexity is used only at the fixed real embedding; the conjugate
+problems need not be convex. Theorem~\ref{thm:qc-degree} applies over $K$ as
+well and bounds $[K(\theta):K]$ by $\mathcal B(n,k)$, so
+$[\Q(\theta):\Q]\le D\,\mathcal B(n,k)$.
+
+\begin{corollary}[Radius and value gap]
+\label{cor:qc-radius}
+There is an absolute constant $c$ with the following properties for every
+rational native PSD system with Hessian span $k$ and input length $L$.
+\begin{enumerate}[label=(\alph*),leftmargin=*]
+\item If $F\ne\varnothing$, its minimum-norm point lies in $[-R_F,R_F]^n$,
+where $R_F=2^{\lceil L^{c(k+1)}\rceil}$.
+\item Let a rational box $[-R,R]^n$, a rational affine function $\phi$, and
+rational affine rows be added, and let $\phi^*$ be the minimum of $\phi$ over
+the resulting compact set, assumed nonempty. If $\phi^*\ne0$, then
+$\abs{\phi^*}\ge2^{-(L+\log_2R)L^{c(k+1)}}$, where $L$ now counts the added
+rows as well.
+\end{enumerate}
+\end{corollary}
+
+\begin{proof}
+For (a), apply Theorem~\ref{thm:qc-height}(ii) with $f=0$. For (b), the
+minimum is attained by compactness, the added rows are affine, and
+Theorem~\ref{thm:qc-height}(ii) with $D=1$ applies with $B\le L+\log_2R+2$.
+\end{proof}
+
+The bound in (b) is linear in $\log R$. Boxes of radius $R_F$ therefore add
+only a factor $L^{O(k+1)}$ to the exponent, and the gap remains
+$2^{-L^{O(k+1)}}$.
+
+\begin{proposition}[Exact feasibility at fixed span]
+\label{prop:qc-decision}
+For each fixed $k$, a deterministic algorithm decides in time polynomial in
+$L$ whether a rational native PSD system with Hessian span at most $k$ is
+feasible. Its running time is $L^{O(k+1)}$.
+\end{proposition}
+
+\begin{proof}
+Compute $R=R_F$ from Corollary~\ref{cor:qc-radius}(a). Let
+$\nu(x)=\max\{0,g_1(x),\ldots,g_m(x),(Ax-b)_1,\ldots\}$, a convex function
+with exact rational values and subgradients at rational points, and let
+$\alpha=\min\{\nu(x):\norm x_\infty\le R\}$. If $F\ne\varnothing$, its
+minimum-norm point gives $\alpha=0$; if $\alpha=0$, a minimizer lies in $F$.
+The number $\alpha$ is the optimal value of the epigraph problem
+$\min\{\tau:g_i(x)\le\tau,\ (Ax-b)_j\le\tau,\ 0\le\tau,\ \norm x_\infty\le R\}$,
+whose constraint Hessians $\diag(Q_i,0)$ span $k$ dimensions; adding the row
+$\tau\le\bar\nu$, where $\bar\nu$ is an explicit rational upper bound for
+$\nu$ on the box, makes its feasible set compact without changing $\alpha$. By
+Corollary~\ref{cor:qc-radius}(b), $\alpha=0$ or $\alpha\ge\eta:=
+2^{-L^{c'(k+1)}}$ for an absolute $c'$. Termwise estimates give rational
+bounds of polynomial length for $\abs\nu$ and for the norms of the gradients
+of the rows on the box, and a subgradient of $\nu$ at a rational point is the
+gradient of a row attaining the maximum, or zero. Hence
+Lemma~\ref{lem:convex-value}(a), with accuracy $\eta/3$, returns a rational
+point $\hat x$ of the box with $\nu(\hat x)\le\alpha+\eta/3$, in time
+polynomial in $n$, $\log R$, $\log(1/\eta)$ and the input length. The system
+is feasible exactly when $\nu(\hat x)<\eta/2$.
+\end{proof}
+
+This is the exact decision procedure of the Hessian-span program. Its
+exponent grows with $k$; no running time of the form $\phi(k)L^{O(1)}$ is
+claimed.
+
+\paragraph{Sharpness.}
+The degree bound is attained, even under strong regularity. The proof
+specializes a generic count inside a nonempty open set of strictly convex
+instances, using two classical inputs. Nie and Ranestad prove that for
+generic coefficients the equality-constrained critical point system
+\begin{equation}
+\label{eq:qc-generic-kkt}
+g_i(x)=0\ (1\le i\le s),\qquad
+\nabla f(x)+\sum_{i=1}^s\lambda_i\nabla g_i(x)=0
+\end{equation}
+of quadratics in $n$ variables has exactly $2^s\binom ns$ complex
+solutions~\cite{NieRanestad2009}. Hilbert's irreducibility theorem, in the
+form that the integral specializations at which an irreducible polynomial over
+$\Q(u_1,\ldots,u_r)$ becomes reducible or drops degree form a set of density
+zero in boxes of $\Z^r$, supplies the rational
+specialization~\cite{Serre2008}.
+
+\begin{theorem}[Sharpness of the degree bound]
+\label{thm:qc-sharp}
+For every $n\ge1$ and $0\le k\le n(n+1)/2$ there is a rational instance with
+Hessian span exactly $k$, positive definite objective Hessian, a strictly
+feasible compact feasible set, and a unique optimizer $p$, such that
+$[\Q(p):\Q]=[\Q(\theta):\Q]=\mathcal B(n,k)$. If $k>0$, all constraint
+Hessians can be taken positive definite.
+\end{theorem}
+
+\begin{proof}
+For $k=0$ minimize $\norm x^2$ over a box. Let $k\ge1$ and choose
+$1\le s\le\min(k,n)$ attaining $\mathcal B(n,k)$; the term for $s=1$ is $2n\ge1$,
+so such $s$ exists. Let $t$ be the vector of all coefficients of
+$f,g_1,\ldots,g_s$, treated as indeterminates, $\mathbb K=\Q(t)$, and
+$\mathcal D=2^s\binom ns$. The incidence variety of~\eqref{eq:qc-generic-kkt}
+is the graph of a polynomial map: $x$, $\lambda$, all Hessians,
+$a_1,\ldots,a_s$ and $c_0$ are free, and $c_i=-\tfrac12x^{\mathsf T}Q_ix-
+a_i^{\mathsf T}x$ and $a_0=-Q_0x-\sum_i\lambda_i(Q_ix+a_i)$ are determined.
+It is therefore an irreducible variety, of the same dimension as the
+parameter space. Its projection to the parameter space has generic fibers of
+cardinality $\mathcal D$, so its function field $\mathcal L=\mathbb K(x,\lambda)$
+is a separable extension of degree $\mathcal D$ of $\mathbb K$. Cramer's rule
+on a nonzero minor of the gradient matrix gives $\lambda\in\mathbb K(x)$, so
+$\mathcal L=\mathbb K(x)$.
+
+Let $\beta=f(x)\in\mathcal L$. Each derivation $\partial_j=\partial/\partial
+a_{0,j}$ of $\mathbb K$ extends uniquely to $\mathcal L$. Differentiating
+$g_i(x)=0$ gives $\nabla g_i(x)^{\mathsf T}\partial_jx=0$, and therefore
+\[
+\partial_j\beta=x_j+\nabla f(x)^{\mathsf T}\partial_jx
+=x_j-\sum_i\lambda_i\nabla g_i(x)^{\mathsf T}\partial_jx=x_j .
+\]
+A derivation of $\mathbb K$ maps $\mathbb K(\beta)$ into itself: if
+$\Pi$ is the minimal polynomial of $\beta$ over $\mathbb K$, then
+$\partial_j\beta=-(\partial_j\Pi)(\beta)/\Pi'(\beta)$. Hence
+$x_j\in\mathbb K(\beta)$ and $\mathbb K(\beta)=\mathcal L$. Write
+$x_j=\varphi_j(\beta)$ and $\lambda_i=\psi_i(\beta)$ with
+$\varphi_j,\psi_i\in\mathbb K[Y]$, and let $\mathfrak c\in\Q[t]$ be a nonzero
+common denominator of these polynomials and of $\Pi$. The identities
+$\Pi(\beta)=0$, $x_j=\varphi_j(\beta)$ and $\lambda_i=\psi_i(\beta)$ hold on
+the incidence variety wherever $\mathfrak c\ne0$.
+
+For the seed $Q_i=I+e_ie_i^{\mathsf T}$, $a_i=e_i$, $c_i=0$ ($1\le i\le s$),
+$Q_0=I$, $a_0=-\sum_ie_i$, $c_0=0$, the point $x=0$ with $\lambda=\mathbf1$
+solves~\eqref{eq:qc-generic-kkt}, all Hessians are positive definite,
+$Q_1,\ldots,Q_s$ are independent, and the active gradients $e_1,\ldots,e_s$ are
+independent. The bordered Jacobian is nonsingular, so the implicit function
+theorem gives a real solution branch on a neighborhood of the seed. Shrinking
+the neighborhood, we obtain a nonempty open set $\mathcal O$ of real
+coefficient vectors on which the Hessians are positive definite and
+independent, the multipliers are positive, a fixed point is strictly feasible
+for $g_i\le0$, and the branch point is, by convexity, the unique optimizer of
+$\min\{f:g_i\le0\}$. Choose a rational $t_0\in\mathcal O$ and put
+$t=t_0+(1/u_1,\ldots,1/u_r)$. This birational substitution keeps $\Pi$
+irreducible over $\Q(u)$. By Hilbert's theorem in the form above, there are
+integral $u$ with all $\abs{u_j}$ so large that $t\in\mathcal O$, at which
+$\Pi$ stays irreducible of degree $\mathcal D$ and the leading coefficient and
+$\mathfrak c$ do not vanish: each excluded condition defines a set of density
+zero.
+
+At such a rational $t$, the unique optimizer $p$ is a point of the incidence
+variety, so $\beta^*=f(p)$ is a root of the irreducible specialized $\Pi$ and
+$[\Q(\beta^*):\Q]=\mathcal D$. The specialized identities give
+$p\in\Q(\beta^*)^n$, and $\beta^*\in\Q(p)$, so $\Q(p)=\Q(\beta^*)$ has degree
+$\mathcal D=\mathcal B(n,k)$. If $s<k$, extend $Q_1,\ldots,Q_s$ to $k$
+independent rational positive definite matrices, which is possible because
+the positive definite cone is open and spans the symmetric matrices, and add
+the rows $\tfrac12x^{\mathsf T}Rx-C\le0$ with rational $C$ so large that they
+are strictly slack at $p$ and at a strictly feasible point. The optimizer and
+value do not change, and the Hessian span becomes exactly $k$.
+\end{proof}
+
+The theorem shows that degeneracy, lack of strict feasibility, and
+nonconvexity are not needed to reach the worst degree. It is an existence
+statement: it gives no useful bound on the coefficient sizes of the
+instances. Section~\ref{app:qc-short} constructs explicit short instances with
+degree $n^{\Omega(k)}$.
+
+\subsection{Rational points at span two and irrational singletons at span three}
+\label{app:qc-rational}
+
+A rational feasible point is the simplest exact output, and it is what an
+exact solver would like to return. For one convex quadratic row together with
+rational affine rows, a nonempty system has a rational point of polynomial
+length~\cite{Vavasis1990,DelPiaDeyMolinaro2017}. This subsection shows that
+the same is true whenever the native Hessians span at most two dimensions, and
+that three dimensions already permit a feasible set consisting of one
+irrational point. The threshold is therefore exactly between two and three.
+The difficult case is a tangency between two convex quadratics, and the key
+fact is that a tangency multiplier is rational.
+
+\begin{lemma}[Rational tangency multiplier]
+\label{lem:qc-tangency}
+Let $g_1,g_2$ be convex quadratics on $\R^d$ with rational coefficients,
+$g_i(x)=\tfrac12x^{\mathsf T}Q_ix+a_i^{\mathsf T}x+c_i$. Suppose that for
+some $t_0>0$ and $z\in\R^d$,
+\[
+g_1+t_0g_2\ge0\ \text{on }\R^d,\qquad g_1(z)=g_2(z)=0 .
+\]
+Then there is a rational $t>0$, of bit length polynomial in the input length,
+with $g_1+tg_2\ge0$ on $\R^d$ and $(g_1+tg_2)(z)=0$. It is computed in
+polynomial time by the following rule. Let $W=\ker Q_1\cap\ker Q_2$. If some
+rational $w\in W$ has $(a_1^{\mathsf T}w,a_2^{\mathsf T}w)\ne(0,0)$, take
+$t=-a_1^{\mathsf T}w/a_2^{\mathsf T}w$. Otherwise restrict to a rational
+complement of $W$ and form
+\[
+\varphi(\tau)=c_1+\tau c_2-\tfrac12(a_1+\tau a_2)^{\mathsf T}
+(Q_1+\tau Q_2)^{-1}(a_1+\tau a_2)\in\Q(\tau);
+\]
+take $t=1$ if $\varphi=0$, and otherwise let $t$ be the root of
+$\gcd(\mathcal N,\mathcal N')$, where $\mathcal N$ is the numerator of
+$\varphi$ in lowest terms.
+\end{lemma}
+
+\begin{proof}
+The aggregate $g=g_1+t_0g_2$ is nonnegative and vanishes at $z$, so
+$\nabla g(z)=0$. For $w\in W$, $\nabla g(z)^{\mathsf T}w=(a_1+t_0a_2)^{\mathsf
+T}w$, hence $(a_1+t_0a_2)^{\mathsf T}w=0$. If $(a_1^{\mathsf T}w,a_2^{\mathsf
+T}w)\ne(0,0)$ for some rational $w\in W$, then $a_2^{\mathsf T}w\ne0$ and
+$t_0=-a_1^{\mathsf T}w/a_2^{\mathsf T}w$ is rational; take $t=t_0$.
+
+Otherwise both linear forms vanish on $W$, and $g_1,g_2$ are constant along
+$W$. Pass to the rational complement $W^\perp$, on which $Q_1+Q_2\succ0$ and
+hence $Q_1+\tau Q_2\succ0$ for $\tau>0$. If $W^\perp=0$, both quadratics are
+constants that vanish at $z$, and $t=1$ works. Otherwise $\varphi(\tau)$ is
+the minimum of $g_1+\tau g_2$ for $\tau>0$, and $\varphi(t_0)=0$. The minimizer
+at $t_0$ is the image $\bar z$ of $z$, and the derivative of the minimum value
+with respect to $\tau$ is $g_2$ at the minimizer, so $\varphi'(t_0)=g_2(\bar z)
+=0$. If $\varphi=0$, then $g_1+g_2\ge0$ with minimum $\varphi(1)=0$, and
+$g_1(z)+g_2(z)=0$, so $t=1$ works.
+
+Suppose $\varphi\ne0$. A real congruence brings $Q_1+Q_2$ to the identity and
+$Q_2$ to $\diag(d_1,\ldots,d_{d'})$ with $0\le d_j\le1$, hence $Q_1$ to
+$\diag(1-d_j)$. Dividing each scalar term gives the partial-fraction form
+\begin{equation}
+\label{eq:qc-partial-fractions}
+\varphi(\tau)=\kappa_0+\kappa_1\tau-\kappa_2\tau^2-\sum_{j=1}^r\frac{\rho_j}{\tau-\sigma_j},
+\qquad \kappa_2\ge0,\quad\rho_j>0,\quad\sigma_1<\cdots<\sigma_r\le0 .
+\end{equation}
+Terms with $d_j=0$ contribute to the quadratic polynomial with nonpositive
+leading coefficient; a term with $d_j>0$ has its pole at
+$\sigma=-(1-d_j)/d_j\le0$ with a nonpositive residue. Equal poles are
+combined and zero residues removed, so the $\sigma_j$ are exactly the poles of
+$\varphi$, all simple. The diagonalization is used only to obtain these signs;
+the numbers in~\eqref{eq:qc-partial-fractions} need not be rational. Write
+$\varphi=\mathcal N/\mathcal Q$ in lowest terms over $\Q$. Then
+$\deg\mathcal N\le r+1$ if $\kappa_2=0$, and $\deg\mathcal N=r+2$ if
+$\kappa_2>0$. On each interval $(\sigma_j,\sigma_{j+1})$, $\varphi$ tends to
+$-\infty$ at the left end and to $+\infty$ at the right end, so $\mathcal N$ has
+a root of odd multiplicity there. If $\kappa_2>0$, there is one more such root
+in $(-\infty,\sigma_1)$. All these roots are nonpositive and distinct from
+$t_0>0$, while $t_0$ is a root of multiplicity at least two because
+$\varphi(t_0)=\varphi'(t_0)=0$ and $\mathcal Q(t_0)\ne0$. Counting with
+multiplicity, these roots exhaust $\deg\mathcal N$ when $r\ge1$. Hence every
+other root of $\mathcal N$ is simple and $t_0$ is a root of multiplicity
+exactly two. When $r=0$, $\varphi$ is a polynomial of degree at most two; it
+cannot be affine with a double root, so it equals $-\kappa_2(\tau-t_0)^2$. In
+all cases $\gcd(\mathcal N,\mathcal N')$ has degree one and root $t_0$, so
+$t_0\in\Q$.
+
+A numerator of $\varphi$ before cancellation is
+\[
+2(c_1+\tau c_2)\det(Q_1+\tau Q_2)-(a_1+\tau a_2)^{\mathsf T}
+\operatorname{adj}(Q_1+\tau Q_2)(a_1+\tau a_2),
+\]
+which has degree at most $d+1$ and coefficients of polynomial bit length.
+The rational root theorem bounds the numerator and denominator of $t_0$. The
+determinant, the adjugate, the cancellation and the gcd are polynomial-time
+rational computations.
+\end{proof}
+
+Cancellation must precede the gcd. In $\R^3$, the balls
+$g_1=\norm x^2-1$ and $g_2=\norm{x-2e_1}^2-1$ touch at $e_1$. Here
+$\varphi(\tau)=-(\tau-1)^2/(\tau+1)$, whereas the uncancelled numerator above
+is $-16(\tau+1)^2(\tau-1)^2$, with a spurious repeated root $-1$. Repeated
+roots of the characteristic determinant also occur in classical contact tests
+for ellipsoids~\cite{JiaChoiMourrainWang2011}; only the reduced numerator has
+the uniqueness property used in the proof.
+
+\begin{proposition}[Two quadratic rows]
+\label{prop:qc-two-rows}
+Let $P$ be a rational polyhedron and $g_1,g_2$ rational convex quadratics. If
+$F=P\cap\{g_1\le0,g_2\le0\}$ is nonempty, then $F$ contains a rational point.
+\end{proposition}
+
+\begin{proof}
+Let $I_t$ be the set of affine rows of $P$ that vanish identically on $F$, and
+$\mathcal Y$ the rational affine space defined by them. For each other row choose
+a point of $F$ at which it is strict, and let $p_0$ be the average of these
+points, or any point of $F$ if there are none. Then $p_0\in F$ and every row
+outside $I_t$ is strict at $p_0$.
+
+If some $y\in\mathcal Y$ has $g_1(y)<0$ and $g_2(y)<0$, the points
+$p_0+s(y-p_0)$ for small $s>0$ lie in $\mathcal Y$, satisfy every row outside
+$I_t$ strictly, and make both quadratics negative. A neighborhood of such a
+point in $\mathcal Y$ lies in $F$, and rational points are dense in the rational
+affine space $\mathcal Y$.
+
+Otherwise the convex open set
+$\{(u_1,u_2):\exists x\in\mathcal Y,\ g_1(x)<u_1,\ g_2(x)<u_2\}$ misses the
+closed negative quadrant. A separating line gives weights
+$\lambda_1,\lambda_2\ge0$, not both zero, with $\lambda_1g_1+\lambda_2g_2\ge0$
+on $\mathcal Y$; the weights are nonnegative because the open set is closed under
+increasing $u$, and the separating constant is zero because $p_0$ is feasible.
+Work in a rational affine chart of $\mathcal Y$.
+
+If only $\lambda_1>0$, then $g_1\ge0$ on $\mathcal Y$ and $g_1(p_0)\le0$, so
+every point of $F$ minimizes $g_1$ on $\mathcal Y$. These minimizers form the
+rational affine space where the gradient of $g_1$ on $\mathcal Y$ vanishes.
+Restricting to it leaves one quadratic row and affine rows. Repeating the
+argument with this single row gives either a strict point, hence a rational
+point by density, or a second restriction to the zero set of that row, after
+which only affine rows remain and $F$ is a nonempty rational polyhedron. The
+case where only $\lambda_2>0$ is symmetric.
+
+If both weights are positive, then $g_1(p_0)=g_2(p_0)=0$, and
+Lemma~\ref{lem:qc-tangency} with $t_0=\lambda_2/\lambda_1$ gives a rational
+$t>0$ for which $g=g_1+tg_2$ is nonnegative on $\mathcal Y$ and vanishes at
+$p_0$. Every point of $F$ has $g\le0$ and therefore lies in the zero set $Z$
+of $g$ on $\mathcal Y$, which is the rational affine space where its gradient
+vanishes. The direction space of $Z$ is the kernel of the restricted Hessian
+of $g$, which equals the intersection of the kernels of the restricted $Q_1$
+and $Q_2$ because both are positive semidefinite. Hence $g_1$ and $g_2$ are
+affine on $Z$, and $F=Z\cap P\cap\{g_1\le0,g_2\le0\}$ is a nonempty rational
+polyhedron.
+\end{proof}
+
+\begin{theorem}[Span two]
+\label{thm:qc-span-two}
+Let $F$ be a rational native PSD system with Hessian span $k\le2$.
+\begin{enumerate}[label=(\alph*),leftmargin=*]
+\item If $F\ne\varnothing$, then rational points are dense in $F$ and the
+affine hull of $F$ is a rational affine space.
+\item A deterministic polynomial-time algorithm either reports that
+$F=\varnothing$ or returns a rational point of $F$. In particular, every
+nonempty $F$ has a rational point of polynomial bit length.
+\end{enumerate}
+No boundedness, strict feasibility, positive definiteness, or bound on the
+number of rows is assumed.
+\end{theorem}
+
+\begin{proof}
+First reduce to at most two quadratic rows. If $k=2$, the cone generated by
+$Q_1,\ldots,Q_m$ lies in a two-dimensional space and is pointed, because a
+matrix and its negative cannot both be nonzero and positive semidefinite. Its
+two extreme rays are generated by input matrices $B_1,B_2$, so
+$Q_i=\alpha_iB_1+\beta_iB_2$ with rational $\alpha_i,\beta_i\ge0$. The system
+is the projection of
+\[
+\tfrac12x^{\mathsf T}B_1x\le u_1,\quad\tfrac12x^{\mathsf T}B_2x\le u_2,\quad
+\alpha_iu_1+\beta_iu_2+a_i^{\mathsf T}x+c_i\le0\ (1\le i\le m),\quad Ax\le b:
+\]
+take $u_j=\tfrac12x^{\mathsf T}B_jx$ in one direction and use
+$\alpha_i,\beta_i\ge0$ in the other. Rational lifted points project to
+rational points. The rays can be found by testing at most $m^2$ pairs. For
+$k=1$ one generator suffices, and for $k=0$ the system is polyhedral.
+
+(a) Proposition~\ref{prop:qc-two-rows} gives a rational point. Intersecting
+$F$ with small rational boxes around any feasible point preserves the span
+and nonemptiness, which proves density. Rational feasible points close to an
+affine basis of the affine hull remain affinely independent, so the affine
+hull is spanned by rational points.
+
+(b) Work with the lifted system, which has span at most two and polynomial
+length; call its feasible set $F$ again, its dimension $n$, and its
+quadratic rows $g_1,g_2$. Every decision below concerns a rational native PSD
+system of span at most two and polynomial length, obtained by adding rational
+affine rows, so Proposition~\ref{prop:qc-decision} answers it in polynomial
+time.
+
+\emph{Step 1.} Decide whether $F=\varnothing$. If not, let $R=R_F$ from
+Corollary~\ref{cor:qc-radius}(a), so $F$ meets $[-R,R]^n$, and let
+$\mathrm{Box}=[-2R,2R]^n$.
+
+\emph{Step 2: the affine hull of the minimal face.} For each affine row
+$\ell_j\le0$, let $\eta_j$ be the gap of Corollary~\ref{cor:qc-radius}(b) for
+minimizing $\ell_j$ over $F\cap\mathrm{Box}$, and decide whether
+$F\cap\mathrm{Box}\cap\{\ell_j\le-\eta_j\}\ne\varnothing$. This happens exactly
+when $\ell_j$ is not identically zero on $F$: if $\ell_j(y)<0$ for some
+$y\in F$, the segment from a point of $F\cap[-R,R]^n$ toward $y$ contains
+points of $F\cap\mathrm{Box}$ with $\ell_j<0$, so the minimum over the compact
+set $F\cap\mathrm{Box}$ is negative and hence at most $-\eta_j$. Let $I_t$ be
+the rows that are identically zero on $F$, $\mathcal Y$ the affine space where
+they vanish, and $x=x_0+Uv$ a rational chart of $\mathcal Y$ whose free
+coordinates are original coordinates. If $\mathcal Y$ is a point, return it.
+Averaging the points found for the rows outside $I_t$ gives, in the proof
+only, a point $\bar x\in F\cap\mathrm{Box}$ at which every row outside $I_t$
+is strictly negative.
+
+\emph{Step 3: a common margin.} Let $\eta$ be the gap of
+Corollary~\ref{cor:qc-radius}(b) for maximizing $\sigma$ subject to
+$g_i\le-\sigma$, $\ell_j\le-\sigma$ for $j\notin I_t$, $0\le\sigma\le1$, and
+$v\in[-3R,3R]^{\dim\mathcal Y}$. Decide whether the set $C_\eta$ of chart points
+in this box with $g_i\le-\eta$ and $\ell_j\le-\eta$ for $j\notin I_t$ is
+nonempty. If some $y\in\mathcal Y$ has $g_1(y),g_2(y)<0$, the segment from
+$\bar x$ toward $y$ gives a point of positive margin in the box, so
+$C_\eta\ne\varnothing$; the converse is clear.
+
+\emph{Step 4: positive margin.} If $C_\eta\ne\varnothing$, bisect the box one
+coordinate at a time, keeping a closed half whose intersection with $C_\eta$
+is nonempty; one decision per bisection suffices, since the other half is
+nonempty when the tested half is empty. Stop when all side lengths are at
+most $2\omega$, where $\omega=\min(1,\eta/(2G))$ and $G\ge1$ is a rational
+Lipschitz bound in the maximum norm for the $g_i$ and $\ell_j$ on the box
+enlarged by one. The center $\hat v$ is within $\omega$ of a point of
+$C_\eta$, so every quadratic and every row outside $I_t$ is at most
+$-\eta/2<0$ at $\hat v$, and $x_0+U\hat v$ is a rational point of $F$. The
+number of bisections is polynomial.
+
+\emph{Step 5: zero margin.} If $C_\eta=\varnothing$, no point of $\mathcal Y$
+makes both quadratics negative. Compute the infimum of each $g_i$ on $\mathcal Y$
+by rational linear algebra. If it is zero for some $i$, every feasible point
+lies in the rational affine space where the gradient of $g_i$ on $\mathcal Y$
+vanishes, and $g_i=0$ there; restrict to that space, delete $g_i$, and repeat
+Steps 2--5 with one quadratic row. With one row and zero margin, the row is
+nonnegative on the current affine space, so its infimum is zero and the next
+restriction leaves a rational polyhedron. If both infima are negative, the
+weights in the convex alternative of Proposition~\ref{prop:qc-two-rows} are
+both positive, since a single positive weight would make the corresponding
+quadratic nonnegative on $\mathcal Y$. Lemma~\ref{lem:qc-tangency} then computes
+a rational $t>0$, and the rational affine space where the gradient of
+$g_1+tg_2$ on $\mathcal Y$ vanishes contains $F$ and carries both quadratics as
+affine functions.
+
+In both branches a nonempty rational polyhedron remains, and rational linear
+programming returns a rational point in polynomial
+time~\cite{GroetschelLovaszSchrijver1988}. At most two curved restrictions
+occur, so the polynomial bounds compose a bounded number of times. The output
+of a polynomial-time algorithm has polynomial length.
+\end{proof}
+
+The face restriction in Step 2 is needed before a zero margin can be read as
+a tangency. For $g_1=x^2-1$, $g_2=y^2-1$ and the row $x\ge1$, there is no
+common positive margin, yet both quadratics are negative at the origin and no
+nonzero nonnegative aggregate is nonnegative on the plane. Step 2 restricts to
+$x=1$, where $g_1$ vanishes identically.
+
+Rational points of convex semialgebraic sets can be computed in time
+exponential in the dimension~\cite{SafeyElDinZhi2010}; for native PSD systems
+of Hessian span at most two, the algorithm above is polynomial in the
+dimension and the number of rows. The theorem gives a rational point, not the
+canonical one. The minimum-norm
+point of $\{x:(x-2)^2\le2\}$ is $2-\sqrt2$, although $1$ is feasible. Two
+consequences are worth recording. First, if a rational convex quadratic
+objective has a rational attained optimal value $\theta$, and the objective and
+constraint Hessians together span at most two dimensions, appending
+$f\le\theta$ yields a rational optimizer in polynomial time. Second, in a
+mixed-integer system whose continuous Hessian span is at most two, every
+nonempty continuous fiber over a fixed integer assignment has a rational
+point; the theorem says nothing about finding the assignment.
+
+\begin{proposition}[An irrational singleton at span three]
+\label{prop:qc-span-three}
+Let $r=\sqrt[3]2$ and
+\[
+g_1=x^2-y,\qquad g_2=y^2-2x,\qquad g_3=(x-y)^2-2x-y+4 .
+\]
+These rows have linearly independent rank-one positive semidefinite Hessians,
+and $\{g_1\le0,g_2\le0,g_3\le0\}=\{(r,r^2)\}$. The rows
+$R_i=3g_i+g_1+g_2+g_3$ have positive definite Hessians, Hessian span three,
+and the same feasible set. No nonzero rational weights $w\ge0$ make
+$\sum_iw_ig_i$ nonnegative on $\R^2$.
+\end{proposition}
+
+\begin{proof}
+The Hessians are, up to the factor two,
+$\left(\begin{smallmatrix}1&0\\0&0\end{smallmatrix}\right)$,
+$\left(\begin{smallmatrix}0&0\\0&1\end{smallmatrix}\right)$ and
+$\left(\begin{smallmatrix}1&-1\\-1&1\end{smallmatrix}\right)$, which are
+independent. With $p=(r,r^2)$ and $r^3=2$, all three rows vanish at $p$; for
+instance $g_3(p)=r^2-2r^3+r^4-2r-r^2+4=0$. For the positive weights
+$\lambda=(2r-1,r^2-1,1)$, direct expansion gives
+\[
+\sum_i\lambda_ig_i(z)=(z-p)^{\mathsf T}
+\begin{pmatrix}2r&-1\\-1&r^2\end{pmatrix}(z-p),
+\]
+and this matrix is positive definite, with determinant $2r^3-1=3$. A feasible
+point makes the left side nonpositive, so it equals $p$.
+
+The quadratic parts of $R_1,R_2,R_3$ are
+$\left(\begin{smallmatrix}5&-1\\-1&2\end{smallmatrix}\right)$,
+$\left(\begin{smallmatrix}2&-1\\-1&5\end{smallmatrix}\right)$ and
+$\left(\begin{smallmatrix}5&-4\\-4&5\end{smallmatrix}\right)$, each positive
+definite with determinant nine. The transformation $3I+\mathbf1\mathbf1^{\mathsf
+T}$ from $(g_i)$ to $(R_i)$ is invertible, so the span stays three. With
+$\bar\lambda=\sum_i\lambda_i$, the weights $\omega_i=(\lambda_i-\bar\lambda/6)/3$ satisfy
+$\sum_i\omega_iR_i=\sum_i\lambda_ig_i$, and they are positive:
+$18\omega_1=10r-r^2-5$, $18\omega_2=5r^2-2r-5$ and $18\omega_3=7-2r-r^2$,
+and $5/4<r<4/3$ gives the lower bounds $95/16$, $5/16$ and $23/9$.
+
+Finally, a nonnegative aggregate with rational weights vanishes at $p$, so its
+gradient vanishes there. Its gradient at $p$ is a rational combination of
+$1,r,r^2$, which are linearly independent over $\Q$; hence all its quadratic
+and linear coefficients vanish. A nonnegative combination of nonzero positive
+semidefinite Hessians is zero only if all weights are zero, since traces are
+positive.
+\end{proof}
+
+Thus each set $R_i\le0$ is a full-dimensional compact ellipsoid with rational
+data, and three of them can meet in a single irrational point. The point
+$(\sqrt[3]2,\sqrt[3]4)$ is also the classical example of an irrational
+singleton cut out by a convex cubic inequality~\cite{BienstockDelPiaHildebrand2023};
+the native PSD quadratic presentation is what matters here. The last
+statement explains why the zero-margin step of Theorem~\ref{thm:qc-span-two}
+cannot be copied at span three: an exposing aggregate with minimum zero may
+need irrational weights. It does not exclude rational infeasibility
+certificates with a positive margin, which are proved to exist in
+Section~\ref{app:qc-infeasible}. Every coordinate of a rational convex
+singleton has exactly one real conjugate, and every such number occurs
+(Theorem~\ref{thm:singleton-field}); three rational ellipsoids already
+realize every such number of degree at least three
+(Corollary~\ref{cor:algebraic-three-quadrics}).
+
+\subsection{Singleton spectrahedra}
+\label{app:qc-spectra}
+
+Rational semidefinite constraints are a second natural way to pin down an
+algebraic number, and they reach different numbers than convex polynomial
+inequalities. A rational convex singleton has a coordinate field with exactly
+one real embedding (Theorem~\ref{thm:singleton-field}). A rational affine
+semidefinite constraint in one scalar variable reaches exactly the totally
+real numbers, and its matrix size is at least twice the degree. If the unique
+feasible matrix has corank one, the coordinate field again has exactly one
+real embedding. These statements show that the representation, and not only
+convexity of the feasible set, decides which algebraic numbers can be imposed
+exactly.
+
+\begin{theorem}[One scalar variable]
+\label{thm:qc-pencil}
+For a real number $\alpha$ the following are equivalent.
+\begin{enumerate}[label=(\roman*),leftmargin=*]
+\item There are rational symmetric matrices $A$ and $B$ of some size with
+$\{x\in\R:A+xB\succeq0\}=\{\alpha\}$.
+\item $\alpha$ is algebraic and every root of its minimal polynomial is real.
+\end{enumerate}
+If these hold and $d=[\Q(\alpha):\Q]$, the least possible size of $A$ and
+$B$ is $2d$. A pencil of size $2d$ can be computed in time polynomial in the
+length of the minimal polynomial and of a rational interval isolating
+$\alpha$ whose endpoints are not roots.
+\end{theorem}
+
+\begin{proof}
+Assume (i). Let $K_0=\ker A\cap\ker B$, a rational subspace. A rational
+congruence with blocks for $K_0^\perp$ and $K_0$ turns the pencil into
+$\diag(\hat A+x\hat B,0)$ with the same feasible set. The reduced pencil has
+no common kernel vector: if $\hat Av=\hat Bv=0$ for the coordinate vector $v$
+of some $y\in K_0^\perp$, then $Ay$ and $By$ lie in the range of $A$ and $B$,
+which is contained in $K_0^\perp$, and they are orthogonal to $K_0^\perp$.
+Hence $Ay=By=0$, so $y\in K_0\cap K_0^\perp=\{0\}$.
+
+Let $C=\hat A+\alpha\hat B\succeq0$, and suppose that
+$(C+(z-\alpha)\hat B)v=0$ for a nonreal $z$ and a complex $v\ne0$. Then
+$v^*Cv+(z-\alpha)v^*\hat Bv=0$ with both quadratic forms real, so
+$v^*\hat Bv=0$, then $v^*Cv=0$, hence $Cv=0$, $\hat Bv=0$ and $\hat Av=0$.
+The real or imaginary part of $v$ would be a nonzero common kernel vector.
+Therefore $\mathcal D(x)=\det(\hat A+x\hat B)\in\Q[x]$ is nonzero and has only
+real roots. The matrix $C$ is singular, since otherwise it would remain
+positive definite near $\alpha$. Thus $\mathcal D(\alpha)=0$, so $\alpha$ is
+algebraic and its minimal polynomial, a factor of $\mathcal D$, has only real
+roots.
+
+Next, $\alpha$ is a double root of $\mathcal D$. If $C$ has corank at least
+two, its adjugate vanishes and $\mathcal D'(\alpha)=\tr(\operatorname{adj}(C)
+\hat B)=0$. If $C$ has corank one with unit kernel vector $v$, then in an
+orthonormal basis adapted to $v^\perp$ and $v$,
+\[
+C+t\hat B=\begin{pmatrix}C_1+tE&tb\\ tb^{\mathsf T}&t\beta\end{pmatrix},
+\qquad C_1\succ0,\quad\beta=v^{\mathsf T}\hat Bv .
+\]
+If $\beta\ne0$, then for small $t$ with $t\beta>0$ the block $C_1+tE$ is
+positive definite and the Schur complement $t\beta-t^2b^{\mathsf T}
+(C_1+tE)^{-1}b$ is positive, so $\alpha+t$ is feasible. Hence $\beta=0$, and
+$\mathcal D'(\alpha)$, which is a multiple of $\beta$, vanishes. The minimal
+polynomial $\mu$ of $\alpha$ divides $\mathcal D$ and $\mathcal D'$; since
+$\mu$ is irreducible and does not divide $\mu'$, $\mu^2$ divides $\mathcal D$.
+Hence $2d\le\deg\mathcal D\le$ size of the pencil.
+
+Assume (ii), and let $\alpha_1<\cdots<\alpha_d$ be the conjugates, with
+$\alpha=\alpha_\kappa$. In the power basis $1,\alpha,\ldots,\alpha^{d-1}$ of
+$\Q(\alpha)$, let $M$ be the rational matrix of multiplication by $\alpha$ and
+$G_{ij}=\tr(M^{i+j})$ the trace form. With the real Vandermonde matrix
+$V_{ji}=\alpha_j^i$, one has $G=V^{\mathsf T}V\succ0$ and
+$VM=\diag(\alpha_1,\ldots,\alpha_d)V$. For rational $\varrho$ that is not a
+conjugate, the rational symmetric affine pencil
+\[
+\mathcal L_\varrho(x)=G(M-xI)(M-\varrho I)^{-1}
+=V^{\mathsf T}\diag\Bigl(\frac{\alpha_j-x}{\alpha_j-\varrho}\Bigr)V
+\]
+is congruent to the displayed diagonal matrix. Choose rational
+$\varrho_-<\alpha<\varrho_+$ such that $[\varrho_-,\varrho_+]$ contains no other
+conjugate. The $\kappa$th diagonal entry of $\mathcal L_{\varrho_-}(x)$ is
+nonnegative exactly when $x\le\alpha$, and that of $\mathcal L_{\varrho_+}(x)$
+exactly when $x\ge\alpha$. At $x=\alpha$ every other entry is positive,
+because $\alpha_j-\alpha$, $\alpha_j-\varrho_-$ and $\alpha_j-\varrho_+$ have
+the same sign for $j\ne\kappa$. Hence
+$\diag(\mathcal L_{\varrho_-}(x),\mathcal L_{\varrho_+}(x))\succeq0$ exactly
+when $x=\alpha$, at size $2d$. The matrices are obtained from the companion
+matrix by $2d-2$ powers, traces, and two inversions, all with polynomial
+coefficient bit length.
+\end{proof}
+
+That positive semidefinite pencils, including singular ones, have only real
+finite eigenvalues is classical~\cite{LiangLiBai2013}; the proof above is
+included to make the arithmetic consequence and the singular case explicit.
+The unique feasible matrix of the construction has corank two, and the
+determinant of the pencil is
+\[
+\det\bigl(\diag(\mathcal L_{\varrho_-}(x),\mathcal L_{\varrho_+}(x))\bigr)
+=\frac{\det(G)^2\,\mu(x)^2}{\mu(\varrho_-)\,\mu(\varrho_+)} .
+\]
+For
+example $\sqrt2$ is imposed by a pencil of size four, while $\sqrt[3]2$, which
+has two nonreal conjugates, cannot be imposed in one variable by any rational
+pencil. Auxiliary scalar variables change the statement, as the next theorem
+shows.
+
+\begin{theorem}[Corank one]
+\label{thm:qc-corank-one}
+Let $A(x)=A_0+\sum_{i=1}^nx_iA_i$ with rational symmetric $A_i$, and suppose
+$\{x\in\R^n:A(x)\succeq0\}=\{x^*\}$ and $A(x^*)$ has corank one. Then
+$K=\Q(x_1^*,\ldots,x_n^*)$ is a number field with exactly one real embedding,
+and so is every subfield; in particular every coordinate has exactly one real
+conjugate. Conversely, every number field with exactly one real embedding is
+the coordinate field of such a singleton with $n\le2$.
+\end{theorem}
+
+\begin{proof}
+The singleton is defined over $\Q$ by sign conditions on principal minors.
+The real algebraic numbers form a real closed field, and by the
+Tarski--Seidenberg transfer principle the existential statement that the
+pencil has a positive semidefinite value holds over that
+field~\cite{BasuPollackRoy2006}. Uniqueness gives $x^*$ algebraic coordinates,
+so $K$ is a number field.
+
+Let $R=A(x^*)$. It has entries in $K$ and rank $m-1$, so its kernel is spanned
+by some $v\in K^m$; normalize a coordinate $v_\iota=1$. If
+$v^{\mathsf T}A_iv\ne0$ for some $i\ge1$, choose $\pm e_i$ so that the
+direction $D$ satisfies $v^{\mathsf T}Dv>0$; the Schur-complement argument of
+Theorem~\ref{thm:qc-pencil} makes $R+tD$ positive definite for small $t>0$,
+a second feasible point. Hence $v^{\mathsf T}A_iv=0$ for $i\ge1$, and then
+$v^{\mathsf T}A_0v=v^{\mathsf T}Rv=0$. Next, the linear system $A(x)v=0$ in
+$x$ has the unique solution $x^*$: if $D=\sum_i\delta_iA_i$ with $\delta\ne0$
+satisfied $Dv=0$, symmetry would make $D$ block diagonal in the decomposition
+$v^\perp\oplus\R v$, and $R+tD$ would stay positive semidefinite for all
+small $\abs t$. The coefficients of this system lie in $F=\Q(v_1,\ldots,v_m)$,
+so Gaussian elimination gives $x^*\in F^n$ and $K=F$.
+
+Let $\sigma$ be a real embedding of $F$ and $u=\sigma(v)\in\R^m$. Since the
+$A_i$ are rational, $u^{\mathsf T}A_iu=\sigma(v^{\mathsf T}A_iv)=0$ for
+$0\le i\le n$, and therefore $u^{\mathsf T}Ru=u^{\mathsf T}A_0u+
+\sum_ix_i^*u^{\mathsf T}A_iu=0$, where $R$ is the original matrix, not a
+conjugate. Positive semidefiniteness gives $Ru=0$, so $u\in\R v$, and
+$u_\iota=1=v_\iota$ gives $u=v$. Hence $\sigma$ fixes the generators of $F$:
+the field has exactly one real embedding. Its degree is then odd. For a
+subfield $F'$, the degree $[F:F']$ is odd; a real embedding of $F'$ extends to
+$F$ by sending a primitive element of $F/F'$ to a real root of the image of
+its odd-degree minimal polynomial. Since $F$ has one real embedding, so does
+$F'$.
+
+For the converse, the pencil $\left(\begin{smallmatrix}1&x\\x&0\end{smallmatrix}
+\right)$ gives $\{0\}$ with corank one, which covers $\Q$. Let $K\ne\Q$ have
+exactly one real embedding, let $\alpha\in K\subset\R$ be a primitive element,
+and let $\mu$ be its monic minimal polynomial, of degree $d\ge3$ with exactly
+one real root. Let $\mathcal C$ be the companion matrix of $\mu$ with ones on
+the superdiagonal and last row $(-\mu_0,\ldots,-\mu_{d-1})$, where
+$\mu=T^d+\sum_{i<d}\mu_iT^i$, and let
+$\nu(T)=(1,T,\ldots,T^{d-1})^{\mathsf T}$, so that $\mathcal C\nu(\gamma)=
+\gamma\nu(\gamma)$ for every root $\gamma$. Let $U$ be the real span of the
+real and imaginary parts of $\nu(\gamma)$ over the nonreal roots; it is
+$\mathcal C$-invariant, $\R^d=\R\nu(\alpha)\oplus U$, and $\mathcal C-\alpha I$
+maps $\R^d$ onto $U$ with kernel $\R\nu(\alpha)$. The rational linear space
+$\mathcal L=\{B=B^{\mathsf T}:\nu(T)^{\mathsf T}B\nu(T)\equiv0\bmod\mu(T)\}$
+contains the real matrix whose form in the basis
+$\nu(\alpha),\Re\nu(\gamma_1),\Im\nu(\gamma_1),\ldots$ is
+$\diag(0,1,1,\ldots,1)$: its form vanishes at every root, because
+$\nu(\gamma)^{\mathsf T}B\nu(\gamma)=1-1+2\mathrm i\cdot0$. By density of
+rational points in $\mathcal L$ and openness of positive definiteness on $U$,
+there is a rational $B\in\mathcal L$ positive definite on $U$. Put
+\[
+Q(s,t)=\mathcal C^{\mathsf T}B\mathcal C-s(\mathcal C^{\mathsf T}B+B\mathcal C)+tB .
+\]
+Then $Q(\alpha,\alpha^2)=(\mathcal C-\alpha I)^{\mathsf T}B(\mathcal C-\alpha I)$
+is positive semidefinite with kernel $\R\nu(\alpha)$, so it has corank one.
+Every $Q(s,t)$ satisfies $\nu(\alpha)^{\mathsf T}Q(s,t)\nu(\alpha)=0$, because
+$\nu(\alpha)^{\mathsf T}B\nu(\alpha)=0$. If $Q(s,t)\succeq0$, it therefore
+annihilates $\nu(\alpha)$, which with $w=B\nu(\alpha)$ reads
+\[
+(\alpha-s)\mathcal C^{\mathsf T}w+(t-s\alpha)w=0 .
+\]
+Here $w\ne0$: otherwise every rational row of $B$ would vanish on the power
+basis of $\alpha$, forcing $B=0$. The vectors $w$ and $\mathcal C^{\mathsf T}w$
+are independent: an eigenvector relation $\mathcal C^{\mathsf T}w=\varkappa w$
+with real $\varkappa$ forces $\varkappa=\alpha$, then
+$(\gamma-\alpha)w^{\mathsf T}\nu(\gamma)=0$ for every root $\gamma$, and
+together with $w^{\mathsf T}\nu(\alpha)=0$ this gives $w=0$. Hence
+$(s,t)=(\alpha,\alpha^2)$ is the unique feasible point, and its coordinate
+field is $\Q(\alpha)=K$.
+\end{proof}
+
+Combined with Theorem~\ref{thm:qc-pencil}, a one-variable singleton whose
+feasible matrix has corank one is rational, since its field would be both
+totally real and have only one real embedding. The size-$2d$ pencils of
+Theorem~\ref{thm:qc-pencil} have corank two, consistent with this. The
+statement does not apply to higher corank, to non-singleton feasible sets, or
+to projections of spectrahedra.
+
+\subsection{Short inputs with long expanded outputs}
+\label{app:qc-short}
+
+Theorem~\ref{thm:qc-sharp} attains the degree bound but says nothing about
+the size of the instances, and a large degree has consequences for output
+length only if the input stays short. This subsection constructs explicit
+short instances whose value and optimizer have degree $n^{\Omega(k)}$. It then
+makes the minimal polynomials of the value and of one input coordinate dense,
+so that sparse coefficient lists are long as well. The consequence is
+unconditional: no algorithm whose output must contain such a list can run in
+time $\phi(k)L^C$. Neither decision nor approximation is affected, and
+the instances have short descriptions as sums of block numbers.
+
+Each block is a trust-region problem. Its secular equation and its
+reduction to a polynomial of degree $2r$ are standard~\cite{AdachiIwataNakatsukasaTakeda2017};
+the new point is that this polynomial is Eisenstein for short explicit data,
+and that congruences make the fields of different blocks independent.
+
+\begin{proposition}[One block]
+\label{prop:qc-block}
+Let $\ell\equiv1\pmod4$ be prime, $r=\ell-1$, $\kappa\in\{1,\ldots,\ell-1\}$
+with $\kappa^2\equiv-1\pmod\ell$, and $\gamma$ a positive integer with
+$\gamma\equiv\kappa\pmod{\ell^2}$. The problem
+\begin{equation}
+\label{eq:qc-block}
+\min\Bigl\{\tfrac12\sum_{j=1}^rjx_j^2-\gamma\sum_{j=1}^rjx_j:\
+\sum_{j=1}^rx_j^2\le1\Bigr\}
+\end{equation}
+has the unique optimizer $x_j^*=\gamma j/(j+\lambda)$, where $\lambda>1$ is
+the unique positive solution of $\sum_j\gamma^2j^2/(j+\lambda)^2=1$. Let
+$\mathcal F(T)=\prod_{j=1}^r(T+j)$, $\mathcal F_j=\mathcal F/(T+j)$, and
+\[
+\mathcal S(T)=\mathcal F(T)^2-\gamma^2\sum_{j=1}^rj^2\mathcal F_j(T)^2 .
+\]
+Then $\mathcal S$ is monic of degree $2r$, Eisenstein at $\ell$, and
+$\mathcal S(\lambda)=0$. Each coordinate $x_j^*$ and the optimal value
+$\theta$ generate the field $\Q(\lambda)$, which has degree $2r$.
+\end{proposition}
+
+\begin{proof}
+The objective is strictly convex and the ball is compact with interior point
+$0$. The unconstrained minimizer $(\gamma,\ldots,\gamma)$ has norm
+$\gamma\sqrt r>1$, so the constraint is active, and the
+Karush--Kuhn--Tucker conditions give $x_j=\gamma j/(j+\lambda)$ with
+$\sum_jx_j^2=1$. The left side of the secular equation decreases strictly on
+$[0,\infty)$ from $r\gamma^2>1$ to $0$, so $\lambda$ is unique. Since
+$\kappa\ne1$ (as $1\not\equiv-1$), $\gamma\ge2$, and the left side at
+$\lambda=1$ is at least $r\gamma^2/4\ge4$; hence $\lambda>1$. Multiplying the
+secular equation by $\mathcal F(\lambda)^2$ gives $\mathcal S(\lambda)=0$.
+
+Modulo $\ell$, $\mathcal F\equiv T^r-1$ and $\gamma^2\equiv-1$, so
+$\mathcal S\equiv\mathcal F^2+\sum_jj^2\mathcal F_j^2$. Let $a=-j$ be a root of
+$T^r-1$ in $\mathbb F_\ell$. Then $\mathcal F_i(a)=0$ for $i\ne j$, and
+$\mathcal F_j(a)=\mathcal F'(a)=ra^{r-1}=-a^{-1}$, so $\mathcal S(a)=
+j^2a^{-2}=1=a^{2r}$. From $\mathcal F''=2\mathcal F_j'+(T+j)\mathcal F_j''$ we
+get $\mathcal F_j'(a)/\mathcal F_j(a)=\mathcal F''(a)/(2\mathcal F'(a))=
+(r-1)/(2a)=r/a$ in $\mathbb F_\ell$, because $r\equiv-1$. Hence
+$\mathcal S'(a)=2j^2\mathcal F_j(a)^2\,r/a=2ra^{2r-1}$. The difference
+$\mathcal S-T^{2r}$ has degree less than $2r$ and vanishes to second order at
+the $r$ distinct roots of $T^r-1$, so $\mathcal S\equiv T^{2r}\pmod\ell$. The
+constant term is $\mathcal S(0)=(r!)^2(1-r\gamma^2)$. Write $\kappa^2+1=m\ell$;
+then $1\le m\le\ell-2$ and
+$(1-r\kappa^2)/\ell=1+m-m\ell\equiv1+m\not\equiv0\pmod\ell$. Since
+$\gamma^2\equiv\kappa^2\pmod{\ell^2}$, the constant term has $\ell$-adic
+valuation exactly one. Thus $\mathcal S$ is Eisenstein, hence irreducible,
+and $[\Q(\lambda):\Q]=2r$~\cite{Neukirch1999}.
+
+Every $x_j^*$ is nonzero, lies in $\Q(\lambda)$, and recovers
+$\lambda=\gamma j/x_j^*-j$. For the value, the active constraint and the
+identity $j^3/(j+\lambda)^2=j^2/(j+\lambda)-\lambda j^2/(j+\lambda)^2$ give
+\begin{equation}
+\label{eq:qc-block-value}
+2\theta=-\lambda-\gamma^2\sum_{j=1}^r\frac{j^2}{j+\lambda}\in\Q(\lambda).
+\end{equation}
+Extend the $\ell$-adic valuation $v_\ell$, normalized by $v_\ell(\ell)=1$, to
+a finite extension of $\Q_\ell$ containing $\lambda$. Since $\mathcal S$ is
+Eisenstein, $v_\ell(\lambda)=1/(2r)$, and the ramification index of a local
+field bounds the denominators of its valuations~\cite{Neukirch1999}. The
+integers $j\le r$ are units, so
+\[
+2\theta=-\gamma^2\sum_jj+(r\gamma^2-1)\lambda
++\sum_{e\ge2}(-1)^{e+1}\gamma^2\Bigl(\sum_jj^{1-e}\Bigr)\lambda^e
+\]
+converges. The constant term $-\gamma^2\ell(\ell-1)/2$ has valuation one, and
+the coefficient of $\lambda$ is divisible by $\ell$. For $2\le e\le r$, the
+power sum $\sum_{a\in\mathbb F_\ell^\times}a^{1-e}$ vanishes because
+$\ell-1\nmid e-1$, so these coefficients are divisible by $\ell$. For $e=r+1$
+the power sum is $r\equiv-1$, a unit. Later coefficients are integral. Hence
+the term $e=r+1$ has the unique least valuation and
+$v_\ell(2\theta)=(r+1)/(2r)$. Since $r$ is even, $\gcd(r+1,2r)=1$, so the
+ramification index of $\Q_\ell(\theta)$ over $\Q_\ell$ is at least $2r$, and
+$[\Q(\theta):\Q]\ge2r$. With $\theta\in\Q(\lambda)$, this gives
+$\Q(\theta)=\Q(\lambda)$.
+\end{proof}
+
+\begin{lemma}[Splitting at a larger prime]
+\label{lem:qc-split}
+In Proposition~\ref{prop:qc-block}, drop the congruence condition on
+$\gamma$. If $q>r$ is an odd prime dividing $\gamma$, then $\mathcal S$ has
+$2r$ distinct roots in $\Q_q$.
+\end{lemma}
+
+\begin{proof}
+Fix $i$ and substitute $T=-i+\gamma iu$ in the secular equation. The term
+$j=i$ becomes $u^{-2}$, and multiplying by $u^2\prod_{j\ne i}(j-i+\gamma iu)^2$
+gives an integer polynomial equation that reduces modulo $q$ to
+$(u^2-1)\prod_{j\ne i}(j-i)^2=0$, with nonzero product because
+$0<\abs{j-i}<q$. The roots $u=\pm1$ are simple modulo $q$, so Hensel's
+lemma~\cite{Neukirch1999} lifts them to $u_\pm\in\Z_q$. The factors $j-i+\gamma iu_\pm$ are units and
+$u_\pm\ne0$, so $T_{i,\pm}=-i+\gamma iu_\pm$ are roots of $\mathcal S$. They
+are distinct for the two signs, and they are congruent to $-i$ modulo $q$, so
+roots for different $i$ are distinct.
+\end{proof}
+
+The reduction of $\mathcal S$ modulo $q$ is $\mathcal F^2$, which is not
+squarefree; the rescaling around each pole is needed.
+
+\begin{theorem}[Products of blocks]
+\label{thm:qc-blocks}
+Let $\ell_1<\cdots<\ell_k$ be primes congruent to one modulo four, choose
+$\kappa_i$ as in Proposition~\ref{prop:qc-block}, put
+$M_i=\prod_{i'>i}\ell_{i'}$, choose $1\le\varrho_i<\ell_i^2$ with
+$M_i\varrho_i\equiv1\pmod{\ell_i^2}$, and let $\gamma_i=\kappa_iM_i\varrho_i$.
+Let $\lambda_i$, $\theta_i$ and $E_i=\Q(\lambda_i)$ belong to block $i$, and put
+$r_i=\ell_i-1$, $n=\sum_ir_i$ and $\mathcal D=\prod_i2r_i$.
+\begin{enumerate}[label=(\alph*),leftmargin=*]
+\item $[E_1\cdots E_k:\Q]=\mathcal D$.
+\item For positive rational weights $\omega_i$, the problem of minimizing
+$\sum_i\omega_i\varphi_i(x_i)$ subject to $\norm{x_i}^2\le1$, where
+$\varphi_i$ is the objective of~\eqref{eq:qc-block} for block $i$, has the
+unique optimizer formed by the block optimizers; its coordinates generate
+$E_1\cdots E_k$, and its Hessian span is exactly $k$.
+\item Some integer $1\le t\le1+(k-1)\mathcal D(\mathcal D-1)/2$ makes the
+optimal value for the weights $\omega_i=t^{i-1}$ generate $E_1\cdots E_k$,
+so it has degree $\mathcal D$.
+\item Let the weights satisfy $1\le\omega_1\le\cdots\le\omega_k$, as those
+of (c) do, and put $\bar\gamma=\max_i\gamma_i\ell_i^2$ and
+$\eta=1/(2k\omega_k\bar\gamma)$. Replacing the rows by
+\[
+\norm{x_i}^2+\eta\sum_{i'\ne i}\norm{x_{i'}}^2-1-\eta(k-1)\le0\qquad(1\le i\le k)
+\]
+keeps the optimizer and the value, makes every constraint Hessian positive
+definite, and keeps the span equal to $k$. The feasible set is compact and
+$0$ is strictly feasible.
+\item With the weights of (c) and the rows of (d), every coefficient has
+$O(k^2\log\ell_k)$ bits, and the input length is
+$L=O\bigl((k+1)n^2(1+k^2\log\ell_k)\bigr)$ in the native encoding and
+$L=O\bigl((k+1)n^2(n+k^2\log\ell_k)\bigr)$ in the explicit format.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+(a) By construction $\gamma_i\equiv\kappa_i\pmod{\ell_i^2}$, so each
+$\mathcal S_i$ is Eisenstein at $\ell_i$, and $\ell_i$ divides $\gamma_{i'}$
+for $i'<i$. Suppose $[E_1\cdots E_{i-1}:\Q]=\prod_{i'<i}2r_{i'}$. For
+$i'<i$, $\ell_i>r_{i'}$ and Lemma~\ref{lem:qc-split} shows that
+$\mathcal S_{i'}$ splits in $\Q_{\ell_i}$. The splitting field of
+$\prod_{i'<i}\mathcal S_{i'}$ is generated by roots that all lie in
+$\Q_{\ell_i}$, so it embeds in $\Q_{\ell_i}$, and so does $E_1\cdots E_{i-1}$.
+The Eisenstein polynomial $\mathcal S_i$ is irreducible over $\Q_{\ell_i}$,
+hence over the image of $E_1\cdots E_{i-1}$, and adjoining $\lambda_i$
+multiplies the degree by $2r_i$. Pairwise trivial intersections of the
+fields would not suffice for this conclusion.
+
+(b) The problem is separable with positive weights, so its optimizer consists
+of the block optimizers. By Proposition~\ref{prop:qc-block} the coordinates
+of block $i$ generate $E_i$. The constraint Hessians have disjoint nonempty
+diagonal supports, hence are independent.
+
+(c) The values $\theta_i$ generate $E=E_1\cdots E_k$. Two distinct
+embeddings $\sigma,\tau$ of $E$ into $\C$ differ on some $\theta_i$, so
+$\sum_iT^{i-1}(\sigma(\theta_i)-\tau(\theta_i))$ is a nonzero polynomial of degree at
+most $k-1$. There are $\mathcal D(\mathcal D-1)/2$ pairs, so some integer in
+the stated range is a root of none of these polynomials, and
+$\sum_it^{i-1}\theta_i$ then has $\mathcal D$ distinct conjugates.
+
+(d) Each Hessian is $2\diag(\eta,\ldots,1,\ldots,\eta)\succ0$, and the rows
+arise from the ball rows by the invertible matrix
+$N=(1-\eta)I+\eta\mathbf1\mathbf1^{\mathsf T}$, so the span stays $k$. At the
+old optimizer every new row is active. From the secular equation,
+$\lambda_i<\gamma_i(\sum_jj^2)^{1/2}<\bar\gamma$, and $\lambda_i>1$ by
+Proposition~\ref{prop:qc-block}. Put $a_i=\omega_i\lambda_i$. Then $a_i>1$
+because $\omega_i\ge1$, and $\Sigma=\sum_ia_i<k\omega_k\bar\gamma$ because
+$\omega_i\le\omega_k$. Stationarity of
+$\sum_i\omega_i\varphi_i+\tfrac12\sum_i\mu_i(\text{row }i)$ at the old
+optimizer requires $N\mu=a$, since every block optimizer is nonzero. The
+solution is
+\[
+\mu_i=\frac{a_i-\eta\Sigma/(1+\eta(k-1))}{1-\eta}>0,
+\]
+because $\eta\Sigma<1/2<a_i$. The Karush--Kuhn--Tucker conditions are
+sufficient for this convex problem, and strict convexity of the objective
+gives uniqueness. The feasible set changes, but the optimizer does not.
+
+The conditions on the weights cannot be dropped. For $k=2$ and $\omega_2=1$,
+the number $\eta=1/(4\bar\gamma)$ does not depend on $\omega_1$, and the
+unique solution of $N\mu=a$ has
+$\mu_1=(\omega_1\lambda_1-\eta\lambda_2)/(1-\eta^2)$ and
+$\mu_2=(\lambda_2-\eta\omega_1\lambda_1)/(1-\eta^2)$. Thus $\mu_2<0$ for
+large $\omega_1$, and $\mu_1<0$ for small $\omega_1>0$. Since $0$ is a
+Slater point, the Karush--Kuhn--Tucker conditions are necessary, so in both
+cases the old optimizer is not optimal for the new rows.
+
+(e) We have $\log\gamma_i=O(k\log\ell_k)$, $\log\mathcal D=O(k\log\ell_k)$,
+$\log t^{k-1}=O(k^2\log\ell_k)$, and $\log(1/\eta)=O(k^2\log\ell_k)$. There are
+$k+1$ quadratics in $n$ variables, each with $O(n^2)$ coefficients; in the
+explicit format each monomial also carries an exponent vector of $O(n)$
+bits.
+\end{proof}
+
+\begin{corollary}[No parameterized bound for dense output]
+\label{cor:qc-no-fpt-output}
+For every function $\phi$ and constant $C$, no algorithm that returns the
+dense coefficient list of the minimal polynomial of the optimal value of
+every rational convex quadratically constrained problem can run in time
+$\phi(k)L^C$, where $k$ is the Hessian span.
+\end{corollary}
+
+\begin{proof}
+Fix an integer $k>3C$. By the prime number theorem for arithmetic
+progressions~\cite{Davenport2000}, every interval $[R,2R]$ with $R$ large
+contains at least $k$ primes congruent to one modulo four. Building
+Theorem~\ref{thm:qc-blocks}(c)--(e) from such primes gives $n<2kR$, input
+length $L=O_k(R^2\log R)$ in the native encoding and $L=O_k(R^3)$ in the
+explicit format, and a value of degree $\mathcal D\ge(2(R-1))^k$, whose
+dense list has $\mathcal D+1$ entries. For large $R$ this exceeds
+$\phi(k)L^C$ in both formats.
+\end{proof}
+
+The weight in Theorem~\ref{thm:qc-blocks}(c) is shown to exist; the following
+lemma gives a larger weight that can be written down directly, which makes
+the whole family constructible in time polynomial in $n$.
+
+\begin{lemma}[An explicit primitive weight]
+\label{lem:qc-weight}
+Let $\beta_1,\ldots,\beta_k$ be real algebraic numbers generating a field
+$E$, and let each $\beta_i$ be a root of a nonzero integer polynomial of
+degree at most $d$ whose coefficients have absolute values summing to at most
+$2^H$, $H\ge1$. Then for $t=1+2^{(H+2)d^2+H+3}$ the number
+$\sum_it^{i-1}\beta_i$ generates $E$.
+\end{lemma}
+
+\begin{proof}
+All conjugates of $\beta_i$ are roots of the given polynomial, so they have
+modulus at most $1+2^H\le2^{H+1}$. Two distinct conjugates of $\beta_i$ are
+roots of its primitive minimal polynomial, whose degree is $e\le d$ and whose
+leading coefficient has modulus at most $2^H$. Its discriminant is a nonzero
+integer equal to the leading coefficient to the power $2e-2$ times the
+product of the squared root differences. Bounding all other factors gives a
+root separation of at least $\delta_\star=2^{-(H+2)d^2}$. Let $\sigma\ne\tau$
+be embeddings of $E$ and $j$ the largest index with
+$\sigma(\beta_j)\ne\tau(\beta_j)$. Then
+\[
+\Bigl\lvert\sum_it^{i-1}(\sigma\beta_i-\tau\beta_i)\Bigr\rvert
+\ge t^{j-1}\delta_\star-2^{H+2}\frac{t^{j-1}}{t-1}>0,
+\]
+because $2^{H+2}/(t-1)=2^{-(H+2)d^2-1}<\delta_\star$.
+\end{proof}
+
+For block $i$, $2\theta_i$ is a root of the resultant
+$\operatorname{Res}_T\bigl(\mathcal S_i(T),\,Y\mathcal F_i(T)+T\mathcal F_i(T)
++\gamma_i^2\sum_jj^2\mathcal F_{i,j}(T)\bigr)$, by~\eqref{eq:qc-block-value}.
+This resultant has degree $2r_i$ in $Y$, since $\mathcal S_i$ is monic and
+$\mathcal F_i$ does not vanish at its roots. Its Sylvester matrix has size
+$3r_i+1$ and entries whose coefficient sums are at most
+$((r_i+1)!)^2(2+\gamma_i^2r_i^3)$, which gives
+$H=O(\ell_k^2\log\ell_k+k\ell_k\log\ell_k)$ and $d=2\ell_k$ in
+Lemma~\ref{lem:qc-weight}. The resulting weights have
+$O(k\ell_k^4\log\ell_k+k^2\ell_k^3\log\ell_k)$ bits, and the analogue of
+Corollary~\ref{cor:qc-no-fpt-output} holds with $L=O_k(R^6\log R)$ in either
+format and $k>6C$.
+
+That the sparsity of a polynomial depends on the basis, in particular on a
+shift of the variable, is well known~\cite{GiesbrechtRoche2010}; the next
+lemma only chooses a short shift whose ordinary expansion is dense.
+
+\begin{lemma}[Translation makes coefficients nonzero]
+\label{lem:qc-translate}
+Let $\Pi(X)=\sum_{i=0}^{\mathcal D}\pi_iX^i\in\Q[X]$ with
+$\pi_{\mathcal D}\ne0$. Some integer $0\le s\le\mathcal D(\mathcal D+1)/2$
+makes every coefficient of $\Pi(X-s)$ nonzero. If $\Pi$ is the minimal
+polynomial of $\vartheta$, then $\Pi(X-s)$ is that of $\vartheta+s$, and
+integer translation preserves primitivity.
+\end{lemma}
+
+\begin{proof}
+The coefficient of $X^j$ in $\Pi(X-s)$ is
+$\sum_{i\ge j}\pi_i\binom ij(-s)^{i-j}$, a polynomial in $s$ of degree
+$\mathcal D-j$ with leading coefficient $\pi_{\mathcal D}\binom{\mathcal
+D}j(-1)^{\mathcal D-j}\ne0$. Together these polynomials have at most
+$\sum_j(\mathcal D-j)=\mathcal D(\mathcal D+1)/2$ integer roots. The
+substitution $X\mapsto X-s$ is an automorphism of $\Q[X]$ and of $\Z[X]$.
+\end{proof}
+
+\begin{theorem}[Sparse lists]
+\label{thm:qc-sparse}
+The instances of Theorem~\ref{thm:qc-blocks}(c)--(e) can be modified, keeping
+positive definite constraint Hessians, Hessian span exactly $k$, a compact
+strictly feasible set, a unique optimizer, and the input lengths of
+Theorem~\ref{thm:qc-blocks}(e) up to constant factors, so that the optimal
+value and the first
+coordinate of the optimizer both have degree $\mathcal D$ and minimal
+polynomials with exactly $\mathcal D+1$ nonzero coefficients. Consequently no
+algorithm can run in time $\phi(k)L^C$ if it must return either the explicit
+list of nonzero coefficients of the minimal polynomial of the optimal value,
+or the minimal polynomials of all coordinates of the optimizer.
+\end{theorem}
+
+\begin{proof}
+Add to the objective an integer constant $s_0$ from
+Lemma~\ref{lem:qc-translate} for the minimal polynomial of the value. For the
+coordinate, let $a_i=x_{i,1}^*$ be the first coordinate of block $i$; it
+generates $E_i$ because $\lambda_i=\gamma_i/a_i-1$. As in
+Theorem~\ref{thm:qc-blocks}(c), some integer
+$1\le\kappa'\le1+(k-1)\mathcal D(\mathcal D-1)/2$ makes
+$\alpha'=\sum_i\kappa'^{\,i-1}a_i$ primitive for $E$, and
+Lemma~\ref{lem:qc-translate} gives an integer $s_1$ for its minimal
+polynomial. The affine change of variables
+$y_1=x_{1,1}+\sum_{i\ge2}\kappa'^{\,i-1}x_{i,1}+s_1$, with all other
+coordinates unchanged, has a unimodular linear part. It maps the optimizer to
+a point whose first coordinate is $\alpha'+s_1$. A congruence by an invertible
+matrix preserves positive definiteness of every Hessian and the dimension of
+their span, and an affine bijection preserves compactness, strict
+feasibility, and uniqueness. Each new coefficient is a sum of at most four
+products of old coefficients with $\kappa'^{\,i-1}$ and $s_1$, which have
+$O(k^2\log\ell_k)$ bits. The output bound follows as in
+Corollary~\ref{cor:qc-no-fpt-output}: both requested lists have
+$\mathcal D+1$ entries.
+\end{proof}
+
+The theorem concerns the ordinary monomial basis of the minimal polynomial of
+the requested scalar. It does not exclude a polynomial in a shifted basis, an
+annihilating polynomial that is not minimal, another primitive element with
+coordinate maps, a tower of fields, the implicit block description given by
+the secular equations, or a circuit with root-selection gates; a circuit over
+the rationals alone cannot represent these irrational numbers. The shear is a
+rational affine map and is undone by one. In the unsheared instances each
+coordinate has degree $2r_i$ only, so separate coordinate descriptions are
+short there; the shear removes exactly this saving for one input
+coordinate. The integers $s_0$, $\kappa'$ and $s_1$ are
+shown to exist, which suffices for an output lower bound. Nothing here
+concerns the cost of deciding feasibility, comparing values, or approximating
+the optimizer.
+
+\paragraph{Feasible points.}
+The same output phenomenon occurs for feasibility alone, with ellipsoids and
+no objective. The blocks are binomial singletons cut out by three ellipsoids
+from the pencil of Theorem~\ref{thm:qc-corank-one}, made explicit with
+coefficients of logarithmic length; a Kummer argument controls the joint field.
+
+\begin{lemma}[Independent radicals]
+\label{lem:qc-kummer}
+Let $d$ be a prime, let $\varpi_1,\ldots,\varpi_k$ be distinct primes, and let
+$\alpha_i=\varpi_i^{1/d}$ be the real roots. Then
+$[\Q(\alpha_1,\ldots,\alpha_k):\Q]=d^k$, and $\sum_ic_i\alpha_i$ generates this
+field for all $c_1,\ldots,c_k\in\Q^\times$.
+\end{lemma}
+
+\begin{proof}
+Let $\zeta$ be a primitive $d$th root of unity, $\mathbb K=\Q(\zeta)$, of
+degree $d-1$, and $\mathbb L=\mathbb K(\alpha_1,\ldots,\alpha_k)$, the
+splitting field of $\prod_i(X^d-\varpi_i)$ over $\mathbb K$. An automorphism
+of $\mathbb L/\mathbb K$ is determined by the vector $b\in\mathbb F_d^k$ with
+$\alpha_i\mapsto\zeta^{b_i}\alpha_i$, and this embeds the Galois group as a
+subspace of $\mathbb F_d^k$. If the subspace were proper, some nonzero
+$\mathfrak e\in\{0,\ldots,d-1\}^k$ would satisfy $\mathfrak e\cdot b\equiv0$
+on it, and $\beta=\prod_i\alpha_i^{\mathfrak e_i}$ would be fixed, hence in
+$\mathbb K$. Then $\beta^d=\prod_i\varpi_i^{\mathfrak e_i}$, so the norm of
+$\beta$ from $\mathbb K$ to $\Q$ is a rational number $\nu$ with
+$\nu^d=\prod_i\varpi_i^{(d-1)\mathfrak e_i}$. Comparing $\varpi_i$-adic
+valuations gives $d\mid(d-1)\mathfrak e_i$, hence $\mathfrak e=0$. So all $d^k$
+rotations occur. Applying the rotation of one $\alpha_j$ to a relation
+$\sum_i\xi_i\alpha_i=0$ with $\xi_i\in\mathbb K$ and subtracting gives
+$\xi_j(\zeta-1)\alpha_j=0$, so the $\alpha_i$ are linearly independent over
+$\mathbb K$. A rotation fixing $s=\sum_ic_i\alpha_i$ therefore has all
+$c_i(\zeta^{b_i}-1)=0$ and is the identity, so
+$d^k=[\mathbb K(s):\mathbb K]\le[\Q(s):\Q]\le[\Q(\alpha_1,\ldots,\alpha_k):\Q]
+\le d^k$.
+\end{proof}
+
+\begin{proposition}[Explicit binomial blocks]
+\label{prop:qc-binomial-block}
+Let $d\ge3$ be odd, $a\ge2$ an integer, and $\alpha=a^{1/d}$. In time
+polynomial in $d+\log a$ one can compute rational quadratics $g_1,g_2,g_3$ in
+$d-1$ variables, with positive definite Hessians and coefficients whose
+numerators and denominators have $O(\log(da))$ bits, such that
+\[
+\{x:g_1(x)\le0,\ g_2(x)\le0,\ g_3(x)\le0\}=\{(\alpha,\alpha^2,\ldots,\alpha^{d-1})\},
+\]
+and $\sum_i\tau_ig_i(x)=(1,x)^{\mathsf T}\mathcal R(1,x)$ for weights
+$\tau_i>1/4$ with $\sum_i\tau_i=1$ and a positive semidefinite matrix
+$\mathcal R$ whose kernel is spanned by $\nu(\alpha)=(1,\alpha,\ldots,
+\alpha^{d-1})$. If $T^d-a$ is irreducible, the three Hessians are linearly
+independent.
+\end{proposition}
+
+\begin{proof}
+Use the construction in the proof of Theorem~\ref{thm:qc-corank-one} for
+$\mu=T^d-a$, with an explicit choice of $B$. Here $\mathcal Ce_i=e_{i-1}$ for
+$i\ge1$ and $\mathcal Ce_0=ae_{d-1}$, so $\norm{\mathcal C}=a$, and the
+eigenvectors of $\mathcal C$ are $\nu(\alpha\zeta^j)$ with
+$\zeta=e^{2\pi\mathrm i/d}$. Let $\Delta_\alpha=\diag(1,\alpha,\ldots,
+\alpha^{d-1})$ and $B_*=\Delta_\alpha^{-1}(I-d^{-1}\mathbf1\mathbf1^{\mathsf
+T})\Delta_\alpha^{-1}$. Since $\Delta_\alpha^{-1}\nu(\alpha\zeta^j)=
+(\zeta^{ij})_i$, and for $j\ne0$ both $\sum_i\zeta^{ij}$ and $\sum_i\zeta^{2ij}$
+vanish because $d$ is odd, the form of $B_*$ vanishes at every
+$\nu(\alpha\zeta^j)$, including $j=0$. Hence $B_*\in\mathcal L$. The space $U$
+equals $\Delta_\alpha\mathbf1^\perp$, so $u=\Delta_\alpha w$ with
+$w\perp\mathbf1$ gives $u^{\mathsf T}B_*u=\norm w^2\ge a^{-2}\norm u^2$,
+while $\norm{B_*}\le1$.
+
+Index rows and columns from zero, and for $0\le r<d$ let $E_r$ have entry one
+where $i+j=r$, entry $a$ where $i+j=r+d$, and zero elsewhere. Reducing
+$\nu(T)^{\mathsf T}B\nu(T)$ modulo $T^d-a$ shows
+$\mathcal L=\{B:\langle E_r,B\rangle_F=0,\ 0\le r<d\}$. The $E_r$ have
+disjoint supports and squared norms $D_r=r+1+a^2(d-r-1)\le da^2$, so
+$\Pi_{\mathcal L}(X)=X-\sum_rD_r^{-1}\langle E_r,X\rangle_FE_r$ is the
+orthogonal projection onto $\mathcal L$. Let $M_0$ be a power of two with
+$16da^2\le M_0<32da^2$, let $B_0$ be a symmetric matrix on the grid
+$M_0^{-1}\Z$ whose entries are within $1/M_0$ of those of $B_*$, computed by
+bisection for $a^{1/d}$ and interval arithmetic, and let $B=\Pi_{\mathcal
+L}(B_0)$. Then $\norm{B-B_*}\le\norm{B_0-B_*}_F\le d/M_0\le(16a^2)^{-1}$, so
+$\norm B\le2$ and $u^{\mathsf T}Bu\ge(2a^2)^{-1}\norm u^2$ on $U$. Each entry
+of $B$ is an entry of $B_0$ minus one correction with denominator $M_0D_r$,
+so it has $O(\log(da))$ bits.
+
+Let $Q(s,t)=\mathcal C^{\mathsf T}B\mathcal C-s(\mathcal C^{\mathsf
+T}B+B\mathcal C)+tB$ and $\mathcal R=Q(\alpha,\alpha^2)=(\mathcal C-\alpha
+I)^{\mathsf T}B(\mathcal C-\alpha I)$, which is positive semidefinite with
+kernel $\R\nu(\alpha)$. On $H=\{z:z_0=0\}$, the vector $y=(\mathcal C-\alpha
+I)z$ satisfies $z_{j+1}=\alpha z_j+y_j$ for $j\le d-2$, which gives
+$\norm z\le ad\norm y$ and $z^{\mathsf T}\mathcal Rz\ge\norm z^2/(2a^4d^2)$.
+Since $\norm{\mathcal C^{\mathsf T}B\mathcal C}\le2a^2$,
+$\norm{\mathcal C^{\mathsf T}B+B\mathcal C}\le4a$ and $\norm B\le2$, the
+restriction of $Q(s,t)$ to $H$ is positive definite whenever
+$\abs{s-\alpha},\abs{t-\alpha^2}\le3\epsilon_0$, where
+$\epsilon_0=1/(100a^5d^2)$. Choose a dyadic $c\in\Q^2$ within $\epsilon_0/16$
+of $(\alpha,\alpha^2)$ in each coordinate, and the triangle with vertices
+$c+(-\epsilon_0,-\epsilon_0)$, $c+(2\epsilon_0,-\epsilon_0)$ and
+$c+(-\epsilon_0,2\epsilon_0)$. With $\delta=(\alpha,\alpha^2)-c$, the
+barycentric weights of $(\alpha,\alpha^2)$ are $1-\tau_2-\tau_3$,
+$\tau_2=(1+\delta_1/\epsilon_0)/3$ and $\tau_3=(1+\delta_2/\epsilon_0)/3$, all
+larger than $1/4$, and every vertex lies within $3\epsilon_0$ of
+$(\alpha,\alpha^2)$. For the vertices $(s_i,t_i)$ put
+$g_i(x)=(1,x)^{\mathsf T}Q(s_i,t_i)(1,x)$. The Hessian of $g_i$ is twice the
+restriction of $Q(s_i,t_i)$ to $H$, hence positive definite, and
+$\sum_i\tau_ig_i(x)=(1,x)^{\mathsf T}\mathcal R(1,x)\ge0$ with equality only
+where $(1,x)\in\R\nu(\alpha)$, that is, at $x=(\alpha,\ldots,\alpha^{d-1})$.
+Multiplication by $\mathcal C$ or $\mathcal C^{\mathsf T}$ permutes entries
+and scales one of them by $a$, so every coefficient of $g_i$ is a sum of a
+bounded number of products of entries of $B$ with $1$, $a$, $s_i$ and $t_i$,
+and has $O(\log(da))$ bits.
+
+For the last statement, a dependence among the three Hessians can be taken
+rational. Since the vectors $(1,s_i,t_i)$ are linearly independent, it yields
+$\Theta=\theta_0\mathcal C^{\mathsf T}B\mathcal C-\theta_1(\mathcal C^{\mathsf
+T}B+B\mathcal C)+\theta_2B$ with rational $\theta\ne0$ and zero restriction to
+$H$. Then $x\mapsto(1,x)^{\mathsf T}\Theta(1,x)$ is a rational affine function
+that vanishes at $(\alpha,\ldots,\alpha^{d-1})$, because all three matrices
+have zero form at $\nu(\alpha)$; as $\alpha$ has degree $d$, all its
+coefficients vanish, and $\Theta=0$. For $\beta=\alpha\zeta^j$ with $1\le j<d$,
+evaluating $\Theta$ on $\nu(\beta)$ and $\nu(\bar\beta)$ gives
+\[
+\bigl(\theta_0\alpha^2-2\theta_1\alpha\cos(2\pi j/d)+\theta_2\bigr)\,
+\nu(\beta)^{\mathsf T}B\nu(\bar\beta)=0,
+\]
+and $\nu(\beta)^{\mathsf T}B\nu(\bar\beta)>0$, since it is the sum of the
+values of the form of $B$ at the real and imaginary parts of $\nu(\beta)$,
+which lie in $U$ and are not both zero. For $d\ge5$ two different cosines
+force $\theta_1=0$, and then $\theta_0=\theta_2=0$ because $\alpha^2$ has degree
+$d$. For $d=3$ the relation reads $\theta_0\alpha^2+\theta_1\alpha+\theta_2=0$.
+In both cases $\theta=0$, a contradiction.
+\end{proof}
+
+\begin{corollary}[Feasible points with dense coordinate polynomials]
+\label{cor:qc-feasible-output}
+Let $d$ be an odd prime, let $\varpi_1<\cdots<\varpi_k$ be primes, and let
+$n=k(d-1)$. There is a rational native PSD system in $n$ variables with $3k$
+rows, each defining a full-dimensional ellipsoid, Hessian span exactly $3k$,
+and a single feasible point, whose first coordinate is
+$R_0+\sum_b\varpi_b^{1/d}$ with $R_0=1+\sum_b\varpi_b$. This coordinate has
+degree $d^k$, and its minimal polynomial has all $d^k+1$ coefficients nonzero.
+The system is computed in time polynomial in $k$, $d$ and $\log\varpi_k$; its
+nonconstant coefficients have $O(\log(kd\varpi_k))$ bits and its constant
+terms $O(k\log(kd\varpi_k))$ bits, so its input length is
+$L=O(k^3d^2\log(kd\varpi_k))$ in the native encoding and
+$L=O(k^3d^2[\log(kd\varpi_k)+kd])$ in the explicit format. Consequently, for
+every function $\phi$ and constant $C$, no algorithm can return in time
+$\phi(h)L^C$ the explicit
+coefficient lists of the minimal polynomials of the coordinates of the unique
+feasible point of every rational native PSD system with Hessian span $h$.
+\end{corollary}
+
+\begin{proof}
+For each $b$, apply Proposition~\ref{prop:qc-binomial-block} with $a=\varpi_b$
+on a separate block of $d-1$ variables. This gives rows
+$g_1,\ldots,g_{3k}$ and weights $\tau_i>1/4$ with $\sum_i\tau_i=k$, and
+$\sum_i\tau_ig_i$ is a sum of block forms that vanishes only at the product
+$p_\star$ of the block singletons. Replace the rows by
+$g'_i=g_i+\varepsilon'\sum_jg_j$ with $\varepsilon'=1/(8k)$. The sum of all
+block Hessians is positive definite on $\R^n$, so each $g'_i$ has a positive
+definite Hessian. The mixing matrix $I+\varepsilon'\mathbf1\mathbf1^{\mathsf
+T}$ is invertible, so the span is unchanged, and it equals $3k$ because each
+$T^d-\varpi_b$ is Eisenstein at $\varpi_b$ and the block spans have disjoint
+supports. The weights $\eta_i=\tau_i-\varepsilon'k/(1+3k\varepsilon')=
+\tau_i-1/11>1/8$ satisfy $\sum_i\eta_ig'_i=\sum_i\tau_ig_i$, so the mixed rows
+still have the single feasible point $p_\star$. Each $g'_i$ is strictly convex
+with rational coefficients, so its minimizer is rational and differs from the
+irrational point $p_\star$, where $g'_i$ vanishes; hence each set
+$\{g'_i\le0\}$ is a full-dimensional ellipsoid.
+
+Next replace the first coordinate $x_{1,1}$ of the first block by
+$y_1=x_{1,1}+\sum_{b\ge2}x_{b,1}+R_0$, keeping all other coordinates. The
+linear part is unimodular, so positive definiteness, the span and the single
+feasible point are preserved, and the new first coordinate of the feasible
+point is $R_0+s$ with $s=\sum_b\varpi_b^{1/d}$. By Lemma~\ref{lem:qc-kummer},
+$s$ has degree $d^k$. Every conjugate of $s$ has modulus at most
+$\sum_b\varpi_b^{1/d}<R_0$, so every root $z_j$ of the minimal polynomial
+$\prod_j(X-z_j)$ of $R_0+s$ has positive real part. Then
+$\prod_j(X+z_j)$ is a product of linear factors $X+z_j$ with $z_j>0$ and
+quadratic factors $X^2+2\operatorname{Re}(z)X+\abs z^2$ with
+$\operatorname{Re}z>0$, so all its coefficients are positive. Since
+$\prod_j(X-z_j)=(-1)^{d^k}\prod_j(-X+z_j)$, the coefficients of the minimal
+polynomial alternate in sign and none vanishes.
+
+Each block coefficient has $O(\log(d\varpi_k))$ bits. In $g'_i$ a nonconstant
+coefficient involves only the three rows of one block, while a constant term
+sums $3k$ constants; the shear changes each coefficient by a sum of at most
+four products with $1$ and $R_0$. This gives the stated bit bounds, and there
+are $3k$ rows with $O(n^2)$ coefficients each; in the explicit format each
+monomial also carries an exponent vector of $O(n)=O(kd)$ bits. For the last
+assertion, fix $k>3C$, let $\varpi_1,\ldots,\varpi_k$ be the first $k$ primes,
+and let $d$ run through odd primes. Then $h=3k$, and $L=O_k(d^2\log d)$ in
+the native encoding and $L=O_k(d^3)$ in the explicit format, while the
+requested list for the first coordinate has $d^k+1$ entries, which eventually
+exceeds $\phi(3k)L^C$ in both formats.
+\end{proof}
+
+In the unsheared system each coordinate has degree $d$, so its coordinatewise
+output is short, while the common-field representation already needs degree
+$d^k=(n/k+1)^k$. The shear moves this joint degree into one input coordinate.
+The point also has a short description as a vector of real radicals, which
+the corollary does not exclude. Unlike Theorem~\ref{thm:qc-sparse}, no
+objective and no existential choice of weights or translations is involved.
+
+\subsection{A single convex quartic row}
+\label{app:qc-quartic}
+
+The degree bound of Theorem~\ref{thm:qc-degree} depends on the span of the
+constant Hessians of quadratic rows. For higher degree there are several
+candidate parameters. The following example shows that the number of nonlinear
+rows, or the dimension of the span of the polynomial Hessian matrices, does not
+control the degree once a row has degree four. This is one reason why the quartic
+singletons of the main text can have large degree with very few rows.
+
+\begin{proposition}[One quartic row]
+\label{prop:qc-quartic}
+Let $\varpi_1,\ldots,\varpi_n$ be distinct primes, $\alpha_i=\varpi_i^{1/3}$,
+$\Psi(x)=\sum_i(x_i^4-4\varpi_ix_i)$, and $M=3\sum_i\varpi_i^2$. The problem
+\[
+\min\{\tau: \Psi(x)-\tau\le0,\ 1\le x_i\le\varpi_i\ (1\le i\le n),\
+-M\le\tau\le0\}
+\]
+has one globally convex nonlinear row, a strictly feasible point, and the
+unique optimizer $x=\alpha$, $\tau=\theta=-3\sum_i\varpi_i\alpha_i$. The value
+$\theta$ has degree exactly $3^n$. On the box, $\nabla^2\Psi\succeq12I$.
+\end{proposition}
+
+\begin{proof}
+The identity
+$x^4-4\varpi x+3\varpi\alpha=(x-\alpha)^2\bigl((x+\alpha)^2+2\alpha^2\bigr)$,
+with $\alpha^3=\varpi$, shows that $\Psi$ has the unique minimizer $\alpha$, which
+lies inside the box because $1<\alpha_i<\varpi_i$. Also $-M<\theta<0$, so the
+bounds on $\tau$ are inactive, and $x_i=3/2$, $\tau=-1$ is strictly feasible:
+$\Psi=\sum_i(81/16-6\varpi_i)\le-111n/16<-1$. The Hessian of the row is
+$\diag(12x_1^2,\ldots,12x_n^2,0)\succeq0$.
+
+Lemma~\ref{lem:qc-kummer} with $d=3$ and $c_i=-3\varpi_i$ shows that
+$\theta$ has degree exactly $3^n$; it applies to every set of distinct primes,
+including $3$.
+\end{proof}
+
+The polynomial Hessian of the single row spans a one-dimensional space of
+polynomial matrices, while its coefficient matrices, or its values on the
+box, span $n$ dimensions. The example refutes extensions of the quadratic
+bound based on the number of rows or on the first notion, not on the second.
+The exact convex quadratic lift $x_i^2\le y_i$,
+$\sum_iy_i^2-4\sum_i\varpi_ix_i\le\tau$ has Hessian span $n+1$, in agreement
+with Theorem~\ref{thm:qc-degree}. With the first $n$ primes and an indexed
+sparse encoding, $L=\Theta(n\log n)$, so the degree is
+$2^{\Theta(L/\log L)}$. A dense coefficient list of the quartic has
+$\Theta(n^4)$ entries; the degree is then still superpolynomial in $L$, but
+the exponential growth is in $n$, not in $L$. The value is also the short
+radical sum displayed above,
+and its sign relative to a rational threshold is a comparison problem that
+the degree does not settle.
+
+\subsection{Common-field representations from certified approximations}
+\label{app:qc-recovery}
+
+Degree and height bounds become an exact output only together with a way to
+approximate one fixed point. The theorem below converts such data into a
+common-field representation with polynomial overhead. It never multiplies
+the degrees of individual coordinates, and it needs no factorization over a
+number field. The only external tool is certified recognition of an algebraic
+number from an approximation.
+
+\begin{theorem}[Recognition of algebraic numbers~\cite{KannanLenstraLovasz1988}]
+\label{thm:qc-kll}
+There is a deterministic algorithm that, given integers $e,A\ge1$ and a
+rational number $\tilde\vartheta$ with
+$\abs{\tilde\vartheta-\vartheta}<2^{-\varsigma}/(12e)$ for a real algebraic
+number $\vartheta$ whose primitive minimal polynomial has degree at most $e$
+and coefficients bounded by $A$ in absolute value, where $\varsigma$ is the
+least integer with $2^\varsigma>2^{e^2/2}(e+1)^{(3e+4)/2}A^{2e}$, returns that
+minimal polynomial in time polynomial in $e$, $\log A$, and the length of
+$\tilde\vartheta$.
+\end{theorem}
+
+\begin{theorem}[Common-field recovery]
+\label{thm:qc-recovery}
+Let $\beta\in\R^n$, $n\ge1$, and $\mathbb E=\Q(\beta_1,\ldots,\beta_n)$. Suppose
+that bounds $\mathcal D\ge[\mathbb E:\Q]$ and $H\ge1$ are given, that every
+$\beta_j$ has a primitive minimal polynomial with coefficients at most $2^H$
+in absolute value, and that an oracle returns, for each integer $q\ge1$,
+rationals $\tilde\beta_j$ with $\abs{\tilde\beta_j-\beta_j}<2^{-q}$ and length
+polynomial in $n,\mathcal D,H,q$. A deterministic algorithm with polynomially
+many oracle calls, at accuracies polynomial in $n,\mathcal D,H$, and with
+additional time polynomial in $n,\mathcal D,H$, returns the actual degree
+$d=[\mathbb E:\Q]$, a primitive irreducible integer polynomial $P$ of degree
+$d$ with an isolating interval for a real root $\alpha$, integers $c_j$ with
+$\alpha=\sum_jc_j\beta_j$, and rational polynomials $b_j$ of degree less than
+$d$ with $\beta_j=b_j(\alpha)$. All output lengths are polynomial in
+$n,\mathcal D,H$.
+\end{theorem}
+
+\begin{proof}
+\emph{Heights.} Let $\mathfrak a_j$ be the absolute leading coefficient of the
+minimal polynomial of $\beta_j$ and $\mathfrak A=\prod_j\mathfrak a_j$, so
+$\log_2\mathfrak A\le nH$ and every $\mathfrak A\beta_j$ is an algebraic
+integer. All conjugates of $\beta_j$ have modulus at most $2^{H+1}$. For
+integers $\abs{c_j}\le2^{\mathfrak c}$ and $0\le\mathfrak s\le\mathcal D$, the
+number $\vartheta=\sum_jc_j\beta_j+\mathfrak s\beta_i$ has conjugates of modulus at
+most $\mathcal M=(n2^{\mathfrak c}+\mathcal D)2^{H+1}$, and
+$\mathfrak A\vartheta$ is an algebraic integer. If $\mathfrak m_\vartheta$ is the monic
+minimal polynomial of $\vartheta$, of degree $e$, then
+$\mathfrak A^e\mathfrak m_\vartheta(T)$ is the monic minimal polynomial of
+$\mathfrak A\vartheta$ evaluated at $\mathfrak AT$, so it has integer
+coefficients bounded by $\mathfrak A^e(1+\mathcal M)^e$. Its primitive part is
+the primitive minimal polynomial of $\vartheta$. Hence recognition can be
+called with degree bound $\mathcal D$ and height
+$\log_2A\le\mathcal D(nH+H+\mathfrak c+\log_2(n+\mathcal D)+3)$, using an
+approximation of $\vartheta$ obtained from the oracle with $\log_2(n2^{\mathfrak
+c}+\mathcal D)+1$ extra bits.
+
+\emph{A primitive element.} Let $\alpha_\kappa=\sum_j\kappa^{j-1}\beta_j$ for
+$0\le\kappa\le(n-1)\mathcal D(\mathcal D-1)/2$. For distinct embeddings
+$\sigma,\tau$ of $\mathbb E$, the difference of their images of $\alpha_\kappa$
+is a nonzero polynomial in $\kappa$ of degree at most $n-1$, so one candidate
+separates all $d(d-1)/2$ pairs and generates $\mathbb E$. Recognize all
+candidates; the largest degree found is $d$, and a candidate attaining it is a
+primitive element $\alpha$ with its coefficients $c_j$. Its primitive minimal
+polynomial $P$ has integer discriminant of modulus at least one, which gives a
+root separation $\delta_P=2^{-4d^2(H_P+2)}$ when its coefficients are bounded
+by $2^{H_P}$; an approximation of $\alpha$ within $\delta_P/8$ yields an
+interval of half-length $\delta_P/4$ containing $\alpha$ and no other root.
+
+\emph{Norm polynomials.} Fix $i$ and let $\gamma_{\mathfrak s}=\alpha+
+\mathfrak s\beta_i$ for $\mathfrak s=0,\ldots,d$. Recognize the monic minimal
+polynomial $\mathfrak m_{\mathfrak s}$ of $\gamma_{\mathfrak s}$, of degree
+$e_{\mathfrak s}\mid d$, and put
+$\Pi_{\mathfrak s}=\mathfrak m_{\mathfrak s}^{d/e_{\mathfrak s}}$. Each embedding of $\Q(\gamma_{\mathfrak s})$ extends to
+exactly $d/e_{\mathfrak s}$ embeddings of $\mathbb E$, so
+\[
+\Pi_{\mathfrak s}(T)=\prod_{\sigma:\mathbb E\to\C}\bigl(T-\sigma(\gamma_{\mathfrak s})\bigr).
+\]
+Hence the $\Pi_{\mathfrak s}$ are the values at $S=\mathfrak s$ of
+\[
+\mathcal R_i(S,T)=\prod_{\sigma:\mathbb E\to\C}\bigl(T-\sigma(\alpha)-S\sigma(\beta_i)\bigr)
+\in\Q[S,T],
+\]
+which is monic of degree $d$ in $T$ and has degree at most $d$ in $S$, and
+coefficientwise Lagrange interpolation at $\mathfrak s=0,\ldots,d$ recovers it.
+Interpolating the minimal polynomials themselves would be wrong when a sample
+fails to generate $\mathbb E$: for $\mathbb E=\Q(\sqrt2)$, $\alpha=\sqrt2$ and
+$\beta_i=-\sqrt2$, the sample at $\mathfrak s=1$ is $0$, with minimal polynomial
+$T$ but norm polynomial $T^2$.
+
+\emph{Coordinates.} Since $\alpha$ is primitive,
+$\mathcal R_i(0,T)=\mathfrak m(T)$ is its monic minimal polynomial, and $\mathcal R_i(S,\alpha+S\beta_i)=0$ in
+$\mathbb E[S]$ because the factor of the identity embedding vanishes.
+Differentiating in $S$ at $S=0$ gives
+\[
+\partial_S\mathcal R_i(0,\alpha)+\mathfrak m'(\alpha)\beta_i=0,\qquad
+\beta_i=-\frac{\partial_S\mathcal R_i(0,\alpha)}{\mathfrak m'(\alpha)} .
+\]
+Separability gives $\mathfrak m'(\alpha)\ne0$. Compute the inverse of
+$\mathfrak m'$ modulo $\mathfrak m$ by solving the rational linear system of multiplication by $\mathfrak m'$ on
+$\Q[T]/(\mathfrak m)$, and let $b_i$ be the remainder of
+$-\mathfrak m'(T)^{-1}\partial_S\mathcal R_i(0,T)$ modulo $\mathfrak m$.
+
+\emph{Cost.} There are $O(n\mathcal D^2)$ candidates and $n(d+1)$ samples.
+Each recognized polynomial has degree at most $\mathcal D$ and coefficient
+bits bounded as above. Raising to the power $d/e_{\mathfrak s}$, Lagrange
+interpolation at integer nodes, whose denominators divide $\mathfrak
+s!(d-\mathfrak s)!$, and the linear algebra modulo $\mathfrak m$ have polynomial bit
+cost by determinant bounds.
+\end{proof}
+
+Reading coordinates from the derivative of a norm polynomial in a separating
+parameter is the mechanism of rational univariate
+representations~\cite{Rouillier1999}; the theorem combines it with certified
+recognition, so that the input is an approximation oracle rather than a
+polynomial system. The input must approximate one specified tuple. Separate minimal polynomials
+of the coordinates, without selected embeddings, do not determine
+$\mathbb E$, and a joint-degree bound alone does not give the representation.
+The output lets a verifier evaluate any rational polynomial at $\beta$ by
+arithmetic modulo $P$ and one sign determination at $\alpha$
+(Lemma~\ref{lem:qc-sign}).
+
+\begin{corollary}[Canonical feasible points at fixed span]
+\label{cor:qc-feasible-point}
+For each fixed $k$, a deterministic algorithm running in time polynomial in
+$L$ decides whether a rational native PSD system with Hessian span $k$ is
+feasible and, if so, returns its minimum-norm point in common-field format,
+with field degree at most $\mathcal B(n,k)$ and all coefficients of
+$L^{O(k+1)}$ bits.
+\end{corollary}
+
+\begin{proof}
+Decide feasibility by Proposition~\ref{prop:qc-decision}, and let $p$ be the
+minimum-norm point. Theorems~\ref{thm:qc-degree} and~\ref{thm:qc-height},
+applied with $f=0$, give $\mathcal D=\mathcal B(n,k)$ and $H=L^{O(k+1)}$.
+For the oracle, binary search the value $\norm p^2$ in $[0,nR_F^2]$ with
+feasibility queries for $F\cap[-R_F,R_F]^n\cap\{\norm x^2\le\varsigma\}$,
+whose Hessian span is at most $k+1$, until a feasible threshold
+$\varsigma\le\norm p^2+2^{-2q-4}$ is found. Every point $x$ of this set satisfies
+$\langle p,x-p\rangle\ge0$, so $\norm{x-p}^2\le\norm x^2-\norm p^2\le
+2^{-2q-4}$. Bisecting coordinate intervals while keeping a nonempty
+intersection with this set, again by feasibility queries, until all widths
+are at most $2^{-q}$ gives a rational point within $2^{-q-1}+2^{-q-2}<2^{-q}$ of
+$p$ in every coordinate. Each query has length polynomial in $L$ and $q$.
+Theorem~\ref{thm:qc-recovery} finishes.
+\end{proof}
+
+For the canonical optimizer of a nonzero convex objective, the same
+conversion applies to any certified approximation oracle for that optimizer.
+Constructing such an oracle requires an exact optimization procedure for the
+fixed-span class, which is part of the structural Hessian-span program and is
+not developed here.
+
+\subsection{One-field optimality certificates}
+\label{app:qc-certificates}
+
+An exact optimizer is most useful when a third party can check it without
+repeating the optimization. When Slater's condition fails, the canonical
+optimizer may have no Karush--Kuhn--Tucker multipliers for the original rows,
+and it may be irrational. The certificate below handles both difficulties. It
+supplies the optimizer in one real number field, adds a short sequence of
+exposing records that preserve every feasible point, and ends with an exact
+quadratic identity proving global optimality. All multipliers lie in the field
+of the optimizer, so the field never grows, and at most $k$ curved records are
+needed. The mechanisms (convex alternatives, facial reduction, polyhedral
+normal cones) are classical; the point here is their encoding size in terms of
+the Hessian span, and a verifier that needs only univariate arithmetic.
+
+\begin{lemma}[Signs at an isolated root]
+\label{lem:qc-sign}
+Let $P\in\Z[T]$ have degree $e$ and coefficients at most $2^{H_P}$ in
+absolute value, and let $\delta_P=2^{-4e^2(H_P+2)}$. Given rationals
+$\varrho_-<\varrho_+$, one can check in polynomial time that $P$ is
+squarefree, that $P(\varrho_-)P(\varrho_+)<0$, and that
+$\varrho_+-\varrho_-<\delta_P$. If these checks pass, the interval contains
+exactly one root $\alpha$ of $P$, and the sign of $\varsigma(\alpha)$ for a
+given $\varsigma\in\Q[T]$ can be determined in time polynomial in the lengths
+of $P$, the endpoints and $\varsigma$.
+\end{lemma}
+
+\begin{proof}
+Squarefreeness is $\gcd(P,P')=1$. For squarefree $P$, the discriminant is
+a nonzero integer equal to the leading coefficient to the power $2e-2$ times
+the product of the squared differences of the roots, which have modulus at
+most $2^{H_P+1}$. Bounding all but one factor shows that distinct roots differ
+by more than $\delta_P$. A sign change on an interval shorter than $\delta_P$
+therefore isolates exactly one root. For the sign, let $\mathfrak g=\gcd(P,\varsigma)$. Its roots are simple
+roots of $P$, so $\varsigma(\alpha)=0$ exactly when
+$\mathfrak g(\varrho_-)\mathfrak g(\varrho_+)<0$. Otherwise let
+$P_1=P/\mathfrak g$, scaled to be primitive, and clear denominators of
+$\varsigma$. Then $\operatorname{Res}(P_1,\varsigma)$ is a nonzero integer equal
+to a power of the leading coefficient of $P_1$ times the product of
+$\varsigma$ over the roots of $P_1$. Bounding the other factors by Cauchy's
+bound gives an explicit lower bound $\epsilon_\varsigma$ on
+$\abs{\varsigma(\alpha)}$, of polynomial bit length. Bisecting the interval
+until its length times a Lipschitz bound for $\varsigma$ is below
+$\epsilon_\varsigma$ determines the sign by evaluation at an endpoint. Gcds,
+resultants, and these evaluations are polynomial-time rational
+computations~\cite{vonzurGathenGerhard2013}.
+\end{proof}
+
+The lemma does not trust a claim that $P$ is irreducible, and it needs no
+multivariate root isolation. Separate isolating intervals for unrelated
+coordinates would not support this kind of joint evaluation.
+
+\begin{definition}[One-field certificate]
+\label{def:qc-certificate}
+Consider a rational native PSD system with polyhedron $\{Ax\le b\}$ and
+objective $f$. A \emph{one-field certificate} consists of a squarefree
+$P\in\Z[T]$ with an interval isolating a root $\alpha$, rational polynomials
+$b_1,\ldots,b_n$ defining $p=(b_j(\alpha))_j$, and records
+$(\lambda^{(j)},\mu^{(j)})$ for $0\le j\le t$, all entries given as rational
+polynomials in $\alpha$. The polyhedra $P_j=\{x:A_jx\le\beta_j\}$ are defined
+by the verifier: $P_0$ consists of the original rows and the tangent rows
+\[
+g_i(p)+\nabla g_i(p)^{\mathsf T}(x-p)\le0\qquad(1\le i\le m),
+\]
+and $P_{j+1}$ adds to $P_j$ the equations $H_j(x-p)=0$ and $v_j^{\mathsf
+T}(x-p)=0$, each written as two rows, where $H_j=\sum_i\lambda^{(j)}_iQ_i$ and
+$v_j=\sum_i\lambda^{(j)}_i\nabla g_i(p)$. The verifier accepts if $p$
+satisfies all original rows, if each exposing record $j<t$ satisfies
+\begin{gather*}
+\lambda^{(j)}\ge0,\quad\sum_i\lambda^{(j)}_i=1,\quad
+\lambda^{(j)}_ig_i(p)=0,\quad\mu^{(j)}\ge0,\\
+\mu^{(j)}_\iota(A_jp-\beta_j)_\iota=0,\quad
+\sum_i\lambda^{(j)}_i\nabla g_i(p)+A_j^{\mathsf T}\mu^{(j)}=0,
+\end{gather*}
+and if the final record satisfies the same sign and complementarity
+conditions without normalization, together with
+$\nabla f(p)+\sum_i\lambda^{(t)}_i\nabla g_i(p)+A_t^{\mathsf T}\mu^{(t)}=0$.
+\end{definition}
+
+\begin{lemma}[Soundness]
+\label{lem:qc-sound}
+If the verifier accepts, then $p$ is feasible and globally optimal.
+\end{lemma}
+
+\begin{proof}
+By convexity each $g_i$ lies above its tangent, so $F\subseteq P_0$. Suppose
+$F\subseteq P_j$, and let $\mathcal G=\sum_i\lambda^{(j)}_ig_i$. For $x\in P_j$
+the exact Taylor formula and the record give
+\[
+\mathcal G(x)=\tfrac12(x-p)^{\mathsf T}H_j(x-p)+
+\sum_\iota\mu^{(j)}_\iota\bigl(\beta_j-A_jx\bigr)_\iota ,
+\]
+because $\mathcal G(p)=0$ by complementarity and $\nabla\mathcal G(p)=
+-A_j^{\mathsf T}\mu^{(j)}$ with $\mu^{(j)}$ supported on rows tight at $p$. Both
+terms are nonnegative on $P_j$, and $\mathcal G\le0$ on $F$. Hence both vanish
+on $F$; positive semidefiniteness turns the first into $H_j(x-p)=0$, and the
+second gives $v_j^{\mathsf T}(x-p)=0$. Thus $F\subseteq P_{j+1}$. For the final
+record and $x\in F\subseteq P_t$,
+\[
+f(x)-f(p)=\tfrac12(x-p)^{\mathsf T}\Bigl(Q_0+\sum_i\lambda^{(t)}_iQ_i\Bigr)(x-p)
+-\sum_i\lambda^{(t)}_ig_i(x)+\sum_\iota\mu^{(t)}_\iota(\beta_t-A_tx)_\iota\ge0 .
+\qedhere
+\]
+\end{proof}
+
+The verifier checks neither a constraint qualification, nor minimality of the
+norm of $p$, nor that a record reduces a dimension. Complementarity with the
+quadratic rows is essential: without it, $\mathcal G(p)$ need not vanish. The
+sets $P_{j+1}$ are polyhedral sections containing $F$ and need not be faces of
+$P_j$: the record $\mathcal G=x^2$ on $P_0=\R$ yields $\{0\}$.
+
+\begin{theorem}[One-field certificates]
+\label{thm:qc-certificate}
+Let a rational native PSD system with Hessian span $k$ and a convex quadratic
+objective attain a finite optimum, and let $p$ be the canonical optimizer.
+There is a one-field certificate for $p$ in the field $\Q(p)$, of degree at
+most $\mathcal B(n,k)$, with at most $k$ exposing records, each having at most
+$n+1$ positive entries in $(\lambda^{(j)},\mu^{(j)})$, and a final record with at
+most $n$ positive entries. Its total length is $L^{O(k+1)}$, and the verifier
+runs in time polynomial in $L$ and the certificate length.
+\end{theorem}
+
+\begin{proof}
+\emph{Existence of the records.} Let $\mathcal V_j$ be the direction space of
+the affine hull of $P_j$, and let $I_j$ contain the quadratic rows whose
+Hessian restricted to $\mathcal V_j$ is nonzero. A row outside $I_j$
+coincides on $P_j$ with its tangent row, so it is implied by $P_j$, and
+$F=\{x\in P_j:g_i(x)\le0,\ i\in I_j\}$.
+
+If the rows in $I_j$ have a common point of $P_j$ at which all of them are
+negative, including the case $I_j=\varnothing$, the convex
+Karush--Kuhn--Tucker theorem with affine constraints and a strict point for
+the nonlinear ones~\cite{Rockafellar1970} gives multipliers at the optimizer
+$p$, which form the final record. Otherwise the convex alternative, as in
+Proposition~\ref{prop:qc-two-rows}, gives normalized weights $\lambda\ge0$ on
+$I_j$ with $\mathcal G=\sum_i\lambda_ig_i\ge0$ on $P_j$. Since $p\in F$,
+$\mathcal G(p)=0$, so positive weights sit on rows active at $p$, and $p$
+minimizes $\mathcal G$ over the polyhedron $P_j$. Polyhedral first-order
+optimality supplies $\mu\ge0$ on the rows of $P_j$ tight at $p$ with
+$\nabla\mathcal G(p)+A_j^{\mathsf T}\mu=0$.
+
+In both cases the multipliers solve a linear system with coefficients in
+$\Q(p)$: $n$ stationarity equations, plus normalization for an exposing
+record, in nonnegative unknowns indexed by the active rows. A nonnegative
+solution of minimal support has linearly independent columns, so it has at
+most $n+1$, respectively $n$, positive entries and is given by Cramer's rule
+over $\Q(p)$.
+
+For an exposing record, $H_j$ restricted to $\mathcal V_j$ is a positive
+combination of nonzero positive semidefinite forms, hence nonzero, while
+$\mathcal V_{j+1}\subseteq\ker H_j$. The restriction from $\mathcal V_j$ to
+$\mathcal V_{j+1}$ therefore kills a nonzero element of the span of the
+restricted Hessians, and the dimension of that span drops by at least one.
+It starts at most at $k$, so there are at most $k$ exposing records.
+
+\emph{Size.} By Theorems~\ref{thm:qc-degree} and~\ref{thm:qc-height},
+$K=\Q(p)$ has degree $d\le\mathcal B(n,k)\le(2L)^k$ and the coordinates of $p$
+have heights at most $B_*=L^{O(k+1)}$. The tangent rows have heights
+$O(LB_*)$. In each round the new multipliers are Cramer quotients of minors of
+order at most $n+1$, and the new rows are sums of polynomially many products
+of these with earlier data. By Lemma~\ref{lem:qc-heights}, if all earlier data
+have heights at most $B_j$, the new ones have heights at most
+$cL^c(B_j+B_*)$ for an absolute $c$. After at most $k+1$ rounds all heights
+are $L^{O(k)}B_*=L^{O(k+1)}$. Heights, unlike power-basis coefficients, do not
+grow by a factor of the field degree in each round.
+
+\emph{Encoding.} Choose $\alpha=\sum_jc_jp_j$ primitive with integers
+$\abs{c_j}\le(1+(n-1)d^2)^{n-1}$, as in the proof of
+Theorem~\ref{thm:qc-recovery}. Theorem~\ref{thm:qc-height}(i) and
+\eqref{eq:qc-minpoly-height} bound its minimal polynomial $P$ by
+$L^{O(k+1)}$ bits. For $\xi\in K$, write $\xi=\sum_{r<d}\varkappa_r\alpha^r$.
+Cramer's rule for the Vandermonde system over the $d$ embeddings of $K$, with
+Lemma~\ref{lem:qc-heights}(a),(d), gives
+$\height(\varkappa_r)\le2d^3\height(\alpha)+d\height(\xi)+2\log d!$; the normal
+closure enters only through invariance of heights under conjugation. Each
+rational $\varkappa_r$ therefore has $L^{O(k+1)}$ bits. There are polynomially
+many entries in the records, so the total length is $L^{O(k+1)}$.
+
+\emph{Verification.} The verifier forms the tangent rows and the sections by
+rational polynomial arithmetic modulo $P$, checks the identities by reduction
+modulo $P$, and checks every sign with Lemma~\ref{lem:qc-sign}.
+\end{proof}
+
+Up to $k$ exposing records may be needed. For the chain
+$x_i^2-x_{i+1}\le0$ ($1\le i<k$), $x_k^2\le0$, with objective $x_1$, the
+feasible set is $\{0\}$, and the original rows admit no multipliers at $0$.
+The tangent rows give $x_2,\ldots,x_k\ge0$. If an exposing record put positive
+weight $\lambda_i$ on a row $i<k$ whose variable $x_{i+1}$ is not yet fixed to
+zero, then along $\tau e_{i+1}$ the aggregate would equal
+$-\lambda_i\tau+O(\tau^2)<0$ for small $\tau>0$. Hence each record can fix
+only the last free variable, and $k$ records are needed before the final
+identity can certify the objective $x_1$.
+
+The theorem is an existence and verification statement. The primal point can
+be constructed by Corollary~\ref{cor:qc-feasible-point} when $f=0$, but no
+polynomial-time construction of the exposing multipliers is claimed. A
+certificate applied after fixing an integer assignment certifies optimality
+in that continuous fiber only, not global mixed-integer optimality. For an
+empty feasible set, the next subsection gives a rational certificate.
+
+\subsection{Rational infeasibility certificates}
+\label{app:qc-infeasible}
+
+An infeasible native PSD system has a positive aggregate: a convex
+combination of its rows that is bounded below by a positive constant. This
+alternative is classical, without any constraint qualification or
+compactness~\cite{JeyakumarLi2014}. Proposition~\ref{prop:qc-span-three}
+shows that aggregates with minimum \emph{zero} may need irrational weights.
+With a \emph{positive} margin, the weights can be chosen rational, and their
+length is controlled by the Hessian span. Such a certificate is checked with
+rational arithmetic alone.
+
+\begin{theorem}[Rational infeasibility certificates]
+\label{thm:qc-rational-infeasibility}
+Let rows $g_i(x)=\tfrac12x^{\mathsf T}Q_ix+a_i^{\mathsf T}x+c_i\le0$,
+$1\le i\le m$, with rational data and $Q_i\succeq0$, have no common solution
+in $\R^n$; affine rows are included with $Q_i=0$, and equalities as two rows.
+Let $k$ be the Hessian span and $L$ the input length. There are rational
+weights $w_i\ge0$ with $\sum_iw_i=1$, at most $n+1$ of them positive, a
+rational $z\in\Q^n$ and a rational $\gamma>0$ such that
+\begin{equation}
+\label{eq:qc-rational-aggregate}
+\sum_iw_ig_i(x)=\gamma+\tfrac12(x-z)^{\mathsf T}H(x-z),\qquad
+H=\sum_iw_iQ_i\succeq0,
+\end{equation}
+of total length $L^{O(k+1)}$. A verifier checks $w\ge0$, $\sum_iw_i=1$,
+$Hz=-\sum_iw_ia_i$ and $\gamma=\sum_iw_ic_i+\tfrac12(\sum_iw_ia_i)^{\mathsf
+T}z>0$ in polynomial time.
+\end{theorem}
+
+\begin{proof}
+\emph{An algebraic aggregate.} The epigraph problem
+$\min\{\tau:g_i(x)\le\tau\ (1\le i\le m)\}$ is feasible, and its infimum is
+nonnegative because the system is infeasible. A feasible convex
+quadratically constrained problem with a linear objective and a finite
+infimum attains it, without compactness or a Slater
+condition~\cite[Corollary~2, in the numbering of the 1997
+report]{LuoZhang1999}; the attained value $\alpha$ is positive, since
+$\alpha=0$ would give a feasible point. Let $(\bar x,\alpha)$ be the canonical
+optimizer. The epigraph rows have Hessians $\diag(Q_i,0)$, so
+Theorems~\ref{thm:qc-degree} and~\ref{thm:qc-height}, in dimension $n+1$, show
+that $K'=\Q(\bar x,\alpha)$ has degree at most $\mathcal B(n+1,k)$ and that
+$\bar x$ and $\alpha$ have heights $L^{O(k+1)}$. The epigraph is strictly
+feasible, so the convex Karush--Kuhn--Tucker conditions give weights
+$w_i^*\ge0$ with $\sum_iw_i^*=1$, $\sum_iw_i^*\nabla g_i(\bar x)=0$, and
+$w_i^*=0$ unless $g_i(\bar x)=\alpha$. A basic solution of this system of
+$n+1$ equations has at most $n+1$ positive entries, lies in $K'$, and has
+heights $L^{O(k+1)}$ by Cramer's rule. The aggregate
+$\mathcal G^*=\sum_iw_i^*g_i$ is stationary at $\bar x$ with value $\alpha$, so
+$\mathcal G^*\ge\alpha$. Lemma~\ref{lem:qc-heights}(c) and the degree bound
+give
+\[
+\omega=\min\{w_i^*:w_i^*>0\}\ge2^{-L^{O(k+1)}},\qquad\alpha\ge2^{-L^{O(k+1)}} .
+\]
+
+\emph{Rounding inside the exact equations.} Let $I$ be the positive support
+and $\Omega=\bigcap_{i\in I}\ker Q_i$, a rational subspace. For every weight
+vector that is positive on $I$, the kernel of $\sum_{i\in I}w_iQ_i$ equals
+$\Omega$, because a sum of positive semidefinite forms vanishes only where
+each summand does. Such an aggregate has a finite minimum exactly when
+$\sum_iw_ia_i\perp\Omega$. Hence we round inside the rational affine space
+\[
+\mathcal W=\Bigl\{w\in\R^I:\sum_iw_i=1,\ \sum_iw_ia_i\perp\Omega\Bigr\},
+\]
+which contains $w^*$. Independent rounding of the weights would not do: for
+$x^2+y+1$ and $x^2-y+1$, equal weights give $x^2+1$, while weights
+$(\tfrac12+\epsilon,\tfrac12-\epsilon)$ give an aggregate unbounded below.
+Parametrize $\mathcal W$ rationally with free coordinates chosen among the
+weights, round the free coordinates to a dyadic grid, and let $\hat w$ be the
+result; then $\varepsilon=\norm{\hat w-w^*}_1$ can be made as small as
+$2^{-\mathfrak b}$ with weights of $\mathfrak b+L^{O(1)}$ bits.
+
+\emph{The margin survives.} Let $M\ge1$ bound $\norm{Q_i}$, $\norm{a_i}$ and
+$\abs{c_i}$. If $\sum_{i\in I}Q_i\ne0$, let $\varrho$ be its least positive
+eigenvalue. The product of the positive eigenvalues of an integer multiple of
+this matrix is a positive integer coefficient of its characteristic
+polynomial, and all eigenvalues are at most $2^{L^{O(1)}}$, so
+$\varrho\ge2^{-L^{O(1)}}$. Put $\eta=\min(1,\omega\varrho)$. On
+$\mathcal V_0=\Omega^\perp$ the aggregate Hessian at $w^*$ is at least $\eta
+I$, and if $\varepsilon\le\omega/2$, at least $(\eta/2)I$ at $\hat w$, with the
+same support and kernel. The minimum of the aggregate is
+$\nu(w)=c(w)-\tfrac12b(w)^{\mathsf T}(H(w)|_{\mathcal V_0})^{-1}b(w)$, with
+$b(w)=\sum_iw_ia_i$ and $c(w)=\sum_iw_ic_i$, and the identity
+$\hat H^{-1}-H^{*-1}=\hat H^{-1}(H^*-\hat H)H^{*-1}$ gives
+\[
+\abs{\nu(\hat w)-\nu(w^*)}\le\Bigl(M+\frac{2M^2}{\eta}+\frac{M^3}{\eta^2}\Bigr)
+\varepsilon\le\frac{4M^3}{\eta^2}\varepsilon .
+\]
+Choosing $\varepsilon\le\min\{\omega/4,\alpha\eta^2/(16M^3)\}$ keeps the
+support and gives $\nu(\hat w)\ge3\alpha/4$. If $\sum_{i\in I}Q_i=0$, then
+$\mathcal W$ forces $b(w)=0$, the aggregate is the constant $c(w)$, and
+$\varepsilon\le\min\{\omega/4,\alpha/(4M)\}$ suffices. In both cases
+$\mathfrak b=L^{O(k+1)}$.
+
+\emph{The certificate.} The rational system $\hat Hz=-b(\hat w)$ is
+consistent because $b(\hat w)\perp\Omega=\ker\hat H$. A rational solution
+from Gaussian elimination and $\gamma=c(\hat w)+\tfrac12b(\hat w)^{\mathsf
+T}z=\nu(\hat w)>0$ satisfy~\eqref{eq:qc-rational-aggregate}, and all lengths
+are $L^{O(k+1)}$. A feasible point would make the left side
+of~\eqref{eq:qc-rational-aggregate} nonpositive and the right side positive.
+\end{proof}
+
+The rounding step is an algorithm once an algebraic aggregate is known: its
+support, the rational kernel, the precision, and the rounding are all
+computable. Finding the initial aggregate is a separate task that the theorem
+does not address. The certificate refutes real feasibility only; it says
+nothing about an integer program whose continuous relaxation is feasible.
+
+The span must enter exponentially for this format, and the support cannot be
+bounded in terms of $k$ alone.
+
+\begin{proposition}[Lower bounds for positive aggregates]
+\label{prop:qc-infeasibility-lower}
+\begin{enumerate}[label=(\alph*),leftmargin=*]
+\item The system $\tfrac12-x_1\le0$, $x_i^2-x_{i+1}\le0$ for $1\le i<k$,
+$x_k^2\le0$ is infeasible, has Hessian span $k$, and every normalized
+positive aggregate has margin at most $2^{-2^k}$, so a rational margin has a
+denominator of at least $2^k+1$ bits.
+\item In the system $\tfrac12-x_1\le0$, $x_i^2-x_{i+1}\le0$ for $1\le i\le k$,
+$x_{k+1}\le0$, with span $k$, every positive aggregate with rational weights
+$\lambda_i\ge0$ satisfies $\lambda_{k+1}/\lambda_0>2^{d-1}/(3d)$, where
+$d=2^k$; the two weights together need $d-O(\log d)$ bits under any common
+scaling.
+\item For $n\ge2$, the rows $\norm{x-e_i}^2-\frac{n-2}{n-1}\le0$,
+$1\le i\le n$, have $k=1$, are infeasible, and every proper subfamily is
+feasible, so every positive aggregate uses all $n$ rows.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+(a) Backward induction from $x_k=0$ gives $x_1=0$, contradicting the first
+row. At $y_i=2^{-2^{i-1}}$ every row except the last vanishes and the last
+equals $2^{-2^k}$; a normalized aggregate with margin $\gamma$ satisfies
+$\gamma\le\sum_iw_ig_i(y)\le2^{-2^k}$.
+
+(b) Infeasibility follows as in (a). At $x=0$ the aggregate equals
+$\lambda_0/2$, so $\lambda_0>0$. On the curve $x_i=\tau^{2^{i-1}}$ all middle
+rows vanish, and positivity at $\tau=(1+1/d)/2$ gives
+$\lambda_0\bigl(-1/(2d)\bigr)+\lambda_{k+1}2^{-d}(1+1/d)^d>0$. Since
+$(1+1/d)^d<3$, the ratio bound follows. If $\lambda_0=a_0/b_0$ and
+$\lambda_{k+1}=a_1/b_1$ in lowest terms, then $a_1b_0>2^{d-1}/(3d)$.
+
+(c) The average of the rows is $\norm{x-\mathbf1/n}^2+\frac{n-1}n-\frac{n-2}{n-1}
+>0$. For a subfamily of $s\le n-1$ indices, the average of its centers has
+squared distance $1-1/s\le\frac{n-2}{n-1}$ to each of them.
+\end{proof}
+
+These are lower bounds for one certificate format. Both chains have short
+symbolic proofs of infeasibility, so no lower bound for other proof systems
+follows.
+
+\subsection{Number-field affine data}
+\label{app:qc-number-field}
+
+Theorem~\ref{thm:qc-height} allows coefficients in a number field. The
+following theorem shows that a convex quadratic program whose matrices are
+rational, but whose right-hand sides and linear costs lie in one explicitly
+given real number field, is solved exactly inside that field in polynomial
+time. The field degree is part of the input length; no product of degrees of
+independently given coefficients is allowed. The argument uses only exact
+rational quadratic programming, a determinant bound in the field, and two
+error bounds.
+
+\begin{theorem}[Rational matrices, algebraic affine data]
+\label{thm:qc-number-field-qp}
+Let $\mathbb F=\Q(\alpha)\subset\R$ be given by a dense irreducible integer
+polynomial of degree $D$ and an interval isolating $\alpha$. Let $Q\succeq0$
+and $C$ be rational, let $b\in\mathbb F^s$ and $c\in\mathbb F^n$ be given in the
+power basis, and let $L$ be the total input length. A deterministic algorithm
+running in time polynomial in $L$ decides whether
+$\min\{\tfrac12x^{\mathsf T}Qx+c^{\mathsf T}x:Cx\le b\}$ is infeasible,
+unbounded, or finite, and in the last case returns the minimum-norm optimizer
+$p\in\mathbb F^n$ in the power basis, with polynomial length.
+\end{theorem}
+
+\begin{proof}
+\emph{Charts.} Assume first that the problem is feasible and bounded below; a
+convex quadratic bounded below on a nonempty polyhedron attains its
+minimum~\cite{FrankWolfe1956}; this is also the polyhedral case
+of~\cite[Corollary~2, in the numbering of the 1997 report]{LuoZhang1999}.
+Let $C_I$ consist of rows forming a basis of all constraint normals active
+at $p$, and let
+$\mathcal M_I=\left(\begin{smallmatrix}Q&C_I^{\mathsf T}\\C_I&0\end{smallmatrix}
+\right)$. For $\xi\in\ker C_I$, the points $p\pm\tau\xi$ are feasible for small
+$\tau$, so $Qp+c\in(\ker C_I)^\perp$, and some signed $\lambda$ satisfies
+$\mathcal M_I(p,\lambda)=(-c,b_I)$. The kernel of $\mathcal M_I$ is
+$(\ker Q\cap\ker C_I)\times\{0\}$: if $Q\xi+C_I^{\mathsf T}\zeta=0$ and
+$C_I\xi=0$, then $\xi^{\mathsf T}Q\xi=0$, so $Q\xi=0$ and $\zeta=0$. For such
+$\xi$, $f(p\pm\tau\xi)=f(p)$, and minimality of the norm gives $p\perp\xi$.
+Hence $(p,\lambda)$ is the least-norm solution, and
+\[
+(p,\lambda)=\mathcal M_I^+(-c,b_I),\qquad
+\mathcal M_I^+=\mathcal A^{-1}\mathcal M_I\mathcal A^{-1},\quad
+\mathcal A=\mathcal M_I+ZZ^{\mathsf T},
+\]
+where the columns of $Z$ form a rational basis of $\ker\mathcal M_I$; on the
+kernel $\mathcal A$ acts invertibly and $\mathcal M_I$ vanishes, and on the
+range $\mathcal A$ agrees with $\mathcal M_I$. Thus each coordinate of $p$ is a
+rational linear combination of the entries of $b$ and $c$ with coefficients of
+polynomial bit length, uniformly over all $I$. This proves $p\in\mathbb F^n$,
+bounds its power-basis length, and gives a computable rational $R\ge1$ of
+polynomial length with $p\in[-R,R]^n$, using Cauchy's bound for $\alpha$. The
+chart is used only in the proof; the algorithm does not search over $I$.
+
+\emph{Separation in $\mathbb F$.} Clearing denominators and multiplying by a
+power of the leading coefficient of the polynomial of $\alpha$ makes every
+entry of a given matrix over $\mathbb F$ an algebraic integer. A nonzero
+$r\times r$ minor is then, up to a known integer factor, a nonzero algebraic
+integer whose conjugates are bounded by determinant expansion, so its norm is
+a nonzero integer. Hence every nonzero minor, and every nonzero element of
+$\mathbb F$ of polynomial length, has absolute value at least $2^{-L^{O(1)}}$.
+
+\emph{Error bounds.} For a real matrix $\mathfrak M$ and any right-hand side
+$\mathfrak r$ with $\{\mathfrak Mx\le\mathfrak r\}\ne\varnothing$,
+\begin{equation}
+\label{eq:qc-hoffman}
+\dist\bigl(y,\{\mathfrak Mx\le\mathfrak r\}\bigr)\le
+H_{\mathfrak M}\norm{(\mathfrak My-\mathfrak r)_+}_\infty,\qquad
+H_{\mathfrak M}=\max_{\mathcal I}\frac{\sqrt{\abs{\mathcal I}}}
+{\sigma_{\min}(\mathfrak M_{\mathcal I})},
+\end{equation}
+the maximum over linearly independent sets of rows~\cite{Hoffman1952}. Indeed,
+if $z$ is the projection of $y$, then $y-z=\mathfrak M_{\mathcal I}^{\mathsf
+T}\lambda$ with $\lambda\ge0$ and independent rows active at $z$, and
+$\norm{y-z}^2=\lambda^{\mathsf T}(\mathfrak M_{\mathcal I}y-\mathfrak
+r_{\mathcal I})\le\norm\lambda_1\norm{(\mathfrak My-\mathfrak r)_+}_\infty$,
+with $\norm\lambda_1\le\sqrt{\abs{\mathcal I}}\,\norm{y-z}/\sigma_{\min}$. A
+nonsingular square column submatrix $\mathfrak N$ of $\mathfrak M_{\mathcal
+I}$ gives $\sigma_{\min}(\mathfrak M_{\mathcal I})\ge\abs{\det\mathfrak N}/
+\norm{\mathfrak N}^{\abs{\mathcal I}-1}$. The separation bound for nonzero
+minors and entrywise bounds for $\norm{\mathfrak N}$ hold uniformly over all
+row sets, so they yield rational numbers $H_A,H_{\mathfrak M}\ge1$ of
+polynomial length that bound the constant in~\eqref{eq:qc-hoffman} for the
+rational matrix $A$ of the rows $Cx\le b$ and $\norm x_\infty\le R$, and for
+$\mathfrak M=(A;Q;-Q;c^{\mathsf T};-c^{\mathsf T})$;
+inequality~\eqref{eq:qc-hoffman} remains true with these upper bounds. The
+right-hand sides do not enter.
+
+Let $P_R=\{Cx\le b,\ \norm x_\infty\le R\}$, which has the same optimum and
+canonical optimizer, let $\mathcal O$ be its optimal set, and let $U=nR$, a
+rational bound for $\norm x$ on the box. Two optimal points have the same
+$Qx$, by the midpoint identity, and then the same $c^{\mathsf T}x$;
+conversely such points are optimal. So $\mathcal O=\{x\in P_R:Qx=Qp,\ c^{\mathsf T}x=c^{\mathsf T}p\}$,
+whose matrix is $\mathfrak M$. For $x\in P_R$ with $\gamma=f(x)-f(p)\le1$, the
+variational inequality at $p$ gives $\tfrac12(x-p)^{\mathsf T}Q(x-p)\le\gamma$,
+hence $\norm{Q(x-p)}\le\sqrt{2\mathfrak q\gamma}$ for a rational
+$\mathfrak q\ge\norm Q$, and
+$\abs{c^{\mathsf T}(x-p)}\le\gamma+U\sqrt{2\mathfrak q\gamma}$. By
+\eqref{eq:qc-hoffman},
+\[
+\dist(x,\mathcal O)\le\mathcal T\sqrt\gamma,\qquad
+\mathcal T=H_{\mathfrak M}\bigl(1+2(U+1)(\mathfrak q+1)\bigr).
+\]
+
+\emph{Approximating $p$.} For rational $\varepsilon,\delta>0$, compute
+rational $b^+$ with $b\le b^+\le b+\varepsilon\mathbf1$ and $\tilde c$ with
+$\norm{\tilde c-c}\le\varepsilon$ by exact root refinement of $\alpha$, keep
+the box exact, and solve the strictly convex rational problem
+\[
+y=\argmin\bigl\{\tfrac12x^{\mathsf T}Qx+\tilde c^{\mathsf T}x+
+\tfrac\delta2\norm x^2:\ Cx\le b^+,\ \norm x_\infty\le R\bigr\}
+\]
+exactly in polynomial time~\cite{KozlovTarasovKhachiyan1980}. Let
+$L_f=\mathfrak qU+\bar c$, where $\bar c\ge1$ is a rational upper bound for
+$\norm c_1$ obtained from the power-basis coefficients of $c$ and Cauchy's
+bound for $\alpha$; it is a Lipschitz bound for $f$ on the box. Put
+$\mathcal W=2U+L_fH_A$. The constants $U$, $\mathfrak q$, $L_f$, $H_A$,
+$H_{\mathfrak M}$, $\mathcal T$ and $\mathcal W$ are rationals of polynomial
+length, computed before $\delta$ and $\varepsilon$ are chosen below. Some
+$x\in P_R$ satisfies $\norm{x-y}\le H_A\varepsilon$, and comparison with $p$
+gives
+\[
+\norm y^2\le\norm p^2+2\mathcal W\varepsilon/\delta,\qquad
+f(x)-f(p)\le\Gamma:=\mathcal W\varepsilon+\delta U^2/2 .
+\]
+If $\Gamma\le1$, then $e:=\dist(y,\mathcal O)\le H_A\varepsilon+\mathcal T
+\sqrt\Gamma$. Let $\hat y$ be the projection of $y$ onto $\mathcal O$. Since
+$p$ is the projection of $0$ onto $\mathcal O$,
+$\norm{\hat y-p}^2\le\norm{\hat y}^2-\norm p^2\le2\mathcal W\varepsilon/\delta
++2Ue$, so
+\[
+\norm{y-p}\le e+\sqrt{2\mathcal W\varepsilon/\delta+2Ue} .
+\]
+For a target accuracy $\tau=2^{-\mathfrak q'}\le1$ put
+$\mathcal E=\tau^2/(16(U+1))$, $\delta=\mathcal E^2/(8\mathcal T^2(U^2+1))$ and
+$\varepsilon\le\min\{\mathcal E/(2H_A),\mathcal E^2/(16\mathcal W\mathcal T^2),
+\delta\tau^2/(32\mathcal W)\}$. Then $\Gamma\le\mathcal E^2/(8\mathcal T^2)$,
+$e\le\mathcal E$, and $\norm{y-p}\le\tau/16+\sqrt3\tau/4<\tau$, with all
+parameters of $O(\mathfrak q')+L^{O(1)}$ bits. The norm penalty is necessary:
+without it, the problems $\min\{-\epsilon x:0\le x\le1\}$ select $1$ for
+every $\epsilon>0$, while the canonical optimizer of the limit problem is $0$.
+
+\emph{Exact output.} Every row slack $b_\iota-C_\iota p$ lies in $\mathbb F$
+with polynomial length, so it is either zero or at least $\mathfrak g$ in
+absolute value, where $\mathfrak g=2^{-L^{O(1)}}$ is a rational lower bound
+computed from the separation bound. Put
+$\mathfrak C=\max\{1,\max_\iota\norm{C_\iota}_1\}$, where the inner maximum is
+$0$ if $C$ has no rows. Approximate $p$ within $\mathfrak g/(8\mathfrak C)$ in
+the maximum norm and the entries of $b$ within $\mathfrak g/8$. Each computed
+slack is then within $\mathfrak g/4$ of the true one, so a row is active
+exactly when its computed slack is below $\mathfrak g/2$. Choose a maximal
+independent subset $I$ of the active rows by rational linear algebra and
+return the first block of $\mathcal M_I^+(-c,b_I)$, computed by rational
+matrix arithmetic applied to power-basis vectors.
+
+\emph{Classification.} For a rational matrix $\mathfrak B$ and
+$\mathfrak a\in\mathbb F^{s'}$, feasibility of $\mathfrak Bx\le\mathfrak a$ is
+decided as follows. The chart argument for $\norm x^2$ gives a box
+$[-R',R']^{n}$ of polynomial length containing the least-norm feasible point
+if one exists. The value $t^*=\min\{t\ge0:\mathfrak Bx\le\mathfrak a+t\mathbf1,
+\ \norm x_\infty\le R'\}$ is attained at a vertex, so it lies in $\mathbb F$
+with polynomial length; it is zero exactly when the system is feasible, and
+otherwise at least $2^{-L^{O(1)}}$. Rounding $\mathfrak a$ outward by less
+than this gap and solving one rational linear program decides
+feasibility~\cite{GroetschelLovaszSchrijver1988}. For a feasible problem,
+$f$ is bounded below exactly when $Qv+C^{\mathsf T}\lambda=-c$, $\lambda\ge0$,
+is feasible: completing the square gives a lower bound, and otherwise
+separation from the closed cone $Q\R^n+C^{\mathsf T}\R^s_+$ gives $h$ with
+$Qh=0$, $Ch\le0$ and $c^{\mathsf T}h<0$, an unbounded ray. Both tests use the
+same routine.
+\end{proof}
+
+The input model is one explicitly represented field. Coefficients given by
+separate minimal polynomials could generate a compositum of exponential
+degree, and that case is not covered. The existence of rational charts alone
+does not give the algorithm; the approximation with a norm penalty does.
+
+\subsection{A nonconvex integer caveat}
+\label{app:qc-pell}
+
+The bounds above use convexity of the native rows. Without it, a classical
+Pell family shows that two integer variables and no continuous variable
+already force exponentially long integer output. The phenomenon is
+classical~\cite{Lenstra2002}; it is recorded only to mark why convexity
+appears in the statements of this paper.
+
+\begin{proposition}[Pell output]
+\label{prop:qc-pell}
+For $m\ge1$, the problem
+\[
+\min\{x:\ x^2-5^{2m+1}y^2=1,\ x\ge2,\ y\ge1,\ x,y\in\Z\}
+\]
+has input length $\Theta(m)$, no continuous variables, and the unique
+optimizer $(X_{5^m},B_{5^m}/5^m)$, where $(9+4\sqrt5)^j=X_j+B_j\sqrt5$. Every
+feasible point has an $x$-coordinate of $\Theta(5^m)$ or more bits, and the
+optimal value has $\Theta(5^m)$ bits.
+\end{proposition}
+
+\begin{proof}
+With $B=5^my$, the equation becomes $X^2-5B^2=1$. Every solution in positive
+integers is $(X_j,B_j)$ for a unique $j\ge1$: dividing $X+B\sqrt5$ by a power of
+$u=9+4\sqrt5$ brings it into $[1,u)$, where the quotient $U+V\sqrt5$ has
+integer coefficients, norm one, $U\ge1$ and $0\le V<4$, and $1+5V^2$ is a
+square only for $V=0$. The binomial expansion gives
+$B_j\equiv4j9^{j-1}\pmod5$, and expanding the fifth power gives
+$B_{5j}=5B_j(X_j^4+10X_j^2B_j^2+5B_j^4)$, whose second factor is congruent to
+one modulo five because $X_j^2\equiv1$. Hence the five-adic valuation of
+$B_j$ equals that of $j$. Feasibility requires $5^m\mid B_j$, that is,
+$5^m\mid j$, and $X_j=(u^j+u^{-j})/2$ increases with $j$. Finally
+$u^j/2<X_j<u^j$ with $16<u<32$.
+\end{proof}
+
+The optimal value is an integer, so its minimal polynomial is linear; the
+obstruction is coefficient length, not degree. Repeated fifth powering gives
+an arithmetic circuit with $O(m)$ gates for the optimizer, so the obstruction
+concerns expanded output only. Each instance is feasible, and no hardness of
+deciding feasibility follows. The rows are indefinite and the feasible set is
+nonconvex, so the example does not bear on the convex mixed-integer results
+of Section~\ref{sec:constraints}.

@@ -28,7 +28,7 @@ The initial scan checks all references, including zero multipliers, against prec
 
 The implementation deliberately rejects some semantically usable proofs, including unsupported syntax, equality rounding, nonconforming lifetime annotations, and objective cutoff extensions. Such rejection is not evidence that a claimed bound is false. The proof file must remain stable while it is parsed, replayed, matched, and optionally checked externally; protection against concurrent file replacement is outside this function's stated contract. Extremely large counts or rational tokens can exhaust resources; this is not a service hardened against denial of service.
 
-The inspected upstream comparison source was `/home/sgusev/build-scip/vipr/code/viprchk.cpp`, checkout `30f2951d1e90e47afa821bdd1b12b82246656c42`. Its arithmetic and branch-rule implementations were used as a comparison, not as proof authority. The new kernel checks stronger prerequisites where that source omits necessary validation, notably integrality for rounding and an actual solution witness for a cutoff.
+The inspected upstream comparison source was `/workspace/local-home/build-scip/vipr/code/viprchk.cpp`, checkout `30f2951d1e90e47afa821bdd1b12b82246656c42`. Its arithmetic and branch-rule implementations were used as a comparison, not as proof authority. The new kernel checks stronger prerequisites where that source omits necessary validation, notably integrality for rounding and an actual solution witness for a cutoff.
 
 **Verification evidence.**
 

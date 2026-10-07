@@ -1,0 +1,1553 @@
+--- a/scip/src/scip/nlhdlr_quadratic.c	2026-10-01 23:31:47.154577333 -0400
++++ b/scip/src/scip/nlhdlr_quadratic.c	2026-10-01 23:31:47.165943770 -0400
+@@ -60,6 +60,8 @@
+ #include "scip/expr_var.h"
+ #include "scip/expr_product.h"
+ #include "scip/pub_misc_rowprep.h"
++#include <stdio.h>
++#include <string.h>
+ 
+ /* fundamental nonlinear handler properties */
+ #define NLHDLR_NAME                    "quadratic"
+@@ -83,6 +85,10 @@
+ #define BINSEARCH_MAXITERS             120
+ #define DEFAULT_NCUTSROOT              20
+ #define DEFAULT_NCUTS                  2
++#define DEFAULT_SETRULE                0      /**< rule to choose the direction lambda of the S-free set: 0 = SCIP's point rule */
++#define DEFAULT_SETRULEMAXEVALS        48     /**< maximal number of lambda evaluations per cut for setrule > 0 */
++#define SETRULE_MINGAIN                1e-4   /**< minimal relative gain in the criterion to replace SCIP's lambda */
++#define SETRULE_PI                     3.14159265358979323846
+ 
+ /*
+  * Data structures
+@@ -141,6 +147,10 @@
+    SCIP_Bool             ignorebadrayrestriction; /**< should cut be generated even with bad numerics when restricting to ray? */
+    SCIP_Bool             ignorehighre;       /**< should cut be added even when range / efficacy is large? */
+    SCIP_Bool             trackmore;          /**< for monoidal strengthening, should we track more statistics (more expensive) */
++   int                   setrule;            /**< rule to choose lambda: 0 = SCIP (point rule), 1 = corner bound, 2 = efficacy */
++   int                   setrulemaxevals;    /**< maximal number of lambda evaluations per cut */
++   char*                 dumpfile;           /**< file to append corner data of root cuts to ("" = no dump) */
++   SCIP_Real*            sellambda;          /**< lambda used for the current cut, or NULL for SCIP's point rule */
+ 
+    /* statistics */
+    int                   ncouldimprovedcoef; /**< number of times a coefficient could improve but didn't because of numerics */
+@@ -158,6 +168,20 @@
+    SCIP_Real             efficacysum;        /**< sum of efficacy of cuts */
+    SCIP_Real             currentavecutcoef;  /**< average cutcoef of current cut */
+    SCIP_Real             currentavemonoidalimprovement;/**< average improvement of current cut when using monoidal strengthening */
++   SCIP_Longint          nselcalls;          /**< number of cuts for which an alternative lambda was searched */
++   SCIP_Longint          nselchanged;        /**< number of cuts computed with a lambda different from SCIP's */
++   SCIP_Longint          nselfail;           /**< number of searches that fell back because of numerics */
++   SCIP_Longint          nselevals;          /**< number of lambda evaluations */
++   SCIP_Real             selgainsum;         /**< sum over changed cuts of criterion(best)/criterion(SCIP) */
++   SCIP_CLOCK*           intercutclock;      /**< time spent in generateIntercut */
++   SCIP_CLOCK*           selclock;           /**< time spent in the lambda search */
++   SCIP_ROW**            cutrows;            /**< captured intersection cuts (to count how many entered the LP) */
++   int                   ncutrows;           /**< number of captured cuts */
++   int                   cutrowssize;        /**< size of cutrows */
++   int                   nrootcutrows;       /**< number of captured cuts generated at depth 0 */
++   SCIP_Longint          napplied;           /**< cuts (released ones) that were in at least one solved LP */
++   SCIP_Longint          nactive;            /**< cuts (released ones) that had a nonzero dual value in some LP */
++   SCIP_Longint          nrootapplied;       /**< depth-0 cuts (released ones) that were in at least one solved LP */
+ };
+ 
+ /* structure to store rays. note that for a given ray, the entries in raysidx are sorted. */
+@@ -175,6 +199,30 @@
+ typedef struct Rays RAYS;
+ 
+ 
++/** counts captured intersection cuts that were in at least one solved LP (patch) */
++static
++void countAppliedCuts(
++   SCIP_NLHDLRDATA*      nlhdlrdata,         /**< nlhdlr data */
++   SCIP_Longint*         napplied,           /**< pointer to add number of applied cuts to */
++   SCIP_Longint*         nactive,            /**< pointer to add number of cuts with nonzero dual to */
++   SCIP_Longint*         nrootapplied        /**< pointer to add number of applied depth-0 cuts to */
++   )
++{
++   int i;
++
++   for( i = 0; i < nlhdlrdata->ncutrows; ++i )
++   {
++      if( SCIProwGetNLPsAfterCreation(nlhdlrdata->cutrows[i]) > 0 )
++      {
++         ++(*napplied);
++         if( i < nlhdlrdata->nrootcutrows )
++            ++(*nrootapplied);
++      }
++      if( SCIProwGetActiveLPCount(nlhdlrdata->cutrows[i]) > 0 )
++         ++(*nactive);
++   }
++}
++
+ /*
+  * Callback methods of the table
+  */
+@@ -214,6 +262,24 @@
+    SCIPinfoMessage(scip, file, " %10g", nlhdlrdata->ncalls > 0 ? nlhdlrdata->nboundcuts / nlhdlrdata->ncalls : 0.0);
+    SCIPinfoMessage(scip, file, "\n");
+ 
++   /* statistics of the set selection rule (patch) */
++   {
++      SCIP_Longint napplied = nlhdlrdata->napplied;
++      SCIP_Longint nactive = nlhdlrdata->nactive;
++      SCIP_Longint nrootapplied = nlhdlrdata->nrootapplied;
++
++      countAppliedCuts(nlhdlrdata, &napplied, &nactive, &nrootapplied);
++      SCIPinfoMessage(scip, file, "Quadratic SetSel   : %10s %10s %10s %10s %10s %10s %12s %12s %10s %10s %10s\n", "Rule",
++         "Calls", "Changed", "Fallback", "Evals", "AveGain", "IntercutTime", "SelectTime", "Applied", "Active", "RootAppl");
++      SCIPinfoMessage(scip, file, "  %-17s: %10d %10" SCIP_LONGINT_FORMAT " %10" SCIP_LONGINT_FORMAT " %10" SCIP_LONGINT_FORMAT
++         " %10" SCIP_LONGINT_FORMAT " %10g %12.4f %12.4f %10" SCIP_LONGINT_FORMAT " %10" SCIP_LONGINT_FORMAT " %10"
++         SCIP_LONGINT_FORMAT "\n", "Quadratic SetSel", nlhdlrdata->setrule, nlhdlrdata->nselcalls,
++         nlhdlrdata->nselchanged, nlhdlrdata->nselfail, nlhdlrdata->nselevals,
++         nlhdlrdata->nselchanged > 0 ? nlhdlrdata->selgainsum / nlhdlrdata->nselchanged : 0.0,
++         SCIPgetClockTime(scip, nlhdlrdata->intercutclock), SCIPgetClockTime(scip, nlhdlrdata->selclock),
++         napplied, nactive, nrootapplied);
++   }
++
+    return SCIP_OKAY;
+ }
+ 
+@@ -1501,6 +1567,276 @@
+    return SCIP_OKAY;
+ }
+ 
++/*
++ * Free direction lambda (patch "setrule"): the maximal S-free sets of Chmiela, Munoz and Serrano are
++ * C_lambda = { s : phi_lambda(yhat(s)) <= lambda^T xhat(s) } with a unit vector lambda; SCIP uses
++ * lambda = xhat(zlp) / ||xhat(zlp)||.  Every unit lambda with zlp in the interior of C_lambda gives an S-free set
++ * (Munoz and Serrano 2022, Theorem 2 and Proposition 5).  The functions below compute the restriction of C_lambda
++ * to a ray for an arbitrary unit lambda.  Coordinates (as in computeRestrictionToRay):
++ *   x_k(s) = sqrt(eig_k) (v_k^T s + v_k^T b / (2 eig_k)) for eig_k > 0 (sidefactor applied), in the order of the
++ *   eigenvalues; case 2 appends sqrt(kappa); case 4 appends (w(s) + kappa + r) / (2 sqrt(r)), r = sqrt(1 + kappa^2),
++ *   and yhat appends (w(s) + kappa - r) / (2 sqrt(r)).  lambda has npos (+1 in cases 2 and 4) entries.
++ */
++
++/** number of positive eigenvalues (after applying sidefactor) that the intersection cut code uses */
++static
++int countPositiveEigenvalues(
++   SCIP*                 scip,               /**< SCIP data structure */
++   SCIP_NLHDLREXPRDATA*  nlhdlrexprdata,     /**< nlhdlr expression data */
++   SCIP_Real             sidefactor          /**< 1.0 if the violated constraint is q &le; rhs, -1.0 otherwise */
++   )
++{
++   SCIP_Real* eigenvalues;
++   int nquadexprs;
++   int npos;
++   int i;
++
++   SCIPexprGetQuadraticData(nlhdlrexprdata->qexpr, NULL, NULL, NULL, NULL, &nquadexprs, NULL, &eigenvalues, NULL);
++
++   npos = 0;
++   for( i = 0; i < nquadexprs; ++i )
++      if( ! SCIPisZero(scip, eigenvalues[i]) && sidefactor * eigenvalues[i] > 0.0 )
++         ++npos;
++
++   return npos;
++}
++
++/** computes xhat(zlp) restricted to the positive coordinates: x0[k] = sqrt(eig_k) dot_k */
++static
++void computeLambdaX0(
++   SCIP*                 scip,               /**< SCIP data structure */
++   SCIP_NLHDLREXPRDATA*  nlhdlrexprdata,     /**< nlhdlr expression data */
++   SCIP_Real             sidefactor,         /**< 1.0 if the violated constraint is q &le; rhs, -1.0 otherwise */
++   SCIP_Real*            vb,                 /**< array containing v_i^T b */
++   SCIP_Real*            vzlp,               /**< array containing v_i^T zlp_q */
++   SCIP_Real*            x0                  /**< buffer of length npos */
++   )
++{
++   SCIP_Real* eigenvalues;
++   int nquadexprs;
++   int k;
++   int i;
++
++   SCIPexprGetQuadraticData(nlhdlrexprdata->qexpr, NULL, NULL, NULL, NULL, &nquadexprs, NULL, &eigenvalues, NULL);
++
++   k = 0;
++   for( i = 0; i < nquadexprs; ++i )
++   {
++      SCIP_Real eig;
++
++      if( SCIPisZero(scip, eigenvalues[i]) )
++         continue;
++      eig = sidefactor * eigenvalues[i];
++      if( eig > 0.0 )
++      {
++         x0[k] = sqrt(eig) * (vzlp[i] + vb[i] / (2.0 * eig));
++         ++k;
++      }
++   }
++}
++
++/** computes the lambda-independent data of a ray: ||y(zlp + t ray)||^2 = yA t^2 + yB t + yC, xr = x(ray) in the
++ *  positive coordinates (without the constant shift), and w(ray) (case 4)
++ */
++static
++void computeLambdaRayData(
++   SCIP*                 scip,               /**< SCIP data structure */
++   SCIP_NLHDLREXPRDATA*  nlhdlrexprdata,     /**< nlhdlr expression data */
++   SCIP_Real             sidefactor,         /**< 1.0 if the violated constraint is q &le; rhs, -1.0 otherwise */
++   SCIP_Bool             iscase4,            /**< whether we are in case 4 */
++   SCIP_Real*            raycoefs,           /**< coefficients of ray */
++   int*                  rayidx,             /**< index of consvar the ray coef is associated to */
++   int                   raynnonz,           /**< length of raycoefs and rayidx */
++   SCIP_Real*            vb,                 /**< array containing v_i^T b */
++   SCIP_Real*            vzlp,               /**< array containing v_i^T zlp_q */
++   SCIP_Real*            wcoefs,             /**< coefficients of w for the quad vars or NULL if w is 0 */
++   SCIP_Real*            ya,                 /**< pointer to store yA */
++   SCIP_Real*            yb,                 /**< pointer to store yB */
++   SCIP_Real*            yc,                 /**< pointer to store yC */
++   SCIP_Real*            xr,                 /**< buffer of length npos to store x(ray) */
++   SCIP_Real*            wray                /**< pointer to store w(ray) */
++   )
++{
++   SCIP_Real* eigenvectors;
++   SCIP_Real* eigenvalues;
++   int nquadexprs;
++   int k;
++   int i;
++
++   SCIPexprGetQuadraticData(nlhdlrexprdata->qexpr, NULL, NULL, NULL, NULL, &nquadexprs, NULL, &eigenvalues, &eigenvectors);
++
++   *ya = 0.0;
++   *yb = 0.0;
++   *yc = 0.0;
++   *wray = 0.0;
++   k = 0;
++   for( i = 0; i < nquadexprs; ++i )
++   {
++      SCIP_Real vdotray;
++      SCIP_Real dot;
++      SCIP_Real eig;
++
++      if( SCIPisZero(scip, eigenvalues[i]) )
++      {
++         if( wcoefs == NULL )
++            continue;
++         vdotray = computeEigenvecDotRay(&eigenvectors[i * nquadexprs], nquadexprs, raycoefs, rayidx, raynnonz);
++         *wray += vb[i] * vdotray;
++         continue;
++      }
++
++      eig = sidefactor * eigenvalues[i];
++      dot = vzlp[i] + vb[i] / (2.0 * eig);
++      vdotray = computeEigenvecDotRay(&eigenvectors[i * nquadexprs], nquadexprs, raycoefs, rayidx, raynnonz);
++
++      if( eig > 0.0 )
++      {
++         xr[k] = sqrt(eig) * vdotray;
++         ++k;
++      }
++      else
++      {
++         *ya -= eig * SQR(vdotray);
++         *yb -= 2.0 * eig * dot * vdotray;
++         *yc -= eig * SQR(dot);
++      }
++   }
++
++   if( iscase4 )
++      *wray += computeWRayLinear(nlhdlrexprdata, sidefactor, raycoefs, rayidx, raynnonz);
++}
++
++/** builds A, B, C, D, E (and case-4 data) of the restriction of C_lambda to a ray from the lambda-independent data */
++static
++void buildLambdaCoefs(
++   SCIP_Bool             iscase4,            /**< whether we are in case 4 */
++   SCIP_Real             kappa,              /**< value of kappa */
++   SCIP_Real             wzlp,               /**< value of w at zlp */
++   int                   npos,               /**< number of positive eigenvalues */
++   const SCIP_Real*      lambda,             /**< unit vector lambda (npos entries, +1 in cases 2 and 4) */
++   const SCIP_Real*      x0,                 /**< x(zlp) in the positive coordinates */
++   SCIP_Real             ya,                 /**< yA of the ray */
++   SCIP_Real             yb,                 /**< yB of the ray */
++   SCIP_Real             yc,                 /**< yC of the ray */
++   const SCIP_Real*      xr,                 /**< x(ray) in the positive coordinates */
++   SCIP_Real             wray,               /**< w(ray) */
++   SCIP_Real*            coefs1234a,         /**< buffer to store A, B, C, D, E of cases 1, 2, 3, or 4a */
++   SCIP_Real*            coefs4b,            /**< buffer to store A, B, C, D, E of case 4b (case 4 only) */
++   SCIP_Real*            coefscondition      /**< buffer to store the data of the case-4a condition (case 4 only) */
++   )
++{
++   SCIP_Real dx;
++   SCIP_Real ex;
++   int k;
++
++   dx = 0.0;
++   ex = 0.0;
++   for( k = 0; k < npos; ++k )
++   {
++      dx += lambda[k] * xr[k];
++      ex += lambda[k] * x0[k];
++   }
++
++   if( ! iscase4 )
++   {
++      coefs1234a[0] = ya;
++      coefs1234a[1] = yb;
++      coefs1234a[2] = yc;
++      if( kappa > 0.0 )
++         ex += lambda[npos] * sqrt(kappa);
++      else if( kappa < 0.0 )
++         coefs1234a[2] -= kappa;
++      coefs1234a[3] = dx;
++      coefs1234a[4] = ex;
++   }
++   else
++   {
++      SCIP_Real r;
++      SCIP_Real sr;
++      SCIP_Real xextra;
++      SCIP_Real yextra;
++      SCIP_Real ll;
++      SCIP_Real fac;
++
++      r = sqrt(1.0 + SQR(kappa));
++      sr = sqrt(r);
++      xextra = wzlp + kappa + r;
++      yextra = wzlp + kappa - r;
++      ll = lambda[npos];
++      fac = MAX(1.0 - SQR(ll), 0.0);
++
++      /* piece a: ||yhat(t)|| - lambda^T xhat(t) */
++      coefs1234a[0] = ya + SQR(wray) / (4.0 * r);
++      coefs1234a[1] = yb + 2.0 * yextra * wray / (4.0 * r);
++      coefs1234a[2] = yc + SQR(yextra) / (4.0 * r);
++      coefs1234a[3] = dx + ll * wray / (2.0 * sr);
++      coefs1234a[4] = ex + ll * xextra / (2.0 * sr);
++
++      /* piece b: sqrt((1 - ll^2) ||y(t)||^2) - (lambda^T xhat(t) - ll yhat_last(t)); xhat_last - yhat_last = sqrt(r) */
++      coefs4b[0] = fac * ya;
++      coefs4b[1] = fac * yb;
++      coefs4b[2] = fac * yc;
++      coefs4b[3] = dx;
++      coefs4b[4] = ex + ll * sr;
++
++      /* condition of piece a: -ll ||yhat(t)|| + yhat_last(t) <= 0, multiplied by 2 sqrt(r) */
++      coefscondition[0] = -2.0 * sr * ll;
++      coefscondition[1] = wray;
++      coefscondition[2] = yextra;
++   }
++}
++
++/** computeRestrictionToRay for a free unit lambda */
++static
++SCIP_RETCODE computeRestrictionToRayLambda(
++   SCIP*                 scip,               /**< SCIP data structure */
++   SCIP_NLHDLREXPRDATA*  nlhdlrexprdata,     /**< nlhdlr expression data */
++   SCIP_Real             sidefactor,         /**< 1.0 if the violated constraint is q &le; rhs, -1.0 otherwise */
++   SCIP_Bool             iscase4,            /**< whether we are in case 4 */
++   SCIP_Real*            raycoefs,           /**< coefficients of ray */
++   int*                  rayidx,             /**< index of consvar the ray coef is associated to */
++   int                   raynnonz,           /**< length of raycoefs and rayidx */
++   SCIP_Real*            vb,                 /**< array containing v_i^T b */
++   SCIP_Real*            vzlp,               /**< array containing v_i^T zlp_q */
++   SCIP_Real*            wcoefs,             /**< coefficients of w for the qud vars or NULL if w is 0 */
++   SCIP_Real             wzlp,               /**< value of w at zlp */
++   SCIP_Real             kappa,              /**< value of kappa */
++   const SCIP_Real*      lambda,             /**< unit vector lambda */
++   SCIP_Real*            coefs1234a,         /**< buffer to store A, B, C, D, and E of cases 1, 2, 3, or 4a */
++   SCIP_Real*            coefs4b,            /**< buffer to store A, B, C, D, and E of case 4b (or NULL if not needed) */
++   SCIP_Real*            coefscondition,     /**< buffer to store data to evaluate condition to decide case 4a or 4b */
++   SCIP_Bool*            success             /**< did we successfully compute the coefficients? */
++   )
++{
++   SCIP_Real* x0;
++   SCIP_Real* xr;
++   SCIP_Real ya;
++   SCIP_Real yb;
++   SCIP_Real yc;
++   SCIP_Real wray;
++   int npos;
++
++   *success = TRUE;
++   npos = countPositiveEigenvalues(scip, nlhdlrexprdata, sidefactor);
++
++   SCIP_CALL( SCIPallocBufferArray(scip, &x0, npos + 1) );
++   SCIP_CALL( SCIPallocBufferArray(scip, &xr, npos + 1) );
++
++   computeLambdaX0(scip, nlhdlrexprdata, sidefactor, vb, vzlp, x0);
++   computeLambdaRayData(scip, nlhdlrexprdata, sidefactor, iscase4, raycoefs, rayidx, raynnonz, vb, vzlp, wcoefs,
++      &ya, &yb, &yc, xr, &wray);
++   buildLambdaCoefs(iscase4, kappa, wzlp, npos, lambda, x0, ya, yb, yc, xr, wray, coefs1234a, coefs4b, coefscondition);
++
++   /* zlp must be in the interior of C_lambda (piece a is an upper bound on the gauge function) */
++   if( sqrt(MAX(coefs1234a[2], 0.0)) - coefs1234a[4] >= 0.0 )
++      *success = FALSE;
++
++   SCIPfreeBufferArray(scip, &xr);
++   SCIPfreeBufferArray(scip, &x0);
++
++   return SCIP_OKAY;
++}
++
+ /** calculate coefficients of restriction of the function to given ray.
+  *
+  * The restriction of the function representing the maximal S-free set to zlp + t * ray has the form
+@@ -1530,6 +1866,7 @@
+    SCIP_Real*            coefs1234a,         /**< buffer to store A, B, C, D, and E of cases 1, 2, 3, or 4a */
+    SCIP_Real*            coefs4b,            /**< buffer to store A, B, C, D, and E of case 4b (or NULL if not needed) */
+    SCIP_Real*            coefscondition,     /**< buffer to store data to evaluate condition to decide case 4a or 4b */
++   const SCIP_Real*      lambda,             /**< unit vector lambda of the S-free set, or NULL for SCIP's rule */
+    SCIP_Bool*            success             /**< did we successfully compute the coefficients? */
+    )
+ {
+@@ -1545,6 +1882,13 @@
+    SCIP_Real wray;
+    int i;
+ 
++   if( lambda != NULL )
++   {
++      SCIP_CALL( computeRestrictionToRayLambda(scip, nlhdlrexprdata, sidefactor, iscase4, raycoefs, rayidx, raynnonz,
++            vb, vzlp, wcoefs, wzlp, kappa, lambda, coefs1234a, coefs4b, coefscondition, success) );
++      return SCIP_OKAY;
++   }
++
+    *success = TRUE;
+ 
+    qexpr = nlhdlrexprdata->qexpr;
+@@ -2501,6 +2845,905 @@
+    return;
+ }
+ 
++/*
++ * Choice of lambda (patch "setrule")
++ */
++
++/** data for evaluating C_lambda on all rays of the current cone */
++typedef struct
++{
++   int                   nrays;              /**< number of rays */
++   int                   npos;               /**< number of positive eigenvalues */
++   int                   dim;                /**< dimension of lambda (npos, +1 in cases 2 and 4) */
++   SCIP_Bool             iscase4;            /**< whether we are in case 4 */
++   SCIP_Real             kappa;              /**< kappa */
++   SCIP_Real             wzlp;               /**< w(zlp) */
++   SCIP_Real             sr;                 /**< sqrt(sqrt(1 + kappa^2)) (case 4) */
++   SCIP_Real*            x0;                 /**< xhat(zlp), dim entries */
++   SCIP_Real*            ya;                 /**< yA of each ray */
++   SCIP_Real*            yb;                 /**< yB of each ray */
++   SCIP_Real*            yc;                 /**< yC of each ray */
++   SCIP_Real*            wray;               /**< w(ray) of each ray */
++   SCIP_Real*            xr;                 /**< xhat(ray) - xhat(0) of each ray, dim entries per ray */
++   SCIP_Real*            weight;             /**< floored reduced cost of each ray (rule 1) */
++   SCIP_Real*            rawweight;          /**< reduced cost (absolute value) of each ray */
++   int*                  ubeg;               /**< start of the structural vector of each ray (rule 2) */
++   int*                  uidx;               /**< LP column positions of the structural vectors */
++   SCIP_Real*            uval;               /**< values of the structural vectors */
++   SCIP_Real*            dense;              /**< dense work array over LP columns */
++   SCIP_Real*            alpha;              /**< step lengths of the last evaluation */
++   int                   rule;               /**< 1 = corner bound, 2 = efficacy */
++   int                   nevals;             /**< number of evaluations so far */
++} LAMBDASEARCH;
++
++/** checks numerics of restricted coefficients like areCoefsNumericsGood, but without statistics */
++static
++SCIP_Bool lambdaCoefsGood(
++   SCIP*                 scip,               /**< SCIP data structure */
++   SCIP_NLHDLRDATA*      nlhdlrdata,         /**< nlhdlr data */
++   SCIP_Real*            coefs1234a,         /**< coefficients for case 1-3 and 4a */
++   SCIP_Real*            coefs4b,            /**< coefficients for case 4b */
++   SCIP_Bool             iscase4             /**< whether we are in case 4 */
++   )
++{
++   int piece;
++
++   if( coefs1234a[2] < 0.0 || sqrt(coefs1234a[2]) - coefs1234a[4] >= 0.0 )
++      return FALSE;
++
++   if( ! nlhdlrdata->ignorebadrayrestriction )
++      return TRUE;
++
++   for( piece = 0; piece < (iscase4 ? 2 : 1); ++piece )
++   {
++      SCIP_Real* cf = piece == 0 ? coefs1234a : coefs4b;
++      SCIP_Real max = 0.0;
++      SCIP_Real min = SCIPinfinity(scip);
++      int j;
++
++      for( j = 0; j < 3; ++j )
++      {
++         SCIP_Real absval = REALABS(cf[j]);
++         if( max < absval )
++            max = absval;
++         if( absval != 0.0 && absval < min )
++            min = absval;
++      }
++      if( SCIPisHugeValue(scip, max / min) )
++         return FALSE;
++   }
++
++   return TRUE;
++}
++
++/** evaluates the criterion of the rule for a unit lambda; returns -infinity if lambda is not usable */
++static
++SCIP_Real evalLambda(
++   SCIP*                 scip,               /**< SCIP data structure */
++   SCIP_NLHDLRDATA*      nlhdlrdata,         /**< nlhdlr data */
++   LAMBDASEARCH*         ls,                 /**< search data */
++   const SCIP_Real*      lambda              /**< unit vector */
++   )
++{
++   SCIP_Real crit;
++   int j;
++
++   ls->nevals++;
++
++   for( j = 0; j < ls->nrays; ++j )
++   {
++      SCIP_Real ca[5];
++      SCIP_Real cb[5];
++      SCIP_Real cc[3];
++
++      buildLambdaCoefs(ls->iscase4, ls->kappa, ls->wzlp, ls->npos, lambda, ls->x0, ls->ya[j], ls->yb[j], ls->yc[j],
++         &ls->xr[j * ls->dim], ls->wray[j], ca, cb, cc);
++
++      if( ! lambdaCoefsGood(scip, nlhdlrdata, ca, cb, ls->iscase4) )
++         return -SCIPinfinity(scip);
++
++      ls->alpha[j] = computeIntersectionPoint(scip, nlhdlrdata, ls->iscase4, ca, cb, cc);
++      if( ls->alpha[j] <= 0.0 )
++         return -SCIPinfinity(scip);
++   }
++
++   if( ls->rule == 1 )
++   {
++      crit = SCIPinfinity(scip);
++      for( j = 0; j < ls->nrays; ++j )
++         if( ! SCIPisInfinity(scip, ls->alpha[j]) )
++            crit = MIN(crit, ls->weight[j] * ls->alpha[j]);
++   }
++   else
++   {
++      SCIP_Real norm2 = 0.0;
++      int k;
++
++      for( j = 0; j < ls->nrays; ++j )
++      {
++         SCIP_Real coef;
++
++         if( SCIPisInfinity(scip, ls->alpha[j]) )
++            continue;
++         coef = 1.0 / ls->alpha[j];
++         for( k = ls->ubeg[j]; k < ls->ubeg[j + 1]; ++k )
++            ls->dense[ls->uidx[k]] += coef * ls->uval[k];
++      }
++      for( j = 0; j < ls->nrays; ++j )
++         for( k = ls->ubeg[j]; k < ls->ubeg[j + 1]; ++k )
++         {
++            norm2 += SQR(ls->dense[ls->uidx[k]]);
++            ls->dense[ls->uidx[k]] = 0.0;
++         }
++      crit = norm2 > 0.0 ? 1.0 / sqrt(norm2) : SCIPinfinity(scip);
++   }
++
++   return crit;
++}
++
++/** derivative of the step length of ray j with respect to lambda (projected onto the tangent space of the sphere) */
++static
++SCIP_Bool alphaGradient(
++   SCIP*                 scip,               /**< SCIP data structure */
++   LAMBDASEARCH*         ls,                 /**< search data */
++   const SCIP_Real*      lambda,             /**< unit vector */
++   int                   j,                  /**< ray */
++   SCIP_Real             t,                  /**< step length of ray j for lambda (finite) */
++   SCIP_Real*            grad                /**< buffer of length dim */
++   )
++{
++   SCIP_Real ca[5];
++   SCIP_Real cb[5];
++   SCIP_Real cc[3];
++   SCIP_Real rad;
++   SCIP_Real dgdt;
++   SCIP_Real proj;
++   int k;
++
++   buildLambdaCoefs(ls->iscase4, ls->kappa, ls->wzlp, ls->npos, lambda, ls->x0, ls->ya[j], ls->yb[j], ls->yc[j],
++      &ls->xr[j * ls->dim], ls->wray[j], ca, cb, cc);
++
++   if( ! ls->iscase4 || isCase4a(t, ca, cc) )
++   {
++      rad = ca[0] * t * t + ca[1] * t + ca[2];
++      if( rad <= 0.0 )
++         return FALSE;
++      dgdt = (2.0 * ca[0] * t + ca[1]) / (2.0 * sqrt(rad)) - ca[3];
++      if( dgdt <= 1e-12 * (1.0 + REALABS(ca[3])) )
++         return FALSE;
++      /* dg/dlambda = -xhat(t) */
++      for( k = 0; k < ls->dim; ++k )
++         grad[k] = (ls->x0[k] + t * ls->xr[j * ls->dim + k]) / dgdt;
++   }
++   else
++   {
++      SCIP_Real ll = lambda[ls->npos];
++      SCIP_Real fac = 1.0 - SQR(ll);
++      SCIP_Real ynorm;
++
++      rad = cb[0] * t * t + cb[1] * t + cb[2];
++      if( rad <= 0.0 )
++         return FALSE;
++      dgdt = (2.0 * cb[0] * t + cb[1]) / (2.0 * sqrt(rad)) - cb[3];
++      if( dgdt <= 1e-12 * (1.0 + REALABS(cb[3])) )
++         return FALSE;
++      for( k = 0; k < ls->npos; ++k )
++         grad[k] = (ls->x0[k] + t * ls->xr[j * ls->dim + k]) / dgdt;
++      ynorm = sqrt(MAX(ls->ya[j] * t * t + ls->yb[j] * t + ls->yc[j], 0.0));
++      grad[ls->npos] = -((fac > 1e-12 ? -ll * ynorm / sqrt(fac) : 0.0) - ls->sr) / dgdt;
++   }
++
++   proj = 0.0;
++   for( k = 0; k < ls->dim; ++k )
++      proj += grad[k] * lambda[k];
++   for( k = 0; k < ls->dim; ++k )
++      grad[k] -= proj * lambda[k];
++
++   return TRUE;
++}
++
++/** lambda(theta) = cos(theta) base + sin(theta) dir, normalized */
++static
++void rotateLambda(
++   int                   dim,                /**< dimension */
++   const SCIP_Real*      base,               /**< unit vector */
++   const SCIP_Real*      dir,                /**< unit vector orthogonal to base */
++   SCIP_Real             theta,              /**< angle */
++   SCIP_Real*            out                 /**< buffer */
++   )
++{
++   SCIP_Real norm = 0.0;
++   int k;
++
++   for( k = 0; k < dim; ++k )
++   {
++      out[k] = cos(theta) * base[k] + sin(theta) * dir[k];
++      norm += SQR(out[k]);
++   }
++   norm = sqrt(norm);
++   for( k = 0; k < dim; ++k )
++      out[k] /= norm;
++}
++
++/** golden-section maximization of the criterion over theta in [lo, hi] along a great circle */
++static
++void goldenSearch(
++   SCIP*                 scip,               /**< SCIP data structure */
++   SCIP_NLHDLRDATA*      nlhdlrdata,         /**< nlhdlr data */
++   LAMBDASEARCH*         ls,                 /**< search data */
++   const SCIP_Real*      base,               /**< base point */
++   const SCIP_Real*      dir,                /**< direction */
++   SCIP_Real             lo,                 /**< lower end */
++   SCIP_Real             hi,                 /**< upper end */
++   int                   maxevals,           /**< evaluations allowed */
++   SCIP_Real*            work,               /**< work buffer of length dim */
++   SCIP_Real*            bestlambda,         /**< best lambda so far (updated) */
++   SCIP_Real*            bestcrit            /**< best criterion so far (updated) */
++   )
++{
++   const SCIP_Real gr = 0.6180339887498949;
++   SCIP_Real m1;
++   SCIP_Real m2;
++   SCIP_Real f1;
++   SCIP_Real f2;
++   int n;
++
++   if( maxevals < 2 )
++      return;
++
++   m1 = hi - gr * (hi - lo);
++   m2 = lo + gr * (hi - lo);
++   rotateLambda(ls->dim, base, dir, m1, work);
++   f1 = evalLambda(scip, nlhdlrdata, ls, work);
++   if( f1 > *bestcrit )
++   {
++      *bestcrit = f1;
++      BMScopyMemoryArray(bestlambda, work, ls->dim);
++   }
++   rotateLambda(ls->dim, base, dir, m2, work);
++   f2 = evalLambda(scip, nlhdlrdata, ls, work);
++   if( f2 > *bestcrit )
++   {
++      *bestcrit = f2;
++      BMScopyMemoryArray(bestlambda, work, ls->dim);
++   }
++
++   for( n = 2; n < maxevals; ++n )
++   {
++      if( f1 >= f2 )
++      {
++         hi = m2;
++         m2 = m1;
++         f2 = f1;
++         m1 = hi - gr * (hi - lo);
++         rotateLambda(ls->dim, base, dir, m1, work);
++         f1 = evalLambda(scip, nlhdlrdata, ls, work);
++         if( f1 > *bestcrit )
++         {
++            *bestcrit = f1;
++            BMScopyMemoryArray(bestlambda, work, ls->dim);
++         }
++      }
++      else
++      {
++         lo = m1;
++         m1 = m2;
++         f1 = f2;
++         m2 = lo + gr * (hi - lo);
++         rotateLambda(ls->dim, base, dir, m2, work);
++         f2 = evalLambda(scip, nlhdlrdata, ls, work);
++         if( f2 > *bestcrit )
++         {
++            *bestcrit = f2;
++            BMScopyMemoryArray(bestlambda, work, ls->dim);
++         }
++      }
++   }
++}
++
++/** writes the corner data of the current cut to the dump file (one JSON object per line) */
++static
++void dumpCorner(
++   SCIP*                 scip,               /**< SCIP data structure */
++   SCIP_NLHDLRDATA*      nlhdlrdata,         /**< nlhdlr data */
++   SCIP_NLHDLREXPRDATA*  nlhdlrexprdata,     /**< nlhdlr expression data */
++   RAYS*                 rays,               /**< rays */
++   SCIP_VAR*             auxvar,             /**< aux var or NULL */
++   SCIP_SOL*             sol,                /**< solution */
++   SCIP_Real             sidefactor,         /**< sidefactor */
++   LAMBDASEARCH*         ls,                 /**< search data */
++   const SCIP_Real*      lambda0,            /**< SCIP's lambda */
++   const SCIP_Real*      alpha0,             /**< step lengths for SCIP's lambda (from evalLambda) */
++   SCIP_Real             crit0,              /**< criterion of SCIP's lambda */
++   const SCIP_Real*      lambdabest,         /**< chosen lambda */
++   const SCIP_Real*      alphabest,          /**< step lengths for the chosen lambda */
++   SCIP_Real             critbest,           /**< criterion of the chosen lambda */
++   SCIP_Bool             changed             /**< whether the chosen lambda is used */
++   )
++{
++   FILE* f;
++   SCIP_EXPR* qexpr;
++   SCIP_EXPR** linexprs;
++   SCIP_Real* lincoefs;
++   SCIP_Real* eigenvalues;
++   SCIP_Real* eigenvectors;
++   SCIP_Real constant;
++   int nlinexprs;
++   int nquadexprs;
++   int nbilin;
++   int nconsvars;
++   int i;
++   int j;
++
++   f = fopen(nlhdlrdata->dumpfile, "a");
++   if( f == NULL )
++      return;
++
++   qexpr = nlhdlrexprdata->qexpr;
++   SCIPexprGetQuadraticData(qexpr, &constant, &nlinexprs, &linexprs, &lincoefs, &nquadexprs, &nbilin, &eigenvalues,
++      &eigenvectors);
++   nconsvars = nquadexprs + nlinexprs + (auxvar != NULL ? 1 : 0);
++
++   if( nlhdlrexprdata->cons != NULL && auxvar == NULL )
++      constant = (sidefactor == 1.0) ? constant - SCIPgetRhsNonlinear(nlhdlrexprdata->cons) :
++         SCIPgetLhsNonlinear(nlhdlrexprdata->cons) - constant;
++   else
++      constant = sidefactor * constant;
++
++   fprintf(f, "{\"type\":\"corner\",\"nlps\":%" SCIP_LONGINT_FORMAT ",\"node\":%" SCIP_LONGINT_FORMAT ",\"depth\":%d,"
++      "\"rule\":%d,\"iscase4\":%d,\"kappa\":%.17g,\"wzlp\":%.17g,\"sf\":%.17g,\"nquad\":%d,\"nlin\":%d,\"aux\":%d,"
++      "\"constant\":%.17g,\"changed\":%d,\"crit0\":%.17g,\"critbest\":%.17g,\"npos\":%d,\"dim\":%d",
++      SCIPgetNLPs(scip), SCIPnodeGetNumber(SCIPgetCurrentNode(scip)), SCIPgetDepth(scip), ls->rule, ls->iscase4,
++      ls->kappa, ls->wzlp, sidefactor, nquadexprs, nlinexprs, auxvar != NULL ? 1 : 0, constant, changed, crit0,
++      critbest, ls->npos, ls->dim);
++
++   fprintf(f, ",\"eigval\":[");
++   for( i = 0; i < nquadexprs; ++i )
++      fprintf(f, "%s%.17g", i > 0 ? "," : "", eigenvalues[i]);
++   fprintf(f, "],\"eigvec\":[");
++   for( i = 0; i < nquadexprs * nquadexprs; ++i )
++      fprintf(f, "%s%.17g", i > 0 ? "," : "", eigenvectors[i]);
++   fprintf(f, "],\"sqrcoef\":[");
++   for( i = 0; i < nquadexprs; ++i )
++   {
++      SCIP_Real sqrcoef;
++      SCIPexprGetQuadraticQuadTerm(qexpr, i, NULL, NULL, &sqrcoef, NULL, NULL, NULL);
++      fprintf(f, "%s%.17g", i > 0 ? "," : "", sqrcoef);
++   }
++   fprintf(f, "],\"quadlin\":[");
++   for( i = 0; i < nquadexprs; ++i )
++   {
++      SCIP_Real lincoef;
++      SCIPexprGetQuadraticQuadTerm(qexpr, i, NULL, &lincoef, NULL, NULL, NULL, NULL);
++      fprintf(f, "%s%.17g", i > 0 ? "," : "", lincoef);
++   }
++   fprintf(f, "],\"bilin\":[");
++   for( i = 0; i < nbilin; ++i )
++   {
++      SCIP_EXPR* e1;
++      SCIP_Real coef;
++      int pos1 = -1;
++      int pos2;
++
++      SCIPexprGetQuadraticBilinTerm(qexpr, i, &e1, NULL, &coef, &pos2, NULL);
++      for( j = 0; j < nquadexprs; ++j )
++      {
++         SCIP_EXPR* ej;
++         SCIPexprGetQuadraticQuadTerm(qexpr, j, &ej, NULL, NULL, NULL, NULL, NULL);
++         if( ej == e1 )
++         {
++            pos1 = j;
++            break;
++         }
++      }
++      fprintf(f, "%s[%d,%d,%.17g]", i > 0 ? "," : "", pos1, pos2, coef);
++   }
++   fprintf(f, "],\"lincoef\":[");
++   for( i = 0; i < nlinexprs; ++i )
++      fprintf(f, "%s%.17g", i > 0 ? "," : "", lincoefs[i]);
++   fprintf(f, "],\"sbar\":[");
++   for( i = 0; i < nquadexprs; ++i )
++   {
++      SCIP_EXPR* expr;
++      SCIPexprGetQuadraticQuadTerm(qexpr, i, &expr, NULL, NULL, NULL, NULL, NULL);
++      fprintf(f, "%s%.17g", i > 0 ? "," : "", SCIPgetSolVal(scip, sol, SCIPgetExprAuxVarNonlinear(expr)));
++   }
++   for( i = 0; i < nlinexprs; ++i )
++      fprintf(f, ",%.17g", SCIPgetSolVal(scip, sol, SCIPgetExprAuxVarNonlinear(linexprs[i])));
++   if( auxvar != NULL )
++      fprintf(f, ",%.17g", SCIPgetSolVal(scip, sol, auxvar));
++   fprintf(f, "],\"rays\":[");
++   for( i = 0; i < rays->nrays; ++i )
++   {
++      fprintf(f, "%s[", i > 0 ? "," : "");
++      for( j = rays->raysbegin[i]; j < rays->raysbegin[i + 1]; ++j )
++         fprintf(f, "%s[%d,%.17g]", j > rays->raysbegin[i] ? "," : "", rays->raysidx[j], rays->rays[j]);
++      fprintf(f, "]");
++   }
++   fprintf(f, "],\"nconsvars\":%d,\"w\":[", nconsvars);
++   for( i = 0; i < rays->nrays; ++i )
++      fprintf(f, "%s%.17g", i > 0 ? "," : "", ls->rawweight[i]);
++   fprintf(f, "],\"lam0\":[");
++   for( i = 0; i < ls->dim; ++i )
++      fprintf(f, "%s%.17g", i > 0 ? "," : "", lambda0[i]);
++   fprintf(f, "],\"lam\":[");
++   for( i = 0; i < ls->dim; ++i )
++      fprintf(f, "%s%.17g", i > 0 ? "," : "", lambdabest[i]);
++   fprintf(f, "],\"alpha0\":[");
++   for( i = 0; i < rays->nrays; ++i )
++      fprintf(f, "%s%.17g", i > 0 ? "," : "", SCIPisInfinity(scip, alpha0[i]) ? -1.0 : alpha0[i]);
++   fprintf(f, "],\"alpha\":[");
++   for( i = 0; i < rays->nrays; ++i )
++      fprintf(f, "%s%.17g", i > 0 ? "," : "", SCIPisInfinity(scip, alphabest[i]) ? -1.0 : alphabest[i]);
++   fprintf(f, "]}\n");
++
++   fclose(f);
++}
++
++/** chooses lambda for the current cut according to nlhdlrdata->setrule (and/or dumps the corner)
++ *
++ *  Rule 1 maximizes the single-cut corner bound min_j w_j alpha_j(lambda) over SCIP's family {C_lambda}
++ *  (w_j = reduced cost of the nonbasic variable of ray j, floored at 1e-6 max_j w_j); rule 2 maximizes the
++ *  Euclidean efficacy of the cut in the space of LP columns.  For dim(lambda) = 2 the search is a grid over the
++ *  half circle centered at SCIP's lambda followed by golden-section refinement; for dim > 2 it is a projected
++ *  (sub)gradient ascent with line searches.  SCIP's lambda is kept unless the criterion improves by the
++ *  relative margin SETRULE_MINGAIN.
++ */
++static
++SCIP_RETCODE selectLambda(
++   SCIP*                 scip,               /**< SCIP data structure */
++   SCIP_NLHDLRDATA*      nlhdlrdata,         /**< nlhdlr data */
++   SCIP_NLHDLREXPRDATA*  nlhdlrexprdata,     /**< nlhdlr expression data */
++   RAYS*                 rays,               /**< rays */
++   SCIP_VAR*             auxvar,             /**< aux var or NULL */
++   SCIP_SOL*             sol,                /**< solution to separate */
++   SCIP_Real             sidefactor,         /**< 1.0 if the violated constraint is q &le; rhs, -1.0 otherwise */
++   SCIP_Bool             iscase4,            /**< whether we are in case 4 */
++   SCIP_Real*            vb,                 /**< array containing v_i^T b */
++   SCIP_Real*            vzlp,               /**< array containing v_i^T zlp_q */
++   SCIP_Real*            wcoefs,             /**< coefficients of w for the qud vars or NULL if w is 0 */
++   SCIP_Real             wzlp,               /**< value of w at zlp */
++   SCIP_Real             kappa,              /**< value of kappa */
++   SCIP_Bool             dosearch,           /**< whether to search (setrule > 0) */
++   SCIP_Bool             dodump,             /**< whether to dump the corner */
++   SCIP_Real*            lambdaout,          /**< buffer (length >= npos + 1) to store the chosen lambda */
++   SCIP_Bool*            changed             /**< pointer to store whether lambdaout differs from SCIP's lambda */
++   )
++{
++   LAMBDASEARCH ls;
++   SCIP_COL** cols;
++   SCIP_ROW** rows;
++   SCIP_Real* lambda0;
++   SCIP_Real* best;
++   SCIP_Real* work;
++   SCIP_Real* dir;
++   SCIP_Real* alpha0;
++   SCIP_Real* alphabest;
++   SCIP_Real crit0;
++   SCIP_Real critbest;
++   SCIP_Real norm;
++   SCIP_Real wmax;
++   int nentries;
++   int npos;
++   int dim;
++   int j;
++   int k;
++
++   *changed = FALSE;
++
++   npos = countPositiveEigenvalues(scip, nlhdlrexprdata, sidefactor);
++   dim = npos + ((iscase4 || kappa > 0.0) ? 1 : 0);
++   if( dim < 1 || rays->nrays == 0 )
++      return SCIP_OKAY;
++   if( dim < 2 && ! dodump )
++      return SCIP_OKAY;
++
++   cols = SCIPgetLPCols(scip);
++   rows = SCIPgetLPRows(scip);
++
++   BMSclearMemory(&ls);
++   ls.nrays = rays->nrays;
++   ls.npos = npos;
++   ls.dim = dim;
++   ls.iscase4 = iscase4;
++   ls.kappa = kappa;
++   ls.wzlp = wzlp;
++   ls.sr = sqrt(sqrt(1.0 + SQR(kappa)));
++   ls.rule = nlhdlrdata->setrule > 0 ? nlhdlrdata->setrule : 1;
++
++   SCIP_CALL( SCIPallocBufferArray(scip, &ls.x0, dim) );
++   SCIP_CALL( SCIPallocBufferArray(scip, &ls.ya, ls.nrays) );
++   SCIP_CALL( SCIPallocBufferArray(scip, &ls.yb, ls.nrays) );
++   SCIP_CALL( SCIPallocBufferArray(scip, &ls.yc, ls.nrays) );
++   SCIP_CALL( SCIPallocBufferArray(scip, &ls.wray, ls.nrays) );
++   SCIP_CALL( SCIPallocBufferArray(scip, &ls.xr, ls.nrays * dim) );
++   SCIP_CALL( SCIPallocBufferArray(scip, &ls.weight, ls.nrays) );
++   SCIP_CALL( SCIPallocBufferArray(scip, &ls.rawweight, ls.nrays) );
++   SCIP_CALL( SCIPallocBufferArray(scip, &ls.alpha, ls.nrays) );
++   SCIP_CALL( SCIPallocBufferArray(scip, &lambda0, dim) );
++   SCIP_CALL( SCIPallocBufferArray(scip, &best, dim) );
++   SCIP_CALL( SCIPallocBufferArray(scip, &work, dim) );
++   SCIP_CALL( SCIPallocBufferArray(scip, &dir, dim) );
++   SCIP_CALL( SCIPallocBufferArray(scip, &alpha0, ls.nrays) );
++   SCIP_CALL( SCIPallocBufferArray(scip, &alphabest, ls.nrays) );
++
++   /* xhat(zlp) and SCIP's lambda */
++   computeLambdaX0(scip, nlhdlrexprdata, sidefactor, vb, vzlp, ls.x0);
++   if( iscase4 )
++      ls.x0[npos] = (wzlp + kappa + sqrt(1.0 + SQR(kappa))) / (2.0 * ls.sr);
++   else if( kappa > 0.0 )
++      ls.x0[npos] = sqrt(kappa);
++   norm = 0.0;
++   for( k = 0; k < dim; ++k )
++      norm += SQR(ls.x0[k]);
++   norm = sqrt(norm);
++   if( norm <= 0.0 )
++      goto TERMINATE;
++   for( k = 0; k < dim; ++k )
++      lambda0[k] = ls.x0[k] / norm;
++
++   /* ray data and reduced costs */
++   wmax = 0.0;
++   for( j = 0; j < ls.nrays; ++j )
++   {
++      int lppos;
++
++      computeLambdaRayData(scip, nlhdlrexprdata, sidefactor, iscase4, &rays->rays[rays->raysbegin[j]],
++         &rays->raysidx[rays->raysbegin[j]], rays->raysbegin[j + 1] - rays->raysbegin[j], vb, vzlp, wcoefs,
++         &ls.ya[j], &ls.yb[j], &ls.yc[j], &ls.xr[j * dim], &ls.wray[j]);
++      if( iscase4 )
++         ls.xr[j * dim + npos] = ls.wray[j] / (2.0 * ls.sr);
++      else if( kappa > 0.0 )
++         ls.xr[j * dim + npos] = 0.0;
++
++      lppos = rays->lpposray[j];
++      if( lppos >= 0 )
++         ls.rawweight[j] = REALABS(SCIPgetColRedcost(scip, cols[lppos]));
++      else
++         ls.rawweight[j] = REALABS(SCIProwGetDualsol(rows[-lppos - 1]));
++      wmax = MAX(wmax, ls.rawweight[j]);
++   }
++   for( j = 0; j < ls.nrays; ++j )
++      ls.weight[j] = MAX(ls.rawweight[j], 1e-6 * MAX(wmax, 1e-9));
++
++   /* structural vectors for the efficacy rule */
++   if( ls.rule == 2 )
++   {
++      int pos;
++
++      nentries = 0;
++      for( j = 0; j < ls.nrays; ++j )
++         nentries += rays->lpposray[j] >= 0 ? 1 : SCIProwGetNLPNonz(rows[-rays->lpposray[j] - 1]);
++      SCIP_CALL( SCIPallocBufferArray(scip, &ls.ubeg, ls.nrays + 1) );
++      SCIP_CALL( SCIPallocBufferArray(scip, &ls.uidx, MAX(nentries, 1)) );
++      SCIP_CALL( SCIPallocBufferArray(scip, &ls.uval, MAX(nentries, 1)) );
++      SCIP_CALL( SCIPallocClearBufferArray(scip, &ls.dense, SCIPgetNLPCols(scip)) );
++      pos = 0;
++      for( j = 0; j < ls.nrays; ++j )
++      {
++         int lppos = rays->lpposray[j];
++
++         ls.ubeg[j] = pos;
++         if( lppos >= 0 )
++         {
++            ls.uidx[pos] = lppos;
++            ls.uval[pos] = SCIPcolGetBasisStatus(cols[lppos]) == SCIP_BASESTAT_UPPER ? -1.0 : 1.0;
++            ++pos;
++         }
++         else
++         {
++            SCIP_ROW* row = rows[-lppos - 1];
++            SCIP_COL** rowcols = SCIProwGetCols(row);
++            SCIP_Real* rowvals = SCIProwGetVals(row);
++            SCIP_Real sgn = SCIProwGetBasisStatus(row) == SCIP_BASESTAT_UPPER ? 1.0 : -1.0;
++
++            for( k = 0; k < SCIProwGetNLPNonz(row); ++k )
++            {
++               ls.uidx[pos] = SCIPcolGetLPPos(rowcols[k]);
++               ls.uval[pos] = -sgn * rowvals[k];
++               ++pos;
++            }
++         }
++      }
++      ls.ubeg[ls.nrays] = pos;
++   }
++
++   crit0 = evalLambda(scip, nlhdlrdata, &ls, lambda0);
++   BMScopyMemoryArray(alpha0, ls.alpha, ls.nrays);
++   BMScopyMemoryArray(best, lambda0, dim);
++   BMScopyMemoryArray(alphabest, ls.alpha, ls.nrays);
++   critbest = crit0;
++
++   if( SCIPisInfinity(scip, -crit0) )
++   {
++      if( dosearch )
++         nlhdlrdata->nselfail++;
++      goto TERMINATE;
++   }
++
++   if( dosearch && dim >= 2 && ! SCIPisInfinity(scip, crit0) )
++   {
++      int maxevals = nlhdlrdata->setrulemaxevals;
++
++      nlhdlrdata->nselcalls++;
++
++      if( dim == 2 )
++      {
++         int ngrid = MIN(24, MAX(4, maxevals / 2));
++         int ibest = -1;
++         SCIP_Real fbestgrid = crit0;
++         SCIP_Real lo;
++         SCIP_Real hi;
++         int i;
++
++         dir[0] = -lambda0[1];
++         dir[1] = lambda0[0];
++         for( i = 0; i < ngrid; ++i )
++         {
++            SCIP_Real theta = -SETRULE_PI / 2.0 + SETRULE_PI * (i + 0.5) / ngrid;
++            SCIP_Real f;
++
++            rotateLambda(dim, lambda0, dir, theta, work);
++            f = evalLambda(scip, nlhdlrdata, &ls, work);
++            if( f > fbestgrid )
++            {
++               fbestgrid = f;
++               ibest = i;
++            }
++            if( f > critbest )
++            {
++               critbest = f;
++               BMScopyMemoryArray(best, work, dim);
++            }
++         }
++         if( ibest < 0 )
++         {
++            /* SCIP's lambda (theta = 0) is the best grid point: refine around it */
++            lo = -SETRULE_PI / ngrid;
++            hi = SETRULE_PI / ngrid;
++         }
++         else
++         {
++            SCIP_Real thetab = -SETRULE_PI / 2.0 + SETRULE_PI * (ibest + 0.5) / ngrid;
++            lo = MAX(thetab - SETRULE_PI / ngrid, -SETRULE_PI / 2.0 + 1e-9);
++            hi = MIN(thetab + SETRULE_PI / ngrid, SETRULE_PI / 2.0 - 1e-9);
++         }
++         goldenSearch(scip, nlhdlrdata, &ls, lambda0, dir, lo, hi, maxevals - ls.nevals, work, best, &critbest);
++      }
++      else
++      {
++         SCIP_Real* cur;
++         SCIP_Real* grad;
++         SCIP_Real* gacc;
++         SCIP_Real* curalpha;
++         SCIP_Real critcur = crit0;
++         int iter;
++
++         SCIP_CALL( SCIPallocBufferArray(scip, &cur, dim) );
++         SCIP_CALL( SCIPallocBufferArray(scip, &grad, dim) );
++         SCIP_CALL( SCIPallocBufferArray(scip, &gacc, dim) );
++         SCIP_CALL( SCIPallocBufferArray(scip, &curalpha, ls.nrays) );
++         BMScopyMemoryArray(cur, lambda0, dim);
++         BMScopyMemoryArray(curalpha, alpha0, ls.nrays);
++
++         for( iter = 0; iter < 20 && ls.nevals + 8 <= maxevals; ++iter )
++         {
++            SCIP_Real gnorm = 0.0;
++            SCIP_Real thetabest = 0.0;
++            SCIP_Real fbestls = critcur;
++            int i;
++
++            BMSclearMemoryArray(dir, dim);
++
++            if( ls.rule == 1 )
++            {
++               /* min-norm element of the convex hull of the gradients of the nearly active rays (Gilbert's algorithm) */
++               int act[8];
++               int nact = 0;
++               SCIP_Real* G;
++
++               for( j = 0; j < ls.nrays; ++j )
++               {
++                  if( SCIPisInfinity(scip, curalpha[j]) || ls.weight[j] * curalpha[j] > critcur * (1.0 + 1e-3) )
++                     continue;
++                  if( nact < 8 )
++                     act[nact++] = j;
++               }
++               if( nact == 0 )
++                  break;
++               SCIP_CALL( SCIPallocBufferArray(scip, &G, nact * dim) );
++               for( i = 0; i < nact; ++i )
++               {
++                  if( ! alphaGradient(scip, &ls, cur, act[i], curalpha[act[i]], &G[i * dim]) )
++                     BMSclearMemoryArray(&G[i * dim], dim);
++                  for( k = 0; k < dim; ++k )
++                     G[i * dim + k] *= ls.weight[act[i]];
++               }
++               BMScopyMemoryArray(dir, G, dim);
++               for( k = 0; k < 50; ++k )
++               {
++                  SCIP_Real minval = SCIPinfinity(scip);
++                  SCIP_Real xx = 0.0;
++                  SCIP_Real denom = 0.0;
++                  SCIP_Real num = 0.0;
++                  SCIP_Real gamma;
++                  int imin = 0;
++                  int l;
++
++                  for( i = 0; i < nact; ++i )
++                  {
++                     SCIP_Real v = 0.0;
++                     for( l = 0; l < dim; ++l )
++                        v += dir[l] * G[i * dim + l];
++                     if( v < minval )
++                     {
++                        minval = v;
++                        imin = i;
++                     }
++                  }
++                  for( l = 0; l < dim; ++l )
++                  {
++                     xx += SQR(dir[l]);
++                     num += dir[l] * (dir[l] - G[imin * dim + l]);
++                     denom += SQR(dir[l] - G[imin * dim + l]);
++                  }
++                  if( num <= 1e-12 * xx || denom <= 0.0 )
++                     break;
++                  gamma = MIN(1.0, num / denom);
++                  for( l = 0; l < dim; ++l )
++                     dir[l] += gamma * (G[imin * dim + l] - dir[l]);
++               }
++               SCIPfreeBufferArray(scip, &G);
++            }
++            else
++            {
++               /* gradient of 1/||a(lambda)||: (1/||a||^3) sum_j (a.u_j) alpha_j^-2 dalpha_j/dlambda */
++               SCIP_Real norm2 = 0.0;
++
++               for( j = 0; j < ls.nrays; ++j )
++               {
++                  if( SCIPisInfinity(scip, curalpha[j]) )
++                     continue;
++                  for( k = ls.ubeg[j]; k < ls.ubeg[j + 1]; ++k )
++                     ls.dense[ls.uidx[k]] += ls.uval[k] / curalpha[j];
++               }
++               for( j = 0; j < ls.nrays; ++j )
++               {
++                  SCIP_Real au = 0.0;
++
++                  if( SCIPisInfinity(scip, curalpha[j]) )
++                     continue;
++                  for( k = ls.ubeg[j]; k < ls.ubeg[j + 1]; ++k )
++                     au += ls.dense[ls.uidx[k]] * ls.uval[k];
++                  if( au == 0.0 || ! alphaGradient(scip, &ls, cur, j, curalpha[j], grad) )
++                     continue;
++                  for( k = 0; k < dim; ++k )
++                     dir[k] += au / SQR(curalpha[j]) * grad[k];
++               }
++               for( j = 0; j < ls.nrays; ++j )
++                  for( k = ls.ubeg[j]; k < ls.ubeg[j + 1]; ++k )
++                  {
++                     norm2 += SQR(ls.dense[ls.uidx[k]]);
++                     ls.dense[ls.uidx[k]] = 0.0;
++                  }
++               /* the positive factor 1/||a||^3 does not change the direction */
++               (void) norm2;
++            }
++
++            /* project onto the tangent space and normalize */
++            norm = 0.0;
++            for( k = 0; k < dim; ++k )
++               norm += dir[k] * cur[k];
++            for( k = 0; k < dim; ++k )
++            {
++               dir[k] -= norm * cur[k];
++               gnorm += SQR(dir[k]);
++            }
++            gnorm = sqrt(gnorm);
++            if( gnorm <= 1e-12 )
++               break;
++            for( k = 0; k < dim; ++k )
++               dir[k] /= gnorm;
++
++            /* line search: theta = pi/4 * 2^-i */
++            for( i = 0; i < 6; ++i )
++            {
++               SCIP_Real theta = SETRULE_PI / 4.0 * pow(0.5, (double) i);
++               SCIP_Real f;
++
++               rotateLambda(dim, cur, dir, theta, work);
++               f = evalLambda(scip, nlhdlrdata, &ls, work);
++               if( f > fbestls )
++               {
++                  fbestls = f;
++                  thetabest = theta;
++               }
++            }
++            if( thetabest <= 0.0 )
++               break;
++            {
++               SCIP_Real flocal = fbestls;
++               SCIP_Real lo = thetabest / 2.0;
++               SCIP_Real hi = MIN(2.0 * thetabest, SETRULE_PI / 2.0 - 1e-9);
++
++               rotateLambda(dim, cur, dir, thetabest, work);
++               BMScopyMemoryArray(gacc, work, dim);
++               goldenSearch(scip, nlhdlrdata, &ls, cur, dir, lo, hi, MIN(6, maxevals - ls.nevals), work, gacc, &flocal);
++               BMScopyMemoryArray(cur, gacc, dim);
++               critcur = evalLambda(scip, nlhdlrdata, &ls, cur);
++               BMScopyMemoryArray(curalpha, ls.alpha, ls.nrays);
++               if( critcur > critbest )
++               {
++                  critbest = critcur;
++                  BMScopyMemoryArray(best, cur, dim);
++               }
++            }
++         }
++
++         SCIPfreeBufferArray(scip, &curalpha);
++         SCIPfreeBufferArray(scip, &gacc);
++         SCIPfreeBufferArray(scip, &grad);
++         SCIPfreeBufferArray(scip, &cur);
++      }
++
++      nlhdlrdata->nselevals += ls.nevals;
++
++      if( critbest > crit0 * (1.0 + SETRULE_MINGAIN) + 1e-12 )
++      {
++         *changed = TRUE;
++         nlhdlrdata->nselchanged++;
++         nlhdlrdata->selgainsum += crit0 > 0.0 ? MIN(critbest / crit0, 1e3) : 1e3;
++         BMScopyMemoryArray(lambdaout, best, dim);
++      }
++   }
++
++   if( dodump )
++   {
++      SCIP_Real crit;
++
++      if( *changed )
++      {
++         crit = evalLambda(scip, nlhdlrdata, &ls, best);
++         BMScopyMemoryArray(alphabest, ls.alpha, ls.nrays);
++         (void) crit;
++      }
++      else
++      {
++         BMScopyMemoryArray(best, lambda0, dim);
++         BMScopyMemoryArray(alphabest, alpha0, ls.nrays);
++         critbest = crit0;
++      }
++      dumpCorner(scip, nlhdlrdata, nlhdlrexprdata, rays, auxvar, sol, sidefactor, &ls, lambda0, alpha0, crit0, best,
++         alphabest, critbest, *changed);
++   }
++
++TERMINATE:
++   if( ls.rule == 2 && ls.ubeg != NULL )
++   {
++      SCIPfreeBufferArray(scip, &ls.dense);
++      SCIPfreeBufferArray(scip, &ls.uval);
++      SCIPfreeBufferArray(scip, &ls.uidx);
++      SCIPfreeBufferArray(scip, &ls.ubeg);
++   }
++   SCIPfreeBufferArray(scip, &alphabest);
++   SCIPfreeBufferArray(scip, &alpha0);
++   SCIPfreeBufferArray(scip, &dir);
++   SCIPfreeBufferArray(scip, &work);
++   SCIPfreeBufferArray(scip, &best);
++   SCIPfreeBufferArray(scip, &lambda0);
++   SCIPfreeBufferArray(scip, &ls.alpha);
++   SCIPfreeBufferArray(scip, &ls.rawweight);
++   SCIPfreeBufferArray(scip, &ls.weight);
++   SCIPfreeBufferArray(scip, &ls.xr);
++   SCIPfreeBufferArray(scip, &ls.wray);
++   SCIPfreeBufferArray(scip, &ls.yc);
++   SCIPfreeBufferArray(scip, &ls.yb);
++   SCIPfreeBufferArray(scip, &ls.ya);
++   SCIPfreeBufferArray(scip, &ls.x0);
++
++   return SCIP_OKAY;
++}
++
+ /** computes intersection cut cuts off sol (because solution sol violates the quadratic constraint cons)
+  * and stores it in rowprep. Here, we don't use any strengthening.
+  */
+@@ -2568,7 +3811,9 @@
+       apex = NULL;
+    }
+ 
+-   usemonoidal = nlhdlrdata->usemonoidal && case2;
++   /* monoidal strengthening and the minimal representation use the apex of SCIP's set; with a free lambda (patch)
++    * they are not applied */
++   usemonoidal = nlhdlrdata->usemonoidal && case2 && nlhdlrdata->sellambda == NULL;
+ 
+    /* for every ray: compute cut coefficient and add var associated to ray into cut */
+    for( i = 0; i < rays->nrays; ++i )
+@@ -2602,7 +3847,8 @@
+          /* restrict phi to ray */
+          SCIP_CALL( computeRestrictionToRay(scip, nlhdlrexprdata, sidefactor, iscase4,
+                   &rays->rays[rays->raysbegin[i]], &rays->raysidx[rays->raysbegin[i]], rays->raysbegin[i + 1] -
+-                  rays->raysbegin[i], vb, vzlp, wcoefs, wzlp, kappa, coefs1234a, coefs4b, coefscondition, success) );
++                  rays->raysbegin[i], vb, vzlp, wcoefs, wzlp, kappa, coefs1234a, coefs4b, coefscondition,
++                  nlhdlrdata->sellambda, success) );
+ 
+          if( ! *success )
+             goto TERMINATE;
+@@ -2642,7 +3888,7 @@
+             cutcoef = SCIPisInfinity(scip, interpoint) ? 0.0 : 1.0 / interpoint;
+          }
+ 
+-         if( cutcoef == 0.0 && case2 && nlhdlrdata->useminrep )
++         if( cutcoef == 0.0 && case2 && nlhdlrdata->useminrep && nlhdlrdata->sellambda == NULL )
+          {
+             /* restrict phi to the line defined by ray + apex + t*(f - apex) */
+             SCIP_CALL( computeRestrictionToLine(scip, nlhdlrexprdata, sidefactor,
+@@ -2880,7 +4126,8 @@
+ 
+    /* restrict phi to the "new" ray */
+    SCIP_CALL( computeRestrictionToRay(scip, nlhdlrexprdata, sidefactor, iscase4, newraycoefs, newrayidx,
+-           newraynnonz, vb, vzlp, wcoefs, wzlp, kappa, coefs1234a, coefs4b, coefscondition, success) );
++           newraynnonz, vb, vzlp, wcoefs, wzlp, kappa, coefs1234a, coefs4b, coefscondition, nlhdlrdata->sellambda,
++           success) );
+ 
+    if( ! *success )
+       goto CLEANUP;
+@@ -3378,6 +4625,9 @@
+    SCIP_Bool iscase4;
+    SCIP_SOL* vertex;
+    SCIP_SOL* soltoseparate;
++   SCIP_Real* lambdabuf;
++   SCIP_Bool dumping;
++   int attempt;
+    int nquadexprs;
+    int nlinexprs;
+    int i;
+@@ -3482,22 +4732,78 @@
+       }
+    }
+ 
+-   /* compute (strengthened) intersection cut */
+-   if( nlhdlrdata->usestrengthening )
++   /* choose lambda of the S-free set (patch "setrule"); NULL means SCIP's point rule */
++   nlhdlrdata->sellambda = NULL;
++   lambdabuf = NULL;
++   dumping = nlhdlrdata->dumpfile != NULL && nlhdlrdata->dumpfile[0] != '\0' && SCIPgetDepth(scip) == 0;
++   if( (nlhdlrdata->setrule > 0 || dumping) && ! nlhdlrdata->useboundsasrays )
+    {
+-      SCIP_Bool strengthsuccess;
+-
+-      SCIP_CALL( computeStrengthenedIntercut(scip, nlhdlrdata, nlhdlrexprdata, rays, sidefactor, iscase4, vb, vzlp, wcoefs,
+-            wzlp, kappa, rowprep, soltoseparate, success, &strengthsuccess) );
++      SCIP_Bool changed;
++      int ncouldimprovedcoef = nlhdlrdata->ncouldimprovedcoef;
+ 
+-      if( *success && strengthsuccess )
+-         nlhdlrdata->nstrengthenings++;
++      SCIP_CALL( SCIPallocBufferArray(scip, &lambdabuf, nquadexprs + 1) );
++      SCIP_CALL( SCIPstartClock(scip, nlhdlrdata->selclock) );
++      SCIP_CALL( selectLambda(scip, nlhdlrdata, nlhdlrexprdata, rays, auxvar, soltoseparate, sidefactor, iscase4, vb,
++            vzlp, wcoefs, wzlp, kappa, nlhdlrdata->setrule > 0, dumping, lambdabuf, &changed) );
++      SCIP_CALL( SCIPstopClock(scip, nlhdlrdata->selclock) );
++      nlhdlrdata->ncouldimprovedcoef = ncouldimprovedcoef;
++      if( changed )
++         nlhdlrdata->sellambda = lambdabuf;
+    }
+-   else
++
++   for( attempt = 0; attempt < 2; ++attempt )
+    {
+-      SCIP_CALL( computeIntercut(scip, nlhdlrdata, nlhdlrexprdata, rays, sidefactor, iscase4, vb, vzlp, wcoefs, wzlp, kappa,
+-            rowprep, NULL, soltoseparate, success) );
++      /* compute (strengthened) intersection cut */
++      if( nlhdlrdata->usestrengthening )
++      {
++         SCIP_Bool strengthsuccess;
++
++         SCIP_CALL( computeStrengthenedIntercut(scip, nlhdlrdata, nlhdlrexprdata, rays, sidefactor, iscase4, vb, vzlp, wcoefs,
++               wzlp, kappa, rowprep, soltoseparate, success, &strengthsuccess) );
++
++         if( *success && strengthsuccess )
++            nlhdlrdata->nstrengthenings++;
++      }
++      else
++      {
++         SCIP_Real* interpoints = NULL;
++
++         if( dumping )
++         {
++            SCIP_CALL( SCIPallocBufferArray(scip, &interpoints, rays->nrays) );
++         }
++         SCIP_CALL( computeIntercut(scip, nlhdlrdata, nlhdlrexprdata, rays, sidefactor, iscase4, vb, vzlp, wcoefs, wzlp, kappa,
++               rowprep, interpoints, soltoseparate, success) );
++         if( dumping )
++         {
++            FILE* f = fopen(nlhdlrdata->dumpfile, "a");
++            if( f != NULL )
++            {
++               fprintf(f, "{\"type\":\"final\",\"success\":%d,\"usedlambda\":%d,\"alpha\":[", *success,
++                  nlhdlrdata->sellambda != NULL);
++               for( i = 0; i < rays->nrays; ++i )
++                  fprintf(f, "%s%.17g", i > 0 ? "," : "", (! *success || SCIPisInfinity(scip, interpoints[i])) ? -1.0 :
++                     interpoints[i]);
++               fprintf(f, "]}\n");
++               fclose(f);
++            }
++            SCIPfreeBufferArray(scip, &interpoints);
++         }
++      }
++
++      /* fall back to SCIP's lambda if the cut for the chosen lambda failed */
++      if( *success || nlhdlrdata->sellambda == NULL )
++         break;
++      nlhdlrdata->sellambda = NULL;
++      nlhdlrdata->nselfail++;
++      nlhdlrdata->nselchanged--;
++      SCIProwprepReset(rowprep);
++      SCIProwprepAddSide(rowprep, 1.0);
++      SCIProwprepSetSidetype(rowprep, SCIP_SIDETYPE_LEFT);
++      *success = TRUE;
+    }
++   nlhdlrdata->sellambda = NULL;
++   SCIPfreeBufferArrayNull(scip, &lambdabuf);
+ 
+    SCIPfreeBufferArrayNull(scip, &wcoefs);
+    SCIPfreeBufferArray(scip, &vzlp);
+@@ -4383,7 +5689,9 @@
+    SCIP_CALL( SCIPcreateRowprep(scip, &rowprep, SCIP_SIDETYPE_LEFT, TRUE) );
+    INTERLOG(printf("Generating inter cut\n"); )
+ 
++   SCIP_CALL( SCIPstartClock(scip, nlhdlrdata->intercutclock) );
+    SCIP_CALL( generateIntercut(scip, expr, nlhdlrdata, nlhdlrexprdata, cons, sol, rowprep, overestimate, &success) );
++   SCIP_CALL( SCIPstopClock(scip, nlhdlrdata->intercutclock) );
+    INTERLOG(if( !success) printf("Generation failed\n"); )
+ 
+    /* we generated something, let us see if it survives the clean up */
+@@ -4455,6 +5763,18 @@
+             nlhdlrdata->ncutsadded += 1;
+             nlhdlrdata->densitysum += (SCIP_Real) SCIProwprepGetNVars(rowprep) / (SCIP_Real) SCIPgetNVars(scip);
+             nlhdlrdata->efficacysum += SCIPgetCutEfficacy(scip, NULL, row);
++
++            /* capture the row to count later whether it entered the LP (patch) */
++            if( nlhdlrdata->ncutrows >= nlhdlrdata->cutrowssize )
++            {
++               int newsize = SCIPcalcMemGrowSize(scip, nlhdlrdata->ncutrows + 1);
++               SCIP_CALL( SCIPreallocBlockMemoryArray(scip, &nlhdlrdata->cutrows, nlhdlrdata->cutrowssize, newsize) );
++               nlhdlrdata->cutrowssize = newsize;
++            }
++            SCIP_CALL( SCIPcaptureRow(scip, row) );
++            nlhdlrdata->cutrows[nlhdlrdata->ncutrows++] = row;
++            if( depth == 0 )
++               nlhdlrdata->nrootcutrows = nlhdlrdata->ncutrows;
+          }
+       }
+       else
+@@ -5072,12 +6392,37 @@
+    return SCIP_OKAY;
+ }
+ 
++/** deinitialization of the handler at the end of solving (patch): count and release captured cuts */
++static
++SCIP_DECL_NLHDLREXIT(nlhdlrExitQuadratic)
++{ /*lint --e{715}*/
++   SCIP_NLHDLRDATA* nlhdlrdata;
++   int i;
++
++   nlhdlrdata = SCIPnlhdlrGetData(nlhdlr);
++   assert(nlhdlrdata != NULL);
++
++   countAppliedCuts(nlhdlrdata, &nlhdlrdata->napplied, &nlhdlrdata->nactive, &nlhdlrdata->nrootapplied);
++   for( i = 0; i < nlhdlrdata->ncutrows; ++i )
++   {
++      SCIP_CALL( SCIPreleaseRow(scip, &nlhdlrdata->cutrows[i]) );
++   }
++   SCIPfreeBlockMemoryArrayNull(scip, &nlhdlrdata->cutrows, nlhdlrdata->cutrowssize);
++   nlhdlrdata->ncutrows = 0;
++   nlhdlrdata->cutrowssize = 0;
++   nlhdlrdata->nrootcutrows = 0;
++
++   return SCIP_OKAY;
++}
++
+ /** callback to free data of handler */
+ static
+ SCIP_DECL_NLHDLRFREEHDLRDATA(nlhdlrFreehdlrdataQuadratic)
+ { /*lint --e{715}*/
+    assert(nlhdlrdata != NULL);
+ 
++   SCIP_CALL( SCIPfreeClock(scip, &(*nlhdlrdata)->selclock) );
++   SCIP_CALL( SCIPfreeClock(scip, &(*nlhdlrdata)->intercutclock) );
+    SCIPfreeBlockMemory(scip, nlhdlrdata);
+ 
+    return SCIP_OKAY;
+@@ -5116,6 +6461,7 @@
+    SCIPnlhdlrSetCopyHdlr(nlhdlr, nlhdlrCopyhdlrQuadratic);
+    SCIPnlhdlrSetFreeHdlrData(nlhdlr, nlhdlrFreehdlrdataQuadratic);
+    SCIPnlhdlrSetFreeExprData(nlhdlr, nlhdlrFreeexprdataQuadratic);
++   SCIPnlhdlrSetInitExit(nlhdlr, NULL, nlhdlrExitQuadratic);
+    SCIPnlhdlrSetSepa(nlhdlr, NULL, nlhdlrEnfoQuadratic, NULL, NULL);
+    SCIPnlhdlrSetProp(nlhdlr, nlhdlrIntevalQuadratic, nlhdlrReversepropQuadratic);
+ 
+@@ -5184,6 +6530,22 @@
+          "for monoidal strengthening, should we track more statistics (more expensive)?",
+          &nlhdlrdata->trackmore, FALSE, FALSE, NULL, NULL) );
+ 
++   SCIP_CALL( SCIPaddIntParam(scip, "nlhdlr/" NLHDLR_NAME "/setrule",
++         "rule to choose the direction lambda of the maximal quadratic-free set: 0 = SCIP's point rule, "
++         "1 = maximize the single-cut corner bound over lambda, 2 = maximize the cut efficacy over lambda",
++         &nlhdlrdata->setrule, FALSE, DEFAULT_SETRULE, 0, 2, NULL, NULL) );
++
++   SCIP_CALL( SCIPaddIntParam(scip, "nlhdlr/" NLHDLR_NAME "/setrulemaxevals",
++         "maximal number of lambda evaluations per cut when setrule > 0",
++         &nlhdlrdata->setrulemaxevals, FALSE, DEFAULT_SETRULEMAXEVALS, 4, 100000, NULL, NULL) );
++
++   SCIP_CALL( SCIPaddStringParam(scip, "nlhdlr/" NLHDLR_NAME "/dumpfile",
++         "file to append the corner data of root intersection cuts to (empty: no dump)",
++         &nlhdlrdata->dumpfile, FALSE, "", NULL, NULL) );
++
++   SCIP_CALL( SCIPcreateClock(scip, &nlhdlrdata->intercutclock) );
++   SCIP_CALL( SCIPcreateClock(scip, &nlhdlrdata->selclock) );
++
+    /* statistic table */
+    assert(SCIPfindTable(scip, TABLE_NAME_QUADRATIC) == NULL);
+    SCIP_CALL( SCIPincludeTable(scip, TABLE_NAME_QUADRATIC, TABLE_DESC_QUADRATIC, FALSE,

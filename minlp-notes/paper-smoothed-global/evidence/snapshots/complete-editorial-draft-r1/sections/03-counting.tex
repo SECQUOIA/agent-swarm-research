@@ -1,0 +1,584 @@
+\section{Local counts, growth tails, and an exact fallback}\label{sec:count}
+
+This section develops the probabilistic and algorithmic tools shared by the
+quadratic, sparse, and recourse results. Every statement concerns a fixed
+base function and an independent random linear perturbation of it. No
+statement uses convexity, differentiability, uniqueness of an optimizer, or
+quadratic growth of the base problem unless that property is listed among
+its hypotheses.
+
+Throughout, $I$ denotes the bit length of the rational base data before any
+perturbation is sampled. It includes the noise width $\sigma$ and every
+supplied decomposition or certificate. A perturbation is drawn once, from a
+law that the algorithm computes from the base data before sampling. No
+algorithm in this paper discards, resamples, or conditions on a draw, and
+every algorithm is correct on every draw. Probability enters only the bounds
+on work.
+
+The section has four parts. Theorem~\ref{thm:count:local} bounds the
+expected number of grid nodes that survive comparisons with their grid
+neighbors. Together with curvature-corrected refinement
+(Theorem~\ref{thm:count:cells}), it bounds the expected number of cells that
+a search retains at every refinement level, uniformly in the level.
+Section~\ref{sec:count:laws} transfers such bounds from continuous proxy
+laws to finite rational laws that a Turing machine can sample.
+Theorem~\ref{thm:count:growth-tail} and Lemma~\ref{lem:count:finite-tails}
+bound the probability of small global quadratic growth and of small active
+gradients. Theorem~\ref{thm:count:fallback} gives an exact algorithm for
+every draw of a fixed-degree polynomial problem. Its cost contains an
+exponential factor that depends only on the base data, and
+Lemma~\ref{lem:count:rare-fallback} shows how a rare exceptional event pays
+for that factor. Section~\ref{sec:count:template} summarizes how the later
+sections combine these parts. Proofs are in Appendix~\ref{app:count}.
+
+\subsection{Upper curvature and local comparison events}\label{sec:count:local}
+
+Let $X=\prod_{i=1}^k[a_i,b_i]$ be a box with $a_i<b_i$ and widths
+$w_i=b_i-a_i$. For a function $f:X\to\R$ and a coefficient vector
+$c\in\R^k$ write
+\[
+ F_c(x)=f(x)+c^{\mathsf T} x .
+\]
+
+\begin{definition}[Upper coordinate curvature]\label{def:count:curv}
+A function $f:X\to\R$ has \emph{upper coordinate curvature at most}
+$L=(L_1,\dots,L_k)\in[0,\infty)^k$ if, for every $i$ and every $x\in X$, the
+function $t\mapsto f(x+te_i)-L_it^2/2$ is concave on the interval
+$\{t:x+te_i\in X\}$.
+\end{definition}
+
+The property holds when $f-\frac12\sum_iL_ix_i^2$ is concave. It is
+preserved by pointwise infima: if every $f_\omega$ has upper coordinate
+curvature at most $L$ and $\inf_\omega f_\omega$ is finite, then
+$\inf_\omega f_\omega$ has upper coordinate curvature at most $L$, because an
+infimum of concave functions is concave. The auxiliary value functions of
+Section~\ref{sec:qp} are of this kind. Downward kinks, discontinuous
+derivatives, and arbitrarily large negative curvature are allowed. Only an
+upper bound on curvature is used.
+
+\begin{lemma}[Neighbor comparisons confine one coefficient]\label{lem:count:interval}
+Let $f:X\to\R$ be arbitrary, $v\in X$, $h>0$, $\delta\ge0$, and suppose
+that $v\pm he_i\in X$. If
+\[
+ F_c(v)\le F_c(v+he_i)+\delta
+ \qquad\text{and}\qquad
+ F_c(v)\le F_c(v-he_i)+\delta ,
+\]
+then $c_i$ belongs to the interval
+\[
+ I_i(v,h,\delta)=\Bigl[\frac{f(v)-f(v+he_i)-\delta}{h},\
+ \frac{f(v-he_i)-f(v)+\delta}{h}\Bigr].
+\]
+This interval depends on $f$, $v$, $h$, and $\delta$, but not on $c$. If $f$
+has upper coordinate curvature at most $L$, its length is at most
+$L_ih+2\delta/h$; an interval with negative length is empty.
+\end{lemma}
+
+\begin{definition}[Grids, local events, and interval concentration]\label{def:count:local-event}
+For integers $m_i\ge1$ put $h_i=w_i/m_i$,
+$G_i=\{a_i+\ell h_i:0\le\ell\le m_i\}$, and $G=\prod_iG_i$. The
+\emph{interior coordinates} of a node $v\in G$ are
+$Q_v=\{i:a_i<v_i<b_i\}$. For $\delta\ge0$, the \emph{$\delta$-local event}
+$E_v^\delta$ is the set of coefficient vectors $c$ for which
+$F_c(v)\le F_c(v\pm h_ie_i)+\delta$ for all $i\in Q_v$ and both signs. The
+\emph{interval concentration} of a real random variable $Y$ is
+\[
+ \pi_Y(\ell)=\sup\{\Prob(Y\in J): J\text{ an interval of length at most }\ell\}.
+\]
+\end{definition}
+
+A node with $F_c(v)\le\inf_XF_c+\delta$, or with
+$F_c(v)\le\min_GF_c+\delta$, satisfies $E_v^\delta$, because its grid
+neighbors are feasible competitors. Three concentration bounds recur. If $Y$
+has a density bounded by $\phi$, then $\pi_Y(\ell)\le\phi\ell$. If $Y$ has the
+grid law $U_{\sigma,M}$ of Definition~\ref{def:model:grid}, uniform on
+$\{-\sigma+2\sigma j/(M-1):0\le j<M\}$, then
+$\pi_Y(\ell)\le\ell/(2\sigma)+1/M$ by \eqref{eq:model:interval}.
+If the distribution function of $Y$ differs everywhere by at most
+$\delta_{\rm K}$ from that of a law with density bounded by $\phi$, then
+$\pi_Y(\ell)\le\phi\ell+2\delta_{\rm K}$.
+
+\begin{theorem}[Expected local counts]\label{thm:count:local}
+Let $f:X\to\R$ have upper coordinate curvature at most $L$, let $G$ be the
+grid of Definition~\ref{def:count:local-event}, and let the coordinates of
+$c$ be independent, with interval concentrations $\pi_1,\dots,\pi_k$. Then
+for every $\delta\ge0$
+\[
+ \E\,\#\{v\in G: c\in E_v^\delta\}
+ \le\prod_{i=1}^k\Bigl[2+(m_i-1)\min\bigl\{1,\pi_i(L_ih_i+2\delta/h_i)\bigr\}\Bigr].
+\]
+The same bound holds conditionally on any random element that is
+independent of $c$, if $f$ is allowed to depend on that element.
+\end{theorem}
+
+The bound concerns a deterministic grid. An adaptive search visits a subset
+of its nodes that depends on the draw, but every node that the search keeps
+for a probabilistic reason will be shown to satisfy a local event. The
+expectation is therefore taken over a fixed family of events, and no
+independence between the draw and the adaptively selected cells is used.
+The comparisons with grid neighbors make the other coefficients cancel, which
+is why independence across coordinates multiplies the per-coordinate bounds.
+
+\begin{definition}[Balanced nested meshes]\label{def:count:mesh}
+Let $\rho_1,\dots,\rho_k>0$ be \emph{mesh scales}. Put
+$S_\rho=\max_iw_i/\rho_i$ and $h_j=S_\rho2^{-j}$ for $j\ge0$. At level $j$,
+coordinate $i$ is divided into $m_{ij}$ equal parts, where $m_{ij}$ is the
+least power of two with $w_i/m_{ij}\le\rho_ih_j$, and $h_{ij}=w_i/m_{ij}$.
+The level-$j$ grid $G_j$ and the level-$j$ cells are the corresponding
+tensor grid and the boxes between consecutive grid nodes. For a curvature
+vector $L\in(0,\infty)^k$ put
+\[
+ E_j=\frac18\sum_{i=1}^kL_ih_{ij}^2,
+ \qquad
+ c_{\rm bal}=\max_{i,l}\frac{L_l\rho_l^2}{L_i\rho_i^2},
+ \qquad
+ C_k=1+2c_{\rm bal}k .
+\]
+The \emph{isotropic} choice $\rho_i=1$, for a common curvature $L_i=L$, gives
+$c_{\rm bal}=1$ and $C_k=1+2k$.
+\end{definition}
+
+\begin{corollary}[Level-uniform counts]\label{cor:count:levels}
+In Definition~\ref{def:count:mesh}, the partitions are nested, level $0$
+consists of the single cell $X$, and $m_{ij}\le2^j$. Every coordinate with
+$m_{ij}\ge2$ satisfies $\rho_ih_j/2<h_{ij}\le\rho_ih_j$ and
+\[
+ L_ih_{ij}+4E_j/h_{ij}\le C_kL_ih_{ij}.
+\]
+Consequently, if $f$ has upper coordinate curvature at most $L$ and the
+coordinates of $c$ are independent, then at every level $j$
+\[
+ \E\,\#\{v\in G_j:c\in E_v^{2E_j}\}\le
+ \begin{cases}
+ \prod_{i=1}^k\bigl[2+C_kL_i\phi_iw_i\bigr]
+ &\text{if $c_i$ has a density bounded by $\phi_i$,}\\[3pt]
+ \prod_{i=1}^k\bigl[3+C_kL_iw_i/(2\sigma_i)\bigr]
+ &\text{if $c_i\sim U_{\sigma_i,M}$ and $M\ge m_{ij}$ for all $i$.}
+ \end{cases}
+\]
+\end{corollary}
+
+A coordinate that is not yet refined has no interior node. It contributes
+the factor $2$, with no dependence on its width, however small. The
+construction divides every coordinate interval into equal parts. Clipping a
+uniform step at the end of an interval would create a short final gap $g$,
+and Lemma~\ref{lem:count:interval} would then produce a term $\delta/g$ that
+the count cannot control. The balance constant $c_{\rm bal}$ matters only
+for anisotropic curvature; it is used with $c_{\rm bal}<4$ in
+Section~\ref{sec:qp:separable}.
+
+\subsection{Curvature-corrected refinement and the role of closure}\label{sec:count:search}
+
+\begin{lemma}[Corrected corners]\label{lem:count:rounding}
+Let $f$ have upper coordinate curvature at most $L$, and let
+$C=\prod_i[l_i,l_i+\eta_i]\subseteq X$ be a cell. For every $c$ and every
+$x\in C$,
+\[
+ \min_{v\text{ corner of }C}F_c(v)\le F_c(x)+\frac18\sum_{i=1}^kL_i\eta_i^2 .
+\]
+\end{lemma}
+
+\begin{definition}[Corrected-corner search]\label{def:count:search}
+Fix balanced nested meshes on $X$, a level cap $J$, and exact evaluation of
+$F_c$. Level $0$ processes the cell $X$. Level $j\ge1$ processes the
+children of the cells retained at level $j-1$. For every processed cell $C$,
+evaluate $F_c$ at all corners of $C$ and put
+$\underline F(C)=\min_{\rm corners}F_c-E_j$. Optionally, a \emph{closure
+step} computes $\min_CF_c$ exactly together with a point attaining it; such
+a cell is \emph{closed}. After all cells of level $j$ have been processed,
+let $U_j$ be the least value of $F_c$ found so far, at corners or at closure
+points, stored together with a point attaining it. Retain exactly the
+processed cells that are not closed and satisfy $\underline F(C)\le U_j$.
+Stop when no cell is retained or when level $J$ has been processed.
+\end{definition}
+
+\begin{theorem}[Corrected-corner search]\label{thm:count:cells}
+Let $f:X\to\R$ be lower semicontinuous with upper coordinate curvature at
+most $L$, and put $F^*=\min_XF_c$. For every coefficient vector $c$ the
+search of Definition~\ref{def:count:search} has the following properties.
+\begin{enumerate}[label=(\roman*)]
+\item $\underline F(C)\le\min_CF_c$ for every processed cell $C$.
+\item If no cell is retained after level $j$, then $U_j=F^*$ and the stored
+ point is a global minimizer.
+\item $U_j\le F^*+E_j$.
+\item Every cell retained at level $j$ has a corner $v\in G_j$ with
+ $F_c(v)\le F^*+2E_j$. Hence $c\in E_v^{2E_j}$, and the number of retained
+ cells is at most $2^k\#\{v\in G_j:c\in E_v^{2E_j}\}$.
+\item The number $\underline U_j=\min\{U_j,\min_{C\text{ retained}}\underline F(C)\}$
+ satisfies $\underline U_j\le F^*\le U_j$ and $U_j-\underline U_j\le E_j$.
+\end{enumerate}
+Consequently, under the hypotheses of Corollary~\ref{cor:count:levels}, the
+expected number of cells retained at level $j$ is at most $2^k$ times the
+corresponding bound of that corollary. This holds with or without closure
+steps.
+\end{theorem}
+
+Item (iv) is the bridge between the adaptive search and the deterministic
+count: a cell is retained for a probabilistic reason only through one of its
+corners, which is a nearly optimal node of a fixed grid.
+
+\begin{corollary}[Approximation with logarithmic accuracy dependence]\label{cor:count:approx}
+Use isotropic meshes with common curvature $L>0$, let $s=\max_iw_i$, fix
+$\varepsilon>0$, and put
+$J=\max\{0,\lceil\frac12\log_2(kLs^2/(8\varepsilon))\rceil\}$. Without
+closure steps, the search, stopped after level $J$ or earlier if no cell is
+retained, returns a point $x$ and a number $\underline U$ with
+$\underline U\le F^*\le F_c(x)$ and $F_c(x)-\underline U\le\varepsilon$, for
+every $c$. If the coordinates of $c$ are independent with densities bounded
+by $\phi_i$, the expected number of evaluations of $F_c$ is at most
+$2^k+8^k\mathcal HJ$, where $\mathcal H=\prod_i[2+(1+2k)L\phi_iw_i]$. If
+instead $c_i\sim U_{\sigma,M}$ with $M\ge2^J$, the same holds with
+$\mathcal H=\prod_i[3+(1+2k)Lw_i/(2\sigma)]$.
+\end{corollary}
+
+For fixed $k$ and numerical bounds on $L\phi_iw_i$, the expected number of
+evaluations is logarithmic in $1/\varepsilon$. The bound counts exact
+evaluations of the sampled objective. Their bit cost must be added, and the
+conclusion concerns the sampled objective, not the unperturbed one. The
+finite law in the corollary is chosen for the requested accuracy. A fixed
+finite law does not support the same bound at arbitrarily fine levels.
+
+\begin{example}[A fixed atom defeats level-uniform counts]\label{ex:count:atom}
+Let $k=1$ and $X=[0,1]$, and let the law of $c$ have an atom $c_0$ with
+$\Prob(c=c_0)=p_0>0$. For $f(x)=-c_0x$, which has upper coordinate curvature at
+most $L$ for every $L>0$, the draw $c=c_0$ makes $F_c\equiv0$. On this draw every node
+of every level is a global minimizer, every cell has
+$\underline F(C)=-E_j<0=U_j$, and all $2^j$ cells of level $j$ are retained.
+The expected number of retained cells is therefore at least $p_02^j$, which
+grows without bound.
+\end{example}
+
+The example explains the shape of the exact results below. A finite law
+supports Corollary~\ref{cor:count:levels} only up to a level $J$ with
+$M\ge m_{iJ}$ (or, for transferred bounds, up to a node budget fixed in
+advance). An exact algorithm must therefore finish the sampled problem in
+another way. In the low-rank quadratic results it does so by a \emph{closure
+step} that certifies the exact minimum of a whole cell from a structural
+formula, and by an exact \emph{fallback} on the same draw for the draws that
+are still unresolved at the base-selected level $J$. Atoms, ties, and flat
+optimal faces are handled by these certificates; they are never excluded by
+a genericity assumption.
+
+\subsection{Finite rational laws and continuous proxies}\label{sec:count:laws}
+
+A Turing machine can sample only from laws with finitely many rational atoms.
+The analysis often computes a probability under a continuous proxy law and
+then transfers it to the finite law that the algorithm actually samples. Two
+families of finite laws are used.
+
+\begin{definition}[Finite laws and Kolmogorov distance]\label{def:count:laws}
+The grid law $U_{\sigma,M}$ is that of Definition~\ref{def:model:grid}. For an
+integer $b\ge1$ and rational $\sigma>0$,
+$\mathcal G_{b,\sigma}$ is the law of $\sigma Z_b$, where $Z_b$ is the
+output of the sampler of Lemma~\ref{lem:count:gauss-sampler}. The
+\emph{Kolmogorov distance} of laws $\mu,\nu$ on $\R$ is
+$d_{\rm K}(\mu,\nu)=\sup_{t\in\R}|\mu(-\infty,t]-\nu(-\infty,t]|$.
+\end{definition}
+
+\begin{lemma}[Product replacement]\label{lem:count:transfer}
+\begin{enumerate}[label=(\alph*)]
+\item The uniform grid law satisfies
+ $d_{\rm K}(U_{\sigma,M},\mathrm{Unif}[-\sigma,\sigma])\le1/M$, and
+ the Gaussian-like law satisfies
+ $d_{\rm K}(\mathcal G_{b,\sigma},N(0,\sigma^2))\le2^{-b}$.
+\item Let $\mu_1,\dots,\mu_n$ and $\nu_1,\dots,\nu_n$ be laws on $\R$ with
+ $d_{\rm K}(\mu_i,\nu_i)\le\delta_i$, and let $E\subseteq\R^n$ be a Borel
+ set. Suppose that for every $i$ and every choice of real values of the
+ coordinates other than the $i$th, the section of $E$ in the $i$th coordinate
+ is a union of at most $C$ intervals (open, closed, half-open, degenerate, or
+ unbounded). Then
+ \[
+  \Bigl|\Bigl(\bigotimes_i\mu_i\Bigr)(E)-\Bigl(\bigotimes_i\nu_i\Bigr)(E)\Bigr|
+  \le2C\sum_{i=1}^n\delta_i .
+ \]
+\end{enumerate}
+\end{lemma}
+
+The section bound must hold for \emph{every} choice of the other
+coordinates, not only for almost every choice under the proxy law, because
+the replacement passes through mixed products of finite and continuous
+marginals.
+
+\begin{lemma}[A bounded rational Gaussian-like sampler]\label{lem:count:gauss-sampler}
+For every integer $b\ge1$ there is a finite law $\mathcal G_b$ on $\Q$,
+determined by $b$ through a fixed deterministic rule, with the following
+properties.
+\begin{enumerate}[label=(\alph*)]
+\item Its support lies in $[-(b+20),b+20]$, and every atom is a rational
+ number of bit length $O(b)$.
+\item $d_{\rm K}(\mathcal G_b,N(0,1))\le2^{-b}$.
+\item One sample is produced from independent fair bits in $\poly(b)$ bit
+ operations in the worst case.
+\end{enumerate}
+\end{lemma}
+
+The law $\mathcal G_{b,\sigma}$ is not a Gaussian law, and no theorem in this
+paper takes real Gaussian coefficients as Turing input. The Gaussian law
+$N(0,\sigma^2)$ serves only as a proxy in proofs: it makes orthogonal
+projections of the noise independent and supplies density bounds. Every
+theorem that uses a Gaussian-like law specifies the accuracy $b$ as a
+function of the base data, computed before sampling. The bounds do not
+apply to an arbitrary finite approximation of a Gaussian, and in particular
+not to a coarse one, because Example~\ref{ex:count:atom} shows how atoms can
+create unbounded counts.
+
+\subsection{Global growth and active gradients}\label{sec:count:growth}
+
+\begin{definition}[Point growth]\label{def:count:growth}
+Let $X\subset\R^n$ be nonempty and compact, let $f:X\to\R$ be lower
+semicontinuous, and let $F_c=f+c^{\mathsf T} x$. The \emph{point-growth modulus}
+$g_*(c)\in[0,\infty]$ is the supremum of the numbers $g\ge0$ for which some
+minimizer $x^*$ of $F_c$ on $X$ satisfies
+\[
+ F_c(x)-F_c(x^*)\ge g\norm{x-x^*}^2\qquad(x\in X).
+\]
+If $X$ is a singleton, $g_*=\infty$. If $F_c$ has two distinct minimizers,
+then $g_*=0$. Write $w_i=\max_Xx_i-\min_Xx_i$ and $S=\sum_iw_i$.
+\end{definition}
+
+Point growth is measured from one minimizer. It differs from growth measured
+by the distance to the set of minimizers, which can remain positive in the
+presence of ties.
+
+\begin{theorem}[Sharp growth tail]\label{thm:count:growth-tail}
+Let $X\subset\R^n$ be nonempty and compact, let $f:X\to\R$ be lower
+semicontinuous, and let $c$ have independent coordinates with densities
+bounded by $\phi_1,\dots,\phi_n$. Then for every $\varepsilon>0$
+\[
+ \Prob\{g_*(c)<\varepsilon\}\le2\varepsilon\sum_{i=1}^n\phi_iw_i .
+\]
+In particular, if $c_i$ is uniform on $[-\sigma,\sigma]$ for every $i$, then
+$\Prob\{g_*(c)<\varepsilon\}\le\varepsilon S/\sigma$. If $X$ is not a
+singleton, then for every $\rho\in(0,1]$, with probability at least
+$1-\rho$ the minimizer of $F_c$ is unique and
+$g_*(c)\ge\rho/(2\sum_i\phi_iw_i)$. The constant $2$ cannot be decreased:
+for $X=[-w/2,w/2]$, $f=0$, and $c$ uniform on $[-\sigma,\sigma]$,
+$\Prob\{g_*(c)<\varepsilon\}=2\varepsilon\phi w$ with $\phi=1/(2\sigma)$
+whenever $0<\varepsilon\le\sigma/w$.
+\end{theorem}
+
+The theorem assumes neither convexity, differentiability, nor definability of
+$f$ or $X$. Its proof works in coefficient space. The function
+$H(a)=\max_{x\in X}\{a^{\mathsf T} x-f(x)+\varepsilon\norm{x}^2\}$ is convex, and
+wherever $H$ is differentiable at the proximal point of $-c$, the tilted
+problem has growth at least $\varepsilon$. The proximal map is a
+$1$-Lipschitz gradient map, so the area formula shows that its Jacobian is
+singular almost everywhere on the bad event. This bounds the indicator of
+the bad event by the trace of the Jacobian of the proximal residual, whose
+integral along each coordinate is at most $2\varepsilon w_i$.
+
+Two comparisons clarify the scope. For a finite binary feasible set and
+independent continuous coefficients, Beier and V\"ocking bound the density of
+the gap between the best and second-best values by the same expression
+$2\sum_i\phi_i$ \cite{beier2006-typical-properties-of-winners-and}. That
+statement compares values, not values relative to squared distances, and it
+does not apply to continuous feasible sets. Qualitatively, an absolutely
+continuous tilt of a continuous function on a compact set almost surely has
+a unique minimizer with positive growth. This can be deduced from
+Alexandrov's theorem on second-order differentiability of convex functions
+\cite{azagra2023-a-geometric-approach-to-second}, applied to a convex
+conjugate, and genericity results of this type are known for semialgebraic
+programs \cite{lee2016-stability-and-genericity-for-semi}. Neither gives a
+probability bound. Theorem~\ref{thm:count:growth-tail} quantifies the
+probability of small growth.
+
+The theorem concerns continuous laws. It does not by itself give an exact
+algorithm in the bit model. For example, minimizing $x^2/2+cx$ over $[-1,1]$
+with continuous $c$ has the interior minimizer $-c$, which is irrational with
+probability one when it is interior. A finite rational law has atoms, and
+ties can occur with positive probability. The next lemma gives finite-law
+tails when the problem is semialgebraic.
+
+For the polynomial statements, let $\mathcal D\subset\R^{n+m}$ be a nonempty
+compact set described by a quantifier-free formula with at most $s$ atomic
+polynomial sign conditions of degree at most $d$ and rational coefficients.
+Let $F\in\Q[x,y]$ have degree at most $d$. The \emph{reduced objective}
+$f(x)=\min\{F(x,y):(x,y)\in\mathcal D\}$ is lower semicontinuous on the
+compact projection $X$ of $\mathcal D$. The noise acts on $x$ only:
+$F_\gamma(x,y)=F(x,y)+\gamma^{\mathsf T} x$, and $g_*(\gamma)$ is the point-growth
+modulus of $f+\gamma^{\mathsf T} x$ on $X$. When $m=0$, $f=F$. A bounded integer
+coordinate $x_j\in\{\ell_j,\dots,u_j\}$ is described by the disjunction
+$\bigvee_{t=\ell_j}^{u_j}(x_j=t)$, which adds $u_j-\ell_j+1$ atoms but no
+variables.
+
+\begin{lemma}[Finite-law growth and active-gradient tails]\label{lem:count:finite-tails}
+There is an absolute constant $a_{\rm R}$ with the following properties. Put
+\[
+ H_{\rm s}=\bigl((2s+1)\max\{d,2\}\bigr)^{a_{\rm R}(n+m+1)^2},
+ \qquad
+ C_{\rm tail}=2H_{\rm s}^3+1 .
+\]
+\begin{enumerate}[label=(\alph*)]
+\item \emph{(Sections.)} Fix $\varepsilon>0$, an index $i\le n$, and real
+ values of $\gamma_l$ for $l\ne i$. The set of $t\in\R$ for which
+ $g_*(\gamma)<\varepsilon$ when $\gamma_i=t$ is a union of at most
+ $C_{\rm tail}$ intervals. The bound is uniform in $\varepsilon$ and in the
+ fixed values.
+\item \emph{(Uniform grids.)} If $\gamma_1,\dots,\gamma_n$ are independent
+ with law $U_{\sigma,M}$, then for every $\varepsilon>0$
+ \[
+  \Prob\{g_*<\varepsilon\}\le\frac{S\varepsilon}{\sigma}+\frac{2nC_{\rm tail}}M,
+  \qquad
+  \Prob\{g_*=0\}\le\frac{2nC_{\rm tail}}M .
+ \]
+\item \emph{(Gaussian-like laws.)} If $\gamma_1,\dots,\gamma_n$ are
+ independent with $d_{\rm K}(\gamma_i,N(0,\sigma^2))\le\delta_{\rm K}$, then
+ for every $\varepsilon>0$
+ \[
+  \Prob\{g_*<\varepsilon\}\le\sqrt{2/\pi}\,\frac{S\varepsilon}{\sigma}
+  +2nC_{\rm tail}\delta_{\rm K}.
+ \]
+\item \emph{(Active gradients on mixed boxes.)} Let $m=0$ and let
+ $\mathcal D=X$ be a product of $n_c$ closed intervals of positive length
+ and of bounded integer ranges with $R_Z$ integer points in total. Put
+ $D=\max\{1,d-1\}$ and $K_{\rm act}=n_c3^{n_c}R_ZD^{n_c}$. For $\tau>0$, the
+ probability that $g_*>0$ and the minimizer $x^*$ has a continuous
+ coordinate $x_i^*$ at an endpoint of its interval with
+ $|\partial_iF_\gamma(x^*)|\le\tau$ is at most
+ $K_{\rm act}(\tau/\sigma+1/M)$ under the law of (b), and at most
+ $K_{\rm act}(\sqrt{2/\pi}\,\tau/\sigma+2\delta_{\rm K})$ under the laws
+ of (c).
+\end{enumerate}
+\end{lemma}
+
+The constant $a_{\rm R}$ comes from the block-sensitive quantifier-elimination
+theorem of Renegar \cite{renegar1992-on-the-computational-complexity-and}.
+Its exponent depends on the product of the two block sizes, not on a tower
+over the number of variables; a bound of cylindrical-decomposition type would
+not give a sampling precision of polynomial length. For fixed $d$, if
+$\log(s+1)$ is polynomial in $I$, then $\log C_{\rm tail}$ is polynomial in
+$I$. This holds for mixed boxes with binary-encoded integer ranges, since
+those contribute $\sum_j(u_j-\ell_j+1)$ atoms. The value of $a_{\rm R}$ is not
+extracted here; the sampling rules below use one fixed admissible value. The
+section bound is used only through the logarithm of $C_{\rm tail}$, which
+determines a number of sampled bits. For quadratic objectives with $m=0$ an
+elementary argument gives the explicit bound $8(\mathsf F+1)^2$ in place of
+$C_{\rm tail}$, where $\mathsf F$ counts candidate faces
+(Lemma~\ref{lem:qp:growth-sections}).
+
+\begin{lemma}[Paying for a rare fallback]\label{lem:count:rare-fallback}
+\begin{enumerate}[label=(\alph*)]
+\item \emph{(Accounting.)} Let an algorithm act on one draw from a law fixed
+ before sampling, and let its work on a draw be $W_0+\ind_{\mathcal E}W_1$.
+ Suppose that $W_1\le B\,P(L_{\max})$ on every draw, where $B\ge1$ and the
+ polynomial $P$ are fixed before sampling and $L_{\max}$ bounds the bit length
+ of every sampled instance, and that $\Prob(\mathcal E)\le1/B$. Then
+ $\E[W_0+\ind_{\mathcal E}W_1]\le\E W_0+P(L_{\max})$.
+\item \emph{(Budget for polynomial mixed boxes.)} In the setting of
+ Lemma~\ref{lem:count:finite-tails}(d), let $\rho\in(0,1]$ and put
+ \[
+  g_0=\frac{\rho\sigma}{S},\qquad
+  \tau=\frac{\rho\sigma}{\max\{1,K_{\rm act}\}} .
+ \]
+ Let $\mathcal E_{\rm bad}$ be the event that $g_*<g_0$, or that $g_*\ge g_0$
+ and some active continuous coordinate has $|\partial_iF_\gamma(x^*)|\le\tau$.
+ If $\gamma_i\sim U_{\sigma,M}$ with
+ $M\ge(2nC_{\rm tail}+K_{\rm act})/\rho$, or if
+ $d_{\rm K}(\gamma_i,N(0,\sigma^2))\le\rho/(2nC_{\rm tail}+2K_{\rm act})$,
+ then $\Prob(\mathcal E_{\rm bad})\le3\rho$.
+\end{enumerate}
+\end{lemma}
+
+Part (a) cancels the combinatorial multiplier $B$ of a fallback, not its
+whole bit cost: the remaining polynomial factor must depend only on the bit
+length of the sampled instance, which is bounded before sampling. This
+ordering, first $B$, then the thresholds and the level cap, and only then the
+law, avoids a circular choice in which a precision depends on the sampled
+coefficients that it is supposed to control.
+
+\subsection{An exact fallback for fixed-degree polynomial problems}\label{sec:count:fallback}
+
+\begin{definition}[Explicit mixed semialgebraic instances]\label{def:count:semialg}
+Fix a degree bound $d\ge1$. A \emph{base instance} consists of variables
+$x\in\R^N$, a set $\mathcal Z\subseteq\{1,\dots,N\}$ of integer variables
+with binary-encoded bounds $\ell_j\le u_j$ ($j\in\mathcal Z$), a
+quantifier-free formula $\Phi_0$ whose atoms are explicitly listed polynomial
+sign conditions of degree at most $d$ with rational coefficients, and an
+objective $F_0\in\Q[x]$ of degree at most $d$, given by its list of monomials
+with rational coefficients. Its domain is
+\[
+ \mathcal D=\{x\in\R^N:\Phi_0(x)\text{ holds and }
+ x_j\in\Z\cap[\ell_j,u_j]\text{ for }j\in\mathcal Z\},
+\]
+which is assumed nonempty and compact. Its bit length $I$ counts $\Phi_0$,
+$F_0$, and the bounds. A \emph{tilted instance} adds rational coefficients
+$\gamma_i$, each of bit length at most $b$, to any subset of the variables:
+$F_\gamma(x)=F_0(x)+\sum_i\gamma_ix_i$. A real algebraic number $\theta$ is
+given in \emph{root representation} by a nonzero $p\in\Z[t]$ and a rational
+interval, possibly a point, that contains $\theta$ and no other real root of
+$p$.
+\end{definition}
+
+The class contains mixed boxes ($\Phi_0$ a conjunction of bounds), bounded
+polytopes and mixed polytopes, and polynomial graph constraints $y=g(x)$
+with explicit polynomials $g$. It does not contain objectives given by
+arithmetic circuits or by unexpanded compositions; the expanded monomial
+list of $F_0$ is part of $I$.
+
+\begin{theorem}[Exact fallback]\label{thm:count:fallback}
+Fix $d\ge1$. There are a deterministic algorithm, a base-computable integer
+$B=2^{\poly_d(I)}$, and an exponent $c_d$ such that the following holds for
+every base instance of Definition~\ref{def:count:semialg} and every tilted
+instance with coefficient bit length at most $b$.
+\begin{enumerate}[label=(\roman*)]
+\item The algorithm returns the optimal value $f^*=\min_{\mathcal D}F_\gamma$
+ and the lexicographically least global minimizer $x^{\rm lex}$, each
+ coordinate and $f^*$ in root representation, within
+ $B\,(I+b+1)^{c_d}$ bit operations.
+\item For every $q\ge1$ it refines these representations to rational
+ enclosures of width at most $2^{-q}$ within $B\,(I+b+q+1)^{c_d}$ bit
+ operations.
+\item If $\mathcal D$ is a mixed box, it returns within the bound of (ii) a
+ rational point $y\in\mathcal D$ and a rational number $\ell\le f^*$ with
+ $F_\gamma(y)-\ell\le2^{-q}$.
+\end{enumerate}
+Neither $B$ nor $c_d$ depends on $\gamma$, $b$, or $q$. The algorithm is
+correct for every $\gamma$, including draws with ties, with a continuum of
+minimizers, or with singular stationary sets.
+\end{theorem}
+
+The output may have length up to $B$, that is, exponential in the base
+length; the added coefficient bits enter only polynomially. This separation
+is what Lemma~\ref{lem:count:rare-fallback}(a) requires. The proof
+characterizes each coordinate of $x^{\rm lex}$, and the optimal value, as the
+unique solution of a formula with two quantified blocks and one free
+variable, eliminates the quantifiers by Renegar's theorem
+\cite{renegar1992-on-the-computational-complexity-and}, and recovers the
+singleton by univariate root isolation. All coordinates refer to the same
+canonical minimizer, so independently represented coordinates cannot come
+from different minimizers. No common primitive element, minimal polynomial,
+unique minimizer, or finite stationary set is required. For quadratic
+objectives on mixed polytopes, a much smaller rational fallback suffices
+(Lemma~\ref{lem:qp:face}).
+
+\subsection{How the tools are combined}\label{sec:count:template}
+
+The exact results of Section~\ref{sec:qp}, and the exact results built on
+growth tails, follow one template.
+\begin{enumerate}[label=(\arabic*)]
+\item \emph{Before sampling,} the algorithm computes from the base data a
+ fallback multiplier $B$, the bad-event thresholds, a level cap $J$, and a
+ finite law (an accuracy $M$ or $b$ and, for Gaussian-like laws, a support
+ radius). All have polynomial bit length in $I$.
+\item It draws the perturbation once.
+\item It runs curvature-corrected refinement with exact closure steps through
+ level $J$. Closure certifies the exact minimum of a cell from a structural
+ formula valid on the whole cell. Correctness of every retained bound and of
+ every closed cell holds on every draw (Theorem~\ref{thm:count:cells}).
+\item If unresolved cells remain at level $J$, it runs an exact fallback on
+ the same draw.
+\end{enumerate}
+The expected work of step (3) is bounded through
+Theorem~\ref{thm:count:cells}(iv) by expected local counts of fixed grids,
+computed under a continuous proxy and transferred by
+Lemma~\ref{lem:count:transfer} when necessary. The probability that step
+(4) runs is at most $1/B$, which pays for the fallback by
+Lemma~\ref{lem:count:rare-fallback}(a). The structural routes differ in what
+plays the role of the box $X$ and its function $f$, in the closure
+certificate, and in the event whose small probability bounds step (4):
+fixed hyperplane tubes and integer-label gaps for low-rank quadratic
+problems (Section~\ref{sec:qp}), and growth and active-gradient events when
+closure is certified by growth. Some problems admit a termination argument
+of their own, such as a lattice of attainable objective values, and need no
+fallback. In each case the target is the exact optimum of the
+\emph{sampled} objective.

@@ -122,6 +122,6 @@ Section 8 contribution statement isolates sparse realizations, quantitative
 kernels and output contracts from the prior query-complexity ingredients.
 
 I ran
-`/home/sgusev/miniconda3/envs/qipm/bin/python notes/scalar-newton-paper/checks/check_temporal_identities.py`.
+`/workspace/local-home/miniconda3/envs/qipm/bin/python notes/scalar-newton-paper/checks/check_temporal_identities.py`.
 It passed all kernel, threshold/XOR, sparse-KKT and rank/volume diagnostics.
 These checks supplement the analytic verification above.

@@ -1,0 +1,501 @@
+\section{Rational certificates and compressed feasible trajectories}
+\label{sec:dynamics-bit}
+
+For polynomial dynamics, the exact local optimization problems in
+\cref{sec:dynamics} can be replaced by rational linear programs.  Exact
+forward simulation requires a different representation: polynomial
+composition can produce rational states with exponentially long expanded
+denominators.  We retain the rational initial state and controls, and let
+the original recurrence define the exact trajectory.  Contraction provides
+short rational enclosures for its objective value.  Rounding every
+coordinate of the next center then prevents denominator growth across
+regridding stages.
+
+\begin{assumption}[Rational polynomial data]
+\label{ass:dynamics-bit}
+Assume \cref{ass:dynamics}.  Every interval endpoint and every coefficient
+of $\varphi_t$ and $a_t$ is rational.  Their numerical degrees are bounded
+by a fixed constant.  The local dimensions are fixed, with
+$N=T$, $p=3$, $k=2$, and maximum separator dimension $q\le1$
+($q=0$ when $T=1$).
+Valid rational bounds $a,b,H,M$, with $0\le a<1$, are supplied for the
+derivatives in \cref{ass:dynamics}.  The box-invariance assertion and
+feasible quadratic growth are promises.  The positive growth constant
+$g$ need not be supplied.
+\end{assumption}
+
+Choose a rational bound $G_b\ge0$ on the absolute value of every component
+of every bag-cost gradient on its full box.  At fixed degree this can be
+done in polynomial bit work: bound each differentiated monomial by its
+coefficient magnitude times the appropriate powers of the maximum
+coordinate magnitudes, and sum these bounds.  Set $G=2G_b$.  Since each
+state occurs in at most two bags,
+\[
+ \abs{\partial_{\sigma_j}F(c)}\le G,\qquad j=1,\ldots,T,
+\]
+for every ambient-box center $c$, whether or not it satisfies the dynamics.
+Thus \cref{lem:dynamics-adjoint,lem:dynamics-error} apply to the rational
+centers used below.  The bounds $M,H,a,G_b$ and box invariance determine
+certificate soundness.  Growth is used only to prove a rate.
+
+\subsection{Exact rational local optimization}
+
+\begin{lemma}[Affine models and exact local linear programs]
+\label{lem:bit-local-lp}
+For a bag leaf $B$ of width $w_B$, let $v_B$ be its full midpoint and use
+\begin{equation}
+ m_{t,B}(z)=a_t(v_B)+\inner{\nabla a_t(v_B)}{z-v_B}
+                         -\frac{Mp}{8}w_B^2.
+ \label{eq:bit-affine-model}
+\end{equation}
+This rational affine model satisfies \cref{eq:model-contract} with
+$A=pM$.  Use the rational graph strip of \cref{lem:dynamics-strip}.
+Every finite local task in the certificate dynamic program is a rational
+linear program with at most three variables and eight inequalities.  Its
+minimum and an attaining point, or its emptiness, can be found exactly by
+a constant number of rational basis computations.
+\end{lemma}
+
+\begin{proof}
+Taylor's estimate on the box gives
+\[
+ \abs{a_t(z)-a_t(v_B)-\inner{\nabla a_t(v_B)}{z-v_B}}
+ \le\frac M2\norm{z-v_B}^2\le\frac{Mp}{8}w_B^2.
+\]
+Subtracting the last bound proves
+$0\le a_t(z)-m_{t,B}(z)\le Mp w_B^2/4$.  No vertex exactness is needed.
+The graph strip has the form
+\[
+ \abs{\sigma'-\varphi_t(v)
+      -\inner{\nabla\varphi_t(v)}{(\sigma,u)-v}}
+ \le \frac H4w_B^2,
+\]
+where $v$ is the input midpoint.  All its coefficients are rational.
+It contains every true graph point in $B$, and every point of the strip
+has residual at most $Hw_B^2/2$.
+
+Intersecting $B$ with its own separator cell only changes coordinate
+bounds.  Merge these bounds by taking the maximum lower endpoint and
+minimum upper endpoint.  There are then at most six coordinate
+inequalities and two strip inequalities.  The model and separator terms
+are affine.  Child-message intercepts are constants, so they can be
+added after minimizing the nonconstant part.
+
+For an unreduced three-dimensional task, enumerate the at most
+$\binom83=56$ triples of constraint rows.  Discard dependent triples,
+solve each remaining rational linear system, and check all inequalities
+exactly.  Select a feasible candidate of least objective value.  A
+nonempty bounded polyhedron has a vertex.  At a vertex its active normals
+span the ambient space: otherwise a nonzero common null direction and
+its negative give feasible small displacements, contradicting
+extremality.  Thus a vertex appears in this enumeration, and finding no
+feasible candidate proves emptiness.  This argument also covers
+lower-dimensional polyhedra.  Alternatively, eliminate coordinates fixed
+by the intersected bounds and enumerate bases in the remaining dimension;
+in dimension zero, check the unique point directly.  Touching faces and
+the exact affine graph when $H=0$ therefore require no numerical tolerance.
+
+The infeasibility flags and bottom-up rules in \cref{sec:dynamics} remain
+valid.  A true feasible trajectory supplies an available configuration,
+so a finite root minimum exists.  Exact backtracking returns rational
+bag points and hence a rational top-copy point, rational controls, and a
+rational initial state.
+\end{proof}
+
+\subsection{Enclosing an exact feasible trajectory}
+
+Fix the rational initial state and controls obtained by backtracking.
+The equations
+$\sigma_{t+1}=\varphi_t(\sigma_t,u_t)$ define the exact states without
+expanding their numerators and denominators.  Box invariance makes this
+trajectory feasible.
+
+\begin{lemma}[Contraction enclosures and an objective upper bound]
+\label{lem:bit-enclosure}
+For any dyadic mesh $\delta>0$, rational state intervals can be computed
+with midpoints $\widehat\sigma_t$ and radii $r_t$ such that they contain
+the exact states, lie in the prescribed state intervals, and satisfy
+\begin{equation}
+ r_0=0,\qquad r_{t+1}\le ar_t+\delta,
+ \qquad r_t\le\frac{\delta}{1-a}.
+ \label{eq:bit-enclosure-radius}
+\end{equation}
+The rational number
+\begin{equation}
+ U_{\mathrm{enc}}=\sum_{t=0}^{T-1}a_t(\widehat\sigma_t,u_t,\widehat\sigma_{t+1})
+               +G_b\sum_{t=0}^{T-1}(r_t+r_{t+1})
+ \label{eq:bit-objective-upper}
+\end{equation}
+satisfies
+\[
+ F(y)\le U_{\mathrm{enc}}\le F(y)+\frac{4G_bN\delta}{1-a}.
+\]
+\end{lemma}
+
+\begin{proof}
+Start from the singleton interval containing the exact rational initial
+state.  Given its current midpoint and radius, evaluate
+$\varphi_t(\widehat\sigma_t,u_t)$ exactly as a rational number.  The
+derivative bound gives the enclosure
+\[
+ [\varphi_t(\widehat\sigma_t,u_t)-ar_t,
+   \varphi_t(\widehat\sigma_t,u_t)+ar_t].
+\]
+Round its lower endpoint down and its upper endpoint up to the dyadic
+mesh, and intersect it with the prescribed next-state interval.  Box
+invariance preserves containment under this intersection.  Outward
+rounding increases the radius by at most $\delta$, and intersection
+cannot increase it.  This proves the recurrence and its geometric-sum
+bound.  The intersection also keeps every subsequent midpoint in the
+box where the derivative promise holds.  Ordinary interval substitution
+in a polynomial does not establish this width recurrence: repeated
+occurrences of the state can overestimate variation.
+
+Both the exact bag point and its midpoint approximation lie in the full
+bag box.  Integrating the componentwise gradient bound along their segment
+gives
+\[
+ \abs{a_t(\widehat\sigma_t,u_t,\widehat\sigma_{t+1})-a_t(y_{V_t})}
+ \le G_b(r_t+r_{t+1}).
+\]
+Adding these inequalities proves that $U_{\mathrm{enc}}$ is an upper bound and that
+its excess is at most $2G_b\sum_t(r_t+r_{t+1})$, hence at most the stated
+$4G_bN\delta/(1-a)$.  No independence between adjacent state intervals
+is required.
+\end{proof}
+
+Fix a positive rational $\omega$; one may take $\omega=1$ throughout.
+At stage $j$, choose the largest reciprocal power-of-two mesh satisfying
+\begin{equation}
+ \delta_j\le
+ \min\left\{1,
+       \frac{\omega(1-a)h_j^2}{4\max\{1,G_b\}},
+       \frac{(1-a)h_{j+1}}4\right\}.
+ \label{eq:bit-enclosure-mesh}
+\end{equation}
+The computed upper bound $U_j$ then exceeds $F(y_j)$ by at most
+$\omega Nh_j^2$.  Keep the least such upper bound, together with the
+rational initial state and controls that produced it.
+
+\subsection{Rational center resetting}
+
+The feasible incumbent and the next center serve different purposes.
+The incumbent retains its exact rational initial state and controls.
+The center retains only newly rounded coordinates and may be infeasible.
+
+\begin{lemma}[Resetting and the rounded-center rate]
+\label{lem:bit-reset}
+At stage $j$, use the rational center $c_j$, the models of
+\cref{lem:bit-local-lp}, and the exact adjoints of
+\cref{lem:dynamics-adjoint}.  Let $y_j$ be the forward repair of the
+backtracked top-copy point.  Round its enclosure midpoints and its exact
+input coordinates to the largest reciprocal power-of-two mesh of size at
+most $\min\{1,h_{j+1}/2\}$, then clip
+each rounded coordinate to its exact interval.  The resulting center
+satisfies
+\begin{equation}
+ \norm{c_{j+1}-y_j}^2\le pNh_{j+1}^2.
+ \label{eq:bit-reset}
+\end{equation}
+Suppose $\theta$ satisfies \cref{eq:dynamics-grading}, with $G=2G_b$
+and $A=pM$.  Write $C$ for the corresponding constant in
+\cref{eq:dynamics-constants}, and put
+\begin{equation}
+ B_{\mathrm{round}}=\max\left\{p,
+                 \frac{4(C+\omega)}g+\frac{3p}5\right\}.
+ \label{eq:bit-rounded-constant}
+\end{equation}
+Starting from the rational box midpoint, the successive repaired points
+obey $e_j=\norm{y_j-x^*}^2\le B_{\mathrm{round}}Nh_j^2$ and
+\begin{equation}
+ 0\le\UB-\LB_j\le gB_{\mathrm{round}}Nh_j^2.
+ \label{eq:bit-gap}
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+By \cref{eq:bit-enclosure-mesh}, each state midpoint has error at most
+$h_{j+1}/4$.  Rounding to the prescribed mesh adds at most
+$h_{j+1}/2$.  The initial state and controls have only the latter error.
+Clipping cannot increase distance from a coordinate in the interval.
+Every coordinate error is therefore at most $h_{j+1}$.  There are
+$2T+1\le pN$ coordinates, proving \cref{eq:bit-reset}.
+
+For initialization, let $c_0$ be the rational box midpoint and choose any
+feasible reference trajectory $y_{-1}$, for example the recurrence from
+its retained input coordinates.  Both $c_0$ and $y_{-1}$ lie in the box,
+so $\norm{c_0-y_{-1}}^2\le pNh_0^2$ and
+$e_{-1}\le pNh_0^2$.  This reference is needed only for the proof;
+its expanded coordinates and objective value are not computed.
+
+The arbitrary-center estimate \cref{eq:dynamics-error-final} gives
+\[
+ F(y_j)-\LB_j\le\frac g{20}\norm{y_j-c_j}^2+CNh_j^2.
+\]
+The three-vector inequality and the reset bound give
+$\norm{y_j-c_j}^2\le3(e_j+e_{j-1}+pNh_j^2)$, including stage zero
+by the initialization bound.  Since $\LB_j\le f^*$, feasible quadratic
+growth yields
+\begin{equation}
+ e_j\le\frac3{17}e_{j-1}
+              +\frac{20C/g+3p}{17}Nh_j^2.
+ \label{eq:bit-rounded-recursion}
+\end{equation}
+In particular the contraction factor $3/17$ is smaller than $1/4$.
+For $j\ge1$, induction gives
+$e_{j-1}\le4B_{\mathrm{round}}Nh_j^2$; this bound also holds at
+$j=0$ because $B_{\mathrm{round}}\ge p$.  The induction closes because
+\[
+ 12B_{\mathrm{round}}+20C/g+3p\le17B_{\mathrm{round}}.
+\]
+Adding the upper-bound evaluation error and using these distance bounds
+gives
+\begin{align*}
+ 0\le\UB-\LB_j
+ &\le\left(\frac{3gB_{\mathrm{round}}}4+\frac{3gp}{20}
+                        +C+\omega\right)Nh_j^2\\
+ &\le gB_{\mathrm{round}}Nh_j^2,
+\end{align*}
+where the last inequality follows from
+$gB_{\mathrm{round}}/4\ge C+\omega+3gp/20$.
+\end{proof}
+
+The center reset includes the controls and initial state.  Retaining their
+arbitrary LP denominators in successive centers would defeat the bit-length
+argument even if all dependent states were rounded.  At an infeasible
+center we still use the original cost models and the adjusted gradients
+only for separator slopes.  A model of the full adjusted function would
+also need its nonzero constant $\sum_t\mu_tq_t(c)$; the present construction
+uses the exact identity in \cref{lem:dynamics-error} directly.
+
+\subsection{Bit lengths and conditioned complexity}
+
+Let $I$ be the total binary length of the rational input, including supplied
+bounds and tolerance.  The fixed rational $\omega$ is included when it is
+not set to one.  Rational numbers are stored as reduced numerator-denominator
+pairs.  Write $\theta=2^{-\mu}$, $\mu\ge1$.
+
+\begin{lemma}[Polynomial numerical representations]
+\label{lem:bit-size}
+At stage $j$, let $b_j=O(I+j+\mu+\log(T+1))$.  Reset-center coordinates
+have $O(I+j)$ bits, fresh shell endpoints have $O(I+j+\mu)$ bits, adjoints
+and local affine contributions have $O(Tb_j)$ bits, and every finite
+dynamic-programming message has $O(T^2b_j)$ bits.  Forward enclosures and
+their objective upper bounds also have polynomial bit length.  Each local
+LP and each arithmetic operation can therefore be performed in polynomial
+bit work in $T,I,j,\mu$.
+\end{lemma}
+
+\begin{proof}
+A reset coordinate is a dyadic rational at the prescribed mesh or a clipped
+input endpoint; its magnitude is bounded by the input box.  The required
+mesh exponent is $O(I+j)$.  Fresh shell boundaries are formed from these
+centers, $h_j=s_0 2^{-j}$, and the dyadic grading ratio, so their bit
+lengths are $O(I+j+\mu)$.  They do not inherit denominators from the
+previous stage's LP solutions.
+
+At fixed degree and arity, rational polynomial values and derivatives at
+points of this size have $O(b_j)$-bit representations.  In the adjoint
+recurrence
+$\mu_{t-1}=A_t\mu_t-d_t$, each coefficient $A_t,d_t$ has $O(b_j)$
+bits.  Multiplication by $A_t$ and addition of $d_t$ increase length by
+only $O(b_j)$ per step.  Across $T$ steps this gives $O(Tb_j)$ bits.
+Fixed-size vertex determinants and local objective evaluation consequently
+have polynomial bit length; the bound $O(Tb_j)$ suffices for both local
+points and nonconstant local values.
+
+A finite message is a sum of chosen local contributions over its subtree.
+To see this directly, write a node's contribution as its affine model plus
+its child slopes evaluated at the node point, minus its own separator
+slope evaluated there.  The dynamic-programming recurrence adds selected
+child intercepts.  Induction expresses the resulting message as a sum
+with one such contribution per selected bag, hence at most $T$ terms.
+Taking a minimum only selects one of these sums.  No two messages are
+multiplied.  A sum of $T$ rational numbers of length $O(Tb_j)$ has length
+$O(T^2b_j)$ after reduction, regardless of how many grid tasks were
+compared.  Exact comparisons and rational reduction take polynomial work
+at these lengths.
+
+One can choose \cref{eq:bit-enclosure-mesh} with
+\[
+ \log(1/\delta_j)=
+ O\left(I+j+\log(1+G_b)+\log\frac1{1-a}
+                         +\log(1+1/\omega)\right).
+\]
+The scale terms have input-sized binary encodings.  At each forward step,
+polynomial evaluation uses the current bounded-length midpoint and fixed
+rational control.  Outward rounding then returns to the prescribed dyadic
+precision; clipping can introduce only input endpoint denominators.
+There is no nonlinear composition of unrounded rational state values.
+The initial-state singleton and controls have the polynomial lengths
+already proved for LP points.  Finally, summing the $T$ rational cost
+values and radii in \cref{eq:bit-objective-upper} still gives polynomial
+length.
+\end{proof}
+
+If a rational growth lower bound is supplied, all grading choices can be
+made by rational arithmetic.  For $p=3$, $k=2$, use the rational majorants
+\[
+ \widehat L_q=1+a+b,\qquad
+ \widehat\rho=\frac{3(1+a+b)+(H/2)s_0}{1-a},\qquad
+ \widehat D=(3+2\widehat\rho)^2.
+\]
+They dominate the corresponding $L_q,\rho,D$ in
+\cref{eq:dynamics-constants}.  Substituting $\widehat D$ for $D$ in
+$B_0,C$ and the grading conditions preserves every estimate.  Square the
+nonnegative sides of the condition containing $\sqrt D$, and repeatedly
+halve a dyadic ratio until all the resulting rational inequalities hold.
+The stopping-stage estimate can likewise be computed by comparing
+$gB_{\mathrm{round}}Ns_0^2 4^{-J}$ with $\eps$.
+
+\begin{theorem}[Conditioned rational approximation]
+\label{thm:dynamics-bit}
+Under \cref{ass:dynamics-bit}, fix a sufficient dyadic ratio and run the
+rational local optimization, enclosure, and center-reset procedure above.
+For every rational $\eps>0$, it returns a finite rational lower certificate,
+a rational feasible-objective upper bound, and rational initial state and
+controls in their exact intervals, with $\UB-\LB\le\eps$.
+The original recurrence is part of the output and defines the exact feasible
+trajectory from these retained inputs.  No expanded state numerators or
+denominators are required.
+
+The algorithm stops by
+\[
+ J=\max\left\{0,
+       \ceil{\log_2\left(s_0\sqrt{gB_{\mathrm{round}}N/\eps}\right)}
+       \right\},
+\]
+has the sharp shell counts of \cref{eq:dynamics-counts} with this $J$,
+and uses at most
+\begin{equation}
+ N(4/\theta)^3(J+1)^3\operatorname{poly}(T,I,J,\mu)
+ \label{eq:bit-work}
+\end{equation}
+bit operations.  Choosing the first sufficient dyadic ratio, or the first
+one satisfying the conservative rational tests above, makes this work
+polynomial in input size, horizon, $\log_+(1/\eps)$, and the numerical
+conditioning parameters.  One may take $0<g\le1$ without loss and,
+with $\omega=1$,
+use
+\[
+ \mathcal K=1+b+H+G_b+M+s_0+\frac1{1-a}+\frac1g
+\]
+as a single conditioning bound.  The assertion is polynomial in these
+numerical quantities, rather than uniformly polynomial in their binary
+encoding lengths.
+\end{theorem}
+
+\begin{proof}
+Each stage has a valid lower certificate by \cref{sec:dynamics} and
+\cref{lem:bit-local-lp}.  Its compressed repaired trajectory is feasible
+by box invariance, and its upper bound is sound by
+\cref{lem:bit-enclosure}.  Thus the rational stopping test proves the
+claimed objective gap.  \Cref{lem:bit-reset} gives the stated stage bound.
+The incumbent stores the retained input coordinates associated with its
+least upper bound, so its trajectory also satisfies the returned gap.
+
+The fresh partitions and incidence lists have the counts established in
+\cref{prop:regridding-incidence,eq:dynamics-counts}.  Here the actual
+separator dimension is at most one.  Empty domains only remove available choices,
+and each local task now requires a constant number of rational basis solves.
+\Cref{lem:bit-size} bounds their arithmetic costs.  Grid generation,
+gradients, adjoints, forward enclosures, resetting, and output construction
+also take polynomial work in the same sizes, proving \cref{eq:bit-work}.
+
+The constants $D,\overline M,B_0,C$ are bounded by polynomials in
+$\mathcal K$ after replacing $g$ by $\min\{g,1\}$.  The first sufficient
+dyadic reciprocal ratio is also polynomially bounded in $\mathcal K$ by
+\cref{eq:dynamics-grading}.  Hence $B_{\mathrm{round}}$ is polynomially
+bounded and $J$ grows only logarithmically with the numerical scale, horizon,
+and reciprocal tolerance.  This proves the conditioned complexity claim.
+
+The certificate's numerical entries and flags have the bit lengths in
+\cref{lem:bit-size}.  A checker can reproduce each constant-size LP basis
+enumeration, verify finite message recurrences and empty-state flags, and
+run the upper-bound enclosure recurrence.  It trusts, or separately
+verifies, the supplied global derivative bounds and box-invariance promise.
+Thus proof serialization and these local checks fit the polynomial work
+bound. For any further rational requested state precision $\tau>0$, rerunning
+\cref{lem:bit-enclosure} with $\delta\le(1-a)\tau$ encloses every
+retained trajectory state with radius at most $\tau$, in bit work
+polynomial in the preceding parameters and the requested precision length.
+\end{proof}
+
+\subsection{Searching without a supplied growth constant}
+
+\begin{theorem}[Unknown-growth search with bit budgets]
+\label{thm:dynamics-unknown-growth}
+Under \cref{ass:dynamics-bit}, there is a sound algorithm that uses no
+supplied value of $g$ and has polynomial bit complexity in the parameters
+of \cref{thm:dynamics-bit}.  Its returned certificate and compressed
+feasible trajectory have polynomial output length.  The sharp shell-count
+conclusion of \cref{thm:dynamics-bit} concerns the sufficient fixed-ratio
+run; the search algorithm's output bound follows from its total bit work.
+\end{theorem}
+
+\begin{proof}
+Trial $\mu\ge1$ uses $\theta=2^{-\mu}$ and starts at the rational box
+midpoint.  It executes stages $j=0,1,\ldots$ using the rational LPs,
+exact adjoints, enclosure mesh, and reset procedure above.  These operations
+use only the input bounds, $h_j$, and the fixed $\omega$.  They use none
+of $g,C,B_{\mathrm{round}}$, or $J$.  A trial succeeds only when its
+computed rational upper and lower bounds have gap at most $\eps$.
+Every such success is sound, whether or not the ratio satisfies the
+convergence inequalities.
+
+In round $r=1,2,\ldots$, restart each trial $1\le\mu\le r$ and simulate
+at most $2^r$ elementary bit operations of its algorithm.  Include setup,
+grid generation, arithmetic, control logic, and completed output in this
+trial budget; no trial-specific preprocessing occurs outside it.  Stop an
+unsuccessful simulation when its budget expires, even within an arithmetic
+routine.  A bit-operation budget imposes no separate stage cap and therefore
+also handles trials whose late stages are expensive.  A binary clock and
+time-bounded simulation add at most a polynomial logarithmic overhead to
+the simulated work.  Completed output is part of the successful trial's
+work.
+
+Let $\mu^*$ be the smallest sufficient dyadic index.  With
+$\eta=g/20$, it satisfies $2^{\mu^*}\le2R$, where
+\[
+ R=\max\left\{2,\sqrt{12D},
+       \frac{4\sqrt{12}\,k\sqrt D\,\overline M}{\eta},
+       \sqrt{\frac{48kB_0}{\eta}}\right\}.
+\]
+Indeed, every reciprocal ratio at least $R$ satisfies each condition in
+\cref{eq:dynamics-grading}, and the next power of two is at most $2R$.
+Thus $2^{\mu^*}$ is polynomially bounded in the conditioning parameters.
+Let $W^*\ge1$ bound the elementary bit work of this trial through its
+successful output, as supplied by \cref{thm:dynamics-bit}.  Set
+\[
+ r^*=\max\{\mu^*,\ceil{\log_2W^*}\}.
+\]
+Round $r^*$ contains the sufficient trial and supplies enough work for it
+to succeed, unless another sound trial has already returned.  Moreover,
+\begin{equation}
+ \sum_{r=1}^{r^*}r2^r\le2r^*2^{r^*}
+       \le4r^*\max\{2^{\mu^*},W^*\}.
+ \label{eq:bit-budget}
+\end{equation}
+Since $r^*$ is logarithmic in the maximum on the right, accounting for the
+clock and simulation overhead preserves polynomial bit complexity.
+Writing the returned output was budgeted, so its length is bounded by the
+same total work.
+
+A coarse-ratio trial can succeed before the sufficient trial and may do
+so at a different stage.  Its stage index has not been bounded by the
+sufficient trial's $J$.  Consequently the search gives a polynomial
+output bound, while the sharper final leaf-and-cell count applies to the
+fixed sufficient ratio.  No growth test or estimate of the best growth
+constant is needed.
+\end{proof}
+
+This result uses rational polynomial data of fixed numerical degree and
+the compressed feasible-solution representation.  It does not provide an
+expanded rational coordinate vector of polynomial length.  For example,
+$\varphi(\sigma)=\sigma^2/4$ on $[0,1]$, starting at $\sigma_0=1/2$,
+has derivative bounded by $1/2$ but gives
+$\sigma_t=2^{-(3\cdot2^t-2)}$.  Its reduced denominator is exponentially
+long, whereas its recurrence and rational initial state are short.
+Additional constraints require a repair that preserves them; the constraint
+obstruction in \cref{prop:limitations-constraint} lies outside the present
+box-invariant model.

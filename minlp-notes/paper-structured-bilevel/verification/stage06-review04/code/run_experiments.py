@@ -5,13 +5,16 @@ worker has a 90-second external limit; partial/failure records are retained.
 Atlas construction and BOTH upper semantics are measured separately. Startup,
 input validation, and total wall time are also recorded explicitly.
 """
+from pathlib import Path as _CleanupPath
+_NOTES_ROOT = _CleanupPath(__file__).resolve().parent.joinpath('../../../..').resolve()
+
 import os
 for key in ('OPENBLAS_NUM_THREADS','OMP_NUM_THREADS','MKL_NUM_THREADS','NUMEXPR_NUM_THREADS'):
     os.environ[key]='1'
 os.environ['PYTHONHASHSEED']='0'
 from pathlib import Path
 import sys,json,time,platform,hashlib,subprocess,random,statistics
-PAPER=Path(__file__).resolve().parents[1];ROOT=Path('/home/sgusev/repo/minlp-notes')
+PAPER=Path(__file__).resolve().parents[1];ROOT=Path((str(_NOTES_ROOT)))
 sys.path.insert(0,str(ROOT/'code/bilevel_nonconvex'))
 sys.path.insert(0,str(ROOT/'code/bilevel_reopened'))
 import sympy as s

@@ -67,7 +67,7 @@ Access limits are explicit. The coordinator had retrieved Starr's public author 
 Commands were run from the repository root:
 
 ```sh
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python paper-relaxation-limits/verification/check_stage06_integration.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python paper-relaxation-limits/verification/check_stage06_integration.py
 python paper-relaxation-limits/verification/build_and_check.py
 ```
 

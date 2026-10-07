@@ -99,7 +99,7 @@ and sufficient for the implementation claims reviewed here; a broad priority
 assessment remains outside Stage 1.
 
 As supplemental checks, a script run with
-`/home/sgusev/miniconda3/envs/qipm/bin/python` tested the threshold formulas for
+`/workspace/local-home/miniconda3/envs/qipm/bin/python` tested the threshold formulas for
 `rho` in `{1.01, 2, 10, 100}` and orders `r=1,...,6`, including sampled global
 positivity, low-band error, strict threshold decrease, and the explicit first
 threshold. All 24 cases passed. It also tested the `c=1` coarse quartic at the

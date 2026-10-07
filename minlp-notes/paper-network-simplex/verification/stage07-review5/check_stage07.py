@@ -1,3 +1,5 @@
+import sys as _cleanup_sys
+
 from pathlib import Path
 from fractions import Fraction as F
 import hashlib,json,re,shutil,subprocess
@@ -27,7 +29,7 @@ assert round(1000*control['summary']['full']['total_seconds']['median'])==30
 assert round(1000*control['summary']['initial']['total_seconds']['median'])==10
 # The author check writes next to itself, so run only a private copy.
 shutil.copy(paper/'verification/stage07/integral-hull.py',out/'integral-hull-author-copy.py')
-answer=subprocess.run(['/home/sgusev/miniconda3/envs/minlp-notes/bin/python',str(out/'integral-hull-author-copy.py')],capture_output=True,text=True)
+answer=subprocess.run([_cleanup_sys.executable,str(out/'integral-hull-author-copy.py')],capture_output=True,text=True)
 assert answer.returncode==0,answer.stderr
 (out/'integral-hull-author-copy.txt').write_text(answer.stdout)
 print(json.dumps(dict(status='PASS',hashes=len(v['sha256']),labels=len(labels),bibliography_keys=len(bib),timing_summaries=summaries,all_new_intro_metrics=True,author_exact_check=json.loads(answer.stdout)),indent=2))

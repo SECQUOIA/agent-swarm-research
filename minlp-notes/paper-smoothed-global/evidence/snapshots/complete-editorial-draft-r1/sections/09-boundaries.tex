@@ -1,0 +1,845 @@
+\section{Boundaries}\label{sec:lim}
+
+The positive results combine four ingredients: retention of grid cells by a
+rounding allowance, objective-only linear noise, a choice of which
+coefficients are perturbed, and exact closure certificates of specific
+kinds. This section shows by explicit families how each ingredient limits
+the scope. \Cref{tab:lim:summary} lists the results, including the examples
+of \cref{sec:rec} that concern the same questions.
+
+None of these results is an unconditional lower bound for all algorithms.
+Each is either a limitation of a specified mechanism, valid on every noise
+draw, or a conditional complexity implication. Several of the instances are
+easy for a different method, and the text says so. The purpose is to show
+that the restrictions of the positive theorems are not artifacts of their
+proofs: removing them requires a different algorithmic idea, and in some
+cases it would resolve an open complexity question.
+
+\begin{table}[tbp]
+\centering
+\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.2\linewidth}
+>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{0.27\linewidth}@{}}
+\toprule
+Result & What it limits & Kind\\
+\midrule
+\Cref{thm:lim:width} & Global-error retention in the sparse route: more than
+$(5n/(6p))^{p/2}$ retained cells & Mechanism-specific, every draw\\
+\Cref{prop:lim:local}, \cref{ex:rec:star} & Replacing the global allowance by
+a bag-local one & The modified rule deletes all optimizers\\
+\Cref{prop:lim:conditional} & What a bag-local allowance would need:
+certified conditional values & Sufficient interface\\
+\Cref{thm:lim:ambient} & Dimension-free counts under independent uniform
+noise in the low-rank route & Count surrogate, in expectation\\
+\Cref{thm:lim:constraints} & Objective noise with arbitrary sparse affine
+constraints & Would give $\mathrm{NP}\subseteq\mathrm{ZPP}$\\
+\Cref{ex:lim:coupled}, \cref{ex:rec:feasibility} & Counting and corner bounds
+when feasibility depends on the bag or core & Counting argument fails\\
+\Cref{prop:lim:threshold} & Reading original threshold answers from sampled
+instances & Probability bound\\
+\Cref{ex:rec:fiber} & Full-dimensional convex closure under core-only noise &
+Mechanism-specific, every draw\\
+\Cref{prop:lim:value} & Converting value accuracy into residual distance;
+Tikhonov selection & Unconditional, method-specific\\
+\Cref{thm:lim:posslp} & Residual point output under core-only noise with
+convex residuals, even at treewidth two & Would give Las Vegas algorithms for
+Square Root Sum and $\PosSLP$\\
+\Cref{prop:lim:flow} & One-flow certificates at boundary core optima &
+Mechanism-specific, probability $1/16$\\
+\Cref{prop:rec:rank} & Reducing small-core recourse to a fixed quadratic
+convexifier & Structural separation\\
+\bottomrule
+\end{tabularx}
+\caption{Boundary results. ``Mechanism-specific'' results show that a stated
+rule or certificate fails; they do not bound the work of other algorithms.}
+\label{tab:lim:summary}
+\end{table}
+
+\subsection{The width exponent of global-error retention}\label{sec:lim:width}
+
+The sparse theorems have bounds of the form
+$C^p[c+(1+n/2)Lw_{\max}/(2\sigma)]^p\poly_d(I)$. The factor $n$ inside the
+bracket comes from the rounding allowance: rounding a feasible point to the
+corners of its cell changes the objective by up to $nLh^2/8$ in expectation,
+and every coordinate contributes (\cref{sec:sp:width}). We show that, for
+the retention rule as specified, the resulting power of $n$ is real.
+
+\paragraph{The global-error search.}
+We recall the search of \cref{sec:sp} in the special case of a continuous
+box $X=[0,1]^n$, with a tree decomposition whose bags $\beta\subseteq[n]$
+have at most $p$ coordinates and contain every monomial scope of $F_0$, and
+with a rational $L\ge\max_i\sup_X\partial_{ii}F_0$. At level $j=0,1,\ldots$
+the mesh is $h_j=2^{-j}$ and the grid is
+$\mathbb G_j=(h_j\Z\cap[0,1])^n$. A cell of bag $\beta$ at level $j$ is a
+product of intervals $[t_ih_j,(t_i+1)h_j]$, $i\in\beta$. At level $0$ each
+bag has the single candidate cell $[0,1]^\beta$; at level $j\ge1$ the
+candidate cells are the children of the cells retained at level $j-1$. The
+\emph{allowed grid} $A_j$ is the set of points of $\mathbb G_j$ whose
+projection onto every bag is a corner of a candidate cell of that bag. The
+search computes the exact bag min-marginals
+$m_\beta(v)=\min\{F_\gamma(y):y\in A_j,\ y_\beta=v\}$, updates the
+incumbent value $U_j$, the least value of a feasible point found so far,
+and retains a candidate cell $C$ of bag $\beta$ if and only if
+\begin{equation}\label{eq:lim:retain}
+ q_C-E_j\le U_j,\qquad
+ q_C=\min_{v\text{ a corner of }C}m_\beta(v),\qquad
+ E_j=\frac{nLh_j^2}8 .
+\end{equation}
+Closure is attempted on the hull $Q_j=\prod_i[a_i,b_i]$, where $[a_i,b_i]$
+is the intersection, over the bags containing $i$, of the smallest interval
+containing the $i$th projections of their retained cells. A coordinate is
+fixed at its original lower (upper) bound only if a sound enclosure of
+$\partial_iF_\gamma$ over $Q_j$ is strictly positive (negative). On the
+remaining box a convexity test certifies a positive lower bound on the
+Hessian of the restricted objective. If no closure succeeds by the stopping
+depth $J$, the exact fallback runs. This is \cref{def:sp:algorithm} for a
+continuous box. The statements below hold for every implementation of these
+rules, every sound gradient enclosure, and every sound convexity test.
+
+\begin{theorem}[Global-error retention forces a width-dependent exponent]\label{thm:lim:width}
+Let $n\ge p\ge2$. Let $\mathcal G$ be the graph on $[n]$ formed by a
+clique on $\{1,\ldots,p\}$ and the path $p,p+1,\ldots,n$, with edge set
+$\mathcal E$. Put $\phi(t)=t^2(1-t)^2$, $\eta=1/(100n^2)$, and
+\[
+ F_0(x)=\sum_{i=1}^n\phi(x_i)+\eta\sum_{\{i,l\}\in\mathcal E}x_ix_l
+ \qquad\text{on }X=[0,1]^n.
+\]
+\begin{enumerate}[label=(\alph*)]
+\item\label{it:lim:width-instance} $F_0$ is a quartic whose interaction
+graph is $\mathcal G$, which has treewidth $p-1$. The bags $\{1,\ldots,p\}$
+and $\{i,i+1\}$, $p\le i<n$, form a tree decomposition of bag size $p$
+containing every monomial scope. For every $\gamma\in\R^n$,
+$\partial_{ii}F_\gamma\le2$ on $X$, so $L=2$ is valid. All widths are one,
+and the base length is $I=O((n+p^2)\log n)$.
+\item\label{it:lim:width-retain} Let $\gamma\in[-\frac1{100},\frac1{100}]^n$
+be arbitrary, and run the global-error search on $F_\gamma$ with $L=2$. At
+every level $j$ with $h_j^2\ge3p/(10n)$, every candidate cell of every bag
+is retained, the hull $Q_j$ is $[0,1]^n$, no sound gradient-sign test fixes
+a coordinate, and no sound convexity test succeeds.
+\item\label{it:lim:width-count} Let $j_*$ be the last level with
+$h_{j_*}^2\ge3p/(10n)$. If the stopping depth satisfies $J>j_*$, the search
+generates more than $(5n/(6p))^{p/2}$ retained cells of the clique bag at
+level $j_*$, on every such draw. The stopping depth of
+\cref{def:sp:schedule} with $\sigma\le\frac1{100}$ satisfies $J>j_*$.
+\item\label{it:lim:width-fpt} Consequently, for every constant $c$ there is
+no function $f$ such that the work of the global-error search is at most
+$f(p)I^c$ on all instances of this family.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+\ref{it:lim:width-instance}
+Expanding $\phi(x_i)=x_i^2-2x_i^3+x_i^4$ shows that the only monomials
+involving two variables are the products $x_ix_l$ with $\{i,l\}\in\mathcal E$,
+each with coefficient $\eta\ne0$. Hence the interaction graph is $\mathcal
+G$. Every tree decomposition of a graph containing a $p$-clique has a bag
+containing that clique, so the treewidth is at least $p-1$. The displayed
+bags, arranged as the path $\{1,\ldots,p\},\{p,p+1\},\{p+1,p+2\},\ldots$,
+cover every edge and every variable, and each variable occurs in one bag or
+in two adjacent bags; so they form a tree decomposition of width $p-1$. The
+linear and bilinear terms have zero diagonal second derivatives, so
+\[
+ \partial_{ii}F_\gamma(x)=\phi''(x_i)=2-12x_i(1-x_i)\le2 .
+\]
+There are $O(n+p^2)$ monomials, each with indices and coefficients of
+$O(\log n)$ bits, and the decomposition has $O(n+p)$ entries; this gives the
+bound on $I$.
+
+\ref{it:lim:width-retain}
+Fix $\gamma$ with $\norm\gamma_\infty\le1/100$. The function
+$P_\gamma(x)=\eta\sum_{\mathcal E}x_ix_l+\gamma^{\mathsf T}x$ is affine in
+each coordinate separately, so moving one coordinate at a time to a better
+endpoint shows that its minimum over $X$ is attained at a vertex. Since
+$\phi\ge0$ and $\phi(0)=\phi(1)=0$,
+\[
+ f^*:=\min_XF_\gamma\ge\min_XP_\gamma=\min_{\{0,1\}^n}P_\gamma
+ =\min_{\{0,1\}^n}F_\gamma\ge f^*,
+\]
+so $f^*$ is attained at a vertex $a$. Let $\beta$ be a bag and
+$v\in[0,1]^\beta$, and put $y=(v,a_{-\beta})$. Using $\phi\le1/16$,
+$\abs{\gamma_i(v_i-a_i)}\le1/100$, $\abs{y_iy_l-a_ia_l}\le1$,
+$\abs{\mathcal E}\le n(n-1)/2$, and $p\ge2$,
+\begin{equation}\label{eq:lim:completion}
+ F_\gamma(y)-f^*
+ \le\abs\beta\Bigl(\frac1{16}+\frac1{100}\Bigr)+\eta\abs{\mathcal E}
+ \le\frac{29p}{400}+\frac1{200}\le\frac{3p}{40}.
+\end{equation}
+
+We show by induction that at every level $j$ with $h_j^2\ge3p/(10n)$ all
+cells are candidates and all are retained. At level $0$ every cell is a
+candidate. Suppose all level-$j$ cells are candidates. Then $A_j=\mathbb
+G_j$. For a cell $C$ of bag $\beta$ and a corner $v$ of $C$, the point
+$(v,a_{-\beta})$ lies in $\mathbb G_j$ because $a$ is a vertex, so
+\eqref{eq:lim:completion} gives $q_C\le m_\beta(v)\le f^*+3p/40$. Here
+$E_j=nh_j^2/4\ge3p/40$, and $U_j\ge f^*$ because $U_j$ is the value of a
+feasible point. Therefore $q_C-E_j\le f^*\le U_j$, and $C$ is retained. As
+every level-$j$ cell is retained, every level-$(j+1)$ cell is a candidate.
+
+Since all cells are retained, every coordinate projection of every bag
+covers $[0,1]$, and $Q_j=[0,1]^n$. Set all coordinates other than $i$ to
+zero. Then $\partial_iF_\gamma=\phi'(x_i)+\gamma_i$, and
+$\phi'(t)=2t(1-t)(1-2t)$ gives the values $\gamma_i+3/16>0$ at $x_i=1/4$
+and $\gamma_i-3/16<0$ at $x_i=3/4$. A sound enclosure contains both values,
+so it is neither strictly positive nor strictly negative, and no coordinate
+is fixed. The remaining box is therefore $[0,1]^n$. At its midpoint
+$c=(\frac12,\ldots,\frac12)$,
+\[
+ \nabla^2F_\gamma(c)=-I+\eta A_{\mathcal G},
+\]
+where $A_{\mathcal G}$ is the adjacency matrix. Its largest eigenvalue is at
+most $-1+\eta(n-1)<0$. A function convex on a box is positive semidefinite
+at interior points, so no sound convexity test can succeed.
+
+\ref{it:lim:width-count}
+Since $h_0=1$ and $3p/(10n)<1$, the level $j_*$ exists, and
+$h_{j_*+1}^2=h_{j_*}^2/4<3p/(10n)$ gives $h_{j_*}^2<6p/(5n)$. The clique bag
+has $h_{j_*}^{-p}=(h_{j_*}^{-2})^{p/2}>(5n/(6p))^{p/2}$ cells at level
+$j_*$, all retained by \ref{it:lim:width-retain}. No closure succeeds at
+levels up to $j_*$, so if $J>j_*$ the fallback does not run before level
+$j_*$, and the search generates all these cells. The stopping depth of
+\cref{def:sp:schedule} satisfies $h_J\le1/(4A)$ with $A\ge nL/g_0$ and
+$g_0=\rho\sigma/(2W)\le\sigma/(8W)$, where $W=\sum_iw_i=n$. Here $L=2$ and
+$\sigma\le1/100$, so $h_J\le\sigma/(64n^2)<\sqrt{3p/(10n)}\le h_{j_*}$, that
+is, $J>j_*$.
+
+\ref{it:lim:width-fpt}
+Fix $p>2c$. For this $p$, the family has $I=O(n\log n)$ and work at least
+$(5n/(6p))^{p/2}$, which exceeds $f(p)I^c$ for all sufficiently large $n$.
+\end{proof}
+
+The lower bound holds on every draw in the noise box, so it also bounds the
+expected work for every law supported there, including $U_{1/100,M}$ for
+every $M$. It does not contradict \cref{thm:sp:main}, whose bound has the
+same form $n^{O(p)}$ for fixed numerical scales; it shows that this
+exponent is necessary for the retention rule as specified. It is not a lower
+bound for sparse optimization: the instances are easy, since every
+optimizer is a vertex and binary dynamic programming with $O(2^p)$ states
+per bag solves them. Tests on individual cells, rather than on the whole
+hull, could also prune these instances much earlier.
+
+The natural repair is to replace $E_j$ by an allowance for the bag alone,
+$\abs\beta Lh_j^2/8$. \Cref{ex:rec:star} shows that this is unsound for the
+unperturbed star quadratic: the error comes from minimizing over the grid
+outside the bag, and it varies with the bag's own coordinates. The failure
+persists on every draw of small noise, so it is a failure of the smoothed
+algorithm and not of one exceptional draw.
+
+\begin{proposition}[A bag-local allowance is unsound on every draw]\label{prop:lim:local}
+Let $m=32$ and let $F_0$ be the star quadratic of \cref{ex:rec:star} on
+$[0,1]^{1+m}$, with center $v$, leaves $z_1,\ldots,z_m$, bags
+$\{v,z_i\}$, and $L=2$. Let $\gamma\in[-\sigma,\sigma]^{1+m}$ with
+$\sigma\le1/1000$, and run the search of \eqref{eq:lim:retain} with $E_j$
+replaced by $\abs\beta Lh_j^2/8$ and with a stopping depth $J\ge1$, for
+instance that of \cref{def:sp:schedule}. Then no closure succeeds at
+level $0$, so the search reaches level $1$ ($h_1=1/2$). There every global
+optimizer of $F_\gamma$ projects into the cell $C=[\frac12,1]\times[0,\frac12]$
+of the bag $\{v,z_1\}$, and $C$ is deleted. The global allowance
+$(1+m)Lh_1^2/8=33/16$ retains $C$.
+\end{proposition}
+
+\begin{proof}
+Every $F_\gamma$ differs from $F_0$ by at most $(1+m)\sigma=33\sigma$ on the
+box, and $F_0(v,z)=v^2-\frac v2\sum_iz_i+\sum_iz_i^2+\frac{15}{16}v$. The
+schedule of \cref{def:sp:schedule} gives $h_J\le1/(4A)<1=h_0$, so $J\ge1$
+there.
+
+\emph{Location of the optimizers.} For fixed $v$, the coordinate $z_i$
+minimizes $z_i^2-(v/2-\gamma_i)z_i$, a strictly convex function whose
+minimizer on $[0,1]$ is at most $(1/2+\sigma)/2<1/2$. Let $V_\gamma(v)$ be
+the minimum of $F_\gamma$ over $z$. Each inner minimum is at least
+$-(v/2-\gamma_i)^2/4$, so for $v\in[0,\frac12]$
+\[
+ V_\gamma(v)\ge v^2+\Bigl(\frac{15}{16}-\sigma\Bigr)v-8\Bigl(\frac v2+\sigma\Bigr)^2
+ =-v^2+\Bigl(\frac{15}{16}-9\sigma\Bigr)v-8\sigma^2\ge-8\sigma^2,
+\]
+the last step because the concave middle expression is at least its
+endpoint values $-8\sigma^2$ and $7/32-9\sigma/2-8\sigma^2>0$. The feasible
+point $v=1$, $z_i=1/4$ has $F_0=-1/16$, so $V_\gamma(1)\le-1/16+9\sigma<
+-8\sigma^2$. Hence every optimizer has $v>1/2$ and $z_1<1/2$.
+
+\emph{Level $0$.} At level $0$ each bag has one cell, and its value $q$ is
+the minimum of $F_\gamma$ over the vertices of the box, which is at most
+$F_\gamma(0)=0$. The bag-local allowance at $h_0=1$ is $1/2$, and the
+incumbent is at least $\min F_\gamma\ge-1/16-33\sigma>-1/2$. So every cell
+is retained, and the hull is the whole box. No closure succeeds there. Each
+leaf derivative $\partial_{z_i}F_\gamma=2z_i-v/2+\gamma_i$ is negative at
+$(v,z_i)=(1,0)$ and positive at $(0,1)$; the center derivative
+$\partial_vF_\gamma=2v-\frac12\sum_iz_i+\frac{15}{16}+\gamma_v$ is negative at
+$(v,z)=(0,\mathbf1)$ and positive at $(1,0)$. So no sound sign test fixes a
+coordinate. The Hessian is the constant matrix with diagonal $2$ and
+center--leaf entries $-\frac12$, and its quadratic form at
+$(1,\frac14\mathbf1)$ is $2-8+4=-2$; so no sound convexity test succeeds.
+Hence the search reaches level $1$, every cell of level $1$ is a candidate,
+and the allowed grid is $\{0,\frac12,1\}^{1+m}$.
+
+\emph{The level-$1$ test.} For $\gamma=0$, \cref{ex:rec:star} computes the
+smallest grid min-marginal of $C$ as $23/32$; in general it is at least
+$23/32-33\sigma$. The incumbent satisfies $U_1\le F_\gamma(0)=0$, because the
+origin is an allowed grid point. The bag-local allowance is
+$2\cdot2\cdot\frac14/8=\frac18$, and
+\[
+ q_C-\frac18\ge\frac{19}{32}-33\sigma>0\ge U_1 ,
+\]
+so $C$ is deleted. With the global allowance,
+$q_C-\frac{33}{16}\le\frac{23}{32}+33\sigma-\frac{33}{16}<-1<U_1$, so $C$ is
+retained.
+\end{proof}
+
+Certified values of the true conditional function remove this error, and
+with it the factor $n$ in the count. The following statement makes this
+precise. It is a sufficient interface, not an algorithm: computing such
+values requires optimizing over all variables outside the bag. In the
+notation of \cref{sec:sp:count}, let
+$W_\beta(v)=V_\beta(v)+\gamma_\beta^{\mathsf T}v$ be the exact conditional
+value of a bag tuple, a minimum over the original outside domain.
+
+\begin{proposition}[Certified conditional values remove the dimension factor]\label{prop:lim:conditional}
+Consider a sparse mixed polynomial instance (\cref{def:sp:instance}) with
+the cells of \cref{sec:sp:cells}, let $a\ge0$, and put
+$e_j=pLh_j^2/8$. Modify the search of \cref{def:sp:algorithm} as follows. At
+level $j$, at every corner $v$ of every candidate cell of every bag $\beta$,
+an oracle returns rationals $\ell(v)\le W_\beta(v)\le u(v)$ with
+$u(v)-\ell(v)\le ae_j$, together with a point of $X$ whose bag projection is
+$v$ and whose value is $u(v)$. Let $U_j$ be the least returned value $u$ up to
+and including level $j$, and retain a candidate cell $C$ of $\beta$ if and
+only if $\min_{v\text{ corner of }C}\ell(v)-e_j\le U_j$. Then on every draw
+and at every level:
+\begin{enumerate}[label=(\alph*)]
+\item\label{it:lim:cond-sound} for every global minimizer $x^*$ and every
+bag $\beta$, the projection $x^*_\beta$ lies in a retained cell of $\beta$;
+\item\label{it:lim:cond-witness} $U_j\le f^*+(1+a)e_j$, and every retained
+cell has a corner $v$ with $W_\beta(v)\le f^*+2(1+a)e_j$;
+\item\label{it:lim:cond-count} under the ambient model with law $U_{\sigma,M}$,
+$M\ge2^J$, and $j\le J$, the expected number of tuples $v$ of the complete
+level-$j$ bag grid with $W_\beta(v)\le f^*+2(1+a)e_j$ is at most
+\[
+ \prod_{i\in\beta}\Bigl[4+\Bigl(1+\frac{(1+a)p}2\Bigr)\frac{Lw_i}{2\sigma}\Bigr].
+\]
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+For fixed outside noise, $V_\beta$ is a minimum over the fixed set $X_O$ of
+functions whose second derivatives in the bag coordinates are at most $L$ on
+the continuous hull, so $W_\beta$ has upper coordinate curvature at most $L$
+in every bag coordinate. Moreover $W_\beta\ge f^*$ on $X_\beta$, with
+equality at $x^*_\beta$ for every global minimizer $x^*$.
+
+\ref{it:lim:cond-sound} We argue by induction over the levels; at level $0$
+the cell of every bag is the whole bag domain. Let $C$ be a candidate cell of
+$\beta$ containing $x^*_\beta$. Its widths are at most $h_j$ and its integer
+coordinates are intervals with integer endpoints or singletons, so
+\cref{lem:count:rounding} applied to $W_\beta$ gives a corner $v$ with
+$W_\beta(v)\le W_\beta(x^*_\beta)+\abs\beta Lh_j^2/8\le f^*+e_j$. Hence
+$\min_{\rm corners}\ell-e_j\le f^*\le U_j$, because $U_j$ is the value of a
+feasible point, and $C$ is retained. Its children cover it, so a cell
+containing $x^*_\beta$ is a candidate at the next level.
+
+\ref{it:lim:cond-witness} The corner $v$ just found was queried at level
+$j$, so $U_j\le u(v)\le W_\beta(v)+ae_j\le f^*+(1+a)e_j$. A retained cell has
+a corner $v'$ with $\ell(v')\le U_j+e_j$, and then
+$W_\beta(v')\le\ell(v')+ae_j\le f^*+2(1+a)e_j$.
+
+\ref{it:lim:cond-count} Repeat the proof of \cref{prop:sp:count} with the
+tolerance $2E_j$ replaced by $\eta=2(1+a)e_j$. \Cref{lem:sp:compare} confines
+the coefficient of every regular coordinate to an interval of length at
+most $La_i+2\eta/a_i\le La_i\bigl(1+(1+a)p/2\bigr)$, since $a_i\ge h_j$, and
+the product bound of that proof gives the claim.
+\end{proof}
+
+With $a$ fixed, the per-bag factor depends on the bag size $p$ but not on
+the dimension $n$, so the count would be fixed-parameter in $p$ and the
+numerical ratio. What is missing for a general sparse algorithm is the
+oracle: the grid min-marginals of \cref{sec:sp} do not satisfy the interface
+(\cref{prop:lim:local}), and an exact conditional value can require solving
+almost the whole instance. The recourse route of \cref{sec:rec} realizes the
+interface for one search block, a small core, by assuming a tractable
+residual problem; its count is the case of a single bag of size $k$. For
+general sparse instances no such oracle is available, and whether another
+method achieves a fixed-parameter bound in the width under linear noise
+remains open.
+
+\subsection{Ambient uniform noise and dimension-free counts}\label{sec:lim:ambient}
+
+The low-rank route has fixed-parameter bounds under aligned noise
+(\cref{thm:qp:aligned}) and under Gaussian-like noise on all coefficients
+(\cref{thm:qp:gauss}), whereas under independent uniform noise on all
+coefficients its count contains powers of the dimension
+(\cref{thm:qp:uniform}). The reason is that the factor component and the
+residual component of a uniform cube vector are dependent: conditionally on
+the residual component, the factor component can be concentrated much more
+than its variance suggests. For a Gaussian vector the two components are
+independent. \Cref{prop:qp:ambient-barrier} states that the dimension
+dependence of the uniform count is real for the counted quantities, even for
+perfectly conditioned factors and fixed projected widths. We prove it here,
+in a slightly more general form.
+
+We use the notation of \cref{sec:qp:aux} with $\Lambda=\alpha I$. For a
+factor $T\in\Q^{k\times N}$ with $TT^{\mathsf T}=I_k$, write
+$\gamma=T^{\mathsf T}\xi+\zeta$ with $\xi=T\gamma$ and $T\zeta=0$, and
+\begin{equation}\label{eq:lim:aux}
+ V(a)=\min_{x\in P}\Bigl[F_0(x)+\zeta^{\mathsf T}x
+ +\frac\alpha2\norm{a-Tx}^2\Bigr]+\xi^{\mathsf T}a,\qquad a\in\R^k .
+\end{equation}
+The search of \cref{thm:qp:uniform} refines dyadic meshes on a box that
+contains the projected ranges enlarged by the largest possible factor
+noise. When all its widths are equal, the allowance at mesh $h$ is
+$E_h=\alpha kh^2/8$, and the count of \cref{thm:qp:uniform} bounds the
+expected number of grid nodes $v$ satisfying the local event
+$V(v)\le V(v\pm he_l)+2E_h$ for every coordinate $l$ that is interior at
+$v$.
+
+\begin{theorem}[Uniform ambient counts depend on the dimension]\label{thm:lim:ambient}
+Let $k\ge1$, let $m\ge256$ be even, let $\alpha\in\{1,m\}$, and put
+$N=km^2$. There are a symmetric rational matrix $A$, a rational factor $T$
+with $TT^{\mathsf T}=I_k$ and $A+\alpha T^{\mathsf T}T\succeq0$, and a bounded
+rational polytope $P\subset\R^N$ with $O(N)$ inequalities, all of encoding
+length polynomial in $N$, with the following properties for
+$F_0(x)=\frac12x^{\mathsf T}Ax$.
+\begin{enumerate}[label=(\alph*)]
+\item\label{it:lim:amb-instance} $A$ has exactly $k$ negative eigenvalues,
+each equal to $-\nu$ with $\nu=\alpha(\sqrt{17/8}-1)$, so $\alpha<4\nu$, and
+each coordinate of $Tx$ ranges over an interval of width $8$ as $x$ ranges
+over $P$.
+\item\label{it:lim:amb-count} Let the coordinates of $\gamma$ be
+independent, either uniform on $[-1,1]$ or with law $U_{1,M}$ for a power of
+two $M\ge32$. For every grid of spacing $h$ on an interval containing
+$[-\frac32,\frac32]$, with product grid $\mathbb G_h$ in $\R^k$:
+\begin{enumerate}[label=(\roman*)]
+\item if $8/\sqrt{\alpha m}\le h\le16/\sqrt{\alpha m}$, then
+$\E\,\#\{v\in\mathbb G_h:V(v)\le\min V+2E_h\}\ge(\sqrt{\alpha m}/64)^k$;
+\item if $16/(\alpha m)\le h\le32/(\alpha m)$, then the expected number of
+nodes $v\in\mathbb G_h\cap[-1,1]^k$ with $V(v)\le V(v\pm he_l)+2E_h$ for
+every $l$ and both signs is at least $(\alpha m/128)^k$.
+\end{enumerate}
+The dyadic meshes of the search of \cref{thm:qp:uniform} include values of
+$h$ in both ranges.
+\item\label{it:lim:amb-fpt} For $\alpha=1$ these bounds are
+$64^{-k}(N/k)^{k/4}$ and $128^{-k}(N/k)^{k/2}$. Consequently no bound of the
+form $f(k,R)\,I^c$, with an absolute constant $c$, holds for either expected
+count, where $R$ records the frame $TT^{\mathsf T}$, the projected widths,
+the ratio $\alpha/\nu$, and the noise scale, all of which are fixed here.
+\end{enumerate}
+\end{theorem}
+
+The proof is in \cref{app:lim:ambient}. Each block of the construction has a
+negative direction coupled to a thin coordinate, and a simplex of total mass
+$4m$ whose two halves carry the signs of the factor row. With constant
+probability the smallest noise coefficients of the two halves are both
+close to $-1$; then minimization over the simplex cancels the factor noise up
+to $O(1/m)$, the auxiliary objective is flat to within $O(1/m)$ on a long
+interval, and many grid nodes pass every comparison.
+
+The theorem bounds the count surrogates used in the analysis, not the work
+of the algorithm: the closure step could resolve these instances before the
+counted nodes are visited. It also leaves room for bounds in terms of the
+ambient diameter, which grows like $m$ here. What it excludes is a proof of
+a fixed-parameter bound for uniform ambient noise that bounds these counts
+in terms of projected widths and conditioning alone. \Cref{thm:qp:gauss}
+avoids the obstruction because the factor and residual components of a
+Gaussian vector are independent.
+
+\subsection{Constraints and decision thresholds}\label{sec:lim:constraints}
+
+The sparse results allow mixed boxes, products of simplices, order
+constraints, and graph equalities (\cref{sec:con}). The next result shows
+that objective noise cannot handle arbitrary sparse affine constraints:
+their feasibility problem can encode an NP-complete question that no small
+objective perturbation changes.
+
+\begin{theorem}[Objective noise does not remove sparse feasibility hardness]\label{thm:lim:constraints}
+There is a polynomial-time map from instances $(a_1,\ldots,a_n;B)$ of
+\textup{\textsc{Subset Sum}}, with positive integers, to the following instances.
+Put $A=\sum_ia_i+B$. The variables are $t,z_1,\ldots,z_n,w_1,\ldots,w_n\in
+\{0,1\}$ and $s_1,\ldots,s_n\in[0,1]$; with $s_0=0$ the constraints are
+\[
+ z_i+w_i=t,\qquad s_i=s_{i-1}+\frac{a_i}Az_i\quad(i=1,\ldots,n),\qquad
+ s_n=\frac BAt,
+\]
+and the objective is $F_0=-t$. Every constraint has at most three variables
+and coefficients of absolute value at most one, the constraint and objective
+scopes have a tree decomposition of bag size four, and the all-zero point is
+feasible. For every $\gamma\in\R^{3n+1}$ with
+$\norm\gamma_\infty\le\sigma:=1/(10(3n+2))$, every global optimizer of
+$F_\gamma=-t+\gamma^{\mathsf T}x$ has $t=1$ if the instance is a
+yes-instance and $t=0$ otherwise.
+
+Consequently, suppose an exact smoothed algorithm handles mixed boxes with
+additional affine equality constraints whose scopes fit a supplied tree
+decomposition of bag size four, under ambient noise drawn from a
+base-chosen finite rational law supported in $[-\sigma,\sigma]$ with
+polynomially many sampling bits. If its expected work is polynomial in $I$
+and $1/\sigma$, then \textup{\textsc{Subset Sum}} has a Las Vegas algorithm with
+expected polynomial running time, and $\mathrm{NP}\subseteq\mathrm{ZPP}$.
+\end{theorem}
+
+\begin{proof}
+If $t=0$, then $z_i+w_i=0$ forces $z_i=w_i=0$, the recurrence forces
+$s_i=0$, and $s_n=0$ holds; so the all-zero point is the only feasible
+point with $t=0$. If $t=1$, then $w_i=1-z_i$ and
+$s_i=A^{-1}\sum_{l\le i}a_lz_l\in[0,1]$, and $s_n=B/A$ holds exactly when
+$\sum_la_lz_l=B$. So a feasible point with $t=1$ exists exactly for
+yes-instances.
+
+The bags $P_i=\{t,s_{i-1},s_i,z_i\}$ (with $s_0$ omitted) form a path, and
+attaching $\{t,z_i,w_i\}$ to $P_i$ gives a tree. Every constraint lies in a
+bag, $t$ lies in every bag, and every other variable lies in one bag or in
+two adjacent bags; so this is a tree decomposition of bag size four.
+
+There are $3n+1$ variables in $[0,1]$, so
+$\abs{\gamma^{\mathsf T}x}\le(3n+1)\sigma<1/10$. The zero point has value
+$0$, and every feasible point with $t=1$ has value below $-9/10$. Hence the
+optimizers have $t=1$ exactly on yes-instances.
+
+For the consequence, construct the instance, compute and sample the law,
+run the algorithm, and read $t$ from its exact output. The answer is
+correct on every draw, and the expected running time is polynomial because
+$1/\sigma=O(n)$ and the instance has length polynomial in the
+\textsc{Subset Sum} input.
+\end{proof}
+
+The objective is linear, so any positive $L$ is a valid curvature bound, all
+widths are one, and $1/\sigma=O(n)$. A constrained analogue of the sparse
+bounds with these parameters would therefore be polynomial on this family.
+Bounded coefficient magnitudes do not bound denominators, Hoffman constants,
+or the constants of feasible repair, and the reduction makes no claim about
+them. A constrained theorem can avoid the barrier by assuming structure
+that preserves feasibility under rounding, as the simplex, order, and graph
+results of \cref{sec:con} do, or by charging parameters that are large on
+this family.
+
+Constraints also affect the counting argument itself. The box count uses
+the fact that a conditional value, obtained by minimizing over the variables
+outside a bag or a core, has bounded upper curvature in each coordinate.
+This requires the outside feasible set to be independent of the bag or core
+values. \Cref{ex:rec:feasibility} shows that otherwise the corrected-corner
+lower bound itself fails. The following example shows that the expected
+count fails as well, even for a single totally unimodular row.
+
+\begin{example}[Core-dependent feasibility defeats the coordinatewise count]\label{ex:lim:coupled}
+Let $v_1,v_2,y\in[0,1]$ with the single constraint $y\ge v_1-v_2$, which
+together with the bounds is totally unimodular. Minimize
+$2y+\gamma_1v_1+\gamma_2v_2+\gamma_yy$, with independent coefficients either
+uniform on $[-\frac12,\frac12]$ or with law $U_{1/2,M}$. Regard $(v_1,v_2)$
+as a core, or as a bag, and $y$ as the residual variable. For fixed
+$\gamma_y$ the conditional value is
+\[
+ V(v)=\kappa\max\{0,v_1-v_2\},\qquad\kappa=2+\gamma_y\in[\tfrac32,\tfrac52],
+\]
+which has a convex kink along the diagonal. Let $h=1/r$ and consider the
+diagonal grid nodes $(kh,kh)$, $1\le k\le r-1$. Their four coordinate
+neighbors increase $V+\gamma_1v_1+\gamma_2v_2$ by
+\[
+ h(\kappa+\gamma_1),\qquad-h\gamma_1,\qquad h\gamma_2,\qquad h(\kappa-\gamma_2).
+\]
+On the event $\{\gamma_1<0<\gamma_2\}$, which has probability $1/4$ under
+both laws because $0$ is not an atom of $U_{1/2,M}$, all four increments are
+positive. So every one of the $r-1$ diagonal nodes passes every
+coordinate-neighbor comparison, even with tolerance zero, and the expected
+number of passing nodes is at least $(r-1)/4$, unbounded as $h\to0$. Under a
+coordinate upper-curvature bound $L$, the two increments in one coordinate
+sum to at most $Lh^2$, which confines the coefficient to an interval of
+length $O(Lh)$; here they sum to $\kappa h$.
+\end{example}
+
+The example does not bound the number of truly near-optimal nodes: along the
+diagonal the objective is $kh(\gamma_1+\gamma_2)$, and comparisons in the
+diagonal direction remove the spurious candidates. The constrained sparse
+results therefore use feasible rounding and comparisons along the faces of
+their polytopes, and the recourse results require a residual feasible set
+that does not depend on the core.
+
+Finally, the answer to a threshold question about the base instance cannot
+in general be read off from the exact optimum of a sampled instance when the
+threshold gap is smaller than the noise. Worst-case hardness results for
+structured nonconvex optimization, such as strong NP-hardness of
+box-constrained quadratic programming at treewidth
+two~\citep{pia2026-treewidth-and-the-complexity-of}, concern such threshold questions, and bounded
+coefficients do not by themselves give a lower bound on the distance of a
+no-instance's minimum from the threshold.
+
+\begin{proposition}[Small gaps do not survive the noise]\label{prop:lim:threshold}
+Let $\Psi$ be continuous on a compact set $X$, let $\delta\ge0$, and let
+$y\in X$ satisfy $\Psi(y)\le\delta$ and $\abs{y_i}\ge1$ for some coordinate
+$i$. Let
+$\gamma$ have independent coordinates with laws symmetric about zero, and
+let $\gamma_i$ be uniform on $[-\sigma,\sigma]$. Then
+\[
+ \Pr\Bigl\{\min_X(\Psi+\gamma^{\mathsf T}x)<0\Bigr\}\ge\frac12-\frac\delta{2\sigma}.
+\]
+If instead $\gamma_i$ has law $U_{\sigma,M}$, the bound holds with the
+additional term $-1/(2M)$.
+\end{proposition}
+
+\begin{proof}
+Put $Z=\gamma^{\mathsf T}y$. It is a sum of independent symmetric terms, so
+$Z$ is symmetric and $\Pr\{Z<-\delta\}=\frac12(1-\Pr\{\abs Z\le\delta\})$.
+Conditionally on $(\gamma_l)_{l\ne i}$, the event $\abs Z\le\delta$ confines
+$\gamma_i$ to an interval of length $2\delta/\abs{y_i}\le2\delta$, which has
+probability at most $\delta/\sigma$, or at most $\delta/\sigma+1/M$ by
+\eqref{eq:model:interval}. On the event $Z<-\delta$,
+$\min_X(\Psi+\gamma^{\mathsf T}x)\le\Psi(y)+Z<0$.
+\end{proof}
+
+If $\Psi\ge0$ and $0<\min_X\Psi\le\delta\ll\sigma$, the base instance is a
+no-instance of the question ``is $\min\Psi\le0$?'', while the sampled
+instance has a negative minimum with probability close to $1/2$. Reading
+the original answer directly from the sampled optimum therefore fails on
+such instances, and expected polynomial bounds for sampled instances are
+compatible with strong NP-hardness of the corresponding threshold
+questions. These guarantees do not by themselves provide a polynomial-time
+algorithm for the original threshold questions. The proposition does not
+exclude other uses of a smoothed solver, for instance reductions with a
+robust gap or repeated queries at chosen noise scales.
+
+\begin{remark}[The treewidth-two reduction]\label{rem:lim:dk}
+The strong NP-hardness proof of \citet{pia2026-treewidth-and-the-complexity-of}
+reduces \textsc{Subset Sum} to the question whether a nonnegative box
+quadratic $\Psi$ of treewidth two with bounded integral coefficients has
+minimum zero. In that construction $\Psi$ is a sum of squared residuals of
+binary indicators, bit copies, bit-serial and partial-sum recurrences, and a
+final square that compares the selected partial sum with the target. Take
+$r\ge1$, $A=2^r$, items $A$ and $A+2$, and target $A+1$, a no-instance. Selecting
+the first item and following every recurrence exactly gives a point of the
+unit box at which every term vanishes except the final square, which equals
+$2^{-2r-4}$, and the indicator of the selected item equals one.
+\Cref{prop:lim:threshold} with $\delta=2^{-2r-4}$ shows that, under
+independent noise of half-width $\sigma$ with law $U_{\sigma,M}$, the sampled
+minimum is negative with probability at least
+$\frac12-2^{-2r-5}/\sigma-1/(2M)$, although the base instance is a
+no-instance. The number of variables of the construction is linear in $r$,
+so the gap is exponentially small in the instance size.
+\end{remark}
+
+\subsection{Core-only noise and residual outputs}\label{sec:lim:points}
+
+Core-only noise perturbs the few coordinates that carry the nonconvexity
+and leaves the residual costs unchanged. Ties and flat directions in the
+residual variables then persist on every draw. The continuous core-only
+theorem (\cref{thm:rec:core-only}) assumes a certified uniform
+strong-convexity modulus of the residual problem, and the integer core-only
+results of \cref{sec:int} use a certificate that represents all tied
+optimal flows at once. The results of this subsection, with
+\cref{ex:rec:fiber}, explain both choices.
+
+\Cref{ex:rec:fiber} concerns the closure step used under ambient noise: a
+full-dimensional box around the optimal set on which the objective is
+convex. Under core-only noise such a box need not exist, even when the core
+has projected growth one, the residual problem is convex or strictly convex,
+and the optimizer is unique and interior. The example has a short exact
+optimality certificate, so it limits one certificate, not exact
+optimization. Two further results concern the output itself. The first
+separates value accuracy from distance to an optimizer. It shows that no
+value tolerance with polynomially many bits localizes the residual
+coordinates of a convex quartic with constant-size coefficients, and that a
+noisy core does not change this.
+
+\begin{proposition}[Value accuracy does not localize residual points]\label{prop:lim:value}
+For $n\ge1$ and $x_0=\frac12$, let
+\[
+ G_n(x)=\sum_{i=1}^n\bigl(8x_i^2-x_{i-1}^2x_i\bigr),\qquad
+ \Phi_\gamma(v,x,y)=\Bigl(v-\frac12\Bigr)^2+\gamma v+G_n(x)+x_n^2(y-1)^2
+\]
+on $[0,1]\times[0,1]^n\times[0,1]$, with $\abs\gamma\le\frac12$.
+\begin{enumerate}[label=(\alph*)]
+\item\label{it:lim:val-convex} $\Phi_\gamma$ is a convex quartic with
+$O(n)$ monomials and constant-size coefficients other than $\gamma$, and
+$\nabla^2G_n\succeq10I$ on $[0,1]^n$.
+\item\label{it:lim:val-opt} $\Phi_\gamma$ has the unique minimizer
+$(v_\gamma,x^*,1)$, where $v_\gamma=(1-\gamma)/2$, $x^*$ is the interior
+minimizer of $G_n$, and $0<x_n^*\le2^{-2^{n+1}}$.
+\item\label{it:lim:val-gap} The feasible point $(v_\gamma,x^*,0)$ is at
+distance one from the minimizer, and its objective gap is
+$(x_n^*)^2\le2^{-2^{n+2}}$.
+\item\label{it:lim:val-tikhonov} For $\lambda>0$ let $(x_\lambda,y_\lambda)$
+minimize $G_n(x)+x_n^2(y-1)^2+\lambda(\norm x^2+y^2)$ on $[0,1]^{n+1}$. If
+$y_\lambda\ge\frac12$, then $\lambda\le2^{-2^{n+2}}$.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+\ref{it:lim:val-convex}
+The Hessian of $G_n$ is tridiagonal, with diagonal entries $16-2x_{i+1}$
+for $i<n$ and $16$ for $i=n$, and off-diagonal entries $-2x_i$. On the box
+each diagonal entry is at least $14$ and each row has off-diagonal absolute
+sum at most $4$, so $\nabla^2G_n\succeq10I$ by Gershgorin's theorem. For a
+direction $(p,q)$ in $(x,y)$ and $u=1-y\in[0,1]$, direct differentiation
+gives
+\[
+ (p,q)^{\mathsf T}\nabla^2\bigl[x_n^2(y-1)^2\bigr](p,q)
+ =2(x_nq-2up_n)^2-6u^2p_n^2,
+\]
+so the Hessian of $G_n+x_n^2(y-1)^2$ has quadratic form at least
+$10\norm p^2-6p_n^2\ge0$. The core term is convex and separate.
+
+\ref{it:lim:val-opt}
+The derivative $\partial_iG_n=16x_i-x_{i-1}^2-2x_ix_{i+1}$ (the last term
+absent for $i=n$) equals $-x_{i-1}^2$ at $x_i=0$ and is at least $13$ at
+$x_i=1$. Since $x_0>0$, induction on $i$ shows that the strongly convex
+function $G_n$ has its minimizer $x^*$ in the interior, with
+$x_i^*=(x_{i-1}^*)^2/(16-2x_{i+1}^*)\le(x_{i-1}^*)^2/14$, where
+$x_{n+1}^*:=0$. Writing $x_i^*=14e_i$ gives $e_i\le e_{i-1}^2$ and
+$e_0=1/28$, so $x_n^*\le14\cdot28^{-2^n}\le4^{-2^n}$. Since
+$\Phi_\gamma\ge(v-\frac12)^2+\gamma v+G_n(x)$, with equality exactly when
+$x_n^2(y-1)^2=0$, and $x_n^*>0$, the unique minimizer is
+$(v_\gamma,x^*,1)$.
+
+\ref{it:lim:val-gap} is immediate from \ref{it:lim:val-opt}.
+
+\ref{it:lim:val-tikhonov}
+The regularized objective is strongly convex, so its minimizer is unique.
+For fixed $x$, minimizing $x_n^2(y-1)^2+\lambda y^2$ over $y$ gives
+$y_\lambda=x_{n,\lambda}^2/(x_{n,\lambda}^2+\lambda)$. The boundary argument
+of \ref{it:lim:val-opt} applies unchanged to the regularized problem, and
+its stationarity equations give
+$x_{i,\lambda}=x_{i-1,\lambda}^2/(16+2\lambda-2x_{i+1,\lambda})$ for $i<n$
+and $x_{n,\lambda}=x_{n-1,\lambda}^2/(16+2\lambda+2(1-y_\lambda)^2)$. Hence
+$x_{n,\lambda}\le4^{-2^n}$ as before. If $y_\lambda\ge\frac12$, then
+$\lambda\le x_{n,\lambda}^2\le2^{-2^{n+2}}$.
+\end{proof}
+
+The input has length $O(n\log n)$, so part~\ref{it:lim:val-gap} says that a
+value accuracy with fewer than $2^{n+2}$ bits, which is superpolynomial in
+$I$, certifies no residual accuracy below one, on every draw.
+Part~\ref{it:lim:val-tikhonov} shows that isotropic Tikhonov selection, the
+usual way to pick a point from a convex optimal fiber, needs a
+regularization parameter of exponentially many bits here. The instance is
+nonetheless easy: setting $y=1$ leaves a uniformly strongly convex problem.
+So the proposition limits methods that convert values into points, not
+residual optimization in general.
+
+The next result concerns every method. It encodes two arithmetic decision
+problems in the residual optimizer of a convex quartic. \emph{Square Root
+Sum} asks, for positive integers $a_1,\ldots,a_n$ and an integer $B$, whether
+$\sum_i\sqrt{a_i}\le B$. A \emph{straight-line program} computes a sequence
+of integers, starting from the constants $0$ and $1$, each a sum, difference,
+or product of two earlier ones; its output is the last integer $A$, and
+$\PosSLP$ asks whether $A>0$. Both problems lie in the counting hierarchy,
+and Square Root Sum is decidable in polynomial time with a $\PosSLP$
+oracle~\citep{allender2009-on-the-complexity-of-numerical}; whether either
+is in $\mathrm P$ is open.
+
+\begin{theorem}[Residual points under core-only noise]\label{thm:lim:posslp}
+\leavevmode
+\begin{enumerate}[label=(\alph*)]
+\item\label{it:lim:pt-srs} There is a polynomial-time algorithm that maps
+every Square Root Sum instance either to its answer or to an explicit
+rational quartic $\Phi$ on a unit box $Y$, convex on $Y$, with a unique
+minimizer $\hat x$ whose designated coordinate $\hat x_y$ is $1$ if
+$\sum_i\sqrt{a_i}>B$ and $0$ if $\sum_i\sqrt{a_i}<B$; equality does not
+occur in the produced instances. The interaction graph of $\Phi$ has
+treewidth at most two, every nonconstant coefficient has absolute value
+bounded by an absolute constant, and $\partial_{ii}\Phi\le20$ on $Y$.
+\item\label{it:lim:pt-posslp} There is a polynomial-time algorithm that maps
+every straight-line program with output $A$ to an explicit rational quartic
+$\Phi$ on a rational box $Y$, convex on $Y$, with a unique minimizer $\hat x$
+whose designated coordinate is $1$ if $A>0$ and $0$ if $A\le0$.
+\item\label{it:lim:pt-core} For $\Phi$ from (a) or (b), consider
+\[
+ F_\gamma(v,x)=\Bigl(v-\frac12\Bigr)^2+\gamma v+\Phi(x)\qquad\text{on }[0,1]\times Y,
+\]
+with one noisy core coordinate $v$, no residual noise, and
+$\abs\gamma\le\frac12$. The core optimizer is $v_\gamma=(1-\gamma)/2$, the
+projected growth is one, $\partial_{vv}F_\gamma=2$, the residual objective
+is convex, and the unique optimizer is $(v_\gamma,\hat x)$ on every draw.
+Consequently, if an exact smoothed algorithm for this class, under a
+base-chosen finite rational core-noise law with polynomially many sampling
+bits, returns an output from which a point within distance $1/4$ of the
+optimizer can be computed with expected polynomial total work, then Square
+Root Sum and $\PosSLP$ have Las Vegas algorithms with expected polynomial
+running time; for Square Root Sum the instances of (a), with treewidth two
+and bounded coefficients, suffice. If a deterministic algorithm returns, in
+polynomial time, a point within distance $1/4$ of the minimizer of every
+explicit rational quartic that is convex on a rational box and has a unique
+minimizer, then Square Root Sum and $\PosSLP$ are in $\mathrm P$.
+\end{enumerate}
+\end{theorem}
+
+The proof is in \cref{app:lim:posslp}. Parts (a) and (b) and the
+deterministic consequence also appear in an unpublished companion
+manuscript~\citep{companion-exact-arithmetic}; the constructions are
+reproduced here to keep the paper self-contained, and part (c) is the
+consequence for core-only noise. The two parts have different structure:
+part (a) has treewidth two and bounded coefficients, while the construction
+of part (b) bounds neither its treewidth nor its coefficient magnitudes. The
+theorem is a conditional implication, not an NP-hardness result. Values
+remain easy: convex optimization approximates $\min\Phi$ in polynomial time,
+and the program $\min_Y\Phi$ is itself a compact exact description of
+$\hat x$. What the theorem limits is the efficient evaluation of residual
+coordinates. The residual problem has no positive uniform strong-convexity
+modulus on its box: along the designated coordinate its curvature vanishes
+on the face where both activation coordinates are zero, and at $\hat x$ it
+can be extremely small. This is consistent with the certified modulus
+assumed in \cref{thm:rec:core-only}. Part (a) is also relevant to the sparse
+route: its residual problems have treewidth two and bounded coefficients,
+so sparsity of the residual problem does not by itself make residual points
+efficiently computable under core-only noise. Noise on the residual
+coordinates is what supplies point growth in the ambient theorems.
+
+For integer recourse under core-only noise, the analogue of a convex patch
+is a certificate that one residual label, for instance one flow, is optimal
+throughout a small core box. Boundary core optima defeat this certificate on
+an event whose probability does not shrink as the noise grid is refined.
+
+\begin{proposition}[One-flow certificates fail at boundary core optima]\label{prop:lim:flow}
+Let $v\in[0,1]^2$, let one integral unit be routed through two parallel
+arcs, so that the residual labels are $Y=\{(1,0),(0,1)\}$, and let
+\[
+ F_\gamma(v,z)=\tfrac12\norm v^2+\gamma^{\mathsf T}v+v_1z_1+v_2z_2 ,
+\]
+with core-only noise $\gamma_1,\gamma_2$ independent with law $U_{1,M}$,
+$M\ge4$. Then $L=1$ is valid and the event
+$\mathcal E=\{\gamma_1\ge\frac12,\gamma_2\ge\frac12\}$ has probability
+exactly $1/16$. On $\mathcal E$:
+\begin{enumerate}[label=(\alph*)]
+\item\label{it:lim:flow-growth} the projected value
+$V_\gamma(v)=\frac12\norm v^2+\gamma^{\mathsf T}v+\min\{v_1,v_2\}$
+satisfies $V_\gamma(v)\ge(\frac12+\min_i\gamma_i)\norm v^2$, so $v=0$ is
+the unique optimal core, with growth at least one, and both labels are
+optimal there;
+\item\label{it:lim:flow-box} on every box $[0,a]\times[0,b]$ with $a,b>0$ no
+single label is optimal throughout, so no certificate of optimality of a
+single label on such a box exists;
+\item\label{it:lim:flow-search} the corrected-grid core search with
+allowance $kLh^2/8=h^2/4$ retains the cell $[0,h]^2$ at every level.
+\end{enumerate}
+If the two arcs are followed by $m-1$ further stages of two parallel arcs
+with zero cost, there are $2^m$ feasible flows and the same conclusions hold.
+A strategy that requires a one-label certificate on the retained hull and
+otherwise enumerates all flows then has expected work at least $2^m/16$,
+while the input length is $O(m\log m)$ plus the sampling bits.
+\end{proposition}
+
+The proof is in \cref{app:lim:flow}. The instance is easy: on $\mathcal E$
+the bound in \ref{it:lim:flow-growth} certifies the origin and any flow. The
+integer core-only theorem of \cref{sec:int} avoids the obstruction with a
+certificate that represents every optimal flow at once and fixes the core
+face instead of one label.
+
+\subsection{Relations between the structural routes}\label{sec:lim:rank}
+
+The low-negative-inertia route uses a quadratic correction
+$\alpha\norm{Tx}^2/2$ of small rank $k$ that makes the objective convex. The
+recourse route uses a small core whose fixing makes the residual problem
+tractable. \Cref{prop:rec:rank} gives a family with a core of size one and
+convex polynomial recourse for which every fixed positive semidefinite
+quadratic correction that makes the objective convex has rank at least the
+residual dimension. \Cref{thm:rec:poly} applies to it with the core
+curvature as numerical parameter, independently of the coupling scale, while
+a quadratic convexification would need rank equal to the residual
+dimension. The two routes therefore measure different structure. The separation concerns the
+broader class with merely convex recourse. A uniformly strongly convex
+residual problem, as in \cref{thm:rec:core-only}, does admit a quadratic
+convexifier supported on the core, of rank at most $k$, by a Schur-complement
+bound; for that class the contribution of the recourse theorem is that its
+numerical factor keeps the original core curvature $L/\sigma$ rather than the
+scale of such a convexifier. Neither statement is a hardness result.
+
+The sparse and recourse routes are related in the opposite way. A bag of the
+sparse route plays the role of a core, and the sparse count contains the
+factor $n$ only because it lacks exact conditional values for the variables
+outside the bag (\cref{prop:lim:local,prop:lim:conditional}). Where such
+values are available, as in the recourse theorems, the factor $n$
+disappears. The strong-noise
+route of \cref{sec:int} uses no structural parameter at all, and its noise
+regime is different from the other three.

@@ -179,7 +179,7 @@ verification.
 
 Ran with the required environment:
 
-`/home/sgusev/miniconda3/envs/qipm/bin/python notes/scalar-newton-paper/checks/check_structured_identities.py`
+`/workspace/local-home/miniconda3/envs/qipm/bin/python notes/scalar-newton-paper/checks/check_structured_identities.py`
 
 All 152 numerical identities and comparison checks passed. The conclusions
 above rest on the derivations, with these diagnostics as supplementary checks.

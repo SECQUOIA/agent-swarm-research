@@ -76,7 +76,7 @@ The peroxide direction offers a natural connection to confinement/solvation inte
 
 ## Exact literature handoff and access limits
 
-All relevant additions and available artifacts were sent to the existing sole `/root/literature` worker through `$lit Add identified literature`, using `/home/sgusev/repo/skills/literature/SKILL.md`, project `/home/sgusev/repo/catalisys-notes`, and KB `/home/sgusev/repo/catalisys-notes/literature`. No KB files were edited here. The worker owns deduplication, sequential ingestion, reading and verification. This file's access statements describe this screen, not later worker outcomes.
+All relevant additions and available artifacts were sent to the existing sole `/root/literature` worker through `$lit Add identified literature`, using `/workspace/skills/literature/SKILL.md`, project `/workspace/catalisys-notes`, and KB `/workspace/catalisys-notes/literature`. No KB files were edited here. The worker owns deduplication, sequential ingestion, reading and verification. This file's access statements describe this screen, not later worker outcomes.
 
 1. **Already queued; not re-requested:** `10.1002/aic.18930`. Exact title and landing link above. Abstract verified; full text/SI still needed for claimed practical operating points.
 2. **Sent:** `10.1002/anie.202521921`. Full publisher HTML inspected; SI acquisition/read needed to verify efficiency definitions, collection and cycling details.

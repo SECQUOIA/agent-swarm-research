@@ -1,0 +1,7 @@
+# Targeted integrated mathematical typesetting check
+
+Reviewed immutable `snapshots/integrated-mathematical-draft-r1/`, 20 TeX files; the bibliography remains pending. Sources were copied to `/tmp/smoothed-integrated-math-typeset-r1-ptql6g_7` and built sequentially with three passes of `pdflatex -interaction=nonstopmode -halt-on-error -file-line-error main.tex`. All three passed. The final scratch PDF has 175 pages, zero overfull boxes, zero oversized-float warnings, zero TeX errors, and no undefined cross-reference warning. Undefined citations and absent bibliography are expected in this scratch build and prevent any final build claim. Four underfull paragraph warnings do not indicate overflow.
+
+`pdftotext -layout main.pdf main.txt` passed after the finished build. The complete results table is on physical page 7, the shared-root conversion on page 112, and the common-law model proposition on page 14. `pdftoppm -f 1 -l 1 -scale-to 1500 -png -singlefile main.pdf title` passed. The root viewed the rasterized title/abstract: both fit legibly on the first page; the contents begin on a separate page. The root also rendered and viewed physical pages 7 and 112: the complete results table fits on one page at a readable font size, and the shared-root proof page has no visible clipping or overlap. Remaining final PDF/bibliography inspection is pending.
+
+No experiment, project-wide verification, or CI inspection was performed. This is an integrated-source/layout check, not approval of mathematical correctness or submission readiness.

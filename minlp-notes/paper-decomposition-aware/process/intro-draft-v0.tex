@@ -1,0 +1,236 @@
+\section{Introduction}\label{sec:intro}
+
+Optimization models in process systems engineering, energy networks and
+optimal control are often built from local pieces. A flowsheet links unit
+models along streams, a multiperiod model links consecutive time stages,
+and a network model links quantities at adjacent nodes. The resulting
+objective is a sum of terms, each depending on a few variables, and the
+graph that records which variables share a term often has small treewidth.
+For variables with finitely many values, small treewidth is exactly what
+dynamic programming needs: bucket elimination or junction-tree message
+passing finds a global optimum in time exponential only in the width of a
+tree decomposition \cite{Bertele1972,Dechter1999,KollerFriedman2009}.
+
+Mixed-integer nonlinear models have continuous variables and nonconvex
+terms, and there the situation is less clear. Global solvers based on
+spatial branch-and-bound compute bounds from convex relaxations of
+individual terms and branch on variable domains
+\cite{TawarmalaniSahinidis2005,Belotti2009,Misener2014}; they do not use a
+tree decomposition to organize the search. Discretizing the continuous
+variables and running a dynamic program gives neither a valid bound nor a
+running time that scales well with the requested accuracy: a uniform grid
+of mesh $h$ has $\Theta(1/h)$ points per coordinate, so tables grow like
+$h^{-p}$ in the bag size $p$. Sparse polynomial optimization methods
+exploit the same structure through moment and linear-programming
+hierarchies \cite{Waki2006,Lasserre2006,BienstockMunoz2018}, with sizes
+that also grow polynomially in the inverse accuracy.
+
+Small treewidth alone does not make continuous nonconvex problems
+tractable. Del Pia and Khajavirad \cite{DelPiaKhajavirad2026} recently
+showed that box-constrained nonconvex quadratic programming is solvable in
+strongly polynomial time when the interaction graph is a forest, but is
+strongly NP-hard at treewidth two, even with small integer coefficients;
+quartic minimization is strongly NP-hard on paths. This paper asks which
+additional, checkable structure makes tree decompositions useful for
+\emph{certified} global optimization of mixed-integer problems, and what
+fails when that structure is absent.
+
+\subsection{Main results}
+We consider $\min\{F(x):x\in X\}$, where $F=\sum_af_a(x_{S_a})$ is a sum of
+factors, $X$ is a box in which some coordinates are integer, and a tree
+decomposition of the scopes $S_a$ with maximum bag size $p$ is given. Two
+quantities govern our results: an upper bound $L$ on the curvature of $F$
+along each coordinate (the diagonal of the Hessian for a quadratic), and a
+quadratic growth constant $g$, defined by
+$F(x)-\OPT\ge g\norm{x-x^*}^2$ for all $x\in X$, where $x^*$ is the unique
+minimizer. We write $\kappa=\max\{1,L/g\}$.
+
+\paragraph{Certified coordinate grids.}
+Choose finite grids in the coordinates, and subtract from $F$ at each grid
+node $v$ of coordinate $i$ the unary correction $L w^2/8$, where $w$ is the
+largest grid interval ending at $v$. The minimum of the corrected objective
+over the grid is a lower bound on $\min_XF$ (Proposition~\ref{prop:cellwise}).
+Because the corrections are unary, the minimum is computed by ordinary
+dynamic programming on the given decomposition, together with all
+coordinate min-marginals. These min-marginals give a safe rule for
+discarding coordinate intervals that cannot contain a point better than a
+known feasible value, and the sequence of grids, min-marginals and
+incumbents forms a certificate that an independent program can check
+(Theorem~\ref{thm:certificate}). None of this uses convexity, uniqueness or
+growth.
+
+\paragraph{Accuracy-independent grids.}
+Under quadratic growth, grids whose spacing grows linearly away from the
+current corrected-grid minimizer, combined with this filtering, keep
+$O(\sqrt\kappa\log n)$ nodes per coordinate at every stage, independently
+of the accuracy reached (Lemma~\ref{lem:states}). A schedule of capped
+trials removes the need to know $g$. For an explicit rational
+mixed-integer box quadratic program this gives a certified
+$2^{-q}$-approximation in $f(p,\kappa)(I+q)^{O(1)}$ bit operations, where
+$I$ is the input length (Theorem~\ref{thm:approx}), and the exact rational
+minimizer and optimal value in $f(p,\kappa)I^{O(1)}$ bit operations
+(Theorem~\ref{thm:exact}). The algorithm is thus fixed-parameter tractable
+in the pair $(p,\kappa)$. The same approximation result holds for
+fixed-degree polynomial factors, with exact output when all coordinates are
+integer (Corollary~\ref{cor:poly}). An exact acceptance rule based on the
+denominator of a candidate's value certifies optimality of any proposed
+point, and a snapping procedure turns any point whose value is within
+$\min\{g_S/(64n^2R^2),1/(2\Omega^2)\}$ of $\OPT$ into an exact minimizer,
+where $g_S$ is the growth constant towards the optimal \emph{set} and
+$R,\Omega$ are explicit height bounds (Theorem~\ref{thm:transfer}); no
+uniqueness is needed for this step.
+
+A simple chain with box widths $2^t$ (Example~\ref{ex:chain}) illustrates
+the difference from exact parametric dynamic programming: its exact Bellman
+messages need at least $2^{m-1}$ quadratic pieces, while the corrected
+grids certify any accuracy in time polynomial in $m$. Our implementation
+certifies a gap of $10^{-3}$ for $m=64$ with at most eleven nodes per
+coordinate grid (Section~\ref{sec:computation}).
+
+\paragraph{Conditional recourse.}
+The condition number uses the largest diagonal curvature, so a stiff convex
+coupling term inflates $\kappa$ even though convex subproblems are easy. The
+corrected-grid bound applies unchanged to any value function
+$V(v)=\min_yF(v,y)$ whose inner feasible set does not depend on $v$:
+partial minimization preserves coordinate curvature and growth
+(Lemma~\ref{lem:valuefunction}). We use this in three ways. Private convex
+quadratic blocks with a certified affine or piecewise-affine response can
+be eliminated exactly, preserving the decomposition and replacing the
+direct curvature by the curvature of the reduced problem; private convex
+blocks without such a response become value factors evaluated by exact
+convex quadratic programming. A large residual problem that is separately
+concave and becomes submodular after sign changes can be removed from
+discretization altogether, since each conditional value is one minimum
+cut; only a small core is then searched by adaptive corrected cells. A
+counterexample shows that the global correction cannot simply be replaced
+by bag-local corrections of grid messages; exact or certified conditional
+values are what make local corrections valid
+(Section~\ref{sec:recourse}).
+
+\paragraph{Constraints and nonunique optima.}
+Independent rounding, on which the certificate rests, breaks under coupling
+constraints. When the continuous coupling matrix is totally unimodular,
+correlated rounding to feasible cell corners restores the certificate on
+aligned uniform grids, with exact feasibility and exact output for
+quadratics; the resulting algorithm is polynomial for fixed width and
+$\kappa$, but not fixed-parameter tractable (Section~\ref{sec:constraints}).
+For coordinatewise concave mixed-integer quadratics, the Bellman residuals
+of an endpoint dynamic program give a factored description of the entire
+optimal set (Section~\ref{sec:optsets}).
+
+\paragraph{Structural limits.}
+Section~\ref{sec:limits} collects what fails without each ingredient:
+hardness at bounded width when $\kappa$ is unbounded and a lower bound on the
+dependence on $p$; exponential exact messages (Example~\ref{ex:chain});
+invalidity of local grid corrections; a family with bounded width,
+bounded negative-curvature ratio and a unique minimizer for which matching
+local moments does not control the error of a local relaxation; the role
+of product domains; and the failure of point localization when only the
+distance to an optimal \emph{set} grows.
+
+\subsection{Relation to prior work}
+\paragraph{Dynamic programming with continuous variables.}
+Finite-state min-sum dynamic programming on tree decompositions and its
+min-marginals are classical
+\cite{Bertele1972,Dechter1999,WainwrightJaakkolaWillsky2005,KohliTorr2007}.
+For continuous variables, Del Pia and Khajavirad's forest algorithm
+\cite{DelPiaKhajavirad2026} and the parametric dynamic program of
+Bhathena et al.\ \cite{Bhathena2026} for convex quadratics with indicators
+represent messages exactly as piecewise quadratics; Example~\ref{ex:chain}
+shows that such representations can be exponential at treewidth two even
+with a unique, well-conditioned minimizer. Interval dynamic programming
+with relaxation-based bounds has been used for optimal power flow on tree
+networks \cite{Dvijotham2017}, continuous distributed constraint
+optimization uses discretized or exact messages \cite{Hoang2020}, and
+adaptive or variable-resolution discretization of dynamic programs and
+message passing is common in practice
+\cite{MunosMoore2002,LeaverFay2005,Parisot2014,Troullinos2022}. We are
+not aware of a method that combines a unary correction making the
+discretized dynamic program a valid lower bound, min-marginal filtering
+with a checkable history, and a growth-based bound on the retained grid
+that is independent of the accuracy.
+
+\paragraph{Global optimization bounds.}
+The one-dimensional interpolation error $Lw^2/8$ underlies piecewise-linear
+relaxations of quadratic terms \cite{Beach2022,DongLuo2018} and
+$\alpha$BB-type underestimators \cite{Adjiman1998}; optimality-based bound
+tightening discards regions that cannot improve an incumbent
+\cite{Belotti2009,GleixnerBertholdMuller2017}. Our corrections act on the
+whole objective rather than on individual terms, which is what allows exact
+dynamic programming to compute the bound, and the filtering is driven by
+exact min-marginals of that bound.
+
+\paragraph{Sparse polynomial optimization.}
+Bienstock and Mu\~noz \cite{BienstockMunoz2018} give linear programming
+formulations of size $O((2\pi/\varepsilon)^{\omega+1}n\log(\pi/\varepsilon))$
+for polynomial problems of degree $\pi$ and intersection width $\omega$, with
+scaled tolerances on feasibility and objective. Sparse moment and
+sum-of-squares hierarchies exploit chordal structure
+\cite{Waki2006,Lasserre2006}. These methods need no growth assumption, but
+their size depends polynomially on $1/\varepsilon$; under growth our
+dependence on the accuracy is polynomial in $\log(1/\varepsilon)$, and the
+returned points are exactly feasible.
+
+\paragraph{Complexity of quadratic optimization.}
+Rational quadratic programs have optimal solutions of polynomial size
+\cite{Vavasis1990,DelPiaDeyMolinaro2017}. Box QP with a fixed number of
+negative eigenvalues is polynomial \cite{Vavasis1992}, and Del Pia
+\cite{DelPia2026} approximates mixed-integer QP with fixed integer
+dimension and few negative eigenvalues. Integer quadratic programming is
+fixed-parameter tractable under combined structural and domain restrictions
+\cite{EibenGanianKnopOrdyniak2019}. Our parameter $\kappa$ is of a different
+kind: negative inertia and integer dimension may grow with $n$, and the
+domain may be exponentially large. Proximity and scaling arguments give
+logarithmic dependence on domain size for separable convex integer
+programs \cite{HochbaumShanthikumar1990,Hunkenschroder2026}; growth plays
+an analogous role for our nonconvex, nonseparable objectives.
+
+\paragraph{Recourse, cuts and total unimodularity.}
+Affine and piecewise-affine solutions of parametric convex QPs are
+classical in multiparametric programming \cite{Bemporad2002}. Minimizing
+pairwise submodular binary energies by minimum cuts \cite{KolmogorovZabih2004}
+and the endpoint property of coordinatewise concave functions are standard,
+and continuous submodular minimization is an active topic
+\cite{Bach2019,BurerNatarajanWillemsen2025}. Totally unimodular systems are
+box-integral \cite{HoffmanKruskal1956,ChervetGrappeRobert2021}. Our
+contribution in these parts is the composition of these tools with the
+corrected-grid certificate and its complexity analysis, not the tools
+themselves.
+
+\subsection{Contributions}
+To the best of our knowledge, the following are new:
+\begin{enumerate}[label=(\roman*)]
+\item the corrected-grid lower bound for sparse mixed-integer box problems
+under coordinate curvature, with min-marginal interval filtering and a
+full-history certificate (Section~\ref{sec:grids});
+\item the accuracy-independent grid bound under quadratic growth, and the
+resulting algorithms that are fixed-parameter tractable in bag size and
+condition number, for certified approximation of sparse polynomial
+problems and exact solution of sparse mixed-integer box quadratic
+programs, without knowledge of the growth constant
+(Sections~\ref{sec:growth}--\ref{sec:exact});
+\item the use of value functions, certified convex responses and
+minimum-cut residual oracles inside the corrected-grid framework, with
+the corresponding curvature and growth transfer
+(Section~\ref{sec:recourse});
+\item the explicit limiting examples of Section~\ref{sec:limits}, in
+particular the expanding-box chain and the local-correction and
+local-moment counterexamples;
+\item an exact-arithmetic implementation whose certificates are replayed
+by an independent checker (Section~\ref{sec:computation}).
+\end{enumerate}
+The ingredients, namely interpolation error bounds, tree dynamic
+programming, min-marginals, domain filtering, rational height bounds,
+parametric quadratic programming, graph cuts and total unimodularity, are
+classical; the novelty lies in their combination and in the resulting
+guarantees.
+
+\paragraph{Organization.}
+Section~\ref{sec:setting} fixes the model and the parameters.
+Sections~\ref{sec:grids}--\ref{sec:exact} develop the corrected grids, the
+growth analysis and exact output. Section~\ref{sec:recourse} treats
+conditional recourse, Section~\ref{sec:constraints} coupling constraints and
+Section~\ref{sec:optsets} nonunique optima. Section~\ref{sec:limits}
+discusses structural limits, Section~\ref{sec:computation} the
+implementation and experiments, and Section~\ref{sec:conclusion} open
+problems.

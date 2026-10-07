@@ -18,7 +18,7 @@ targets that gap.
   DICOPT, SBB, KNITRO, SHOT, LINDO, CPLEX, COPT, CONOPT, IPOPT, MINOS, SNOPT
   all solve a test MINLP/NLP/MIP. Gurobi 13.0.2 CLI and gurobipy 13.0.3 use
   the academic license. Ipopt and CBC executables in the conda environment
-  `solvers` (`/home/sgusev/miniconda3/envs/solvers/bin`).
+  `solvers` (`/workspace/local-home/miniconda3/envs/solvers/bin`).
 - MINLPLib catalogue (`instancedata.csv`, 1633 instances): 299 convex
   discrete instances (`convex=True`, probtype in MINLP/MIQCP/MBNLP/MBQCP/
   MBQCQP) downloaded in `.gms` and Pyomo `.py` form to
@@ -98,7 +98,7 @@ Selected streams:
   independent checker that re-derives convexity, recomputes every safe
   intercept and regenerates the LP byte-for-byte. `batch`: 74 cuts, all
   re-verified. SCIP 10 with exact mode and the VIPR tools were built in
-  `/home/sgusev/.local/opt/scip-exact`.
+  `/workspace/local-home/.local/opt/scip-exact`.
 
 ## Progress (22:40): reviews and corrections
 

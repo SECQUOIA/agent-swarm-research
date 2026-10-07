@@ -1,0 +1,1533 @@
+\section{Proofs for point output}\label{app:points}
+
+This appendix proves the results of Section~\ref{sec:points}.
+Section~\ref{app:points-tools} collects the tools: explicit sparse
+evaluation, interpolation inequalities, integer eigenvalue and Hoffman
+bounds, relative coordinates, the convex value interface, and the selector
+lemma. Sections~\ref{app:points-global} and~\ref{app:points-cubic} prove
+Theorems~\ref{thm:global-point} and~\ref{thm:cubic-point}.
+Section~\ref{app:points-boundary} contains the constructions behind the
+boundary results of Sections~\ref{sec:points-limits}
+and~\ref{sec:points-representation}.
+
+Throughout, $\langle r\rangle$ denotes the binary encoding length of a
+rational number, vector, or matrix, written with integer numerators and
+positive integer denominators. The norm $\norm{\cdot}$ is Euclidean, and
+for a matrix it is the spectral norm. For a matrix $T$ we write
+$\norm{T}_\triangle=\sum_{i,j}|T_{ij}|$; it bounds the spectral norm of $T$
+and of $T^{\mathsf T}$. Running times count bit operations. A bound
+``polynomial in $a,b,\ldots$'' is a polynomial in $a+b+\cdots$ with an
+absolute exponent.
+
+\subsection{Tools}\label{app:points-tools}
+
+\paragraph{Classical rational subroutines.}
+Three classical facts are used without proof. First, Gaussian elimination
+over $\Q$ computes ranks, bases of kernels and ranges, inverses, and
+solutions of linear systems in polynomial time, and all its outputs have
+polynomial encoding length \citep[Section~1.4]{GroetschelLovaszSchrijver1988}.
+Second, rational linear programs are solvable in polynomial time: given
+rational $A,b,c$, one can decide whether $\{x:Ax\le b\}$ is empty and
+whether $c^{\mathsf T}x$ is unbounded above on it, and otherwise compute an
+optimal solution of polynomial encoding length; systems that also contain
+linear equations are handled in the same way
+\citep[Theorem~(6.4.12) and Section~6.5]{GroetschelLovaszSchrijver1988}.
+Third, Farkas' lemma: for real matrices $G_1,G_2$ and a real vector $w$,
+the system $G_1y_1+G_2y_2=w$, $y_1\ge0$, has no solution if and only if
+some $d$ satisfies $G_1^{\mathsf T}d\le0$, $G_2^{\mathsf T}d=0$, and
+$w^{\mathsf T}d>0$. With rational data such a $d$ with $w^{\mathsf T}d=1$
+is an optimal solution of the linear program
+$\max\{w^{\mathsf T}d:G_1^{\mathsf T}d\le0,\ G_2^{\mathsf T}d=0,\
+w^{\mathsf T}d\le1\}$.
+
+\paragraph{Explicit sparse evaluation.}
+An explicit sparse polynomial is a list of pairs $(f_\alpha,\alpha)$ with
+distinct exponent vectors $\alpha$ and nonzero rational coefficients. Its
+numerical degree is the largest $|\alpha|=\sum_i\alpha_i$ in the list.
+Exponents may be written in binary; the bounds below are polynomial in the
+numerical degree, which is polynomial in the input length exactly when the
+degree is.
+
+\begin{lemma}[Explicit sparse evaluation]\label{lem:points-sparse}
+Let $f=\sum_{\alpha\in\mathcal A}f_\alpha y^\alpha\in\Q[y_1,\ldots,y_N]$
+be an explicit sparse polynomial of encoding length $L_f$ and numerical
+degree at most $D\ge1$. Let $T\in\Q^{N\times n}$, $t\in\Q^N$, and
+$\tau\in\Q$ with $\tau\ge0$, and put
+\[
+ \varphi(x)=f(Tx+t)+\tau\norm x^2 .
+\]
+\begin{enumerate}[label=(\alph*)]
+\item For every rational $x$, the exact rational values $\varphi(x)$ and
+$\nabla\varphi(x)$ can be computed in time polynomial in
+$L_f,D,\langle T,t,\tau\rangle,\langle x\rangle$. The computation does not
+form the expanded polynomial $f(Tx+t)$.
+\item Let $\varrho\ge1$ be rational, put
+$\varrho_1=\max\{1,\ \varrho\max_i\sum_j|T_{ij}|+\max_i|t_i|\}$, and
+\[
+ V_f=\sum_{\alpha}|f_\alpha|\varrho_1^{|\alpha|},\qquad
+ G_f=\sum_{|\alpha|\ge1}|f_\alpha|\,|\alpha|\,\varrho_1^{|\alpha|-1},\qquad
+ H_f=\sum_{|\alpha|\ge2}|f_\alpha|\,|\alpha|^2\varrho_1^{|\alpha|-2}.
+\]
+Then on the box $[-\varrho,\varrho]^n$,
+\[
+ |\varphi|\le V_f+\tau n\varrho^2,\qquad
+ \norm{\nabla\varphi}\le\norm T_\triangle G_f+2\tau n\varrho,\qquad
+ \norm{\nabla^2\varphi}\le\norm T_\triangle^2H_f+2\tau .
+\]
+These bounds are rationals of encoding length polynomial in
+$L_f,D,\langle T,t,\tau,\varrho\rangle$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+(a) Compute $y=Tx+t$. If every coordinate of $y$ has encoding length at most
+$\sigma$, then each power $y_i^{\alpha_i}$, and hence each monomial
+$y^\alpha$, is a rational whose numerator and denominator have at most
+$D\sigma$ bits, computed by repeated multiplication. Summing the at most
+$L_f$ terms $f_\alpha y^\alpha$ gives $f(y)$ with polynomially many bits.
+The partial derivatives satisfy
+$\partial_if(y)=\sum_{\alpha_i>0}\alpha_if_\alpha y^{\alpha-e_i}$ and are
+computed in the same way. Finally
+$\nabla\varphi(x)=T^{\mathsf T}\nabla f(y)+2\tau x$.
+
+(b) For $\norm x_\infty\le\varrho$ we have
+$\norm{Tx+t}_\infty\le\varrho_1$. For $\norm y_\infty\le\varrho_1$ and
+$\varrho_1\ge1$, a monomial satisfies $|y^\alpha|\le\varrho_1^{|\alpha|}$,
+the entries of its gradient satisfy
+$\sum_i|\alpha_iy^{\alpha-e_i}|\le|\alpha|\varrho_1^{|\alpha|-1}$, and
+the entries of its Hessian satisfy
+$\sum_{i,j}|\alpha_i(\alpha_j-\delta_{ij})y^{\alpha-e_i-e_j}|\le
+|\alpha|^2\varrho_1^{|\alpha|-2}$. The Euclidean norm of a vector and the
+spectral norm of a matrix are bounded by the sums of the absolute values of
+their entries. The chain rule gives
+$\nabla_x f(Tx+t)=T^{\mathsf T}\nabla f(y)$ and
+$\nabla^2_xf(Tx+t)=T^{\mathsf T}\nabla^2f(y)T$. The regularizer contributes
+at most $\tau n\varrho^2$, $2\tau\norm x\le2\tau n\varrho$, and $2\tau$.
+Each displayed bound is a sum of at most $L_f+1$ rationals whose lengths
+are polynomial in the stated quantities.
+\end{proof}
+
+\paragraph{Interpolation inequalities.}
+For an integer $D\ge1$ put
+\[
+ c_0(D)=(D+1)D^D,\qquad c_1(D)=(D+1)D^{D+1},\qquad c_2(D)=(D+1)D^{D+2},
+\]
+and for an integer $k\ge1$ put $\beta_k=(k+1)2^kk^k$. These integers have
+$O(D\log(D+1))$ and $O(k\log(k+1))$ bits.
+
+\begin{lemma}[Interpolation]\label{lem:points-interp}
+Let $r$ be a real univariate polynomial of degree at most $D\ge1$.
+\begin{enumerate}[label=(\alph*)]
+\item $|r(t)|\le c_0(D)(1+|t|)^D\max_{0\le j\le D}|r(j/D)|$ for every
+real $t$.
+\item If $\varrho>0$ and $|r(t)|\le W$ for $0\le t\le\varrho$, then
+$|r'(0)|\le c_1(D)W/\varrho$.
+\item $|r''(0)|\le c_2(D)\max_{0\le j\le D}|r(j/D)|$.
+\item Let $k\ge1$ and let $p\in\R[z_1,\ldots,z_n]$ have degree at most $k$
+in each variable. If $|p(z)|\le V$ for every $z\in[0,1]^n$, then every
+coefficient of $p$ has absolute value at most $\beta_k^nV$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+For $j=0,\ldots,D$ let
+$\lambda_j(t)=\prod_{i\ne j}(t-i/D)/\prod_{i\ne j}(j/D-i/D)$ be the
+Lagrange basis for the nodes $j/D$, so that
+$r=\sum_jr(j/D)\lambda_j$. The denominator of $\lambda_j$ has absolute
+value $j!(D-j)!/D^D\ge D^{-D}$.
+
+(a) Every numerator factor satisfies $|t-i/D|\le1+|t|$, so
+$|\lambda_j(t)|\le D^D(1+|t|)^D$. Sum over the $D+1$ nodes.
+
+(b) The derivative at zero of $\prod_{i\ne j}(t-i/D)$ is a sum of $D$
+products of $D-1$ numbers in $[-1,0]$, so it has absolute value at most
+$D$, and $|\lambda_j'(0)|\le D^{D+1}$. Apply this to
+$s\mapsto r(\varrho s)$, whose values at the nodes lie in $[-W,W]$ and whose
+derivative at zero is $\varrho r'(0)$.
+
+(c) The second derivative at zero of the numerator is a sum over the
+$D(D-1)$ ordered pairs of distinct indices of products of numbers in
+$[-1,0]$. Hence $|\lambda_j''(0)|\le D(D-1)D^D\le D^{D+2}$.
+
+(d) Use the nodes $j/k$ in $[0,1]$ and the corresponding univariate Lagrange
+polynomials $\mu_0,\ldots,\mu_k$. The sum of the absolute values of the
+coefficients is submultiplicative, and for a factor $z-i/k$ it equals
+$1+i/k\le2$; with the denominator bound, each $\mu_j$ has coefficient sum at
+most $2^kk^k$. Tensor interpolation
+\[
+ p(z)=\sum_{J\in\{0,\ldots,k\}^n}p(J/k)\prod_{i=1}^n\mu_{J_i}(z_i)
+\]
+is exact for polynomials of degree at most $k$ in each variable. The
+coefficient sum of each product is at most $(2^kk^k)^n$, and there are
+$(k+1)^n$ terms. Hence the coefficient sum of $p$ is at most $\beta_k^nV$.
+The interpolation grid enters only this proof; no algorithm below
+evaluates $p$ on it.
+\end{proof}
+
+\paragraph{Integer matrices.}
+
+\begin{lemma}[Positive eigenvalues of integer matrices]\label{lem:points-integer-eigen}
+Let $N$ be a symmetric positive semidefinite integer matrix of order $n$,
+rank $r\ge1$, and entries bounded in absolute value by $C\ge1$. Every
+nonzero eigenvalue of $N$ is at least $(nC)^{-(r-1)}$. Consequently, if
+$M\succeq0$ is rational, $Q_M$ is a positive integer with $Q_MM$ integral,
+$C\ge1$ bounds the entries of $Q_MM$, and $\Pi$ is the orthogonal
+projection onto the range of $M$, then
+$x^{\mathsf T}Mx\ge\norm{\Pi x}^2/(Q_M(nC)^{n-1})$ for every $x$.
+\end{lemma}
+
+\begin{proof}
+The product of the nonzero eigenvalues of $N$ equals, up to sign, a
+coefficient of its characteristic polynomial; it is the sum of the
+principal minors of order $r$, an integer. It is positive, so it is at
+least one. Each eigenvalue is at most the largest absolute row sum, which
+is at most $nC$. Hence the smallest nonzero eigenvalue is at least
+$(nC)^{-(r-1)}$. For the consequence, $Q_MM$ and $M$ have the same range,
+$x^{\mathsf T}Mx=(\Pi x)^{\mathsf T}M(\Pi x)$, and $\Pi x$ lies in the
+span of the eigenvectors of $Q_MM$ with nonzero eigenvalues. If $M=0$,
+both sides vanish.
+\end{proof}
+
+\begin{proof}[Proof of Lemma~\ref{lem:integer-hoffman}]
+Let $x\in Q$ and let $y$ be the Euclidean projection of $x$ onto the
+nonempty closed convex set $Z$. If $x=y$ there is nothing to prove. Let
+$I$ be the set of inequality rows active at $y$. The vector $x-y$ lies in
+the normal cone of the polyhedron $Z$ at $y$: the linear function
+$(x-y)^{\mathsf T}z$ is maximized over $Z$ at $z=y$. By linear programming
+duality this normal cone is
+$\{A_I^{\mathsf T}\beta+T^{\mathsf T}\alpha:\beta\ge0\}$, so
+$x-y=A_I^{\mathsf T}\beta+T^{\mathsf T}\alpha$ for some $\beta\ge0$ and some
+$\alpha$.
+
+We pass to a linearly independent representation. Choose rows of $T$ that
+form a basis of its row space; the representation can be rewritten with
+equality coefficients supported on these rows. If the chosen equality rows
+together with the inequality rows of positive coefficient are linearly
+dependent, some nontrivial relation among them gives a positive coefficient
+to at least one inequality row, because the chosen equality rows are
+independent. Subtracting the largest multiple of the relation that keeps
+all inequality coefficients nonnegative removes at least one inequality
+row. After finitely many steps
+$x-y=R^{\mathsf T}\binom{\alpha'}{\beta'}$, where $R$ stacks linearly
+independent rows $T'$ of $T$ and $A'$ of $A_I$, with $\beta'\ge0$. Let $k'$
+be the number of rows of $R$.
+
+By the Cauchy--Binet formula, $\det(RR^{\mathsf T})$ is the sum of the
+squares of the $k'\times k'$ minors of $R$, so it is at least $\mu^2$. The
+largest eigenvalue of $RR^{\mathsf T}$ is at most
+$\norm R_1\norm R_\infty\le(k'C)(sC)\le(sC)^2$. Therefore the smallest
+eigenvalue is at least $\mu^2(sC)^{-2(k'-1)}\ge\mu^2(sC)^{-2(s-1)}$, and
+$\sigma_{\min}(R)\ge\mu(sC)^{-(s-1)}$. Since $R$ has full row rank,
+\[
+ \Bigl\|\binom{\alpha'}{\beta'}\Bigr\|\le\frac{\norm{x-y}}{\sigma_{\min}(R)}.
+\]
+Now
+\[
+ \norm{x-y}^2=\alpha'^{\mathsf T}T'(x-y)+\beta'^{\mathsf T}A'(x-y).
+\]
+Each row of $A'$ is active at $y$ and satisfied at $x\in Q$, so
+$A'(x-y)\le0$ and the second term is nonpositive. Since $T'y=t'$, the first
+term equals $\alpha'^{\mathsf T}(T'x-t')$, which is at most
+$\norm{\alpha'}\,\norm{Tx-t}$. Combining,
+$\norm{x-y}^2\le\norm{x-y}\,\norm{Tx-t}\,(sC)^{s-1}/\mu$. Divide by
+$\norm{x-y}$.
+
+For integer matrices, a linearly independent family of $k'$ rows has rank
+$k'$, so some $k'\times k'$ minor is a nonzero integer and has absolute value
+at least one.
+\end{proof}
+
+The proof uses neither boundedness of $Q$ nor rationality of $b,t$. When
+the equality rows are absent, $Z=Q$ and the bound reads $\dist(x,Z)=0$.
+
+\paragraph{Relative coordinates.}
+
+\begin{lemma}[Relative coordinates and an inner ball]\label{lem:points-relative}
+Let $P=\{x\in\R^n:Ax\le b\}$ be nonempty, with rational $A,b$, and let
+$\varrho\ge1$ be rational with $P\subseteq[-\varrho,\varrho]^n$. In
+polynomial time one can compute an integer $m$ with $0\le m\le n$, a point
+$x_0\in P\cap\Q^n$, a matrix $V\in\Q^{n\times m}$ of rank $m$ that contains
+the $m\times m$ identity matrix as a submatrix, and, when $m\ge1$, a
+rational system $Gu\le h$ with nonzero rows $g_i^{\mathsf T}$ and $h>0$ such
+that, with $P'=\{u\in\R^m:Gu\le h\}$,
+\begin{enumerate}[label=(\roman*)]
+\item $P=\{x_0+Vu:u\in P'\}$ (for $m=0$, $P=\{x_0\}$);
+\item the ball of radius $r_0=\min_ih_i/\norm{g_i}_1$ about $0$ lies in
+$P'$, and $\norm u\le R_0=2m\varrho$ for every $u\in P'$.
+\end{enumerate}
+All outputs have encoding length polynomial in $\langle A,b,\varrho\rangle$.
+In particular $m=\dim P$.
+\end{lemma}
+
+\begin{proof}
+For each row $a_i^{\mathsf T}x\le b_i$ solve
+$\max\{b_i-a_i^{\mathsf T}x:x\in P\}$. Call the row an implicit equality
+if the optimum is zero; otherwise record an optimal point $x^{(i)}$, which
+has positive slack in row $i$. Let $x_0$ be the average of the recorded
+points, or any rational point of $P$ if none was recorded. Then $x_0\in P$
+and $x_0$ has positive slack in every row that is not an implicit equality.
+
+Let $Ex=e$ be the implicit equalities. Gaussian elimination brings this
+system to reduced row echelon form, with free coordinates
+$F\subseteq\{1,\ldots,n\}$, $|F|=m$. Its solution set is
+$\{x_0+Vu:u\in\R^m\}$, where $V$ has the identity matrix in the rows
+indexed by $F$ and $u=(x-x_0)_F$. Every point of $P$ satisfies $Ex=e$, so
+(i) holds with $P'=\{u:x_0+Vu\in P\}$.
+
+Substitute $x=x_0+Vu$ into $Ax\le b$. An implicit equality row becomes
+$0\le0$: it is constant on the solution set of $Ex=e$ and vanishes at
+$x_0$. Any other row with $V^{\mathsf T}a_i=0$ is constant on that set and
+has positive slack at $x_0$, so it is redundant. Delete these rows. The
+remaining rows read $g_i^{\mathsf T}u\le h_i$ with $g_i=V^{\mathsf T}a_i\ne0$
+and $h_i=b_i-a_i^{\mathsf T}x_0>0$. If $\norm u\le r_0$, then
+$g_i^{\mathsf T}u\le\norm{g_i}\,\norm u\le\norm{g_i}_1r_0\le h_i$. For
+$u\in P'$ we have $u=(x-x_0)_F$ with $x\in P$, so
+$\norm u\le\norm u_1\le2m\varrho$. If $m\ge1$, boundedness of $P'$ forces at
+least one remaining row. All steps are linear programs and Gaussian
+elimination. The ball in $P'$ shows that $P'$ is full dimensional, hence
+$\dim P=m$.
+\end{proof}
+
+\paragraph{The convex value interface.}
+We use the following theorem of Gr\"otschel, Lov\'asz, and Schrijver. For
+a convex body $\mathcal K\subseteq\R^d$ (a compact convex set with nonempty
+interior) and $\varepsilon>0$, let $S(\mathcal K,\varepsilon)$ be the set
+of points within distance $\varepsilon$ of $\mathcal K$, and let
+$S(\mathcal K,-\varepsilon)$ be the set of points whose closed
+$\varepsilon$-ball lies in $\mathcal K$. A \emph{weak separation oracle}
+for $\mathcal K$ receives a rational $y$ and a rational $\delta>0$ and
+either asserts $y\in S(\mathcal K,\delta)$ or returns a rational $c$ with
+$\norm c_\infty=1$ and $c^{\mathsf T}z\le c^{\mathsf T}y+\delta$ for all
+$z\in S(\mathcal K,-\delta)$.
+
+\begin{lemma}[Weak optimization from weak separation;
+\citealp{GroetschelLovaszSchrijver1988}]\label{lem:points-gls}
+There is an oracle algorithm that, given $d$, a rational $R>0$ with
+$\mathcal K\subseteq\{z:\norm z\le R\}$, a rational vector $c$, a rational
+$\varepsilon>0$, and a weak separation oracle for $\mathcal K$, either
+returns a rational $y\in S(\mathcal K,\varepsilon)$ with
+$c^{\mathsf T}z\le c^{\mathsf T}y+\varepsilon$ for all
+$z\in S(\mathcal K,-\varepsilon)$, or asserts that
+$S(\mathcal K,-\varepsilon)$ is empty. If the oracle is realized by an
+algorithm whose running time is polynomial in the encoding lengths of its
+query and of a fixed description of $\mathcal K$, the total running time is
+polynomial in $d$, $\langle R\rangle$, $\langle c\rangle$,
+$\langle\varepsilon\rangle$, and the length of that description.
+\end{lemma}
+
+This is the weak optimization problem \citep[(2.1.10)]{GroetschelLovaszSchrijver1988}
+for the circumscribed convex body $(\mathcal K;d,R)$ given by a weak
+separation oracle \citep[(2.1.13), (2.1.16)]{GroetschelLovaszSchrijver1988},
+solved in oracle-polynomial time by
+\citet[Corollary~(4.2.7)]{GroetschelLovaszSchrijver1988}. The running-time
+consequence is their composition rule for oracle-polynomial algorithms with
+polynomially bounded oracle answers
+\citep[(1.2.1) and Section~4.1]{GroetschelLovaszSchrijver1988}; we include
+the description of $\mathcal K$ in every oracle query.
+
+\begin{proof}[Proof of Lemma~\ref{lem:convex-value}]
+(a) Decide by linear programming whether $P$ is empty. If it is not, apply
+Lemma~\ref{lem:points-relative}. If $m=0$, return $\hat x=x_0$ and
+$\ell=\varphi(x_0)$. Assume $m\ge1$ and let $\psi(u)=\varphi(x_0+Vu)$ on
+$P'$; it is continuous and convex. For $u\in P'$ the point $x_0+Vu$ lies in
+$P$, so $\psi(u)$ and the vector
+$s_\psi(u)=V^{\mathsf T}s(x_0+Vu)$ are computable in time polynomial in
+$\Delta+\langle u\rangle$. The vector $s_\psi(u)$ is a subgradient of $\psi$
+on $P'$, that is, $\psi(u')\ge\psi(u)+s_\psi(u)^{\mathsf T}(u'-u)$ for
+$u'\in P'$, and on $P'$
+\[
+ |\psi|\le W,\qquad\norm{s_\psi}\le G_V=\norm V_\triangle G .
+\]
+Consider the capped epigraph
+\[
+ \mathcal K=\{(u,s)\in\R^m\times\R:\ u\in P',\ \psi(u)\le s\le W+2\}.
+\]
+It is compact and convex. Let $a_0=(0,W+1)$ and
+$r_{\mathcal K}=\min\{r_0,1/2\}$. A point $(u,s)$ with
+$\norm{(u,s)-a_0}\le r_{\mathcal K}$ has $\norm u\le r_0$, hence $u\in P'$,
+and $W+\tfrac12\le s\le W+\tfrac32$, hence $\psi(u)\le W<s\le W+2$. Thus the
+ball of radius $r_{\mathcal K}$ about $a_0$ lies in $\mathcal K$, and
+$\mathcal K$ is a convex body. Since $\norm u\le R_0$ and
+$|s|\le W+2$ on $\mathcal K$, it lies in the ball of radius
+$R_{\mathcal K}=R_0+W+2$ about the origin.
+
+\emph{Separation.} Given rational $(u,s)$ and $\delta>0$, proceed as follows.
+If $g_i^{\mathsf T}u>h_i$ for some $i$, return
+$(g_i,0)/\norm{g_i}_\infty$; every point of $\mathcal K$ satisfies
+$g_i^{\mathsf T}u'\le h_i<g_i^{\mathsf T}u$. Otherwise, if $s>W+2$, return
+$(0,1)$. Otherwise $u\in P'$; compute $\psi(u)$ and $s_\psi(u)$. If $s<\psi(u)$,
+return $(s_\psi(u),-1)$ divided by its maximum norm, which is at least one.
+This is valid because for $(u',s')\in\mathcal K$ the subgradient inequality
+gives
+\[
+ s'\ge\psi(u')\ge\psi(u)+s_\psi(u)^{\mathsf T}(u'-u)
+ >s+s_\psi(u)^{\mathsf T}(u'-u).
+\]
+Otherwise $(u,s)\in\mathcal K$, and we assert $(u,s)\in S(\mathcal
+K,\delta)$. Every returned vector separates $(u,s)$ from all of
+$\mathcal K$, so the answers meet the weak separation requirement for every
+$\delta>0$. The running time is polynomial in $\Delta+\langle u,s\rangle$.
+
+\emph{Optimization.} Put
+\[
+ A_0=1+\frac{2W+1}{r_{\mathcal K}},\qquad
+ C_0=A_0+1+G_V\Bigl(1+\frac{R_0}{r_0}\Bigr),\qquad
+ \varepsilon=\min\Bigl\{\frac{r_{\mathcal K}}2,\frac\eta{C_0}\Bigr\}.
+\]
+Apply Lemma~\ref{lem:points-gls} with objective $c=(0,\ldots,0,-1)$ and
+tolerance $\varepsilon$. The set $S(\mathcal K,-\varepsilon)$ contains the
+ball of radius $r_{\mathcal K}-\varepsilon>0$ about $a_0$, so the algorithm
+returns a rational $(u,s)\in S(\mathcal K,\varepsilon)$ with
+$s\le s'+\varepsilon$ for every $(u',s')\in S(\mathcal K,-\varepsilon)$.
+
+\emph{Lower bound.} Let $u_*$ minimize $\psi$ over $P'$, $\psi_*=\psi(u_*)$,
+$z_*=(u_*,\psi_*)\in\mathcal K$, and $\lambda=\varepsilon/r_{\mathcal K}\le
+\tfrac12$. For $\norm e\le\varepsilon$,
+\[
+ (1-\lambda)z_*+\lambda a_0+e=(1-\lambda)z_*+\lambda(a_0+e/\lambda),
+\]
+and $\norm{e/\lambda}\le r_{\mathcal K}$, so this point lies in
+$\mathcal K$. Hence $(1-\lambda)z_*+\lambda a_0\in S(\mathcal
+K,-\varepsilon)$. Its last coordinate is
+$\psi_*+\lambda(W+1-\psi_*)\le\psi_*+\lambda(2W+1)$, because
+$\psi_*\ge-W$. Therefore $s\le\psi_*+A_0\varepsilon$, and
+$\ell=s-A_0\varepsilon$ satisfies $\ell\le\psi_*=\min_P\varphi$.
+
+\emph{Feasible repair.} Some $(\bar u,\bar s)\in\mathcal K$ lies within
+$\varepsilon$ of $(u,s)$. Put $\hat u=r_0u/(r_0+\varepsilon)$. For each row,
+$g_i^{\mathsf T}u\le g_i^{\mathsf T}\bar u+\norm{g_i}\varepsilon\le
+h_i+\norm{g_i}\varepsilon$, and $r_0\norm{g_i}\le r_0\norm{g_i}_1\le h_i$, so
+\[
+ g_i^{\mathsf T}\hat u\le\frac{r_0h_i+r_0\norm{g_i}\varepsilon}
+ {r_0+\varepsilon}\le h_i .
+\]
+Thus $\hat u\in P'$. Moreover
+$\hat u-\bar u=[r_0(u-\bar u)-\varepsilon\bar u]/(r_0+\varepsilon)$, and
+$\norm{\bar u}\le R_0$, so
+$\norm{\hat u-\bar u}\le\varepsilon(1+R_0/r_0)$. Both points lie in $P'$,
+and the subgradient inequality at $\hat u$ gives
+$\psi(\hat u)\le\psi(\bar u)+s_\psi(\hat u)^{\mathsf T}(\hat u-\bar u)\le
+\psi(\bar u)+G_V\norm{\hat u-\bar u}$. Hence
+\[
+ \psi(\hat u)\le\psi(\bar u)+G_V\varepsilon(1+R_0/r_0)
+ \le\bar s+G_V\varepsilon(1+R_0/r_0)
+ \le s+\varepsilon+G_V\varepsilon(1+R_0/r_0).
+\]
+Return $\hat x=x_0+V\hat u\in P$ and $\ell$. Then
+$\ell\le\min_P\varphi\le\varphi(\hat x)$ and
+$\varphi(\hat x)-\ell\le C_0\varepsilon\le\eta$.
+
+\emph{Complexity.} The data of Lemma~\ref{lem:points-relative}, and $A_0$,
+$C_0$, $\varepsilon$, $R_{\mathcal K}$, have encoding length polynomial in
+$\Delta+\langle\eta\rangle$. The separation routine runs in polynomial time
+in its query length and $\Delta$. Lemma~\ref{lem:points-gls} and one final
+evaluation give the stated bound.
+
+(b) Lemma~\ref{lem:points-sparse} evaluates $\varphi$ and $\nabla\varphi$
+exactly and supplies $W=\max\{1,V_f+\tau n\varrho^2\}$ and
+$G=\max\{1,\norm T_\triangle G_f+2\tau n\varrho\}$. For a function that is
+continuously differentiable near $P$ and convex on $P$, the gradient is a
+subgradient on $P$: for $x,x'\in P$ the convex function
+$\theta\mapsto\varphi(x+\theta(x'-x))$ on $[0,1]$ lies above its tangent at
+$\theta=0$. Part (a) applies with $\Delta$ polynomial in $D$ and the stated
+encoding lengths.
+\end{proof}
+
+\begin{remark}[An independently checkable lower bound]\label{rem:points-tangent}
+If $\varphi$ is twice continuously differentiable with
+$\norm{\nabla^2\varphi}\le H$ on $P$, a lower bound can also be certified
+by linear programming duality. Let $\hat x\in P$ have
+$\varphi(\hat x)-\min_P\varphi\le\delta$, let
+$\gamma=\nabla\varphi(\hat x)$, and let $\hat\ell=\varphi(\hat x)+
+\min_{x\in P}\gamma^{\mathsf T}(x-\hat x)$. Convexity gives
+$\hat\ell\le\min_P\varphi$, and an optimal dual solution of the tangent
+linear program certifies $\hat\ell$. If $x'$ attains the tangent minimum
+and $\Delta_P\ge\max_{x,x'\in P}\norm{x-x'}$, the points
+$\hat x+t(x'-\hat x)$, $0\le t\le1$, give
+$t(\varphi(\hat x)-\hat\ell)\le\delta+Ht^2\Delta_P^2/2$. With
+$K_0=\max\{1,H\Delta_P^2\}$, $\delta=\min\{\eta/2,\eta^2/(8K_0)\}$, and
+$t=\min\{1,\eta/(2K_0)\}$ this yields $\varphi(\hat x)-\hat\ell\le\eta$.
+A verifier checks feasibility of $\hat x$, the exact values $\varphi(\hat
+x)$ and $\gamma$, and the dual certificate; it does not repeat the
+ellipsoid computation. This certificate is optional and is not used in the
+theorems.
+\end{remark}
+
+\paragraph{The selector lemma.}
+
+\begin{proof}[Proof of Lemma~\ref{lem:selector}]
+Write $\Phi=\varphi+\tau\norm{\cdot}^2$. Since $\varphi\ge\varphi_*$ on $P$,
+every sublevel set of $\Phi$ in $P$ is bounded; it is closed by continuity.
+Hence $\Phi$ attains its minimum on $P$, and the minimizer $x_\tau$ is unique
+because $\tau\norm{\cdot}^2$ is strictly convex. Comparison with $p$ gives
+\[
+ \varphi(x_\tau)+\tau\norm{x_\tau}^2\le\varphi_*+\tau\norm p^2 ,
+\]
+so $\norm{x_\tau}\le\norm p\le R$ and
+$\varphi(x_\tau)-\varphi_*\le\tau R^2\le1$; the last inequality holds
+because $\varepsilon\le1\le R,\Gamma$ and $d\ge2$.
+
+Let $s$ be the projection of $x_\tau$ onto the closed convex set $S$, and
+$e=\norm{s-x_\tau}$. Comparison of $\Phi$ at $x_\tau$ and $s$ gives
+\[
+ \varphi(x_\tau)-\varphi_*\le\tau(\norm s^2-\norm{x_\tau}^2)
+ \le\tau e(\norm s+\norm{x_\tau})\le\tau e(2\norm{x_\tau}+e).
+\]
+Since $p\in S$, $e\le\norm{p-x_\tau}\le2R$, and the right side is at most
+$4R\tau e$. If every point of $S$ has norm at most $R$, then
+$\norm s+\norm{x_\tau}\le2R$ and the bound is $2R\tau e$. The error bound
+applies to $x_\tau$, so $e^d\le\Gamma^d\cdot4R\tau e$. If $e>0$, the choice
+of $\tau$ gives
+\[
+ e^{d-1}\le4R\tau\Gamma^d=\Bigl(\frac{\varepsilon^2}{8R}\Bigr)^{d-1},
+\]
+so $e\le\varepsilon^2/(8R)$; this also holds if $e=0$, and in the bounded
+variant with the factor $2$.
+
+The point $p$ is the projection of the origin onto $S$, so
+$p^{\mathsf T}(z-p)\ge0$ for all $z\in S$; in particular
+$p^{\mathsf T}s\ge\norm p^2$. Using $\norm{x_\tau}\le\norm p$,
+\[
+ \norm{x_\tau-p}^2\le2\norm p^2-2p^{\mathsf T}x_\tau
+ \le2p^{\mathsf T}(s-x_\tau)\le2Re\le\frac{\varepsilon^2}4 .
+\]
+Finally, for $x\in P$ and $0<\theta\le1$, the point
+$x_\theta=x_\tau+\theta(x-x_\tau)$ lies in $P$, and convexity of $\varphi$
+and the identity
+$\norm{x_\theta}^2=(1-\theta)\norm{x_\tau}^2+\theta\norm x^2-
+\theta(1-\theta)\norm{x-x_\tau}^2$ give
+\[
+ \Phi(x_\tau)\le\Phi(x_\theta)\le(1-\theta)\Phi(x_\tau)+\theta\Phi(x)
+ -\tau\theta(1-\theta)\norm{x-x_\tau}^2 .
+\]
+Dividing by $\theta$ and letting $\theta\to0$ yields
+$\Phi(x)-\Phi(x_\tau)\ge\tau\norm{x-x_\tau}^2$. If the left side is at most
+$\tau\varepsilon^2/4$, then $\norm{x-x_\tau}\le\varepsilon/2$ and
+$\norm{x-p}\le\varepsilon$.
+\end{proof}
+
+No differentiability of $\varphi$ is needed. The lemma does not assume
+that $S$ is bounded; the factor $4$ pays for a projection $s$ that may lie
+far from the origin.
+
+\subsection{Proof of Theorem~\ref{thm:global-point}}\label{app:points-global}
+
+Fix the data of Theorem~\ref{thm:global-point}: an explicit sparse
+$f=\sum_\alpha f_\alpha x^\alpha$, convex on $\R^n$, and
+$P=\{x:Ax\le b\}$. If $n=0$, the problem is the evaluation of a constant
+and a check of the constraints, so assume $n\ge1$. Put
+$D=\max\{2,\deg f\}$ and $\kappa_D=c_2(D)=(D+1)D^{D+2}$. Let
+$\int\cdot\,da$ denote integration over $[0,1]^n$ with respect to Lebesgue
+measure.
+
+\begin{lemma}[Integrated quadratic minorant]\label{lem:points-minorant}
+Let
+\begin{align*}
+ M&=\int\nabla^2f(a)\,da,\qquad
+ g=\int\Bigl[\nabla f(a)-\frac2{\kappa_D}\nabla^2f(a)\,a\Bigr]da,\\
+ m_0&=\int\Bigl[f(a)-\nabla f(a)^{\mathsf T}a+
+ \frac1{\kappa_D}a^{\mathsf T}\nabla^2f(a)\,a\Bigr]da .
+\end{align*}
+\begin{enumerate}[label=(\alph*)]
+\item $M$, $g$, and $m_0$ are rational, computable in time polynomial in
+$L,D$, and $f(x)\ge m_0+g^{\mathsf T}x+x^{\mathsf T}Mx/\kappa_D$ for all
+$x\in\R^n$.
+\item $M\succeq0$, and $\ker M$ is the set of $d$ with $\nabla^2f(a)d=0$
+for every $a\in\R^n$. For such $d$, $\nabla f(x)^{\mathsf T}d=
+\nabla f(0)^{\mathsf T}d$ for all $x$.
+\item Let $\Pi$ be the orthogonal projection onto the range of $M$
+($\Pi=0$ if $M=0$) and $w=-(I-\Pi)\nabla f(0)$. Then $\Pi$ and $w$ are
+rational and computable in polynomial time, and
+\[
+ f(x)=f(\Pi x)-w^{\mathsf T}x\quad(x\in\R^n),\qquad g=\Pi g-w .
+\]
+\item Let $Q_M$ be a positive integer with $Q_MM$ integral, let
+$C_M\ge1$ bound the entries of $Q_MM$, and put
+$\mu_0=1/(\kappa_DQ_M(nC_M)^{n-1})$. Then
+$x^{\mathsf T}Mx/\kappa_D\ge\mu_0\norm{\Pi x}^2$ for all $x$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+(a) Fix $a,x$ and let
+$h(t)=f(a+t(x-a))-f(a)-t\nabla f(a)^{\mathsf T}(x-a)$. It has degree at
+most $D$. By global convexity $h\ge0$ on $\R$, $h(0)=0$, and $h$ is convex,
+so $0\le h(t)\le th(1)\le h(1)$ on $[0,1]$. Since
+$h''(0)=(x-a)^{\mathsf T}\nabla^2f(a)(x-a)$,
+Lemma~\ref{lem:points-interp}(c) gives
+\[
+ f(x)\ge f(a)+\nabla f(a)^{\mathsf T}(x-a)+
+ \frac1{\kappa_D}(x-a)^{\mathsf T}\nabla^2f(a)(x-a).
+\]
+Expanding the right side in powers of $x$ and integrating over $a$ gives
+the minorant. For computation, use the identities
+\[
+ (\nabla^2f(a)a)_i=\sum_\alpha f_\alpha\alpha_i(|\alpha|-1)a^{\alpha-e_i},
+ \qquad
+ a^{\mathsf T}\nabla^2f(a)a=\sum_\alpha f_\alpha|\alpha|(|\alpha|-1)a^\alpha,
+\]
+$\nabla f(a)^{\mathsf T}a=\sum_\alpha f_\alpha|\alpha|a^\alpha$, and
+$\int a^\gamma\,da=\prod_i(\gamma_i+1)^{-1}$. Thus
+\[
+ M_{ij}=\sum_\alpha f_\alpha\alpha_i(\alpha_j-\delta_{ij})
+ \!\int\! a^{\alpha-e_i-e_j}da,\quad
+ g_i=\sum_\alpha f_\alpha\alpha_i\Bigl(1-\frac{2(|\alpha|-1)}{\kappa_D}\Bigr)
+ \!\int\! a^{\alpha-e_i}da,
+\]
+and
+$m_0=\sum_\alpha f_\alpha\bigl(1-|\alpha|+|\alpha|(|\alpha|-1)/\kappa_D\bigr)
+\int a^\alpha da$, where terms with a negative exponent are omitted. Each
+entry is a sum of at most one term per input monomial, with denominators
+of $O(n\log(D+1)+D\log D)$ bits.
+
+(b) $M$ is an integral of positive semidefinite matrices. If
+$d^{\mathsf T}Md=0$, the continuous nonnegative polynomial
+$a\mapsto d^{\mathsf T}\nabla^2f(a)d$ has zero integral over the cube, so it
+vanishes on the cube and hence identically. Positive semidefiniteness gives
+$\nabla^2f(a)d=0$ for all $a$. The converse is immediate. For such $d$, the
+gradient of $x\mapsto\nabla f(x)^{\mathsf T}d$ is $\nabla^2f(x)d=0$.
+
+(c) A rational basis $E$ of the range of $M$ gives
+$\Pi=E(E^{\mathsf T}E)^{-1}E^{\mathsf T}$. Since $(I-\Pi)x\in\ker M$, part
+(b) gives
+\[
+ f(x)-f(\Pi x)=\int_0^1\nabla f\bigl(\Pi x+\theta(I-\Pi)x\bigr)^{\mathsf T}
+ (I-\Pi)x\,d\theta=\nabla f(0)^{\mathsf T}(I-\Pi)x=-w^{\mathsf T}x .
+\]
+Every $\nabla^2f(a)$ is symmetric and annihilates $\ker M$, so its range
+lies in the range of $M$ and $(I-\Pi)\nabla^2f(a)=0$. By (b),
+$(I-\Pi)\nabla f(a)=(I-\Pi)\nabla f(0)$. Applying $I-\Pi$ to the definition
+of $g$ gives $(I-\Pi)g=-w$.
+
+(d) This is Lemma~\ref{lem:points-integer-eigen}.
+\end{proof}
+
+The vector $w$ is the slope of $f$ along the common Hessian kernel. Kernel
+directions with $w^{\mathsf T}d\ne0$ are directions of linear change, not
+of invariance; part (c) records both.
+
+\begin{lemma}[Boundedness, attainment, and a radius]\label{lem:points-radius}
+Let $P\ne\emptyset$, let $a\in P$ be rational, and put $f_a=f(a)$. Consider
+the linear system
+\begin{equation}\label{eq:points-boundedness-lp}
+ w=A^{\mathsf T}\lambda+Mz,\qquad\lambda\ge0 .
+\end{equation}
+\begin{enumerate}[label=(\alph*)]
+\item If \eqref{eq:points-boundedness-lp} is infeasible, there is a
+rational $d$ with $Ad\le0$, $Md=0$, and $w^{\mathsf T}d=1$, and
+$f(a+td)=f_a-t$ for all $t\ge0$.
+\item If it is feasible, let $(\lambda,z)$ be a rational solution and put
+$v=Mz$, $\nu=\norm{\Pi g-v}_1$, and $\beta_0=m_0-\lambda^{\mathsf T}b$.
+Then
+\begin{equation}\label{eq:points-quotient}
+ f(x)\ge\beta_0-\nu\norm{\Pi x}+\mu_0\norm{\Pi x}^2\qquad(x\in P).
+\end{equation}
+With $r_*=1+(\nu+|f_a-\beta_0|+1)/\mu_0$ and
+$W_0=1+|\lambda^{\mathsf T}b|+\norm v_1r_*+|f(0)|+\norm{\nabla f(0)}_1r_*+
+|f_a|$, every $x\in P$ with $f(x)\le f_a$ satisfies $\norm{\Pi x}\le r_*$
+and $|w^{\mathsf T}x|\le W_0$.
+\item In case (b), let $J=\binom{M}{w^{\mathsf T}}$, let $Q_J$ be a
+positive integer with $Q_JJ$ integral, let $A_Z$ be obtained from $A$ by
+multiplying each row by the least positive integer that makes it integral,
+let $C\ge1$ bound the entries of $Q_JJ$ and $A_Z$, let
+$m_1=\max_{ij}|M_{ij}|$, and put
+\[
+ R=1+\norm a_1+(nC)^{n-1}Q_J\bigl(\norm{Ja}_1+n^2m_1r_*+W_0\bigr).
+\]
+Every $y\in P$ with $f(y)\le f_a$ has a point $y'\in P$ with $f(y')=f(y)$
+and $\norm{y'}<R$. Consequently $f$ attains its infimum on $P$, the optimal
+set $S$ is nonempty, closed, and convex, and its minimum-norm point $p$
+satisfies $\norm p<R$.
+\item All quantities above are rational and computable in time polynomial
+in $L,D$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+(a) By Farkas' lemma, infeasibility gives $d$ with $Ad\le0$, $Md=0$, and
+$w^{\mathsf T}d>0$; a linear program finds one with $w^{\mathsf T}d=1$. Then
+$a+td\in P$ for $t\ge0$, $\Pi d=0$, and Lemma~\ref{lem:points-minorant}(c)
+gives $f(a+td)=f(\Pi a)-w^{\mathsf T}a-t=f_a-t$.
+
+(b) For $x\in P$, $\lambda\ge0$ and $Ax\le b$ give
+$w^{\mathsf T}x=\lambda^{\mathsf T}Ax+z^{\mathsf T}Mx\le
+\lambda^{\mathsf T}b+v^{\mathsf T}\Pi x$, because $v$ lies in the range of
+$M$. By Lemma~\ref{lem:points-minorant},
+\[
+ f(x)\ge m_0+(\Pi g)^{\mathsf T}\Pi x-w^{\mathsf T}x+\mu_0\norm{\Pi x}^2
+ \ge\beta_0+(\Pi g-v)^{\mathsf T}\Pi x+\mu_0\norm{\Pi x}^2 ,
+\]
+and $|(\Pi g-v)^{\mathsf T}\Pi x|\le\nu\norm{\Pi x}$. This proves
+\eqref{eq:points-quotient}. If $f(x)\le f_a$ and $\rho=\norm{\Pi x}>r_*$,
+then $\rho>1$ and $\mu_0\rho-\nu>|f_a-\beta_0|+1$, so
+$\mu_0\rho^2-\nu\rho>|f_a-\beta_0|+1>f_a-\beta_0$, contradicting
+\eqref{eq:points-quotient}. Hence $\norm{\Pi x}\le r_*$. The upper bound
+$w^{\mathsf T}x\le\lambda^{\mathsf T}b+\norm v_1r_*$ was shown above. For
+the lower bound, global convexity at $0$ and
+Lemma~\ref{lem:points-minorant}(c) give
+\[
+ w^{\mathsf T}x=f(\Pi x)-f(x)\ge f(0)+\nabla f(0)^{\mathsf T}\Pi x-f_a
+ \ge f(0)-\norm{\nabla f(0)}_1r_*-f_a .
+\]
+The constraints $Ax\le b$ alone give only the upper bound.
+
+(c) Let $y\in P$ with $f(y)\le f_a$. Since $My=M\Pi y$,
+$\norm{My}_1\le nm_1\norm{\Pi y}_1\le n^2m_1r_*$, and
+$\norm{Q_JJy}_1\le Q_J(n^2m_1r_*+W_0)$. The slice
+$Z_y=\{x\in P:Q_JJx=Q_JJy\}$ contains $y$. Apply
+Lemma~\ref{lem:integer-hoffman} with inequality matrix $A_Z$ and equality
+matrix $Q_JJ$, both integral, to the point $a\in P$. The projection $y'$ of
+$a$ onto $Z_y$ satisfies
+\[
+ \norm{y'}\le\norm a+(nC)^{n-1}\norm{Q_JJ(a-y)}<R .
+\]
+From $My'=My$ we get $y'-y\in\ker M$ and $\Pi y'=\Pi y$; with
+$w^{\mathsf T}y'=w^{\mathsf T}y$, Lemma~\ref{lem:points-minorant}(c) gives
+$f(y')=f(y)$.
+
+By (b), $f$ is bounded below on $P$. If $a$ is optimal, its own
+representative is $a$, of norm at most $\norm a_1<R$. Otherwise a minimizing
+sequence eventually lies in $\{f\le f_a\}$; replace it by representatives
+in the compact set $P\cap\{\norm x\le R\}$, extract a convergent
+subsequence, and use continuity. Either way $f$ attains its infimum at a
+point of norm less than $R$. The optimal set is a sublevel set of a convex
+continuous function on a closed convex set, so its minimum-norm point exists
+and has norm less than $R$. The argument does not assume attainment in
+order to construct $R$.
+
+(d) The point $a$, the system \eqref{eq:points-boundedness-lp}, and its
+solution or Farkas certificate come from linear programs of polynomial size.
+Lemma~\ref{lem:points-minorant} supplies $M,g,m_0,\Pi,w,\mu_0$. The values
+$f_a$, $f(0)$, $\nabla f(0)$ and all products in $r_*,W_0,R$ have
+polynomial encoding length; the power $(nC)^{n-1}$ has
+$(n-1)\log_2(nC)$ bits.
+\end{proof}
+
+\begin{lemma}[Global error modulus]\label{lem:points-error}
+Assume that $S\ne\emptyset$ and that its minimum-norm point $p$ satisfies
+$\norm p\le R$ for a rational $R\ge1$. Let
+$\mathcal E=\{\alpha-e_i:f_\alpha\ne0,\ \alpha_i>0\}$ and define
+$N\in\Q^{\mathcal E\times n}$ by
+\[
+ N_{\gamma,i}=(\gamma_i+1)f_{\gamma+e_i},
+\]
+where $f_{\gamma+e_i}=0$ if $\gamma+e_i$ is not an exponent of $f$. Let
+$Q_N$ be a positive integer with $Q_NN$ integral, let $C_N\ge1$ bound the
+entries of $Q_NN$ and $A_Z$, let $k_N=\max\{1,|\mathcal E|\}$, and put
+\[
+ V_f=\sum_\alpha|f_\alpha|(R+2)^{|\alpha|},\quad
+ G_f=\sum_{|\alpha|\ge1}|f_\alpha||\alpha|(R+2)^{|\alpha|-1},\quad
+ h_f=\max\{1,2V_f+2G_f(R+1)\},
+\]
+\[
+ C_*=1+c_1(D)\bigl(h_f+3^Dc_0(D)\bigr),\qquad
+ \Gamma=\max\bigl\{1,(nC_N)^{n-1}Q_Nk_N\beta_{D-1}^nC_*\bigr\}.
+\]
+Then $S=\{x\in P:Nx=Np\}$ and
+\[
+ \dist(x,S)\le\Gamma\bigl(f(x)-f_*\bigr)^{1/D}\qquad
+ (x\in P,\ f(x)-f_*\le1).
+\]
+The number $\Gamma$ is computable in time polynomial in $L,D,\langle R\rangle$.
+\end{lemma}
+
+\begin{proof}
+\emph{Coefficient rows.} For every $d$ and $z$,
+\[
+ \nabla f(z)^{\mathsf T}d=\sum_i d_i\sum_{\alpha_i>0}\alpha_if_\alpha
+ z^{\alpha-e_i}=\sum_{\gamma\in\mathcal E}(Nd)_\gamma z^\gamma ,
+\]
+and distinct $\gamma$ give distinct monomials. Hence $Nd=0$ if and only if
+$\nabla f(z)^{\mathsf T}d=0$ for all $z$, that is, if and only if
+$f(z+\theta d)=f(z)$ for all $z$ and all real $\theta$.
+
+\emph{A Bregman estimate.} Fix $x\in P$ with
+$E=f(x)-f_*\in[0,1]$, put $d=x-p$, and let
+\[
+ h(u)=f(p+u)-f(p)-\nabla f(p)^{\mathsf T}u .
+\]
+Global convexity makes $h$ convex and nonnegative on $\R^n$. Optimality of
+$p$ over $P$ gives $\nabla f(p)^{\mathsf T}d\ge0$, and convexity gives
+$\nabla f(p)^{\mathsf T}d\le E$. For $0\le\theta\le1$,
+\[
+ 0\le h(\theta d)\le f(p+\theta d)-f_*\le\theta E\le E .
+\]
+The polynomial $\theta\mapsto h(\theta d)$ has degree at most $D$, so
+Lemma~\ref{lem:points-interp}(a) gives
+$h(2\theta d)\le c_0(D)(1+2|\theta|)^DE$ for every real $\theta$.
+
+Let $c\in[0,1]^n$ and $\pi_c(\theta)=h(c-p+\theta d)$. Since
+$c-p+\theta d$ is the midpoint of $2(c-p)$ and $2\theta d$, convexity of $h$
+gives
+\begin{equation}\label{eq:points-midpoint}
+ 0\le\pi_c(\theta)\le\tfrac12h(2(c-p))+\tfrac12h(2\theta d).
+\end{equation}
+The points $p$ and $2c-p$ lie in the box of radius $R+2$, and
+$\norm{c-p}_\infty\le R+1$. For $\norm y_\infty\le R+2$ every monomial
+satisfies $|y^\alpha|\le(R+2)^{|\alpha|}$ and
+$\sum_i|\partial_iy^\alpha|\le|\alpha|(R+2)^{|\alpha|-1}$, so $|f(y)|\le V_f$
+and $\norm{\nabla f(y)}_1\le G_f$. Hence
+\[
+ h(2(c-p))\le|f(2c-p)|+|f(p)|+2\norm{\nabla f(p)}_1\norm{c-p}_\infty\le h_f .
+\]
+Only the norm of $p$ enters here; the point $x$ may be arbitrarily far
+away.
+
+If $E>0$, then on $0\le\theta\le E^{-1/D}$ we have
+$E(1+2\theta)^D\le E(3E^{-1/D})^D=3^D$, so
+$0\le\pi_c\le h_f+3^Dc_0(D)$ there. Lemma~\ref{lem:points-interp}(b) with
+$\varrho=E^{-1/D}$ gives
+$|\pi_c'(0)|\le c_1(D)(h_f+3^Dc_0(D))E^{1/D}$. Since
+$\pi_c'(0)=(\nabla f(c)-\nabla f(p))^{\mathsf T}d$ and
+$E\le E^{1/D}$,
+\begin{equation}\label{eq:points-gradient-residual}
+ |\nabla f(c)^{\mathsf T}d|\le C_*E^{1/D}\qquad(c\in[0,1]^n).
+\end{equation}
+If $E=0$, then $h(\theta d)=0$ on $[0,1]$, so this polynomial vanishes
+identically, and \eqref{eq:points-midpoint} bounds $\pi_c$ on the whole real
+line. A bounded polynomial is constant, so $\pi_c'(0)=0$; also
+$\nabla f(p)^{\mathsf T}d=0$. Thus \eqref{eq:points-gradient-residual}
+holds with right side zero.
+
+\emph{From residuals to coefficients.} The polynomial
+$z\mapsto\nabla f(z)^{\mathsf T}d=\sum_\gamma(Nd)_\gamma z^\gamma$ has
+degree at most $D-1\ge1$ in each variable, and
+\eqref{eq:points-gradient-residual} bounds it on $[0,1]^n$.
+Lemma~\ref{lem:points-interp}(d) gives
+\[
+ |(N(x-p))_\gamma|\le\beta_{D-1}^nC_*E^{1/D}\qquad(\gamma\in\mathcal E).
+\]
+
+\emph{The optimal slice.} If $x\in S$, then $E=0$ and $N(x-p)=0$.
+Conversely, if $x\in P$ and $N(x-p)=0$, then $f(x)=f(p)$ by invariance, so
+$x\in S$. Hence $S=\{x\in P:Q_NNx=Q_NNp\}$. Apply
+Lemma~\ref{lem:integer-hoffman} with the integer matrices $A_Z$ and $Q_NN$:
+\[
+ \dist(x,S)\le(nC_N)^{n-1}\norm{Q_NN(x-p)}
+ \le(nC_N)^{n-1}Q_N\sqrt{k_N}\,\beta_{D-1}^nC_*E^{1/D}\le\Gamma E^{1/D}.
+\]
+If $\mathcal E$ is empty, $f$ is constant, $S=P$, and the bound is trivial.
+
+\emph{Complexity.} The matrix $N$ has at most $n$ times as many rows as $f$
+has monomials, and its entries are products of input coefficients and
+exponents. The numbers $V_f,G_f,h_f$ are sums of at most one term per
+monomial, each of $O(\langle f_\alpha\rangle+D\langle R\rangle)$ bits. The
+constants $c_0(D),c_1(D),3^D$ have $O(D\log(D+1))$ bits and
+$\beta_{D-1}^n$ has $O(nD\log(D+1))$ bits.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:global-point}]
+\emph{Part (a).} Decide emptiness of $P$ by linear programming. If
+$P\ne\emptyset$, compute a rational $a\in P$ and the data of
+Lemma~\ref{lem:points-minorant}, and solve
+\eqref{eq:points-boundedness-lp}. By Lemma~\ref{lem:points-radius}, the
+system is infeasible exactly when $f$ is unbounded below on $P$, and in that
+case the lemma supplies the certificate $(a,d)$.
+
+\emph{Part (b).} If \eqref{eq:points-boundedness-lp} is feasible,
+Lemma~\ref{lem:points-radius}(c) gives attainment and a rational $R$ with
+$\norm p<R$, and Lemma~\ref{lem:points-error} with this $R$ gives $\Gamma$.
+Both are computed in time polynomial in $L,D$, so $\log R$ and $\log\Gamma$
+are polynomial in $L,D$.
+
+\emph{Part (c).} Let $\varepsilon=2^{-q}$ and define $\tau$ by
+Lemma~\ref{lem:selector} with $d=D$ and the computed $R,\Gamma$. Then
+\[
+ \log_2(1/\tau)\le(2D-2)q+(3D-1)+D\log_2R+D\log_2\Gamma ,
+\]
+which is polynomial in $L,D,q$. By Lemma~\ref{lem:selector},
+$\norm{x_\tau}\le\norm p<R$, so $x_\tau$ lies in the bounded polytope
+$Q=P\cap[-R,R]^n$ and minimizes $f+\tau\norm{\cdot}^2$ over $Q$ as well.
+Apply Lemma~\ref{lem:convex-value} to $Q$, $\varrho=R$, the function
+$\varphi=f+\tau\norm{\cdot}^2$, and $\eta=\tau\varepsilon^2/4$. The
+evaluation and the bounds $W,G$ come from Lemma~\ref{lem:points-sparse} with
+$T=I$, $t=0$; the composition $f(x_0+Vu)$ inside
+Lemma~\ref{lem:convex-value} is evaluated, not expanded. The returned
+rational $x_q\in Q\subseteq P$ satisfies
+$\varphi(x_q)-\varphi(x_\tau)\le\eta$, hence $\norm{x_q-p}\le\varepsilon$.
+
+For a value enclosure of width $\delta=2^{-q_f}$, let
+$G_Q=\max\{1,\sum_{|\alpha|\ge1}|f_\alpha||\alpha|R^{|\alpha|-1}\}$, which
+bounds $\norm{\nabla f}$ on $[-R,R]^n$. Run the preceding procedure with
+accuracy $\varepsilon'=\min\{2^{-q},\delta/(2G_Q)\}$. The returned point
+$x_q$ is within $2^{-q}$ of $p$, and since the segment $[p,x_q]$ lies in $Q$,
+$f(x_q)-f_*\le G_Q\varepsilon'\le\delta/2$. Apply
+Lemma~\ref{lem:convex-value} to $f$ on $Q$ with $\eta=\delta/2$ to get
+$\ell\le\min_Qf$. Because $p\in Q$, $\min_Qf=f_*$. Thus
+$\ell\le f_*\le f(x_q)\le\ell+\delta$. The encoding lengths involved are
+polynomial in $L,D,q+q_f$.
+\end{proof}
+
+\begin{proof}[Proof of Corollary~\ref{cor:points-bounded}]
+For bounded $P\subseteq[-\varrho,\varrho]^n$, the function $f$ attains its
+minimum by compactness, and $R_x=\max\{1,n\varrho\}$ bounds the norm of every
+point of $P$. Lemma~\ref{lem:points-error} applies with $R=R_x$, without
+Lemmas~\ref{lem:points-minorant} and~\ref{lem:points-radius}. Every optimal
+point has norm at most $R_x$, so Lemma~\ref{lem:selector} holds with the
+factor $2$, and the proof of part (c) above applies with $Q=P$. For fixed
+$D$, every bound polynomial in $L,D,q$ is polynomial in $L+q$.
+\end{proof}
+
+\begin{proof}[Proof of the claim in Remark~\ref{rem:points-expansion}]
+Let $n=2r\ge4$, $f(y)=\sum_iy_i^{2r}$, and $U=I-\tfrac2n\mathbf1\mathbf1^{\mathsf
+T}$. Then $U^{\mathsf T}U=I-\tfrac4n\mathbf1\mathbf1^{\mathsf T}+
+\tfrac4{n^2}n\mathbf1\mathbf1^{\mathsf T}=I$, and every entry of $U$ is
+nonzero because $n\ge4$. For an exponent $\beta$ with $|\beta|=r$, the
+coefficient of $y^{2\beta}$ in $f(Uy)=\sum_i(\sum_jU_{ij}y_j)^{2r}$ is
+\[
+ \frac{(2r)!}{\prod_j(2\beta_j)!}\sum_i\prod_jU_{ij}^{2\beta_j}>0 ,
+\]
+a sum of positive terms. There are $\binom{3r-1}r\ge2^r$ such exponents,
+while $f$ has $n$ monomials of degree $2r$.
+\end{proof}
+
+\subsection{Proof of Theorem~\ref{thm:cubic-point}}\label{app:points-cubic}
+
+\begin{lemma}[Reflection]\label{lem:points-reflection}
+Let $H:\R^m\to\R^{m\times m}$ be an affine map into symmetric matrices, let
+$\Omega\subseteq\R^m$ be convex with $H(u)\succeq0$ for $u\in\Omega$, and let
+$c\in\Omega$ and $\theta\in(0,1]$ be such that $c-\theta(u-c)\in\Omega$ for
+every $u\in\Omega$. Then $0\preceq H(u)\preceq(1+\theta^{-1})H(c)$ for
+$u\in\Omega$; in particular $\ker H(c)\subseteq\ker H(u)$. If $\Omega$
+contains the ball of radius $r$ about $c$ and lies in the ball of radius
+$R\ge r$ about $c$, one can take $\theta=r/R$. If $\Omega$ is a box and $c$
+is its center, one can take $\theta=1$.
+\end{lemma}
+
+\begin{proof}
+With $u'=c-\theta(u-c)\in\Omega$ we have
+$c=\frac\theta{1+\theta}u+\frac1{1+\theta}u'$, so affinity gives
+$H(c)=\frac\theta{1+\theta}H(u)+\frac1{1+\theta}H(u')\succeq
+\frac\theta{1+\theta}H(u)$. If $H(c)d=0$, then $0\le d^{\mathsf T}H(u)d\le0$
+and positive semidefiniteness gives $H(u)d=0$. In the ball case,
+$\norm{u'-c}=\theta\norm{u-c}\le r$; in the box case $u'$ is the reflection
+of $u$ through the center.
+\end{proof}
+
+For a polynomial $\varphi$ of degree at most three write
+$H(u)=\nabla^2\varphi(u)$; it is affine in $u$. Let $\mathsf D^3\varphi$ be
+the constant, fully symmetric third derivative, so that
+$H(u)-H(v)=\mathsf D^3\varphi[u-v]$ and Taylor's formula is exact:
+\begin{equation}\label{eq:points-cubic-taylor}
+ \varphi(v+d)=\varphi(v)+\nabla\varphi(v)^{\mathsf T}d+\tfrac12d^{\mathsf
+ T}H(v)d+\tfrac16\mathsf D^3\varphi[d,d,d].
+\end{equation}
+
+\begin{proof}[Proof of Lemma~\ref{lem:points-cubic-transverse}]
+Put $a=d^{\mathsf T}H(v)d$ and $b=d^{\mathsf T}H(u)d$, both nonnegative.
+Since $b=a+\mathsf D^3\varphi[d,d,d]$, \eqref{eq:points-cubic-taylor} gives
+$E=\nabla\varphi(v)^{\mathsf T}d+(2a+b)/6$. First-order optimality of $v$
+over the convex set $\Omega$ gives $\nabla\varphi(v)^{\mathsf T}d\ge0$, so
+$\sigma=a+b\le6E$. Symmetry of $\mathsf D^3\varphi$ gives
+\[
+ d^{\mathsf T}H(c)d=a+\mathsf D^3\varphi[c-v,d,d]
+ =a+(c-v)^{\mathsf T}\bigl(H(u)-H(v)\bigr)d .
+\]
+For a positive semidefinite $Q$, $\norm{Qd}^2=d^{\mathsf T}Q^2d\le
+\norm Q\,d^{\mathsf T}Qd$. Hence $\norm{H(u)d}+\norm{H(v)d}\le
+\sqrt{\Lambda b}+\sqrt{\Lambda a}\le\sqrt{2\Lambda\sigma}$, and
+$|d^{\mathsf T}H(c)d|\le\sigma+\rho_1\sqrt{2\Lambda\sigma}$. Also
+$\sigma\le2\Lambda\rho_2^2$, so $\sigma\le\rho_2\sqrt{2\Lambda\sigma}$.
+Therefore $|d^{\mathsf T}H(c)d|\le(\rho_1+\rho_2)\sqrt{2\Lambda\sigma}$, and
+squaring with $\sigma\le6E$ proves the lemma.
+\end{proof}
+
+\begin{proof}[Proof of Lemma~\ref{lem:points-cubic-slice}]
+Let $\psi(u)=\varphi(u)-g_c^{\mathsf T}u$. For $u\in\Omega$ the segment from
+$c$ to $u$ lies in $\Omega$, and
+$\nabla\psi(u)=\int_0^1H(c+\theta(u-c))(u-c)\,d\theta$. Each $H$ on $\Omega$
+is symmetric and annihilates $K$, so $\nabla\psi(u)\in K^\perp$.
+
+Let $w$ minimize $\varphi$ over $\Omega$, put $d=w-v$, $a=d^{\mathsf
+T}H(v)d$, and $b=d^{\mathsf T}H(w)d$. Since $\varphi(w)=\varphi(v)$, the
+computation in the previous proof gives
+$0=\nabla\varphi(v)^{\mathsf T}d+(2a+b)/6$ with three nonnegative terms, so
+$a=b=0$ and $H(v)d=H(w)d=0$. The identity in the previous proof gives
+$d^{\mathsf T}H(c)d=0$, hence $H(c)d=0$ and $d\in K$. Then
+$\psi(w)-\psi(v)=\int_0^1\nabla\psi(v+\theta d)^{\mathsf T}d\,d\theta=0$
+and $0=\varphi(w)-\varphi(v)=g_c^{\mathsf T}d$. Conversely, if $w\in\Omega$,
+$H(c)(w-v)=0$, and $g_c^{\mathsf T}(w-v)=0$, then $w-v\in K$,
+$\psi(w)=\psi(v)$, and $\varphi(w)=\varphi(v)$.
+
+For the estimate, let $u\in\Omega$ and $d=u-v$. Since
+$\nabla\psi\in K^\perp$, $\nabla\psi^{\mathsf T}d=\nabla\psi^{\mathsf
+T}\Pi_Kd$, and the mean value bound on $[c,z]\subseteq\Omega$ gives
+$\norm{\nabla\psi(z)}=\norm{\nabla\varphi(z)-\nabla\varphi(c)}\le\Lambda
+R_\Omega$. Hence
+\[
+ |g_c^{\mathsf T}d|=\Bigl|\varphi(u)-\varphi(v)-\int_0^1\nabla\psi(v+\theta
+ d)^{\mathsf T}\Pi_Kd\,d\theta\Bigr|\le\varphi(u)-\varphi(v)+\Lambda
+ R_\Omega\norm{\Pi_Kd}. \qedhere
+\]
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:cubic-point}]
+\emph{Reduction.} Compute $\varrho=\max\{1,\max_j\max_{x\in P}|x_j|\}$ by
+$2n$ linear programs and apply Lemma~\ref{lem:points-relative}. If $m=0$,
+then $P=S=\{x_0\}$; take $\Gamma_P=1$ and output $x_0$. Otherwise let
+$\varphi(u)=f(x_0+Vu)$, a cubic in $u$, and $P'=\{Gu\le h\}$ with inner
+radius $r_0$ and outer bound $R_0$ about $0$. Convexity of $f$ on $P$ makes
+$\varphi$ convex on the full-dimensional set $P'$, so
+$H(u)=\nabla^2\varphi(u)=V^{\mathsf T}\nabla^2f(x_0+Vu)V\succeq0$ on the
+interior of $P'$ and, by continuity, on $P'$. This step needs the reduction:
+convexity on a lower-dimensional polytope does not make the ambient Hessian
+positive semidefinite. We never expand $\varphi$; only
+$H_c=H(0)=V^{\mathsf T}\nabla^2f(x_0)V$, $g_c=\nabla\varphi(0)=V^{\mathsf
+T}\nabla f(x_0)$, and evaluations of $f$ are used.
+
+\emph{Center Hessian.} Lemma~\ref{lem:points-reflection} with $c=0$ and
+$\theta=r_0/R_0$ gives $0\preceq H(u)\preceq\omega H_c$ on $P'$, where
+$\omega=1+R_0/r_0$, and $K=\ker H_c$ lies in every $\ker H(u)$, $u\in P'$.
+Put $\Lambda=\max\{1,\omega\max_i\sum_j|(H_c)_{ij}|\}$; then
+$\norm{H(u)}\le\Lambda$ on $P'$. Let $\Delta$ be a positive integer that
+clears the denominators of $H_c$, $g_c$, and $G$, let
+$C_*\ge1$ bound the entries of $T_Z=\Delta\binom{H_c}{g_c^{\mathsf T}}$ and
+$\Delta G$, and let $S'$ be the optimal set of $\varphi$ on $P'$, so that
+$S=x_0+VS'$ and $f(x_0+Vu)-f_*=\varphi(u)-\varphi_*$.
+
+\emph{Affine branch.} If $H_c=0$, then $H$ vanishes on the open set
+$\operatorname{int}P'$, hence everywhere, and $\varphi$ is affine with
+gradient $g_c$. If $g_c=0$, then $S'=P'$ and $\Gamma_P=1$ works. Otherwise
+$S'=\{u\in P':g_c^{\mathsf T}u=g_c^{\mathsf T}v\}$ for any $v\in S'$, and
+$\Delta g_c^{\mathsf T}(u-v)=\Delta E$ with $E=\varphi(u)-\varphi_*$.
+Lemma~\ref{lem:integer-hoffman} gives $\dist(u,S')\le(mC_*)^{m-1}\Delta E$,
+which is at most $(mC_*)^{m-1}\Delta E^{1/4}$ for $E\le1$.
+
+\emph{Curved branch.} Let $H_c\ne0$ have rank $r$. The product of its
+nonzero eigenvalues is the sum of its principal minors of order $r$, a
+positive rational with denominator dividing $\Delta^r$; so it is at least
+$\Delta^{-r}$. Each eigenvalue is at most $\norm{H_c}\le\Lambda$. Hence the
+least positive eigenvalue $\lambda$ satisfies
+$\lambda\ge\lambda_0=\Delta^{-m}\Lambda^{-(m-1)}$. Let $v\in S'$, $u\in P'$,
+$d=u-v$, and $E=\varphi(u)-\varphi(v)\le1$. With $\rho_1=R_0\ge\norm v$
+and $\rho_2=2R_0\ge\norm d$, Lemma~\ref{lem:points-cubic-transverse} gives
+\[
+ \lambda_0^2\norm{\Pi_Kd}^4\le(d^{\mathsf T}H_cd)^2\le108\Lambda R_0^2E,
+\]
+so $\norm{\Pi_Kd}\le\rho_TE^{1/4}$ with
+$\rho_T=\max\{1,108\Lambda R_0^2/\lambda_0^2\}$. By
+Lemma~\ref{lem:points-cubic-slice} with $\Omega=P'$, $c=0$, and
+$R_\Omega=R_0$, the optimal set is $S'=\{u\in P':T_Zu=T_Zv\}$, and
+$|g_c^{\mathsf T}d|\le E+\Lambda R_0\norm{\Pi_Kd}$. Since
+$H_cd=H_c\Pi_Kd$,
+\[
+ \norm{T_Zd}\le\Delta\bigl(\Lambda\norm{\Pi_Kd}+E+\Lambda
+ R_0\norm{\Pi_Kd}\bigr)\le\Delta\bigl(1+\Lambda(1+R_0)\rho_T\bigr)E^{1/4}.
+\]
+Lemma~\ref{lem:integer-hoffman}, applied to $P'$ with the integer matrices
+$\Delta G$ and $T_Z$, gives $\dist(u,S')\le\Gamma_uE^{1/4}$ with
+\[
+ \Gamma_u=(mC_*)^{m-1}\Delta\bigl(1+\Lambda(1+R_0)\rho_T\bigr).
+\]
+
+\emph{Original coordinates.} For $x=x_0+Vu\in P$,
+$\dist(x,S)\le\norm V\dist(u,S')$. Hence
+$\Gamma_P=\max\{1,\norm V_\triangle\}\Gamma_u$ (or the affine-branch
+constant multiplied by the same factor) satisfies the error bound. All
+quantities are rational, computed in polynomial time, and have polynomial
+encoding length.
+
+\emph{Output.} For a set approximation, apply Lemma~\ref{lem:convex-value} to
+$f$ on $P$ with $\eta=(2^{-q}/\Gamma_P)^4\le1$; the returned $\hat x$ has
+$\dist(\hat x,S)\le\Gamma_P\eta^{1/4}=2^{-q}$. For the fixed selector, let
+$R_x=\max\{1,n\varrho\}$, which bounds the norm of every point of $P$, and
+apply Lemma~\ref{lem:selector} with $d=4$, $\Gamma=\Gamma_P$, $R=R_x$, and the
+factor $2$:
+\[
+ \tau=\frac{\varepsilon^6}{1024R_x^4\Gamma_P^4},\qquad
+ \eta=\frac{\tau\varepsilon^2}4,\qquad\varepsilon=2^{-q}.
+\]
+Lemma~\ref{lem:convex-value}, applied to $f+\tau\norm x^2$ on $P$ in the
+original coordinates, returns $\hat x\in P$ with regularized gap at most
+$\eta$, hence $\norm{\hat x-p}\le\varepsilon$. The penalty is the original
+norm $\norm x^2=\norm{x_0+Vu}^2$, not $\norm u^2$; the latter would select
+a different optimizer in general. The encoding lengths of $\tau$ and $\eta$
+are $O(q)$ plus a polynomial in $L$.
+\end{proof}
+
+\subsection{Boundary constructions}\label{app:points-boundary}
+
+\paragraph{Treewidth.}
+Every objective below for which a treewidth bound is claimed is a sum of
+terms in at most three variables each. Every monomial of the expanded sum
+occurs in some term, so every edge of the interaction graph joins two
+variables of one term. Hence a tree of bags in which the variables of each
+term lie together in some bag, and each variable occurs in a connected set of
+bags, is a tree decomposition of the interaction graph; bags of at most three
+variables give treewidth at most two.
+
+\paragraph{Two generic devices.}
+The reductions combine a strongly convex base problem with a one-sided
+sign test and a quartic amplifier.
+
+\begin{lemma}[Sign test]\label{lem:points-sign-test}
+Let $Y\subseteq\R^k$ be a box and $\Phi$ a polynomial with
+$\nabla^2\Phi\succeq\kappa I$ on $Y$ for some $\kappa\ge1/8$, and let $y^0$ be
+its minimizer over $Y$. Let $\zeta(y)=\sigma^{\mathsf T}y+\sigma_0$ be affine
+with $\norm\sigma\le1$ and $|\zeta|\le2$ on $Y$. Put $\epsilon_0=1/32$ and
+\[
+ H(y,\theta)=\Phi(y)+\theta^2+\epsilon_0\theta\zeta(y)\qquad
+ \text{on }Y\times[0,1].
+\]
+Then $\nabla^2H\succeq\tfrac1{16}I$ on $Y\times[0,1]$, so $H$ has a unique
+minimizer $(y^*,\theta^*)$. If $\zeta(y^0)\ge0$, then $(y^*,\theta^*)=(y^0,0)$;
+if $\zeta(y^0)<0$, then $0<\theta^*<1$.
+\end{lemma}
+
+\begin{proof}
+The Hessian of $\Phi(y)+\theta^2$ is at least $\min\{\kappa,2\}I\succeq
+\tfrac18I$, and the Hessian of $\epsilon_0\theta\zeta(y)$ has spectral norm
+$\epsilon_0\norm\sigma\le\tfrac1{32}$. On the face $\theta=0$, $H=\Phi$, with
+the unique minimizer $y^0$. At $(y^0,0)$ the partial derivatives in $y$ equal
+$\nabla\Phi(y^0)$, which satisfies the first-order condition for $\Phi$ on
+$Y$, and $\partial_\theta H=\epsilon_0\zeta(y^0)$. If $\zeta(y^0)\ge0$, the
+point satisfies the first-order condition on $Y\times[0,1]$ and is the
+minimizer by convexity. If $\zeta(y^0)<0$, the direction $+e_\theta$ is a
+feasible descent direction at $(y^0,0)$, and no other point of the face
+$\theta=0$ can be optimal, since its restriction has only the minimizer
+$y^0$; so $\theta^*>0$. At $\theta=1$,
+$\partial_\theta H\ge2-2\epsilon_0>0$, which excludes $\theta^*=1$.
+\end{proof}
+
+\begin{lemma}[Quartic amplifiers]\label{lem:points-amplifier}
+Let $\eta_0=1/192$.
+\begin{enumerate}[label=(\alph*)]
+\item Let $H$ be a polynomial on a box $Z$ with $\nabla^2H\succeq\frac1{16}I$
+on $Z$, unique minimizer $z^*$, and a distinguished coordinate
+$\theta\in[0,1]$. Then $F'(z,y)=H(z)+\eta_0\theta^2(y-1)^2$ is convex on
+$Z\times[0,1]$, and its optimal set is $\{z^*\}\times[0,1]$ if $\theta^*=0$
+and $\{(z^*,1)\}$ if $\theta^*>0$.
+\item Let $H_\pm$ be polynomials on boxes $Z_\pm$ with Hessians at least
+$\frac1{16}I$, unique minimizers $z_\pm^*$, and distinguished coordinates
+$\theta_\pm\in[0,1]$, such that exactly one of $\theta_+^*,\theta_-^*$ is
+positive. Then
+\[
+ F(z_+,z_-,y)=H_+(z_+)+H_-(z_-)+\eta_0\bigl[\theta_+^2(y-1)^2+
+ \theta_-^2y^2\bigr]
+\]
+is convex on $Z_+\times Z_-\times[0,1]$ and has a unique minimizer, whose
+$y$-coordinate is $1$ if $\theta_+^*>0$ and $0$ if $\theta_-^*>0$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+For real $\theta,y,\gamma$ and a direction $(\pi,\varsigma)$ in
+$(\theta,y)$,
+\begin{equation}\label{eq:points-amplifier-identity}
+ \frac{d^2}{dt^2}\Bigl[(\theta+t\pi)^2(y+t\varsigma-\gamma)^2\Bigr]_{t=0}
+ =2\bigl(\theta\varsigma+2(y-\gamma)\pi\bigr)^2-6(y-\gamma)^2\pi^2 ,
+\end{equation}
+as direct expansion shows. For $y\in[0,1]$ and $\gamma\in\{0,1\}$ the
+negative term is at least $-6\pi^2$. Multiplied by $\eta_0$, it is at least
+$-\frac1{32}\pi^2$, which the base Hessian absorbs; in (b) the two losses
+affect the distinct coordinates $\theta_+$ and $\theta_-$. Hence the Hessian
+quadratic form is at least $\frac1{32}$ times the squared norm of the base
+part of the direction, with no division by $\theta$. This proves convexity,
+including where the amplitudes vanish.
+
+(a) Since $F'\ge H\ge H(z^*)$, a point is optimal exactly when $z=z^*$ and
+$\theta^{*2}(y-1)^2=0$, and $y=1$ always attains the bound.
+
+(b) $F$ is at least the sum of the two base minima. If $\theta_+^*>0$ and
+$\theta_-^*=0$, the point $(z_+^*,z_-^*,1)$ attains this sum; if
+$\theta_-^*>0$ and $\theta_+^*=0$, the point $(z_+^*,z_-^*,0)$ does. Every
+optimal point must attain both base minima, hence equal $z_\pm^*$ in those
+coordinates, and must make both added terms vanish, which fixes $y$.
+\end{proof}
+
+At the minimizer in (b) the curvature in the $y$ direction is
+$2\eta_0\bigl((\theta_+^*)^2+(\theta_-^*)^2\bigr)$. It is positive but can be
+extremely small; the amplifier transfers a tiny amplitude into an order-one
+coordinate without a usable growth constant.
+
+\paragraph{Square Root Sum.}
+An instance consists of positive integers $a_1,\ldots,a_n$ and an integer
+$B$; the question is whether $\sum_i\sqrt{a_i}\le B$. If $B<0$ the answer is
+no.
+
+\begin{lemma}[Averaging tree]\label{lem:points-tree}
+For a Square Root Sum instance with $B\ge0$, compute powers of two $R_i$
+with $R_i^2\le a_i<4R_i^2$, and put $c_i=a_i/R_i^2\in[1,4)$,
+$M_0=\max_iR_i$, $w_i=R_i/M_0\in(0,1]$, and let $K$ be the least power of
+two with $K\ge\max\{2,n\}$. Take a complete binary tree with $K$ leaf
+slots. Each real leaf $i\le n$ has a variable $u_i\in[1,2]$ and signal
+$w_iu_i$; padded leaves have signal $0$. Each internal node $\nu$ has a
+variable $v_\nu\in[0,2]$, its own signal $v_\nu$, and residual
+$\varsigma_\nu=v_\nu-\frac12(\text{left signal}+\text{right signal})$. Let
+$s$ be the root variable and
+\[
+ F_0(u,v)=\sum_{i=1}^n\bigl(u_i^3/3-c_iu_i\bigr)+\sum_\nu\varsigma_\nu^2
+\]
+on the box $Y$ of these variables. Then $\nabla^2F_0\succeq\frac18I$ on $Y$,
+and the unique minimizer has root value $s^0=\sum_i\sqrt{a_i}/(KM_0)\in[0,2]$.
+The construction takes polynomial time; all coefficients and box widths are
+bounded by absolute constants; and the bags
+$\{v_\nu\}\cup\{\text{variable children of }\nu\}$, joined along the tree,
+form a tree decomposition with bags of size at most three.
+\end{lemma}
+
+\begin{proof}
+The leaf term has derivative $u_i^2-c_i$ and is minimized on $[1,2]$ at
+$u_i=\sqrt{c_i}\in[1,2)$. Setting internal variables to the averages of
+their children's signals makes every residual zero and keeps them in
+$[0,2]$. This point minimizes every summand, and its root is the average of
+the $K$ leaf signals,
+$\frac1K\sum_iw_i\sqrt{c_i}=\sum_i\sqrt{a_i}/(KM_0)$.
+
+For the Hessian, order the variables and write the residuals as the rows of
+$(I-P)$ applied to a direction $d$: the row of a leaf variable is the
+identity row, and the row of an internal variable subtracts half of each
+variable child's coefficient ($w_i$ for a leaf, $1$ for an internal node).
+Every variable is a child of at most one parent, so distinct rows of $P$
+have disjoint supports and $PP^{\mathsf T}$ is diagonal with entries at most
+$2\cdot\frac14$. Thus $\norm P\le1/\sqrt2<\frac34$. Since $2u_i\ge2$,
+\[
+ d^{\mathsf T}\nabla^2F_0d\ge2\sum_id_{u_i}^2+2\sum_\nu(\text{residual
+ row of }d)^2=2\norm{(I-P)d}^2\ge2\cdot\tfrac1{16}\norm d^2 .
+\]
+For the decomposition, a leaf variable occurs only in its parent's bag,
+which also covers its unary term; adjacent bags share the child internal
+variable; every residual lies in its own bag. The normalization uses
+integer square roots of bounded size and binary arithmetic on numbers of
+polynomial length, and the tree has fewer than $4n+4$ nodes. Coefficients
+are bounded because $c_i<4$, $w_i\le1$, and every residual has coefficients
+in $[-1,1]$.
+\end{proof}
+
+\begin{lemma}[Integral radical sums]\label{lem:points-trace}
+If positive integers $a_1,\ldots,a_n$ satisfy $\sum_i\sqrt{a_i}\in\Z$, then
+every $a_i$ is a perfect square.
+\end{lemma}
+
+\begin{proof}
+Let $\mathcal F=\Q(\sqrt{a_1},\ldots,\sqrt{a_n})$, a number field, and let
+$\operatorname{Tr}=\operatorname{Tr}_{\mathcal F/\Q}$. If $a_i$ is not a
+square, $\Q(\sqrt{a_i})$ has degree two and
+$\operatorname{Tr}_{\Q(\sqrt{a_i})/\Q}(\sqrt{a_i})=0$, so transitivity of the
+trace gives $\operatorname{Tr}(\sqrt{a_i})=[\mathcal
+F:\Q(\sqrt{a_i})]\cdot0=0$. A rational number $z$ has
+$\operatorname{Tr}(z)=[\mathcal F:\Q]z$. Applying the trace to
+$\sum_i\sqrt{a_i}=B'\in\Z$ gives $\sum_{a_i\text{ square}}\sqrt{a_i}=B'$, and
+subtracting, the sum of the positive numbers $\sqrt{a_i}$ over the
+nonsquares is zero. So there are no nonsquares.
+\end{proof}
+
+The field $\mathcal F$ appears only in the proof. The reduction tests squareness by
+integer square roots.
+
+\begin{proof}[Proof of Proposition~\ref{prop:points-active}]
+If $B<0$, answer no. If $B\ge2KM_0$, answer yes, since $s^0\le2$ gives
+$\sum_i\sqrt{a_i}=KM_0s^0\le B$. Otherwise $b=B/(KM_0)\in[0,2)$. Apply
+Lemma~\ref{lem:points-sign-test} to $\Phi=F_0$ of Lemma~\ref{lem:points-tree}
+with $\zeta=b-s$, and let $F=H$. Then $\nabla^2F\succeq\frac1{16}I$, and the
+distinguished coordinate $\theta$ satisfies $\theta^*=0$ exactly when
+$b\ge s^0$, that is, when $\sum_i\sqrt{a_i}\le B$, including equality;
+otherwise $0<\theta^*<1$. The polynomial $F$ is a cubic without constant
+term, with coefficients bounded by an absolute constant. Its diagonal
+Hessian entries are at most $4+\frac12$ for leaf variables, $2+\frac12$ for
+internal variables, and $2$ for $\theta$. Adding the bag $\{s,\theta\}$ at
+the root keeps bags of size at most three, so the interaction graph has
+treewidth at most two. Point approximation follows from strong convexity:
+Lemma~\ref{lem:convex-value} with $\eta=2^{-2q}/32$ returns a feasible point
+of gap at most $\eta$, and $F(z)-F_*\ge\frac1{32}\norm{z-z^*}^2$ gives
+distance at most $2^{-q}$.
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:points-selector}]
+Apply Lemma~\ref{lem:points-amplifier}(a) to the cubic $H=F$ of
+Proposition~\ref{prop:points-active}, with distinguished coordinate
+$\theta$, and a new coordinate $y\in[0,1]$. If $\sum_i\sqrt{a_i}\le B$, then
+$\theta^*=0$ and $S=\{z^*\}\times[0,1]$, whose minimum-norm point has $y=0$;
+otherwise $S=\{(z^*,1)\}$. The point $(z^*,1)$ is optimal in both cases, and
+a rational point within $2^{-q}$ of it is obtained by approximating $z^*$ as
+in the proof of Proposition~\ref{prop:points-active} and appending $y=1$.
+The new term has scope $\{\theta,y\}$; attaching the bag $\{\theta,y\}$ to
+the bag $\{s,\theta\}$ keeps the treewidth at most two. Its coefficients are
+bounded.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:points-quartic-lower}(a)]
+Handle $B<0$ and $B\ge2KM_0$ as above, and decide the instance by integer
+arithmetic if every $a_i$ is a perfect square. Otherwise
+Lemma~\ref{lem:points-trace} shows $\sum_i\sqrt{a_i}\ne B$, so $s^0\ne b$.
+Build two independent copies of $F_0$ with root variables $s_\pm$, and apply
+Lemma~\ref{lem:points-sign-test} with $\zeta_+=b-s_+$ and $\zeta_-=s_--b$.
+The resulting $H_\pm$ have Hessians at least $\frac1{16}I$, and
+\[
+ \theta_+^*>0\iff s^0>b,\qquad\theta_-^*>0\iff s^0<b .
+\]
+Exactly one amplitude is positive. Lemma~\ref{lem:points-amplifier}(b)
+gives a quartic $F$, convex on its box, with a unique minimizer whose
+$y$-coordinate is $1$ if $\sum_i\sqrt{a_i}>B$ and $0$ if
+$\sum_i\sqrt{a_i}<B$.
+
+For the structural claims, take the two tree decompositions with their
+root bags $\{s_\pm,\theta_\pm\}$, add the bags $\{\theta_+,y\}$ and
+$\{\theta_-,y\}$ attached to $\{s_+,\theta_+\}$ and $\{s_-,\theta_-\}$, and
+join the two new bags. This is a tree decomposition with bags of size at
+most three; $y$ occurs in two adjacent bags. Before rescaling, the diagonal
+Hessian entries are at most $5$: the amplifier adds at most $2\eta_0$ to the
+$\theta_\pm$ entries and contributes $2\eta_0(\theta_+^2+\theta_-^2)$ to the
+$y$ entry. The coordinate intervals have width at most two; the affine maps
+onto $[0,1]$ preserve degrees and factor scopes and multiply diagonal Hessian
+entries by at most four, giving the bound $20$. Each factor (leaf term,
+residual square, $\theta^2$, sign test, amplifier) has degree at most four,
+at most three variables, and bounded coefficients after the substitution,
+and each variable lies in at most three factors. Hence every nonconstant
+monomial of the expanded polynomial has a coefficient bounded by an
+absolute constant. The constant term is a sum over all factors and need not
+be bounded; deleting it does not change the minimizer.
+\end{proof}
+
+\paragraph{$\PosSLP$.}
+A straight-line program uses the constants $0$ and $1$ and the operations
+$+,-,\times$ on earlier results; its output is an integer $A$, and $\PosSLP$
+asks whether $A>0$ \citep{AllenderEtAl2009}.
+
+\begin{lemma}[A strongly convex gate objective]\label{lem:points-gates}
+From a straight-line program with output $A$ one computes in polynomial time
+a rational quartic $\mathcal G$ on the box $[-\frac14,\frac14]^N$ with
+$\nabla^2\mathcal G\succeq I$ there, whose unique minimizer $x^*$ has last
+coordinate $t^*$ with $t^*>0$ if $A>0$ and $t^*<0$ if $A\le0$. The number
+$N$ is linear in the program length, and the exact values of the gates are
+never written.
+\end{lemma}
+
+\begin{proof}
+Represent each gate value $\alpha$ by a pair $(u,v)$ with $v>0$ and
+$u/v=\alpha$: the constants $0$ and $1$ by $(0,\frac14)$ and
+$(\frac14,\frac14)$, a sum or difference of $(u_1,v_1)$ and $(u_2,v_2)$ by
+$\bigl((u_1v_2\pm u_2v_1)/4,\ v_1v_2/4\bigr)$, and a product by
+$\bigl(u_1u_2/4,\ v_1v_2/4\bigr)$. These preserve the ratios and the
+positivity of $v$, and all entries stay in $[-\frac14,\frac14]$. For the
+output pair $(u,v)$ add $t=(2u-v)/4=\frac v4(2A-1)$, which is nonzero and
+positive exactly when $A>0$.
+
+List the pair coordinates and $t$ in topological order as $x_1,\ldots,x_N$,
+with $x_i=p_i(x_1,\ldots,x_{i-1})$, where each $p_i$ is a constant, an affine
+function, or a quadratic with at most two monomials. On the whole box,
+repeated operands included,
+\[
+ |p_i|\le\tfrac14,\qquad\norm{\nabla p_i}_1\le1,\qquad
+ \norm{\nabla^2p_i}\le1 .
+\]
+Let $r_i=x_i-p_i$, $a_i=64^{N-i}$, and $\mathcal G=\sum_ia_ir_i^2$. The
+triangular system $r=0$ has the unique solution $x^*$ given by the exact gate
+values, so $\mathcal G\ge0=\mathcal G(x^*)$.
+
+Let $D_a=\diag(8^{N-i})$, let $L_p$ be the strictly lower
+triangular matrix with entries $\partial_jp_i$, and
+$\mathcal E=D_aL_pD_a^{-1}$, with entries $8^{j-i}\partial_jp_i$ for $j<i$.
+Row sums of $|\mathcal E|$ are at most $\frac18$ and column sums at most
+$\sum_{k\ge1}8^{-k}=\frac17$, so
+$\norm{\mathcal E}\le(1/56)^{1/2}<\frac14$. For a direction $h$,
+\[
+ 2\norm{D_a(I-L_p)h}^2=2\norm{(I-\mathcal E)D_ah}^2\ge\tfrac98\norm{D_ah}^2 .
+\]
+The remaining Hessian term is $-2\sum_ia_ir_ih^{\mathsf T}\nabla^2p_ih$.
+Since $|r_i|\le\frac12$ and $p_i$ depends only on earlier coordinates, it is
+at least
+\[
+ -\sum_ia_i\norm{h_{<i}}^2=-\sum_jh_j^2\sum_{i>j}a_i\ge-\tfrac1{63}\norm{D_ah}^2 .
+\]
+Thus $\nabla^2\mathcal G\succeq(\frac98-\frac1{63})D_a^2\succeq I$. The
+polynomial has $O(N)$ monomials and weights of $O(N)$ bits.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:points-quartic-lower}(b)]
+Take two copies of $\mathcal G$ with outputs $t_\pm$ and apply
+Lemma~\ref{lem:points-sign-test} with $\kappa=1$, $\zeta_+=-t_+$, and
+$\zeta_-=t_-$; here $|\zeta_\pm|\le\frac14$. Since $t^*\ne0$, exactly one of
+$\theta_+^*>0$ (when $A>0$) and $\theta_-^*>0$ (when $A\le0$) holds.
+Lemma~\ref{lem:points-amplifier}(b) gives a quartic, convex on its box, with
+a unique minimizer whose $y$-coordinate is $1$ if $A>0$ and $0$ if $A\le0$.
+
+Multiply the whole objective by $64^{-N}$. This preserves the minimizer and
+convexity. The gate weights become $64^{-i}$, and every squared residual has
+coefficients bounded by an absolute constant even when a monomial occurs in
+many residuals, because $\sum_i64^{-i}<\frac1{63}$; the remaining terms are
+bounded as well. The affine map from $[-\frac14,\frac14]$ to $[0,1]$ keeps
+these bounds, including that of the constant term. The encoding length is
+polynomial; the weights have $O(N)$ bits, so bounded magnitude does not mean
+bounded bit length. No treewidth bound is claimed.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:points-quartic-lower}(c)]
+Given a source instance, run the reduction. If it answers directly, stop.
+Otherwise query the point algorithm for a point $\hat z$ with
+$\norm{\hat z-z^*}\le\frac14$ and answer according to whether the designated
+coordinate of $\hat z$ exceeds $\frac12$; its true value is $0$ or $1$.
+Feasibility of $\hat z$ is not used. The running time is polynomial if the
+point algorithm is. If the point algorithm is always correct and runs in
+expected polynomial time, so does the decision procedure.
+\end{proof}
+
+\paragraph{Regularization.}
+
+\begin{proof}[Proof of Proposition~\ref{prop:points-regularization}]
+Write $x_0=\frac12$ (a constant) and
+$G_n(x)=8\sum_{i=1}^nx_i^2-\sum_{i=1}^nx_{i-1}^2x_i$, so that the $i=1$ term
+is $-x_1/4$ and $F_n=G_n+x_n^2(y-1)^2$.
+
+(a) On $[0,1]^n$ the Hessian of $G_n$ is tridiagonal with diagonal entries
+$16-2x_{i+1}\ge14$ ($i<n$) and $16$ ($i=n$), and off-diagonal entries
+$-2x_i$ in positions $(i,i+1)$. Each absolute off-diagonal row sum is at
+most $4$, so $\nabla^2G_n\succeq10I$. For a direction $(\pi,\varsigma)$ in
+$(x,y)$, \eqref{eq:points-amplifier-identity} with $\gamma=1$ gives a Hessian
+form of at least $(10-6)\norm\pi^2\ge0$, so $F_n$ is convex on the box.
+
+Let $x^*$ minimize $G_n$ on $[0,1]^n$. At a lower bound $x_i=0$ the partial
+derivative is $-x_{i-1}^2$, negative once $x_{i-1}>0$; since $x_0=\frac12$,
+induction excludes all lower bounds. At an upper bound the derivative is at
+least $16-1-2>0$. Hence $x^*$ is interior and
+\[
+ x_i^*=\frac{(x_{i-1}^*)^2}{16-2x_{i+1}^*}\ (i<n),\qquad
+ x_n^*=\frac{(x_{n-1}^*)^2}{16}.
+\]
+So $0<x_i^*\le(x_{i-1}^*)^2/14$, and with $\omega_i=x_i^*/14$ we get
+$\omega_i\le\omega_{i-1}^2$, $\omega_0=\frac1{28}$, hence
+$x_n^*\le14\cdot28^{-2^n}\le2^{-2^{n+1}}$ for $n\ge1$. Since
+$F_n\ge G_n\ge G_n(x^*)$ with equality at $(x^*,1)$ and $x_n^*>0$, the
+point $(x^*,1)$ is the unique minimizer.
+
+(b) The point $(x^*,0)$ has gap $(x_n^*)^2\le2^{-2^{n+2}}$ and distance one.
+An error bound $\dist\le\Gamma\,\mathrm{gap}^\vartheta$ at this point gives
+$1\le\Gamma(x_n^*)^{2\vartheta}$, so $\log_2\Gamma\ge\vartheta2^{n+2}$.
+
+(c) For $\lambda>0$, the same boundary arguments show that the regularized
+minimizer has interior $x$-coordinates. Minimizing over $y$ for fixed $x$
+gives $y_\lambda=x_{n,\lambda}^2/(x_{n,\lambda}^2+\lambda)$, and stationarity
+in $x$ gives
+\[
+ x_{i,\lambda}=\frac{x_{i-1,\lambda}^2}{16+2\lambda-2x_{i+1,\lambda}}\
+ (i<n),\qquad
+ x_{n,\lambda}=\frac{x_{n-1,\lambda}^2}{16+2\lambda+2(1-y_\lambda)^2}.
+\]
+All denominators are at least $14$, so the bound of (a) applies:
+$x_{n,\lambda}\le2^{-2^{n+1}}$. If $y_\lambda\ge\frac12$ then
+$\lambda\le x_{n,\lambda}^2\le2^{-2^{n+2}}$. A positive rational
+$\lambda=p_\lambda/q_\lambda$ with this property has
+$q_\lambda\ge2^{2^{n+2}}$.
+
+(d) Optimality of $z_\lambda$ and $\norm z^2\le n+1$ on the box give
+$F_n(z_\lambda)-F_{n,*}\le(n+1)\lambda$. For the point problem,
+$F_n(x,1)=G_n(x)$, so $(x^*,1)$ is approximated by applying
+Lemma~\ref{lem:convex-value} to the $10$-strongly convex $G_n$ and appending
+$y=1$.
+\end{proof}
+
+\paragraph{Algebraic output on a conditioned path.}
+
+\begin{proof}[Proof of Proposition~\ref{prop:points-algebraic-output}]
+(a) The chain $a_n=1$, $a_i=\sqrt{a_{i+1}+2}$ stays in $[1,2)$ and makes
+every square in $\Psi_n$ vanish; conversely $\Psi_n=0$ forces $x_n=1$ and then the
+chain. For $x\in[1,2]^n$ and $e=x-a$ the residuals are
+\[
+ r_i=x_i^2-x_{i+1}-2=(x_i+a_i)e_i-e_{i+1}\ (i<n),\qquad r_n=e_n .
+\]
+Thus $r=D_r(I-P_r)e$ with $D_r=\diag(x_1+a_1,\ldots,
+x_{n-1}+a_{n-1},1)$ and $P_r=D_r^{-1}S_n$, where $S_n$ is the upper shift.
+Since $x_i+a_i\ge2$, $P_r$ is a nilpotent weighted shift with
+$\norm{P_r}\le\frac12$, so $\norm{(I-P_r)^{-1}}\le2$; also
+$\norm{D_r^{-1}}\le1$. Hence $\norm e\le2\norm r$ and
+$\Psi_n(x)=\norm r^2\ge\frac14\norm{x-a}^2$. The outgoing factor contributes
+$12x_i^2-4x_{i+1}-8\le36$ to $\partial_{ii}\Psi_n$ and the incoming factor
+contributes $2$, so $\partial_{ii}\Psi_n\le38$.
+
+(b) Let $\phi(t)=t^2-2$ and $P_k=\phi^{\circ k}-1$, $k=n-1$. Since
+$\phi(a_i)=a_{i+1}$, $P_k(a_1)=0$. Modulo $2$, $\phi(t)\equiv t^2$, so
+$P_k(t+1)\equiv(t+1)^{2^k}-1\equiv t^{2^k}$. Moreover $\phi(\pm1)=-1$ gives
+$P_k(1)=-2$. Hence $P_k(t+1)$ is monic, all its other coefficients are even,
+and its constant term is $-2$; Eisenstein's criterion at $2$ shows that it
+is irreducible, and so is $P_k$. Therefore $P_k$ is the minimal polynomial of
+$a_1$ and $[\Q(a_1):\Q]=2^{n-1}$.
+
+For the support, we show by induction that $\phi^{\circ k}$ ($k\ge1$) has a
+nonzero coefficient at every even power $t^{2j}$, $0\le j\le2^{k-1}$, with
+sign $(-1)^{2^{k-1}-j}$. This holds for $t^2-2$. If $\chi=\phi^{\circ k}$
+has this property, every product contributing to the coefficient of
+$t^{2J}$ in $\chi^2$ has sign $(-1)^{2^k-J}$, so these coefficients are
+nonzero with that sign. The constant coefficient of $\chi$ is
+$\phi^{\circ k}(0)\in\{-2,2\}$, so the constant coefficient of $\chi^2-2$ is
+$2$, which has the required sign. Finally the constant coefficient of $P_k$
+is $-3$ for $k=1$ and $1$ for $k\ge2$. Hence $P_k$ has exactly
+$2^{k-1}+1=2^{n-2}+1$ nonzero coefficients.
+
+(c) Let $\alpha_n=1$ and, for $i=n-1,\ldots,1$, let
+$\alpha_i=\lfloor2^8\sqrt{\alpha_{i+1}+2}\rfloor/2^8$, computed by an integer
+square root. With $e_i=|\alpha_i-a_i|$, we have $e_n=0$ and
+\[
+ e_i\le2^{-8}+\frac{e_{i+1}}{\sqrt{\alpha_{i+1}+2}+\sqrt{a_{i+1}+2}}
+ \le2^{-8}+\tfrac12e_{i+1},
+\]
+so $e_i\le2^{-7}$ by induction. Put $\ell_i=\max\{1,\alpha_i-2^{-6}\}$ and
+$u_i=\min\{2,\alpha_i+2^{-6}\}$. Then $a\in B=\prod_i[\ell_i,u_i]\subseteq
+[1,2]^n$, the endpoints have $O(1)$ bits, and $|x_i-a_i|\le3\cdot2^{-7}$
+for $x\in B$. Consequently $|r_i|\le4\cdot3\cdot2^{-7}+3\cdot2^{-7}=
+\frac{15}{128}$. The residual Jacobian is
+$J=\diag(2x_1,\ldots,2x_{n-1},1)-S_n$; as in (a),
+$\norm{J^{-1}}\le2$ because $x_i\ge1$. The exact Hessian is
+\[
+ \nabla^2\Psi_n=2J^{\mathsf T}J+4\diag(r_1,\ldots,r_{n-1},0)
+ \succeq\Bigl(\tfrac12-\tfrac{60}{128}\Bigr)I=\tfrac1{32}I
+\]
+on $B$.
+\end{proof}
+
+\paragraph{Rectangular certificates.}
+
+\begin{proof}[Proof of Proposition~\ref{prop:points-rectangle}]
+(a) The residuals are $\varrho_0=x_0-\frac14$ and
+$\varrho_i=x_i-\frac14x_{i-1}^2$. They vanish exactly at
+$a_0=\frac14$, $a_i=\frac14a_{i-1}^2$, which gives
+$a_i=2^{-(4\cdot2^i-2)}$, a point strictly inside $X=[0,\frac12]^{n+1}$; so
+$a$ is the unique minimizer, with value $0$. With $e=x-a$ the residuals are
+$\varrho=(I-P_\varrho)e$, where $P_\varrho$ is a lower shift with weights
+$(x_{i-1}+a_{i-1})/4\le\frac14$. Hence $\norm e\le\frac43\norm\varrho$ and
+$\Xi_n\ge\frac9{16}\norm{x-a}^2$. Direct differentiation gives
+$\partial_{ii}\Xi_n=2+\frac34x_i^2-x_{i+1}\le\frac{35}{16}$ for $i<n$ and
+$\partial_{nn}\Xi_n=2$. With the residual Jacobian $J$, which has unit diagonal
+and subdiagonal entries $-x_{i-1}/2\in[-\frac14,0]$, the exact Hessian is
+$2J^{\mathsf T}J-\diag(\varrho_1,\ldots,\varrho_n,0)$. Since
+$\norm{I-J}\le\frac14$ and $\varrho_i\le\frac12$ on $X$,
+$\nabla^2\Xi_n\succeq(2\cdot\frac9{16}-\frac12)I=\frac58I$.
+
+If a rectangle with rational endpoints contains $a$ and lies in
+$(0,\frac12)^{n+1}$, its lower endpoint in coordinate $n$ satisfies
+$0<\ell_n\le a_n=2^{-m}$ with $m=4\cdot2^n-2$. Writing $\ell_n=p_n/q_n$ with
+integers $p_n\ge1$, $q_n\ge1$ gives $q_n\ge2^m$.
+
+(b) Let $h(x)=x_n-\frac18x_{n-1}^2=\frac12(x_n+\varrho_n)$ and
+$\widetilde\Xi_n=\Xi_n+y^2+\frac14yh$ on $X\times[0,\frac12]$. Since $x_n,y\ge0$,
+$\frac14yh\ge\frac18y\varrho_n\ge-\frac1{16}(y^2+\varrho_n^2)$, and
+$\varrho_n^2\le\Xi_n$, so
+\[
+ \widetilde\Xi_n\ge\tfrac{15}{16}(\Xi_n+y^2)\ge\tfrac{135}{256}
+ \bigl(\norm{x-a}^2+y^2\bigr).
+\]
+Thus $(a,0)$ is the unique minimizer, with value $0$, and
+$\partial_y\widetilde\Xi_n(a,0)=\frac14h(a)=\frac18a_n>0$ because
+$a_{n-1}^2=4a_n$. The added term changes the diagonal only by
+$-\frac y{16}$ in coordinate $n-1$, and $\partial_{yy}\widetilde\Xi_n=2$. Its
+other Hessian entries are $-x_{n-1}/16$ in position $(n-1,y)$ and
+$\frac14$ in position $(n,y)$; the absolute row sums of this perturbation are
+at most $\frac9{32}$, so $\nabla^2\widetilde\Xi_n\succeq(\frac58-\frac9{32})I=
+\frac{11}{32}I$. Treewidth two follows from the path bags
+$\{x_{i-1},x_i\}$ and the extra bag $\{x_{n-1},x_n,y\}$.
+
+For a rectangle $\prod_i[\ell_i,u_i]\subseteq X$ containing $a$,
+$h$ is increasing in $x_n$ and decreasing in $x_{n-1}\ge0$, so the exact
+minimum of $\partial_y\widetilde\Xi_n(x,0)=\frac14h(x)$ over the rectangle is
+$\frac14(\ell_n-u_{n-1}^2/8)$, attained at a corner. If it is nonnegative,
+then $\ell_n\ge u_{n-1}^2/8\ge a_{n-1}^2/8=a_n/2>0$, while containment gives
+$\ell_n\le a_n=2^{-m}$. The denominator bound follows as in (a).
+
+(c) The recurrence $a_i=\frac14a_{i-1}^2$ is an arithmetic circuit of size
+$O(n)$. The map $T(x)=(\frac14,\frac14x_0^2,\ldots,\frac14x_{n-1}^2)$
+sends the closed box $X$ into itself and has Lipschitz constant at most
+$\frac14$ there, so the contraction principle on $X$ certifies the unique
+fixed point $a$, and $\Xi_n=\norm{x-T(x)}^2\ge0$ certifies optimality. In the
+second family, $\varrho_n(a)=0$ gives $h(a)=a_n/2>0$ symbolically, and the
+displayed lower bound certifies global optimality. Neither certificate
+requires a rectangle in the open box or a sign on a whole rectangle.
+\end{proof}

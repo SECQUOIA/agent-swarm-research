@@ -1,0 +1,915 @@
+% ---------------------------------------------------------------------------
+% Conditional recourse: local filtering, its limits, exact cut recourse,
+% core search, and exact output.  Self-contained fragment (no preamble).
+% Shared notation: X = prod X_i, X_i = [l_i,u_i] or [l_i,u_i] cap Z; F, \OPT=F^*;
+% L = upper coordinate curvature; g = growth; kappa = max{1,L/g}; p = bag size.
+% Citation keys not yet in references.bib: Hammer1965, PicardRatliff1975,
+% Topkis1978, Edmonds1970, BeierVocking2004, RoglinVocking2007.
+% ---------------------------------------------------------------------------
+
+\subsection{Conditional values and bag-cell bounds}\label{sec:cr-values}
+
+Throughout this part $B\subseteq\{1,\ldots,n\}$ is a nonempty set of
+coordinates, for example a bag of the tree decomposition or a supplied
+core, and $-B$ is its complement. Write
+$\widehat X_B=\prod_{i\in B}[l_i,u_i]$ for the continuous hull of $X_B$.
+As in the rest of the paper, $F$ is defined on the continuous hull of $X$
+and $L$ is a valid upper coordinate curvature there.
+
+\begin{definition}[Conditional value]\label{def:cr-W}
+For $v\in\widehat X_B$ put
+\[
+W_B(v)=\min\{F(v,x_{-B}) : x_{-B}\in X_{-B}\}.
+\]
+The minimum exists because $F$ is continuous and $X_{-B}$ is compact.
+Clearly $W_B(x_B)\le F(x)$ for $x\in X$, and $\min_{v\in X_B}W_B(v)=\OPT$.
+\end{definition}
+
+A \emph{bag cell} is a product $C=\prod_{i\in B}[a_i,b_i]$ with
+$a_i\le b_i$ and $a_i,b_i\in X_i$. Its \emph{corners} are the points $v$
+with $v_i\in\{a_i,b_i\}$; they are feasible bag values. Put
+\[
+e_B(C)=\frac L8\sum_{i\in B}w_i(C)^2,\qquad
+w_i(C)=\begin{cases}
+0,& i\in I_Z\text{ and }b_i-a_i=1,\\
+b_i-a_i,&\text{otherwise.}
+\end{cases}
+\]
+If every side of $C$ is at most $h$, then $e_B(C)\le|B|Lh^2/8$.
+
+\begin{lemma}[Conditional values inherit coordinate curvature]\label{lem:cr-semiconcave}
+For every $i\in B$ and every fixed $v_{B\setminus\{i\}}$, the function
+$t\mapsto W_B(v_{B\setminus\{i\}},t)-Lt^2/2$ is concave on $[l_i,u_i]$.
+\end{lemma}
+\begin{proof}
+Fix $x_{-B}\in X_{-B}$. The point $(v_{B\setminus\{i\}},t,x_{-B})$ lies in
+the continuous hull of $X$ for $t\in[l_i,u_i]$, so
+$t\mapsto F(v_{B\setminus\{i\}},t,x_{-B})-Lt^2/2$ is concave. The
+function in the statement is the pointwise minimum of these concave
+functions over the set $X_{-B}$, which does not depend on $t$. A pointwise
+infimum of concave functions is concave, because its hypograph is the
+intersection of their hypographs, and here it is finite.
+\end{proof}
+
+\begin{lemma}[Bag-cell interpolation]\label{lem:cr-cell}
+Let $C$ be a bag cell. Every $x\in X$ with $x_B\in C$ satisfies
+\[
+F(x)\ \ge\ \min_{v\text{ a corner of }C}W_B(v)-e_B(C).
+\]
+\end{lemma}
+\begin{proof}
+Put $\xi=x_B$. Let $(Y_i)_{i\in B}$ be independent, with $Y_i\in\{a_i,b_i\}$
+and $\E Y_i=\xi_i$ (and $Y_i=a_i$ if $a_i=b_i$). Then
+$\operatorname{Var}Y_i=(\xi_i-a_i)(b_i-\xi_i)\le(b_i-a_i)^2/4$. If $i$ is an
+integer coordinate with $b_i-a_i=1$, then $\xi_i\in\{a_i,b_i\}$ because
+$x$ is feasible, and $\operatorname{Var}Y_i=0$. Hence
+$\frac L2\sum_i\operatorname{Var}Y_i\le e_B(C)$.
+
+Order $B$ as $i_1,\ldots,i_r$, and let $Z^{(s)}$ be $\xi$ with its first $s$
+listed coordinates replaced by the corresponding $Y$'s. All $Z^{(s)}$ lie
+in $\widehat X_B$. Conditionally on $Y_{i_1},\ldots,Y_{i_{s-1}}$, the
+function $\varphi(t)=W_B(Z^{(s-1)}\text{ with coordinate }i_s\text{ set to }t)$
+has $\varphi(t)-Lt^2/2$ concave by Lemma~\ref{lem:cr-semiconcave}. Jensen's
+inequality for this concave function gives
+$\E\varphi(Y_{i_s})\le\varphi(\xi_{i_s})+\frac L2\operatorname{Var}Y_{i_s}$,
+that is,
+$\E[W_B(Z^{(s)})\mid Y_{i_1},\ldots,Y_{i_{s-1}}]
+\le W_B(Z^{(s-1)})+\frac L2\operatorname{Var}Y_{i_s}$.
+Taking expectations and summing over $s$ yields
+$\E W_B(Y)\le W_B(\xi)+e_B(C)$. Since $Y$ is a corner of $C$ almost surely,
+\[
+\min_{\text{corners}}W_B\le\E W_B(Y)\le W_B(\xi)+e_B(C)\le F(x)+e_B(C).
+\qedhere
+\]
+\end{proof}
+
+No coordinate outside $B$ is rounded, so the error $e_B(C)$ does not grow
+with $n$. The price is that $W_B$ is a global optimization problem over
+the original outside domain.
+
+\subsection{The conditional-recourse filter}\label{sec:cr-interface}
+
+\begin{theorem}[Conditional-recourse filter]\label{thm:cr-filter}
+Let $\mathcal Q$ be a finite family of bag cells and
+$e\ge\max_{C\in\mathcal Q}e_B(C)$. Suppose that for every corner $v$ of
+every cell of $\mathcal Q$ an oracle supplies a number $\ell(v)$ and a
+point $x^v\in X$ with $x^v_B=v$ such that
+\begin{equation}\label{eq:cr-oracle}
+\ell(v)\le W_B(v),\qquad F(x^v)\le\ell(v)+\eta .
+\end{equation}
+Let $U$ be the value of a feasible point with $U\le\min_vF(x^v)$, the
+minimum taken over all supplied completions. Retain $C\in\mathcal Q$ if
+and only if $\min_{v\text{ corner of }C}\ell(v)-e\le U$. Then:
+\begin{enumerate}
+\item[(a)] every $C\in\mathcal Q$ that contains $x^*_B$ for some global
+optimizer $x^*$ is retained;
+\item[(b)] if some $C\in\mathcal Q$ contains $x^*_B$ for a global optimizer
+$x^*$, then $U\le\OPT+e+\eta$, and every retained cell has a corner $v$
+with $W_B(v)\le\OPT+2e+2\eta$;
+\item[(c)] every $x\in X$ with $x_B\in\bigcup\mathcal Q$ satisfies
+\[
+F(x)\ge\lambda:=\min_{C\in\mathcal Q}\Bigl(\min_{\text{corners of }C}\ell-e\Bigr),
+\]
+and $U-\lambda\le e+\eta$.
+\end{enumerate}
+\end{theorem}
+\begin{proof}
+(a) By~\eqref{eq:cr-oracle} and Lemma~\ref{lem:cr-cell} applied to $x^*$,
+\[
+\min_{\text{corners}}\ell-e\le\min_{\text{corners}}W_B-e_B(C)\le\OPT\le U.
+\]
+
+(b) Lemma~\ref{lem:cr-cell} at $x^*$ gives a corner $v^\circ$ of the
+optimizer's cell with $W_B(v^\circ)\le\OPT+e$. Hence
+$U\le F(x^{v^\circ})\le\ell(v^\circ)+\eta\le W_B(v^\circ)+\eta\le\OPT+e+\eta$.
+A retained cell has a corner $v$ with $\ell(v)\le U+e$, and
+$W_B(v)\le F(x^v)\le\ell(v)+\eta\le U+e+\eta\le\OPT+2e+2\eta$.
+
+(c) For $x_B\in C$, Lemma~\ref{lem:cr-cell} and $\ell\le W_B$ give
+$F(x)\ge\min_{\text{corners}}W_B-e\ge\min_{\text{corners}}\ell-e\ge\lambda$.
+Every corner satisfies $\ell(v)\ge F(x^v)-\eta\ge U-\eta$, so
+$\lambda\ge U-e-\eta$.
+\end{proof}
+
+\begin{remark}
+Hypothesis~\eqref{eq:cr-oracle} is a certified global optimization of the
+outside problem, over the original outside domain, at every queried bag
+value, with an error $\eta$ that is uniform over these values. In a
+multilevel scheme that refines only retained cells, the hypothesis of
+(b) holds at every level by (a) and induction. A point whose bag
+projection lies in a cell discarded at an earlier level has value larger
+than the incumbent at that level, hence larger than the current $U$.
+Therefore $\min\{\lambda,U\}$ is a certified lower bound on $\OPT$, as in
+the filtering proposition for corrected grids.
+\end{remark}
+
+The next proposition shows that the filter needs only control of the
+\emph{variation} of the error across bag states. A common additive error,
+such as a normalization constant of messages, is harmless.
+
+\begin{proposition}[Only the error oscillation matters]\label{prop:cr-osc}
+Let $\mathcal Q$, $e$ be as in Theorem~\ref{thm:cr-filter}, and suppose
+some cell of $\mathcal Q$ contains $x^*_B$ for a global optimizer $x^*$.
+Let $\mathcal V$ be the set of all corners and $\ell:\mathcal V\to\R$ a
+function such that, for some constants $\delta_-\le\delta_+$ with
+$\delta_+-\delta_-\le\eta$,
+\[
+\delta_-\le W_B(v)-\ell(v)\le\delta_+\qquad(v\in\mathcal V).
+\]
+The constants need not be known. Retain $C$ if and only if
+$\min_{\text{corners of }C}\ell\le\min_{\mathcal V}\ell+e+\eta$. Then every
+cell containing $x^*_B$ for a global optimizer $x^*$ is retained, and
+every retained cell has a corner with $W_B(v)\le\OPT+2e+2\eta$.
+\end{proposition}
+\begin{proof}
+Let $C^*$ contain $x^*_B$. By Lemma~\ref{lem:cr-cell},
+\[
+\min_{\text{corners of }C^*}\ell\le\min_{\text{corners of }C^*}W_B-\delta_-
+\le\OPT+e-\delta_-,
+\]
+while $W_B\ge\OPT$ gives
+$\min_{\mathcal V}\ell\ge\OPT-\delta_+$. The difference is at most
+$e+\delta_+-\delta_-\le e+\eta$, so $C^*$ is retained. If $C$ is retained,
+it has a corner $v$ with
+$W_B(v)\le\ell(v)+\delta_+\le\min_{\mathcal V}\ell+e+\eta+\delta_+$, and
+$\min_{\mathcal V}\ell\le\min_{\text{corners of }C^*}\ell\le\OPT+e-\delta_-$.
+Thus $W_B(v)\le\OPT+2e+\eta+(\delta_+-\delta_-)\le\OPT+2e+2\eta$.
+\end{proof}
+
+Theorem~\ref{thm:cr-filter} additionally certifies a gap; for that, valid
+lower bounds and feasible completions are needed. For filtering alone,
+Proposition~\ref{prop:cr-osc} identifies the essential requirement: the
+oscillation of $W_B-\ell$ over the compared bag states must be
+$O(e)$.
+
+\subsection{Grid min-marginals require a dimension-dependent budget}\label{sec:cr-star}
+
+Let $h=2^{-j}$ and $G=h\Z\cap[0,1]$. On $[0,1]^{1+m}$ with coordinates
+$(x,y_1,\ldots,y_m)$, let the uniform product grid be $G^{1+m}$, write
+$U_G=\min_{G^{1+m}}F$, and, for the bag $B=\{x,y_1\}$ and $v\in G^2$,
+\[
+m^F(v)=\min\{F(z):z\in G^{1+m},\ (z_x,z_{y_1})=v\}.
+\]
+A \emph{constant-correction test} with constant $c$ retains a bag cell
+$C$ of the grid if and only if $\min_{\text{corners of }C}m^F-c\le U_G$;
+its coordinate version retains a grid interval $[a,a+h]$ of the centre
+coordinate if and only if $\min\{V_h(a),V_h(a+h)\}-c\le U_G$, where
+$V_h(a)=\min\{F(z):z\in G^{1+m},\ z_x=a\}$. On a uniform grid every node has
+correction $Lh^2/8$ in every coordinate, so the corrected-grid method of
+the paper applies the coordinate version with $c=(1+m)Lh^2/8$. A bag-local
+budget would take $c=|B|Lh^2/8=Lh^2/4$. In both families below, the
+corner minimum of each relevant bag cell equals
+$\min\{V_h(a),V_h(a+h)\}$, where $[a,a+h]$ is the projection of the cell
+on the centre coordinate. Hence the thresholds stated for bag cells hold
+verbatim for the coordinate version.
+
+\begin{proposition}[Constant corrections must grow with dimension]\label{prop:cr-star}
+\leavevmode
+\begin{enumerate}
+\item[(A)] Let $j\ge1$, $m\ge1$, $\epsilon>0$ with $mh^2>4(1+\epsilon)$, and
+\[
+F_A(x,y)=x^2-hx\sum_{i=1}^my_i+\sum_{i=1}^my_i^2
++\Bigl(\frac{mh^2}4-1-\epsilon\Bigr)x .
+\]
+Its interaction graph is a star with bags $\{x,y_i\}$ ($p=2$), and $L=2$
+is valid. Its unique minimizer is $x=1$, $y_i=h/2$, with $\OPT=-\epsilon$,
+and any growth constant satisfies $g\le\epsilon/(1+mh^2/4)$; moreover
+$U_G=0$. The only bag cell containing $(1,h/2)$ is
+$C=[1-h,1]\times[0,h]$, and
+\[
+\min_{\text{corners of }C}m^F=(1-h)\Bigl(\frac{mh^2}4-h-\epsilon\Bigr).
+\]
+Hence a constant-correction test discards a cell containing the unique
+optimizer unless
+$c\ge(1-h)\bigl(m-4/h-4\epsilon/h^2\bigr)\,Lh^2/8$. As $m\to\infty$ the
+ratio of $(1+m)Lh^2/8$ to this lower bound tends to $(1-h)^{-1}$.
+\item[(B)] Let $j\ge2$, let $d\ge2/h$ be an integer, $m=d^2$, and
+\[
+F_B(x,y)=\Bigl(x-\frac12\Bigr)^2+\sum_{i=1}^m
+\Bigl(y_i-\frac h2-\frac{x-1/2}{d}\Bigr)^2 .
+\]
+It is a star with $p=2$; $L=4$ is valid; its unique minimizer
+$z^*=(1/2,h/2,\ldots,h/2)$ is interior; and
+$F_B(z)-\OPT\ge\frac{3-\sqrt5}2\norm{z-z^*}^2$, so
+$\kappa\le2(3+\sqrt5)<11$ for every $d$ and $h$. Moreover
+$U_G=\frac12-\frac{dh}2+\frac{d^2h^2}4$, and both bag cells containing
+$(1/2,h/2)$ have
+\[
+\min_{\text{corners}}m^F-U_G=dh\Bigl(\frac12-h\Bigr)+2h^2-\frac12 .
+\]
+Thus a constant-correction test discards every cell containing the
+unique optimizer unless $c\ge dh(\frac12-h)+2h^2-\frac12$, a quantity of
+order $\sqrt m\,h$ at fixed $h$, while $p=2$ and $\kappa<11$.
+\end{enumerate}
+\end{proposition}
+\begin{proof}
+(A) Write $\beta=mh^2/4-1-\epsilon>0$. All coordinate second derivatives
+equal $2$ and $F_A$ is quadratic, so $L=2$ is valid. For fixed $x$, each
+leaf term $y^2-hxy$ is strictly convex with minimizer $hx/2\in[0,1]$ and
+minimum $-h^2x^2/4$. Hence $\min_yF_A(x,y)=(1-mh^2/4)x^2+\beta x=:V(x)$,
+which is strictly concave because $mh^2>4$, with $V(0)=0$ and
+$V(1)=-\epsilon$. For $x\in(0,1)$, strict concavity gives
+$V(x)>(1-x)V(0)+xV(1)\ge-\epsilon$. So $x=1$ is the unique minimizing
+centre and $y_i=h/2$ the unique leaves; $\OPT=-\epsilon$. The origin has
+$F_A=0=\OPT+\epsilon$ and squared distance $1+mh^2/4$ from the minimizer,
+which bounds $g$.
+
+On the grid, $y(y-hx)\ge0$ for $y\in G$ and $x\in[0,1]$, since either
+$y=0$ or $y\ge h\ge hx$. Also $x^2+\beta x\ge0$ for $x\ge0$. Hence
+$F_A\ge0$ on $G^{1+m}$ with equality at the origin, so $U_G=0$, and every
+leaf's grid minimum is $0$. The point $(1,h/2)$ has $x$ at the right
+endpoint and $h/2$ interior to $[0,h]$, so $C$ is the only grid cell of
+the bag containing it. At its corners,
+$m^F(x,y_1)=x^2+\beta x+(y_1^2-hxy_1)$. For $x=1-h$ this equals
+$(1-h)(1-h+\beta)=(1-h)(mh^2/4-h-\epsilon)$ at $y_1=0$ and exceeds it by
+$h^3$ at $y_1=h$. For $x=1$ it equals $mh^2/4-\epsilon$ at both $y_1=0,h$,
+which exceeds the previous value by $h(mh^2/4-\epsilon)+h(1-h)>0$. This
+proves the corner minimum; it also equals $\min\{V_h(1-h),V_h(1)\}$,
+because every leaf's grid minimum is attained at $0$. Since $U_G=0$ and
+$L=2$, the threshold for $c$ is as stated, and
+$(1+m)h^2/4\big/\bigl[(1-h)(mh^2/4-h-\epsilon)\bigr]\to(1-h)^{-1}$.
+
+(B) The Hessian $H$ has $H_{xx}=2+2m/d^2=4$, $H_{y_iy_i}=2$,
+$H_{xy_i}=-2/d$, and zero elsewhere; thus $L=4$ is valid. Vectors with
+zero $x$-component and leaf components summing to zero are eigenvectors
+with eigenvalue $2$. On the span of $e_x$ and $m^{-1/2}\mathbf 1_y$, $H$
+acts as $\bigl(\begin{smallmatrix}4&-2\\-2&2\end{smallmatrix}\bigr)$, with
+eigenvalues $3\pm\sqrt5$. Since $F_B\ge0$ vanishes only at $z^*\in(0,1)^{1+m}$
+and $F_B(z)=\frac12(z-z^*)^{\mathsf T}H(z-z^*)$, growth holds with
+$g=(3-\sqrt5)/2$ and $\kappa=L/g=2(3+\sqrt5)$.
+
+Write $t=x-1/2\in h\Z\cap[-1/2,1/2]$ for centre grid values (here
+$1/2\in G$ because $j\ge1$). A leaf's ideal value
+$\iota(t)=h/2+t/d$ lies in $[0,h]$ because $|t|/d\le1/(2d)\le h/4$.
+Its distance to $G$ is therefore $h/2-|t|/d$, and the conditional grid
+value of the centre is
+\[
+V_h(t)=t^2+m\Bigl(\frac h2-\frac{|t|}d\Bigr)^2=2t^2-dh|t|+\frac{d^2h^2}4 .
+\]
+On the grid $|t|\le1/2\le dh/4$, and $s\mapsto2s^2-dhs$ decreases on
+$[0,dh/4]$, so $U_G=V_h(\pm1/2)=\frac12-\frac{dh}2+\frac{d^2h^2}4$.
+The optimizer's bag projection $(1/2,h/2)$ lies on the common edge of
+the cells $[1/2-h,1/2]\times[0,h]$ and $[1/2,1/2+h]\times[0,h]$ and in no
+other cell. At $t=0$ both leaf labels $0,h$ are at distance $h/2$ from
+$\iota$, so $m^F=d^2h^2/4$. At $t=\pm h$ the nearer label gives
+$m^F=V_h(h)=2h^2-dh^2+d^2h^2/4$ and the farther adds $2h^2/d$. Since
+$d\ge2$, each cell has corner minimum $d^2h^2/4-(d-2)h^2
+=\min\{V_h(0),V_h(\pm h)\}$, and subtracting $U_G$ gives the stated
+difference. For $h\le1/4$ this difference is at least
+$dh/4+2h^2-1/2$, which grows linearly in $d=\sqrt m$. Discarding both
+centre intervals adjacent to $x=1/2$ removes the optimizer.
+\end{proof}
+
+\begin{example}[The smallest instance]\label{ex:cr-star32}
+Take $h=1/2$, $m=32$, $\epsilon=1/16$ in (A):
+$F=x^2-\frac x2\sum y_i+\sum y_i^2+\frac{15}{16}x$ on $[0,1]^{33}$.
+The exact leaf recourse is $y_i=x/4$, with $V(x)=-x^2+\frac{15}{16}x$, so
+the unique optimizer is $x=1$, $y_i=1/4$, value $-1/16$. On
+$G=\{0,\frac12,1\}$ the conditional grid values at $x=0,\frac12,1$ are
+$0,\frac{23}{32},\frac{31}{16}$, and $U_G=0$. The four corner
+min-marginals of $C=[\frac12,1]\times[0,\frac12]$ are
+$\frac{23}{32},\frac{27}{32},\frac{31}{16},\frac{31}{16}$. The bag-local
+budget $\frac18$ rejects $C$; the global correction $\frac{33}{16}$ keeps it.
+The conditional grid error is
+\[
+V_h(x)-V(x)=m\,\dist(x/4,G)^2,
+\]
+which varies from $0$ at $x=0$ to $m/16$ at $x=1$; no normalization of
+messages removes this variation. Because the growth constant of family (A)
+degrades as $m$ grows, this instance refutes budgets depending on
+$(p,L)$ only; family (B) refutes budgets depending on $(p,\kappa)$.
+\end{example}
+
+\subsection{An exact minimum-cut oracle for a large nonconvex residual}\label{sec:cr-cut}
+
+In this subsection
+\[
+F(x)=c_0+\sum_i(a_ix_i^2+b_ix_i)+\sum_{i<j}c_{ij}x_ix_j
+\]
+is a rational quadratic. Its coordinates are split into a \emph{core}
+$\mathcal C$ of $k$ continuous coordinates and a \emph{residual}
+$\mathcal R$. Missing couplings have $c_{ij}=0$. Assume
+\begin{equation}\label{eq:cr-class}
+\text{(R1)}\ a_i\le0\ (i\in\mathcal R),\qquad
+\text{(R2)}\ c_{ij}o_io_j\le0\ (i,j\in\mathcal R)\ \text{for some }
+o\in\{-1,1\}^{\mathcal R}.
+\end{equation}
+Nothing is assumed about core--core or core--residual coefficients, and
+the residual interaction graph may be dense. A residual coordinate may be
+continuous or integer; integer bounds are rounded inward first and an
+empty domain is rejected. Given the signs of the residual $c_{ij}$, a
+breadth-first traversal finds an orientation satisfying (R2) or a cycle
+proving that none exists.
+
+\begin{lemma}[Endpoint reduction]\label{lem:cr-endpoint}
+Fix $v\in\widehat X_{\mathcal C}$ and a box $\prod_{i\in\mathcal R}[l_i,u_i]$
+(after inward rounding). Under (R1), the minimum of $F(v,\cdot)$ over the
+continuous box is attained at a point with $x_i\in\{l_i,u_i\}$ for all
+$i\in\mathcal R$. Consequently it equals the minimum over the mixed
+residual domain.
+\end{lemma}
+\begin{proof}
+Start from a minimizer, which exists by compactness. For each residual
+coordinate in turn, the objective as a function of that coordinate alone
+is $a_it^2+(\text{affine in }t)$, which is concave by (R1); replace the
+coordinate by an endpoint with no larger value. The result is an endpoint
+minimizer. Its coordinates are integral for integer coordinates, so it is
+feasible for the mixed domain, which is contained in the continuous box.
+\end{proof}
+
+For $i\in\mathcal R$ put $\alpha_i=l_i$, $d_i=u_i-l_i$ if $o_i=1$, and
+$\alpha_i=u_i$, $d_i=-(u_i-l_i)$ if $o_i=-1$. For $y\in\{0,1\}^{\mathcal R}$
+let $x_i(y)=\alpha_i+d_iy_i$; this enumerates all residual endpoint
+vectors. In the network below, for a node set $S$ that contains the
+source $\mathsf s$ but not the sink $\mathsf t$, $\operatorname{cap}(S)$
+denotes the total capacity of arcs leaving $S$.
+
+\begin{proposition}[Signed cut representation]\label{prop:cr-cut}
+Fix a rational core point $v$. Under~\eqref{eq:cr-class} there are rationals
+$\varphi_0,\mu_i,\omega_{ij}$, computable by exact evaluation of $F$, such
+that for all $y\in\{0,1\}^{\mathcal R}$
+\[
+F(v,x(y))=\varphi_0+\sum_{i}\mu_iy_i+\sum_{i<j}\omega_{ij}y_iy_j,
+\qquad \omega_{ij}=c_{ij}d_id_j\le0 .
+\]
+Let $\rho_i=\mu_i+\frac12\sum_{j\ne i}\omega_{ij}$ and
+$r_{ij}=-\omega_{ij}/2\ge0$. Build a network on
+$\mathcal R\cup\{\mathsf s,\mathsf t\}$ with arcs $i\to\mathsf t$ of
+capacity $\max\{\rho_i,0\}$, arcs $\mathsf s\to i$ of capacity
+$\max\{-\rho_i,0\}$, and, for each pair with $\omega_{ij}\ne0$, arcs
+$i\to j$ and $j\to i$ of capacity $r_{ij}$. With
+$S_y=\{\mathsf s\}\cup\{i:y_i=1\}$,
+\begin{equation}\label{eq:cr-cutid}
+F(v,x(y))=\varphi_0+\sum_i\min\{0,\rho_i\}+\operatorname{cap}(S_y).
+\end{equation}
+\end{proposition}
+\begin{proof}
+Expand $F(v,\alpha+d\circ y)$. Core terms and $c_0$ give constants. A term
+$a_ix_i^2$ gives $a_i\alpha_i^2+(2a_i\alpha_id_i+a_id_i^2)y_i$ by
+$y_i^2=y_i$; $b_ix_i$ and core--residual terms $c_{ij}v_jx_i$ are affine
+in $y_i$; and $c_{ij}x_ix_j$ for residual $i,j$ gives
+$c_{ij}d_id_jy_iy_j$ plus affine terms. By (R2),
+$\omega_{ij}=c_{ij}o_io_j(u_i-l_i)(u_j-l_j)\le0$. For binary $y$,
+$\omega y_iy_j=\frac\omega2(y_i+y_j)-\frac\omega2|y_i-y_j|$, so
+\[
+F(v,x(y))=\varphi_0+\sum_i\rho_iy_i+\sum_{i<j}r_{ij}|y_i-y_j| .
+\]
+In the cut $S_y$, an arc $i\to\mathsf t$ is cut exactly when $y_i=1$, an
+arc $\mathsf s\to i$ exactly when $y_i=0$, and exactly one of the two pair
+arcs exactly when $y_i\ne y_j$. Hence
+$\operatorname{cap}(S_y)=\sum_i[\max\{\rho_i,0\}y_i+\max\{-\rho_i,0\}(1-y_i)]
++\sum_{i<j}r_{ij}|y_i-y_j|$, and
+$\rho_iy_i=\max\{\rho_i,0\}y_i+\max\{-\rho_i,0\}(1-y_i)+\min\{0,\rho_i\}$.
+\end{proof}
+
+\begin{theorem}[Certified cut recourse]\label{thm:cr-oracle}
+Under~\eqref{eq:cr-class}, for every rational core point $v$, every
+rational residual subbox and every rational change of the residual linear
+coefficients, one maximum-flow computation returns an exact conditional
+minimizer, the exact value $W_{\mathcal C}(v)$, and a certificate: an
+endpoint label $y$ and a feasible flow whose value equals
+$\operatorname{cap}(S_y)$. The bit complexity is polynomial in the
+encoding length of the query, with an absolute exponent independent of
+$k$. Given the network, the certificate is checked with
+$O(|\mathcal R|+m_{\mathcal R})$ rational operations, where $m_{\mathcal R}$
+is the number of nonzero residual couplings. Conditions (R1)--(R2) are
+preserved by residual subboxes, by fixing residual coordinates, by added
+linear terms and by fixing the core.
+\end{theorem}
+\begin{proof}
+By Lemma~\ref{lem:cr-endpoint} the conditional minimum is attained at an
+endpoint label, and by~\eqref{eq:cr-cutid} minimizing over labels is a
+minimum $\mathsf s$--$\mathsf t$ cut problem with nonnegative capacities.
+Any feasible flow has value at most the capacity of any cut (weak
+duality), so a flow whose value equals $\operatorname{cap}(S_y)$ proves
+that $S_y$ is a minimum cut; checking it needs capacity bounds,
+conservation at each residual node and one comparison. A maximum flow and
+such a cut exist and are found, for instance, by the Edmonds--Karp
+algorithm with $O(|V||A|^2)$ arithmetic operations, where
+$|V|=|\mathcal R|+2$ and $|A|=O(|\mathcal R|+m_{\mathcal R})$. After
+multiplying all capacities by a common denominator (whose bit length is
+polynomial in the query), capacities are integers, every augmentation is
+by an integer, and every flow value is an integer bounded by the total
+capacity. Thus all intermediate numbers have polynomial bit length. The
+coefficients $\varphi_0,\mu_i,\omega_{ij}$ are obtained by exact
+rational evaluation. The stability statement holds because (R1)--(R2)
+involve only $a_i$ and $c_{ij}$ for residual $i,j$, which these operations
+do not change; a fixed coordinate has $d_i=0$.
+\end{proof}
+
+\begin{remark}[Scope and prior work]\label{rem:cr-cut-prior}
+Each ingredient is classical: endpoint optimality of coordinatewise
+concave functions; the representation of quadratic pseudo-Boolean
+functions with nonpositive couplings by cuts
+\cite{Hammer1965,PicardRatliff1975,KolmogorovZabih2004}; and the resulting
+polynomial solvability of box QPs that are submodular with nonpositive
+diagonal, as recorded in \cite{BurerNatarajanWillemsen2026v3}. The role of
+Theorem~\ref{thm:cr-oracle} here is a box-stable, certified conditional
+oracle with an arbitrary core. Separate concavity (R1) is essential:
+continuous submodular box QP without it is not known to be polynomial,
+and its natural SDP relaxation is exact only up to dimension three
+\cite{BurerNatarajanWillemsen2026v3}. Del Pia and Khajavirad also separate
+nonpositive-diagonal variables, which can be taken binary, from the others
+and prove polynomial classes with few positive-diagonal variables; their
+conditions bound the treewidth and interfaces of the binary part rather
+than its signs \cite{DelPiaKhajavirad2026}.
+\end{remark}
+
+\subsection{Search over a continuous core}\label{sec:cr-search}
+
+Let the core domain be $[0,1]^k$ ($k\ge1$, continuous) and the residual
+domain $X_{\mathcal R}$ any compact mixed box. Put
+$V(v)=W_{\mathcal C}(v)=\min_{z\in X_{\mathcal R}}F(v,z)$ and let $L\ge0$ be an
+upper coordinate curvature in the core coordinates (for a quadratic,
+$L\ge\max_{i\in\mathcal C}2a_i$). Assume an \emph{exact oracle}: for every
+dyadic $v\in[0,1]^k$ it returns $V(v)$ and a completion $z(v)\in X_{\mathcal R}$
+with $F(v,z(v))=V(v)$, with a certificate. Theorem~\ref{thm:cr-oracle}
+supplies one under~\eqref{eq:cr-class}.
+
+\paragraph{Core search.}
+Level $j$ uses dyadic cells of side $h_j=2^{-j}$ and
+$e_j=kLh_j^2/8$. Start with $\mathcal Q_0=\{[0,1]^k\}$ and $U=+\infty$.
+At level $j$: query $V$ at all corners of the cells of $\mathcal Q_j$ that
+were not queried before; set $U$ to the least value of all completions
+found so far; let
+$\lambda_j=\min_{C\in\mathcal Q_j}(\min_{\text{corners of }C}V-e_j)$;
+retain $\mathcal K_j=\{C\in\mathcal Q_j:\min_{\text{corners}}V-e_j\le U\}$;
+and let $\mathcal Q_{j+1}$ be the $2^k$ dyadic children of each retained
+cell. Stop when $U-\min\{\lambda_j,U\}\le\varepsilon$ or at a level limit.
+
+\begin{theorem}[Core search]\label{thm:cr-search}
+For every level $j$:
+\begin{enumerate}
+\item[(a)] every cell of $\mathcal Q_j$ containing $x^*_{\mathcal C}$ for a
+global optimizer $x^*$ is retained; in particular $\mathcal K_j\ne\emptyset$;
+\item[(b)] $\lambda_j\le\OPT\le U\le\lambda_j+e_j$;
+\item[(c)] every retained cell has a corner $v$ with $V(v)\le\OPT+2e_j$;
+\item[(d)] every $x\in X$ satisfies $F(x)\ge\min\{\lambda_j,U\}$, and this
+can be verified from the list of cells, the certified queried values and
+the retention decisions, without any optimization.
+\end{enumerate}
+\end{theorem}
+\begin{proof}
+Core coordinates are continuous, so every cell of $\mathcal Q_j$ has
+$e_{\mathcal C}(C)=e_j$. (a) The unit cube contains $x^*_{\mathcal C}$. If
+$C\in\mathcal Q_j$ contains it, Lemma~\ref{lem:cr-cell} gives
+$\min_{\text{corners}}V-e_j\le\OPT\le U$, so $C$ is retained and the child
+containing $x^*_{\mathcal C}$ belongs to $\mathcal Q_{j+1}$.
+(b)--(c) This is Theorem~\ref{thm:cr-filter} with $\ell=V$ and $\eta=0$;
+its hypothesis on an optimizer cell holds by (a).
+(d) Children of retained cells cover them, so the cells of $\mathcal Q_j$
+together with the cells discarded at levels $i<j$ cover $[0,1]^k$. If
+$x_{\mathcal C}$ lies in a cell of $\mathcal Q_j$, then
+$F(x)\ge V(x_{\mathcal C})\ge\lambda_j$ by Lemma~\ref{lem:cr-cell}. If it lies in
+a cell discarded at level $i$, then
+$F(x)\ge\min_{\text{corners}}V-e_i>U^{(i)}\ge U$, where $U^{(i)}$ is the
+incumbent at level $i$. Each step uses only recorded values.
+\end{proof}
+
+For any $\varepsilon>0$ the search therefore stops by the first level with
+$e_j\le\varepsilon$. Its cost is controlled by the number of near-optimal
+grid points. Let $N_j$ be the number of points
+$v\in h_j\Z^k\cap[0,1]^k$ with $V(v)\le\OPT+2e_j$.
+
+\begin{lemma}[Charging queries]\label{lem:cr-charge}
+Level $0$ makes $2^k$ queries and level $j+1$ makes at most $8^kN_j$.
+\end{lemma}
+\begin{proof}
+By Theorem~\ref{thm:cr-search}(c), every retained level-$j$ cell has a
+corner counted in $N_j$, and a grid point is a corner of at most $2^k$
+cells; so $|\mathcal K_j|\le2^kN_j$. Each retained cell has $2^k$
+children with $2^k$ corners each.
+\end{proof}
+
+\begin{proposition}[Deterministic count under core growth]\label{prop:cr-growth}
+Suppose $V(v)-\OPT\ge g\norm{v-v^*}^2$ for all $v\in[0,1]^k$, some $v^*$
+and some $g>0$; this holds with the same $g$ if $F$ has point growth $g$.
+Let $\kappa=\max\{1,L/g\}$. Then levels $0,\ldots,J$ make at most
+\[
+2^k+8^kJ\bigl(1+\sqrt{k\kappa}\bigr)^k
+\]
+queries. The constant $g$ is not used by the algorithm.
+\end{proposition}
+\begin{proof}
+If $F(x)-\OPT\ge g\norm{x-x^*}^2$, then minimizing over the residual gives
+$V(v)-\OPT\ge g\norm{v-x^*_{\mathcal C}}^2$. A point counted in $N_j$
+satisfies $g\norm{v-v^*}^2\le2e_j=kLh_j^2/4$, so each coordinate lies
+within $\frac{h_j}2\sqrt{k\kappa}$ of $v^*_i$. An interval of length
+$h_j\sqrt{k\kappa}$ contains at most $1+\sqrt{k\kappa}$ points of
+$h_j\Z$. Hence $N_j\le(1+\sqrt{k\kappa})^k$; apply
+Lemma~\ref{lem:cr-charge} and sum over $j<J$.
+\end{proof}
+
+\begin{example}[Flat directions]\label{ex:cr-flat}
+Without growth the count can be exponential in the number of accuracy
+bits. Take $k=2r$, no residual, and $V(v)=\sum_{t=1}^r(v_{2t-1}-v_{2t})^2$,
+so $L=2$ and $\OPT=0$. Every product of diagonal cells
+$\prod_t\bigl([a_th_j,(a_t+1)h_j]\times[a_th_j,(a_t+1)h_j]\bigr)$ has a
+corner with $V=0$, hence is retained. So level $j$ retains at least
+$2^{jr}=2^{jk/2}$ cells, and gap $\varepsilon$ costs
+$\Omega((L/\varepsilon)^{k/4})$ queries.
+\end{example}
+
+Random linear perturbations of the core remove this effect in
+expectation. For $\sigma>0$ and an integer $M\ge2$ let $\Gamma_M(\sigma)$
+be the uniform distribution on the $M$ points
+$-\sigma+2\sigma t/(M-1)$, $t=0,\ldots,M-1$.
+
+\begin{lemma}[Finite uniform law]\label{lem:cr-law}
+If $\gamma\sim\Gamma_M(\sigma)$ and $I$ is an interval of length
+$\ell\ge0$, then $\Pr[\gamma\in I]\le\ell/(2\sigma)+1/M$.
+\end{lemma}
+\begin{proof}
+Consecutive atoms are $2\sigma/(M-1)$ apart, so $I$ contains at most
+$\ell(M-1)/(2\sigma)+1$ atoms. Divide by $M$ and use $(M-1)/M\le1$.
+\end{proof}
+
+\begin{theorem}[Smoothed query count]\label{thm:cr-smoothed}
+Let $F_\gamma(x)=F_0(x)+\sum_{i\in\mathcal C}\gamma_ix_i$, where $F_0$ is
+fixed (it may contain residual data drawn independently of $\gamma$)
+and the $\gamma_i$ are independent with law $\Gamma_M(\sigma)$. Let $J\ge1$
+and $M\ge2^{J-1}$. The core search is correct for every draw, and the
+expected number of queries made by levels $0,\ldots,J$ is at most
+\[
+2^k+8^kJH_k,\qquad
+H_k=\Bigl[3+\Bigl(1+\frac k2\Bigr)\frac L{2\sigma}\Bigr]^k .
+\]
+\end{theorem}
+\begin{proof}
+Correctness is Theorem~\ref{thm:cr-search}. Write
+$V_\gamma(v)=V_0(v)+\gamma^{\mathsf T}v$ with
+$V_0(v)=\min_zF_0(v,z)$; $V_0$ does not depend on $\gamma$, and by
+Lemma~\ref{lem:cr-semiconcave} each $t\mapsto V_0(v+t\mathbf e_i)-Lt^2/2$ is
+concave. Fix $j\le J-1$, $h=h_j$, a grid point $v$ and a coordinate $i$
+with $v_i\in(0,1)$, so $v\pm h\mathbf e_i\in[0,1]^k$. If
+$V_\gamma(v)\le\OPT_\gamma+2e_j$, then
+$V_\gamma(v)\le V_\gamma(v\pm h\mathbf e_i)+2e_j$, that is,
+\[
+\frac{V_0(v)-V_0(v+h\mathbf e_i)-2e_j}{h}\ \le\ \gamma_i\ \le\
+\frac{V_0(v-h\mathbf e_i)-V_0(v)+2e_j}{h}.
+\]
+This interval $I_i(v)$ depends on $V_0$, $v$ and $i$ only. Its length is
+$[V_0(v+h\mathbf e_i)+V_0(v-h\mathbf e_i)-2V_0(v)+4e_j]/h\le Lh+4e_j/h
+=Lh(1+k/2)$, by concavity of $t\mapsto V_0(v+t\mathbf e_i)-Lt^2/2$ at
+$t=-h,0,h$. By independence and Lemma~\ref{lem:cr-law},
+\[
+\Pr\bigl[V_\gamma(v)\le\OPT_\gamma+2e_j\bigr]\le
+\prod_{i:\,v_i\in(0,1)}\Bigl[\frac{Lh(1+k/2)}{2\sigma}+\frac1M\Bigr].
+\]
+Summing over the $(2^j+1)^k$ grid points coordinate by coordinate, with
+two boundary values (factor at most $1$) and $2^j-1$ interior values,
+\[
+\E N_j\le\Bigl[2+(2^j-1)\Bigl(\frac{Lh_j(1+k/2)}{2\sigma}+\frac1M\Bigr)\Bigr]^k
+\le H_k ,
+\]
+since $(2^j-1)h_j\le1$ and $2^j-1<M$. Lemma~\ref{lem:cr-charge} and
+summation over $j=0,\ldots,J-1$ complete the proof.
+\end{proof}
+
+\begin{remark}[Meaning of the smoothed count]\label{rem:cr-smoothed}
+Correctness never depends on the draw, and the instance being solved is
+the perturbed one. The bound is linear in the number $J$ of levels,
+whereas Example~\ref{ex:cr-flat} shows that the deterministic count can be
+exponential in $J$. The residual dimension and graph enter only the
+polynomial cost of each query. Each query has encoding length polynomial
+in $I+J+\log M$, so with the cut oracle the expected bit work is
+$8^kH_k\poly(I+\log(1/\varepsilon)+\log M)$ with an absolute exponent.
+The bound is not a device for approximating the unperturbed problem: the
+perturbation can change values by $k\sigma$, so accuracy $\delta$ would
+require $\sigma\le\delta/k$, and then $H_k$ grows like $\delta^{-k}$,
+worse than the deterministic worst case $(kL/\delta)^{k/2}$. With an
+approximate oracle satisfying~\eqref{eq:cr-oracle} with $\eta_j\le ae_j$,
+the same proof (applied to the true values $V_\gamma$) gives the bound
+with $1+k/2$ replaced by $1+(1+a)k/2$. The noise-confinement argument is
+in the spirit of isolation lemmas in smoothed analysis
+\cite{BeierVocking2004,RoglinVocking2007}.
+\end{remark}
+
+For one core coordinate with sign-consistent couplings the
+perturbation is unnecessary.
+
+\begin{proposition}[One core coordinate with consistent signs]\label{prop:cr-k1}
+Let $k=1$ with core coordinate $v\in[0,1]$, assume~\eqref{eq:cr-class}
+with orientation $o$, and assume $c_{vi}o_i\le0$ for every $i\in\mathcal R$
+(if instead $c_{vi}o_i\ge0$ for every $i$, substitute $v\mapsto1-v$).
+Then an exact global minimizer and $\OPT$ are computed with at most
+$2|\mathcal R|+1$ minimum-cut computations and at most $|\mathcal R|+1$
+minimizations of univariate quadratics on $[0,1]$, in polynomial time.
+\end{proposition}
+\begin{proof}
+For $S\subseteq\mathcal R$ let $x(S)=\alpha+d\circ\mathbf 1_S$. Collecting
+terms as in Proposition~\ref{prop:cr-cut} gives
+$F(v,x(S))=q(v)+E_0(S)+v\beta(S)$, where $q$ is a univariate quadratic,
+$E_0(S)=\sum_{i\in S}\mu^0_i+\sum_{i<j;\,i,j\in S}\omega_{ij}$ with
+$\omega_{ij}\le0$, and $\beta(S)=\sum_{i\in S}\beta_i$ with
+$\beta_i=c_{vi}d_i=c_{vi}o_i(u_i-l_i)\le0$. Put
+$E_v(S)=E_0(S)+v\beta(S)$ and $\Phi(v)=\min_SE_v(S)$. By
+Lemma~\ref{lem:cr-endpoint}, $V=q+\Phi$. The function $E_0$ is submodular
+(each $\omega_{ij}y_iy_j$ with $\omega_{ij}\le0$ is) and $\beta$ is
+modular, so the minimizers of $E_v$ are closed under union and
+intersection; let $S(v)$ be the least one.
+
+\emph{Monotonicity.} Let $v<v'$, $S\in\arg\min E_v$, $T\in\arg\min E_{v'}$.
+Submodularity and modularity give
+\[
+E_v(S\cap T)+E_{v'}(S\cup T)\le E_v(S)+E_{v'}(T)+(v'-v)\beta(S\setminus T)
+\le E_v(S)+E_{v'}(T).
+\]
+Both terms on the left are at least their counterparts on the right, so
+$S\cap T\in\arg\min E_v$ and $S\cup T\in\arg\min E_{v'}$. With $S=S(v)$
+and $T=S(v')$, minimality gives $S(v)\cap S(v')=S(v)$, that is,
+$S(v)\subseteq S(v')$. Hence $\{S(v):v\in[0,1]\}$ is a chain with at most
+$|\mathcal R|+1$ members. The source side of a minimum cut reachable from
+$\mathsf s$ in the residual network of a maximum flow is the least
+minimum cut, so one flow computation returns $S(v)$.
+
+\emph{Recursion.} Write $\ell_S(v)=E_0(S)+v\beta(S)$; then
+$\Phi=\min_S\ell_S$ is concave and every $\ell_S\ge\Phi$. Compute
+$P=S(0)$ and $Q=S(1)$ and apply the following procedure
+$\mathrm{Ex}(0,1,P,Q)$. Given $a<b$ and $P=S(a)\subseteq Q=S(b)$,
+$\mathrm{Ex}(a,b,P,Q)$:
+\begin{enumerate}
+\item stops if $\ell_P$ and $\ell_Q$ do not meet at a single point
+$v_m\in(a,b)$;
+\item otherwise computes $S_m=S(v_m)$ and stops if
+$\Phi(v_m)=\ell_P(v_m)$;
+\item otherwise records $S_m$ and calls $\mathrm{Ex}(a,v_m,P,S_m)$ and
+$\mathrm{Ex}(v_m,b,S_m,Q)$.
+\end{enumerate}
+
+At a stop, $\Phi=\min\{\ell_P,\ell_Q\}$ on $[a,b]$. Indeed $\Phi$ is
+concave, $\Phi\le\ell_P,\ell_Q$, $\Phi(a)=\ell_P(a)$ and
+$\Phi(b)=\ell_Q(b)$. A concave function lying below a line and touching
+it at both ends of an interval equals the line there, because it lies
+above the chord. Since $P\subseteq Q$ and $\beta\le0$, the slope of
+$\ell_P$ is at least that of $\ell_Q$. In the second stopping case apply
+the chord fact on $[a,v_m]$ to $\ell_P$ and on $[v_m,b]$ to $\ell_Q$; by
+the slope comparison $\min\{\ell_P,\ell_Q\}$ is $\ell_P$ left of $v_m$ and
+$\ell_Q$ right of it. In the first case the slope comparison together with
+$\ell_P(a)\le\ell_Q(a)$ and $\ell_Q(b)\le\ell_P(b)$ shows that one line,
+say $\ell_Q$, lies below the other on all of $[a,b]$ (the other case is
+symmetric); then $\ell_Q(a)\le\ell_P(a)=\Phi(a)\le\ell_Q(a)$, so $\ell_Q$
+touches $\Phi$ at both ends and $\Phi=\ell_Q=\min\{\ell_P,\ell_Q\}$ on
+$[a,b]$. A recorded $S_m$ satisfies
+$P\subseteq S_m\subseteq Q$ and differs from both, since
+$\ell_{S_m}(v_m)<\ell_P(v_m)=\ell_Q(v_m)$; sets recorded in different
+branches lie in disjoint parts of the chain. So at most $|\mathcal R|-1$
+sets are recorded, the recursion tree has at most $|\mathcal R|$ leaves,
+and with the two initial computations there are at most
+$2|\mathcal R|+1$ flow computations. Every $v_m$ is the intersection of two
+lines with rational coefficients of polynomial bit length.
+
+Let $\mathcal S$ be $P$, $Q$ and the recorded sets. Then
+$\Phi=\min_{S\in\mathcal S}\ell_S$ on $[0,1]$, so
+$\OPT=\min_{S\in\mathcal S}\min_{v\in[0,1]}(q(v)+\ell_S(v))$, a minimum of
+at most $|\mathcal R|+1$ univariate quadratics on $[0,1]$, each solved
+exactly.
+\end{proof}
+
+Without the sign condition the least minimizers need not be nested, and
+we do not know whether $k=1$ admits a deterministic polynomial algorithm.
+
+\subsection{Exact output}\label{sec:cr-exact}
+
+\begin{lemma}[Uniform height over residual labels]\label{lem:cr-height}
+Let $F$ be a rational quadratic with continuous core $[0,1]^k$ and residual
+satisfying (R1), with integer residual bounds rounded inward. Let
+$\Lambda_c$ be the least common denominator of all coefficients of $F$,
+$\Lambda_e$ that of all residual bounds, $T_0=\Lambda_c\Lambda_e^2$,
+$H_0=\max\{1,\max_{i,j\in\mathcal C}|T_0\,\partial_{ij}F|\}$ and
+\[
+D_0=T_0\bigl(k!\,H_0^k\bigr)^2 .
+\]
+For every residual endpoint label $z$, the value
+$\Phi(z)=\min_{v\in[0,1]^k}F(v,z)$ is a rational with reduced denominator
+at most $D_0$, and so is $\OPT$.
+\end{lemma}
+\begin{proof}
+Fix $z$ and put $\phi(v)=F(v,z)$. Every monomial of $T_0\phi$ has an
+integer coefficient: the coefficients of $v_iv_j$ and $v_i^2$ are
+coefficients of $F$; the coefficient of $v_i$ is $b_i+\sum_jc_{ij}z_j$;
+and the constant collects $c_0$, $a_jz_j^2$, $b_jz_j$ and $c_{ij}z_iz_j$
+for residual $i,j$. Each has denominator dividing $\Lambda_c\Lambda_e^2$.
+The matrix $A=T_0\nabla^2_{\mathcal C\mathcal C}F$ is integral with entries
+bounded by $H_0$ in absolute value.
+
+Among minimizers of $\phi$ on $[0,1]^k$ choose one, $v$, with the fewest
+coordinates in $(0,1)$; let $S$ be that set. The other coordinates are
+$0$ or $1$. If $S=\emptyset$, then $T_0\phi(v)\in\Z$. Otherwise
+$\nabla_S\phi(v)=0$ and $A_{SS}\succeq0$ by first- and second-order
+optimality on the face. If $A_{SS}$ were singular, a nonzero $w$
+supported on $S$ with $A_{SS}w_S=0$ would give $\phi(v+tw)=\phi(v)$ for all
+$t$, and moving $t$ until a coordinate of $S$ reaches $0$ or $1$ would
+produce a minimizer with fewer interior coordinates. Hence
+$\delta=|\det A_{SS}|$ is a positive integer, and by the Leibniz expansion
+$\delta\le|S|!\,H_0^{|S|}\le k!\,H_0^k$. The stationarity system
+$A_{SS}v_S=-T_0\nabla_S\phi(0_S,v_{\mathcal C\setminus S})$ has an integral
+right-hand side, so $\delta v$ is integral by Cramer's rule. Evaluating
+the integer-coefficient quadratic $T_0\phi$ at $v=(\delta v)/\delta$ gives
+an element of $\delta^{-2}\Z$. Thus $\Phi(z)\in(T_0\delta^2)^{-1}\Z$.
+By Lemma~\ref{lem:cr-endpoint}, some global optimizer has an endpoint
+label $z^*$, and $\OPT=\Phi(z^*)$.
+\end{proof}
+
+\begin{remark}
+Any common multiple $S_0$ of all denominators can replace $\Lambda_c$ and
+$\Lambda_e$, for example $T_0=S_0^3$. A cube, or the mixed form
+$\Lambda_c\Lambda_e^2$, is needed in general: the term $\frac12x_ix_j$ at
+residual endpoints $x_i=x_j=\frac12$ equals $\frac18$, while the least
+common denominator of the data is $2$.
+\end{remark}
+
+\begin{theorem}[Exact output with a cut residual]\label{thm:cr-exact}
+Assume~\eqref{eq:cr-class} with continuous core $[0,1]^k$ and rational data.
+Run the core search until $U-\min\{\lambda_j,U\}<D_0^{-2}$, which happens
+by the first level with $e_j<D_0^{-2}$. Let $z_U$ be the residual label
+of the incumbent completion. Minimize $\phi(v)=F(v,z_U)$ exactly over
+$[0,1]^k$ by enumerating the $3^k$ faces of the cube, solving the
+stationarity system on each face whose free Hessian block is nonsingular,
+and keeping feasible solutions. The best candidate $\hat v$ satisfies
+$F(\hat v,z_U)=\OPT$, so $(\hat v,z_U)$ is a global optimizer. A checker
+needs only the search trace, $D_0$, feasibility and exact value of the
+output, its reduced denominator ($\le D_0$), and the inequality
+$F(\hat v,z_U)-\min\{\lambda_j,U\}<D_0^{-2}$.
+If in addition $V$ has core growth with constant $g$ as in
+Proposition~\ref{prop:cr-growth}, the total bit complexity is
+$f(k,\kappa)(I+1)^{C_1}$ with an absolute constant $C_1$, and $g$ is not
+an input.
+\end{theorem}
+\begin{proof}
+The proof of Lemma~\ref{lem:cr-height} shows that a minimizer of $\phi$
+lies on some face with a nonsingular free block, so the enumeration
+contains it; all candidates are feasible, so the best one attains
+$\Phi(z_U)$. If $(v_U,z_U)$ is the incumbent completion, then
+$\OPT\le\Phi(z_U)\le F(v_U,z_U)=U$ and, by Theorem~\ref{thm:cr-search}(d),
+$\min\{\lambda_j,U\}\le\OPT$. So $0\le\Phi(z_U)-\OPT<D_0^{-2}$. Both
+numbers have reduced denominators at most $D_0$ by
+Lemma~\ref{lem:cr-height}, and distinct such rationals differ by at least
+$D_0^{-2}$; hence they are equal. The checker's test proves optimality of
+any feasible point with these properties by the same separation argument.
+
+For the complexity, $\log T_0$ and $\log H_0$ are $O(I)$ and $k\le I$, so
+$\log D_0=O(I^2)$ and the number of levels is
+$J=O(\log D_0+\log(kL)+1)=\poly(I)$. Under core growth,
+Proposition~\ref{prop:cr-growth} bounds the queries by
+$2^k+8^kJ(1+\sqrt{k\kappa})^k$. Each query is a cut problem whose data have
+bit length polynomial in $I+J$, hence $\poly(I)$ by
+Theorem~\ref{thm:cr-oracle}. Face enumeration costs $3^k\poly(I)$. All
+factors depending only on $k$ and $\kappa$ form $f$.
+\end{proof}
+
+Without core growth the exact mode still terminates, but its number of
+cells can be $2^{kJ}$ with $J=\Theta(\log D_0)$. The stopping depth must
+not be combined with Theorem~\ref{thm:cr-smoothed} by choosing
+$M\ge2^{J}$: sampled coefficients enter $D_0$, and for a fixed noise scale
+the atom denominators grow with $M$, so this condition generally cannot
+hold.
+
+\subsection{Mixed concave--convex residuals}\label{sec:cr-mixed}
+
+Consider a rational residual problem
+$\min\{q(z)=\frac12z^{\mathsf T}Az+b^{\mathsf T}z+c : z\in\prod_{i\in\mathcal R}[l_i,u_i]\}$,
+for example the residual after the core has been fixed. Assume an
+orientation $o$ with $o_io_jA_{ij}\le0$ for $i\ne j$, and a partition
+$\mathcal R=\mathcal D\cup\mathcal P$ with $A_{ii}\le0$ for $i\in\mathcal D$ and
+$A_{\mathcal P\mathcal P}\succeq0$. Coordinates in $\mathcal P$ are
+continuous; coordinates in $\mathcal D$ may be integer with inward-rounded
+bounds. Define $\alpha_i,d_i$ as before and, for
+$S\subseteq\mathcal D$, the label $\zeta(S)_i=\alpha_i+d_i[i\in S]$ and
+\[
+g(S)=\min\Bigl\{q(\zeta(S),z_{\mathcal P}) :
+z_{\mathcal P}\in\prod_{i\in\mathcal P}[l_i,u_i]\Bigr\}.
+\]
+With $\mathcal P=\emptyset$ this is the cut class; with
+$\mathcal D=\emptyset$ it is convex.
+
+\begin{proposition}[Submodular conditional value]\label{prop:cr-submod}
+(a) The minimum of $q$ over the continuous box and over the mixed domain
+equals $\min_{S\subseteq\mathcal D}g(S)$.
+(b) Each $g(S)$ is the value of a rational convex box QP.
+(c) For all $S,T\subseteq\mathcal D$,
+$g(S)+g(T)\ge g(S\cap T)+g(S\cup T)$.
+\end{proposition}
+\begin{proof}
+(a) As in Lemma~\ref{lem:cr-endpoint}, move each coordinate of
+$\mathcal D$ to an endpoint without increasing $q$. (b) After fixing
+$z_{\mathcal D}$, the objective in $z_{\mathcal P}$ has Hessian
+$A_{\mathcal P\mathcal P}\succeq0$. (c) Substitute out degenerate intervals
+and put $z_i=\alpha_i+d_it_i$, $t\in[0,1]^{\mathcal R}$; the transformed objective
+$\tilde q$ has off-diagonal Hessian entries
+$d_id_jA_{ij}=o_io_j(u_i-l_i)(u_j-l_j)A_{ij}\le0$. For $s,t\in[0,1]^{\mathcal R}$,
+$\tilde q(s)+\tilde q(t)\ge\tilde q(s\wedge t)+\tilde q(s\vee t)$: unary terms
+cancel, and for a pair $i,j$ the two sides agree if $s_i-t_i$ and
+$s_j-t_j$ have the same sign, while otherwise
+$s_is_j+t_it_j-(s\wedge t)_i(s\wedge t)_j-(s\vee t)_i(s\vee t)_j
+=(s_i-t_i)(s_j-t_j)\le0$, which multiplied by a nonpositive coefficient is
+nonnegative. Let $t^S,t^T$ attain $g(S),g(T)$ in transformed
+coordinates. Then $(\mathbf 1_S,t^S)\wedge(\mathbf 1_T,t^T)
+=(\mathbf 1_{S\cap T},t^S\wedge t^T)$ and similarly for $\vee$ with
+$S\cup T$; both completions are feasible. Hence
+$g(S)+g(T)\ge\tilde q(\mathbf 1_{S\cap T},t^S\wedge t^T)
++\tilde q(\mathbf 1_{S\cup T},t^S\vee t^T)\ge g(S\cap T)+g(S\cup T)$.
+\end{proof}
+
+Positive semidefiniteness is not used in (c); it makes each $g(S)$
+computable exactly in polynomial time \cite{KozlovTarasovKhachiyan1980}.
+Partial minimization preserving submodularity is classical
+\cite{Topkis1978}, and the same composition with submodular minimization
+appears in \cite{BuntonTabuada2022,GomezHan2025}.
+
+Let $m=|\mathcal D|$ and $h(S)=g(S)-g(\emptyset)$. For an ordering $\pi$ of
+$\mathcal D$ with prefixes $S_0=\emptyset,S_1,\ldots,S_m=\mathcal D$, the
+greedy vector is $b^\pi_{\pi(t)}=h(S_t)-h(S_{t-1})$.
+
+\begin{proposition}[Greedy-base certificate]\label{prop:cr-greedy}
+(a) For every ordering $\pi$ and every $T\subseteq\mathcal D$,
+$b^\pi(T)\le h(T)$ and $b^\pi(\mathcal D)=h(\mathcal D)$.
+(b) If $w=\sum_\pi\lambda_\pi b^\pi$ is a convex combination, then
+$\min q\ge g(\emptyset)+\sum_{i\in\mathcal D}\min\{0,w_i\}$.
+(c) Some convex combination of at most $m+1$ greedy vectors attains
+equality \cite{Edmonds1970}, and such a combination, a minimizing label
+and exact convex-QP witnesses can be computed in time polynomial in the
+input length \cite{GrotschelLovaszSchrijver1988}.
+(d) Given orderings, weights, the $O(m^2)$ chain values with their
+minimizers, and a label $S^*$ with its completion, a checker verifies the
+bound in (b) and its attainment by $S^*$ with polynomially many rational
+operations and no optimization. It checks a convex chain value by
+feasibility, exact evaluation and the sign conditions
+$\partial_iq=0$ at interior, $\ge0$ at lower and $\le0$ at upper bounds
+of $\mathcal P$, which suffice by convexity once
+$A_{\mathcal P\mathcal P}\succeq0$ has been verified exactly.
+\end{proposition}
+\begin{proof}
+(a) List $T=\{t_1,\ldots,t_r\}$ in $\pi$-order and let $S^{(s)}$ be the
+$\pi$-prefix ending just before $t_s$. Since
+$\{t_1,\ldots,t_{s-1}\}\subseteq S^{(s)}$, submodularity gives
+$b^\pi_{t_s}=h(S^{(s)}\cup\{t_s\})-h(S^{(s)})
+\le h(\{t_1,\ldots,t_s\})-h(\{t_1,\ldots,t_{s-1}\})$. Summing telescopes
+to $b^\pi(T)\le h(T)$; the full prefix sum is $h(\mathcal D)$.
+(b) By (a) and convexity, $w(S)\le h(S)$ for every $S$, so
+$g(S)=g(\emptyset)+h(S)\ge g(\emptyset)+w(S)\ge g(\emptyset)+\sum_i\min\{0,w_i\}$;
+conclude with Proposition~\ref{prop:cr-submod}(a).
+(c) Edmonds' theorem gives
+$\min_Sh(S)=\max\{\sum_i\min\{0,w_i\}: w\in B(h)\}$, where $B(h)$ is the
+base polytope; its vertices are the greedy vectors, and the maximum of
+this concave piecewise-linear function is attained at a combination of at
+most $m+1$ of them. For computation, consider the linear program
+$\max\{\beta: 0\le y\le\mathbf 1,\ \beta+(b^\pi)^{\mathsf T}y\le0\ \forall\pi\}$,
+whose dual is $\min\{\sum_ir_i : \sum_\pi\lambda_\pi b^\pi+r\ge0,\
+\sum_\pi\lambda_\pi=1,\ \lambda,r\ge0\}$. Sorting $y$ decreasingly and
+forming its greedy vector maximizes $(b^\pi)^{\mathsf T}y$, so separation
+costs $m+1$ convex-QP queries. Each $g(S)$ is the optimal value of a convex
+box QP with fixed Hessian, and by the smallest-face argument of
+Lemma~\ref{lem:cr-height} its encoding length is polynomial; hence the
+polyhedron has polynomial facet complexity, and the ellipsoid method
+solves the program and recovers an optimal basic dual solution from the
+separating inequalities in polynomial time
+\cite[Thm.~6.4.9, Lemma~6.5.15]{GrotschelLovaszSchrijver1988}. A basic dual
+solution has at most $m+1$ positive $\lambda_\pi$, and at optimality
+$r_i=\max\{0,-w_i\}$. For an optimal $y$ sorted as
+$y_{\pi(1)}\ge\cdots\ge y_{\pi(m)}$, with $y_{\pi(m+1)}:=0$,
+$(b^\pi)^{\mathsf T}y=\sum_t(y_{\pi(t)}-y_{\pi(t+1)})h(S_t)+(1-y_{\pi(1)})h(\emptyset)$
+is a convex combination of prefix values equal to $\min h$, so some prefix
+with positive weight is a minimizing label. (d) follows from (a), (b) and
+the stated optimality conditions for convex problems on a box.
+\end{proof}

@@ -36,7 +36,7 @@ Reviewed `sections/05-primal-dual.tex`, `06-formulation.tex`, `appendix-formulat
 
 ## Independent computations
 
-Ran the provided `verify_primal_dual_formulations.py` with `/home/sgusev/miniconda3/envs/qipm/bin/python`; all checks passed. I also wrote and ran separate checks covering boundaries omitted by that script:
+Ran the provided `verify_primal_dual_formulations.py` with `/workspace/local-home/miniconda3/envs/qipm/bin/python`; all checks passed. I also wrote and ran separate checks covering boundaries omitted by that script:
 
 - 80 random orthant central systems with deliberately rank-deficient equality matrices (duplicate linear combinations and zero rows), using SVD tangent projections instead of inverse Schur formulas. Feasibility, orthogonal speed split, and both objective-progress identities passed.
 - 120 rank-one exposed-minor tests in spin factors with transverse dimensions 2, 4, and 8, using the explicit quadratic representation and arbitrary transverse fibers. The ambient covector norm was one to numerical tolerance, supporting the Jordan rather than just real-PSD normalization.

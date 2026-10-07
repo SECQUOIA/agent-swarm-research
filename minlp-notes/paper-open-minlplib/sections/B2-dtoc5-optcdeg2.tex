@@ -1,0 +1,304 @@
+% Plan: development/outline.md, section 6, item B.2.
+% Sources: development/dossiers/dtoc5-optcdeg2.md and its critique,
+% development/reviews/sol-dtoc5-exact.md, development/decision-register.md
+% (DO-01 to DO-18, N-05, SV-08), development/dossiers/solvers.md (Prop. 16),
+% data/numbers.json.
+% Round-1 revision (adjudication G5): one certificate box per result, the
+% verification-record table merged into the boxes.
+\subsection{\inst{dtoc5} and \inst{optcdeg2}}\label{app:dtoc5}
+
+Both instances are Euler transcriptions of optimal control problems with about $5\cdot10^4$ stages, taken from QPLIB and, before that, from CUTEst; both are nonconvex QCQPs with unbounded states, and both certificates are splits (\cref{sec:split-framework}).
+For \inst{dtoc5}, \cref{sec:split-affine} proves \cref{prop:dtoc5-identity,thm:dtoc5-bracket}; \cref{app:dtoc5-proof} describes the evaluation and proves \cref{cor:dtoc5-attained}.
+For \inst{optcdeg2}, \cref{app:optcdeg2-proof,app:optcdeg2-point} prove \cref{thm:optcdeg2-bound} and the existence of the exactly feasible point it uses.
+
+% ---------------------------------------------------------------------------
+\subsubsection{\inst{dtoc5}: stored model}\label{app:dtoc5-model}
+
+The $99{,}999$ continuous variables of the model of \cref{sec:split-affine} are, in the OSIL order, $u_t=x_{t+2}$ ($0\le t<T$) and $y_t=x_{50001+t}$ ($0\le t\le T$).
+OSIL row~$t$ reads $-h\,u_t+y_t-y_{t+1}+4h\,y_t^2=0$, with the coefficient strings \texttt{2e-5} for $h$ (also in the objective) and \texttt{8e-5} for $4h$; $y_0=1$ is fixed, and $y_0^2$ contributes the constant $h$ to the objective.
+The GAMS file equals that of \inst{QPLIB_8585} apart from comment lines, the formatting of one option and the solve statement (\cref{app:semantics-provenance}); floating-point solves of this model and of the CUTEst problem DTOC5, which has $h$ in place of $4h$, give different optimal values.
+
+All four listed dual bounds are below $0.0025$, against an optimal value of about $5.39$; we take this as a sign that termwise relaxations of the terms $4hy_t^2$ with unbounded $y_t$ are weak, which is an interpretation (\cref{sec:interpretation}), not a tested fact.
+
+% ---------------------------------------------------------------------------
+\subsubsection{\inst{dtoc5}: evaluation of the certificate}\label{app:dtoc5-proof}
+
+We use the notation of \cref{prop:dtoc5-identity,thm:dtoc5-bracket}.
+The sign convention matters: $c_t$ is the negative of OSIL row~$t$; had the multipliers $\hat\lambda_t$ been attached to the OSIL rows themselves, the coefficient of $y_t^2$ in the Lagrangian would be $h(1+4\hat\lambda_t)$, which is negative wherever $\hat\lambda_t<-\tfrac14$, and the Lagrangian would be unbounded below.
+
+\paragraph{Multipliers and the point.}
+Stationarity of the Lagrangian in $u_t$ gives $\lambda_t=-2u_t$, which is why the certificate reads $\hat\lambda$ from the stored exactly feasible point $\hat x$ of \cref{app:points}.
+The states $\hat y_1,\dots,\hat y_T$ of $\hat x$ are a refined Newton solution rounded to 30 decimals, and its controls $\hat u_t=50{,}000(\hat y_t-\hat y_{t+1})+4\hat y_t^2$ are defined by the rows, so every row holds exactly.
+Every nonterminal control is positive (the smallest is about \sci{1.46}{-5}); the last one, $\hat u_{T-1}\approx-1.96\cdot10^{-26}$, is not used.
+Hence $\hat\lambda_t\le0<\tfrac14$ for all $t$, and $A_t\ge h$.
+
+\paragraph{Evaluation.}
+Both $f(\hat x)$ and $q(\hat\lambda)$ are rational.
+$f(\hat x)$ is computed exactly; it lies below $5.38967211918114046742396649913627186883131341$.
+Two codes give rigorous lower bounds on $q(\hat\lambda)$:
+\begin{enumerate}
+\item[(i)] one reads the GAMS text, whose coefficients equal the OSIL strings exactly, evaluates the polynomial part of $q(\hat\lambda)$ exactly and rounds each of the 49,998 subtracted quotients \emph{up} to the grid $2^{-256}$ before subtracting, which yields a rational $B_{256}\le q(\hat\lambda)$;
+\item[(ii)] the other, which has its own OSIL reader, assembles the Lagrangian coefficients from the parsed terms, computes $q(\hat\lambda)$ as an exact reduced rational (its denominator has 9,071,237 bits; the sums use GMP integers), and checks that $f(\hat x)-q(\hat\lambda)$ equals the exactly computed sum of the squares in \eqref{eq:dtoc5-squares}.
+\end{enumerate}
+Both give $q(\hat\lambda)\ge5.38967211918114046742396649913627186883131268$; the two values differ by about \sci{2.2}{-73}.
+The exact gap is $f(\hat x)-q(\hat\lambda)=7.2051\ldots\cdot10^{-43}\le\sci{7.21}{-43}$.
+The two 44-decimal displays of \cref{thm:dtoc5-bracket} differ by \sci{7.3}{-43}, more than this gap; \cref{tab:closures} prints 19-decimal displays and therefore marks its gap cell as computed from the certificate ends.
+The displayed lower end is a rigorous rational evaluation below the dual function at $\hat\lambda$; we claim neither that $q(\hat\lambda)$ is the optimal value of the Lagrangian dual nor that the duality gap is zero.
+
+\begin{certbox}[Certificate for \cref{thm:dtoc5-bracket}]
+\certitem{Inputs}{OSIL file (SHA-256 \texttt{ac7b2d94}); point $\hat x$ (\texttt{6e963788}); exact $f(\hat x)$ (\texttt{8c110402}).}
+\certitem{Computation}{all rows and $f(\hat x)$ exactly; $q(\hat\lambda)$ by (i) and (ii); \arith{E} (\texttt{Fraction}, GMP sums).}
+\certitem{Data reading}{exact decimals; separately written readers and an exact comparison with the GAMS text confirm every variable, bound, objective term and row.}
+\certitem{Implementations}{the exact evaluation (ii) certifies the displayed lower end; the separately written rounded evaluation (i) certifies the same display.}
+\certitem{Evidence level}{\evid{hand}+\evid{stored}.}
+\certitem{Replay}{Tier~1; about 17\,s for (ii) and 3\,s for (i).}
+\end{certbox}
+
+\begin{corollary}[attainment and location]\label{cor:dtoc5-attained}
+The optimal value of \inst{dtoc5} is attained.
+Every minimizer $x^*$ satisfies $|u^*_t+\hat\lambda_t/2|\le\sci{1.9}{-19}$ for $0\le t\le T-1$ and $|y^*_t-\bar y_t(\hat\lambda)|\le\sci{1.9}{-19}$ for $1\le t\le T-1$.
+\end{corollary}
+
+\begin{proof}
+Apply \eqref{eq:dtoc5-squares} with $\lambda=\hat\lambda$; here $\hat\lambda_t\le0$, so $A_t\ge h$.
+Every feasible $x$ with $f(x)\le f(\hat x)$ has each square term at most $f(\hat x)-q(\hat\lambda)\le\sci{7.21}{-43}$ (\cref{thm:dtoc5-bracket}).
+So $u_0,\dots,u_{T-1}$ and $y_1,\dots,y_{T-1}$ are bounded on this level set, and $y_T$ is determined by the last row.
+The feasible set is closed and $f$ is continuous, so the level set is compact and nonempty, and $f$ attains its minimum on it.
+At a minimizer each deviation is therefore at most $(\sci{7.21}{-43}/h)^{1/2}<\sci{1.9}{-19}$.
+\end{proof}
+
+The corollary does not by itself show that the minimizer is unique, and we do not claim uniqueness.
+
+\begin{remark}[Lagrangian and semidefinite relaxations]\label{rem:dtoc5-sdp}
+The proof of \cref{prop:dtoc5-identity} collects terms without using the rows, so the identity \eqref{eq:dtoc5-squares} holds with $f(x)+\sum_t\hat\lambda_tc_t(x)$ on the left for every $x$ with $y_0=1$.
+The squares vanish at $u_t=-\hat\lambda_t/2$ and $y_t=\bar y_t(\hat\lambda)$, so $q(\hat\lambda)$ is the value of the Lagrangian dual function at $\hat\lambda$, and the optimal value of the Lagrangian dual lies in $[q(\hat\lambda),\vstar]$, an interval of width at most \sci{7.21}{-43}.
+The same holds for the order-one semidefinite relaxation, dense (Shor) or sparse.
+Each square in \eqref{eq:dtoc5-squares} involves a single variable $z$ and has the form $\gamma(z-\zeta)^2$ with $\gamma>0$.
+Its linearization is $\gamma(Z-2\zeta z+\zeta^2)$, where $Z$ stands for $z^2$; this is nonnegative whenever the $2\times2$ moment matrix with entries $1$, $z$, $z$, $Z$ is positive semidefinite, which every moment matrix of either relaxation that contains $z$ ensures.
+The linearized rows vanish, so the relaxed objective equals $q(\hat\lambda)$ plus these nonnegative terms.
+If $y_0$ is kept as a variable with the row $y_0=1$, a multiple of this row adds the square $A_0(y_0-1)^2$, and the argument is unchanged.
+For the source model with coefficient $h$ and 600 to 1000 steps, \citet{waki2006-sums-of-squares-and-semidefinite} observed numerically tight sparse order-one relaxations in floating-point SDP solves (\cref{tab:literature}).
+The mechanism is that of Mangasarian-type sufficiency conditions \citep{mangasarian1966-sufficient-conditions-for-the-optimal}: at multipliers taken from a near-optimal point, the Lagrangian is convex.
+\end{remark}
+
+The floating-point closure credited in \cref{sec:results-prior} concerns a bounded restriction of \inst{QPLIB_8585}: its MINOTAUR log states that default lower and upper bounds were assumed for 99,983 and 99,997 variables.
+Its value $5.3897$ and QPLIB's value $5.38967212$ \citep{furini2026-qplib-official-solution-point-records} agree with ours.
+
+% ---------------------------------------------------------------------------
+\subsubsection{\inst{optcdeg2}: stored model}\label{app:optcdeg2-model}
+
+Let $N=50{,}000$ and $h=1/2500$.
+The OSIL coefficient strings \texttt{4e-4}, \texttt{8e-6}, \texttt{8e-5} and \texttt{2e-4} are $h$, $a=h/50$, $b=h/5$ and $w=h/2$.
+The $150{,}002$ continuous variables are, in the OSIL order, $u_t=x_{2+t}$ for $t\le N-2$, $u_{N-1}=x_{50002}$, $y_t=x_{50003+t}$, $v_t=x_{100004+t}$ for $t\le N-1$, and $v_N=x_{50001}$.
+The model of \cref{sec:split-richer} reads
+\begin{equation}\label{eq:optcdeg2-model}
+\min\ f=w\sum_{t=0}^{N}y_t^2
+\quad\text{s.t.}\quad
+y_{t+1}=y_t+hv_t,\quad v_{t+1}=v_t+hu_t-ay_t-bv_t^2\quad(t<N),
+\end{equation}
+with $-\tfrac15\le u_t\le\tfrac15$ (the strings \texttt{-.2} and \texttt{.2}), $v_t\ge-1$ for $1\le t\le N-1$, $y_0=10$ and $v_0=v_N=0$; the positions $y_1,\dots,y_N$ are free, and the velocities have no upper bound.
+The objective is convex; the only nonconvex terms are $-bv_t^2$ in the velocity rows.
+The GAMS file equals that of \inst{QPLIB_8803} apart from comment lines, a redundant declaration, the formatting of one option and the solve statement (\cref{app:semantics-provenance}).
+
+Gurobi's listed dual bound $292.41713458$ equals, to the displayed digits, the objective of the listed point p2, which MINLPLib records with violation $10^{-6}$.
+Evaluated under exact semantics, p2 violates 46,687 rows by more than $10^{-8}$, by at most \sci{9.97}{-7}.
+The listed bound is valid: it lies at least $1.45$ below the certified bound of \cref{thm:optcdeg2-bound}.
+The value of p2 is attained by no exactly feasible point (category~A, \cref{tab:claims}).
+
+% ---------------------------------------------------------------------------
+\subsubsection{\inst{optcdeg2}: the quadratic split}\label{app:optcdeg2-proof}
+
+The certificate uses a split whose function on the state $(y_t,v_t)$ has the form
+\begin{equation}\label{eq:optcdeg2-S}
+\varphi_{t-1}(y,v)=p^y_t\,y+p^v_t\,v+\frac{q_t}2\,(v-\bar v_t)^2,\qquad 1\le t\le N,
+\end{equation}
+with rational data $(p^y_t,p^v_t,q_t,\bar v_t)$; as in \cref{sec:split-framework}, the index of a split function is that of the stage to whose right it acts, so $\varphi_{t-1}$ links the stages $t-1$ and $t$.
+Write $U=[-\tfrac15,\tfrac15]$ and $g(v)=v-bv^2$.
+
+\begin{lemma}[split bound for \inst{optcdeg2}]\label{lem:optcdeg2-krotov}
+Let $\varphi_0,\dots,\varphi_{N-1}\colon\R^2\to\R$ be arbitrary, and for $1\le t\le N-1$ let $V_t\subseteq\R$ contain $v_t$ for every exactly feasible point.
+Put $\rho_t(y,v,u)=wy^2+\varphi_t(y+hv,\ g(v)+hu-ay)-\varphi_{t-1}(y,v)$.
+Then every exactly feasible point satisfies $f\ge m_0+\sum_{t=1}^{N-1}m_t+m_N$, where
+\begin{gather*}
+m_0=\inf_{u\in U}\bigl[100w+\varphi_0(10,\,hu-10a)\bigr],\qquad
+m_N=\inf_{y\in\R}\bigl[wy^2-\varphi_{N-1}(y,0)\bigr],\\
+m_t=\inf\bigl\{\rho_t(y,v,u):\ y\in\R,\ v\in V_t,\ u\in U\bigr\}\quad(1\le t\le N-1).
+\end{gather*}
+\end{lemma}
+
+\begin{proof}
+For an exactly feasible point, $(y_{t+1},v_{t+1})$ is the image of $(y_t,v_t,u_t)$ under the dynamics, so the split terms telescope:
+\[
+f=\bigl[wy_0^2+\varphi_0(y_1,v_1)\bigr]+\sum_{t=1}^{N-1}\rho_t(y_t,v_t,u_t)+\bigl[wy_N^2-\varphi_{N-1}(y_N,v_N)\bigr].
+\]
+Here $y_0=10$ and $v_0=0$, so $(y_1,v_1)=(10,\,hu_0-10a)$, and $u_t\in U$, $v_t\in V_t$ and $v_N=0$.
+Each bracket is at least its infimum.
+\end{proof}
+
+This is \cref{lem:split-bound}(a) for the stages $(y_t,v_t,u_t)$, with the derived enclosures $\R\times V_t\times U$ (\cref{rem:split-enclosures}).
+
+\begin{lemma}[velocity enclosure]\label{lem:optcdeg2-enclosure}
+Define intervals by a forward pass, $Y_0=\{10\}$, $V_0=\{0\}$,
+\[
+Y_{t+1}=Y_t+hV_t,\qquad V_{t+1}=\bigl(g(V_t)+hU-aY_t\bigr)\cap[-1,\infty)\quad(t+1\le N-1),\qquad V_N=\{0\},
+\]
+followed by a backward pass for $t=N-1,\dots,1$,
+\[
+Y_t\leftarrow Y_t\cap(Y_{t+1}-hV_t),\qquad V_t\leftarrow V_t\cap g^{-1}\bigl(V_{t+1}-hU+aY_t\bigr),
+\]
+where $g^{-1}$ is the inverse of $g$ on $(-\infty,1/(2b))$.
+Suppose that $\sup V_t<1/(2b)=6250$ for all $t$ after the forward pass, and that every step is rounded outward.
+Then $(y_t,v_t)\in Y_t\times V_t$ for every exactly feasible point and every $t$.
+\end{lemma}
+
+\begin{proof}
+By induction.
+In the forward pass, if $(y_t,v_t)\in Y_t\times V_t$, then $y_{t+1}=y_t+hv_t\in Y_t+hV_t$ and $v_{t+1}=g(v_t)+hu_t-ay_t\in g(V_t)+hU-aY_t$, and $v_{t+1}\ge-1$ for $t+1\le N-1$; since $g$ is increasing on $(-\infty,6250)$, $g(V_t)$ is the interval between the images of the endpoints.
+The row $v_N=0$ gives $V_N=\{0\}$.
+In the backward pass, by induction from $t+1$, $y_t=y_{t+1}-hv_t$ and $g(v_t)=v_{t+1}-hu_t+ay_t$, and $v_t$ lies on the increasing branch, so $v_t\in g^{-1}(V_{t+1}-hU+aY_t)$.
+Outward rounding only enlarges the intervals.
+\end{proof}
+
+The computation of these intervals is exact: each step is evaluated in rational arithmetic and rounded outward to the dyadic grid $2^{-110}$; $g^{-1}(s)$ is enclosed by rational points $x^-\le x^+$ for which $g(x^-)\le s\le g(x^+)$ is checked exactly; and the final bounds are rounded outward to binary64.
+The forward bounds stay below $1.22$, and the computation also checks that $0\in g(V_{N-1})+hU-aY_{N-1}$, which every feasible point requires.
+The result satisfies $V_t\subseteq[-1,\,1.2135]$, with widths at most $2.09$.
+
+\begin{lemma}[exact stage reduction]\label{lem:optcdeg2-stage}
+Fix $1\le t\le N-1$, let $\varphi_{t-1},\varphi_t$ be of the form \eqref{eq:optcdeg2-S}, and put
+\begin{gather*}
+A=w+\tfrac12q_{t+1}a^2,\qquad B=p^y_{t+1}-p^y_t-a\,p^v_{t+1},\\
+K_2=\frac{q_{t+1}w}{2A},\qquad K_1=p^v_{t+1}+\frac{a\,q_{t+1}B}{2A},\qquad K_0=-\frac{B^2}{4A},\\
+\Gamma(v)=\bigl(h\,p^y_{t+1}-p^v_t\bigr)v+p^v_{t+1}\bar v_{t+1}+K_0-\frac{q_t}2(v-\bar v_t)^2 .
+\end{gather*}
+If $A>0$, then $\min_{y\in\R}\rho_t(y,v,u)=G(v,e):=\Gamma(v)+K_2e^2+K_1e$ with $e=g(v)+hu-\bar v_{t+1}$.
+For $u\in U$, $e$ ranges over $[e_-(v),e_+(v)]=g(v)-\bar v_{t+1}+[-h/5,\,h/5]$, and
+\[
+m_t\ \ge\ \min\Bigl\{\inf_{v\in V_t}G\bigl(v,e_-(v)\bigr),\ \inf_{v\in V_t}G\bigl(v,e_+(v)\bigr),\ \gamma\Bigr\},
+\]
+where $\gamma=+\infty$ if $K_2\le0$, and otherwise $\gamma=\inf_{v\in R^*}\bigl[\Gamma(v)-K_1^2/(4K_2)\bigr]$ for any set $R^*\supseteq\{v\in V_t:\ e_-(v)\le-K_1/(2K_2)\le e_+(v)\}$ (with $\gamma=+\infty$ if $R^*=\emptyset$).
+Equality holds if $R^*$ is exactly this set.
+\end{lemma}
+
+\begin{proof}
+Put $y'=y+hv$ and $v'=g(v)+hu-ay$, so that $v'-\bar v_{t+1}=e-ay$.
+Expanding \eqref{eq:optcdeg2-S},
+\[
+\rho_t=Ay^2+\bigl(B-q_{t+1}a\,e\bigr)y+h\,p^y_{t+1}v+p^v_{t+1}(e+\bar v_{t+1})+\frac{q_{t+1}}2e^2-p^v_tv-\frac{q_t}2(v-\bar v_t)^2 .
+\]
+For $A>0$, minimizing over $y\in\R$ subtracts $(B-q_{t+1}ae)^2/(4A)$.
+The coefficient of $e^2$ becomes $q_{t+1}/2-q_{t+1}^2a^2/(4A)=q_{t+1}(2A-q_{t+1}a^2)/(4A)=K_2$, the coefficient of $e$ becomes $K_1$, and the remaining terms form $\Gamma(v)$.
+For fixed $v$, the map $u\mapsto e$ is affine and increasing, with range $[e_-(v),e_+(v)]$.
+A quadratic in $e$ attains its minimum over an interval at an endpoint, or, if $K_2>0$, possibly at the vertex $-K_1/(2K_2)$, where its value is $\Gamma(v)-K_1^2/(4K_2)$; this value is a lower bound on $G(v,\cdot)$ for every $v$, so enlarging $R^*$ can only lower $\gamma$.
+\end{proof}
+
+Since $g$ is quadratic, $G(v,e_\pm(v))$ is a polynomial of degree at most $4$ in $v$.
+
+\begin{lemma}[rigorous univariate minimization]\label{lem:optcdeg2-quartic}
+Let $G$ be a nonconstant real polynomial and $\alpha<\beta$ with $G'(\alpha)G'(\beta)\neq0$.
+Let $[l_k,r_k]\subset(\alpha,\beta)$, $k=1,\dots,K$, satisfy $G'(l_k)<0<G'(r_k)$, and suppose that every point of $(\alpha,\beta)$ at which $G'$ changes sign from negative to positive lies in one of these intervals.
+If $M_k\ge\max_{[l_k,r_k]}|G''|$, then
+\[
+\min_{[\alpha,\beta]}G\ \ge\ \min\Bigl\{G(\alpha),\ G(\beta),\ \min_k\bigl[\min\bigl(G(l_k),G(r_k)\bigr)-M_k(r_k-l_k)^2\bigr]\Bigr\}.
+\]
+\end{lemma}
+
+\begin{proof}
+Let $x_0$ minimize $G$ over $[\alpha,\beta]$; if $x_0$ is an endpoint, there is nothing to prove.
+Otherwise $G'(x_0)=0$.
+Since $G'$ is a nonzero polynomial, it has finitely many zeros, so it has a constant sign on each side of $x_0$ near $x_0$.
+It must be negative on the left and positive on the right, since otherwise $G$ would be smaller at a nearby point.
+So $x_0\in[l_k,r_k]$ for some $k$, and Taylor's theorem gives $G(l_k)=G(x_0)+\tfrac12G''(\xi)(l_k-x_0)^2\le G(x_0)+\tfrac12M_k(r_k-l_k)^2$.
+\end{proof}
+
+
+\paragraph{Certificate data.}
+The data $(p^y_t,p^v_t,q_t,\bar v_t)$ are binary64 numbers stored with the certificate and read as exact rationals; any data give a valid bound.
+Here $\bar v_t$ is the velocity of a refined floating-point KKT point, and $p^y_t,p^v_t$ are its discrete costates.
+With $q\equiv0$, \cref{lem:optcdeg2-krotov} gives the Lagrangian bound of \cref{prop:split-affine}, whose stage residual contains the term $-b\,p^v_{t+1}v^2$.
+This term is concave in $v$ on the two arcs where the certified control is $-\tfrac15$ ($t<3091$ and $t>47290$), because $p^v_{t+1}>0$ there ($p^v_1\approx124.09$, $p^v_N\approx0.595$), and there the affine split is not minimized at the trajectory (\cref{sec:split-richer}); with an earlier set of multipliers, the certified affine bound is $293.2500703$, about $0.63$ below the optimum.
+
+The quadratic term adds curvature in $v$ only.
+On the two arcs with control $-\tfrac15$, $q_t$ is chosen so that the $v$-curvature of $\rho_t$ at the trajectory, $-2b\,p^v_{t+1}+q_{t+1}(1-2b\bar v_t)^2-q_t$, equals $2\eta h$, with margin $\eta=1$ on the first arc and $\eta=0.05$ on the last.
+The recursion runs backward from $q_{3091}=0$ on the first arc, reaching about $-34.1$ at the start, and forward from $q_{47291}=0$ on the last, reaching about $0.286$ at $t=N$.
+On the middle arc $q\equiv0$, because there $p^v<0$ and the affine residual is already convex in $v$.
+Since $v_0$ and $v_N$ are fixed, the curvature of the split at the two ends never enters the bound, so the schedules can start from $q=0$ at each switch and run outward; and $q=0$ at both switching stages keeps the two stages with fractional control nearly exact.
+The validity of the bound does not depend on these design choices.
+\Cref{fig:optcdeg2-calibration} shows the control of the certified trajectory, the velocity costate and the curvature schedule.
+
+\begin{figure}[tb]
+\centering
+\includegraphics[width=0.85\textwidth]{fig-optcdeg2-calibration}
+\caption{Split data of the \inst{optcdeg2} certificate against time $th$.
+(a)~Control $u_t$ of the certified trajectory.
+(b)~Velocity costate $p^v_t$; it is positive on both arcs with $u=-\frac15$.
+(c)~Curvature $q_t$ of the split functions; it is zero on the middle arc and at both switching stages (dashed lines, $t=3091$ and $t=47290$).
+Panels (b) and (c) use a symmetric logarithmic scale, linear near~0.
+Data: the stored binary64 split data.}
+\label{fig:optcdeg2-calibration}
+\end{figure}
+
+\begin{proof}[Proof of \cref{thm:optcdeg2-bound}]
+Apply \cref{lem:optcdeg2-krotov} with the functions \eqref{eq:optcdeg2-S} and the intervals $V_t$ of \cref{lem:optcdeg2-enclosure}.
+For $1\le t\le N-1$, \cref{lem:optcdeg2-stage} applies because $A>0$ at every stage, which the computation checks exactly.
+It reduces $m_t$ to the minimization of two polynomials of degree at most $4$ over $V_t$; the third term never arises, because at every stage either $K_2\le0$ or a computed superset of the vertex set is empty.
+Polynomials of degree at most $2$ are minimized in closed form.
+For the 11,596 quartics, an exact Sturm sequence of $G'$ isolates its distinct real roots in $(\alpha,\beta)$, after an exact check that $G'(\alpha)G'(\beta)\ne0$.
+For each root at which $G'$ changes sign from negative to positive, a bracket with $G'(l)<0<G'(r)$ is checked exactly, with floating-point roots used only as seeds (7,785 brackets; no bisection fallback and no root of even multiplicity was needed).
+\Cref{lem:optcdeg2-quartic}, with $M_k$ the sum of the absolute coefficients of $G''$ times powers of $\max(|l_k|,|r_k|)$ (in the shifted variable $v-\bar v_t$), then gives a rational $\tilde m_t\le m_t$; the largest slack $M_k(r_k-l_k)^2$ is \sci{9.5}{-29}.
+The end terms are explicit: $m_0$ is the minimum of a quadratic in $u$ over $U$ (about $1014.99647$), and $m_N=-(p^y_N)^2/(4w)-\tfrac12q_N\bar v_N^2=-(p^y_N)^2/(2h)$ because $\bar v_N=0$ (about $-1.86\cdot10^{-4}$).
+Rounding $m_0$, every $\tilde m_t$ and $m_N$ down to the grid $2^{-200}$ and summing exactly gives a rational $B\le\vstar$ with $B\ge293.87607509587509237940$, the rigorous evaluation in \cref{thm:optcdeg2-bound}; its truncated display is $293.87607509587509237$.
+All arithmetic is in Python integers and \texttt{Fraction}.
+With the upper bound of \cref{prop:optcdeg2-point}, $\gapabs\le\sci{8.98}{-16}$ and $\gaprel\le\sci{3.06}{-18}$.
+\end{proof}
+
+The computation also checks the reduction of \cref{lem:optcdeg2-stage} against the definition of $\rho_t$, exactly, at three points $(v,u)$ in each of 115 stages, among them the seven stages around each switch.
+
+Two further checks support the exact code and are not part of the proof.
+A separately written sampling search over 197 stages found no point below the computed stage minimum (best values within \sci{2.8}{-29} of it).
+Along the certified trajectory rounded to $2^{-300}$ at each step (near-feasible, not exactly feasible), every stage residual is at least its computed minimum, and the differences sum to $8.978\cdot10^{-16}$, the gap between $B$ and the upper bound of \cref{prop:optcdeg2-point}; stage 3091 accounts for about \sci{8.9777}{-16}, stage 47290 for about \sci{4.08}{-20} and every other stage for at most \sci{7.2}{-25}, the two stages with fractional control, where $p^v_{t+1}$ is small but not zero (\sci{7.6}{-12} and $-\sci{9.7}{-16}$).
+The verification principle is classical (\cref{sec:split-framework}); the model-specific function and its exact check are the contribution.
+
+\begin{certbox}[Certificate for \cref{thm:optcdeg2-bound}]
+\certitem{Inputs}{OSIL file (SHA-256 \texttt{6a9bcd91}); split data (\texttt{08311d33}).}
+\certitem{Computation}{$V_t$ on the grid $2^{-110}$; 11,596 quartic pieces by exact Sturm isolation; floors on the grid $2^{-200}$ summed exactly; \arith{E}.}
+\certitem{Data reading}{exact decimals, asserted by the reader; a separately written reader and an exact comparison with the GAMS text confirm every row, bound and objective term.}
+\certitem{Implementations}{the second code (exact) certifies the displayed bound; the first code, in binary64 intervals (\arith{F}, 162 geometric cells per stage, refined by bisection), certifies the weaker $293.8760750958728$, each stage bound at least \sci{3.6}{-19} below the exact one.}
+\certitem{Evidence level}{\evid{stored}.}
+\certitem{Replay}{Tier~1; 6\,s and 19\,s (enclosure and stage minima; 16 to 18\,s for the latter in other runs); 8\,s for the interval code.}
+\end{certbox}
+
+% ---------------------------------------------------------------------------
+\subsubsection{\inst{optcdeg2}: the exactly feasible point}\label{app:optcdeg2-point}
+
+\begin{proposition}[an exactly feasible point]\label{prop:optcdeg2-point}
+Let $u_t=-\tfrac15$ for $t\le3090$ and $t\ge47291$, $u_t=\tfrac15$ for $3092\le t\le47289$, $u_{3091}=1506828432880435/2^{55}\approx0.041823$, and let $u_{47290}=\sigma$ be free.
+Let $y_t(\sigma),v_t(\sigma)$ be defined by the rows of \eqref{eq:optcdeg2-model} from $y_0=10$, $v_0=0$.
+For a rational $\tilde\sigma\approx0.0951284142971001$, there is $\sigma^*\in[\tilde\sigma-10^{-60},\tilde\sigma+10^{-60}]$ such that the resulting point is exactly feasible, and its objective is at most $293.87607509587509328$.
+\end{proposition}
+
+\begin{proof}
+For every $\sigma$, all rows hold by construction, and $y_0=10$, $v_0=0$.
+All controls lie in $U$ for $\sigma$ in the bracket.
+The function $\sigma\mapsto v_N(\sigma)$ is a polynomial, hence continuous.
+An interval simulation of the rows in integer arithmetic, with all quantities scaled by $2^{320}$ and rounded by floor and ceiling, gives $v_N<0$ at the left end of the bracket and $v_N>0$ at the right end (about $\mp3.8\cdot10^{-64}$).
+Over the whole bracket it gives $v_t(\sigma)\ge-0.8316$ for $1\le t\le N-1$ and encloses the objective in an interval of width below \sci{4.8}{-64} whose upper end is $293.8760750958750932772142114247080159340995594910\ldots$.
+By the intermediate value theorem, some $\sigma^*$ in the bracket gives $v_N=0$; the point is then exactly feasible, and its objective lies in the enclosure.
+\end{proof}
+
+The control of the certified point is $\pm\tfrac15$ except at stages 3091 and 47290; we claim this structure only for the certified point, not for every minimizer.
+Our floating-point KKT point violates rows by up to \sci{8.9}{-16}, and its objective $293.87607509588105$ lies at least \sci{5.95}{-12} above the upper bound of \cref{prop:optcdeg2-point}; this says nothing about attainability.
+
+\begin{certbox}[Certificate for \cref{prop:optcdeg2-point}]
+\certitem{Inputs}{OSIL file (SHA-256 \texttt{6a9bcd91}); control vector (binary64, \texttt{8206c29d}).}
+\certitem{Computation}{interval simulation of all rows over the bracket on the grid $2^{-320}$; sign change of $v_N$; bounds; objective enclosure; \arith{E}.}
+\certitem{Data reading}{exact decimals, asserted as rationals.}
+\certitem{Implementations}{the integer code certifies the displayed upper bound, which therefore does not depend on \texttt{mpmath}; a separately written \texttt{mpmath} code (\arith{I}, 200 bits, bracket of half-width $10^{-40}$) certifies the same display.}
+\certitem{Evidence level}{\evid{stored}.}
+\certitem{Replay}{Tier~1; 1.5\,s (integer code) and 9\,s (\texttt{mpmath} code).}
+\end{certbox}
+
+% ---------------------------------------------------------------------------
+\subsubsection{\inst{optcdeg2}: MINOTAUR's report}\label{app:optcdeg2-minotaur}
+
+\Cref{sec:solvers-invalid} proves \cref{prop:minotaur-optcdeg2} from \cref{prop:optcdeg2-point}, and \cref{app:solvers-published} compares the files and the log.
+According to the log, the report occurs in the first presolve, before MINOTAUR's quadratic handler assigns default bounds to unbounded variables, so such default bounds play no role; the cause of the report is unknown, and we attribute no defect to MINOTAUR.

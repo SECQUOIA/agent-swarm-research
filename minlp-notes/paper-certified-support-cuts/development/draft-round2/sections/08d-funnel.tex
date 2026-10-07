@@ -1,0 +1,71 @@
+\subsection{What the separator does and what it costs}\label{sec:funnel}
+
+Table~\ref{tab:funnel} follows the certified rows from the support calls to
+the cuts that reach SCIP. Three observations explain most of the results of
+Section~\ref{sec:minlplib}.
+
+\begin{table}[t]
+\centering\footnotesize\setlength{\tabcolsep}{3.5pt}
+\caption{Separator funnel, summed over the runs of a part and mode: support
+calls, failed certifications, certified rows below the violation threshold,
+rows rejected by the stored-row check, and cuts added; then the separator
+callback time and its main parts. No row was ever discarded by safe rounding.
+In the path family the separator runs only at the root, so full and root runs
+have the same funnel; the times shown are those of the root runs. The three timed parts
+do not add up to the total, which also contains untimed work.}\label{tab:funnel}
+\begin{tabular}{@{}llrrrrrrrrr@{}}
+\toprule
+& & Support & Failed & Below & Stored-row & Cuts & \multicolumn{4}{c}{Callback time (s)}\\
+\cmidrule(l){8-11}
+Part & Mode & calls & cert. & thresh. & rejected & added & total & discovery & LPs & certif.\\
+\midrule
+3A full & \code{all} & 684 & 57 & 461 & 15 & 151 & 19.1 & 6.3 & 2.5 & 8.6\\
+3B full & \code{all} & 884 & 14 & 646 & 45 & 179 & 32.9 & 4.4 & 3.9 & 23.0\\
+3B root & \code{all-diag} & 1{,}618 & 19 & 1{,}039 & 202 & 358 & 45.1 & 2.3 & 9.6 & 30.4\\
+4B2 root & \code{all-diag}, no aggr. & 1{,}572 & 17 & 1{,}058 & 47 & 450 & 38.6 & 2.1 & 8.6 & 25.7\\
+4D root & \code{all} & 176 & 2 & 149 & 11 & 14 & 18.4 & 15.7 & 0.4 & 1.8\\
+4D root & \code{all-diag} & 6{,}352 & 313 & 5{,}042 & 106 & 891 & 188.4 & 53.6 & 22.8 & 69.8\\
+\midrule
+3C & remainder, mech.\ limits & 3{,}462 & 0 & 391 & 71 & 3{,}000 & 73.6 & 10.6 & 9.6 & 32.0\\
+4C2 & remainder, wide limits & 13{,}502 & 0 & 1{,}189 & 313 & 12{,}000 & 240.4 & 10.3 & 31.1 & 121.3\\
+4C3 & whole row, wide limits & 15{,}534 & 0 & 3{,}181 & 353 & 12{,}000 & 269.2 & 10.3 & 32.6 & 140.1\\
+4C4 & remainder, wide limits & 14{,}186 & 0 & 1{,}939 & 247 & 12{,}000 & 261.9 & 10.2 & 36.5 & 129.6\\
+4C4 & whole row, wide limits & 15{,}204 & 0 & 2{,}989 & 215 & 12{,}000 & 274.8 & 10.7 & 36.6 & 137.7\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+First, most certified supports are not violated at the LP point: on the
+MINLPLib models, 65 to 86\% of the certified rows fell below the violation
+threshold, because SCIP's relaxation already implied them up to the
+threshold. Certification failed in few support calls. In the campaign-3 reruns
+that recorded the outcome, every failure was \emph{incomplete} (a Bernstein
+or ball-arithmetic bound reached its depth budget, or did not certify the
+required value) or \emph{unsupported} (a quadratic block whose number of row
+subsets exceeded the enumeration budget and which the fallback bounds do not
+cover); none was an empty domain. In Part~D, 307 of the 313 failures came
+from one model.
+
+Second, the stored-row check lost a substantial share of the violated rows
+on MINLPLib models, mainly to presolve aggregation (Section~\ref{sec:minlplib}),
+and a small share on the path family, where SCIP dropped coefficients below
+its epsilon of $10^{-9}$ in 2 to 3\% of the violated rows. Each such loss would be a
+silent change of a certified row if the check were absent. A separator that
+works in the presolved space, or that declares its variables
+non-aggregatable before presolve, avoids most of the presolve losses; we did
+the latter only as an experiment (Part~B2), because it changes SCIP's own
+relaxation.
+
+Third, on the MINLPLib models the whole slowdown is the separator's own time.
+SCIP's solving time without the callback was unchanged in every part: its
+shifted geometric mean differed from the baseline's by at most 4\% in
+Parts~A and~B, and the median per-run ratio was between 0.96 and 1.01 in
+Parts~B2 and~D. The callback cost about half a second per run in Part~B, more than SCIP's whole
+solving time on most of these models (median 0.16\,s). In campaign~3, exact
+certification took 70\% of the callback time on Part~B, the direction LPs and
+discovery the rest; on the larger models of Part~D, discovery took 85\% of the
+callback time in mode \code{all}. All of this is Python code; a compiled
+implementation would remove most of it, but on these models it would at best
+break even, because the cuts did not reduce SCIP's work. On the path family,
+in contrast, the cuts reduced SCIP's own time sharply
+(Section~\ref{sec:mechanism}), and the callback was the dominant remaining cost.

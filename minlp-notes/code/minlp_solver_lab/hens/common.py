@@ -15,9 +15,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 INST = ROOT / "instances" / "hens"
 RES = pathlib.Path(__file__).resolve().parent / "results"
 RES.mkdir(exist_ok=True)
-GAMS_DIR = "/home/sgusev/.local/opt/gams/gams54.3_linux_x64_64_sfx"
-IPOPT_BIN = "/home/sgusev/miniconda3/envs/solvers/bin"
-os.environ["PATH"] = IPOPT_BIN + os.pathsep + os.environ["PATH"]
+# Configure ipopt and gams on PATH before running these experiments.
 
 
 def load_minlplib(name):

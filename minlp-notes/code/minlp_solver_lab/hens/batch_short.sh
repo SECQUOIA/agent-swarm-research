@@ -1,6 +1,6 @@
 #!/bin/bash
 export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
-cd /home/sgusev/repo/minlp-notes/code/minlp_solver_lab/hens
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")" || exit
 T=150; ex=ex1_yg1990_2h2c
 for form in orig lift; do
   uv run python -u run_synheat.py $ex $form gurobi $T 2>&1 | grep "^synheat\|rror"

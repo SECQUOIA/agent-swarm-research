@@ -26,7 +26,7 @@ The primary author-hosted [Buhrman et al. manuscript](https://homepages.cwi.nl/~
 
 Consulted the repository's Parks et al. literature record when assessing the reuse discussion. Existing Krylov recycling is expressly acknowledged, and the new claim is restricted to the residual/checkpoint contract and its proved quantitative bounds.
 
-Ran `checks/check_temporal_identities.py` with `/home/sgusev/miniconda3/envs/qipm/bin/python`. It passed its kernel, threshold/XOR, sparse KKT, and rank/volume diagnostics. These numerical checks supplement the algebraic inspection above and are not treated as proofs.
+Ran `checks/check_temporal_identities.py` with `/workspace/local-home/miniconda3/envs/qipm/bin/python`. It passed its kernel, threshold/XOR, sparse KKT, and rank/volume diagnostics. These numerical checks supplement the algebraic inspection above and are not treated as proofs.
 
 ## Overall fit and scope
 

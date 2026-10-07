@@ -120,7 +120,7 @@ to one definite-parity transform, not arbitrary compositions.
 Ran successfully:
 
 ```text
-/home/sgusev/miniconda3/envs/qipm/bin/python scripts/joint_accuracy_diagnostics.py --output /tmp/spectral-shift-review3-stage2
+/workspace/local-home/miniconda3/envs/qipm/bin/python scripts/joint_accuracy_diagnostics.py --output /tmp/spectral-shift-review3-stage2
 ```
 
 The CSVs and both image formats were produced; I inspected the PNG.

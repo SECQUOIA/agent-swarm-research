@@ -1,0 +1,211 @@
+\section{Valid cuts from numerically chosen directions}\label{sec:certification}
+
+A separation routine for~\eqref{eq:joint-hull} has two parts. One part
+chooses a direction $(a,b)$; the other proves a lower bound on
+$h_D(a,b)$. Only the second part affects validity. This section states
+the resulting contract and the whole-domain bounds that we use for
+non-quadratic expressions. Exact bounds for quadratic blocks follow in
+Section~\ref{sec:quadratic}.
+
+\subsection{The exported row}\label{sec:exported-row}
+
+Floating-point LP solvers store binary64 coefficients. Every finite
+binary64 number is a dyadic rational, so the row that the solver
+actually uses is a rational inequality, and validity can be stated for
+that row.
+
+\begin{proposition}[Validity of the exported row]\label{prop:exported-row}
+Let $\hat a\in\Q^n$ and $\hat b\in\Q^k$ be the exact values of the
+coefficients passed to the solver. If
+$L\le\min_{x\in D}\{\hat a\T x+\hat b\T F(x)\}$ and the exported
+right-hand side satisfies $\hat r\le L$, then
+$\hat a\T x+\hat b\T w\ge\hat r$ is valid for $H_D(F)$.
+\end{proposition}
+
+\begin{proof}
+Apply Proposition~\ref{prop:support} to $(\hat a,\hat b)$ and weaken
+the right-hand side.
+\end{proof}
+
+The statement is elementary, and the principle behind it is
+established: a numerically chosen affine bound needs no verification of
+how it was found, only a rigorous final shift
+\citep[Section~5]{GarloffJanssonSmith2003JCAM}, \citep{GarloffSmith2008},
+cut parameters may be chosen in floating point and the derivation then
+repeated rigorously \citep[p.~294]{NeumaierShcherbina2004}, and safe
+linear estimators are defined in terms of the machine coefficients
+themselves \citep{BorradaileVanHentenryck2005}. What the proposition fixes
+is what must be checked for joint support cuts. The direction may come
+from an LP over samples, from a heuristic, or from a previous iteration;
+none of these needs to be correct. A lower bound must be certified for the
+\emph{final} coefficients, on the \emph{whole} domain $D$, and the
+comparison $\hat r\le L$ must be exact. Rounding a proved rational row to
+binary64 without accounting for the coefficient changes does not meet
+this contract, and neither does a row that the solver changes after it
+has been submitted: outside its exact mode, SCIP~10 rounds a row coefficient that is integral
+within its tolerance to that integer, without adjusting the sides
+(functions \code{rowAddCoef} and \code{rowChgCoefPos} in
+\code{src/scip/lp.c} of \citealp{SCIPsource10}). For this reason our implementation reads back
+the row that SCIP stores and compares it with the certified row
+(Section~\ref{sec:replay}). When valid bounds $\ell\le(x,w)\le u$ are known
+for all coordinates, there is a standard alternative: if $c\T z\ge L$ is
+valid and $\hat c$ are the rounded coefficients, then
+\begin{equation}\label{eq:bound-correction}
+\hat c\T z\ \ge\ L+\sum_i\min\{(\hat c_i-c_i)\ell_i,\,(\hat c_i-c_i)u_i\}
+\end{equation}
+is valid, and its right-hand side can be rounded downward
+\citep{NeumaierShcherbina2004,EiflerGleixner2024}. We use the direct
+check of Proposition~\ref{prop:exported-row} for support inequalities
+in lifted coordinates, because bounds on the lifted coordinates $w$
+need not be available, and we use~\eqref{eq:bound-correction} after the
+lifted coordinates have been eliminated (Section~\ref{sec:export}).
+
+\subsection{Lower bounds on the whole domain}\label{sec:bounds}
+
+\paragraph{Polynomials.}
+Let $p$ be a polynomial with rational coefficients on a rational box
+$B=\prod_{i=1}^n[\ell_i,u_i]$. After the affine change of variables
+$x_i=\ell_i+(u_i-\ell_i)t_i$ and removal of fixed coordinates, write
+\[
+p(x(t))=\sum_{\beta\le d}a_\beta t^\beta=\sum_{\alpha\le d}c_\alpha B^d_\alpha(t),
+\qquad
+B^d_\alpha(t)=\prod_i\binom{d_i}{\alpha_i}t_i^{\alpha_i}(1-t_i)^{d_i-\alpha_i},
+\]
+where $d$ is a componentwise degree bound. The Bernstein coefficients
+are
+\begin{equation}\label{eq:bernstein}
+c_\alpha=\sum_{\beta\le\alpha}a_\beta\prod_i
+\binom{\alpha_i}{\beta_i}\Big/\binom{d_i}{\beta_i}.
+\end{equation}
+
+\begin{lemma}[Bernstein enclosure; see \citealp{GarloffSmith2008}]\label{lem:bernstein}
+For every $x\in B$, $\min_\alpha c_\alpha\le p(x)\le\max_\alpha c_\alpha$.
+\end{lemma}
+
+\begin{proof}
+On $[0,1]^n$ the basis polynomials are nonnegative and sum to one, so
+$p(x(t))$ is a convex combination of the coefficients. Formula
+\eqref{eq:bernstein} follows from the univariate identity
+$t^j=\sum_{i\ge j}\binom ij\binom dj^{-1}B^d_i(t)$ applied in each
+coordinate.
+\end{proof}
+
+All quantities in~\eqref{eq:bernstein} are rational, so the enclosure is
+computed exactly. A weak enclosure is improved by subdivision, and the
+enclosures shrink monotonically with the box
+\citep{GarloffJanssonSmith2003}. Exact rational Bernstein subdivision has
+even been formalized in a proof assistant \citep{MunozNarkawicz2013}; our
+use of it is ordinary.
+
+\begin{proposition}[Partition certificate]\label{prop:partition}
+Let $B_1,\dots,B_N$ be closed boxes with $\bigcup_jB_j=B$, and let
+$L_j\le\inf_{B_j}p$ for each $j$. Then $\min_jL_j\le\inf_Bp$. If a
+rational affine row $\alpha\T x\le\gamma$ is part of the domain and
+$\min_{x\in B_j}\alpha\T x>\gamma$, then $B_j$ may be omitted from the
+minimum. If every cell is omitted, the domain is empty.
+\end{proposition}
+
+The proof is immediate. Its hypothesis is what a checker must verify:
+the cells must cover $B$ exactly, starting from the trusted box and not
+from a list supplied by the generator. A missing end interval or a
+child box generated from a different parent would invalidate the bound.
+For the same reason, a stored bound may be reused only for the same
+expression, direction and domain; a bound proved on a smaller domain is
+not valid on a larger one.
+
+\paragraph{Univariate elementary expressions.}
+For one variable we also admit sums, products and rational powers of
+$\exp$, $\log$, $\sin$, $\cos$, $\sinh$, $\cosh$, $\tanh$, $\arctan$ and
+$\abs{\cdot}$, with rational constants and $\pi$ and $e$. On every cell
+of an interval subdivision, outward-rounded ball arithmetic
+\citep{Johansson2017arb} gives an enclosure of the support objective
+$t\mapsto at+b\T F(t)$. Domain requirements are part of the expression:
+$\log$ needs a positive argument, a quotient needs a denominator interval
+that excludes zero, and fractional powers use the nonnegative-base real
+convention. If an enclosure is not finite or a domain requirement cannot
+be proved on a cell, no bound is returned. Algebraic simplification
+before this check is not allowed to remove a domain requirement; for
+example, $x\log x/x$ still requires $x>0$.
+
+A curvature bound often gives a much better lower bound on a cell than
+a natural interval extension.
+The following bound is the classical remainder of linear interpolation;
+the same quantity is the maximal separation of an $\alpha$BB underestimator
+with $\alpha=M/2$ \citep{AdjimanEtAl1998}.
+
+\begin{lemma}[Chord correction]\label{lem:chord}
+Let $p$ be twice continuously differentiable on $[\alpha,\beta]$ with
+$p''\le M$. Then
+\[
+\min_{[\alpha,\beta]}p\ \ge\ \min\{p(\alpha),p(\beta)\}-\max\{0,M\}\,(\beta-\alpha)^2/8.
+\]
+\end{lemma}
+
+\begin{proof}
+The function $p(t)-Mt^2/2$ is concave, so it lies above its chord.
+Rearranging gives
+$p(t)\ge\ell_p(t)-\tfrac M2(t-\alpha)(\beta-t)$, where $\ell_p$ is the
+chord of $p$. If $M\ge0$, use $(t-\alpha)(\beta-t)\le(\beta-\alpha)^2/4$
+and $\ell_p(t)\ge\min\{p(\alpha),p(\beta)\}$. If $M<0$, the correction
+term is nonnegative and $p\ge\ell_p$.
+\end{proof}
+
+Verified enclosures of $p(\alpha)$, $p(\beta)$ and of $p''$ on the cell
+are enough. The implementation takes the larger of this bound and the
+natural enclosure on each cell.
+
+\paragraph{Outcomes.}
+A bound computation returns one of three outcomes: a certified bound
+with its partition, \emph{unsupported} (an operation outside the
+grammar), or \emph{incomplete} (a work limit was reached). Only the
+first produces a cut. An incomplete computation says nothing about the
+point being separated; in particular it is not evidence that the point
+lies in $H_D(F)$.
+
+\subsection{A certificate for skipping separation}\label{sec:screening}
+
+Separation is worth attempting only when a sufficiently violated cut
+may exist. A convex combination of graph points certifies that no cut
+with large normalized violation exists, and it is cheap to check.
+
+Let $z=(x,w)\in\R^r$ collect the coordinates of the block, let $\bar z$
+be the current LP point, and choose positive scales $s_1,\dots,s_r$.
+Let $x^1,\dots,x^N\in D$ be samples whose graph values have verified
+enclosures $z_j(x^i)\in[\ell_{ij},u_{ij}]$, and let
+$\lambda\in\R^N_{\ge0}$ with $\sum_i\lambda_i=1$. Put
+$L_j=\sum_i\lambda_i\ell_{ij}$, $U_j=\sum_i\lambda_iu_{ij}$, and
+\[
+\rho_j=\max\{\abs{\bar z_j-L_j},\abs{\bar z_j-U_j}\}/s_j,\qquad
+R_1=\sum_j\rho_j,\qquad R_\infty=\max_j\rho_j.
+\]
+
+\begin{theorem}[Screening]\label{thm:screen}
+Every valid inequality $c\T z\ge\beta$ for $H_D(F)$ satisfies
+$\beta-c\T\bar z\le R_1$ if $\max_js_j\abs{c_j}\le1$, and
+$\beta-c\T\bar z\le R_\infty$ if $\sum_js_j\abs{c_j}\le1$.
+\end{theorem}
+
+\begin{proof}
+The point $z^\ast=\sum_i\lambda_iz(x^i)$ lies in $H_D(F)$ and satisfies
+$L\le z^\ast\le U$. Hence
+$\beta-c\T\bar z\le c\T(z^\ast-\bar z)\le\sum_j(s_j\abs{c_j})\,\rho_j$,
+and H\"older's inequality gives both bounds.
+\end{proof}
+
+The theorem is the dual-norm bound on the violation of a hyperplane
+\citep{Mangasarian1999} applied to a certified point of the hull; the
+convex combination plays the role of an inclusion certificate in the
+sense of \citet{Tawarmalani2010}.
+
+The weights may come from any numerical LP. To use them, interpret the
+returned values exactly, set negative entries to zero and divide by the
+exact sum. Each sample must satisfy the exact domain constraints, and
+the enclosures must come from the trusted evaluator rather than from the
+LP. The direction LP of our implementation bounds each scaled
+coefficient separately, so the matching certificate is $R_1$: if
+$R_1\le\tau$, no cut with scaled violation above $\tau$ exists for that
+block at this point, and the separation call can be skipped. A failed
+screen has no consequence other than running the separator. In our first
+campaign the screen was used by the automatic mode, and it allowed only
+2 of 506 attempted skips; it is sound but rarely decisive, and the second
+implementation does not use it.

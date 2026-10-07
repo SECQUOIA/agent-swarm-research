@@ -1,0 +1,160 @@
+\section{Certified cuts and their replay}\label{sec:certification}
+
+A separation routine has two parts. One part chooses a direction; the other
+proves a lower bound for that direction. Only the second affects validity.
+This section states what must be checked for a cut in the original variables
+to be valid as the solver stores it, and how a record of the check is
+replayed.
+
+\subsection{The stored row}\label{sec:exported-row}
+
+Floating-point LP solvers store binary64 coefficients. Every finite binary64
+number is a dyadic rational, so the row that the solver uses is a rational
+inequality, and validity can be stated for that row. For a cut of the
+form~\eqref{eq:agg-cut}, four things must hold.
+\begin{enumerate}[label=(C\arabic*)]
+\item The direction $(a,\lambda)$ is taken as the exact rational value of its
+binary64 representation, and a lower bound $L\le\varphi(a,\lambda)$ over the
+whole domain $D$ is certified.
+\item The cut is assembled exactly: $c=S\T a-A\T\lambda$ and $r=L-\lambda\T b$,
+with repeated occurrences of a variable combined.
+\item The rational row $c\T v\ge r$ is rounded to binary64 with a correction
+that keeps it valid (Proposition~\ref{prop:export}).
+\item The row that the solver stores is the exported row.
+\end{enumerate}
+By Proposition~\ref{prop:aggregate}, (C1) and (C2) give a valid rational row,
+and (C3) and (C4) carry its validity to the stored row. The direction itself
+may come from an LP over samples, from a heuristic or from a previous
+iteration; none of these needs to be correct. The principle is established:
+a numerically chosen affine bound needs no verification of how it was found,
+only a rigorous final shift \citep[Section~5]{GarloffJanssonSmith2003JCAM},
+\citep{GarloffSmith2008}; cut parameters may be chosen in floating point and
+the derivation then repeated rigorously
+\citep[p.~294]{NeumaierShcherbina2004}; and safe linear estimators are
+defined in terms of the machine coefficients themselves
+\citep{BorradaileVanHentenryck2005}. The hazard at the last step is known to
+SCIP's developers. Outside its exact mode, SCIP~10 rounds a row coefficient
+that is integral within its tolerance to that integer and drops coefficients
+below its epsilon, without adjusting the sides (functions \code{rowAddCoef},
+\code{rowChgCoefPos} and \code{rowMerge} in \code{src/scip/lp.c} of SCIP~10.0.2
+\citep{SCIPsource10}). Its nonlinear constraint handler therefore relaxes its
+own cuts with variable bounds before storing them, in floating point, and
+rounds without correction when a needed bound is infinite
+\citep[Section~4.2.10]{SCIP8report}; cuts added by another separator receive
+no such treatment. Two points are specific to support cuts: the bound must be
+certified for the final direction on the whole block domain, which is a
+global nonconvex minimization, and the row that SCIP stores must be compared
+with the certified row.
+
+\begin{proposition}[Safe export]\label{prop:export}
+Let $c\T v\ge r$ be valid, let $\hat c$ be binary64 coefficients and
+$\Delta=\hat c-c$, and let $\ell_j\le v_j\le u_j$ be valid bounds, where
+$\ell_j$ is finite whenever $\Delta_j>0$ and $u_j$ is finite whenever
+$\Delta_j<0$. Put
+$E=\sum_{j:\Delta_j>0}\Delta_j\ell_j+\sum_{j:\Delta_j<0}\Delta_ju_j$. Then
+$\hat c\T v\ge\hat r$ is valid for every $\hat r\le r+E$.
+\end{proposition}
+
+\begin{proof}
+$\hat c\T v=c\T v+\Delta\T v\ge r+E$.
+\end{proof}
+
+This is the bound-corrected rounding of safe LP bounds and safe cuts
+\citep{NeumaierShcherbina2004,CookEtAl2009SafeCuts,EiflerGleixner2024},
+applied to the eliminated row. A coefficient that is exactly representable
+needs no bound, even on an unbounded variable such as the objective variable.
+The correction must be applied after every transformation that changes the
+row, including merging, scaling and the removal of tiny coefficients; $\hat r$
+is rounded downward and compared with $r+E$ in exact arithmetic. If a needed
+bound is infinite or the correction destroys the violation, the row is
+discarded. A fixed safety shift replaces neither this correction nor the
+certified bound of (C1); Section~\ref{sec:validity} gives an uncertified
+support bound whose error a shift of $10^{-6}$ does not cover. The bounds
+must be global implications of the model (Section~\ref{sec:faithful}). Our
+exporter is more conservative than the proposition: it requires both bounds
+of a variable to be finite whenever the coefficient of that variable changes.
+For support inequalities in lifted coordinates $(x,w)$, as in our first
+implementation, bounds on $w$ need not be available, and the direct form is
+used instead: if $L\le\min_{x\in D}\{\hat a\T x+\hat b\T F(x)\}$ for the exact
+values of the stored coefficients $(\hat a,\hat b)$ and $\hat r\le L$, then
+$\hat a\T x+\hat b\T w\ge\hat r$ is valid for $H_D(F)$ by
+Proposition~\ref{prop:support}.
+
+\subsection{Lower bounds on the whole domain}\label{sec:bounds}
+
+For quadratic blocks, (C1) is computed exactly by the oracles of
+Section~\ref{sec:quadratic}. For polynomial \emph{remainders} (the
+nonlinear part of a row, Section~\ref{sec:blocks}) in one or two
+variables we use Bernstein enclosures on a subdivision of the block box,
+computed in exact rational arithmetic
+\citep{GarloffJanssonSmith2003,GarloffSmith2008,MunozNarkawicz2013}; for
+univariate elementary expressions, outward-rounded ball arithmetic
+\citep{Johansson2017arb} on interval cells, strengthened by a chord
+correction from a verified bound on the second derivative
+(Appendix~\ref{app:bounds}). A certificate depends on two hypotheses. The
+cells must cover the box exactly, starting from the trusted box and not from
+a list supplied by the generator, and a bound proved on a smaller domain is
+never reused on a larger one. Domain requirements, such as a positive
+argument of $\log$ or a nonzero denominator, are proved on every cell; they
+are collected from the raw source expression before any symbolic
+simplification (Section~\ref{sec:faithful}), and every original feature is
+enclosed on the whole cell before features are combined, so that
+cancellation between features cannot hide a requirement. The chord
+correction is used only on cells where the expression is twice continuously
+differentiable and a finite bound on its second derivative is verified. A
+bound computation returns one of four outcomes: a certified bound with its
+partition; \emph{empty}, when every cell is excluded by a domain row, so that
+$D=\emptyset$; \emph{unsupported}, for an operation outside the grammar; or
+\emph{incomplete}, when a work limit is reached. Only the first produces a
+cut. An incomplete computation says nothing about the point being separated;
+in particular, it is not evidence that the point lies in the hull.
+
+\subsection{Records and replay}\label{sec:replay}
+
+Each cut is accepted through the same sequence: certify the support bound for
+the binary64 direction (C1); eliminate the nonlinear rows exactly and merge
+coefficients (C2); apply the correction of Proposition~\ref{prop:export} (C3);
+and read back the row that SCIP has created from the cut, with its columns,
+coefficients, constant, sides and scope, before it is passed to SCIP's
+separation storage, and compare it with the certified row after mapping
+original to transformed variables (C4). Any difference, such as a coefficient
+rounded by SCIP or a variable aggregated or removed by presolve, rejects the
+cut. Accepted rows are passed to SCIP as global, removable cuts with
+\code{forcecut} set. SCIP's later handling of the row, such as converting a
+cut in a single variable into a bound change, is outside this check.
+
+The record of a cut contains the serialized source model, the signed source
+rows and multipliers, the proven bounds with their derivations, the support
+domain, the direction, the support certificate (the complete candidate
+enumeration, the star partition or the subdivision with its bounds), the
+eliminated row, the rounding correction and the stored SCIP row. Replay runs
+in a fresh process. It verifies the hashes of the archived sources and model,
+re-executes the model builder (which constructs, but does not solve, a SCIP
+model through PySCIPOpt) and the bound derivations, rebuilds every signed
+source side from the archived model with its own affine splitter, repeats the
+exact support calculation for the recorded binary64 direction on the rebuilt
+features and domain, recomputes elimination and rounding, and compares the
+result with the stored row as recorded by the separator; the comparison with
+SCIP's row itself is made only when the cut is generated. For one recorded cut in each part and cut mode,
+fourteen single-field corruptions check that replay rejects altered inputs:
+the model hash, the support normal, the right-hand side and identity of a
+source side, a feature, the box, a row right-hand side, the scope, the
+rounding correction, the support identity, a stored coefficient, a stored
+side, the column mapping and the bound proof.
+
+Replay re-executes the generator's exact code: the model builder, the bound
+replay, the support kernels and the elimination and export routine. It does
+not run the direction search, the LP solver or SCIP's solving process, and it
+has its own affine splitter. It is therefore a re-execution in a fresh
+process, not an independent checker. The trusted base consists of Python's
+rational arithmetic; SymPy's expression construction (including its automatic
+canonicalization), expansion, polynomial conversion and differentiation; Arb
+through python-flint; the OSiL reader, both its parsing and its conversion of
+decimal tokens to binary64; PySCIPOpt's translation of the checked expression
+objects and row sides into SCIP constraints, and its accessors for stored
+rows; and the code shared by generation and replay. None of these is formally
+verified. The certificates say nothing about SCIP's presolve, its LP bounds,
+its branching or its final optimality claim; SCIP's exact mode, which solves
+MILPs without tolerances and can write VIPR certificates of complete solves
+for independent checking \citep{CheungGleixnerSteffy2017,EiflerGleixner2023},
+is limited to MILP \citep{SCIP10}.

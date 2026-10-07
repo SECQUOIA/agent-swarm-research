@@ -171,3 +171,52 @@ non-formal, non-exhaustive review, not external peer review or a guarantee
 against all errors. It does not establish practical performance or verify
 implemented CAD/recursive SDD solvers. No project-wide checks or CI inspection
 were performed.
+
+## Editorial revision of 2026-09-30
+
+An expert in the decision-diagram line of work read the previous version and
+said that it was hard to follow, mixed in decision-diagram material, presented
+the exponential size of projected-row diagrams on stars as new, mixed central
+and minor results, and gave no practical evidence. In response, the author
+removed the moment, geometry, and recursion appendices (now in `companion/`),
+demoted the decision-diagram star theorem to Remark `rem:dd-star` with
+corrected credit to Choi et al. Section 7.2, and added a Discussion section on
+practical relevance and open questions. Every section was rewritten for
+clarity.
+
+The rewrite was reviewed in two internal rounds (six and then four reviewer
+lenses: mathematical fidelity, an indicator-MIQO referee, a smoothed-analysis
+referee, prior-work accuracy, and consistency), each finding checked by a
+separate verifier before it was applied. No accepted finding identified a
+mathematical error. Accepted changes made the numerical-dependence claim
+precise (Corollary `cor:magnitude` forces the dependence on `C` relative to
+`sigma`), stated that each message is computed directly rather than composed,
+reframed the additive certificate (one grid-oracle call already approximates
+the original optimum), unified terminology and notation, and added credit to
+Beier–Vöcking Theorem 3, Röglin–Teng Lemma 6.1, Fiorini et al., Murty,
+Atamtürk–Gómez, Bodlaender, and the open question of Bhathena et al.
+(structured graphs, Section 2.2). These were internal reviews, not external
+peer review.
+
+## Restructuring of 2026-10-01
+
+The same expert read the revised introduction and said it still assumed
+familiarity with Bhathena et al. and with tree-decomposition methods, used
+separators and the "minimum over supports" on page one, and read as
+AI-written. In response the introduction was rewritten at a high level; a
+new Section 2 (Preliminaries, `sections/preliminaries.tex`, formerly
+`model.tex`) explains dynamic programming on a chain, tree decompositions
+with a figure, how exact dynamic programming combines child messages,
+messages and dictionaries, the perturbation, and the proof outline; and a
+new Section 3 (`sections/related.tex`) holds the detailed comparisons that
+were in the introduction. Every other section received a clarity pass, and
+repeated statements were reduced to one home each. Liu, Fattahi, Gómez,
+and Küçükyavuz (path case) were added to the credits.
+
+Three internal review rounds (an outsider reader, the expert's
+perspective, content preservation, citation accuracy, consistency, and
+style) checked the revision, each finding verified before it was applied.
+They found one incorrect sentence ("XP in w"), now removed, and no other
+mathematical error; the content check against the previous version found
+no lost theorem, caveat, or verified citation. These were internal
+reviews, not external peer review.

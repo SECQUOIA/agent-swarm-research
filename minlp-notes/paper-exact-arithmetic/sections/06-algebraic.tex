@@ -1,0 +1,701 @@
+\section{Algebraic singletons and the degree of exact optimizers}
+\label{sec:algebraic}
+
+The previous sections ask how hard it is to compare an exact optimal value or
+coordinate with a rational threshold. This section asks a prior question:
+what kind of number can an exact optimizer be, and how large must an expanded
+description of it be? We study the simplest setting in which the answer is not
+obvious. The objective $f$ is an unconstrained rational quartic, globally
+strongly convex, certified convex by rational data, and with minimum value
+zero. Its unique minimizer $p$ is then the unique real zero of $f$, and the
+zero sublevel set $\{f\le0\}$ is the singleton $\{p\}$.
+
+The answers are as follows.
+\begin{enumerate}[label=(\roman*)]
+\item Already in two variables the zero can be irrational, so a single
+  strongly convex quartic inequality with integer coefficients can have no
+  rational solution (Proposition~\ref{prop:algebraic-bivariate}).
+\item The coordinates that occur are exactly the real algebraic numbers with
+  one real conjugate. The same class arises for every singleton defined by
+  rational convex inequalities, for every unique minimizer of a rational convex
+  polynomial, and even for every rational polynomial with a single real zero
+  (Theorem~\ref{thm:singleton-field}). A number of degree $d$ is realized in
+  $(d+1)/2$ variables, in time polynomial in its dense minimal polynomial; this
+  count is optimal for consecutive power coordinates
+  (Theorem~\ref{thm:algebraic-dimension}).
+\item The degree can be exponential in the number of variables while all
+  coefficients have $O(\log n)$ bits (Theorem~\ref{thm:algebraic-cyclic}).
+  The construction uses $n+1$ integer squares, the least possible number even
+  over $\R$ (Theorem~\ref{thm:sos-length}).
+\item For a rational sum of quadratic squares with a single real zero, at
+  which the Hessian is positive definite, the field degree of the zero is at
+  most $2^n-1$; global convexity improves this to $2^n-3$ for $n\ge3$ and
+  $2^n-5$ for $n\ge4$. For $n=5$ the sharp bound is $21$.
+  The construction in (iii) is therefore extremal for
+  $n\le5$ (Theorem~\ref{thm:algebraic-degree-bounds}).
+\item Univariate convex realizations can require exponential degree, although
+  an auxiliary variable or a compressed circuit avoids that cost
+  (Theorem~\ref{thm:algebraic-univariate}).
+\item The optimizer of a certified quartic can be realized together with all
+  of its quadratic products, again by a polynomial-size certified quartic
+  (Theorem~\ref{thm:quadratic-graph}).
+\end{enumerate}
+These results matter for exact output. A rational convexity certificate does
+not produce rational feasible points, does not bound the algebraic degree of
+the optimizer by a constant, and does not make dense minimal-polynomial output
+short. They also supply the construction (Lemma~\ref{lem:quartic-realization})
+that the lower reductions of Section~\ref{sec:reductions} and the height and
+field constructions of Sections~\ref{sec:heights} and~\ref{sec:fields} use to
+place a prescribed point at the zero of a certified quartic. None of these
+results is a lower bound for exact decision problems; they concern which
+exact outputs exist and how long their expanded forms must be. Complete proofs
+are in Appendix~\ref{app:algebraic}.
+
+\subsection{Hessian Gram matrices and output formats}
+\label{sec:algebraic-models}
+
+In this section a \emph{quadratic} is a polynomial of degree at most two. For
+$x,v\in\R^n$ put $w(x,v)=(v,\,x\otimes v)\in\R^{n+n^2}$, where
+$x\otimes v$ has entries $x_kv_j$ indexed by ordered pairs $(k,j)$. As in
+Section~\ref{sec:heights}, a symmetric matrix $A$ is a \emph{full Hessian
+Gram} of a polynomial $f$ of degree at most four if
+$v^{\mathsf T}\nabla^2f(x)v=w(x,v)^{\mathsf T}Aw(x,v)$ for all $x,v$. If
+$A\succeq\lambda I$ then $\nabla^2f\succeq\lambda I$ everywhere, since
+$\norm{w(x,v)}\ge\norm v$. A full Hessian Gram certifies the Hessian; it is
+not a Gram matrix of $f$ itself. At a zero of $f$, no polynomial Gram matrix
+of $f$ can be positive definite, while a full Hessian Gram can be.
+
+Sums of squares of quadratics carry a canonical full Hessian Gram. For a
+quadratic $g(x)=g_0+b^{\mathsf T}x+x^{\mathsf T}Tx$ with $T$ symmetric,
+define the $n\times n^2$ matrix $\Delta(b,T)$ and the symmetric matrices
+$\Xi(T)$ and $\Gamma(g)$ by
+\begin{equation}
+\begin{gathered}
+ \Delta(b,T)_{i,(k,j)}=2b_kT_{ij}+4b_iT_{kj},\qquad
+ \Xi(T)=8\operatorname{vec}(T)\operatorname{vec}(T)^{\mathsf T}+4\,T\otimes T,\\
+ \Gamma(g)=\begin{pmatrix}2bb^{\mathsf T}+4g_0T&\Delta(b,T)\\
+            \Delta(b,T)^{\mathsf T}&\Xi(T)\end{pmatrix}.
+\end{gathered}
+ \label{eq:algebraic-canonical}
+\end{equation}
+Here $\operatorname{vec}(T)_{(k,j)}=T_{kj}$ and
+$(T\otimes T)_{(k,j),(k',j')}=T_{kk'}T_{jj'}$. The map $g\mapsto\Gamma(g)$ is
+quadratic in the coefficients of $g$; let $\widehat\Gamma(g,g')$ be its
+symmetric bilinear polarization. For a polynomial written as
+$f=\sum_{k,l}S_{kl}g_kg_l$ with quadratics $g_k$ and a symmetric matrix $S$,
+the \emph{canonical Hessian Gram} of this representation is
+$\Gamma_S(g)=\sum_{k,l}S_{kl}\widehat\Gamma(g_k,g_l)$. For a weighted sum of
+squares $f=\sum_kc_kg_k^2$ it is $\sum_kc_k\Gamma(g_k)$.
+
+\begin{lemma}[Canonical Hessian Grams]
+\label{lem:algebraic-gram}
+Let $f=\sum_{k,l}S_{kl}g_kg_l$ as above.
+\begin{enumerate}[label=(\alph*)]
+\item $v^{\mathsf T}\nabla^2f(x)v=w(x,v)^{\mathsf T}\Gamma_S(g)w(x,v)$ for all
+  $x,v\in\R^n$.
+\item \emph{Covariance.} For $c\in\R^n$ let
+  $\Psi_c=\begin{pmatrix}I_n&0\\-c\otimes I_n&I_{n^2}\end{pmatrix}$, where
+  $(c\otimes I_n)v=c\otimes v$. Then, as an identity of matrices,
+  $\Gamma_S(g)=\Psi_c^{\mathsf T}\,\Gamma_S\bigl(g(\cdot+c)\bigr)\,\Psi_c$.
+\item Consequently, if the canonical Gram of the recentred representation
+  satisfies $\Gamma_S(g(\cdot+c))\succeq\lambda I$, then
+  $\Gamma_S(g)\succeq\lambda(1+\norm c)^{-2}I$.
+\end{enumerate}
+\end{lemma}
+
+Part (b) is the reason the constructions below need no second approximation.
+Positivity is proved for the Gram centred at the common zero $p$ of the square
+factors, where they have no constant terms. Covariance then shows that the matrix
+$\Gamma_S(g)$, computed directly from the rational square factors, is the
+congruent image of that positive definite matrix. It is rational, positive
+definite, and of polynomial bit length, and no approximation of $p$ is needed
+to obtain it.
+
+\paragraph{Output formats.}
+For an algebraic point $p$ we write $\Q(p)=\Q(p_1,\ldots,p_n)$ and call
+$[\Q(p):\Q]$ the \emph{field degree} of $p$. A coordinate can be output by the
+\emph{dense} coefficient list of its minimal polynomial or by an
+\emph{ordinary sparse} list of its nonzero terms
+(Definition~\ref{def:models-representations}). The rational circuits of
+Definition~\ref{def:models-circuits} compute only rational numbers, so for
+irrational coordinates we also use \emph{root circuits}: rational circuits
+that may in addition contain gates $z\mapsto z^{1/k}$, returning the positive
+real $k$-th root of a positive input, with the integer $k\ge2$ written in
+binary. A coordinate of degree $D$ has a dense minimal-polynomial list with
+$D+1$ entries. The field degree of $p$ bounds the degree of every coordinate,
+but a coordinate need not attain it, and degree alone says nothing about
+sparse lists or root circuits. The lower bounds below always name the
+coordinate and the format they concern.
+
+\subsection{An integer quartic with an irrational zero}
+\label{sec:algebraic-bivariate}
+
+\begin{proposition}[Two variables suffice]
+\label{prop:algebraic-bivariate}
+Let $q_1=x^2-y$, $q_2=y^2-2x$,
+\[
+ A=12599x^2-10000xy+7937y^2-15874x-12599y+20000,
+ \qquad F=A^2+(100q_1)^2+(100q_2)^2 .
+\]
+Then $F\in\Z[x,y]$ has coefficients of absolute value less than $2^{30}$, and:
+\begin{enumerate}[label=(\alph*)]
+\item $\nabla^2F(x,y)\succeq4124\,I$ for all $(x,y)\in\R^2$;
+\item $F^{-1}(0)=\{F\le0\}=\{(2^{1/3},2^{2/3})\}$, so $\{F\le0\}$ contains no
+  rational point;
+\item the canonical Hessian Gram $\Gamma_F$ of the displayed three squares is
+  a positive definite integer $6\times6$ matrix, printed in
+  \eqref{eq:algebraic-bivariate-gram};
+\item the biform $v^{\mathsf T}(\nabla^2F(x)-4096I)v$ has the explicit
+  representation \eqref{eq:algebraic-bivariate-squares} as a positive integer
+  combination of squares of polynomials with rational coefficients.
+\end{enumerate}
+\end{proposition}
+
+The construction starts from the three quadratics $q_1,q_2$ and
+$q_3=(x-y)^2-2x-y+4$, which vanish at $p=(r,r^2)$, $r=2^{1/3}$. The real
+combination $(2r-1)q_1+(r^2-1)q_2+q_3$ equals
+$(x-r,y-r^2)\left(\begin{smallmatrix}2r&-1\\-1&r^2\end{smallmatrix}\right)
+(x-r,y-r^2)^{\mathsf T}$, a positive definite quadratic form centred at $p$;
+the rational combination $A=7599q_1+2937q_2+5000q_3$ approximates $5000$
+times it. Thus $A$ vanishes at $p$ exactly, has a positive definite quadratic
+part, and has a very small gradient at $p$. Squaring $A$ supplies curvature far
+from $p$; the two small squares supply curvature near $p$. Part (a) is proved
+by an explicit global estimate, part (c) by
+Lemma~\ref{lem:algebraic-gram} and a Schur complement bound, and part (d)
+records a direct rational certificate of a slightly weaker modulus.
+
+In version~1 of \cite{SlotSteurerWiedmer2025}, Table~1 leaves open whether
+exact feasibility of globally convex rational quartic inequalities always has
+a rational witness of polynomial bit length; Appendix~C there gives a convex
+sextic with an irrational unique zero. Proposition~\ref{prop:algebraic-bivariate}
+answers the quartic witness question negatively in two variables. It says
+nothing about the complexity of the decision problem: the point has the short
+algebraic description $(2^{1/3},2^{2/3})$.
+
+\subsection{Which algebraic numbers occur}
+\label{sec:algebraic-field}
+
+\begin{lemma}[One real conjugate]
+\label{lem:one-real-conjugate}
+Let $\{p\}\subseteq\R^n$ be a singleton that is either the real zero set of
+finitely many polynomials with rational coefficients, or the set
+$\{x:f_i(x)\le0,\ 1\le i\le s\}$ for finitely many rational convex polynomials
+$f_i$. Then $p$ has real algebraic coordinates, the field $K=\Q(p)$ has exactly
+one embedding into $\R$, $[K:\Q]$ is odd, and the minimal polynomial of every
+coordinate $p_j$ has exactly one real root.
+\end{lemma}
+
+For the zero-set case, every real embedding of $K$ maps $p$ to another real
+common zero, hence fixes $p$. In the convex case the inequalities active at
+$p$ already define $\{p\}$, and the same argument applies to them. The passage
+from the joint field to a single coordinate uses that $[K:\Q(p_j)]$ is odd, so
+every real embedding of $\Q(p_j)$ extends to a real embedding of $K$.
+
+\begin{theorem}[Coordinates of rational convex singletons]
+\label{thm:singleton-field}
+For a real number $\alpha$ the following are equivalent.
+\begin{enumerate}[label=(\roman*)]
+\item $\alpha$ is algebraic and its minimal polynomial over $\Q$ has exactly
+  one real root.
+\item For some $n$, some $f\in\Q[x_1,\ldots,x_n]$ has a single real zero, and
+  $\alpha$ is one of its coordinates.
+\item For some $n$, finitely many rational convex polynomials $f_i$ on $\R^n$
+  satisfy $\{x:f_i(x)\le0\ \forall i\}=\{p\}$ with $\alpha$ a coordinate
+  of $p$.
+\item For some $n$, $\alpha$ is a coordinate of the unique minimizer of a
+  rational convex polynomial on $\R^n$ that has exactly one minimizer.
+\item For some $n$, $\alpha$ is a coordinate of the unique zero of a rational
+  quartic $f$ on $\R^n$ that is a sum of $n+1$ squares of rational quadratics,
+  satisfies $\nabla^2f\succeq I$ on $\R^n$, and has a positive definite
+  rational full Hessian Gram.
+\end{enumerate}
+If (i) holds and $\alpha$ has degree $d\ge3$, then (v) holds with
+$n=(d+1)/2$ and zero $(\alpha,\alpha^2,\ldots,\alpha^n)$, and $f$, its square
+factors, and its Gram matrix are computed from the dense coefficient list of
+any rational multiple of the minimal polynomial in time polynomial in that
+list's binary length. If $\alpha$ is rational, (v) holds with $n=1$ and
+$f=(x-\alpha)^2+(x-\alpha)^4$.
+\end{theorem}
+
+The theorem says that convexity, certified convexity, degree four, and a sum
+of squares representation cost nothing in the class of reachable coordinates:
+they reach exactly the numbers that any rational polynomial with a single real
+zero can reach. The restriction to one real conjugate concerns singletons and
+unique unconstrained minimizers. It does not apply to constrained optimizers:
+$-x$ has the unique minimizer $\sqrt2$ on the rational convex set
+$\{x:x^2\le2\}$, and $\sqrt2$ has two real conjugates. In particular, no
+singleton defined by rational convex inequalities has $\sqrt2$ as a
+coordinate, which is why Square Root Sum comparisons are not encoded by such
+singletons (Section~\ref{sec:reductions}).
+
+Several convex quadratic inequalities suffice when one prefers quadratics to
+one quartic. The following corollary realizes power coordinates of degree $d$
+with three rational ellipsoids, so the Hessian span of a convex quadratic
+system with an irrational singleton can be three while the degree of the
+singleton is unbounded.
+
+\begin{corollary}[Three rational ellipsoids]
+\label{cor:algebraic-three-quadrics}
+Let $P\in\Q[T]$ be irreducible of degree $d\ge3$ with exactly one real root
+$\alpha$, given by its dense coefficient list. In time polynomial in the
+length of that list one can compute rational quadratics $g_1,g_2,g_3$ in $d-1$
+variables, each with positive definite Hessian, such that
+$\{x:g_i(x)\le0,\ i=1,2,3\}=\{(\alpha,\alpha^2,\ldots,\alpha^{d-1})\}$. Each
+set $\{g_i\le0\}$ is a full-dimensional ellipsoid.
+\end{corollary}
+
+\subsection{A generic quantitative construction}
+\label{sec:algebraic-realization}
+
+The realization results of this section, and those of
+Sections~\ref{sec:reductions}, \ref{sec:heights} and~\ref{sec:fields}, use
+one assembly step. A point $p$ is
+described by rational quadratics $r_j$ vanishing at it with a well-conditioned
+Jacobian, and by one rational quadratic $g$ vanishing at $p$ whose quadratic
+part is positive definite and whose gradient at $p$ is small. Such a $g$
+usually comes from an irrational positive semidefinite \emph{exposing}
+quadratic that vanishes to second order at $p$; approximating its coefficients
+inside the rational space of quadratics that vanish at $p$ keeps $g(p)=0$
+exactly and makes $\nabla g(p)$ as small as required.
+
+\begin{lemma}[Quantitative quartic realization]
+\label{lem:quartic-realization}
+Let $p\in\R^n$, and let $g,r_1,\ldots,r_m\in\Q[x_1,\ldots,x_n]$ be
+polynomials of degree at most two that vanish at $p$. Write
+\[
+ g(p+u)=\ell^{\mathsf T}u+u^{\mathsf T}Hu,\qquad
+ r_j(p+u)=b_j^{\mathsf T}u+u^{\mathsf T}T_ju,
+\]
+with symmetric $H,T_j$. Let $\mu,\Lambda,\beta,\nu$ be positive rationals with
+\begin{equation}
+ H\succeq\mu I,\quad \norm H\le\Lambda,\quad \norm{T_j}\le1,\quad
+ \norm{b_j}\le\beta\ (1\le j\le m),\quad
+ \sum_{j=1}^mb_jb_j^{\mathsf T}\succeq\nu^2I .
+ \label{eq:algebraic-realization-data}
+\end{equation}
+Let $t>0$ be rational, put $\varepsilon=t^2$, and suppose
+\begin{equation}
+ \varepsilon\le\min\Bigl\{1,\ \frac{\mu^2}{2m},\
+   \frac{\nu^2\mu^2}{36\,n(\Lambda+m\beta)^2}\Bigr\},
+ \qquad \norm\ell\le\varepsilon .
+ \label{eq:algebraic-realization-eps}
+\end{equation}
+Then $f=(g/(t\nu))^2+\sum_{j=1}^m(r_j/\nu)^2$ has the following properties.
+\begin{enumerate}[label=(\alph*)]
+\item $f\in\Q[x]$ has degree exactly four, is a sum of $m+1$ squares of
+  rational quadratics vanishing at $p$, and its quartic form is positive
+  definite.
+\item $\nabla^2f(x)\succeq\tfrac32I$ for every $x\in\R^n$. Hence $p$ is the
+  unique zero and the unique minimizer of $f$.
+\item The canonical Hessian Gram $\Gamma_f$ of the displayed representation is
+  a rational full Hessian Gram of $f$, and $\Gamma_f\succeq\gamma I$ with
+  \[
+   \gamma=\frac{\min\{3/2,\ 2\mu^2/(\varepsilon\nu^2)\}}
+          {\bigl((1+\theta)^2+1\bigr)(1+\norm p)^2},\qquad
+   \theta=\frac{3\sqrt n\,\varepsilon(\Lambda+m\beta)}{\mu^2}.
+  \]
+  Its entries are fixed polynomial expressions in the coefficients of
+  $g,r_1,\ldots,r_m$ and in $t,\nu$; computing it uses
+  $O(m(n+n^2)^2)$ rational operations on numbers of the input bit length.
+\end{enumerate}
+\end{lemma}
+
+The factor $n$ in the last bound of \eqref{eq:algebraic-realization-eps} is
+used only for part (c); part (b) holds without it
+(Remark~\ref{rem:algebraic-curvature}). The proof computes the
+canonical Gram centred at $p$, where it has three blocks: a constant block at
+least $2\varepsilon\nu^2I$, a quartic block at least $2\mu^2I$ even though the
+individual $T_j\otimes T_j$ can be indefinite, and a small cross block. A
+Schur complement estimate gives positivity, and covariance transfers it to the
+rational Gram. Squaring an indefinite quadratic does not produce a convex
+function, and the estimate retains the corresponding negative terms. Positive
+definite Hessian Gram matrices and Schur-complement arguments for SOS-convex
+regularization are established techniques \cite{AhmadiChaudhryZhang2024}; the
+additional feature here is that a prescribed, possibly irrational, zero is kept
+exactly while all coefficients stay rational and of polynomial size. The
+hypotheses force $p$ to be algebraic: $n$ of the residuals have a nonsingular
+Jacobian at $p$, so a small rational box isolates $p$ among their real common
+zeros, and the transfer argument in the proof of
+Lemma~\ref{lem:one-real-conjugate} applies. The construction, however, uses
+no algebraic representation of $p$, and $p$ need not be known or rational.
+The constructions in Sections~\ref{sec:reductions}, \ref{sec:heights},
+and~\ref{sec:fields} apply the lemma at the gate values of certified odd-root
+circuits and of rational unit-quaternion circuits, at points given by
+cube-root chains and by repeated complex squaring, and at points with
+coordinates in towers of radicals.
+
+\subsection{Power coordinates and the dimension count}
+\label{sec:algebraic-power}
+
+\begin{theorem}[Realization in power coordinates]
+\label{thm:algebraic-dimension}
+Let $P\in\Q[T]$ be irreducible of degree $d\ge3$ with exactly one real root
+$\alpha$, given by its dense list of rational coefficients of total binary
+length $L$, and let $n$ be an integer with $(d+1)/2\le n\le d-1$. A
+deterministic algorithm running in time polynomial in $L$ computes rational
+quadratics $g,r_1,\ldots,r_n$ in $n$ variables and positive rationals
+$t,\mu,\Lambda,\beta,\nu$ that satisfy the hypotheses of
+Lemma~\ref{lem:quartic-realization} at $p=(\alpha,\alpha^2,\ldots,\alpha^n)$. Hence
+$F_P=(g/(t\nu))^2+\sum_{j=1}^n(r_j/\nu)^2$ is a sum of $n+1$ squares of
+rational quadratics, $\nabla^2F_P\succeq\tfrac32I$, $F_P^{-1}(0)=\{p\}$, and
+the canonical Hessian Gram of $F_P$ is a positive definite rational matrix; all
+outputs have bit length polynomial in $L$.
+
+Conversely, if $f\in\Q[x_1,\ldots,x_k]$ has degree at most four, is
+nonnegative on $\R^k$, and has the unique real zero
+$(\alpha,\alpha^2,\ldots,\alpha^k)$, then $k\ge(d+1)/2$.
+\end{theorem}
+
+The algorithm first replaces $P$ by the monic minimal polynomial $P_1$ of
+$\alpha$; the input may be any rational multiple of it, including a negative
+one. The exposing quadratic comes from the nonnegative univariate polynomial
+$(T-\alpha)P_1(T)(1+T^2)^e$, where $e=n-(d+1)/2$ raises the degree to $2n$:
+its positive factor $P_1(T)(1+T^2)^e/(T-\alpha)$ is a product of real
+quadratics with positive definite $2\times2$ Gram matrices, which a recursion
+compresses onto consecutive monomials. Multiplying by the difference matrix
+for $T-\alpha$ produces a positive semidefinite matrix $Q_*$ of order $n+1$
+whose kernel is spanned by $(1,\alpha,\ldots,\alpha^n)$. Its entries involve
+all complex roots, so the algorithm approximates the roots with certified
+precision, forms a rational approximation, and projects it exactly onto the
+rational space of matrices that represent multiples of $P$. Root separation
+from the integer discriminant keeps every required precision at polynomially
+many bits. The residuals are $x_1x_j-x_{j+1}$ and one quadratic version of
+$P_1(x_1)=0$, whose Jacobian determinant at $p$ is a positive multiple of
+$P_1'(\alpha)$.
+
+The lower bound concerns the prescribed consecutive-power point only. A degree
+$d$ number has other coordinate encodings, and we do not know whether some of
+them need fewer variables. Irreducibility and the single real root are
+promises; the algorithm does not test them.
+
+\subsection{Exponential degree with small coefficients}
+\label{sec:algebraic-cyclic}
+
+Theorem~\ref{thm:algebraic-dimension} uses about $d/2$ variables for degree
+$d$. Far fewer variables suffice for special numbers. Let $n\ge2$, $m=n+1$,
+$\eta=(-1)^m$, and
+\[
+ d_n=\frac{2^m-\eta}{3}=\frac{2^{n+1}-(-1)^{n+1}}3,\qquad
+ e_i=\frac{(-2)^i-1}{3}\ (0\le i\le n),\qquad
+ p_i=2^{e_i/d_n}.
+\]
+The sequence $d_n$ begins $3,5,11,21,43,85$. With $x_0=1$ and indices modulo
+$m$, the point $p=(p_1,\ldots,p_n)$ is the unique real common zero of the $m$
+cyclic binomials $x_i^2-2^{\theta_i}x_{i+1}x_{i+2}$, where $\theta_i=0$ except
+$\theta_{m-2}=\eta$ and $\theta_{m-1}=-\eta$. The weights $p_i^{-2}$ combine
+these binomials into the anchored cycle energy
+$\tfrac12\sum_i(x_i/p_i-x_{i+1}/p_{i+1})^2$, an exposing quadratic whose
+curvature and Jacobian are controlled by inverse-polynomial quantities.
+
+\begin{theorem}[Small integer quartics with exponentially large field degree]
+\label{thm:algebraic-cyclic}
+For every $n\ge2$ a deterministic algorithm running in time polynomial in $n$
+computes integer quadratics $s_0,\ldots,s_n$ in $n$ variables, with
+coefficients of $O(\log(n+1))$ bits, such that $F_n=\sum_{i=0}^ns_i^2$
+satisfies:
+\begin{enumerate}[label=(\alph*)]
+\item $\nabla^2F_n\succeq I$ on $\R^n$, and the canonical Hessian Gram of
+  $\sum_is_i^2$ is a positive definite integer matrix;
+\item the unique zero of $F_n$ is $p\in(1/2,2)^n$, and
+  $[\Q(p):\Q]=[\Q(p_1):\Q]=d_n$;
+\item $F_n$ has $O(n^2)$ monomials, each with an $O(\log(n+1))$-bit
+  coefficient;
+\item $F_n$ is not a sum of fewer than $n+1$ squares of real polynomials;
+\item the condition number of $\nabla^2F_n(p)$ is at most $65600\,n^2$;
+\item after the substitution $x_1\mapsto x_1-1$, the first coordinate of the
+  unique zero is $1+2^{-1/d_n}$, whose primitive minimal polynomial
+  $2(T-1)^{d_n}-1$ has all $d_n+1$ coefficients nonzero and total binary
+  length $\Theta(d_n^2)$.
+\end{enumerate}
+\end{theorem}
+
+The field degree is exponential in the dimension, while the whole instance is
+computed in time polynomial in $n$. Even with dense exponent vectors and the
+full canonical Hessian Gram of order $n+n^2$ included, the certified input has
+binary length $L=O(n^4\log n)$. The dense and ordinary sparse
+minimal-polynomial lists in part (f) therefore have length
+$2^{\Omega(n)}=2^{\Omega((L/\log L)^{1/4})}$, which is superpolynomial, though
+not exponential, in $L$. No algorithm that writes such a list for this
+coordinate runs in time polynomial in $L$. Short output in other formats is
+not excluded. Each coordinate $p_i=2^{e_i/d_n}$ is determined by its rational
+exponent $e_i/d_n$, of $O(n)$ bits. With $a=2^{1/d_n}$, the relation
+$e_{i+1}=-2e_i-1$ gives $p_1=1/a$ and $p_{i+1}=1/(ap_i^2)$, so one root gate
+with the $O(n)$-bit index $d_n$, applied to $2$, followed by $O(n)$
+multiplications and divisions, is a root circuit for the whole optimizer.
+Part (e) shows that the large degree does not come from ill conditioning:
+the Hessian at the optimizer has condition number polynomial in $n$. This is
+a statement at the
+optimizer, not a uniform smoothness bound on a neighbourhood.
+Part (f) needs the translation, because $p_1=2^{-1/d_n}$ itself has the
+two-term minimal polynomial $2T^{d_n}-1$. The grounded determinant $d_n$ of the
+directed square cycle and its exponential growth are classical; see
+\cite{LoncParolWojciechowski2001}. The supporting construction of the proof
+also gives $n+1$ rational ellipsoids with the same singleton intersection.
+
+The number of squares in part (d) is optimal for a general reason.
+
+\begin{theorem}[Minimum number of squares]
+\label{thm:sos-length}
+Let $f\in\R[x_1,\ldots,x_n]$ be globally convex of degree exactly four, and
+suppose $f=\sum_{i=1}^mg_i^2$ with $g_i\in\R[x]$, $f(p)=0$, and
+$\nabla^2f(p)\succ0$ for some $p\in\R^n$. Then $m\ge n+1$. The bound is
+attained for every $n$ by $(\sum_ix_i^2)^2+\sum_ix_i^2$, by every quartic of
+Lemma~\ref{lem:quartic-realization} with $m=n$, and by the quartics $F_n$ of
+Theorem~\ref{thm:algebraic-cyclic}.
+\end{theorem}
+
+Each hypothesis is needed. The quartic $(1+\norm x^2)^2$ is globally strongly
+convex with one square and minimum one; $\norm x^4$ has a degenerate zero and
+one square; the nonconvex $x^2+(y-x^2)^2$ has two squares in two variables and
+Hessian $2I$ at its unique zero; a positive definite quadratic is a sum of $n$
+squares; and the sextic $(x_1+x_1^3)^2+\sum_{j\ge2}x_j^2$ is globally strongly
+convex with $n$ squares. The proof shows first that the leading quadratic part
+of the square factors does not depend on directions in which the quartic form
+vanishes, and that convexity forbids quadratic coupling to those directions;
+minimizing over them leaves a square quadratic map with one regular zero and a
+proper leading part. A proper even map has even topological degree, whereas a
+map with one regular zero has degree $\pm1$.
+
+The cyclic network is optimal among the binomial systems that its exposing
+strategy can use.
+
+\begin{proposition}[Optimality within binomial exposing networks]
+\label{prop:algebraic-network}
+Let $n\ge2$, $m=n+1$, and let $\mathcal D$ be a strongly connected directed
+multigraph on $\{0,\ldots,n\}$, loops and parallel arcs allowed, with exactly
+two outgoing arcs $i\to a(i)$, $i\to b(i)$ at every vertex. Fix $x_0=1$ and
+nonzero rationals $c_i$, and consider the $m$ equations
+$x_i^2=c_ix_{a(i)}x_{b(i)}$, $0\le i\le n$. If the system has exactly one real
+solution $p$, then $p$ is algebraic and $[\Q(p):\Q]\le d_n$; if $\mathcal D$
+is not Eulerian, then $[\Q(p):\Q]\le2^{n-1}-1$. Conversely, if $m$ rational
+homogeneous quadratic binomials in $(X_0,\ldots,X_n)$ vanish at a point
+$(1,p_1,\ldots,p_n)$ with nonzero coordinates and some real linear
+combination of them is a positive semidefinite quadratic form with kernel
+spanned by that point, then after reordering and rational rescaling the
+binomials have the above form; in particular the field degree is at most $d_n$,
+and fewer than $m$ binomials cannot have such a combination.
+\end{proposition}
+
+The proof counts complex solutions as characters of the finite group
+$\Z^n/\Lambda$, where $\Lambda$ is the row lattice of the exponent matrix;
+its order is the gcd $g$ of the rooted spanning-tree counts. Uniqueness of the
+real solution is equivalent to $g$ being odd. For Eulerian graphs, classical
+identities for the interlace polynomial of an Euler tour give
+$3g\le2^m-(-1)^m$ \cite{ArratiaBollobasSorkin2004,BalisterBollobasCutlerPebody2002}.
+The description of binomial solution sets by characters of a lattice quotient
+is standard \cite{EisenbudSturmfels1996}. The proposition restricts the method,
+not the problem: it does not bound the field degree of arbitrary rational sums
+of quadratic squares.
+
+\subsection{Upper bounds on the degree}
+\label{sec:algebraic-bounds}
+
+How large can the field degree of the zero be? For quartics given as rational
+sums of quadratic squares, intersection theory bounds it in terms of $n$. After
+a rational change of coordinates and elimination of flat directions, global
+convexity leaves the square factors
+without common real zeros at infinity, which would otherwise spoil classical
+Cayley--Bacharach arguments.
+
+\begin{theorem}[Degree bounds for rational sums of quadratic squares]
+\label{thm:algebraic-degree-bounds}
+Let $f=\sum_{j=1}^mr_j^2$ with $r_j\in\Q[x_1,\ldots,x_n]$ of degree at most
+two, suppose that $f$ has exactly one real zero $p$ and that
+$\nabla^2f(p)\succ0$, and put $D=[\Q(p):\Q]$. Then $p$ is algebraic, $D$ is
+odd, and:
+\begin{enumerate}[label=(\alph*)]
+\item $D\le2^n-1$;
+\item if $f$ is globally convex and $n\ge3$, then $D\le2^n-3$; if moreover
+  $n\ge4$, then $D\le2^n-5$;
+\item if $f$ is globally convex and $n=5$, then $D\le21$.
+\end{enumerate}
+Consequently, among globally convex quartics in this class the largest field
+degrees in dimensions $1,2,3,4,5$ are exactly $1,3,5,11,21$; for $n\ge2$ they
+are attained by the quartics $F_n$ of Theorem~\ref{thm:algebraic-cyclic}.
+\end{theorem}
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+$n$ & 2 & 3 & 4 & 5 & 6\\
+\midrule
+cyclic degree $d_n$ & 3 & 5 & 11 & 21 & 43\\
+upper bound & 3 & 5 & 11 & 21 & 59\\
+\bottomrule
+\end{tabular}
+\caption{Field degrees of zeros of globally convex rational sums of quadratic
+squares with a nondegenerate zero. The maximum is known exactly for $n\le5$.
+For $n\ge6$ the cyclic family gives $d_n=(2^{n+1}-(-1)^{n+1})/3$ and the upper
+bound is $2^n-5$.}
+\label{tab:algebraic-degrees}
+\end{table}
+
+Part (a) selects $n$ square factors with a nonsingular Jacobian at $p$; all
+conjugates of $p$ are simple isolated zeros of these $n$ quadrics, so a
+weighted form of B\'ezout's theorem bounds their number by $2^n$, and oddness
+gives $2^n-1$. For (b), global convexity lets us remove, by a rational change
+of coordinates that preserves the field and the rational squares, every
+direction in which the quartic form vanishes. Afterwards the square factors
+have no common real zero at infinity, although common complex zeros at
+infinity may remain. If the degree were $2^n-1$ or $2^n-3$, the conjugates of
+$p$ would leave a residual of length one or three in a complete intersection
+of $n$ rational linear combinations of the square factors, chosen generically
+for length three, and Cayley--Bacharach theorems
+\cite{EisenbudGreenHarris1996} would make that residual contain a second real
+common zero. In five variables, the remaining residual
+lengths $1,3,5,7,9$ are excluded by a parity argument for a Gorenstein pairing
+on the residual scheme, and positive-dimensional complex base components are
+excluded by a residual-intersection count over a list of low-degree real-point
+free curves and surfaces. These five-variable steps import precisely stated
+results of intersection theory \cite{Fulton1998,EklundJostPeterson2013} and
+the classification of curves of minimal degree \cite{EisenbudHarris1987}; the
+contracts are recorded in Appendix~\ref{app:algebraic-imports}.
+
+Rational square factors are essential to this argument. Without them, the
+gradient equations give the following weaker bound, and in two variables a
+classification of rational nonnegative ternary quartics recovers the sharp
+bound.
+
+\begin{proposition}[Bounds without square factors]
+\label{prop:algebraic-node-bound}
+Let $f\in\Q[x_1,\ldots,x_n]$ have degree at most four, be nonnegative on
+$\R^n$, and have exactly one real zero $p$, with $\nabla^2f(p)$ nonsingular.
+Then $p$ is algebraic and $[\Q(p):\Q]$ is odd and at most $2\cdot3^{n-1}-1$.
+If $n=2$ and $f$ is globally convex, then $[\Q(p):\Q]\le3$.
+\end{proposition}
+
+\begin{lemma}[Rational descent in two variables]
+\label{lem:algebraic-bivariate-descent}
+Let $f\in\Q[x_1,x_2]$ have degree four, be nonnegative on $\R^2$, have exactly
+one real zero, and have a positive definite quartic form. Then $f$ is a sum of
+squares of polynomials with rational coefficients. In particular this holds
+for every certified quartic in two variables with minimum zero.
+\end{lemma}
+
+The lemma uses Scheiderer's description of rational nonnegative ternary
+quartics that are not sums of rational squares \cite{Scheiderer2016}: such a
+form is a product of four complex lines in general position, and then it has
+at least two real projective zeros. The lemma is the reason why the
+three-variable rational descent obstruction of Section~\ref{sec:fields} cannot
+occur in two variables. Global convexity cannot be dropped from
+Theorem~\ref{thm:algebraic-degree-bounds}(b): Example~\ref{ex:algebraic-seven}
+in the appendix gives three rational quadratics in three variables whose sum of
+squares has a unique real zero of field degree $7>2^3-3$, with positive
+definite Hessian there.
+
+\subsection{Univariate realizations: degree, dimension, and format}
+\label{sec:algebraic-univariate}
+
+A univariate rational polynomial can also have a single real zero at a
+number with one real conjugate; the square of its minimal polynomial does.
+Requiring convexity changes the cost.
+
+\begin{theorem}[Univariate convex realizations]
+\label{thm:algebraic-univariate}
+\begin{enumerate}[label=(\alph*)]
+\item A real number is the unique real zero of a rational globally strongly
+  convex univariate polynomial if and only if it is algebraic with exactly one
+  real conjugate.
+\item Let $P\in\Z[T]$ be irreducible of degree $d\ge1$, with positive leading
+  coefficient, coefficients of absolute value at most $2^\tau$, and exactly one
+  real root $\alpha$. In time polynomial in $d+\tau$ one can compute
+  $c\in\Q$, $\kappa\in\Q_{>0}$, and an integer $N\ge2$, each of binary length
+  $O(d^3(\tau+\log(d+1)))$, such that $G=\kappa P^2(1+(T-c)^2)^N$ satisfies
+  $G''\ge1$ on $\R$ and $G^{-1}(0)=\{\alpha\}$. Thus $G$ is computed by a
+  rational arithmetic circuit with input $T$ and size polynomial in $d+\tau$,
+  while its degree $2d+2N$
+  may be exponential and its value at the integer $2^{\tau+2}$ is at least
+  $2^N$.
+\item For $k\ge1$ let $P_k=T^3-3T+2+2^{-2k}$. It is irreducible, has a single
+  real root $\alpha_k$, and has binary length $O(k)$. Every rational globally
+  convex univariate $F$ whose only real zero is $\alpha_k$ satisfies
+  $(\deg F)^2>\tfrac342^k$. Every finite system of rational convex univariate
+  inequalities with solution set $\{\alpha_k\}$ contains a polynomial of such
+  degree. Every nonconstant rational globally convex $J$ with a minimizer at
+  $\alpha_k$ satisfies $(\deg J-1)^2>\tfrac342^k$.
+\item The two-variable quartic of Theorem~\ref{thm:algebraic-dimension}
+  ($d=3$, $n=2$) has unique zero $(\alpha_k,\alpha_k^2)$ and binary length
+  polynomial in $k$. The quartic $J_k=T^4/4-3T^2/2+(2+2^{-2k})T$ is globally
+  quasiconvex, not convex, and has unique minimizer $\alpha_k$.
+\end{enumerate}
+\end{theorem}
+
+Parts (a) and (b) multiply $P^2$ by $(1+(T-c)^2)^N$; the exponent $N$ must be chosen
+before the rational centre $c$, which must then lie very close to $\alpha$
+(a fixed centre does not work in general). Convexification of positive
+polynomials by such multipliers is established \cite{KurdykaSpodzieja2015};
+the zero of $P^2$ is what forces the moving rational centre. Part (c) uses that
+two complex
+conjugates of $\alpha_k$ lie within $2^{-k}$ of the real point $1$, at distance
+more than three from $\alpha_k$: a convex polynomial vanishing at $\alpha_k$
+must vanish at these conjugates, and Markov's inequality on the interval
+from $\alpha_k$ to their common real part forces large degree
+\cite{BorweinErdelyi1995}. Thus, in one variable, exact
+convex realization has an unavoidable exponential degree for some
+$O(k)$-bit inputs; one auxiliary variable, a compressed circuit, or
+quasiconvexity removes this cost. Part (b) supplies no cheap exact evaluation:
+expanded rational values of $G$ at short rational arguments can be
+exponentially long.
+
+\subsection{Realizing the quadratic products of an optimizer}
+\label{sec:algebraic-graph}
+
+Some constructions need a certified quartic whose zero records not only an
+optimizer $p$ but also all products $p_ip_j$. The next theorem provides one
+without computing $p$ or any minimal polynomial. It is used later in the
+paper to make both blocks of a block-separated certificate obstruction
+strongly SOS-convex.
+
+\begin{theorem}[Quadratic graph realization]
+\label{thm:quadratic-graph}
+Let $f\in\Q[x_1,\ldots,x_n]$ have degree at most four and a rational full
+Hessian Gram $A\succ0$, and suppose that $\min f=0$; this is a promise and is
+not checked. Let $p$ be the minimizer, $N=n+n(n+1)/2$, and use variables
+$(y,z)$ with $z=(z_{ij})_{1\le i\le j\le n}$. In deterministic time polynomial
+in the binary length $L$ of $(f,A)$ one can compute rational quadratics
+$g,r_1,\ldots,r_N$ in $(y,z)$ and positive rationals $t,\mu,\Lambda,\beta,\nu$
+that satisfy the hypotheses of Lemma~\ref{lem:quartic-realization} at
+$w_*=(p,(p_ip_j)_{i\le j})$. Hence $B=(g/(t\nu))^2+\sum_{j=1}^N(r_j/\nu)^2$ is
+a sum of $N+1$ rational squares, $B^{-1}(0)=\{w_*\}$,
+$\nabla^2B\succeq\tfrac32I$, and the canonical Hessian Gram of $B$ is a
+positive definite rational matrix. No representation of $B$ uses fewer than
+$N+1$ real squares.
+\end{theorem}
+
+The exposing quadratic is a quadratic lift of $f$ itself. For a rational
+centre $\hat p$, the Taylor formula with integral remainder and the full
+Hessian Gram express $f(y)$ as a rational quadratic $g_{\hat p}(y,z)$
+evaluated on the graph $z_{ij}=y_iy_j$. Hence $g_{\hat p}(w_*)=f(p)=0$
+exactly for every $\hat p$, which is what the assembly lemma needs. Its
+quadratic part is uniformly positive definite, and its gradient at $w_*$ is
+at most a constant
+multiple of $\norm{\hat p-p}$. A rational
+$\hat p$ close to $p$ is computed by approximate convex minimization
+(Lemma~\ref{lem:convex-value}) and strong convexity. The residuals are the
+graph relations $y_iy_j-z_{ij}$ and a quadratic version of $\nabla f(y)$, with
+Jacobian determinant $\det\nabla^2f(p)$ at $w_*$.
+
+\subsection{Scope and open questions}
+\label{sec:algebraic-scope}
+
+The results of this section are statements about exact outputs and exact
+certificates. They give no lower bound for deciding feasibility, comparing
+values, or approximating the optimizer. In the explicit families above the
+optimizer also has a short description, as a radical expression, a root of
+the input polynomial, or the zero of the input quartic, and the comparison
+problems for certified quartics are covered by the upper bounds of
+Section~\ref{sec:upper}. Dimension-exponential
+lower bounds on output length are superpolynomial in the input length of the
+families, not exponential in it.
+
+Several questions remain open. The largest field degree of the zero of a
+globally convex rational sum of quadratic squares is unknown for $n\ge6$;
+the cyclic family gives about $\tfrac232^n$ and
+Theorem~\ref{thm:algebraic-degree-bounds} gives $2^n-5$. The sharp bound for
+rational convex quartics without a rational square representation is unknown
+for $n\ge3$; Proposition~\ref{prop:algebraic-node-bound} gives
+$2\cdot3^{n-1}-1$. We do not know the fewest variables needed for a degree $d$
+number in coordinate encodings other than consecutive powers, the optimal
+degree in Theorem~\ref{thm:algebraic-univariate}(c), or the shortest sparse
+or circuit description of the univariate realizations.

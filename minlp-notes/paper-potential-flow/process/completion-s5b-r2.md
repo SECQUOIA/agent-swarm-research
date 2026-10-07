@@ -1,6 +1,6 @@
 # Independent S5b review R2
 
-Reviewed frozen Paper A, `complexity/sections/09-correlations-energy.tex`, in `/home/sgusev/repo/minlp-notes-potential-flow`.
+Reviewed frozen Paper A, `complexity/sections/09-correlations-energy.tex`, in `/workspace/minlp-notes-potential-flow`.
 
 Initial SHA256: `51b97d72b27619fa890ec977d9c9166beb5ee0c933edb3f29fa5df348e950f13`.
 
@@ -64,7 +64,7 @@ These checks support the stated relationships to earlier work. I did not perform
 
 ## Independent computations
 
-I used `/home/sgusev/miniconda3/envs/minlp-notes/bin/python`, with bytecode writing disabled for the diagnostic script. SymPy checked the triangle derivatives, cut constants, and irrational-example identities exactly. The rewards evaluate to approximately `0.03759827903824855` and `0.0687354247371111`, consistent with the rational lower bounds.
+I used `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python`, with bytecode writing disabled for the diagnostic script. SymPy checked the triangle derivatives, cut constants, and irrational-example identities exactly. The rewards evaluate to approximately `0.03759827903824855` and `0.0687354247371111`, consistent with the rational lower bounds.
 
 A separate five-edge Wheatstone diagnostic varied both directional profiles so that the diagonal flow reversed sign. It tested regularization values `1`, `0.01`, `0.000001`, and `0`, with endpoint diagonal flows approaching `+/-0.2360679774997897`. At the symmetric midpoint the diagonal flow is exactly zero. An initial double-precision pseudoinverse calculation lost accuracy in the forcing residual at `rho=0.000001`; I replaced that electrical-response calculation with exact rational grounded-Laplacian algebra. All five individual forcing identities and response bounds then passed exactly for each positive tested regularization. This numerical issue is not a manuscript finding. These finite checks supplement the full proof audit and do not establish its universal statements.
 

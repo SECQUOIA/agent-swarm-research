@@ -152,7 +152,7 @@ The adjacent-terminal current-sign lemma is classical [Duffin confluence theory]
 
 [`series_parallel_envelope_checks.py`](../code/potential_flow_mpd/series_parallel_envelope_checks.py) compared 24 envelope maxima/minima on `K_{2,3}` and `K_{2,4}` blocks with dangling branches against exhaustive enumeration of 3,840 endpoint scenarios. These networks include block ranks two and three, and the tests include a target bridge. The largest extremum mismatch was `4.05e-15`; selecting endpoints from the envelope flow reproduced its full state within `5.47e-15`. Another 72 approximate-sign endpoint recoveries satisfied the stated perturbation bound, and 72 feasible-flow perturbations satisfied the energy-gap inequality. These checks use unsmoothed quadratic laws and independently solve the circulation equations; they do not certify the general theorem or its bit complexity.
 
-Run `/home/sgusev/miniconda3/envs/minlp-notes/bin/python code/potential_flow_mpd/series_parallel_envelope_checks.py`.
+Run `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python code/potential_flow_mpd/series_parallel_envelope_checks.py`.
 
 ## Independent verification and exact-arithmetic boundary
 

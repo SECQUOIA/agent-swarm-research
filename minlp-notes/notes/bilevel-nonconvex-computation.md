@@ -158,7 +158,7 @@ seen when the number of distinct response events grows.
 Run from the repository root:
 
 ```sh
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python code/bilevel_nonconvex/benchmarks.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python code/bilevel_nonconvex/benchmarks.py
 ```
 
 The script needs SymPy and SciPy; the JSON records Python, SymPy, and platform

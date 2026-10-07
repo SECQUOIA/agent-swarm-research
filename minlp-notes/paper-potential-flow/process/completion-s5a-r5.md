@@ -1,6 +1,6 @@
 Independent S5a review — reviewer 5
 
-Reviewed worktree: `/home/sgusev/repo/minlp-notes-potential-flow`.
+Reviewed worktree: `/workspace/minlp-notes-potential-flow`.
 Reviewed manuscript: `paper-potential-flow/complexity/sections/08-design.tex`, all 749 lines.
 
 **Verdict: pass with minor corrections.** I found no major mathematical, complexity, output-contract, or attribution defect. The new fixed-measurement theorem for independent polynomial-law cycle polytopes, including the stated rational local capacities, has a complete substantive proof. Its validity does not depend on treating the earlier quadratic implementation as evidence. Two small proof corrections are listed below. They do not require changing a theorem's scope or conclusion.

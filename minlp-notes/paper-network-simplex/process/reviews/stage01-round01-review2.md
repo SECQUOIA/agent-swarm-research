@@ -98,7 +98,7 @@ the original flow.
 Command actually run:
 
 ```sh
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python paper-network-simplex/verification/reviewer2/stage01-round01/check_factorization.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python paper-network-simplex/verification/reviewer2/stage01-round01/check_factorization.py
 ```
 
 The computations supplement the proof review; they do not substitute for the

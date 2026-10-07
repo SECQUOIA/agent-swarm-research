@@ -147,7 +147,7 @@ implicit optimum and the concrete parity comparison are fully proved.
 
 Run:
 
-    /home/sgusev/miniconda3/envs/qipm/bin/python scripts/joint_accuracy_diagnostics.py
+    /workspace/local-home/miniconda3/envs/qipm/bin/python scripts/joint_accuracy_diagnostics.py
 
 from the manuscript directory (the script also works from another directory).
 It writes thresholds.csv, pinned_kernels.csv, joint_diagnostics.pdf, and

@@ -75,7 +75,7 @@ The abstract now says “at most two” LP spectral scales, matching the possibi
 
 I created an isolated standalone copy at `/tmp/conditioning-full-r1-t07gb9o0` containing the manuscript, bibliography, README, Makefile, sections, figures, tables, and reproduction package. I deliberately omitted `development/` and the surrounding repository. All numerical reruns and compilation occurred in that copy.
 
-- `make reproduce PYTHON=/home/sgusev/miniconda3/envs/qipm/bin/python` passed all reproduction checks.
+- `make reproduce PYTHON=/workspace/local-home/miniconda3/envs/qipm/bin/python` passed all reproduction checks.
 - Regenerated files under `figures/`, `tables/`, and `repro/results/` matched the submitted files byte-for-byte.
 - The three Netlib accepted/attempted counts were 14/27, 19/27, and 12/27. The final accepted gaps and condition estimates agreed with the manuscript.
 - The finite-precision CG experiment reproduced iteration counts 43, 71, 96, and 124. In the last case, the recursive residual was approximately \(2.95\cdot10^{-9}\), the independently recomputed true residual approximately \(2.52\cdot10^{-8}\), and the relative energy error approximately \(8.55\cdot10^{-9}\), agreeing with the stated residual-gap interpretation.

@@ -32,7 +32,7 @@ The analytic checks below do not rely on prior audit labels.
 - **Exactness and interpretation.** Equality `R=L` requires the positive and negative edge sets to be cuts, equivalently even intersection with every cycle. The stated positive-coloring bound, complete-graph limiting value, nonempty-forest exactness, arboricity comparison, and global-average-density counterexample are consistent. The manuscript separates coefficient suprema from a fixed coefficient vector and separates finite extremizers from growing-density constants.
 - **Prior norm transfer.** Davidson–Donsig Theorem 2.4 provides the continuous parameter required here; using Theorem 2.3 instead would round it. The symmetric pattern count gives beta=rho even for overlapping row and column subsets. The real projective pairing gives `2L <= pi(M)||A||_(infinity->1)`, and the cube polarization gives the latter norm at most `4R`. Consequently the displayed transfer constant is `4 K_G sqrt(rho)`, as claimed. The real Grothendieck convention is supported by the source. The elementary proof's attribution does not overclaim priority.
 
-An independent checker is retained at `verification/reviewer13/check.py`. Executed with `/home/sgusev/miniconda3/envs/minlp-notes/bin/python`; result:
+An independent checker is retained at `verification/reviewer13/check.py`. Executed with `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python`; result:
 
 ```text
 PASS: 729 signed/zero coefficient vectors; 6452 exact nonempty induced cut checks; 675 numerical vertex-LP gap checks.

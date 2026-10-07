@@ -1,0 +1,98 @@
+\section{The tightening operator}\label{sec:foundations}
+
+Consider
+\begin{equation}\label{eq:problem}
+ f^*=\min\{f(x):x\in X\cap B_0\},
+\end{equation}
+where $B_0=[\ell^0,u^0]\subset\R^n$ is a bounded box and $X$ includes
+the original constraints and any integrality restrictions. A relaxation
+built on $B\subseteq B_0$ has a projected objective
+$\phi_B:B\longrightarrow\R\cup\{+\infty\}$: for a lifted formulation,
+$\phi_B(x)$ is the infimum of the relaxed objective over lifted points
+above $x$, with value $+\infty$ if none exist. Assume
+\begin{align}
+ \phi_B(x)&\le f(x) &&(x\in X\cap B),\label{eq:validity}\\
+ \phi_{B'}(x)&\ge\phi_B(x) &&(B'\subseteq B,\ x\in B').\label{eq:monotonicity}
+\end{align}
+The second condition is a hypothesis on the whole relaxation construction,
+including any rows retained or discarded. It is not a consequence of
+calling a relaxation ``McCormick'' if unrelated strengthening rows change
+between calls. Assume that the nonempty projected sublevel sets used
+below are compact. This holds for the bounded lifted linear relaxations
+in the exact reference implementation.
+
+For a finite objective cutoff $U$, define
+\begin{equation}\label{eq:operator}
+ K_U(B)=\{x\in B:\phi_B(x)\le U\},\qquad
+ T_U(B)=\hull K_U(B),
+\end{equation}
+where $\hull$ is the smallest axis-aligned closed box containing its
+argument. The empty set maps to the empty set. Exact Jacobi OBBT computes
+the coordinate minima and maxima on one frozen relaxation, then rebuilds
+the relaxation on the resulting box. A sequential variant may rebuild
+after each coordinate update; this difference matters for rate equalities.
+
+\begin{lemma}[Containment and order]\label{lem:order}
+Every feasible point in $X\cap B$ with objective at most $U$ belongs to
+$T_U(B)\subseteq B$. If $B'\subseteq B$, then
+$T_U(B')\subseteq T_U(B)$. If $U'\le U$, then
+$T_{U'}(B)\subseteq T_U(B)$.
+\end{lemma}
+\begin{proof}
+Validity puts the stated feasible points in $K_U(B)$. The box hull stays
+in $B$. For $x\in K_U(B')$, monotonicity gives
+$\phi_B(x)\le\phi_{B'}(x)\le U$, so $K_U(B')\subseteq K_U(B)$;
+taking box hulls preserves inclusion. The cutoff assertion follows
+directly from sublevel-set inclusion.
+\end{proof}
+
+If a feasible incumbent supplies $U\ge f^*$, exact iterates
+$B_{k+1}=T_U(B_k)$ are nested and preserve every global minimizer in
+$B_0$. Their intersection $B_\infty$ is a nonempty box. This elementary
+convergence statement does not supply a rate or a computable distance to
+$B_\infty$. Nor does nestedness alone justify identifying the intersection
+as a fixed point without an additional continuity property of the
+relaxation construction. The certificates below avoid that inference.
+
+Write $w(B)=\max_i(u_i-\ell_i)$. A frequently useful bound from the
+earlier study illustrates the role of the incumbent and of curvature.
+
+\begin{proposition}[Quadratic growth and a relaxation error]\label{prop:growth}
+Suppose a global minimizer $x^*$ and constants $\gamma>0$, $\tau\ge0$
+satisfy, for all relevant $B$ containing $x^*$ and all $x\in B$,
+\[
+ \phi_B(x)\ge f^*+\frac{\gamma}{2}\norm{x-x^*}_\infty^2-\tau w(B)^2.
+\]
+With $\epsilon=U-f^*\ge0$,
+\begin{equation}\label{eq:growth-recurrence}
+ w(T_U(B))^2\le\frac{8\epsilon}{\gamma}
+                     +\frac{8\tau}{\gamma}w(B)^2.
+\end{equation}
+If $q^2=8\tau/\gamma<1$, then
+\[
+ w(B_k)^2\le q^{2k}w(B_0)^2+
+ \frac{8\epsilon}{\gamma}\frac{1-q^{2k}}{1-q^2}.
+\]
+\end{proposition}
+\begin{proof}
+Every point of $K_U(B)$ is within infinity-norm distance
+$\sqrt{2(\epsilon+\tau w(B)^2)/\gamma}$ of $x^*$.
+Its coordinate ranges are at most twice this radius. Squaring gives
+\eqref{eq:growth-recurrence}; iteration of the affine scalar recurrence
+gives the second bound.
+\end{proof}
+
+This is a sufficient contraction estimate, not a claim of an exact rate.
+It also explains why improving the incumbent may justify reconsidering
+tightening: the displayed floor scales with $\sqrt{U-f^*}$. In ordinary
+search, $f^*$, $x^*$, and a certified growth constant are not generally
+available. The estimate is therefore not itself a computable universal
+activation rule. Section~\ref{sec:constraints} treats constrained support
+problems and makes the additional sensitivity assumptions explicit.
+
+Finally, relaxation witnesses need not be feasible for the original
+nonlinear problem. A witness can prove that a relaxation cannot tighten a
+coordinate even when it violates a nonlinear equality or integrality.
+Conversely, a feasible incumbent justifies the cutoff but says little
+about the remaining width of a weak relaxation. Both types of information
+are useful, and they have different proof obligations.

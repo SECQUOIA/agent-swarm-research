@@ -1,0 +1,179 @@
+\section{Introduction}\label{sec:intro}
+
+Optimization models in process systems engineering, energy networks and
+optimal control are often built from local pieces. A flowsheet links unit
+models along streams, a multiperiod model links consecutive time stages, and a
+network model links quantities at adjacent nodes. The objective is then a sum
+of terms that each depend on a few variables, and the graph recording which
+variables share a term often has small treewidth. For variables with finitely
+many values, small treewidth is exactly what dynamic programming needs:
+nonserial dynamic programming, bucket elimination and junction-tree message
+passing find a global optimum in time exponential only in the width of a tree
+decomposition \cite{BerteleBrioschi1972,Dechter1999,KollerFriedman2009}.
+
+Mixed-integer nonlinear models have continuous variables and nonconvex
+terms, and there the situation is less clear. Global solvers based on spatial
+branch-and-bound bound individual terms by convex relaxations and branch on
+variable domains \cite{TawarmalaniSahinidis2005,BelottiEtAl2009,
+MisenerFloudas2014,BelottiEtAl2013}; they do not use a tree decomposition to
+organize the search. Discretizing the continuous variables and running a
+dynamic program gives neither a valid bound nor a running time that scales
+well with the accuracy: a uniform grid of mesh $h$ has $\Theta(1/h)$ points per
+coordinate, so tables grow like $h^{-p}$ in the bag size $p$. Sparse polynomial
+optimization exploits the same structure through linear and semidefinite
+hierarchies \cite{WakiEtAl2006,Lasserre2006,BienstockMunoz2018}, again with
+sizes polynomial in the inverse accuracy.
+
+Small treewidth alone does not make continuous nonconvex problems
+tractable. Del Pia and Khajavirad \cite{DelPiaKhajavirad2026} recently showed
+that box-constrained nonconvex quadratic programming is solvable in strongly
+polynomial time on forests, but strongly NP-hard at treewidth two even with
+small integer coefficients, and that quartic minimization is strongly NP-hard
+on paths. This paper asks which additional, checkable structure makes tree
+decompositions useful for \emph{certified} global optimization of
+mixed-integer problems, and what fails when it is absent.
+
+\subsection{Main results}
+We consider $\min\{F(x):x\in X\}$, where $F=\sum_af_a(x_{S_a})$ is a sum of
+factors, $X$ is a box in which some coordinates are integer, and a tree
+decomposition of the scopes $S_a$ with maximum bag size $p$ is given. Two
+quantities govern the results: upper bounds $L_i$ on the curvature of $F$ along
+each coordinate (the diagonal of the Hessian for a quadratic), and quadratic
+growth $F(x)-\OPT\ge g\norm{x-x^*}^2$ at a unique minimizer $x^*$. We write
+$\kappa=\max\{1,L/g\}$ with $L=\max_iL_i$, and $\bar\kappa\le\kappa$ for a
+weighted version that does not change when coordinates are rescaled
+(Definition~\ref{def:growth}).
+
+\paragraph{Certified coordinate grids.}
+Choose finite grids in the coordinates and subtract, at each node $v$ of
+coordinate $i$, the unary correction $L_iw^2/8$, where $w$ is the largest grid
+interval ending at $v$. The minimum of the corrected objective over the grid is
+a lower bound on $\min_XF$; in fact it equals the best of the vertex bounds of
+Bajaj and Hasan \cite{BajajHasan2020} over all cells of the product grid
+(Proposition~\ref{prop:cellwise}). Because the corrections are unary, this
+minimum and all coordinate min-marginals are computed by ordinary dynamic
+programming on the given decomposition, without enumerating cells. The
+min-marginals discard coordinate intervals that cannot contain a point better
+than a known feasible value, and the grids of the successive stages, one
+bound and one feasible point form a certificate that an independent program
+checks by recomputation (Theorem~\ref{thm:certificate}). None of this uses
+convexity, uniqueness or growth.
+
+\paragraph{Accuracy-independent grids and exact output.}
+Under weighted growth, grids whose spacing grows linearly away from the
+current corrected minimizer, combined with this filtering, keep
+$O(\sqrt{\bar\kappa}\log n)$ nodes per coordinate at every stage, independently of
+the accuracy (Lemma~\ref{lem:states}); capped trials remove the need to know the
+growth constant. For an explicit rational mixed-integer quadratic program on a
+box this gives a certified $2^{-q}$-approximation in
+$f(p,\bar\kappa)(I+q+1)^5$ bit operations, where $I$ is the input length
+(Theorem~\ref{thm:approx}), and the exact minimizer and optimal value in
+$f(p,\kappa)I^{O(1)}$ bit operations (Theorem~\ref{thm:exact}). The algorithms
+are therefore fixed-parameter tractable in the pair of bag size and condition
+number. A snapping procedure based on explicit rational height bounds turns
+any point within $\poly(I)+\log_2(1/g_S)$ bits of the optimum into an exact
+minimizer, where $g_S$ is the growth constant towards the optimal \emph{set},
+so exactness itself needs no uniqueness (Theorem~\ref{thm:transfer}). The
+approximation result extends to fixed-degree polynomial factors, with exact
+output when all coordinates are integer (Corollary~\ref{cor:poly}).
+
+A chain with box widths $2^t$ (Example~\ref{ex:chain}) shows the difference from
+exact parametric dynamic programming: its exact Bellman messages need at least
+$2^{m-1}$ quadratic pieces, while the corrected grids certify any accuracy in
+time polynomial in $m$. Our implementation certifies a gap of $10^{-3}$ for
+$m=64$ with at most eleven nodes per coordinate grid
+(Section~\ref{sec:computation}).
+
+\paragraph{Conditional recourse.}
+The condition number uses diagonal curvature, so a stiff convex coupling term
+inflates it although convex subproblems are easy. The corrected-grid bound
+applies to any value function $V(v)=\min_yF(v,y)$ whose inner feasible set does
+not depend on $v$, because partial minimization preserves coordinate curvature
+and growth (Lemma~\ref{lem:valuefunction}); bag-local corrections are valid
+only with such exact or certified recourse (Theorem~\ref{thm:cr-filter}), not
+with grid messages (Proposition~\ref{prop:star}). Private convex quadratic
+blocks become value factors whose curvature is certified by piecewise-affine
+responses; the certified cancellation is the best possible for the block, and
+no global overlay of the pieces is needed (Theorem~\ref{thm:cv}). A large
+residual problem that is concave in each coordinate and submodular after sign
+changes is removed from discretization, because each conditional value is one
+minimum cut; only a small core is searched (Section~\ref{sec:cuts}). For balanced
+quadratics the grid problem itself is a minimum cut, which gives certified
+approximation in time polynomial in $n$, $\kappa$ and $\log(1/\varepsilon)$
+without any width parameter (Theorem~\ref{thm:balanced}). Recourse does not
+reduce the parameter to negative curvature over growth in general
+(Proposition~\ref{prop:cv-limit}).
+
+\paragraph{Constraints and several minimizers.}
+Independent rounding, on which the certificate rests, breaks under coupling
+constraints. When the continuous coupling matrix is totally unimodular and the
+data are aligned to a mesh, correlated rounding to feasible cell corners
+restores the certificate, with exact feasibility and exact output for
+quadratics; the algorithm is polynomial for fixed width and conditioning but
+not fixed-parameter tractable, and we show that the uniform meshes responsible
+for this are forced (Section~\ref{sec:constraints}). With several minimizers, a
+single graded grid can need exponential time even for two isolated minimizers
+(Proposition~\ref{prop:twocenters}); unions of uniform cells restore a
+polynomial bound for fixed width when the optimal set is finite
+(Theorem~\ref{thm:cells}). For coordinatewise concave mixed-integer
+quadratics, the Bellman residuals of an endpoint dynamic program describe the
+entire optimal set as a tree-structured constraint problem
+(Corollary~\ref{cor:facecsp}), and for instances certified by a diagonal
+Lagrangian multiplier an unknown optimal set is found exactly in
+$f(p,\kappa)\poly(I)$ time (Theorem~\ref{thm:diagdiscovery}).
+
+\paragraph{Structural limits.}
+Section~\ref{sec:limits} shows that each hypothesis does real work. Box QP with
+bag size three and a unique minimizer is NP-hard on instances with
+$\log\kappa=O(I)$, so the dependence on $\kappa$ cannot be polylogarithmic unless
+P${}={}$NP; under the exponential-time hypothesis the dependence on $p$ is
+exponential even for $\kappa\le2$; under its randomized version the exponent of
+$\kappa$ must grow linearly with $p$; and in the value-oracle model the
+exponent $p/2$ of $\kappa$ is optimal. Further results show that growth towards
+a continuum of minimizers does not bound any corrected-grid certificate, that
+one local affine equality chain makes the problem NP-hard at $\kappa=1$, and
+that matching separator moments of any finite order does not give a local
+error bound in terms of negative curvature.
+
+\subsection{Contributions}
+The ingredients we use are classical: interpolation error bounds and
+edge-concave underestimators, tree dynamic programming and min-marginals,
+optimality-based bound tightening, rational height bounds for quadratic
+programs, multiparametric quadratic programming, graph cuts and total
+unimodularity. Section~\ref{sec:related} discusses this prior work in detail.
+To the best of our knowledge, the following are new:
+\begin{enumerate}[label=(\roman*)]
+\item the node-separable form of the vertex lower bound, which makes the best
+cellwise bound over a product grid computable by dynamic programming on a tree
+decomposition, together with min-marginal filtering and the path certificate
+(Section~\ref{sec:grids});
+\item the accuracy-independent grid bound under global growth, with the
+scale-invariant condition number $\bar\kappa$, and the resulting algorithms that
+are fixed-parameter tractable in bag size and condition number for certified
+approximation of sparse mixed-integer polynomial problems and exact solution
+of sparse mixed-integer box quadratic programs, without knowledge of the growth
+constant (Sections~\ref{sec:growth} and~\ref{sec:exact});
+\item the integration of value functions, certified convex responses,
+minimum-cut residual oracles and cut-based grid oracles into the
+corrected-grid framework, with the corresponding curvature and growth transfer
+(Section~\ref{sec:recourse});
+\item the exactly feasible TU extension and the analysis of several
+minimizers (Sections~\ref{sec:constraints} and~\ref{sec:optsets});
+\item the lower bounds and limiting examples of Section~\ref{sec:limits},
+in particular the expanding-box chain, the unique-minimizer hardness at width
+three and the finite-order moment obstruction;
+\item an exact-arithmetic implementation whose certificates are replayed by an
+independent checker, and experiments confirming the predicted grid sizes
+(Section~\ref{sec:computation}).
+\end{enumerate}
+
+\paragraph{Organization.}
+Section~\ref{sec:related} reviews related work and Section~\ref{sec:setting}
+fixes the model and the parameters. Sections~\ref{sec:grids}--\ref{sec:exact}
+develop the corrected grids, the growth analysis and exact output.
+Section~\ref{sec:recourse} treats conditional recourse,
+Section~\ref{sec:constraints} coupling constraints and Section~\ref{sec:optsets}
+several minimizers. Section~\ref{sec:limits} collects structural limits,
+Section~\ref{sec:computation} reports the implementation and experiments, and
+Section~\ref{sec:conclusion} lists open problems. Longer proofs are in the
+appendices.

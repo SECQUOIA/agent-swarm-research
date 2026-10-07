@@ -77,6 +77,11 @@ def covariance() -> np.ndarray:
 
 def load_sensitivities(path: Path) -> np.ndarray:
     """Validate immutable input bytes and return time-by-channel-by-parameter F."""
+    if not path.is_file():
+        raise FileNotFoundError(
+            "Prepare the pinned input with data/prepare_input.py, or pass --data. "
+            "See data/README.md for the source and preparation command."
+        )
     if hashlib.sha256(path.read_bytes()).hexdigest() != SOURCE_SHA256:
         raise ValueError("sensitivity file does not match the audited source hash")
     with path.open(newline="") as stream:

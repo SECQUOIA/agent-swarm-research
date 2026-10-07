@@ -2,7 +2,7 @@
 
 No valid major or minor issues found.
 
-I read all five requested sections end to end: `12a-resource-ledgers.tex`, `12b-work-contracts.tex`, `12c-newton-comparisons.tex`, `12d-query-output.tex`, and `12e-active-compilers.tex`. I followed the supplied global instructions and `/home/sgusev/repo/qipm/AGENTS.md`. I did not read earlier or current review reports, root checks, assessments, or correction-author reports. I made no manuscript edits and did not delegate.
+I read all five requested sections end to end: `12a-resource-ledgers.tex`, `12b-work-contracts.tex`, `12c-newton-comparisons.tex`, `12d-query-output.tex`, and `12e-active-compilers.tex`. I followed the supplied global instructions and `/workspace/qipm/AGENTS.md`. I did not read earlier or current review reports, root checks, assessments, or correction-author reports. I made no manuscript edits and did not delegate.
 
 ## Fresh scale maintenance and static reuse
 
@@ -35,4 +35,4 @@ I compared the substantive claims against the source notes `2026-09-04-dynamic-p
 
 Primary-source checks confirmed the finite-output adversary and direct sum in [Ambainis–Childs–Le Gall–Tani, Theorems 3–4](https://arxiv.org/html/0903.1291v2); exact known-success amplification and zero-versus-known-cardinality search in [Brassard–Hoyer–Mosca–Tapp, Theorems 4 and 16](https://arxiv.org/pdf/quant-ph/0005055); the dimension upper bound in [Lee–Yue](https://arxiv.org/abs/1809.03011); and the supplied-decomposition linear-system bound in [Furer–Hoppen–Trevisan, Corollary 3](https://drops.dagstuhl.de/storage/00lipics/lipics-vol351-esa2025/LIPIcs.ESA.2025.116/LIPIcs.ESA.2025.116.pdf).
 
-Using `/home/sgusev/miniconda3/envs/qipm/bin/python`, I checked the claimed integer `V_R` formula for `R=2,...,30`, `N=1,...,500`, and both explicit `F_4,F_5` formulas against dynamic programming. I also checked the allocation-aware matrix and quotient inequalities on 200 random feasible off-center packed instances. All checks passed. These computations supplement the algebraic review; they do not replace the proofs.
+Using `/workspace/local-home/miniconda3/envs/qipm/bin/python`, I checked the claimed integer `V_R` formula for `R=2,...,30`, `N=1,...,500`, and both explicit `F_4,F_5` formulas against dynamic programming. I also checked the allocation-aware matrix and quotient inequalities on 200 random feasible off-center packed instances. All checks passed. These computations supplement the algebraic review; they do not replace the proofs.

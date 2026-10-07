@@ -1,0 +1,462 @@
+% Plan: development/outline.md, section 6, item B.4.
+% Round-1 revision (adjudication G5): one certificate box per result, the
+% verification record merged into the boxes.
+\subsection{The \inst{chain} and \inst{catmix} instances}\label{app:chain}
+
+This subsection proves \cref{thm:chain-bound,thm:catmix-bound}, whose certificates \cref{sec:split-richer} outlines; both families are trapezoidal discretizations of optimal control problems from COPS~2.0 \citep{dolan2001-benchmarking-optimization-software-with-cops}.
+
+\subsubsection{The \inst{chain} model}\label{app:chain-model}
+
+COPS~2.0 (problem~3) seeks the shape $x(t)$ of a chain of length $4$ between $(0,1)$ and $(1,3)$ that minimizes $\int_0^1 x\sqrt{1+x'^2}\,dt$ subject to $\int_0^1 \sqrt{1+x'^2}\,dt = 4$, written as a control problem with $u = x'$ and discretized by the trapezoidal rule on $N$ intervals.
+MINLPLib's \inst{chain}$N$, $N\in\{50,100,200,400\}$, are the scalar forms of the GAMS model library model \texttt{chain} \citep{library2026-cops-and-gams-source-models}.
+With $h = 1/N$ and $\eta = h/2$ the model is
+\begin{equation}\label{eq:chain-model}
+\begin{aligned}
+\min\quad & f(x,u) = \eta \textstyle\sum_{i=0}^{N-1} \bigl( x_i\sqrt{1+u_i^2} + x_{i+1}\sqrt{1+u_{i+1}^2} \bigr)\\
+\text{s.t.}\quad & x_{i+1} - x_i - \eta\,(u_i + u_{i+1}) = 0 \qquad (0 \le i \le N-1),\\
+& \eta \textstyle\sum_{i=0}^{N-1} \bigl( \sqrt{1+u_i^2} + \sqrt{1+u_{i+1}^2} \bigr) = 4,\\
+& x_0 = 1,\quad x_N = 3,\quad \text{all other variables free.}
+\end{aligned}
+\end{equation}
+The OSIL files have $2N+2$ variables and $N+1$ rows; the decimal $\eta$ is exactly $1/(2N)$, and the objective constant is $0$.
+No variable has finite bounds apart from the two fixed end values, so spatial branch and bound starts from an unbounded box.
+
+\subsubsection{\texorpdfstring{\inst{chain}}{chain}: reduction to two end values}\label{app:chain-reduction}
+
+\begin{lemma}[polyline form]\label{lem:chain-polyline}
+Let $(x,u)$ satisfy the $N$ linear rows of~\eqref{eq:chain-model}.
+Put $z_i = x_i - \eta u_i$ for $0 \le i \le N$ and $z_{N+1} = x_N + \eta u_N$.
+Then $x_i = (z_i + z_{i+1})/2$ and $u_i = (z_{i+1} - z_i)/h$ for $0 \le i \le N$, and $(x,u) \mapsto z$ is a bijection from the solution set of the linear rows onto $\R^{N+2}$.
+If moreover $x_0 = 1$ and $x_N = 3$, then $z_0 = 2 - z_1$ and $z_{N+1} = 6 - z_N$.
+With
+\[
+\lambda_0 = \sqrt{\eta^2 + (z_1 - 1)^2},\qquad \lambda_N = \sqrt{\eta^2 + (3 - z_N)^2}
+\]
+and $\lambda_k = \sqrt{h^2 + (z_{k+1} - z_k)^2}$ for $1 \le k \le N-1$, the length row is equivalent to $\lambda_0 + \lambda_N + \sum_{k=1}^{N-1}\lambda_k = 4$, and
+\begin{equation}\label{eq:chain-pieces}
+f(x,u) = \lambda_0 + 3\lambda_N + \sum_{k=1}^{N-1} \lambda_k\, \frac{z_k + z_{k+1}}{2}.
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+Row $i$ reads $x_{i+1} - \eta u_{i+1} = x_i + \eta u_i$, that is, $z_{i+1} = x_i + \eta u_i$ for $0 \le i \le N-1$; for $i = N$ this is the definition of $z_{N+1}$.
+Adding and subtracting $z_i = x_i - \eta u_i$ and $z_{i+1} = x_i + \eta u_i$ gives $x_i$ and $u_i$.
+Conversely, for any $z \in \R^{N+2}$ these formulas give $x_{i+1} - x_i = (z_{i+2} - z_i)/2 = \eta(u_i + u_{i+1})$, so the map is onto, and it is injective by construction.
+The fixed values give $z_0 + z_1 = 2$ and $z_N + z_{N+1} = 6$.
+Put $m_i = \sqrt{h^2 + (z_{i+1} - z_i)^2}$; then $\eta\sqrt{1+u_i^2} = m_i/2$.
+The trapezoidal sums weight index $i$ by $\omega_0 = \omega_N = 1$ and $\omega_i = 2$ otherwise, so the length row reads $m_0/2 + \sum_{i=1}^{N-1}m_i + m_N/2 = 4$, and $f = x_0m_0/2 + \sum_{i=1}^{N-1} x_im_i + x_Nm_N/2$.
+Finally $m_0 = 2\lambda_0$ because $z_1 - z_0 = 2(z_1 - 1)$, and $m_N = 2\lambda_N$ likewise.
+\end{proof}
+
+Geometrically, the points $A = (0,1)$, $Q_k = ((k - \tfrac12)h, z_k)$ for $1 \le k \le N$, and $B = (1,3)$ form a polyline over a fixed horizontal mesh, with end pieces $AQ_1$ and $Q_NB$ of lengths $\lambda_0$ and $\lambda_N$ and interior pieces $Q_kQ_{k+1}$ of lengths $\lambda_k$.
+We write $\ell = 4 - \lambda_0 - \lambda_N$ for the interior length; it is a function of the end values $(z_1, z_N)$.
+
+\begin{lemma}[summation by parts]\label{lem:chain-summation}
+Let $z_1,\dots,z_N$, $\lambda_1,\dots,\lambda_{N-1}$ and $V$ be real numbers.
+Put $v_1 = V$, $v_{k+1} = v_k + \lambda_k$ and $\bar v_k = (v_k + v_{k+1})/2$.
+Then
+\[
+\sum_{k=1}^{N-1} \lambda_k\,\frac{z_k + z_{k+1}}{2} = v_N z_N - v_1 z_1 - \sum_{k=1}^{N-1} \bar v_k\,(z_{k+1} - z_k).
+\]
+\end{lemma}
+
+\begin{proof}
+For each $k$, $v_{k+1}z_{k+1} - v_k z_k = \bar v_k (z_{k+1} - z_k) + (v_{k+1} - v_k)(z_k + z_{k+1})/2$, by expanding both sides.
+Sum over $k$.
+\end{proof}
+
+\begin{lemma}[discrete catenary inequality]\label{lem:chain-calibration}
+Let $h > 0$ and $H > 0$.
+Put $\tau = \operatorname{asinh}(h/(2H))$,
+\[
+G_H(v) = \tfrac12\bigl( v\sqrt{H^2 + v^2} + H^2 \operatorname{asinh}(v/H) \bigr)\qquad\text{and}\qquad c_H = 2\,G_H(h/2),
+\]
+so that $G_H'(v) = \sqrt{H^2 + v^2}$.
+Then for all real $a, b$ with $b - a \ge h$,
+\begin{equation}\label{eq:chain-calibration}
+\frac{|a+b|}{2}\,\sqrt{(b-a)^2 - h^2} \;\le\; G_H(b) - G_H(a) - c_H,
+\end{equation}
+with equality if and only if $\operatorname{asinh}(b/H) - \operatorname{asinh}(a/H) = 2\tau$.
+\end{lemma}
+
+\begin{proof}
+Both sides are homogeneous of degree $2$ in $(a, b, h, H)$, and $\tau$ is invariant under common scaling, so we may take $H = 1$; write $G = G_1$ and $c_1$ for $c_H$ at $H = 1$.
+Write $a = \sinh\varphi_a$, $b = \sinh\varphi_b$, $S = (\varphi_a + \varphi_b)/2$, $D = (\varphi_b - \varphi_a)/2$, $s = |\sinh S|$ and $X = \sinh D\cosh D$.
+Since $b - a \ge h > 0$, $D > 0$.
+From $G(\sinh\varphi) = \tfrac14\sinh 2\varphi + \tfrac12\varphi$ and the addition formulas,
+\[
+G(b) - G(a) = D + (1 + 2s^2)X,\qquad c_1 = \tau + \sinh\tau\cosh\tau,\qquad \frac{a+b}{2} = \sinh S\cosh D,
+\]
+and, because $(b-a)/2 = \cosh S\sinh D$ and $h/2 = \sinh\tau$,
+\[
+\frac{(b-a)^2 - h^2}{4} = Y := (1 + s^2)\sinh^2 D - \sinh^2\tau \ge 0 .
+\]
+So~\eqref{eq:chain-calibration} is equivalent to
+\[
+\Xi := D - \tau - \sinh\tau\cosh\tau + (1 + 2s^2)X - 2s\cosh D\,\sqrt{Y} \;\ge\; 0 .
+\]
+For $p, q \ge 0$ and $t > 0$ we have $2\sqrt{pq} = pt + q/t - (\sqrt{pt} - \sqrt{q/t})^2$.
+With $p = s^2\cosh^2 D$, $q = Y$ and $t = \tanh D$ this gives $pt = s^2 X$ and $q/t = (1+s^2)X - \sinh^2\tau\coth D$, hence
+\[
+2s\cosh D\,\sqrt{Y} = (1 + 2s^2)X - \sinh^2\tau\coth D - \bigl(\sqrt{pt} - \sqrt{q/t}\bigr)^2 .
+\]
+Therefore $\Xi = \psi(D) + (\sqrt{pt} - \sqrt{q/t})^2 \ge \psi(D)$ with $\psi(D) = D - \tau - \sinh\tau\cosh\tau + \sinh^2\tau\coth D$.
+Now $\psi(\tau) = 0$ and $\psi'(D) = 1 - \sinh^2\tau/\sinh^2 D$, which is negative for $0 < D < \tau$ and positive for $D > \tau$.
+So $\psi \ge 0$ on $(0,\infty)$, with equality only at $D = \tau$.
+The condition $pt = q/t$ is equivalent to $X = \sinh^2\tau\coth D$, that is, to $\sinh^2 D = \sinh^2\tau$, so at $D = \tau$ the square vanishes as well.
+Hence equality holds in~\eqref{eq:chain-calibration} exactly when $D = \tau$, that is, when $\operatorname{asinh} b - \operatorname{asinh} a = 2\tau$.
+\end{proof}
+
+\begin{proposition}[end-value bound]\label{prop:chain-endvalue}
+Let $N \ge 2$, let $(x,u)$ be an exactly feasible point of~\eqref{eq:chain-model}, and let $z_1, z_N, \lambda_0, \lambda_N$ and $\ell = 4 - \lambda_0 - \lambda_N$ be as above.
+Then for every $V \in \R$ and every $H > 0$,
+\begin{equation}\label{eq:chain-BN}
+f(x,u) \;\ge\; B_N(z_1, z_N; V, H) := \lambda_0 + 3\lambda_N + (V + \ell)\,z_N - V z_1 - G_H(V + \ell) + G_H(V) + (N-1)\,c_H ,
+\end{equation}
+where $G_H$ and $c_H$ are as in \cref{lem:chain-calibration} with $h = 1/N$.
+In particular $V$ and $H$ may be chosen as functions of $(z_1, z_N)$.
+\end{proposition}
+
+\begin{proof}
+By \cref{lem:chain-polyline}, $\ell = \sum_{k=1}^{N-1}\lambda_k$ and $\lambda_k \ge h$.
+Apply \cref{lem:chain-summation} with this $V$; then $v_N = V + \ell$.
+Since $|z_{k+1} - z_k| = \sqrt{\lambda_k^2 - h^2}$ and $v_{k+1} - v_k = \lambda_k \ge h$, \cref{lem:chain-calibration} with $a = v_k$ and $b = v_{k+1}$ gives
+\[
+-\bar v_k\,(z_{k+1} - z_k) \;\ge\; -\frac{|v_k + v_{k+1}|}{2}\sqrt{(v_{k+1} - v_k)^2 - h^2} \;\ge\; -\bigl( G_H(v_{k+1}) - G_H(v_k) - c_H \bigr).
+\]
+Summing over $k = 1,\dots,N-1$ telescopes to $-G_H(V + \ell) + G_H(V) + (N-1)c_H$.
+Insert this into \cref{lem:chain-summation} and~\eqref{eq:chain-pieces}.
+\end{proof}
+
+The bound uses no box on the interior heights; it holds for every exactly feasible point.
+In the lifted state (height, cumulative length) of \cref{sec:split-richer}, with stage dynamics $v_{k+1}=v_k+\lambda_k$, the functions $\varphi_k(z,v)=G_H(v)-vz-k\,c_H$ form a split in the sense of \cref{lem:split-bound}: by \cref{lem:chain-summation,lem:chain-calibration}, the interior stage residual $\lambda_k(z_k+z_{k+1})/2+\varphi_k(z_{k+1},v_{k+1})-\varphi_{k-1}(z_k,v_k)$ equals $G_H(v_{k+1})-G_H(v_k)-c_H-\bar v_k(z_{k+1}-z_k)\ge0$, with equality exactly on discrete catenary pieces.
+The end pieces and the end values form one two-dimensional window, which the case split of \cref{lem:split-bound}(c) covers by boxes.
+
+\begin{lemma}[end window]\label{lem:chain-window}
+Every exactly feasible point satisfies $(z_1, z_N) \in \Omega_N$, the set of pairs with
+\[
+|z_1 - 1| \le 3 + \eta,\qquad |z_N - 3| \le 3 + \eta,\qquad \ell(z_1, z_N) \ge \sqrt{(1-h)^2 + (z_N - z_1)^2} .
+\]
+\end{lemma}
+
+\begin{proof}
+Each interior piece has horizontal length $h$, so $\ell \ge (N-1)h = 1 - h$; also $\lambda_N \ge \eta$.
+Hence $\lambda_0 = 4 - \ell - \lambda_N \le 3 + h - \eta = 3 + \eta$, and $|z_1 - 1| \le \lambda_0$.
+The bound on $z_N$ follows in the same way.
+The interior polyline runs from $Q_1$ to $Q_N$ over a horizontal span of $1 - h$, so its length $\ell$ is at least the length of the chord.
+\end{proof}
+
+The next result is not needed for the validity of any bound; it shows that the reduction to the end values loses nothing, which is why the computation below can certify any target slightly below the optimal value.
+
+\begin{proposition}[discrete Weierstrass theorem]\label{prop:chain-weierstrass}
+Let $N \ge 3$, and let $(z_1, z_N)$ satisfy the chord condition strictly: $\ell > \sqrt{(1-h)^2 + (z_N - z_1)^2}$ with $\ell = 4 - \lambda_0 - \lambda_N$.
+\begin{enumerate}
+\item[(i)] There are $H^* > 0$ and $\varphi_m \in \R$ with $2H^*\sinh((N-1)\tau^*) = \sqrt{\ell^2 - (z_N - z_1)^2}$, where $\tau^* = \operatorname{asinh}(\eta/H^*)$, and $\tanh\varphi_m = (z_N - z_1)/\ell$. Put $V^* = H^*\sinh(\varphi_m - (N-1)\tau^*)$.
+\item[(ii)] The chain that starts at $z_1$ and has interior slopes $(z_{k+1} - z_k)/h = \sinh\bigl(\varphi_m - (N-1)\tau^* + (2k-1)\tau^*\bigr)$ for $1 \le k \le N-1$ ends at $z_N$ and has interior length $\ell$. Together with the end pieces it defines an exactly feasible point, which we call the discrete catenary with end values $(z_1, z_N)$.
+\item[(iii)] Its objective value equals $B_N(z_1, z_N; V^*, H^*)$. Hence $\max_{V\in\R,\,H>0} B_N(z_1, z_N; V, H)$ equals the minimum of $f$ over the feasible points with end values $(z_1, z_N)$, and both are attained.
+\item[(iv)] The discrete catenary is the only feasible point with end values $(z_1, z_N)$ that attains this minimum.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+(i) Write $n = N - 1 \ge 2$ and $g(H) = 2H\sinh(n\operatorname{asinh}(\eta/H))$.
+The function $g$ is continuous on $(0,\infty)$.
+As $H \to \infty$, $g(H) \to 2n\eta = 1 - h$; as $H \to 0^+$, $g(H)$ behaves like $(2\eta)^n H^{1-n}$ and tends to $+\infty$.
+The strict chord condition says that the target $\sqrt{\ell^2 - (z_N - z_1)^2}$ exceeds $1 - h$, so the intermediate value theorem gives $H^*$.
+The strict chord condition also gives $|z_N - z_1| < \ell$, so $\varphi_m$ exists.
+
+(ii) Write $\tau = \tau^*$, $H = H^*$ and $\theta_k = \varphi_m - n\tau + (2k-1)\tau$, so that the $\theta_k$ are symmetric about $\varphi_m$.
+Then $\sum_{k=1}^{n}\sinh\theta_k = \sinh\varphi_m\,\sinh(n\tau)/\sinh\tau$ and $\sum_{k=1}^{n}\cosh\theta_k = \cosh\varphi_m\,\sinh(n\tau)/\sinh\tau$.
+Since $h = 2\eta = 2H\sinh\tau$, the rise is $h\sum_k \sinh\theta_k = 2H\sinh(n\tau)\sinh\varphi_m = z_N - z_1$, and the interior length is $\sum_k \sqrt{h^2 + h^2\sinh^2\theta_k} = h\sum_k\cosh\theta_k = 2H\sinh(n\tau)\cosh\varphi_m = \ell$, by the equations in (i).
+The end pieces depend only on $(z_1, z_N)$, so the length row holds, and \cref{lem:chain-polyline} turns $z$ into an exactly feasible $(x,u)$.
+
+(iii) Put $v_k = H\sinh(\varphi_m - n\tau + 2(k-1)\tau)$ for $1 \le k \le N$.
+Then $v_1 = V^*$, $v_{k+1} - v_k = 2H\cosh\theta_k\sinh\tau = h\cosh\theta_k = \lambda_k$, and $\operatorname{asinh}(v_{k+1}/H) - \operatorname{asinh}(v_k/H) = 2\tau$, so \cref{lem:chain-calibration} holds with equality for every $k$.
+Also $\bar v_k = H\sinh\theta_k\cosh\tau$ has the sign of $z_{k+1} - z_k = h\sinh\theta_k$, so the first inequality in the proof of \cref{prop:chain-endvalue} is an equality as well.
+Hence $f = B_N(z_1, z_N; V^*, H^*)$.
+By \cref{prop:chain-endvalue}, $B_N(z_1, z_N; V, H) \le f(y)$ for every $(V,H)$ and every feasible $y$ with these end values; so the maximum over $(V,H)$ and the minimum over the slice are both attained, at $(V^*, H^*)$ and at the discrete catenary, and they are equal.
+
+(iv) Let $y$ be feasible with these end values and $f(y) = B_N(z_1, z_N; V^*, H^*)$.
+Then every inequality in the proof of \cref{prop:chain-endvalue}, with $(V,H) = (V^*,H^*)$, holds with equality.
+Equality in \cref{lem:chain-calibration} for every $k$ determines $v_2, \dots, v_N$ recursively from $v_1 = V^*$, hence every $\lambda_k$ and every $|z_{k+1} - z_k|$.
+Equality in the first inequality fixes the sign of $z_{k+1} - z_k$ whenever $\bar v_k \ne 0$; when $\bar v_k = 0$ the increment is $0$ for both points.
+So $y$ has the increments of the discrete catenary and coincides with it.
+\end{proof}
+
+\begin{remark}[the boundary of the window]\label{rem:chain-boundary}
+If $\ell$ equals the chord, the only feasible interior is the straight one.
+Such points are limits of feasible points that satisfy the chord condition strictly.
+Indeed, in the coordinates $(z_1,\dots,z_N)$ the feasible set is the level set $\{g = 4\}$ of the total length $g = \lambda_0 + \lambda_N + \sum_k\lambda_k$.
+The gradient of $g$ vanishes only if the whole polyline from $A$ to $B$ is straight, which would give length $|AB| = \sqrt5 < 4$; so the feasible set is a smooth manifold of dimension $N - 1 \ge 2$.
+The feasible points with a straight interior are determined by $(z_1, z_N)$ subject to one equation whose gradient does not vanish for the same reason, so they form a curve, which has empty interior in that manifold.
+Since $f$ is continuous, the optimal value of~\eqref{eq:chain-model} equals the infimum of $\max_{V,H} B_N$ over the end pairs that satisfy the chord condition strictly.
+\end{remark}
+
+\subsubsection{\texorpdfstring{\inst{chain}}{chain}: the computation and the proof of \texorpdfstring{\cref{thm:chain-bound}}{the theorem}}\label{app:chain-bnb}
+
+By \cref{prop:chain-endvalue,lem:chain-window}, every exactly feasible point satisfies $f \ge B_N(z_1, z_N; V, H)$ for any choice of $V$ and $H > 0$ that may depend on its end values, and its end values lie in $\Omega_N$.
+The computer-assisted step is a two-dimensional interval branch and bound over $(z_1, z_N)$ with a target $\Lcert_N$.
+It produces a finite set of boxes that covers a root box containing the box of \cref{lem:chain-window}.
+Every leaf box either is proved disjoint from $\Omega_N$, because interval enclosures show that $\ell$ lies below the chord on the whole box (the upper end of $\ell$ is negative, or its square lies below a lower bound of the smallest squared chord over the box), or carries constants $(V_b, H_b)$ with $H_b > 0$ and a rigorous lower bound of $B_N(\cdot\,; V_b, H_b)$ over the box that is at least $\Lcert_N$.
+The lower bound on a box is the larger of the natural interval extension of~\eqref{eq:chain-BN} and a first-order mean-value form around the box centre, with an interval enclosure of the gradient over the box; the form is valid because $B_N$ is continuously differentiable on $\R^2$ ($\lambda_0, \lambda_N \ge \eta > 0$) and the expansion point lies in the box.
+The constants $(V_b, H_b)$ are floating-point solutions of the equations of \cref{prop:chain-weierstrass}(i) at the box centre; validity does not depend on how they are chosen.
+
+\begin{proof}[Proof of \cref{thm:chain-bound}]
+Let $(x,u)$ be exactly feasible.
+By \cref{lem:chain-window} its end values $(z_1, z_N)$ lie in $\Omega_N$, which lies in the root box; since the leaves cover the root box, $(z_1, z_N)$ lies in a leaf box, and that box cannot be one proved disjoint from $\Omega_N$.
+By \cref{prop:chain-endvalue} with that box's constants, $f(x,u) \ge B_N(z_1, z_N; V_b, H_b) \ge \Lcert_N$.
+The branch-and-bound runs described next check, for each $N$, that the leaves cover the root box and that every leaf satisfies one of the two conditions, with no unresolved box.
+Hence $\vstar \ge \Lcert_N$, where $\Lcert_N$ is the binary64 target, whose safe display (rounded down) is in \cref{tab:chain-bnb}.
+\end{proof}
+
+Both codes evaluate $\operatorname{asinh}(x) = \log(x + \sqrt{x^2+1})$ for $x \ge 0$ and extend it by oddness and monotonicity, also for intervals that contain $0$, and convert binary64 values to \texttt{mpmath} exactly.
+The first code works at 40 digits on the root box $[-2-h, 4+h]\times[-h, 6+h]$, the second at 30 digits on the box of \cref{lem:chain-window} enlarged by $10^{-9}$.
+The target $\Lcert_N$ is a KKT objective value minus $10^{-14}$, computed in binary64 (the first code starts from a 25-digit KKT value, the second from a 50-digit evaluation at the binary64-rounded KKT point; both give the same four doubles).
+The bound $B_N$ at the end values of the KKT points, with the multipliers of \cref{prop:chain-weierstrass}, equals the KKT objective in all 25 stored digits, so the gaps of about $10^{-14}$ come from the chosen target, not from slack in the certificate.
+
+\begin{table}[ht]
+\centering
+\small
+\caption{The \inst{chain} lower bounds and the branch-and-bound runs. $\Lcert_N$ is the certified binary64 target, displayed rounded down. Boxes: all boxes processed, of which the stated number were proved disjoint from $\Omega_N$; no box remained unresolved. Times are wall-clock seconds of the original runs on one thread of a shared machine and are indicative only.}
+\label{tab:chain-bnb}
+\begin{tabular}{@{}rlrrrr@{}}
+\toprule
+$N$ & $\Lcert_N$ (display) & \multicolumn{2}{c}{first code} & \multicolumn{2}{c}{second code} \\
+\cmidrule(lr){3-4}\cmidrule(l){5-6}
+ & & boxes (disjoint) & time & boxes (disjoint) & time \\
+\midrule
+50 & 5.0722614939828627 & 11,121 (61) & 13 s & 36,689 (36) & 50 s \\
+100 & 5.0697846107387505 & 15,329 (53) & 18 s & 52,955 (39) & 79 s \\
+200 & 5.0689173417931616 & 21,057 (64) & 25 s & 75,385 (33) & 122 s \\
+400 & 5.068621694604009 & 27,843 (62) & 34 s & 104,945 (36) & 154 s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{certbox}[Certificate for \cref{thm:chain-bound}]
+\certitem{Inputs}{OSIL files (SHA-256 \texttt{f6b2b409}, \texttt{45cb3020}, \texttt{634acc62}, \texttt{7cd93486}).}
+\certitem{Computation}{interval branch and bound over $(z_1,z_N)$; \arith{I} (\texttt{mpmath}~1.3.0, outward rounding for $+,-,\times,\div$, powers, $\sqrt{\ }$, $\log$).}
+\certitem{Data reading}{outward enclosure; the step $1/(2N)$ and the structure of the file checked exactly; three separately written readers agree on the model.}
+\certitem{Implementations}{the first and the second code certify the same four doubles; both round outward throughout, the first after a one-line fix of its disjointness test (it squared one interval end without directed rounding), which reproduced identical certificates for all four $N$.}
+\certitem{Evidence level}{\evid{rerun}: the search trees are not stored.}
+\certitem{Replay}{Tier~1; under 4\,min per instance and code; a rerun from a clean checkout reproduced every certified value bit for bit.}
+\end{certbox}
+
+\paragraph{Exactly feasible points.}
+The gap bounds of \cref{thm:chain-bound} use the exactly feasible points of \cref{app:points}, whose coordinates lie in a real quadratic field $\Q(\sqrt{R_N})$ (\cref{lem:pts-chain}); the upper ends of their objective enclosures are the values $\Uprim$ of \cref{tab:closures}.
+At the 10 decimals of the \texttt{.solu} file, MINLPLib's listed primal values for \inst{chain100}, \inst{chain200} and \inst{chain400} exceed the objective values of our points by at least $1.5\cdot10^{-10}$; the page display $5.0686217$ of \inst{chain400} is not optimal to its printed digits.
+
+\subsubsection{The \inst{catmix} model}\label{app:catmix-model}
+
+COPS~2.0 problem~14 maximizes the yield $1 - x_1(1) - x_2(1)$ of a catalyst mixing process, $x_1' = u(10x_2 - x_1)$, $x_2' = u(x_1 - 10x_2) - (1-u)x_2$, $x(0) = (1,0)$, $u(t)\in[0,1]$; COPS describes the continuous problem as bang--singular--bang.
+MINLPLib's \inst{catmix}$N$, $N\in\{100,200,400,800\}$, are trapezoidal discretizations from the GAMS model library model \texttt{catmix} \citep{library2026-cops-and-gams-source-models}.
+Let $a = 1/(2N)$ and
+\[
+P(u) = \begin{pmatrix} 1 + a u & -10 a u\\ -a u & 1 + a + c\,u \end{pmatrix},\qquad
+Q(u) = \begin{pmatrix} 1 - a u & 10 a u\\ a u & 1 - a - c\,u \end{pmatrix}.
+\]
+The model has controls $u_0,\dots,u_N \in [0,1]$ and states $x_i = (x_{1,i}, x_{2,i}) \in \R^2$, and reads
+\begin{equation}\label{eq:catmix-model}
+\min\ J = x_{1,N} + x_{2,N} - 1\quad\text{s.t.}\quad P(u_{i+1})\,x_{i+1} = Q(u_i)\,x_i\ \ (0 \le i \le N-1),\quad x_0 = (1,0),
+\end{equation}
+with all other states free; the $-1$ is the objective constant in the OSIL file.
+The files have $3N+3$ variables and $2N$ bilinear equality rows.
+We have $Q(u) = 2I - P(u)$, so $P(u)$ and $Q(u)$ commute.
+
+The coefficient $c$ differs between the two source forms.
+The GAMS text gives $c = 9a$ exactly (from $-(1-u)x_2 - 10ux_2$), while the OSIL file stores binary64 products: $4.5000000000000005\cdot10^{-2}$, $2.2500000000000003\cdot10^{-2}$, $1.1250000000000001\cdot10^{-2}$ and $5.625000000000001\cdot10^{-3}$.
+Hence $c - 9a$ equals $5\cdot10^{-18}$, $3\cdot10^{-18}$, $10^{-18}$ and $10^{-18}$, all positive.
+All other coefficients agree exactly.
+Our certificates are for the OSIL values; \cref{prop:catmix-transport} transfers the lower bounds to $c = 9a$.
+COPS~3.0 uses a three-stage collocation scheme for this problem, which is a different model; none of our results transfers to it.
+
+Each instance page reports a single dual bound, by LINDO (\cref{tab:closures}); the one for \inst{catmix800}, $-1.48896963$, lies below the trivial bound $J \ge -1$ of \cref{lem:catmix-reduction}.
+
+\subsubsection{\texorpdfstring{\inst{catmix}}{catmix}: a dynamic-programming lower bound}\label{app:catmix-dp}
+
+\begin{lemma}[nonnegativity]\label{lem:catmix-nonneg}
+Let $0 < a \le 1/10$ and $9a \le c \le 1 - a$; this covers the four OSIL values and $c = 9a$.
+Then for all $u \in [0,1]$, $\det P(u) \ge 1 + a$, and the adjugate $\operatorname{adj}P(u)$ and $Q(u)$ are entrywise nonnegative.
+Hence $P(u)^{-1} \ge 0$ and $M(u) := Q(u)P(u)^{-1} \ge 0$ entrywise.
+\end{lemma}
+
+\begin{proof}
+$\det P(u) - (1+a) = u\,[a(1+a) + c + (ac - 10a^2)u]$.
+For $u \in [0,1]$ the bracket is at least $a + a^2 + c + \min(0, ac - 10a^2) \ge a + a^2 + 9a + 9a^2 - 10a^2 > 0$, using $c \ge 9a$.
+Next, $\operatorname{adj}P(u) = \begin{pmatrix} 1 + a + c u & 10 a u\\ a u & 1 + a u\end{pmatrix} \ge 0$.
+The entries of $Q(u)$ are $1 - au \ge 1 - a > 0$, $10au \ge 0$, $au \ge 0$ and $1 - a - cu \ge 1 - a - c \ge 0$.
+\end{proof}
+
+\begin{lemma}[reduction to the controls]\label{lem:catmix-reduction}
+Fix $u \in [0,1]^{N+1}$.
+The rows of~\eqref{eq:catmix-model} have a unique solution $x(u)$, so every $u$ defines exactly one feasible point, and $\vstar = \min_u J(u)$.
+Put $y_i = Q(u_i)x_i$ for $0 \le i \le N-1$.
+Then $y_0 = (1 - au_0, au_0)^\top$, $y_i = M(u_i)\,y_{i-1}$ for $1 \le i \le N-1$, $x_{i+1} = P(u_{i+1})^{-1}y_i$, and
+\[
+J(u) + 1 = \mathbb{1}^\top P(u_N)^{-1} M(u_{N-1}) \cdots M(u_1)\, Q(u_0)\, x_0 .
+\]
+All $y_i$ and $x_i$ lie in the cone $K = \R^2_+$; in particular $J \ge -1$.
+\end{lemma}
+
+\begin{proof}
+Row $i$ reads $P(u_{i+1})x_{i+1} = y_i$, and $P(u_{i+1})$ is invertible by \cref{lem:catmix-nonneg}; then $y_{i+1} = Q(u_{i+1})P(u_{i+1})^{-1}y_i$.
+The states are free, so any $u$ gives a feasible point; the minimum exists because $J$ is continuous on the compact set $[0,1]^{N+1}$.
+Nonnegativity follows from \cref{lem:catmix-nonneg} and $x_0 \ge 0$.
+\end{proof}
+
+Each control enters exactly one factor, $Q(u_0)$, $M(u_1), \dots, M(u_{N-1})$ or $P(u_N)^{-1}$, so the optimal value is described exactly by a backward recursion over independent controls; the certificate computes lower bounds of its value functions, not the functions themselves.
+
+\begin{lemma}[value functions]\label{lem:catmix-value}
+On $K$ define $V_{N-1}(y) = \min_{u\in[0,1]} \mathbb{1}^\top P(u)^{-1}y$ and $V_{i-1}(y) = \min_{u\in[0,1]} V_i(M(u)y)$ for $i = N-1, \dots, 1$.
+Then:
+\begin{enumerate}
+\item[(i)] $\vstar + 1 = \min_{u\in[0,1]} V_0(Q(u)x_0)$;
+\item[(ii)] each $V_i$ is concave, positively homogeneous of degree $1$ and nonnegative on $K$;
+\item[(iii)] each $V_i$ is superadditive: $V_i(y + y') \ge V_i(y) + V_i(y')$ for $y, y' \in K$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+Unrolling the recursion gives $V_i(y) = \min \kappa(u)^\top y$ over $(u_{i+1},\dots,u_N) \in [0,1]^{N-i}$, with $\kappa(u)^\top = \mathbb{1}^\top P(u_N)^{-1}M(u_{N-1})\cdots M(u_{i+1}) \ge 0$; the minimum is attained because $\kappa$ is continuous.
+A pointwise minimum of linear functions with nonnegative coefficients is concave, positively homogeneous and nonnegative on $K$.
+Superadditivity follows from $V_i(y + y') = 2V_i((y+y')/2) \ge V_i(y) + V_i(y')$.
+Part (i) follows from \cref{lem:catmix-reduction}.
+\end{proof}
+
+By homogeneity each $V_i$ is determined by its values on the rays $r(\theta) = (1-\theta, \theta)^\top$, $\theta \in [0,1]$.
+For $y \in K\setminus\{0\}$ write $\rho(y) = y_1 + y_2$ and $\theta(y) = y_2/\rho(y)$.
+
+\begin{lemma}[chord minorant]\label{lem:catmix-chord}
+Let $V$ be positively homogeneous and superadditive on $K$.
+Let $0 = \theta_0 < \theta_1 < \dots < \theta_R = 1$, $r_k = r(\theta_k)$, and let $w_k \le V(r_k)$ for all $k$.
+Define $W(0) = 0$ and, for $y \in K\setminus\{0\}$ with $\theta(y) \in [\theta_k, \theta_{k+1}]$,
+\[
+W(y) = \rho(y)\,\bigl[w_k + \sigma_k(\theta(y) - \theta_k)\bigr],\qquad \sigma_k = \frac{w_{k+1} - w_k}{\theta_{k+1} - \theta_k}.
+\]
+Then $W$ is well defined, linear on each cone $\{y : \theta(y) \in [\theta_k, \theta_{k+1}]\}$, and $W \le V$ on $K$.
+\end{lemma}
+
+\begin{proof}
+At a shared ray both formulas give $\rho(y)w_k$, and on cone $k$, $W(y) = (w_k - \sigma_k\theta_k)\,y_1 + (w_k + \sigma_k(1 - \theta_k))\,y_2$.
+Write $y = s\,r_k + t\,r_{k+1}$ with $s = \rho(y)(\theta_{k+1} - \theta(y))/(\theta_{k+1} - \theta_k) \ge 0$ and $t = \rho(y)(\theta(y) - \theta_k)/(\theta_{k+1} - \theta_k) \ge 0$; then $W(y) = s\,w_k + t\,w_{k+1}$.
+Superadditivity and homogeneity give $V(y) \ge s\,V(r_k) + t\,V(r_{k+1}) \ge s\,w_k + t\,w_{k+1}$.
+\end{proof}
+
+\begin{lemma}[dynamic-programming lower bound]\label{lem:catmix-dp}
+For each $i = 0, \dots, N-1$ let $\Theta^{(i)}$ be a grid in $[0,1]$ containing $0$ and $1$, with rays $r^{(i)}_j$ and numbers $w^{(i)}_j$, and let $W^{(i)}$ be the chord function of \cref{lem:catmix-chord} for $(\Theta^{(i)}, \max(w^{(i)}, 0))$.
+Suppose that
+\begin{align*}
+\text{(T)}\quad & w^{(N-1)}_j \le \min_{u\in[0,1]} \mathbb{1}^\top P(u)^{-1} r^{(N-1)}_j \quad\text{for all } j,\\
+\text{(S)}\quad & w^{(i-1)}_j \le \min_{u\in[0,1]} W^{(i)}\bigl(M(u)\,r^{(i-1)}_j\bigr) \quad\text{for all } j \text{ and } i = N-1, \dots, 1,\\
+\text{(I)}\quad & \omega \le \min_{u\in[0,1]} W^{(0)}\bigl(Q(u)\,x_0\bigr).
+\end{align*}
+Then $\vstar \ge \omega - 1$.
+\end{lemma}
+
+\begin{proof}
+We show by downward induction that $\max(w^{(i)}_j, 0) \le V_i(r^{(i)}_j)$ for all $j$ and that $W^{(i)} \le V_i$ on $K$.
+For $i = N-1$, (T) gives $w^{(N-1)}_j \le V_{N-1}(r^{(N-1)}_j)$, and $V_{N-1} \ge 0$ (\cref{lem:catmix-value}), so clipping at $0$ keeps the inequality; \cref{lem:catmix-chord} gives $W^{(N-1)} \le V_{N-1}$.
+For the step, $M(u)r^{(i-1)}_j \in K$, so (S) gives $w^{(i-1)}_j \le \min_u V_i(M(u)r^{(i-1)}_j) = V_{i-1}(r^{(i-1)}_j)$; clip and apply \cref{lem:catmix-chord} again.
+Finally (I) and $Q(u)x_0 \in K$ give $\omega \le \min_u V_0(Q(u)x_0) = \vstar + 1$ by \cref{lem:catmix-value}(i).
+\end{proof}
+
+\Cref{lem:catmix-dp} is the instance of \cref{lem:split-minorant} for cone-valued linear dynamics.
+Each $W^{(i)}$ is a valid minorant because the true value function is concave and positively homogeneous; the computed $W^{(i)}$ need not be concave, so the bound is not an instance of \cref{lem:split-bound}, and it is not exact.
+We do not claim that the discrete optimum chatters; our best feasible points do.
+
+\subsubsection{\texorpdfstring{\inst{catmix}}{catmix}: the computation and the proof of \texorpdfstring{\cref{thm:catmix-bound}}{the theorem}}\label{app:catmix-computation}
+
+For each stage and output ray $r$, the function to be minimized is $u \mapsto W^{(i)}(M(u)r) = W^{(i)}(n(u))/D(u)$, where $n(u) = Q(u)\operatorname{adj}P(u)\,r$ has quadratic entries and $D(u) = \det P(u) \ge 1 + a$ is quadratic; this uses positive homogeneity of $W^{(i)}$.
+On cone $k$ the function equals $p_k(u)/D(u)$ with $p_k = w_k\,\rho(n) + \sigma_k\,g_k(n)$ and $g_k(y) = (1-\theta_k)\,y_2 - \theta_k\,y_1$, again quadratic in $u$.
+The implementation of record checks (S) for every ray as follows.
+\begin{enumerate}
+\item It cuts $[0,1]$ at $0$, at $1$ and at floating-point approximations of the preimages of the cone boundaries, with small intervals of half-width $10^{-9}$ around the latter.
+\item On each interval it verifies a range of cones $[k_{\mathrm{lo}}, k_{\mathrm{hi}}]$ rigorously, from the signs $g_{k_{\mathrm{lo}}}(n(u)) \ge 0$ and $g_{k_{\mathrm{hi}}+1}(n(u)) \le 0$, widening the range until both are proved; then $n(u)$ lies in one of these cones for every $u$ in the interval.
+\item It bounds each pair (interval, cone) either by $\bigl(\min\rho(n)/\max D\bigr)\cdot\min(w_k, w_{k+1})$, which is valid because $w \ge 0$, or by one exact Dinkelbach step: for a floating-point $t$, a rigorous lower bound $m$ on the minimum of $p_k - tD$ over the interval gives $p_k/D \ge t + m/D_{\min}$ if $m < 0$ and $p_k/D \ge t + m/D_{\max}$ otherwise.
+\item It sets the new value $w^{(i-1)}_j$ to the minimum over all pairs.
+\end{enumerate}
+Minima of quadratics are bounded from the lower ends of the coefficient intervals, which is valid because $u \ge 0$, and include the vertex whenever it may lie in the interval.
+The terminal condition (T) is checked by the same Dinkelbach step for $\mathbb{1}^\top\operatorname{adj}P(u)\,r/D(u)$, and (I) with $Q(u)x_0$ and $D = 1$; the reported bound is $\omega - 1$ rounded down to a binary64 number.
+Floating-point computations decide only where to cut and which bound to use, never validity; a square root only places cuts.
+The coefficients of the stage polynomials are exact rationals derived from the decimal strings, with $P\operatorname{adj}P = \det P\cdot I$ asserted, and the grid rays are dyadic with at most 30 fractional bits, so $1 - \theta_k$ and differences of grid points are exact.
+
+The record grids are dyadic: a base grid with spacing $2^{-16}$ to $2^{-13}$ on $[0,13/128)$ and $2^{-7}$ on $[13/128,1]$, refined by bands on the singular arc and, at each stage, by a window of up to 601 rays around the $\theta$-trajectory of a good feasible point, with 2,629 to 9,131 rays per stage on average; any grid gives a valid bound.
+
+
+\begin{proof}[Proof of \cref{thm:catmix-bound}]
+For each $N$ the record run computes grids and numbers $w^{(i)}_j \ge 0$ that satisfy (T), (S) and (I) of \cref{lem:catmix-dp}, by the rigorous per-ray bounds described above, and returns $\Lcert_N$, a binary64 number at most $\omega - 1$.
+\Cref{lem:catmix-dp} gives $\vstar \ge \omega - 1 \ge \Lcert_N$.
+The displayed bounds are $\Lcert_N$ rounded down (\cref{tab:closures}).
+With the exactly feasible points of \cref{app:points} (binary64 controls whose states are computed in exact rational arithmetic by \cref{lem:catmix-reduction}), the gaps are at most $1.85\cdot10^{-13}$, $1.90\cdot10^{-11}$, $6.81\cdot10^{-11}$ and $1.49\cdot10^{-10}$.
+\end{proof}
+
+These points improve MINLPLib's listed primal values by at least $2.2\cdot10^{-8}$.
+
+\begin{certbox}[Certificate for \cref{thm:catmix-bound}]
+\certitem{Inputs}{OSIL files (SHA-256 \texttt{9f5b5bae}, \texttt{9194135d}, \texttt{3dfc4d7f}, \texttt{40b572a4}); grid arguments; binary64 controls of the primal points.}
+\certitem{Computation}{dual: per ray and control interval, a proved cone range and Dinkelbach bounds; \arith{F} (IEEE binary64, \cref{hyp:fp-ieee}, $+,-,\times,\div$ with one outward \texttt{nextafter} step each; no library function). Primal: states in \arith{E}.}
+\certitem{Data reading}{exact rationals, enclosed by outward binary64 intervals.}
+\certitem{Implementations}{the displayed bounds come from the second code (for $N = 400$ and $800$ through a separate driver with its own grid construction and grid-validity assertions, which calls its stage routines unchanged); the first code, a per-ray interval branch and bound with mean-value and second-order Taylor bounds on the chord pieces and a Lipschitz bound across many cones, certifies bounds lower by at most \sci{3.7}{-10} and, on identical test inputs for $N=100$ (all 99 stages on a 324-ray grid and 40 stages on a $2^{-21}$-band grid), agrees with the second per stage within \sci{9.44}{-15}. Three exact evaluations confirm the primal points.}
+\certitem{Evidence level}{dual \evid{rerun} (the per-stage values $w^{(i)}$ are not stored); primal \evid{stored} (exact rational state evaluation).}
+\certitem{Replay}{Tier~2 for the replay of the displayed bounds: 20.2 to 46.1\,min per instance (clean-checkout runs, which reproduced every certified value bit for bit). The first code, which certifies the weaker bounds, took 1,049 to 4,602\,s per instance, which is Tier~3 for \inst{catmix800} (4,602\,s).}
+\end{certbox}
+
+\paragraph{Where the gap comes from.}
+The next lemma is not needed for validity; it shows that the losses of the computation add up over the stages without amplification.
+
+\begin{lemma}[losses add up]\label{lem:catmix-losses}
+Let $9a \le c \le 1 - a$.
+For $u \in [0,1]$, $\mathbb{1}^\top M(u) \le \mathbb{1}^\top$ entrywise, so $\rho(M(u)y) \le \rho(y)$ for $y \in K$.
+Suppose the numbers of \cref{lem:catmix-dp} satisfy (T), (S) and (I) with slack at most $\gamma_T$, $\gamma_i$ and $\gamma_I$, that is, $w^{(N-1)}_j \ge \min_u \mathbb{1}^\top P(u)^{-1}r^{(N-1)}_j - \gamma_T$, $w^{(i-1)}_j \ge \min_u W^{(i)}(M(u)r^{(i-1)}_j) - \gamma_i$ and $\omega \ge \min_u W^{(0)}(Q(u)x_0) - \gamma_I$.
+Let $\epsilon_i$ be the interpolation error of $V_i$ on $\Theta^{(i)}$: the supremum over $y \in K$ with $\rho(y) = 1$ of $V_i(y)$ minus the chord interpolant of the exact values $V_i(r^{(i)}_k)$.
+Then
+\[
+\vstar - (\omega - 1) \;\le\; \gamma_T + \sum_{i=1}^{N-1}\gamma_i + \gamma_I + \sum_{i=0}^{N-1}\epsilon_i .
+\]
+\end{lemma}
+
+\begin{proof}
+With $e_2 = (0,1)^\top$, a direct computation gives $\mathbb{1}^\top Q(u) = \mathbb{1}^\top P(u) - 2\bigl(a - (10a - c)u\bigr)e_2^\top$, hence $\mathbb{1}^\top M(u) = \mathbb{1}^\top - 2\bigl(a - (10a-c)u\bigr)\,e_2^\top P(u)^{-1}$.
+Here $e_2^\top P(u)^{-1} \ge 0$ by \cref{lem:catmix-nonneg}, and $a - (10a - c)u \ge \min(a, c - 9a) \ge 0$; this proves the first claim.
+Let $\Gamma_i = \max_k \bigl(V_i(r^{(i)}_k) - \max(w^{(i)}_k, 0)\bigr) \ge 0$.
+For $y$ with $\rho(y) = 1$ in cone $k$, write $y = s\,r_k + t\,r_{k+1}$ with $s + t = 1$; then $V_i(y) - W^{(i)}(y) \le \epsilon_i + s\,\Gamma_i + t\,\Gamma_i = \epsilon_i + \Gamma_i$, and by homogeneity $V_i - W^{(i)} \le (\epsilon_i + \Gamma_i)\,\rho$ on $K$.
+For a grid ray $r$ of stage $i-1$, let $u'$ minimize $W^{(i)}(M(u)r)$ over $[0,1]$; a minimizer exists because $W^{(i)}$ is continuous on $K$.
+Then $V_{i-1}(r) - \max(w^{(i-1)}(r), 0) \le V_i(M(u')r) - W^{(i)}(M(u')r) + \gamma_i \le (\epsilon_i + \Gamma_i)\,\rho(M(u')r) + \gamma_i \le \epsilon_i + \Gamma_i + \gamma_i$, so $\Gamma_{i-1} \le \Gamma_i + \epsilon_i + \gamma_i$.
+The terminal cost is linear in $y$ for fixed $u$ and is minimized directly on each ray, so $\Gamma_{N-1} \le \gamma_T$.
+At the initial stage, $\rho(Q(u)x_0) = 1$, so with $u'$ minimizing $W^{(0)}(Q(u)x_0)$ we get $\vstar + 1 \le V_0(Q(u')x_0) \le \omega + \gamma_I + \epsilon_0 + \Gamma_0$.
+Unrolling the recursion for $\Gamma$ gives the claim.
+\end{proof}
+
+The interpolation error is of second order in the grid spacing where $V_i$ is twice differentiable in $\theta$, and of first order, on one cone only, at a kink of $V_i$.
+In runs on coarser grids almost all of the loss accumulated on the singular arc (numerical evidence), which is why the record grids refine a band there and a window around the trajectory of a good feasible point.
+
+\subsubsection{\texorpdfstring{\inst{catmix}}{catmix}: the exact-coefficient model}\label{app:catmix-transport}
+
+\begin{proposition}[transport to $c = 9a$]\label{prop:catmix-transport}
+Fix $u \in [0,1]^{N+1}$ and let $9a \le c' \le c \le 1 - a$.
+Then $J_{c'}(u) \ge J_c(u)$, where $J_c$ denotes the objective of~\eqref{eq:catmix-model} with coefficient $c$.
+Hence $\vstar_{9a} \ge \vstar_{c_N} \ge \Lcert_N$: every certified lower bound for the OSIL model also holds for the model of the GAMS text, in which $c = 9a$.
+\end{proposition}
+
+\begin{proof}
+Write $E_{22} = e_2 e_2^\top$.
+Then $P_{c'}(u) = P_c(u) - (c - c')u\,E_{22}$ and $Q_{c'}(u) = Q_c(u) + (c - c')u\,E_{22}$.
+By the resolvent identity, $P_{c'}^{-1} - P_c^{-1} = (c - c')u\,P_{c'}^{-1}E_{22}P_c^{-1} \ge 0$, because both inverses are nonnegative (\cref{lem:catmix-nonneg}).
+So $P_{c'}^{-1} \ge P_c^{-1} \ge 0$ and $Q_{c'} \ge Q_c \ge 0$, hence $M_{c'} \ge M_c \ge 0$ entrywise.
+The vector $Q(u_0)x_0 = (1 - au_0, au_0)^\top$ does not depend on $c$.
+By \cref{lem:catmix-reduction}, $J + 1$ is a product of entrywise nonnegative factors, each of which is entrywise nondecreasing as $c$ decreases; so $J_{c'}(u) \ge J_c(u)$.
+Taking minima over $u$ gives $\vstar_{c'} \ge \vstar_c$, and $c_N - 9a > 0$ for all four files.
+\end{proof}
+
+Under $c = 9a$ the exact objectives of our feasible points are higher than under the OSIL coefficient by about $1.2\cdot10^{-17}$, $1.4\cdot10^{-17}$, $9.5\cdot10^{-18}$ and $1.9\cdot10^{-17}$ (exact rational evaluation by two separately written codes).
+For the exact-coefficient model the gaps are therefore at most $1.86\cdot10^{-13}$, $1.90\cdot10^{-11}$, $6.81\cdot10^{-11}$ and $1.49\cdot10^{-10}$.
+
+\subsubsection{Checks of the proofs and prior work}\label{app:chain-prior}
+
+The proofs of \cref{lem:chain-polyline,lem:chain-calibration,prop:chain-endvalue} were read in at least two separate agent sessions, their identities were checked by computer algebra, and the stage inequality was tested at 40 and 50 digits on random and catenary chains, with no violation beyond rounding.
+The proof of \cref{prop:chain-weierstrass} was read in one separate session and tested at 50 digits on constructed catenaries for $N = 3, 7, 50$ and on perturbed chains.
+The proofs of \crefrange{lem:catmix-reduction}{lem:catmix-dp} were read in at least two separate agent sessions; those of \cref{lem:catmix-nonneg,lem:catmix-losses,prop:catmix-transport}, written later, in one.
+The inequalities $\det P \ge 1+a$, $M \ge 0$, $\mathbb{1}^\top M \le \mathbb{1}^\top$ and $M_{9a} \ge M_{c_N}$ were checked in exact rational arithmetic at random rational $u$, and the objectives under both coefficients exactly.
+
+The sufficiency theory of the continuous catenary through Weierstrass fields is classical \citep[see][for a discussion and a variant]{denzler1999-catenaria-verathe-true-catenary}; \cref{lem:chain-calibration} and \cref{prop:chain-weierstrass} are discrete analogues for the COPS transcription, which we did not find stated elsewhere in our search.
+The \inst{catmix} bound is a relaxed dynamic program in the sense of \citet{lincoln2006-relaxing-dynamic-programming}, with piecewise-linear lower interpolation of concave, positively homogeneous value functions, which is standard in spirit; the global methods for continuous-time dynamic optimization that we know of \citep[for example][]{chachuat2005-global-mixed-integer-dynamic-optimization} treat the continuous problems, and we found none applied to these discretizations.

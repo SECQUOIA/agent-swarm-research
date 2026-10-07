@@ -121,7 +121,7 @@ proof and do not replace its quantified or topological arguments.
   imaginary voltages; it does not use numerical solver output as proof.
 - The relevant result, all three power-flow reviews, novelty/closeout notes,
   and both source programs are byte-identical in the other worktree
-  `/home/sgusev/repo/minlp-notes-potential-flow`. Evidence is retained in
+  `/workspace/minlp-notes-potential-flow`. Evidence is retained in
   `process/worktree-coverage-audit.json` and the refreshed
   `verification/root/worktree-coverage-final-check.json`. The other
   worktree therefore contributes no unaccounted power-flow development.

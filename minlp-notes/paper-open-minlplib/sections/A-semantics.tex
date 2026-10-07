@@ -1,0 +1,121 @@
+% Plan: development/outline.md, section 6, item A. The SHA-256 table of the
+% 43 models, the table of expression nodes, the full GAMS/OSIL comparison
+% table and some per-family details moved to the supplement
+% (development/moves/m-intro-sem.md). Round-1 revision: item G1-16 of
+% development/reviews/round1/adjudication.md; the exact checks behind the
+% reading-(c) proofs of A.4 are in development/reviews/round1/g1-readingc/.
+% Round-2 revision: item G1-15 of development/reviews/round2/adjudication.md.
+% Round-3 revision: opus-writing 10 ("data reading" throughout A.2).
+\section{Model semantics and OSIL reading}\label{app:semantics}
+
+At the refresh of 2026-10-02 (documentation page last updated 2026-09-14), the OSIL files on the MINLPLib site for all 69 instances used in this paper and in the audit had the same SHA-256 hashes as the copies we used (prefixes of the 43 stored models in \cref{tab:sem-hashes}).
+
+\subsection{Reading an OSIL file}\label{app:semantics-osil}
+
+An OSIL file lists variables, objective and rows with their bounds and constants, a sparse matrix of linear row coefficients, quadratic terms (\texttt{qTerm}) and expression trees (\texttt{nl}); a row's value is the sum of its \texttt{constant}, linear part, quadratic terms and expression tree, and compressed vectors (\texttt{mult}, \texttt{incr}) expand exactly.
+We keep the OSIL names $x\langle k\rangle$ and $e\langle k\rangle$ of variables and rows.
+
+The schema defaults of \cref{def:sem-model}(ii) matter: in \inst{pindyck}, 97 of the 116 variables carry no \texttt{lb} attribute, and the initial cumulative supply is fixed at $0$ only by \texttt{ub="0"} together with the default lower bound.
+Every binary variable carries only \texttt{ub="1"}; the integer variables, which occur only in the \inst{eg} instances, have explicit bounds.
+The only \texttt{constant} attributes are objective constants ($-1$ in the four \inst{catmix} files, $2$ in \inst{powerflow0039p} and \inst{powerflow0039r}), and every reader of these families applies them.
+
+The expression trees use the nodes \texttt{number}, \texttt{variable}, \texttt{sum}, \texttt{product}, \texttt{negate}, \texttt{divide}, \texttt{square}, \texttt{sqrt}, \texttt{power}, \texttt{exp}, \texttt{ln}, \texttt{sin}, \texttt{cos} and \texttt{tanh}; \inst{dtoc5}, \inst{optcdeg2}, \inst{catmix}, \inst{camshape} and \inst{powerflow0039r} have only quadratic terms.
+The \texttt{power} nodes fall into four cases.
+In \inst{pricing050} and \inst{waterno2} the exponent is the integer~$3$, so the integer-power rule applies; this matters because our exactly feasible points contain zero bases (5 in \inst{pricing050}; 44, 56, 69, 97 and 125 in \inst{waterno2_06}, \inst{waterno2_09}, \inst{waterno2_12}, \inst{waterno2_18} and \inst{waterno2_24}).
+In \inst{lukvle10} the base is the square of a variable and the exponent is the square of another variable plus $1$, so every \texttt{power} node is defined everywhere (and $0$ at a zero base).
+In \inst{pindyck} the base is the constant $1.02$ and the exponent is a variable times the decimal $-0.142857142857143$, not $-1/7$.
+In \inst{etamac} the exponents are negative fractional constants, and the variable bounds keep every base positive.
+
+Within the variable bounds, the domain rule of \cref{def:sem-model}(iv) excludes points only in two instances: \inst{hvycrash} divides by powers of the free variables $r_k$, so its domain excludes $r_k=0$ (the identity of \cref{prop:hvycrash-identity} uses this), and \inst{pindyck} divides by the reserves $R_t$, whose lower bound is the default $0$.
+Elsewhere every expression is defined within the bounds.
+The \texttt{ln} arguments and denominators of \inst{ex6_2_5} and \inst{ex6_2_7} are positive because every variable involved has the lower bound $10^{-7}$, and the \texttt{ln} arguments of \inst{etamac} are variables with positive lower bounds; $\sqrt{1+x_j^2}$ in \inst{chain}, the KAN denominators $1+e^{-z}$ and \texttt{tanh} are defined everywhere.
+
+\subsection{How the certificate codes read the data}\label{app:semantics-codes}
+
+An agent session inspected every code that certifies a dual bound or a primal point and recorded how each numeric string $\sigma$ enters it.
+Four data readings occur.
+In an \emph{exact data reading}, $\sigma$ is converted to an exact rational (Python \texttt{Fraction}, SymPy \texttt{Rational}), or a hard-coded rational is used after an exact string comparison with the file.
+In an \emph{outward data reading}, $\dval{\sigma}$ is enclosed in an interval.
+The interval is built by mpmath from $\sigma$ (at 53 or 64 bits, or at 30 to 60 digits), or lies between the two binary64 neighbours of $\fl(\dval{\sigma})$, or is an mpmath interval quotient of the numerator and denominator of $\dval{\sigma}$, or is a dyadic floor and ceiling.
+In a \emph{rounded data reading}, the code uses $\fl(\dval{\sigma})$, and its error analysis covers the relative error of at most $\uround$.
+In a \emph{binary64 data reading}, the code parses $\sigma$ to binary64.
+Exact, outward and rounded data readings make the certificate valid for the decimal data of \reading{b}.
+A binary64 data reading does so only if every datum that the code uses is a binary64 number or is entered again exactly; we checked this case by case.
+
+Every code that certifies a displayed value uses an exact, outward or rounded data reading (\cref{tab:trust-full}).
+Two such codes use a rounded data reading: the leaf re-certifier of the \inst{eg} instances, covered by \cref{lem:eg-padding}, and the second bounding code of \inst{ann_cumene_tanh}, whose slack of $10^{-12}$ per step exceeds the rounding of the data; the \inst{ann_cumene_tanh} bound also follows from its first code, which reads outward.
+Binary64 data readings occur only in early scripts for \inst{lnts}, \inst{lukvle10}, \inst{dtoc5}, \inst{camshape} and \inst{optcdeg2}, which use only binary64-exact or exactly re-entered data; the displayed values for these families come from codes with exact or outward data readings.
+The inspection also found a latent error: one \inst{pricing050} code uses only the numerators of the objective coefficients, which is correct only because all 46 of them are integers; the displayed bound comes from a separately written code that encloses the full rationals.
+Finally, we tested the string conversions of the outward data readings directly on all 164,791 distinct numeric strings of the 46 OSIL files involved: the 43 stored models and \inst{rocket100}, \inst{rocket200} and \inst{rocket400} from the audit.
+Each conversion, and the mpmath interval of the shortest binary64 round-trip string, contains $\dval{\sigma}$; the quotient and dyadic conversions are outward by construction.
+
+\subsection{GAMS and OSIL forms}\label{app:semantics-gams}
+
+MINLPLib's GAMS files minimize an objective variable defined by an objective row, while the OSIL files usually substitute it out \citep{vigerske2026-minlplib-a-library-of-mixed}; the comparisons in \cref{tab:sem-gams} account for this.
+An exact comparison reads both files with every decimal as a rational and compares rows, bounds and types symbolically; an evaluation compares rows at random points in high-precision arithmetic and is evidence only.
+
+\begin{table}[ht]
+\centering
+\small
+\caption{Comparison of the GAMS form \reading{a} with the OSIL form \reading{b}; evaluations use 50 or 60 digits.}
+\label{tab:sem-gams}
+\begin{tabular}{@{}p{0.6\linewidth}p{0.35\linewidth}@{}}
+\toprule
+\raggedright instances & \raggedright comparison: result \tabularnewline
+\midrule
+\raggedright \inst{dtoc5}, \inst{optcdeg2}, \inst{camshape100}--\inst{camshape800}, \inst{powerflow0030p}, \inst{powerflow0039p}, \inst{powerflow0039r}, \inst{eg_int_s}, \inst{eg_disc_s}, \inst{eg_disc2_s}, \inst{waterno2_06}--\inst{waterno2_24} & \raggedright exact: identical \tabularnewline
+\raggedright \inst{catmix100}--\inst{catmix800} & \raggedright exact: rows differ, objective identical \tabularnewline
+\raggedright \inst{lnts50}--\inst{lnts400}, \inst{lukvle10}, \inst{chain50}--\inst{chain400}, \inst{ann_cumene_tanh}, KAN & \raggedright evaluation (variables, types and bounds exact): no difference \tabularnewline
+\raggedright \inst{ex6_2_5}, \inst{ex6_2_7}, \inst{pricing050}, \inst{etamac}, \inst{pindyck}, \inst{hvycrash} & \raggedright evaluation at 5 points: no difference \tabularnewline
+\bottomrule
+\end{tabular}
+\end{table}
+
+In the four \inst{catmix} files the coefficient $c=9a$ of the GAMS text is printed as a binary64 product, so that $c_N-9a$ is exactly $\sci{5}{-18}$, $\sci{3}{-18}$, $\sci{1}{-18}$ and $\sci{1}{-18}$ for $N=100$, 200, 400 and 800 (\cref{app:chain,prop:catmix-transport}).
+For the KAN instances and \inst{ann_cumene_tanh} we claim results for the OSIL form only; \cref{app:audit} compares the forms of the audit instances.
+
+\subsection{Binary64 data}\label{app:semantics-binary64}
+
+Under \reading{c} every decimal $\sigma$ is replaced by $\fl(\dval{\sigma})$, which changes the value of no string in \inst{lukvle10}, of two strings in each \inst{lnts} and \inst{chain} file, and of up to 3,332 strings (\inst{eg_disc2_s}) elsewhere.
+We claim nothing for \reading{c} beyond \cref{rem:sem-readings}, for these reasons.
+
+\paragraph{Points.}
+Our points of \inst{dtoc5}, \inst{chain} and \inst{powerflow} violate an equality row under \reading{c} (checked exactly):
+\begin{itemize}\setlength{\itemsep}{0pt}\setlength{\parsep}{0pt}
+\item \inst{dtoc5}: row e2, $-h\,u_0+y_0-y_1+4h\,y_0^2=0$ with the strings \texttt{-2e-5} and \texttt{8e-5}, has under \reading{c} the residual $(\fl(h)-h)(4y_0^2-u_0)\ne0$ at our point, because $\fl(8\cdot10^{-5})=4\fl(2\cdot10^{-5})$ (rounding commutes with scaling by $4$), $\fl(2\cdot10^{-5})\ne2\cdot10^{-5}$, $y_0=1$ and $u_0\approx8.06$.
+\item \inst{chain}: the step $\eta=1/(2N)$ is not dyadic, so under \reading{c} the dynamics rows $x_{i+1}-x_i-\eta(u_i+u_{i+1})=0$ leave the residuals $(\eta-\fl(\eta))(u_i+u_{i+1})$, which cannot all vanish because $\sum_i\eta(u_i+u_{i+1})=x_N-x_0=2$.
+\item \inst{powerflow}: each model has a flow row $P+c\,T(x)=0$ whose coefficients other than $\pm1$ are all $\pm c$, with $\fl(c)\ne c$ and $P\ne0$ at our point: row e2 of \inst{powerflow0030p}, with $|c|=7.14285714285714$ and $P\approx-0.162$, and the branch 2--30 row e65 of \inst{powerflow0039p} and \inst{powerflow0039r}, with $|c|=b$ and $P=P_g\approx6.71$ (\cref{app:powerflow-0039}).
+Under \reading{c} this row has the residual $P\,(c-\fl(c))/c\ne0$.
+\end{itemize}
+The \inst{waterno2} points are not feasible either: each switches off a pump station whose speed identities, such as $0.7^3=0.343$, fail for binary64 data.
+The \inst{lnts} angle bound $1.5707963267949$, which \reading{c} changes, exceeds $\pi/2$ by about $\sci{3.4}{-15}$ as a decimal and $\sci{3.5}{-15}$ in binary64.
+
+\paragraph{Identities and sensitivity.}
+Several exact statements rest on identities among decimals that fail for their binary64 values.
+The \inst{hvycrash} objective is constant on the exactly feasible set because the rows force it to equal $-50\,\dval{\texttt{4.37e-3}}=-0.2185$ (\cref{prop:hvycrash-identity}); in binary64, $50\cdot\fl(4.37\cdot10^{-3})-0.2185\approx\sci{-1.24}{-17}$.
+In \inst{waterno2}, the file writes the square and the cube of the minimum speed of a pump station as decimal lower bounds of auxiliary variables.
+For stations A, B2 and D the binary64 values violate these identities, for instance $\fl(0.7)^3-\fl(0.343)\approx\sci{-9.24}{-17}$, and in the runs we traced this cube residual triggers the SCIP error of \cref{sec:solvers-invalid} (\cref{app:waterno2}).
+The \inst{etamac} certificate needs a sum of exponents to exceed $1$; the excess is about $\sci{4.1}{-16}$ under \reading{b} and $\sci{3.7}{-16}$ under \reading{c}, so this step does not depend on the reading.
+Other results are insensitive to small data changes: perturbing each of the \inst{camshape} constants $c$, $\bar u$, $\alpha$ and $c_0$ by up to $10^{-14}$ moves the optimal value by at most $\sci{5.9}{-11}$ ($n=100$) and $\sci{3.6}{-9}$ ($n=800$; \cref{rem:camshape-robust}).
+
+\paragraph{Audit refutations.}
+The 19 refuted listed bounds and the three refuted \inst{rocket} bounds have relative margins of at least $\sci{1.9}{-9}$ under \reading{b}.
+Their existence certificates succeed again when every datum that is not a binary64 number is replaced by its binary64 value.
+The upper ends of the objective enclosures change by at most $\sci{2.13}{-10}$ ($\sci{2.8}{-12}$ relative).
+Every class~(i) margin is still at least $1.115\,\dunit{s}$, where $s$ is the listed bound, and the \inst{rocket} margins stay at 1.06, 4.70 and 18.9 units (computed, one implementation; \cref{app:audit}).
+This suggests that the refutations transfer to the solvers' binary64 models; we do not claim it.
+
+\subsection{Provenance}\label{app:semantics-provenance}
+
+Several stored models differ from the source models their names suggest; our results concern the stored models only.
+\begin{itemize}\setlength{\itemsep}{0pt}\setlength{\parsep}{0pt}
+\item \inst{dtoc5} and \inst{optcdeg2} differ from their CUTEst sources \citep{luksan2026-cutest-source-forms-for-dtoc5} by a factor of $4$ in one coefficient.
+The \inst{dtoc5} dynamics are $y_{t+1}=y_t+4h\,y_t^2-h\,u_t$ with $h=1/50000$, where \citet{coleman1993-the-global-convergence-of-a} and the CUTEst file use $h\,y_t^2$; the \inst{optcdeg2} velocity rows have the coefficient $0.2h$ on $v_t^2$, where the CUTEst file uses $0.05h$; we do not know where the factor entered.
+\item The GAMS files of \inst{dtoc5} and \inst{optcdeg2} equal those of QPLIB\_8585 and QPLIB\_8803 \citep{furini2018-qplib-a-library-of-quadratic} apart from comments, one solver option, the solve statement and, for \inst{optcdeg2}, a redundant declaration of two variables that both files fix at $0$.
+\item \inst{powerflow0030p} omits the two bus shunts of MATPOWER case30, and \inst{powerflow0039p} and \inst{powerflow0039r} omit the tap ratios of 11 of the 12 tapped branches of case39 \citep{matpower2026-minlplib-power-flow-and-water,zimmerman2011-matpower-steady-state-operations-planning}; our bounds do not apply to the MATPOWER cases (\cref{app:powerflow}).
+The rectangular twin \inst{powerflow0030r} differs from \inst{powerflow0030p} by rounding in the 15th or 16th significant digit and has no angle rows; we transport no bound between them.
+\item The COCONUT translation of \inst{pindyck} drops the exponent factor $0.142857142857143$, so its best value $-1612.18$ belongs to a different model \citep{coconut2026-globallib-gams-coconut-and-minlplib}.
+\item \inst{hvycrash} is the CUTE problem HVYCRASH at $N=50$, which the SIF file marks as the original value of $N$ \citep{toint2013-cute-hvycrash-source-sif-files}; the decoded SIF problem agrees with the stored model at 20 random points to 50 digits (evidence only).
+\item \inst{camshape} is the GAMS model library model camshape \citep{library2026-cops-and-gams-source-models} in scalar form, with the objective negated and the constants printed to 15 significant digits; it omits one curvature row of the COPS discretization, and its QPLIB copies, with constants rounded to 8 to 10 digits, have different optimal values (\cref{app:camshape}).
+\item In the KAN models the B-spline recursion coefficients are 16-digit decimal roundings of the trained network, so their partition-of-unity rows are inconsistent under \reading{b} (\cref{app:annkan}).
+\end{itemize}

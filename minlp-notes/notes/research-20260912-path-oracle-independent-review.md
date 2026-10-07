@@ -84,7 +84,7 @@ from __future__ import annotations
 import hashlib, importlib.util, itertools, json, pathlib, time
 import numpy as np
 
-source = pathlib.Path('/home/sgusev/repo/minlp-notes/code/research_20260912/path_oracle.py')
+source = pathlib.Path('/workspace/minlp-notes/code/research_20260912/path_oracle.py')
 snapshot = pathlib.Path('/tmp/path_oracle_review_snapshot.py')
 raw = source.read_bytes(); snapshot.write_bytes(raw)
 spec = importlib.util.spec_from_file_location('review_oracle', snapshot)

@@ -1,3 +1,5 @@
+import sys as _cleanup_sys
+
 from pathlib import Path
 from statistics import median
 from copy import deepcopy
@@ -30,7 +32,7 @@ check=out/'table-check';(check/'verification').mkdir(parents=True,exist_ok=True)
 shutil.copy(paper/'verification/stage06-tables.py',check/'verification/stage06-tables.py')
 source=check/'verification/stage06-benchmarks.json'
 def invoke(d):
- source.write_text(json.dumps(d));return subprocess.run(['/home/sgusev/miniconda3/envs/minlp-notes/bin/python',str(check/'verification/stage06-tables.py')],capture_output=True,text=True)
+ source.write_text(json.dumps(d));return subprocess.run([_cleanup_sys.executable,str(check/'verification/stage06-tables.py')],capture_output=True,text=True)
 assert invoke(data).returncode==0
 for f in (check/'tables').glob('*.tex'):
  # JSON reformatted privately: compare table content, retaining official hash separately.
@@ -51,6 +53,6 @@ try_bad('wrong-status',lambda d:d['optimization'][0]['runs'][1]['measurements'][
 try_bad('wrong-summary',lambda d:d['optimization'][0]['summary']['full']['total_seconds'].__setitem__('median',1234))
 # Restore correct raw bytes and test exact byte-for-byte regeneration.
 source.write_bytes((paper/'verification/stage06-benchmarks.json').read_bytes())
-answer=subprocess.run(['/home/sgusev/miniconda3/envs/minlp-notes/bin/python',str(check/'verification/stage06-tables.py')],capture_output=True,text=True);assert answer.returncode==0
+answer=subprocess.run([_cleanup_sys.executable,str(check/'verification/stage06-tables.py')],capture_output=True,text=True);assert answer.returncode==0
 for f in (check/'tables').glob('*.tex'):assert f.read_bytes()==(snapshot/'tables'/f.name).read_bytes()
 print(json.dumps(dict(status='PASS',hashes=len(manifest['sha256']),timing_summaries=summaries,timed_records=records,unchanged_membership_and_cold=True,original_optimization_inputs_retained=True,new_timings_all_optimization_methods=True,identical_generated_tables=5,mutations=mutations),indent=2))

@@ -56,7 +56,7 @@ The copied verification directory contains pre-existing artifacts as well as fre
 
 ### Checker replays
 
-I reran the following seven frozen scripts on the copied inputs using `/home/sgusev/miniconda3/envs/minlp-notes/bin/python`, with the build directory as explicit working directory. All exited 0. `verification/reviewer12/whole-round01/replay.json` records the script hashes, exit codes, stdout and stderr.
+I reran the following seven frozen scripts on the copied inputs using `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python`, with the build directory as explicit working directory. All exited 0. `verification/reviewer12/whole-round01/replay.json` records the script hashes, exit codes, stdout and stderr.
 
 - `check_complete_signings.py`: exact exhaustive switching representatives for K2 through K7, giving minimum cut ranges `1, 2, 4, 4, 5, 8`, together with witness/face checks. The K6 extension witness has the stated full ratio `21/10` and face ratio `3`.
 - `check_stage02_finite.py`: exact finite three-group and two-level enumeration, including 275,697 three-count states and 564 two-count states. The finite ratios and the small/large examples agree with the text.

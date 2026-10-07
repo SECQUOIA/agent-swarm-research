@@ -50,9 +50,9 @@ Fresh open-web query combinations for polynomial constitutive uncertainty, poten
 
 ## Verification
 
-The following completed successfully in `/home/sgusev/repo/minlp-notes-potential-flow`:
+The following completed successfully in `/workspace/minlp-notes-potential-flow`:
 
-- Research environment `/home/sgusev/miniconda3/envs/minlp-notes/bin/python`, `code/potential_flow_mpd/polynomial_law_checks.py`: 20 heterogeneous-law blocks, 50 exact rational cycle identities and 40 adjoint derivative checks; maximum derivative error `3.66e-10`, physical residual `1.29e-11`.
+- Research environment `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python`, `code/potential_flow_mpd/polynomial_law_checks.py`: 20 heterogeneous-law blocks, 50 exact rational cycle identities and 40 adjoint derivative checks; maximum derivative error `3.66e-10`, physical residual `1.29e-11`.
 - Same environment, `affine_law_checks.py`: 40 exact affine cycle identities and 64 independent coefficient derivative checks; maximum derivative error `1.5e-9`, physical residual `1.55e-13`.
 - Same environment, `fractional_power_arc_review.py`: 103 small cycle instances including exact ties and both inequality directions; common integer resistance scaling discrepancy `2.6e-16`.
 - Same environment, `fractional_rational_checks.py`: four positive rational-surrogate mechanism checks and 10,000 strong-monotonicity pairs; observed error decreased from `2.20e-4` to `5.37e-8`; maximum sampled error/analytical-bound ratio `0.00156`.

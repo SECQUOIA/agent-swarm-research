@@ -109,7 +109,7 @@ idea or Boolean composition theory as original.
 Run with the qipm environment:
 
 ```
-/home/sgusev/miniconda3/envs/qipm/bin/python checks/check_temporal_identities.py
+/workspace/local-home/miniconda3/envs/qipm/bin/python checks/check_temporal_identities.py
 conda run -n qipm --live-stream make
 ```
 

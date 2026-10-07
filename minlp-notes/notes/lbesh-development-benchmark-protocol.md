@@ -185,7 +185,7 @@ package versions as the native GAMS solver versions.
 Example, from `code/minlp_solver_lab`:
 
 ```sh
-PATH=/home/sgusev/miniconda3/envs/solvers/bin:$PATH uv run --frozen --no-sync python -m lbesh_research.benchmark --instances lbesh.quadratic.small.s104729 --methods all --time-limit 30 --wall-limit 60 --threads 1 --parallel 4 --out results/lbesh_development/example.jsonl
+PATH=/workspace/local-home/miniconda3/envs/solvers/bin:$PATH uv run --frozen --no-sync python -m lbesh_research.benchmark --instances lbesh.quadratic.small.s104729 --methods all --time-limit 30 --wall-limit 60 --threads 1 --parallel 4 --out results/lbesh_development/example.jsonl
 uv run --frozen --no-sync python -m lbesh_research.summarize results/lbesh_development/example.jsonl
 uv run --frozen --no-sync python -m unittest lbesh_research.test_harness -v
 ```

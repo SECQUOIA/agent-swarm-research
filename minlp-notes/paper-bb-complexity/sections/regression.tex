@@ -1,0 +1,485 @@
+\section{Sparse regression: different thresholds for different certificates}
+\label{sec:regression}
+
+Sparse regression gives a statistical example in which root exactness,
+short variable-branching trees, and large convex-piece certificates have
+different thresholds. The distinction depends on the relaxation and on the
+signal scaling. In particular, failure to certify the planted support does
+not establish failure to certify the global optimum.
+
+\subsection{Model and perspective relaxation}
+\label{regression:model}
+
+In this section, $n$ is the sample size, $p$ the number of features, and
+$1\leq k<p$ the cardinality budget. Let $X\in\R^{n\times p}$ have independent
+standard Gaussian entries, with columns $x_j$, and let
+\begin{equation}\label{regression:model-eq}
+ y=X\beta^*+\sigma w,\qquad w\sim N(0,I_n),\qquad w\perp X.
+\end{equation}
+The support $S^*=\supp\beta^*$ is deterministic and has size $k$.
+The ridge parameter $\lambda>0$ is deterministic. We use the unnormalized
+loss throughout:
+\begin{align}
+ F_\lambda(S)&=\min_{b\in\R^{|S|}}
+       \{\|y-X_Sb\|^2+\lambda\|b\|^2\},
+       &\OPT&=\min_{|S|\leq k}F_\lambda(S),\label{regression:integer}\\
+ K&=\{z\in[0,1]^p:\mathbf1^\top z\leq k\},
+       &g_\lambda(z)&=y^\top
+       (I_n+\lambda^{-1}X\diag(z)X^\top)^{-1}y.
+       \label{regression:perspective}
+\end{align}
+Multiplying both terms of the objective by $1/2$ has no effect on the
+results. Dividing the entire objective by $n$ changes the ridge coefficient
+to $\lambda/n$.
+
+The Boolean relaxation of
+\citet{pilanciWainwrightElGhaoui2015BooleanRelaxation} has the equivalent
+perspective and dual representations below. The perspective connection
+is developed by \citet{xieDeng2018BooleanRelaxation}.
+\begin{align}
+ g_\lambda(z)&=\min_{\beta_j=0\text{ if }z_j=0}
+  \left\{\|y-X\beta\|^2+
+       \lambda\sum_{z_j>0}\frac{\beta_j^2}{z_j}\right\},
+       \label{regression:primal}\\
+ g_\lambda(z)&=\max_{a\in\R^n}h(a,z),\qquad
+ h(a,z)=2a^\top y-\|a\|^2-\lambda^{-1}
+       \sum_jz_j(x_j^\top a)^2.\label{regression:dual}
+\end{align}
+These identities follow by completing the square in the corresponding
+ridge problems. The second identity makes $g_\lambda$ convex in $z$.
+At $z=\mathbf1_S$, its value is $F_\lambda(S)$. Write
+\begin{equation}\label{regression:node}
+ r(S_0,S_1)=\min\{g_\lambda(z):z\in K,
+                         z_{S_0}=0,\ z_{S_1}=1\},\qquad R=r(\varnothing,\varnothing).
+\end{equation}
+The two sets of fixed coordinates are disjoint. Infeasible nodes have
+value $+\infty$.
+
+For a support $S$ of size $k$, let
+\begin{equation}\label{regression:residual}
+ M_S=I_n+\lambda^{-1}X_SX_S^\top,\quad
+ \widehat\beta_S=(X_S^\top X_S+\lambda I)^{-1}X_S^\top y,\quad
+ r_S=M_S^{-1}y=y-X_S\widehat\beta_S.
+\end{equation}
+The normal equations give $X_S^\top r_S=\lambda\widehat\beta_S$.
+The following exact condition is the selected-support certificate in
+\citet[Corollary~2]{pilanciWainwrightElGhaoui2015BooleanRelaxation}.
+
+\begin{proposition}[Exactness at a specified support]
+\label{regression:exact-condition}
+For $|S|=k$, put $a_j=x_j^\top r_S$. Then
+\begin{equation}\label{regression:exact-condition-eq}
+ R=F_\lambda(S)\quad\Longleftrightarrow\quad
+ \max_{j\notin S}|a_j|\leq\min_{i\in S}|a_i|.
+\end{equation}
+Strict inequality implies that $S$ is the unique optimal support and that
+every single wrong fixing has bound strictly above $\OPT$.
+\end{proposition}
+\begin{proof}
+The matrix in \eqref{regression:perspective} is positive definite, and
+$\partial_jg_\lambda(\mathbf1_S)=-a_j^2/\lambda$.
+The first-order condition for minimizing this convex differentiable
+function over $K$ says that $\mathbf1_S$ maximizes
+$\sum_j a_j^2z_j$. This is precisely \eqref{regression:exact-condition-eq}.
+For strictness, evaluate \eqref{regression:dual} at $r_S$. A removal of
+$i\in S$ must replace its squared correlation by a smaller one; forcing
+$j\notin S$ must displace a larger selected squared correlation. Both
+node bounds exceed $F_\lambda(S)$. Every other feasible support lies in
+one of these nodes, which proves uniqueness.
+\end{proof}
+
+\subsection{Single-variable certificates}
+\label{regression:single}
+
+At an optimal support $S$, condition C1 means that all single wrong
+fixings are certified:
+\begin{equation}\label{regression:c1}
+ r(\{i\},\varnothing)\geq\OPT-\varepsilon\quad(i\in S),
+ \qquad r(\varnothing,\{j\})\geq\OPT-\varepsilon\quad(j\notin S).
+\end{equation}
+Strict C1 replaces the right sides by strict inequalities above $\OPT$.
+The identity $g_\lambda(\mathbf1_T)=F_\lambda(T)$ supplies the
+surviving singleton bound required by the path lemma,
+\cref{lattice:path}. Thus C1 gives at most $2p+1$ nodes
+for every variable-branching rule if an optimal incumbent is available
+when off-path nodes are examined. Strict C1 gives the same bound under
+best-bound search without an initial incumbent. Node relaxation solves,
+probing work, and their running times are separate costs.
+Dual sufficient tests for fixing one feature underpin the safe-screening
+rules of \citet{atamturkGomez2020SafeScreening}. Condition C1 here uses
+the exact single-fixing relaxation values.
+
+The full condition is sufficient, but need not be necessary for a small
+certificate. If only the removal inequalities in
+\eqref{regression:c1} hold, branch on the $k$ coordinates of $S$, always
+continuing through their value $1$. Each sibling has a certified removal
+fixing, and the budget forces the final node to be $\mathbf1_S$. This is
+a certificate with $2k+1$ nodes. Thus failure of the forced-in half of
+C1 alone is no lower bound on the minimum tree size.
+
+A useful dual certificate modifies the residual to cap its unusually
+large null correlations. Fix $S$, set $a=X^\top r_S$, and choose a cap
+$q>0$. Put
+\begin{align}
+ V&=\{j\notin S:|a_j|>q\},\qquad
+ H=X_V^\top M_S^{-1}X_V,\qquad
+ u=H^{-1}(a_V-q\operatorname{sign}(a_V)),\label{regression:saturation}\\
+ \Delta&=M_S^{-1}X_Vu,\qquad \alpha=r_S-\Delta,\qquad
+ \Gamma=u^\top Hu,\quad
+ m=\min_{i\in S}|x_i^\top\alpha|,\quad
+ M=\max_{j\notin S}|x_j^\top\alpha|.\label{regression:saturation-quantities}
+\end{align}
+The empty set $V$ is allowed and gives $\Delta=0$, $\Gamma=0$.
+
+\begin{lemma}[Capped residual certificate]
+\label{regression:capped}
+If $H$ is invertible, $M\leq m$, and
+$\Gamma<(m^2-M^2)/\lambda$, then $S$ is uniquely optimal and every
+single wrong fixing has bound at least
+\begin{equation}\label{regression:capped-bound}
+ F_\lambda(S)+(m^2-M^2)/\lambda-\Gamma>F_\lambda(S).
+\end{equation}
+Also $0\leq F_\lambda(S)-R\leq\Gamma$.
+\end{lemma}
+\begin{proof}
+Completing the square gives
+$h(\alpha,\mathbf1_S)=F_\lambda(S)-\Gamma$ and
+$\|\Delta\|^2\leq\Gamma$; the cap satisfies
+$X_V^\top\alpha=q\operatorname{sign}(a_V)$.
+For any node, \eqref{regression:dual} gives the lower bound
+\begin{equation}\label{regression:node-dual}
+ 2\alpha^\top y-\|\alpha\|^2-\lambda^{-1}
+ \left[\sum_{i\in S_1}c_i^2+
+ \operatorname{Top}_{k-|S_1|}\{c_i^2:i\notin S_0\cup S_1\}\right],
+ \qquad c=X^\top\alpha,
+\end{equation}
+where $\operatorname{Top}_t$ sums the largest $\min(t,N)$ entries
+when $N$ entries are available.
+Since all selected correlations are at least all null correlations,
+a wrong fixing lowers the bracket by at least $m^2-M^2$ relative to
+$\sum_{i\in S}c_i^2$. This proves
+\eqref{regression:capped-bound}. The root bracket equals
+$\sum_{i\in S}c_i^2$, proving the root-gap bound. Every support other
+than $S$ has a wrong fixing, so its value is larger.
+\end{proof}
+
+\subsection{Two sharp planted-support thresholds}
+\label{regression:easy}
+
+For the easy regime, assume $\beta_i^*=\pm b$ on $S^*$, with arbitrary
+fixed signs, and fix $b,\sigma,C_0>0$. Define
+\begin{equation}\label{regression:tau}
+ b_\lambda=\frac{bn}{n+\lambda},\qquad
+ \omega_\lambda^2=n\sigma^2+
+             \frac{kb^2\lambda^2n}{(n+\lambda)^2},\qquad
+ \tau_\lambda=\frac{\lambda b_\lambda}{\omega_\lambda},\qquad
+ \Lambda_\lambda=\log(p\lambda/n).
+\end{equation}
+The ratio $\tau_\lambda$ compares a selected correlation with the
+standard deviation of a null correlation. Indeed, conditional on
+$(X_{S^*},w)$, the null correlations are independent
+$N(0,\|r_{S^*}\|^2)$ variables.
+
+\begin{assumption}[Easy-regime scaling]\label{regression:easy-assumption}
+As $p\to\infty$,
+\begin{equation}\label{regression:easy-regime}
+ \log^6p\leq n\leq p,\qquad
+ 1\leq k\leq C_0n/\log p,\qquad
+ \sqrt n\leq\lambda\leq n/\log^2p.
+\end{equation}
+\end{assumption}
+
+\begin{theorem}[Root and single-variable certification]
+\label{regression:easy-thresholds}
+Under \cref{regression:easy-assumption}, fix $\delta\in(0,1)$.
+The following statements hold with probability tending to one.
+\begin{enumerate}[label=(\alph*)]
+\item If $\tau_\lambda^2\geq(2+\delta)\log p$ eventually, then
+      $R=\OPT=F_\lambda(S^*)$, $S^*$ is uniquely optimal, and strict C1
+      holds. If $\tau_\lambda^2\leq(2-\delta)\log p$ eventually, then
+      $R<F_\lambda(S^*)$.
+\item If $\tau_\lambda^2\geq(2+\delta)\Lambda_\lambda$ eventually,
+      then $S^*$ is uniquely optimal and every single wrong fixing has
+      bound at least $\OPT+\lambda b^2/\log p$.
+\item If $\tau_\lambda^2\leq(2-\delta)\Lambda_\lambda$ eventually
+      and $k\geq5000/\delta^2$, then all but at most $n/\log^2p$ null
+      features $j$ satisfy
+      $r(\varnothing,\{j\})<F_\lambda(S^*)-\lambda b^2/2$.
+\end{enumerate}
+The negative statements compare with $F_\lambda(S^*)$. They imply global
+root inexactness or C1 failure at $S^*$ when $S^*$ is optimal.
+\end{theorem}
+
+The proof in \cref{app:regression:easy} controls the true coefficients
+uniformly, then uses the capped residual for the positive C1 statement.
+The cap changes very few null correlations above the positive threshold.
+Below it, many null features jointly recover the price of consuming one
+unit of the cardinality budget. A single extreme null feature need not
+recover that price.
+
+\begin{corollary}[Sample sizes and a linear-tree window]
+\label{regression:window}
+Within \eqref{regression:easy-regime}, the following bounds describe
+certification of $S^*$, with fixed positive slack in their constants.
+When the sample size is above $2k\log p$, root certification is
+achievable by a deterministic ridge; below that sample size it is
+impossible for each allowed deterministic ridge sequence.
+Single-variable certification is achievable when the sample size is above
+$2k\log(p/\sqrt n)$; below this value the comparison in part~(c) of
+\cref{regression:easy-thresholds} holds for each allowed deterministic
+ridge sequence, with a fixed sufficiently large $k$.
+
+More precisely, if $k=p^{\gamma+o(1)}$, $0<\gamma<1$, and
+$n=a k\log p$ with fixed $2-\gamma<a<2$, a suitable deterministic
+ridge gives a unique planted optimum, an inexact root, and at most
+$2p+1$ nodes for every variable-branching rule under the incumbent or
+best-bound conventions above. For $a>2$, a suitable ridge certifies the
+root. For $a<2-\gamma$, the single-variable planted comparison fails
+for each allowed deterministic ridge sequence; this does not assert a
+large tree.
+\end{corollary}
+
+The ridge choice and proof are given in
+\cref{app:regression:sample-sizes}. The exact bound
+$\tau_\lambda^2<n/k$ for $\sigma>0$ explains the sample-size constants.
+In contrast, $\lambda=\sqrt n$ gives
+$\tau_\lambda\leq b/\sigma$, whereas both logarithmic thresholds diverge.
+At fixed per-entry signal-to-noise ratio, this ridge eventually fails
+both planted-support tests, subject to the hypotheses for their
+converses. This is an asymptotic statement. In particular,
+$\log^6p\leq n\leq p$ excludes the moderate dimensions of the archived
+experiments discussed in \cref{sec:experiments}; those observations do
+not estimate the constants in this theorem.
+
+\subsection{Local second-moment lifts}
+\label{regression:local}
+
+The same first-order thresholds survive specified stronger relaxations
+when the design has many more columns than rows. The result concerns
+unbounded, signed coefficients. Bounds on coefficients supply additional
+information and are outside this comparison.
+Second-moment convexification and rank-one strengthening have been
+studied by \citet{dongChenLinderoth2015SparseRegression} and
+\citet{atamturkGomez2019RankOneConvexification}; the comparison below
+specifies the local hulls and node conventions it covers.
+
+Let $Q=X^\top X+\lambda I$ and define
+\begin{equation}\label{regression:lift-objective}
+ \mathcal F(\beta,B)=\|y\|^2-2y^\top X\beta+\langle Q,B\rangle.
+\end{equation}
+For $T\subseteq[p]$, let
+\begin{equation}\label{regression:local-hull}
+ \mathcal H_T=\cl\operatorname{conv}
+ \{(\zeta,b,bb^\top):\zeta\in\{0,1\}^T,
+                    b_j=0\text{ whenever }\zeta_j=0\}.
+\end{equation}
+There is no cardinality constraint inside $\mathcal H_T$.
+For an integer $s\geq1$, the projected root lift $\ell_s(z)$ minimizes
+\eqref{regression:lift-objective} subject to
+\begin{equation}\label{regression:local-lift}
+ \begin{pmatrix}1&\beta^\top\\\beta&B\end{pmatrix}\succeq0,
+ \qquad (z_T,\beta_T,B_{TT})\in\mathcal H_T\quad(|T|\leq s).
+\end{equation}
+The node bound $L_s(S_0,S_1)$ minimizes $\ell_s(z)$ on the face in
+\eqref{regression:node}. In this definition, a zero fixing constrains
+$z_j$ and $\beta_j$ but leaves second moments available:
+$(0,0,t)\in\mathcal H_{\{j\}}$ for every $t\geq0$.
+This convention matters for the hard lower bound below.
+
+The singleton lift $L_1$ is the relaxation with global positive
+semidefiniteness and $\beta_j^2\leq z_jB_{jj}$.
+Every $L_s$ dominates the perspective relaxation and is valid for the
+integer problem. Also $L_s$ dominates selected block relaxations:
+if $Q=Q_0+\sum_TQ_T$, where all matrices are positive semidefinite and
+each $Q_T$ is supported on at most $s$ coordinates, replacing
+$\beta_T^\top Q_T\beta_T$ by its exact closed indicator epigraph hull
+gives a bound no larger than $L_s$. The elementary hull proof is in
+\cref{app:regression:hull}.
+
+\begin{theorem}[Thresholds for selected local lifts]
+\label{regression:lift-thresholds}
+Under \cref{regression:easy-assumption}, let $s=s_p\geq1$ satisfy
+$s n\log p=o(p)$. Consider any valid node relaxation
+$\mathcal R(S_0,S_1)$ satisfying
+\begin{equation}\label{regression:lift-sandwich}
+ r(S_0,S_1)\leq\mathcal R(S_0,S_1)
+ \quad\text{at every node},\qquad
+ \mathcal R\leq L_s
+ \quad\text{at the root and all forced-in nodes }(\varnothing,\{j\}).
+\end{equation}
+Then parts~(a) and (b) of \cref{regression:easy-thresholds}, including
+their positive margins, hold for $\mathcal R$. Its negative C1 statement
+holds with $k\geq20000/\delta^2$ and at most $2n/\log^2p$ exceptions.
+Consequently the planted-support sample-size thresholds and the
+linear-tree window of \cref{regression:window} also hold.
+\end{theorem}
+
+For the positive tree statement, monotonicity of $\mathcal R$ under
+fixings is unnecessary: an off-path node has $\mathcal R$ at least
+the monotone perspective bound of a single wrong fixing. Validity gives
+path-node bounds at most $\OPT$. Column deletion at zero-fixed nodes
+is therefore compatible with this theorem if
+\eqref{regression:lift-sandwich} holds: its upper comparisons occur
+only where no coordinate is fixed to zero.
+
+The obstruction has a precise mechanism. A perspective point is the
+mean of a random feasible support. Its coefficient covariance has trace
+\begin{equation}\label{regression:fractional-excess}
+ \pi(z,\beta)=\sum_{z_j>0}\beta_j^2(1/z_j-1).
+\end{equation}
+An exact averaged fit would pay both the ridge variance $\lambda\pi$
+and the design variance. The lift can cancel the latter using columns
+with $z_j=0$ while paying an additional ridge cost
+$o(\lambda\pi)$. Local hulls do not detect the cancellation. The
+construction and both converse proofs are complete in
+\cref{app:regression:completion,app:regression:lift-easy}.
+
+\subsection{Large certificates in pure noise and at low total signal}
+\label{regression:hard}
+
+For the hard regime, change the scaling. Let $k\to\infty$,
+$k/n\to0$, $\lambda/n\to0$, and
+\begin{equation}\label{regression:hard-regime}
+ x_p=\frac2n\log\binom pk\longrightarrow x\in(0,x_0),
+ \qquad e^{-x_0}(1+2x_0)=1,\quad x_0>0.
+\end{equation}
+The positive root is approximately $1.2564$.
+The convex-piece certificates here branch on $z$: a node is a convex
+set in $z$-space, its children cover its feasible binary points, and
+its bound is the infimum of the fixed projected relaxation on that set
+intersected with $K$.
+
+\begin{theorem}[Conflict packing for perspective and pairwise hulls]
+\label{regression:hard-theorem}
+Under \eqref{regression:hard-regime}, consider either:
+\begin{enumerate}[label=(\alph*)]
+\item $y$ independent of $X$, with $y\ne0$ almost surely; or
+\item the planted model \eqref{regression:model-eq}, with
+      $\|\beta^*\|^2/\sigma^2\to\kappa$ and
+      $\kappa<e^{-x}(1+2x)-1$.
+\end{enumerate}
+There exist constants $c,\eta>0$ such that, with probability tending
+to one, there is a family $\mathcal C$ of $k$-subsets with
+\begin{equation}\label{regression:clique-size}
+ |\mathcal C|\geq\exp(c k\log(p/k))=\binom pk^{c+o(1)}.
+\end{equation}
+For distinct $S,T\in\mathcal C$, both
+$g_\lambda((\mathbf1_S+\mathbf1_T)/2)$ and
+$\ell_2((\mathbf1_S+\mathbf1_T)/2)$ are strictly below
+$\OPT-\eta Y$, where $Y=\|y\|^2$ in (a) and $Y=n\sigma^2$ in (b).
+Thus every convex-piece $\varepsilon$-certificate using either
+projected relaxation has at least $|\mathcal C|$ leaves whenever
+$0\leq\varepsilon\leq\eta Y$.
+
+For binary variable branching with certified incumbent reductions,
+the corresponding node count is at least $|\mathcal C|/(p+1)$ when
+each removed binary piece is charged to its node. The $\ell_2$ assertion
+uses the retained-column node convention in
+\eqref{regression:local-lift}; it does not cover deletion of zero-fixed
+helper columns.
+\end{theorem}
+
+Two binary points in one convex leaf bring their midpoint into the
+leaf. A midpoint below the required bound therefore prevents that
+leaf from containing both points. This is the conflict mechanism from
+\cref{sec:lattice}; it applies to variable, split, and other convex
+pieces under the stated fixed-oracle convention. The reduction count
+charges at most one removed piece per binary coordinate per node.
+
+The proof in \cref{app:regression:hard} selects highly correlated
+features, packs their $k$-subsets far apart, and bounds all pairwise
+union fits at once. The integer optimum receives a separate lower
+bound over all supports. For pairwise hulls, a uniform design event
+allows the completion of every union using its complement as helpers;
+this closes the additional uniformity step required by the stronger
+relaxation.
+
+The hard theorem treats bounded \emph{total} signal-to-noise ratio.
+With fixed $b/\sigma$ and $k\to\infty$, the total ratio
+$kb^2/\sigma^2$ diverges, so it does not overlap the easy theorem's
+fixed per-coefficient scaling. For $k=p^{\gamma+o(1)}$ and
+$n=a k\log p$, \eqref{regression:hard-regime} becomes
+$x=2(1-\gamma)/a$; the admissible pure-noise range is
+$a>2(1-\gamma)/x_0$. The proof gives a positive exponent, not a
+practical estimate of it or a general complexity lower bound for
+algorithms using other relaxations.
+
+\subsection{A richer moment matrix changes the variance price}
+\label{regression:richer}
+
+The local-lift obstruction is not universal. To illustrate its scope,
+add moments $Z$ and $U$ of indicators and indicator--coefficient products.
+Consider the valid relaxation with objective
+\eqref{regression:lift-objective} and
+\begin{equation}\label{regression:full-moment}
+ Y=\begin{pmatrix}1&z^\top&\beta^\top\\
+ z&Z&U\\\beta&U^\top&B\end{pmatrix}\succeq0,\qquad
+ \diag Z=z,\quad\diag U=\beta,
+\end{equation}
+with $z\in K$, $Z\mathbf1\leq kz$, the usual binary-product inequalities
+$0\leq Z_{jm}\leq\min(z_j,z_m)$,
+$Z_{jm}\geq z_j+z_m-1$, and
+$U_{jm}^2\leq Z_{jm}B_{mm}$ for $j\ne m$.
+The last inequalities follow from Cauchy--Schwarz for any genuine
+support/coefficient distribution.
+
+\begin{proposition}[Variance price in the richer lift]
+\label{regression:variance-price}
+At every feasible point of \eqref{regression:full-moment}, put
+$A=\supp z$ and $\nu_A=\lambda_{\min}(X_A^\top X_A)$, with
+$\nu_\varnothing=0$. Then
+\begin{equation}\label{regression:variance-price-eq}
+ \mathcal F(\beta,B)\geq\|y-X\beta\|^2+\lambda\|\beta\|^2
+                           +(\lambda+\nu_A)\pi(z,\beta).
+\end{equation}
+\end{proposition}
+The Gram-matrix proof is given in \cref{app:regression:variance}.
+It uses both the full positive semidefinite moment matrix and the
+product constraints. Pairwise hulls with positive semidefiniteness
+only on $(1,\beta,B)$ do not supply this argument. The proposition
+does not give a sharp root threshold or a tree bound for this richer
+relaxation.
+
+\subsection{A fixed-dimensional noise-normalization check}
+\label{regression:pwe}
+
+Support recovery and relaxation exactness can differ even when the
+dimension is fixed and the sample size diverges. This gives a narrow
+check on the Gaussian exactness statement of
+\citet[Section~3.1, Theorem~2, p.~72]{pilanciWainwrightElGhaoui2015BooleanRelaxation}.
+
+\begin{theorem}[Fixed dimension with per-entry noise]
+\label{regression:pwe-theorem}
+Fix $1\leq k<d$, $S\subseteq[d]$ with $|S|=k$, and
+$\beta^*\in\R^d$ with support $S$. Put
+$b_{\min}=\min_{i\in S}|\beta_i^*|>0$ and fix $\sigma>0$.
+For each $n$, use the Gaussian model \eqref{regression:model-eq}
+with $p=d$ and $\lambda=\sqrt n$. Then $S$ is the unique optimal
+support with probability tending to one, but
+\begin{equation}\label{regression:pwe-limit}
+ \lim_{n\to\infty}\Pbb\{R=\OPT\}
+ =\left[1-2\overline\Phi(b_{\min}/\sigma)\right]^{d-k}<1,
+\end{equation}
+where $\overline\Phi(t)=\Pbb\{N(0,1)>t\}$.
+\end{theorem}
+
+The complete proof, including the global-optimum transfer, is in
+\cref{app:regression:pwe}. In the printed model, the noise variance
+per observation is $\sigma^2$ and the ridge is $\sqrt n$ for the
+unnormalized loss. The displayed sample-size requirement
+\begin{equation}\label{regression:pwe-condition}
+ n>c_0\frac{\sigma^2+\|\beta^*\|^2}{b_{\min}^2}\log d
+\end{equation}
+holds eventually for every fixed $c_0>0$. Equation
+\eqref{regression:pwe-limit} therefore contradicts the claimed
+exactness probability $1-2e^{-c_1n}$ for every fixed $c_1>0$
+under those printed hypotheses. For example, $d=2$, $k=1$,
+$\beta^*=(1,0)$, and $\sigma=1$ give the limit
+$1-2\overline\Phi(1)$, approximately $0.683$.
+
+This conclusion concerns that Gaussian probability statement. The
+Boolean reformulation and its deterministic exactness condition remain
+the ones used above. A fixed finite coefficient-to-noise ratio, however
+large, cannot make the limit in \eqref{regression:pwe-limit} equal to
+one. Shrinking the per-entry noise defines a different statistical
+model and requires its own theorem.

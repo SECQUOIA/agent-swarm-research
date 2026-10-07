@@ -1,0 +1,685 @@
+\section{Models and conventions}
+\label{sec:models}
+
+This section fixes the input encodings, the promises and certificates that
+may accompany an input, the output contracts, and the computational models.
+Later sections use these definitions without restating them. The section
+also proves a few elementary facts that are used throughout.
+
+\subsection{Notation}
+\label{sec:models-notation}
+
+For $x\in\R^n$, $\norm{x}$ is the Euclidean norm, and $\norm{x}_1$ and
+$\norm{x}_\infty$ are the $\ell_1$ and maximum norms. For a set
+$S\subseteq\R^n$, $\dist(x,S)=\inf_{s\in S}\norm{x-s}$. The space of real
+symmetric $m\times m$ matrices is $\mathrm{Sym}_m$; $A\succeq0$ and $A\succ0$
+mean positive semidefinite and positive definite, and $\lambda_{\min}(A)$ is
+the least eigenvalue. The Kronecker product $x\otimes v\in\R^{n^2}$ has
+coordinates $x_iv_j$, ordered lexicographically by $(i,j)$.
+
+The following symbols are reserved. The total binary input length is $L$
+(Definition~\ref{def:models-length}); the number of continuous variables is
+$n$; $k$ is a structural parameter defined in each statement; $q$ is a
+number of requested bits of precision, and $\varepsilon=2^{-q}$. The objective
+is $f$, the feasible set $P$, the optimal value $f_*=\inf_Pf$, and the set of
+optimizers $S$. The selected optimizer is $p$; it is the unique optimizer
+when $f$ is strictly convex on a convex feasible set, and otherwise, for
+example in mixed-integer problems with several optimal points, the selection
+rule is stated. An
+explicit polynomial whose sign or value at $p$ is requested is an
+\emph{observable} and is denoted by $h$. Lower curvature bounds are denoted
+by $\mu$ and upper curvature or Lipschitz bounds by $\Lambda$. The degree of
+the input polynomials is $D$. We write $\poly(\cdot)$ for a polynomial whose
+exponent is an absolute constant, $C$ for an absolute constant, and $F(k)$,
+$a(t)$ for computable functions of the parameters shown. For a point $p$ with
+algebraic coordinates, $\Q(p)=\Q(p_1,\ldots,p_n)$ is its coordinate field.
+
+\subsection{Input encodings}
+\label{sec:models-input}
+
+\begin{definition}[Rational data]
+\label{def:models-rational}
+A rational number $a/b$ with $b\ge1$ and $\gcd(a,b)=1$ is encoded by $a$ and
+$b$ in binary. Its bit length is
+$\lceil\log_2(\abs a+1)\rceil+\lceil\log_2(b+1)\rceil+1$, and the bit length
+of a vector or matrix is the sum of the bit lengths of its entries.
+\end{definition}
+
+\begin{definition}[Explicit polynomials and degree]
+\label{def:models-polynomial}
+An \emph{explicit} (or explicitly sparse) polynomial
+$f=\sum_\alpha f_\alpha x^\alpha\in\Q[x_1,\ldots,x_n]$ is given by the list
+of its nonzero coefficients $f_\alpha$ together with their exponent vectors
+$\alpha\in\N^n$. Its degree is $\deg f=\max\{\abs\alpha:f_\alpha\ne0\}$. When
+the degree is not fixed, we use the numerical degree $D=\max\{2,\deg f\}$, or
+the maximum over all input polynomials. A bound of the form $\poly(L,D)$ is
+polynomial in the input length when the degree is at most polynomial in
+$L$, for example when exponents are written in unary; we then speak of
+\emph{unary degree}.
+\end{definition}
+
+The \emph{interaction graph} of a polynomial has one vertex for each
+variable and an edge between two variables when a nonzero monomial contains
+both. For a polynomial, this is equivalent to the corresponding off-diagonal
+entry of its Hessian being a nonzero polynomial. The graph records which
+variables interact; bounds on its treewidth or a supplied forest are stated
+where used.
+
+\begin{definition}[Polyhedra]
+\label{def:models-polyhedra}
+A rational polyhedron is $P=\{x\in\R^n:Bx\le b\}$ with $B\in\Q^{m\times n}$
+and $b\in\Q^m$; an equality is written as two inequalities. A box is
+$\{x:l\le x\le u\}$ with $l_i\in\Q\cup\{-\infty\}$ and
+$u_i\in\Q\cup\{+\infty\}$. A network-flow polyhedron is
+$\{x\in\R^E:Ax=b,\ l\le x\le u\}$, where $A$ is the node-arc incidence
+matrix of a directed graph with arc set $E$.
+\end{definition}
+
+\begin{definition}[Input length]
+\label{def:models-length}
+The input length $L$ is the total bit length of all input data: the
+polynomials (objective, constraints, observables), the polyhedron,
+thresholds, supplied numbers such as curvature bounds, slack gaps, or noise
+widths, and supplied certificates. The number of variables is part of the
+input, so $n\le L$, and we assume $L\ge2$.
+\end{definition}
+
+Quantities computed from the input in polynomial time have bit length
+$\poly(L)$, so bounds stated in terms of $L$ remain valid when such
+quantities are added to the input.
+
+\begin{remark}[Encodings not covered]
+\label{rem:models-encodings}
+Three other encodings are excluded unless a statement says otherwise. First,
+a polynomial given by an arithmetic circuit can have exponentially many
+monomials and exponentially large degree. Second, exponents written in binary
+allow degree exponential in $L$; our bounds that are polynomial in $D$ are
+then not polynomial in $L$. Third, expansion is not free under substitution:
+$(x_1+\cdots+x_n)^D$ has $\binom{n+D-1}{D}$ monomials, so a rational affine
+substitution $x=x_0+Vu$ can make a short polynomial of growing degree long.
+Algorithms for variable degree therefore evaluate such compositions instead of
+expanding them. At fixed degree, expansion changes the length only
+polynomially.
+\end{remark}
+
+\subsection{Promises and certificates of convexity}
+\label{sec:models-promises}
+
+A function $f$ is \emph{convex on} a convex set $K$ if
+$f(\lambda x+(1-\lambda)y)\le\lambda f(x)+(1-\lambda)f(y)$ for all $x,y\in K$
+and $\lambda\in[0,1]$. It is \emph{globally convex} if it is convex on $\R^n$,
+equivalently $\nabla^2f(x)\succeq0$ for all $x$. For $\mu>0$ it is
+\emph{globally $\mu$-strongly convex} if $\nabla^2f(x)\succeq\mu I$ for all
+$x\in\R^n$. A map $T:\R^n\to\R^n$ is \emph{globally $\mu$-strongly monotone}
+if $(T(x)-T(y))^{\mathsf T}(x-y)\ge\mu\norm{x-y}^2$ for all $x,y$; for a
+polynomial map this is equivalent to
+$\frac12(J_T(x)+J_T(x)^{\mathsf T})\succeq\mu I$ for all $x$, where $J_T$ is
+the Jacobian. A solution of the variational inequality defined by $T$ on a
+closed convex set $K$ is a point $p\in K$ with
+$T(p)^{\mathsf T}(y-p)\ge0$ for all $y\in K$; for $T=\nabla f$ these are the
+minimizers of $f$ on $K$.
+
+These properties enter in two ways. As a \emph{promise}, the property is
+assumed and not checked; an algorithm for a promise problem may answer
+arbitrarily on inputs that violate it. Recognizing convexity is NP-hard
+already for quartics on $\R^n$~\cite{AhmadiOlshevskyParriloTsitsiklis2013}
+and for cubics on a box~\cite{AhmadiHall2020}, so in general the promise
+cannot be checked in polynomial time unless $\mathrm P=\NP$. As a
+\emph{checked certificate}, the input contains data
+that prove the property and can be verified in polynomial time. The input is
+then an ordinary language, and a malformed certificate is mapped to a fixed
+answer.
+
+\begin{definition}[Hessian Gram matrices]
+\label{def:models-hessian-gram}
+Let $f\in\Q[x_1,\ldots,x_n]$ have degree at most four, and put
+$w(x,v)=(v,\,x\otimes v)\in\R^{n+n^2}$. A \emph{Hessian Gram matrix} of $f$
+is a matrix $A\in\mathrm{Sym}_{n+n^2}$ such that
+\[
+v^{\mathsf T}\nabla^2f(x)\,v=w(x,v)^{\mathsf T}A\,w(x,v)
+\]
+as polynomials in $(x,v)$. It is a \emph{full positive definite Hessian
+Gram} if $A\succ0$. For higher degree the same definition is used with a
+vector $w(x,v)$ of monomials that are linear in $v$ and include
+$v_1,\ldots,v_n$ among them.
+\end{definition}
+
+A rational Hessian Gram matrix is checked in polynomial time by comparing
+coefficients and by rational symmetric Gaussian elimination. Hessian Gram
+matrices are not unique, since several entries contribute to the same
+monomial of the biform.
+
+\begin{lemma}[Determinant--trace margin]
+\label{lem:models-det-trace}
+Let $A\in\mathrm{Sym}_m$ be rational and positive definite, and put
+\[
+\rho(A)=\frac{\det A}{(\operatorname{tr}A)^{m-1}}.
+\]
+Then $A\succeq\rho(A)I$. The rational number $\rho(A)$ is computable in time
+polynomial in the bit length of $A$ and has polynomial bit length.
+\end{lemma}
+
+\begin{proof}
+Let $\lambda_1\le\cdots\le\lambda_m$ be the eigenvalues. Each is at most
+$\operatorname{tr}A$, so
+$\det A=\lambda_1\prod_{i\ge2}\lambda_i\le\lambda_1(\operatorname{tr}A)^{m-1}$.
+The determinant of a rational matrix is computed in polynomial time with
+polynomial bit length by fraction-free elimination, and the power
+$(\operatorname{tr}A)^{m-1}$ has bit length at most $m$ times that of
+$\operatorname{tr}A$.
+\end{proof}
+
+\begin{lemma}[Consequences of a Hessian Gram]
+\label{lem:models-gram-curvature}\label{lem:models-hessian-gram}
+Let $A$ be a Hessian Gram matrix of a quartic $f$ in $n$ variables.
+\begin{enumerate}[label=(\alph*)]
+\item If $A\succeq\mu I$ for some $\mu>0$, then $\nabla^2f(x)\succeq\mu I$ for
+  all $x\in\R^n$. In particular, a full positive definite Hessian Gram
+  certifies global strong convexity with the rational modulus $\rho(A)$ of
+  Lemma~\ref{lem:models-det-trace}.
+\item Let $T\in\Q^{n\times n}$ be invertible, $c\in\Q^n$, and
+  $g(y)=f(Ty+c)$. Then $S^{\mathsf T}AS$ is a Hessian Gram matrix of $g$,
+  where
+  \[
+  S=\begin{pmatrix}T&0\\ c\otimes T&T\otimes T\end{pmatrix}
+  \]
+  is invertible. Hence a full positive definite Hessian Gram is preserved by
+  invertible rational affine changes of variables.
+\item If $A\succ0$, then the homogeneous quartic part $f_4$ of $f$ satisfies
+  $f_4(x)>0$ for all $x\ne0$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+(a) Since $v$ is a subvector of $w=w(x,v)$,
+$v^{\mathsf T}\nabla^2f(x)v=w^{\mathsf T}Aw\ge\mu\norm w^2\ge\mu\norm v^2$.
+(b) We have $v^{\mathsf T}\nabla^2g(y)v=(Tv)^{\mathsf T}\nabla^2f(Ty+c)(Tv)$
+and
+$w(Ty+c,Tv)=(Tv,\,(T\otimes T)(y\otimes v)+(c\otimes T)v)=S\,w(y,v)$. The
+matrix $S$ is block lower triangular with invertible diagonal blocks $T$ and
+$T\otimes T$. (c) Let $Q$ be the block of $A$ indexed by $x\otimes v$.
+Comparing the terms of degree two in $x$ in the defining identity gives
+$v^{\mathsf T}\nabla^2f_4(x)v=(x\otimes v)^{\mathsf T}Q(x\otimes v)$. Setting
+$v=x$ and using Euler's identity
+$x^{\mathsf T}\nabla^2f_4(x)x=12f_4(x)$ gives
+$12f_4(x)=(x\otimes x)^{\mathsf T}Q(x\otimes x)>0$ for $x\ne0$, because
+$Q\succ0$.
+\end{proof}
+
+\begin{remark}[Hessian Gram and polynomial Gram matrices]
+\label{rem:models-gram-kinds}
+A full positive definite Hessian Gram is stronger than global strong
+convexity. For example, $f(x,y)=x^2+y^2+y^4$ satisfies
+$\nabla^2f\succeq2I$, but its quartic part $y^4$ vanishes at $(1,0)$, so by
+Lemma~\ref{lem:models-hessian-gram}(c) it has no full positive definite Hessian
+Gram. A sum $f(x)+g(y)$ in disjoint blocks of variables has none either: if
+$v_i$ is a direction coordinate of the $y$-block, the monomial $x_j^2v_i^2$
+has coefficient zero in the Hessian biform, and in $w^{\mathsf T}Aw$ it arises
+only from the diagonal entry indexed by the coordinate $x_jv_i$ of $w$, which
+must therefore vanish. A Hessian Gram certifies convexity, not
+nonnegativity. A full positive definite Hessian Gram is compatible with
+minimum zero at an irrational point, as for the quartic of
+Section~\ref{sec:intro-optimizers}, whereas a positive definite polynomial
+Gram matrix on the full monomial vector of
+Definition~\ref{def:models-sos}, which contains $1$, implies strict
+positivity at every real point. A positive definite Gram on a custom
+polynomial vector can coexist with zeros when all entries of that vector
+vanish there, as in Section~\ref{sec:fields-certificates}. The Hessian basis
+$w(x,v)=(v,x\otimes v)$ instead contains every $v_i$, so it cannot vanish
+when $v\ne0$; this is what makes its positive definiteness a global curvature
+certificate.
+\end{remark}
+
+\begin{lemma}[Strong convexity]
+\label{lem:models-strong-convexity}
+Let $f$ be continuously differentiable and globally $\mu$-strongly convex,
+and let $K\subseteq\R^n$ be nonempty, closed, and convex. Then $f$ attains its
+minimum over $K$ at a unique point $p$, and for every $x\in K$
+\[
+f(x)-f(p)\ge\frac\mu2\norm{x-p}^2,
+\qquad
+\norm{x-p}\le\frac2\mu\norm{\nabla f(x)}.
+\]
+If $K=\R^n$, then also $\norm{x-p}\le\norm{\nabla f(x)}/\mu$.
+\end{lemma}
+
+\begin{proof}
+For $x_0\in K$, $f(x)\ge f(x_0)+\nabla f(x_0)^{\mathsf T}(x-x_0)
++\frac\mu2\norm{x-x_0}^2$, so the sublevel sets of $f$ on $K$ are compact and
+the minimum is attained; strict convexity makes the minimizer unique. First
+order optimality gives $\nabla f(p)^{\mathsf T}(x-p)\ge0$, and Taylor's
+formula with $\nabla^2f\succeq\mu I$ gives the first inequality. For the
+second,
+$0\ge f(p)-f(x)\ge\nabla f(x)^{\mathsf T}(p-x)+\frac\mu2\norm{p-x}^2
+\ge-\norm{\nabla f(x)}\norm{p-x}+\frac\mu2\norm{p-x}^2$. If $K=\R^n$, then
+$\nabla f(p)=0$, and
+$\mu\norm{x-p}^2\le(\nabla f(x)-\nabla f(p))^{\mathsf T}(x-p)
+\le\norm{\nabla f(x)}\norm{x-p}$.
+\end{proof}
+
+\begin{lemma}[Low degree]
+\label{lem:models-low-degree}
+\leavevmode
+\begin{enumerate}[label=(\alph*)]
+\item A globally convex polynomial of degree at most three has degree at most
+  two. Consequently, if a globally convex polynomial of degree at most three
+  attains its minimum on a rational polyhedron, then it has a rational
+  minimizer whose bit length is polynomial in the input length, computable in
+  polynomial time~\cite{KozlovTarasovKhachiyan1980}.
+\item A globally monotone polynomial map $T:\R^n\to\R^n$ of degree at most
+  two is affine. If it is strongly monotone and has rational coefficients, its
+  unique zero is rational and is computed by rational linear algebra.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+(a) Write $f=f_0+f_1+f_2+f_3$ by homogeneous degree. For fixed $u$, the
+function $x\mapsto u^{\mathsf T}\nabla^2f(x)u$ is affine and nonnegative on
+$\R^n$, hence constant. Thus $u^{\mathsf T}\nabla^2f_3(x)u=0$ for all $x$ and
+$u$, and Euler's identity gives $6f_3(x)=x^{\mathsf T}\nabla^2f_3(x)x=0$.
+(b) Monotonicity is equivalent to $v^{\mathsf T}J_T(x)v\ge0$ for all $x$ and
+$v$. For fixed $v$ this function of $x$ is affine and nonnegative, hence
+constant. Let $U$ be the homogeneous quadratic part of $T$; then
+$v^{\mathsf T}J_U(x)v=0$ for all $x,v$, that is,
+$\partial_iU_j+\partial_jU_i=0$ for all $i,j$. Put
+$a_{kij}=\partial_k\partial_iU_j$, a constant tensor symmetric in its first two
+indices. Differentiating the identity gives $a_{kij}=-a_{kji}$. A tensor that
+is symmetric in its first two indices and antisymmetric in its last two
+vanishes:
+$a_{kij}=-a_{kji}=-a_{jki}=a_{jik}=a_{ijk}=-a_{ikj}=-a_{kij}$. Hence all second
+derivatives of $U$ vanish, so $U=0$ and $T(x)=Ax+c$. Strong monotonicity
+gives $\frac12(A+A^{\mathsf T})\succ0$, so $A$ is invertible and
+$p=-A^{-1}c$ is rational.
+\end{proof}
+
+Lemma~\ref{lem:models-low-degree} explains the degrees in this paper. For
+globally convex objectives on rational polyhedra, degree four is the first
+degree that permits a unique irrational optimizer. A convex cubic problem on
+a rational polyhedron can have a unique irrational optimizer only if the
+objective is convex on the feasible set but not on $\R^n$. Nonunique optimal
+sets can contain irrational points already for quadratics; for example,
+$f(x,y)=x^2$ is minimized at every point $(0,y)$.
+
+\subsection{Output contracts}
+\label{sec:models-outputs}
+
+Let $f$ and $P$ be given, with $f_*$ finite and attained, and let
+$S=\argmin_Pf$. The outputs studied in this paper are the following.
+
+\begin{definition}[Values]
+\label{def:models-value}
+A \emph{value enclosure} of precision $q$ consists of a rational number
+$\ell$ and a feasible rational point $x\in P$ with
+$\ell\le f_*\le f(x)\le\ell+2^{-q}$. A \emph{value-gap point} is a feasible
+rational $x$ with $f(x)-f_*\le2^{-q}$.
+\end{definition}
+
+\begin{definition}[Points]
+\label{def:models-points}
+A \emph{set approximation} of precision $q$ is a feasible rational $x$ with
+$\dist(x,S)\le2^{-q}$. A \emph{fixed selector} consists of a point $p\in S$
+determined by the instance, independently of $q$, and an algorithm that on
+input $q$ returns a feasible rational $x_q$ with $\norm{x_q-p}\le2^{-q}$.
+For convex problems the default selected point is the point of $S$ of minimum
+Euclidean norm in the original coordinates. The sequence $(x_q)$ is a
+Cauchy name of $p$; it need not give a short exact description of $p$.
+\end{definition}
+
+\begin{definition}[Exact predicates]
+\label{def:models-predicates}
+Let $h$ be an explicit rational polynomial (the observable). An \emph{exact
+comparison} asks whether $h(p)\bowtie0$, for a relation
+${\bowtie}\in\{<,\le,=,\ne,\ge,>\}$. Value thresholds ($h=f-r$), coordinate
+thresholds ($h=x_j-r$), and constraint slacks ($h=b_i-B_ix$) are special
+cases. The \emph{active set} of $p$ is the set of constraints with zero
+slack. A \emph{Boolean predicate} is a polynomial-size Boolean combination of
+exact comparisons. We call $<$ and $>$ strict, $\le$ and $\ge$ weak, and $=$
+and $\ne$ equality relations.
+\end{definition}
+
+\begin{definition}[Exact representations]
+\label{def:models-representations}
+An exact representation of $p$ is one of the following.
+\begin{enumerate}[label=(\alph*)]
+\item An \emph{implicit} representation: a rational affine map $t\mapsto u+Mt$
+  and an explicit polynomial system with a unique real solution $t_*$, such
+  that $p=u+Mt_*$.
+\item A \emph{circuit} representation of a rational point: a shared rational
+  circuit (Definition~\ref{def:models-circuits}) whose value is $p$.
+\item A \emph{root-circuit} representation, when available: a shared rational
+  circuit with the explicitly defined real-root gates below. This format
+  includes radical expressions but does not represent every algebraic point.
+\item An \emph{algebraic} representation: for each coordinate, or for a
+  primitive element of $\Q(p)$ together with the coordinates written as
+  polynomials in it, the minimal polynomial over $\Q$ and an isolating
+  interval. The minimal polynomial is given either as a \emph{dense list} of
+  all its coefficients or as a \emph{sparse list} of its nonzero coefficients
+  with their exponents.
+\item An \emph{expanded rational} representation: reduced fractions for all
+  coordinates.
+\end{enumerate}
+\end{definition}
+
+These outputs form a hierarchy only in part. A fixed selector gives set
+approximations and, by continuity, value-gap points; the converse fails,
+because a set approximation may approach different optimizers at different
+precisions. No approximation of fixed precision decides an exact
+predicate, since $h(p)$ may be nonzero but smaller than any fixed bound. An
+exact decision procedure need not produce a short representation, and a
+short representation in one format need not be short in another: the number
+$2^{1/d}$ has the two-term minimal polynomial $T^d-2$, while $1+2^{1/d}$ has
+the minimal polynomial $(T-1)^d-2$, all of whose $d+1$ coefficients are
+nonzero.
+
+\subsection{Computational models}
+\label{sec:models-computation}
+
+An \emph{ordinary} algorithm is a deterministic algorithm in the bit model,
+without an oracle. A \emph{Las Vegas} algorithm is randomized, returns a
+correct answer whenever it halts, halts with probability one, and is
+analyzed by its expected running time on each input. A parameterized
+algorithm is \emph{fixed-parameter tractable} (FPT) if its running time is
+at most $F(k)L^C$ with $F$ computable and $C$ an absolute constant; a bound
+$L^{F(k)}$ is not of this form.
+
+\begin{definition}[Arithmetic circuits]
+\label{def:models-circuits}
+An \emph{integer arithmetic circuit} is a finite directed acyclic graph
+whose sources are labeled by the constants $0$ or $1$, and whose other nodes
+are labeled by $+$, $-$, or $\times$ and have two ordered inputs; one node is
+the output. Its size is the number of nodes, and nodes may feed several later
+nodes. A circuit of size $s$ can compute an integer with about $2^s$ bits. A
+\emph{rational circuit} may in addition use rational constants written in
+binary and division by nonzero values. It is evaluated as a pair of integer
+circuits $(N,M)$ with $M>0$, representing $N/M$: sums and products follow the
+usual fraction rules, and division by a value $N_2/M_2\ne0$ uses
+\[
+\frac{N_1/M_1}{N_2/M_2}=\frac{N_1M_2N_2}{M_1N_2^2},
+\]
+which keeps the denominator positive without any sign test
+(Lemma~\ref{lem:denominator-clearing}). A \emph{shared rational circuit} for
+a vector or matrix is a single circuit with several outputs. Such circuits
+have rational values. A \emph{root circuit} may also have a gate
+$a\mapsto\sqrt[d]{a}$ with the positive integer $d$ written in binary: it
+selects the unique real root when $d$ is odd and the nonnegative real root
+when $d$ is even, in the latter case requiring $a\ge0$. A circuit with
+algebraic inputs instead uses explicitly represented algebraic numbers as
+sources. The representation of each such source is part of its size; a
+rational circuit applied to an unspecified irrational source is not an exact
+description.
+\end{definition}
+
+\begin{definition}[$\PosSLP$ and reductions]
+\label{def:models-posslp}
+$\PosSLP$ is the set of integer arithmetic circuits whose value is
+positive~\cite{AllenderEtAl2009}. A problem \emph{reduces to one $\PosSLP$
+instance} if a deterministic polynomial-time algorithm maps each instance $x$
+to a circuit $C_x$ with $x$ a yes-instance exactly when $C_x\in\PosSLP$; for a
+promise problem, the equivalence is required on instances that satisfy the
+promise. The problem is \emph{$\PosSLP$-hard} if $\PosSLP$ reduces to it by
+such a polynomial-time many-one reduction, and \emph{$\PosSLP$-complete} if
+both hold. $\mathrm P^{\PosSLP}$ is the class of problems decided in
+deterministic polynomial time by an oracle machine whose queries are circuit
+descriptions. $\mathrm{UP}^{\PosSLP}$ is the class of problems decided by a
+nondeterministic polynomial-time oracle machine with exactly one accepting
+computation on each yes-instance and none on each no-instance, and
+$\mathrm{coUP}^{\PosSLP}$ is the class of their complements. Las Vegas and FPT
+algorithms with a $\PosSLP$ oracle are defined analogously.
+\end{definition}
+
+The sign of a rational circuit $(N,M)$ is the sign of $N$, so comparing a
+rational circuit with zero is one $\PosSLP$ instance. Since $1-N>0$ exactly
+when $N\le0$, strict and weak comparisons, and a problem and its complement,
+reduce to each other. $\PosSLP$ lies in the counting
+hierarchy~\cite[Theorem~1.4]{AllenderEtAl2009}, the class $\mathrm P^{\PosSLP}$
+coincides with the class of Boolean problems decided in polynomial time by
+constant-free real machines~\cite[Proposition~1.1]{AllenderEtAl2009}, and
+Square Root Sum lies in
+$\mathrm P^{\PosSLP}$~\cite[Section~1.4]{AllenderEtAl2009}.
+Section~\ref{sec:upper} proves
+that every problem in $\mathrm P^{\PosSLP}$ reduces to one $\PosSLP$ instance;
+we therefore state deterministic oracle algorithms as single-instance
+reductions. This conversion does not apply to $\mathrm{UP}^{\PosSLP}$, to Las
+Vegas algorithms, or to algorithms whose running time is FPT rather than
+polynomial.
+
+These notions should be read with care. $\PosSLP$-hardness is hardness
+relative to the sign problem of integer circuits. It is not NP-hardness, and
+it does not exclude a polynomial-time algorithm unconditionally; whether
+$\PosSLP$ is in P, or is NP-hard, is open~\cite{BuergisserJindal2024}.
+Conversely, a reduction to one $\PosSLP$ instance is not an ordinary
+algorithm: the circuit computes an integer whose binary expansion can have
+exponentially many bits.
+
+\begin{remark}[Exact conic feasibility]
+\label{rem:models-socp}
+Exact feasibility of second-order cone programs is $\PosSLP$-hard. This
+follows from the basis equivalence of Tarasov and
+Vyalyi~\cite[Theorem~3]{TarasovVyalyi2008} and standard conic duality, as
+follows. An integer $N$ is positive exactly when $N\ge1$, so their basis
+equivalence reduces $\PosSLP$ to deciding $A\ge B$ for the values $A,B$ of two
+circuits that start from the constant $1$ and use only the operations $x+y$
+and $x^2/2$; all gate values are positive. For one such
+circuit, introduce a variable $x_i$ for every gate other than the input,
+substitute $1$ for the input, and impose $x_i\ge x_j+x_k$ for an addition
+gate and
+\[
+\begin{pmatrix}2x_i&x_j\\x_j&1\end{pmatrix}\succeq0,
+\quad\text{that is,}\quad 2x_i\ge x_j^2,
+\]
+for a squaring gate. By induction in topological order, every feasible point
+dominates the gate values, because addition is monotone and squaring is
+monotone on positive numbers; the gate values themselves are feasible. Hence
+the minimum of the output variable is the circuit value, and raising each
+variable above its bound in topological order gives a strictly feasible
+point. The cone is a product of half-lines and two-by-two positive
+semidefinite cones, which is self-dual, so the dual program consists of
+linear equations and membership in the same cone. Since the primal program
+is strictly feasible and its value is finite, the conic duality theorem shows
+that the dual attains the same value. Now require a dual feasible point for
+the circuit of $A$, with objective value $d$, a primal feasible point for the
+circuit of $B$, with objective value $e$, and the linear inequality $d\ge e$.
+Weak duality gives $d\le A$ and $e\ge B$, so a feasible point forces $A\ge B$.
+Conversely, if $A\ge B$, an optimal dual point with $d=A$ and the gate values
+of the second circuit, with $e=B$, satisfy all constraints. The system is
+therefore feasible exactly when $A\ge B$. Finally,
+$\bigl(\begin{smallmatrix}a&b\\b&c\end{smallmatrix}\bigr)\succeq0$ if and only
+if $\norm{(2b,a-c)}\le a+c$, so the system is a second-order cone program of
+polynomial size. This consequence of~\cite{TarasovVyalyi2008} is recorded
+for comparison only; the lower bounds of this paper concern a much smaller
+class.
+\end{remark}
+
+\subsection{Certificates of nonnegativity}
+\label{sec:models-certificates}
+
+\begin{definition}[Gram matrices and sums of squares]
+\label{def:models-sos}
+Let $f$ have degree at most four, and let $z(x)$ be the vector of the
+$\binom{n+2}{2}$ monomials of degree at most two, with the constant first.
+A \emph{polynomial Gram matrix} of $f$ is a real symmetric matrix $Q$ with
+$f=z^{\mathsf T}Qz$. Let $E\subseteq\R$ be a field. The polynomial $f$ is
+a \emph{sum of squares (SOS) over $E$} if $f=\sum_ig_i^2$ with $g_i\in E[x]$,
+and it has a \emph{positive semidefinite Gram matrix over $E$} if some
+polynomial Gram matrix with entries in $E$ is positive semidefinite. A
+positive definite polynomial Gram matrix is called \emph{interior}.
+\end{definition}
+
+An SOS over $E$ gives a positive semidefinite Gram matrix over $E$; the
+converse holds for $E=\Q$ by Lemma~\ref{lem:models-rational-squares}, but not
+for every real field~\cite{ChuaPlaumannSinnVinzant2017}, so field statements
+for the two kinds of certificate need separate proofs. In an SOS
+representation of a quartic, every $g_i$ has degree at most two, because the
+highest-degree squares cannot cancel. If $f(p)=0$, every positive
+semidefinite Gram matrix $Q$ satisfies $Qz(p)=0$, so $f$ has no interior
+Gram matrix; every square factor then vanishes at $p$.
+
+\begin{lemma}[Rational squares]
+\label{lem:models-rational-squares}
+Every positive rational $u/v$, with positive integers $u$ and $v$, is a sum
+of at most $2\lceil\log_2(uv+1)\rceil$ squares of rationals, computable in time
+polynomial in its bit length. Consequently, a rational positive semidefinite
+Gram matrix of $f$ yields, in polynomial time, rational polynomials $g_i$ with
+$f=\sum_ig_i^2$ and total bit length polynomial in that of the matrix.
+\end{lemma}
+
+\begin{proof}
+Write $u/v=uv/v^2$ and expand $uv=\sum_j2^{e_j}$ in binary. Each term
+$2^{2h}/v^2$ is the square $(2^h/v)^2$, and each term $2^{2h+1}/v^2$ is the sum
+of two copies of that square. For the Gram matrix, rational symmetric
+Gaussian elimination without square roots writes
+$Q=\sum_id_i\ell_i\ell_i^{\mathsf T}$ with rationals $d_i\ge0$ and rational
+vectors $\ell_i$; when a pivot vanishes, positive semidefiniteness forces its
+row and column to vanish, and the row is skipped. Then
+$f=\sum_id_i(\ell_i^{\mathsf T}z)^2$, and each $d_i$ is expanded as above.
+The entries of the factors have polynomial bit length, as for fraction-free
+elimination.
+\end{proof}
+
+Lemma~\ref{lem:models-rational-squares} avoids integer factorization and
+four-square algorithms; it may use more rational squares than the rank of
+$Q$, so it says nothing about the least number of rational squares.
+
+\begin{definition}[Other certificate formats]
+\label{def:models-formats}
+\leavevmode
+\begin{enumerate}[label=(\alph*)]
+\item A polynomial $f$ is a \emph{sum of squares of rational functions with
+  common denominator} $d\in\Q[x]\setminus\{0\}$ if $d^2f=\sum_ig_i^2$ with
+  $g_i\in\Q[x]$. A \emph{multiplier certificate} is an identity
+  $mf=\sum_ig_i^2$ with $m$ a polynomial that is positive on $\R^n$; a
+  \emph{radial multiplier} is $m=(1+\norm{x}^2)^N$. The degree of a multiplier
+  and the degree of a common denominator are different quantities.
+\item For $f(x)+g(y)$ in disjoint blocks of variables, a \emph{block-separated
+  certificate} over $E$ consists of a constant $c\in E$ and certificates over
+  $E$ for $f+c$ and for $g-c$, each with its own monomial vector, including
+  its own constant monomial.
+\item The \emph{order-two moment relaxation} of a quartic $f$ minimizes
+  $\sum_\alpha f_\alpha y_\alpha$ over sequences $(y_\alpha)_{\abs\alpha\le4}$
+  with $y_0=1$ and moment matrix
+    $M_2(y)=(y_{\alpha+\beta})_{\abs\alpha,\abs\beta\le2}\succeq0$. Its dual
+  is the
+  problem of maximizing $\gamma$ such that $f-\gamma$ has a positive
+  semidefinite polynomial Gram matrix. When $f_*$ is attained in the dual,
+  the positive semidefinite polynomial Gram matrices of $f-f_*$ are the
+  \emph{optimal Gram matrices}. A nonzero positive semidefinite matrix $Z$
+  with $\langle Z,Q\rangle=0$ for every real optimal Gram matrix $Q$ is an
+  \emph{exposing matrix} for the set of optimal Gram matrices.
+\end{enumerate}
+\end{definition}
+
+\subsection{Size measures}
+\label{sec:models-size}
+
+For an algebraic number $\alpha$, the degree is $[\Q(\alpha):\Q]$, and the
+minimal polynomial is normalized to a primitive integer polynomial with
+positive leading coefficient. For a point $p$, every coordinate satisfies
+$[\Q(p_j):\Q]\le[\Q(p):\Q]$, so a lower bound on the degree of one
+coordinate also bounds the degree of the joint field $\Q(p)$. The converse
+fails: the joint field can have much larger degree than every individual
+coordinate, so a lower bound on the joint degree need not force any single
+coordinate to have comparable degree. The bit
+length of a rational point is the sum of the bit lengths of its reduced
+coordinates.
+
+For input data in a number field, Appendix~\ref{app:further-arithmetic}
+uses one common field $K=\Q(\alpha)$ with a specified real embedding. Its
+defining polynomial, an isolating interval selecting $\alpha$, and the
+coefficient lists expressing all data in the basis
+$1,\alpha,\ldots,\alpha^{[K:\Q]-1}$ are part of the input. A witness may
+require a larger field $K(p)$; its defining data and all coordinate lists
+are charged to the output size. Separate short descriptions of individual
+coordinates need not give a short dense description of their joint field.
+
+Most of our lower-bound families have input length polynomial in the number
+of variables $n$, or in a family index $k$, and output size exponential in
+$n$ or $k$. Such bounds are superpolynomial in $L$, but they are not of the
+form $2^{\Omega(L)}$, and we do not state them that way.
+
+\subsection{Imported results}
+\label{sec:models-imported}
+
+Besides standard linear algebra, the proofs rely on the external results
+listed in Table~\ref{tab:models-imported}. Each is stated with its exact
+hypotheses where it is used.
+
+{\small
+\setlength{\tabcolsep}{4pt}
+\setlength{\LTcapwidth}{\textwidth}
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.52\textwidth}
+  >{\raggedright\arraybackslash}p{0.28\textwidth}
+  >{\raggedright\arraybackslash}p{0.14\textwidth}@{}}
+\caption{External results used in the proofs, and where their precise
+statements appear.}
+\label{tab:models-imported}\\
+\toprule
+Result & Used for & Stated in\\
+\midrule
+\endfirsthead
+\toprule
+Result & Used for & Stated in\\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Weak convex optimization by the ellipsoid method with separation oracles;
+exact rational linear and convex quadratic
+programming~\cite{GroetschelLovaszSchrijver1988,KozlovTarasovKhachiyan1980}
+& Value approximation and starting points & Sec.~\ref{sec:points}\\
+One-block real quantifier elimination with degree and coefficient-height
+bounds~\cite[Theorem~2.27]{Basu2014} & Separation of nonzero values &
+Secs.~\ref{sec:upper}, \ref{sec:constraints}\\
+The rounded central-cut ellipsoid method~\cite{GroetschelLovaszSchrijver1988}
+& Starting points for monotone maps & Sec.~\ref{sec:upper}\\
+Linear programming with an operation count polynomial in the encoding of
+the rational constraint matrix and independent of the objective and
+right-hand-side encoding lengths~\cite{GroetschelLovaszSchrijver1988} & Normal-cone
+verification & Sec.~\ref{sec:constraints}\\
+Exact separable quadratic network flow with a strongly polynomial operation
+count~\cite{Vegh2016}; exact constrained Newton
+convergence~\cite{LeeSunSaunders2014} & Structured constrained problems &
+Sec.~\ref{sec:constraints}\\
+Violator-space sampling~\cite{GaertnerMatousekRuestSkovron2008}; integer
+feasibility with separation queries at integer
+points~\cite{AriHildebrand2026,HildebrandGoess2024,Basu2023Integers};
+fixed-dimensional integer and mixed-integer linear
+feasibility~\cite{HildebrandKoeppe2013,DelPia2023} & Rank and integer
+parameters & Sec.~\ref{sec:constraints}\\
+Certified isolation of real and complex roots of univariate
+polynomials~\cite[Theorem~5]{MehlhornSagraloffWang2015} & Singleton
+constructions & Sec.~\ref{sec:algebraic}\\
+Bézout bounds for isolated solutions; Cayley--Bacharach and residual
+intersection; classification of varieties of low degree; Brouwer
+degree~\cite{Hartshorne1977,Fulton1998,EisenbudGreenHarris1996,
+EklundJostPeterson2013,Harris1992,Milnor1965} & Degree bounds and number of
+squares & Sec.~\ref{sec:algebraic}\\
+Rational points of bounded height in open semialgebraic
+sets~\cite[Theorem~4.1.2]{BasuPollackRoy1996} & Interior Gram matrices &
+Sec.~\ref{sec:heights}\\
+Characterization of the nonnegative rational ternary quartic forms that are
+not sums of squares over $\Q$~\cite[Theorem~4.1]{Scheiderer2016} & Minimal
+dimension of the field obstruction & Sec.~\ref{sec:fields}\\
+Pure-state and order-unit criteria for sums of squares in archimedean
+preorderings~\cite{BurgdorfScheidererSchweighofer2012} & Finite radial order &
+Sec.~\ref{sec:fields-certificates}\\
+Lattice basis reduction~\cite{LenstraLenstraLovasz1982}; two-block quantifier
+elimination with separate dependence on coefficient
+height~\cite{Renegar1992QE,BasuPollackRoy2006}; almost-everywhere
+differentiability of convex conjugates and covering lemmas for maximal
+functions~\cite{Rockafellar1970,EvansGariepy2015} & Core faces, margins,
+exact fallback, and expected cell counts & Sec.~\ref{sec:recourse}\\
+Multihomogeneous B\'ezout bounds; Hilbert irreducibility; algebraic-number
+recognition~\cite{MorganSommese1987,Serre2008,KannanLenstraLovasz1988} &
+Quadratic comparisons & App.~\ref{app:qc}\\
+Effective quantifier elimination and {\L}ojasiewicz-type inequalities with
+coefficient-height bounds~\cite{BasuMohammadNezhad2024} & Exact penalty
+representations & App.~\ref{app:boundaries}\\
+Sampling over quadratic maps with degree and height
+bounds~\cite[Theorem~1.2]{GrigorievPasechnik2005} & Common-field witnesses
+and finite infima & App.~\ref{app:further-arithmetic}\\
+Integer-point bounds for convex first-order sets; rational mixed-integer
+linear feasibility at fixed integer dimension~\cite{KhachiyanPorkolab2000,
+Lenstra1983} & Algebraic cone feasibility &
+App.~\ref{app:further-arithmetic}\\
+\end{longtable}
+}

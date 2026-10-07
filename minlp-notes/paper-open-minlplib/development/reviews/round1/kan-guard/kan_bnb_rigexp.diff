@@ -1,0 +1,161 @@
+--- development/dossiers/ann-kan-checks/kan_bnb_rigexp.py
++++ development/reviews/round1/kan-guard/kan_bnb_rigexp.py
+@@ -1,6 +1,6 @@
+ """Independent rigorous branch and bound for the KAN relaxation R (verifier's own code).
+ 
+-  python3 kan_bnb.py <name> <rel_tol> <time_limit_s> [batch]
++  python3 kan_bnb_rigexp.py <name> <rel_tol> <time_limit_s> [batch]
+ 
+ Works directly with the model's exact piece polynomials P_k (kan_decode.py);
+ no "ideal spline" and no perturbation term Delta are used.  For a box of inputs
+@@ -12,9 +12,10 @@
+ h_j = beta_j + sum_i phi_ij(u_i), phi = P_k + wb * silu on z in I_k.
+ 
+ Interval arithmetic: IEEE double with one-ulp outward rounding by nextafter
+-after every operation.  exp: numpy's exp widened by a relative 2^-50
+-(assumption: numpy's float64 exp is accurate to < 4 ulps; checked against
+-mpmath by `python3 kan_bnb.py --check-exp`).
++after every operation.  Certifying exp uses the rigorous table enclosure
++in kan_iv.iexp_pt_fast. The local search and --check-exp diagnostic still use
++numpy exp. minquad guards exact halving, finiteness and signed displacements;
++failed entries use exact rational minimization (see minquad-proof.md).
+ 
+ Lower bounds per box: max of
+   LB1  natural enclosure (tight per edge: hull over pieces; Taylor ranges of the
+@@ -372,21 +373,114 @@
+     return fup(q)
+ 
+ 
+-def minquad(gl, gh, m, sl, sh):
+-    """lower bound of min over g in [gl,gh], s in [sl,sh] of g*s + m*s^2/2 (m a float lower bound)"""
+-    best = np.full(gl.shape, INF)
+-    half_m = 0.5 * m   # exact
++MINQUAD_STATS = dict(
++    calls=0, entries=0, guard_calls=0, guard_entries=0,
++    fallback_calls=0, fallback_entries=0, invalid_entries=0,
++    reasons=dict(nonfinite_inputs=0, unordered_intervals=0,
++                 unsigned_displacements=0, inexact_half=0,
++                 nonfinite_intermediates=0, nonpositive_denominator=0),
++)
++
++
++def _minquad_exact(gl, gh, m, sl, sh):
++    """Exact rational fallback; nonfinite or unordered data return -inf."""
++    import math
++    if not all(math.isfinite(x) for x in (gl, gh, m, sl, sh)) or gl > gh or sl > sh:
++        return -math.inf
++    gl, gh, m, sl, sh = map(Fr, (gl, gh, m, sl, sh))
++    values = []
+     for g in (gl, gh):
+         for s in (sl, sh):
+-            gs = dn(g * s)
+-            ms = np.where(half_m >= 0, dn(half_m * dn(s * s)), dn(half_m * up(s * s)))
+-            best = np.minimum(best, dn(gs + ms))
+-        # convex case: the vertex s* = -g/m, value -g^2/(2m), if s* can lie in [sl, sh]
++            values.append(g * s + m * s * s / 2)
++        if m > 0 and sl <= -g / m <= sh:
++            values.append(-g * g / (2 * m))
++    q = min(values)
++    try:
++        f = float(q)
++    except OverflowError:
++        # A finite positive rational is >= the largest finite binary64.
++        return -math.inf if q < 0 else sys.float_info.max
++    return f if Fr(f) <= q else math.nextafter(f, -math.inf)
++
++
++def minquad(gl, gh, m, sl, sh):
++    """Lower bound of min_{g in [gl,gh], s in [sl,sh]} g*s + m*s*s/2.
++
++    Guard every binary64 entry, not just a sample. Failed entries use exact
++    rational minimization; invalid inputs return -inf. See minquad-proof.md.
++    Counters distinguish vector invocations (calls) and scalar entries.
++    """
++    gl, gh, m, sl, sh = np.broadcast_arrays(
++        *[np.asarray(x, dtype=np.float64) for x in (gl, gh, m, sl, sh)])
++    stats = MINQUAD_STATS
++    stats['calls'] += 1
++    stats['entries'] += gl.size
++    finite_inputs = np.isfinite(gl) & np.isfinite(gh) & np.isfinite(m) & np.isfinite(sl) & np.isfinite(sh)
++    unordered = (gl > gh) | (sl > sh)
++    unsigned = ~((sl <= 0) & (sh >= 0))
++    nonfinite = np.zeros(gl.shape, dtype=bool)
++
++    # A local accumulator covers raw and outward-rounded arithmetic results,
++    # including operations in np.where branches that are subsequently ignored.
++    def check(*xs):
++        nonlocal nonfinite
++        for x in xs:
++            nonfinite |= ~np.isfinite(x)
++
++    with np.errstate(over='ignore', under='ignore', invalid='ignore', divide='ignore'):
++        half_m = 0.5 * m
++        twice_half = 2.0 * half_m
++        inexact_half = twice_half != m
++        check(half_m, twice_half)
++        best = np.full(gl.shape, INF)
+         mpos = np.where(m > 0, m, 1.0)
+-        vert = -up(up(g * g) / dn(2.0 * mpos))
+-        sstar = -g / mpos
+-        inside = (m > 0) & (sstar >= sl * (1 + 1e-9) - 1e-300) & (sstar <= sh * (1 + 1e-9) + 1e-300)
+-        best = np.where(inside, np.minimum(best, vert), best)
++        twice_m = 2.0 * mpos
++        denom = dn(twice_m)
++        check(twice_m, denom)
++        bad_denom = ~(denom > 0)
++        for g in (gl, gh):
++            for s in (sl, sh):
++                raw_gs, raw_ss = g * s, s * s
++                gs, sslo, sshi = dn(raw_gs), dn(raw_ss), up(raw_ss)
++                raw_mslo, raw_mshi = half_m * sslo, half_m * sshi
++                mslo, mshi = dn(raw_mslo), dn(raw_mshi)
++                ms = np.where(half_m >= 0, mslo, mshi)
++                raw_value = gs + ms
++                value = dn(raw_value)
++                check(raw_gs, raw_ss, gs, sslo, sshi, raw_mslo, raw_mshi,
++                      mslo, mshi, raw_value, value)
++                best = np.minimum(best, value)
++            raw_gg = g * g
++            gg = up(raw_gg)
++            raw_quot = gg / denom
++            quot = up(raw_quot)
++            vert = -quot
++            sstar = -g / mpos
++            starlo, starhi = dn(sstar), up(sstar)
++            check(raw_gg, gg, raw_quot, quot, vert, sstar, starlo, starhi)
++            # An enclosure intersection cannot miss an admissible exact vertex.
++            inside = (m > 0) & (starhi >= sl) & (starlo <= sh)
++            best = np.where(inside, np.minimum(best, vert), best)
++        check(best)
++    reasons = dict(nonfinite_inputs=~finite_inputs, unordered_intervals=unordered,
++                   unsigned_displacements=unsigned, inexact_half=inexact_half,
++                   nonfinite_intermediates=nonfinite, nonpositive_denominator=bad_denom)
++    bad = np.zeros(gl.shape, dtype=bool)
++    for reason, mask in reasons.items():
++        stats['reasons'][reason] += int(np.count_nonzero(mask))
++        bad |= mask
++    invalid = ~finite_inputs | unordered
++    stats['invalid_entries'] += int(np.count_nonzero(invalid))
++    nbad = int(np.count_nonzero(bad))
++    if nbad:
++        stats['guard_calls'] += 1
++        stats['guard_entries'] += nbad
++        stats['fallback_calls'] += 1
++        stats['fallback_entries'] += nbad
++        flat = best.ravel()
++        args = [x.ravel() for x in (gl, gh, m, sl, sh)]
++        for i in np.flatnonzero(bad.ravel()):
++            flat[i] = _minquad_exact(*(float(x[i]) for x in args))
+     return best
+ 
+ 
+@@ -743,7 +837,8 @@
+     final = min(UB - tol, float(LB.min()) if len(LB) else INF)
+     final = float(dn(final))
+     res = dict(name=name, done=done, processed=processed, open=int(len(LB)), UB=UB, ub_u=list(map(float, ubx)),
+-               tol=tol, lower_bound=final, time=time.time() - t0)
++               tol=tol, lower_bound=final, time=time.time() - t0,
++               minquad_stats=json.loads(json.dumps(MINQUAD_STATS)))
+     log(json.dumps(res, indent=1))
+     return res
+ 

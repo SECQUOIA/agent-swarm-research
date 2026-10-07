@@ -44,6 +44,6 @@ No major findings. The formulas and lower/upper reductions checked below are val
 
 ## Validation
 
-`/home/sgusev/miniconda3/envs/qipm/bin/python notes/scalar-newton-paper/scripts/verify_cyclic.py` passed. It checks cyclic spectra, the inverse history, public norms, readout/value/decrement identities, row metadata, norm-tree derivatives, and completion distance. The independent algebra above is the basis for the conclusions; finite numerical tests do not establish the theorems.
+`/workspace/local-home/miniconda3/envs/qipm/bin/python notes/scalar-newton-paper/scripts/verify_cyclic.py` passed. It checks cyclic spectra, the inverse history, public norms, readout/value/decrement identities, row metadata, norm-tree derivatives, and completion distance. The independent algebra above is the basis for the conclusions; finite numerical tests do not establish the theorems.
 
 Attribution remains suitably qualified: the manuscript separates existing Forrelation/history, variable-time norm estimation, and cone constructions from the precise parameter/access/optimization refinements claimed here.

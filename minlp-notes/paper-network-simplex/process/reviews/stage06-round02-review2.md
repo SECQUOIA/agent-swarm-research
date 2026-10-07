@@ -121,7 +121,7 @@ compressed numerical certificate semantics remain accurately described.
 - Reran the full combined test command:
 
   ```sh
-  PYTHONPATH=code /home/sgusev/miniconda3/envs/minlp-notes/bin/python -m unittest network_simplex.test_separator network_simplex.test_flat_chain network_simplex_benchmarks.test_strong_baselines -q
+  PYTHONPATH=code /workspace/local-home/miniconda3/envs/minlp-notes/bin/python -m unittest network_simplex.test_separator network_simplex.test_flat_chain network_simplex_benchmarks.test_strong_baselines -q
   ```
 
   All 22 tests passed.

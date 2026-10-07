@@ -1,0 +1,380 @@
+\section{Accuracy-independent grids under quadratic growth}\label{sec:growth}
+
+Theorem~\ref{thm:certificate} holds for any choice of grids. This section
+chooses them so that, under weighted growth, every coordinate grid has
+$O(\sqrt{\bar\kappa}\log(n+2))$ nodes at every refinement stage, independently
+of the accuracy reached. The growth constant is used only in the analysis.
+
+\subsection{Graded grids and one trial}
+
+\begin{definition}[Graded grid]\label{def:graded}
+Let $X_i'=[\ell_i',u_i']$ (or its integer points if $i\in I_Z$), a center
+$c_i\in X_i'$, a mesh $h>0$ and a grading $0<\theta\le1/4$ be given. Put
+\begin{equation}\label{eq:step}
+\sigma(t)=h+\theta t\quad(i\in I_C),\qquad
+\sigma(t)=\max\{1,\lfloor h+\theta t\rfloor\}\quad(i\in I_Z).
+\end{equation}
+Starting from $t_0=0$, set $t_{k+1}=\min\{t_k+\sigma(t_k),u_i'-c_i\}$ until
+$t_{k+1}=u_i'-c_i$, and take the nodes $c_i+t_k$; proceed in the same way
+towards $\ell_i'$. These nodes form the \emph{graded grid} of $X_i'$.
+\end{definition}
+
+Spacing grows linearly with the distance from the center, so a grid of radius
+$R$ needs only $O(1+\theta^{-1}\log(1+\theta R/h))$ nodes.
+
+\begin{lemma}[Graded grids]\label{lem:graded}
+(a) $w_i(v)\le h+\theta\abs{v-c_i}$ for every node $v$.
+(b) If an endpoint is at distance $R>0$ from $c_i$, the number of nodes
+strictly on that side is at most $\lceil(4/\theta)\ln(1+\theta R/\hat h)\rceil$,
+where $\hat h=h$ for $i\in I_C$ and $\hat h=\max\{h,1\}$ for $i\in I_Z$.
+(c) If $h\ge u_i'-\ell_i'$, the grid has at most three nodes.
+\end{lemma}
+
+The proof is in Appendix~\ref{app:growth}. The meshes are chosen per
+coordinate so that every coordinate sees the same correction scale. For
+$i\in P$ let $\varpi_i\in\Z$ satisfy $4^{\varpi_i-1}<L_i\le4^{\varpi_i}$ and
+put $r_i=2^{-\varpi_i}$, so that $\frac14<L_ir_i^2\le1$. Let $E$ be the least
+integer with $2^Er_i\ge s_i$ for all $i\in P$, and put $\eta_j=2^{E-j}$ and
+$h_{ij}=\eta_jr_i$; every $h_{ij}$ is a power of two.
+
+\begin{algorithm}[TRIAL: one trial]\label{alg:trial}
+The parameters are a grading $\theta\in(0,1/4]$, a cap $K$, an accuracy
+$\varepsilon>0$ and a stage limit $j_{\max}$. Start with $X^{(0)}=X$, center
+$c^{(0)}=\ell$, and the incumbent $\hat x=\ell$ with value $U=F(\ell)$, or a
+better feasible point and its value if one is known. For
+$j=0,1,\dots,j_{\max}$:
+\begin{enumerate}[label=(\roman*)]
+\item for $i\in P$ let $G_i^{(j)}$ be the graded grid of $X_i^{(j)}$ with
+center $c_i^{(j)}$, mesh $h_{ij}$ and grading $\theta$; for $i\notin P$ let
+$G_i^{(j)}=\{\ell_i,u_i\}$; if some grid would exceed $K$ nodes,
+\emph{abort} the trial before forming any table;
+\item compute $\beta_j$, a minimizer $y^{(j)}$ of $Q$ over $G^{(j)}$ and all
+min-marginals by Lemma~\ref{lem:dp}; if $F(y^{(j)})<U$, set
+$\hat x=y^{(j)}$ and $U=F(y^{(j)})$;
+\item if $U-\beta_j\le\varepsilon$, stop with \emph{success}; otherwise
+filter with threshold $U$ (Definition~\ref{def:filter}) to obtain
+$X^{(j+1)}$, and set $c^{(j+1)}=y^{(j)}$.
+\end{enumerate}
+The trial \emph{fails} if stage $j_{\max}$ ends without success.
+\end{algorithm}
+
+By Proposition~\ref{prop:filter} the centers stay feasible and inside the
+current subbox, and by Corollary~\ref{cor:filtercert} every stage yields a
+valid path certificate. The analysis allows any first center in $X$
+(Lemma~\ref{lem:inv}(ii) holds at $j=0$ for every $c^{(0)}\in X$). Later
+centers need to be close to $x^*$: by Lemma~\ref{lem:inv}(iii), the corrected
+minimizer $y^{(j)}$ is as close to $x^*$ as Lemma~\ref{lem:inv}(ii) requires
+of the center of stage $j+1$. Because the centers are $\ell$ and grid points,
+denominators do not compound from stage to stage
+(Appendix~\ref{app:growth}).
+
+\subsection{Contraction and localization}
+
+\begin{lemma}[Stage invariants]\label{lem:inv}
+Assume weighted growth with constant $\gamma$ at a minimizer $x^*$, let
+$k\ge\max\{1,1/\gamma\}$ satisfy $8k\theta^2\le1$, and write
+$a_j=n_P\eta_j^2$. At every stage $j$ reached by TRIAL, with $U$ the
+incumbent value after step~(ii):
+\begin{enumerate}[label=(\roman*)]
+\item $x^*\in X^{(j)}$ and $\beta_j\le\OPT$;
+\item $\norm{c^{(j)}-x^*}_{\mathbf L}^2\le4ka_j$;
+\item $\norm{y^{(j)}-x^*}_{\mathbf L}^2\le ka_j$;
+\item $U-\beta_j\le F(y^{(j)})-\beta_j=D(y^{(j)})\le\frac9{16}a_j$;
+\item every grid point $z$ with $Q(z)\le U$ satisfies
+$\norm{z-x^*}_{\mathbf L}^2\le\frac{17}{15}ka_j$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+(i) By induction on $j$, starting from $x^*\in X^{(0)}=X$. If
+$x^*\in X^{(j)}$, then $\beta_j\le\min_{X^{(j)}}F=\OPT$ by
+Proposition~\ref{prop:cellwise}(b), and filtering with threshold
+$U\ge\OPT=F(x^*)$ keeps $x^*$ by Proposition~\ref{prop:filter}.
+
+Next, every grid point $z$ satisfies, with $c=c^{(j)}$,
+\begin{equation}\label{eq:energy}
+D(z)\le\frac{a_j}4+\frac{\theta^2}2\Bigl(\norm{z-x^*}_{\mathbf L}^2
++\norm{c-x^*}_{\mathbf L}^2\Bigr).
+\end{equation}
+Indeed, for $i\in P$ Lemma~\ref{lem:graded}(a) and $L_ih_{ij}^2\le\eta_j^2$
+give $d_i(z_i)\le\frac{L_i}8(h_{ij}+\theta\abs{z_i-c_i})^2\le\frac{\eta_j^2}4
++\frac{\theta^2}4L_i(z_i-c_i)^2$, and
+$(z_i-c_i)^2\le2(z_i-x_i^*)^2+2(c_i-x_i^*)^2$; for $i\notin P$, $d_i=0$.
+
+(ii) For $j=0$ and any $c^{(0)}\in X$,
+$\norm{c^{(0)}-x^*}_{\mathbf L}^2\le\sum_{i\in P}L_is_i^2\le
+\sum_{i\in P}L_ir_i^2\eta_0^2\le a_0$. For $j\ge1$ it follows from (iii) at
+stage $j-1$, because $c^{(j)}=y^{(j-1)}$ and $a_{j-1}=4a_j$.
+
+(iii) Write $Y=\norm{y^{(j)}-x^*}_{\mathbf L}^2$ and $a=a_j$. Since
+$\theta^2/2\le1/(16k)\le\gamma/16$, growth, (i), $Q(y^{(j)})=\beta_j$,
+\eqref{eq:energy} and (ii) give
+$\gamma Y\le F(y^{(j)})-\OPT\le F(y^{(j)})-\beta_j=D(y^{(j)})
+\le\frac a4+\frac\gamma{16}(Y+4ka)$, so
+$Y\le\frac4{15}(\gamma^{-1}+k)a\le\frac8{15}ka$.
+
+(iv) By \eqref{eq:energy}, (ii), (iii) and $\theta^2k\le\frac18$,
+$D(y^{(j)})\le\frac a4+\frac{\theta^2}2\cdot5ka\le\frac9{16}a$. Moreover
+$U\le F(y^{(j)})$ after step~(ii), and $F(y^{(j)})-\beta_j=D(y^{(j)})$
+because $Q(y^{(j)})=\beta_j$.
+
+(v) Let $Z=\norm{z-x^*}_{\mathbf L}^2$. Using $Q(z)\le U\le F(y^{(j)})$,
+$\beta_j\le\OPT$, (iv) and \eqref{eq:energy},
+$\gamma Z\le F(z)-\OPT=Q(z)+D(z)-\OPT\le D(y^{(j)})+D(z)\le\frac{13}{16}a
++\frac\gamma{16}(Z+4ka)$, so
+$Z\le(\frac{13}{15}\gamma^{-1}+\frac4{15}k)a\le\frac{17}{15}ka$.
+\end{proof}
+
+The proof shows where filtering is essential. Part (v) bounds every grid point
+whose corrected value can keep an interval alive, and the retained subbox
+therefore shrinks at the same rate as the mesh.
+
+\begin{lemma}[Localization and grid size]\label{lem:states}
+Under the hypotheses of Lemma~\ref{lem:inv}, for every stage $j$ followed by
+filtering and every $i\in P$,
+\[
+X_i^{(j+1)}\subseteq\bigl[y_i^{(j)}-R_{ij},\,y_i^{(j)}+R_{ij}\bigr],\qquad
+R_{ij}=8\sqrt{kn_P}\,h_{ij}+[i\in I_Z],
+\]
+where $[i\in I_Z]$ is $1$ if $i\in I_Z$ and $0$ otherwise. Consequently
+every grid of the trial has at most
+\begin{equation}\label{eq:statecap}
+K(\theta,n_P)=10\,\theta^{-1}\lceil\log_2(n_P+2)\rceil
+\end{equation}
+nodes per coordinate, independently of the stage and of $\varepsilon$.
+\end{lemma}
+
+\begin{proof}
+Write $y=y^{(j)}$, $c=c^{(j)}$, $h=h_{ij}$ and $\rho=\sqrt{kn_P}$. Let
+$[a,a']$ be a retained grid interval of coordinate $i$, let
+$v\in\{a,a'\}$ satisfy $m_i(v)\le U$ (Definition~\ref{def:filter}), and let
+the grid point $z$ attain $m_i(v)$, so $z_i=v$ and $Q(z)\le U$. Because
+$\sqrt{L_i}>1/(2r_i)$, a bound $\sqrt{L_i}\abs\delta\le\lambda\rho\eta_j$
+implies $\abs\delta<2\lambda\rho h$; so Lemma~\ref{lem:inv}(ii), (iii), (v)
+give $\abs{v-y_i}<2(1+\sqrt{17/15})\rho h$ and
+$\abs{v-c_i}<2(2+\sqrt{17/15})\rho h$. An integer interval of length one
+lies within $\abs{v-y_i}+1$ of $y_i$. Otherwise the interval has length at
+most $w_i(v)\le h+\theta\abs{v-c_i}$ (Lemma~\ref{lem:graded}(a)), and
+$\theta\sqrt k\le1/\sqrt8$, $h\le\rho h$ and $\sqrt{n_P}\le\rho$ give that
+each of its points is within
+$\bigl(3+2\sqrt{17/15}+(2+\sqrt{17/15})/\sqrt2\bigr)\rho h<7.3\rho h$ of
+$y_i$. So every retained interval, and hence their hull $X_i^{(j+1)}$, lies
+in $[y_i-R_{ij},y_i+R_{ij}]$.
+
+At stage $j+1$ the grid of coordinate $i$ is centered at
+$y_i\in X_i^{(j+1)}$ with mesh $h/2$, and each side has length at most
+$R_{ij}$. With $\hat h$ as in Lemma~\ref{lem:graded}(b) for mesh $h/2$,
+$\theta R_{ij}/\hat h\le16\theta\rho+\theta\le4\sqrt{2n_P}+\frac14$, so by
+Lemma~\ref{lem:graded}(b) the grid has at most
+$1+2\lceil\frac4\theta\ln(\frac54+4\sqrt{2n_P})\rceil$ nodes, which is at
+most $K(\theta,n_P)$ by a calculus estimate in Appendix~\ref{app:growth}.
+Stage $0$ has at most three nodes per
+coordinate by Lemma~\ref{lem:graded}(c), since $h_{i0}\ge s_i$, and
+coordinates outside $P$ have two.
+\end{proof}
+
+Section~\ref{sec:related} relates Lemmas~\ref{lem:inv} and~\ref{lem:states}
+to the cluster problem of branch-and-bound.
+
+\subsection{Unknown growth: capped trials}
+The algorithm cannot use $8\bar\kappa\theta^2\le1$ directly because $\gamma$
+is unknown. It tries geometrically decreasing gradings and relies on the caps
+to bound the work of unsuitable trials.
+
+\begin{algorithm}[CT: capped trials]\label{alg:ct}
+The input is an accuracy $\varepsilon>0$. If $P=\emptyset$, minimize $F$
+over the grid $\prod_i\{\ell_i,u_i\}$ by Lemma~\ref{lem:dp} and return a
+minimizer $\hat x$, $\beta=F(\hat x)$ and this grid. Otherwise let
+$j_{\max}$ be the least integer $j_{\max}\ge0$ with
+$\frac9{16}n_P\eta_0^2\,4^{-j_{\max}}\le\varepsilon$, and for
+$\mu=2,3,\dots$ run TRIAL with grading $\theta=2^{-\mu}$, cap
+$K_\mu=K(2^{-\mu},n_P)$, accuracy $\varepsilon$ and stage limit $j_{\max}$,
+keeping the incumbent from trial to trial, until a trial succeeds. Return the
+incumbent $\hat x$, the bound $\beta=\beta_j$ of the successful stage $j$ and
+the grids of the successful trial.
+\end{algorithm}
+
+\begin{theorem}[Certified approximation]\label{thm:approx}
+Let~\eqref{eq:model} have explicit rational quadratic factors given as
+monomial lists, a tree decomposition of maximum bag size $p$, curvature bounds
+$L_i=\max\{0,\partial_{ii}F\}$, and let $\varepsilon=2^{-q}$.
+\begin{enumerate}[label=(\alph*)]
+\item On every instance, CT$(\varepsilon)$ halts and returns a feasible
+rational $\hat x$ and a valid path certificate with
+$\beta\le\OPT\le F(\hat x)\le\beta+\varepsilon$.
+\item If the instance has weighted growth with condition number $\bar\kappa$,
+CT$(\varepsilon)$ succeeds at a trial with $2^\mu\le6\sqrt{\bar\kappa}$ and
+uses at most
+\[
+f(p,\bar\kappa)\,(I+q+1)^5,\qquad
+f(p,t)=c_0\,(c_1p\sqrt t)^p\,t\,(1+\log_2t)^2,
+\]
+bit operations, for absolute constants $c_0,c_1$. The certificate has size,
+and is checked in time, within the same bound. Neither $\gamma$ nor
+$\bar\kappa$ is an input. Since $f$ is increasing in $t\ge1$, the bound also
+holds with any larger number in place of $\bar\kappa$, such as the Euclidean
+condition number $\kappa$ under point growth.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+(a) If $P=\emptyset$, all corrections vanish and
+Proposition~\ref{prop:cellwise}(b) gives $F(\hat x)=\beta\le\OPT$. Otherwise
+validity follows from Corollary~\ref{cor:filtercert}, because every threshold
+is the value of a feasible point. For termination, take $\mu\ge2$ with
+$\theta=2^{-\mu}\le\min_{i\in P}h_{i,j_{\max}}/s_i$, so that
+$\theta s_i\le h_{ij}$ for all $j\le j_{\max}$. In this trial every unclipped
+step at a stage $j\le j_{\max}$ is at least $h_{ij}$: for $i\in I_C$
+by~\eqref{eq:step}, and for $i\in I_Z$ with
+$h_{ij}\ge1$ because $h_{ij}$ is a power of two, so
+$\lfloor h_{ij}\rfloor=h_{ij}$. A side of length at most $s_i\le h_{ij}/\theta$
+therefore takes at most $1/\theta$ steps, and the grid has at most
+$1+2/\theta<K_\mu$ nodes. For $i\in I_Z$ with $h_{ij}<1$ the grid has at most
+$s_i+1<1/\theta+1$ nodes, because $s_i\le h_{ij}/\theta<1/\theta$. So the
+trial is not aborted. At stage $j_{\max}$, Lemma~\ref{lem:graded}(a) gives
+$w_i(v)\le h_{i,j_{\max}}+\theta s_i\le2h_{i,j_{\max}}$ for every node $v$, so
+$U-\beta_{j_{\max}}\le D(y^{(j_{\max})})\le\sum_{i\in P}L_ih_{i,j_{\max}}^2/2
+\le a_{j_{\max}}/2\le\frac89\varepsilon$, and the trial succeeds.
+
+(b) Let $\mu^*=\max\{2,\lceil\log_4(8\bar\kappa)\rceil\}$, so that
+$\theta=2^{-\mu^*}$ satisfies $8\bar\kappa\theta^2\le1$, and
+$2^{\mu^*}\le6\sqrt{\bar\kappa}$. Apply Lemmas~\ref{lem:inv}
+and~\ref{lem:states} with the growth constant $\gamma$ that defines
+$\bar\kappa$ and $k=\bar\kappa$: by Lemma~\ref{lem:states} trial $\mu^*$ is
+never aborted, and by Lemma~\ref{lem:inv}(iv) it succeeds at stage
+$j_{\max}$ at the latest, since $\frac9{16}a_{j_{\max}}\le\varepsilon$. Every
+trial $\mu\le\mu^*$ runs at most $j_{\max}+1$ stages with at most $K_\mu$
+nodes per coordinate, because an oversized grid is detected while it is
+generated. By Lemma~\ref{lem:dp} this costs
+$O\bigl((j_{\max}+1)p(\abs{\mathcal A}+n+N)K_\mu^p\bigr)$ table operations,
+and $\sum_{\mu\le\mu^*}K_\mu^p\le2K_{\mu^*}^p$. Since
+$\sup_{t\ge0}t^pe^{-t}=(p/e)^p$,
+\begin{equation}\label{eq:logabsorb}
+\lceil\log_2(n_P+2)\rceil^p\le2p^p(n+2),
+\end{equation}
+so the table work is at most
+$c\,(j_{\max}+1)\,p\,I^2(60\,p\sqrt{\bar\kappa})^p$ with
+$j_{\max}=O(I+q+1)$ and an absolute constant $c$.
+Let $\Gamma_X$ and $\Gamma_F$ be the products of the denominators of the box
+endpoints and of the coefficients. Appendix~\ref{app:growth} shows that all
+grid nodes of a trial have denominators dividing $\Gamma_X2^\alpha$, where
+$\alpha=j_{\max}+O(I)+\mu K_\mu$, so one bound holds at all stages of a
+trial: denominators do not compound from stage to stage. It also shows that
+all table entries are integers of $O((1+\mu2^\mu)(I+q+1))$ bits over the
+common denominator $8\Gamma_F\Gamma_X^24^\alpha$. Multiplying the counts
+proves the bound.
+\end{proof}
+
+\begin{remark}[In what sense the bound is fixed-parameter]\label{rem:fpt}
+As a parameter, $\bar\kappa$ is the smallest weighted condition number of
+the instance, which exists by Section~\ref{sec:setting}. It is a real number,
+not part of the input, and CT never computes it. Since $f$ is
+increasing in $t\ge1$, the bound of Theorem~\ref{thm:approx}(b) is at most
+$f(p,\lceil\bar\kappa\rceil)(I+q+1)^5$, a fixed-parameter bound in the
+parameters $p$ and $\lceil\bar\kappa\rceil$, which the algorithm does not
+need to know. The exponent $5$ reflects schoolbook arithmetic and depends on
+neither parameter, and the accuracy enters only through
+$q=\log_2(1/\varepsilon)$. The factor $\lceil\log_2(n_P+2)\rceil^p$ is
+absorbed by~\eqref{eq:logabsorb}, and no bound on the number of bags
+containing a coordinate, on Hessian norms or on the number of local minima is
+used. If only a treewidth bound is known, the decomposition of
+\cite{Korhonen2021} gives the same result with $p=2\,\mathrm{tw}+2$.
+Theorem~\ref{thm:intro-lower} states the lower bounds, proved in
+Section~\ref{sec:limits}; since $\bar\kappa\le\kappa$, the bounds stated
+for $\kappa$ also apply to $\bar\kappa$.
+\end{remark}
+
+\paragraph{A common mesh.}
+The implementation of Section~\ref{sec:computation} and the exact-output
+results of Section~\ref{sec:localized} and
+Appendices~\ref{app:localized} and~\ref{app:boundary} use one mesh for all
+coordinates and point growth with the Euclidean condition number $\kappa$.
+
+\begin{lemma}[CT with a common mesh]\label{lem:commonmesh}
+Modify TRIAL by using the common mesh $h_j=s2^{-j}$ in place of $h_{ij}$ for
+every $i\in P$; the corrections $L_iw_i(v)^2/8$ and the grids
+$\{\ell_i,u_i\}$ for $i\notin P$ are unchanged. Assume point growth with
+constant $g$ at $x^*$, put $\kappa=\max\{1,L/g\}$, and let
+$8\kappa\theta^2\le1$. At every stage $j$ reached by such a trial, with
+center $c=c^{(j)}$, corrected minimizer $y_j=y^{(j)}$ and $U$ the incumbent
+value after step~(ii), we have $x^*\in X^{(j)}$, $\beta_j\le\OPT$, and:
+\begin{enumerate}[label=(G\arabic*)]
+\item $D(z)\le\frac L4nh_j^2+\frac{L\theta^2}2\bigl(\norm{z-x^*}^2
++\norm{c-x^*}^2\bigr)$ for every grid point $z$;
+\item $\norm{c-x^*}^2\le4\kappa nh_j^2$, $\norm{y_j-x^*}^2\le\kappa nh_j^2$,
+and $\norm{z-x^*}^2\le\frac{17}{15}\kappa nh_j^2$ for every grid point $z$
+with $Q(z)\le U$;
+\item $U-\OPT\le F(y_j)-\OPT\le F(y_j)-\beta_j=D(y_j)\le\frac9{16}Lnh_j^2$;
+\item if stage $j$ is followed by filtering, then for $i\in P$ the filtered
+interval $X_i^{(j+1)}$ lies within $4.2\sqrt{n\kappa}\,h_j$ of $(y_j)_i$ if
+$i\in I_C$, and within $1+4.2\sqrt{n\kappa}\,h_j$ if $i\in I_Z$;
+\item every grid of the trial has at most
+$8\theta^{-1}\lceil\log_2(n+2)\rceil$ nodes per coordinate.
+\end{enumerate}
+These statements also hold if the trial starts at any center
+$c^{(0)}\in X$ instead of $\ell$.
+\emph{CT with a common mesh} is CT with these trials, caps
+$8\cdot2^\mu\lceil\log_2(n+2)\rceil$, and the least stage limit
+$j_{\max}\ge0$ with $\frac9{16}Lns^24^{-j_{\max}}\le\varepsilon$. On every
+instance it halts with a valid path certificate and
+$F(\hat x)\le\beta+\varepsilon$; under point growth it succeeds at the latest
+in the trial
+$\mu=\max\{2,\lceil\log_4(8\kappa)\rceil\}$.
+\end{lemma}
+
+The proof in Appendix~\ref{app:growth} follows those of
+Lemmas~\ref{lem:inv} and~\ref{lem:states} with $a_j=Lnh_j^2$ and
+$\norm\cdot_{\mathbf L}^2$ replaced by $L\norm\cdot^2$. Because (G2) bounds
+Euclidean distances in units of the common mesh, the coordinate bounds
+follow directly, without the conversion through $\sqrt{L_i}>1/(2r_i)$ that
+costs Lemma~\ref{lem:states} up to a factor~$2$; this gives the smaller
+radius and cap, at the price of $\kappa\ge\bar\kappa$. Items (G1)--(G4) and
+their proofs also hold for uniform grids, $\theta=0$, with
+Lemma~\ref{lem:graded}(a) read as $w_i(v)\le h_j$; only (G5) needs
+$\theta>0$.
+
+\input{sections/growth-sharp}
+
+\subsection{Examples}
+The first example shows that Theorem~\ref{thm:approx} covers nonconvex
+problems with many local minima and treewidth larger than one.
+
+\begin{example}[Coupled indefinite blocks]\label{ex:family}
+For a block $b$ with variables $(u_b,v_b,\omega_b)\in[0,1]^3$ let
+$\phi(u,v,\omega)=u^2+v^2-4uv+\frac14(u+v)+(\omega-\frac u2)^2$, and for a graph
+$\mathcal G$ on the blocks with maximum degree $\Delta_{\mathcal G}\ge1$ let
+\[
+F=\sum_b\phi(u_b,v_b,\omega_b)+\frac1{16\Delta_{\mathcal G}}
+\sum_{bb'\in\mathcal G}(u_b-u_{b'})^2 .
+\]
+Then (a) $x^*=(1,1,\frac12)$ in every block is the unique minimizer and
+$F(x)-\OPT\ge\frac12\norm{x-x^*}^2$; (b) $L\le\frac{21}8$, so
+$\kappa\le\frac{21}4$; (c) each of the $2^m$ points with
+$(u_b,v_b,\omega_b)\in\{(0,0,0),(1,1,\frac12)\}$ in all $m$ blocks is a strict
+local minimizer; (d) a tree decomposition of $\mathcal G$ of width $w$ yields
+one of $F$ with $p=\max\{w+1,3\}$. Each block Hessian is indefinite and the
+minimizer is not a vertex. For $\mathcal G$ an $m_1\times m_2$ grid graph
+with $m=m_1m_2\ge2$, Theorem~\ref{thm:approx} applies with $p=\max\{m_1+1,3\}$ and
+$\bar\kappa\le\kappa\le\frac{21}4$, although the instance has $2^m$ strict
+local minima. The proof is in Appendix~\ref{app:growth}.
+\end{example}
+
+The minimizer of this family is easy to guess block by block; by (a),
+$F-\OPT$ is at least $\frac98$ times the number of blocks at $(0,0,0)$. The
+second example separates the grids from exact parametric dynamic
+programming.
+
+\begin{example}[Expanding-box chain]\label{ex:chain}
+The family of Proposition~\ref{lim:prop:messages}, a chain of length $m$
+whose $t$th state has a box of width $2^t-1$, has $p=3$, a unique minimizer
+and $\kappa\le80$ for every $m$. By Theorem~\ref{thm:approx}, a certified
+$2^{-q}$-approximation takes time polynomial in $m$ and $q$, whereas the
+exact Bellman message for the last state has at least $2^{m-1}$ quadratic
+pieces. Rescaling the $t$th state by $2^{-t}$ moves every coordinate into
+$[0,1]$ and does not change $\bar\kappa$, which stays at most $80$, but the
+rescaled instance has $L=4^{m+1}$ and a largest growth constant between
+$\frac18$ and $20$, so every valid growth constant gives $\kappa\ge4^m/5$,
+and the largest gives $\kappa\le32\cdot4^m$ (Appendix~\ref{app:growth}).
+Section~\ref{sec:computation} reports the certified computation up to
+$m=64$.
+\end{example}

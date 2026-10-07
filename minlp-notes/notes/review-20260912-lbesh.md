@@ -13,7 +13,7 @@ Reviewed: [`lbesh-20260912-method.md`](lbesh-20260912-method.md) and
 `code/minlp_solver_lab/lbesh/{structure,master,solver,nlfunc}.py`.
 Reviewed code was not modified. Test scripts added under
 `code/minlp_solver_lab/lbesh/tests/` (run from `code/minlp_solver_lab` with
-`OMP_NUM_THREADS=1 PATH=/home/sgusev/miniconda3/envs/solvers/bin:$PATH uv run python lbesh/tests/<script>`):
+`OMP_NUM_THREADS=1 PATH=/workspace/local-home/miniconda3/envs/solvers/bin:$PATH uv run python lbesh/tests/<script>`):
 
 | script | purpose |
 |---|---|

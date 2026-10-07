@@ -6,7 +6,7 @@ Reviewed: `notes/certified-bounds-20260912-method.md`;
 the working copy at HEAD `696fad1` (this includes the half-line rule for
 one-sided bounds that was added to `safecut.py` / `driver.py` while the
 review was in progress; see "Half-line rule" below); the VIPR 1.1
-specification and `viprchk.cpp` in `/home/sgusev/build-scip/vipr`.
+specification and `viprchk.cpp` in `/workspace/local-home/build-scip/vipr`.
 The OA engine (`lbesh/`) is treated as untrusted, except where the checker
 itself imports it (see S2).
 

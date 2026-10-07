@@ -1,7 +1,10 @@
+from pathlib import Path as _CleanupPath
+_NOTES_ROOT = _CleanupPath(__file__).resolve().parent.joinpath('../../..').resolve()
+
 import sys, numpy as np, csv
-sys.path.insert(0,'/home/sgusev/repo/minlp-notes/research-20260922/scouting/minlplib-open-data')
+sys.path.insert(0,(str(_NOTES_ROOT) + '/research-20260922/scouting/minlplib-open-data'))
 from osil import read
-D='/home/sgusev/.cache/minlplib/minlplib/osil/'
+D=(str(_CleanupPath.home()) + '/.cache/minlplib/minlplib/osil/')
 def ev(t,x):
     op=t[0]
     if op=='num': return t[1]
@@ -14,7 +17,7 @@ def ev(t,x):
         return p
     if op=='negate': return -a[0]
     raise NotImplementedError(op)
-rows={x['name']:x for x in csv.DictReader(open('/home/sgusev/repo/minlp-notes/research-20260922/scouting/minlplib-open-data/open.csv'))}
+rows={x['name']:x for x in csv.DictReader(open((str(_NOTES_ROOT) + '/research-20260922/scouting/minlplib-open-data/open.csv')))}
 rng=np.random.default_rng(0)
 for name in sorted(n for n in rows if n.startswith('autocorr')):
     I=read(D+name+'.osil'); N=len(I['vt'])-1

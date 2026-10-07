@@ -30,6 +30,6 @@ All four frozen exact suites passed independently with the documented counts. A 
 
 A fresh repository search found 18 relevant or incidentally matching result/note/code files. Every corresponding file was byte-identical in the other worktree. The coverage map accounts for the actual exact power-flow developments; the additional incidental matches concern different potential-flow or chance-constrained models and introduce no omitted theorem for this paper. Historical numerical evidence is accurately separated from exact proofs.
 
-Artifacts are in `/home/sgusev/repo/minlp-notes/paper-power-flow/verification/reviewer5/full-round01/`, including the manifest receipt, four check logs, clean build and PDF, rendered pages, `worktree-coverage.json`, and `empty-source-composition.log`.
+Artifacts are in `/workspace/minlp-notes/paper-power-flow/verification/reviewer5/full-round01/`, including the manifest receipt, four check logs, clean build and PDF, rendered pages, `worktree-coverage.json`, and `empty-source-composition.log`.
 
 After the minor correction above, I consider the manuscript mathematically coherent, sufficiently explained for its intended research readership, and complete within its stated scope. I found no significant missing development that should delay completion. No optional improvement is being presented as a required correction.

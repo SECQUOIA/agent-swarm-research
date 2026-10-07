@@ -15,7 +15,7 @@ scope of claims; the constructions and query exponents are unchanged.
 Validation completed with:
 
 ```sh
-conda run -n qipm --live-stream make -C /home/sgusev/repo/qipm/notes/spectral-shift-paper
+conda run -n qipm --live-stream make -C /workspace/qipm/notes/spectral-shift-paper
 ```
 
 The build succeeded and produced the 10-page `main.pdf`. The first LaTeX

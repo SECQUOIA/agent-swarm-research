@@ -128,7 +128,7 @@ synthesis belong to later authorized stages.
 From `conditioning-paper/`:
 
 ```sh
-/home/sgusev/miniconda3/envs/qipm/bin/python development/stage3_verify.py
+/workspace/local-home/miniconda3/envs/qipm/bin/python development/stage3_verify.py
 latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex
 ```
 

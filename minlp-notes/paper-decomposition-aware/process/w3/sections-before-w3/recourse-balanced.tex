@@ -1,0 +1,181 @@
+\subsection{Corrected grids without a tree decomposition}\label{sec:balanced}
+
+The certified grid algorithm uses its tree decomposition only to compute, on the current product
+grid $\prod_iG_i$, the corrected minimum $\beta=\min Q$, one minimizer, and the coordinate
+min-marginals $m_i(v)$ of $Q=F-D$. Any exact oracle for these quantities can replace the
+messages. For one sign structure such an oracle exists without any width bound.
+
+\begin{definition}[Balanced quadratic]
+A quadratic $F(x)=\tfrac12x^{\T}Hx+b^{\T}x+e$ is \emph{balanced} if there are signs
+$\sigma\in\{-1,1\}^n$ with $\sigma_i\sigma_jH_{ij}\le0$ for all $i\neq j$.
+\end{definition}
+
+Equivalently, after the substitution $x_i\mapsto\sigma_ix_i$ all off-diagonal Hessian entries
+are nonpositive, that is, $F$ becomes submodular on $\R^n$. No sign condition is imposed on the
+diagonal or the linear terms.
+
+\begin{lemma}[Recognizing balance]\label{lem:balance}
+Balance can be decided, and signs $\sigma$ found, in time linear in $n$ plus the number of
+nonzero off-diagonal entries.
+\end{lemma}
+
+\begin{proof}
+The conditions are $\sigma_i=\sigma_j$ when $H_{ij}<0$ and $\sigma_i=-\sigma_j$ when $H_{ij}>0$.
+Breadth-first search assigns signs on each connected component of the graph of nonzero entries
+and reports failure exactly when an edge contradicts the assignment, that is, when some cycle has
+an odd number of positive entries \cite{Harary1953}.
+\end{proof}
+
+\begin{lemma}[Grid minimization by one minimum cut]\label{lem:chaincut}
+Let $F$ be balanced with signs $\sigma$, let $G_i\subset\R$ be finite and nonempty with
+$|G_i|=m_i+1$, and let $\eta_i:G_i\to\Q$ be arbitrary. Put
+$\Phi(y)=F(y)+\sum_i\eta_i(y_i)$ for $y\in\prod_iG_i$. Then $\min\Phi$ and a minimizer can be
+computed from one minimum $s$--$t$ cut in a directed graph with $\sum_im_i+2$ nodes and at most
+$3\sum_im_i+2\sum_{i<j:\,H_{ij}\neq0}m_im_j$ arcs whose capacities are computed from the
+coefficients, the grid points and the values $\eta_i$ by polynomially many rational operations.
+A maximum flow of equal value certifies the minimum. The same
+holds for each min-marginal $\min\{\Phi(y):y_i=v\}$, by replacing $G_i$ with $\{v\}$.
+\end{lemma}
+
+\begin{proof}
+List $G_i$ as $g_{i,0},\dots,g_{i,m_i}$ in increasing order if $\sigma_i=1$ and decreasing order
+if $\sigma_i=-1$, so that $\delta_{i,k}=g_{i,k}-g_{i,k-1}$ has the sign of $\sigma_i$. Encode
+$y_i=g_{i,k}$ by $z_i\in\{0,1\}^{m_i}$ with $z_{i,l}=1$ exactly for $l\le k$. This is a bijection
+between $G_i$ and the monotone vectors $z_{i,1}\ge\dots\ge z_{i,m_i}$, and on monotone vectors
+\[
+y_i=g_{i,0}+\sum_l\delta_{i,l}z_{i,l},\qquad
+\theta(y_i)=\theta(g_{i,0})+\sum_l\bigl[\theta(g_{i,l})-\theta(g_{i,l-1})\bigr]z_{i,l}
+\]
+for every function $\theta$ on $G_i$. Apply the second formula to
+$\theta_i(t)=\tfrac12H_{ii}t^2+b_it+\eta_i(t)$ and substitute the first into each cross term
+$H_{ij}y_iy_j$, $i<j$. On monotone vectors this gives
+\[
+\Phi=E(z)=E_0+\sum_ah_az_a+\sum_{a<b}w_{ab}z_az_b,\qquad
+w_{(i,k),(j,l)}=H_{ij}\delta_{i,k}\delta_{j,l}\le0,
+\]
+for suitable rational $E_0,h_a$; all other pair coefficients are zero. For binary
+variables $z_az_b=\tfrac12(z_a+z_b)-\tfrac12|z_a-z_b|$, so with $r_{ab}=-w_{ab}/2\ge0$ and
+$p_a=h_a+\tfrac12\sum_{b\neq a}w_{ab}$,
+\[
+E(z)=E_0+\sum_ap_az_a+\sum_{a<b}r_{ab}|z_a-z_b|.
+\]
+Build a graph with a node for each $z_a$, an arc $a\to t$ of capacity $\max\{p_a,0\}$, an arc
+$s\to a$ of capacity $\max\{-p_a,0\}$, two opposite arcs of capacity $r_{ab}$ between $a$ and
+$b$, and an arc $(i,l+1)\to(i,l)$ of infinite capacity for each $i$ and $1\le l<m_i$. Identify
+$z$ with the cut whose source side is $\{s\}\cup\{a:z_a=1\}$. A finite cut has no
+infinite arc from the source side to the sink side, which says exactly that $z$ is monotone; and
+for monotone $z$ the cut capacity is
+$\sum_a[\max\{p_a,0\}z_a+\max\{-p_a,0\}(1-z_a)]+\sum_{a<b}r_{ab}|z_a-z_b|$, so that
+\[
+E(z)=E_0+\sum_a\min\{p_a,0\}+\operatorname{cut}(z).
+\]
+The all-zero vector is monotone, so the minimum cut is finite and decodes to a minimizer of
+$\Phi$. By max-flow min-cut duality, a feasible flow whose value equals the capacity of the
+returned cut certifies its optimality. Fixing $y_i=v$ is the same construction with $G_i=\{v\}$,
+and the restricted function is still balanced.
+\end{proof}
+
+\begin{remark}
+Encoding finite ordered labels by threshold variables, and solving pairwise problems that are
+submodular with respect to the label orders by one minimum cut, is classical; see
+\cite[Section~4]{SchlesingerFlach2006} and, for convex functions of label differences,
+\cite{Ishikawa2003}. For binary variables the construction is that of
+\cite{Ivanescu1965,PicardRatliff1975,KolmogorovZabih2004}. The point of
+Lemma~\ref{lem:chaincut} here is only that the arbitrary unary terms $\eta_i$ may be the
+negative interpolation corrections $-d_i$ on arbitrary nonuniform grids.
+\end{remark}
+
+\begin{theorem}[Balanced box quadratics without a width parameter]\label{thm:balanced}
+Let $F(x)=\tfrac12x^{\T}Hx+b^{\T}x+e$ be an explicit rational quadratic on a
+mixed box $X$ with binary input length $I$, and suppose $F$ is balanced. Let
+$L=\max_iH_{ii}$.
+\begin{enumerate}
+\item If $L\le0$, an exact minimizer and the optimal value are obtained from one minimum cut on
+the endpoint labels, in time polynomial in $I$.
+\item If $L>0$ and $F$ has a unique minimizer satisfying the growth condition~\eqref{eq:growth}
+with constant $g>0$, put $\kappa=\max\{1,L/g\}$. The capped algorithm of
+Section~\ref{sec:growth}, with $\beta$, a minimizer and all min-marginals computed by
+Lemma~\ref{lem:chaincut} instead of tree messages, returns a feasible rational point and an
+independently checkable certificate of gap at most $2^{-q}$ in
+$(n\kappa(I+q+1))^{O(1)}$ bit operations. The exact minimizer and optimal value are returned in
+$(n\kappa(I+1))^{O(1)}$ bit operations.
+\end{enumerate}
+No decomposition is used, $g$ and $\kappa$ are not inputs, and the validity of every certificate
+uses neither growth nor uniqueness.
+\end{theorem}
+
+\begin{proof}
+(1) If every $H_{ii}\le0$, then $F$ is concave along every coordinate line of the continuous
+hull, so successive replacement of coordinates by endpoints of their (inward-rounded) intervals
+does not increase $F$, and the minimum over $X$ equals the minimum over the endpoint labels.
+Lemma~\ref{lem:chaincut} with $|G_i|\le2$ and $\eta_i=0$ computes it.
+
+(2) The correctness statements used by the capped algorithm, namely Propositions~\ref{prop:cellwise} and~\ref{prop:filter} and Lemmas~\ref{lem:inv}
+and~\ref{lem:states}, depend on $F$ only through the coordinate curvature
+condition~Definition~\ref{def:curvature}, which holds with this $L$ because the restriction of $F$ to a
+coordinate line has second derivative $H_{ii}$, and through the exact values $\beta$, a
+minimizer of $Q$, and $m_i(v)$ on the current grids. The tree decomposition enters those proofs
+only through the computation of these values by \eqref{eq:messages}.
+Since $Q=F-D$ and $D$ is a sum of unary terms, Lemma~\ref{lem:chaincut} with
+$\eta_i=-d_i$ computes $\beta$ and a minimizer by one cut, and each $m_i(v)$ by one further cut.
+Hence all correctness and state bounds hold verbatim, including the abort rule of the capped
+trials, and the certificate consists of the same filtering record with each tree computation
+replaced by a cut and an equal-value flow.
+
+For the work, the trial with $\theta=2^{-\mu}$ has at most
+$K_\mu=K(2^{-\mu},n_P)$ nodes per coordinate (Lemma~\ref{lem:states}),
+and the first successful trial has $2^\mu\le6\sqrt\kappa$. A stage therefore performs at most
+$1+nK_\mu$ cut computations on graphs with at most $nK_\mu+2$ nodes and
+$3nK_\mu+n^2K_\mu^2$ arcs. As in the proof of Theorem~\ref{thm:approx} (Appendix~\ref{app:growth}),
+grid coordinates have denominators dividing $\Gamma_X2^\alpha$ and all values of
+$Q$ on grid points have a common denominator dividing
+$8\Gamma_F\Gamma_X^24^\alpha$ and numerators of bit length polynomial in
+$I+q+\mu K_\mu$. The capacities of Lemma~\ref{lem:chaincut} are sums of at most
+$O(n^2)$ products of input coefficients with grid coordinates and of correction
+values, so they
+have the same common denominator and numerators of polynomial bit length. After multiplication by
+the common denominator, capacities are integers, and the Edmonds--Karp algorithm performs a
+number of augmentations polynomial in the graph size, each on integers bounded by the total
+capacity. The number of stages per trial is $O(I+q+1)$ by the choice of $J$ in Algorithm~2, and the number
+of trials is $O(\log\kappa)$. Multiplying these polynomial bounds gives the first claim. The
+exact claim follows from the proof of Theorem~\ref{thm:exact}, which uses only the approximation
+algorithm, the height bounds of Corollary~\ref{cor:height}, rational reconstruction and exact
+checks; it requires $q=\poly(I)+O(\log\kappa)$.
+\end{proof}
+
+\begin{corollary}[Balanced after deleting a supplied core]\label{cor:core}
+Let $F$, $X$, $L>0$, growth and $\kappa$ be as in Theorem~\ref{thm:balanced}(2), except that
+$F$ need not be balanced. Suppose a set $C$ of $k$ coordinates is supplied such that the
+quadratic obtained from $F$ by fixing $x_C$ is balanced, that is, there are signs $\sigma$ with
+$\sigma_i\sigma_jH_{ij}\le0$ for all $i\neq j$ outside $C$. Then the conclusions of
+Theorem~\ref{thm:balanced}(2) hold with work multiplied by
+$K^{k}$, where $K=O(\sqrt\kappa\log n)$ bounds the labels per coordinate.
+\end{corollary}
+
+\begin{proof}
+Fixing the labels of the core coordinates on their grids changes only unary and constant terms of
+the remaining quadratic. Hence $\beta$ and each min-marginal are minima, over at most $K^k$ core
+label vectors, of balanced grid problems solved by Lemma~\ref{lem:chaincut}; min-marginals of
+core coordinates restrict the enumeration. The remainder of the proof of
+Theorem~\ref{thm:balanced} is unchanged.
+\end{proof}
+
+This removes the restriction to nonpositive residual diagonals in the cut-based recourse of the
+report: residual coordinates with positive diagonal are gridded and filtered like the core, and
+the residual graph may be dense.
+
+\begin{remark}[Position of Theorem~\ref{thm:balanced}]
+After sign changes, a balanced box quadratic is a continuous submodular quadratic. For it,
+\cite{BurerNatarajanWillemsen2026v3} prove that a polynomial-size SDP relaxation is exact when
+$n\le3$, give a four-variable gap, and state that the complexity for $n\ge4$ is open
+(Theorem~1, Example~4 and footnote~2). Exactness of the basic SDP relaxation is known under an
+additional sign condition on the linear term \cite{KimKojima2003}, and the case of nonpositive
+diagonal is solved by endpoint reduction and a cut, as in part (1)
+\cite{BurerNatarajanWillemsen2026v3,Padberg1989}. Discretization methods for continuous
+submodular minimization \cite{Bach2019,Bach2018Isotonic,AxelrodLiuSidford2020} are polynomial
+in $1/\varepsilon$. Theorem~\ref{thm:balanced} instead has polynomial dependence on
+$\log(1/\varepsilon)$ and on $\kappa$. Since $\kappa$ can be exponential in $I$, it does not
+settle the open complexity question; it shows that under quadratic growth the cost is
+polynomial in the conditioning.
+\end{remark}
+

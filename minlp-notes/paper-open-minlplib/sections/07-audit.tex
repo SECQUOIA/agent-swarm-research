@@ -1,0 +1,109 @@
+% Plan: development/outline.md, section 5, "§7". The margin figure
+% (fig:audit-margins), Lemma lem:audit-display and Propositions
+% prop:spring-opt and prop:emfl-enclosure are stated in the supplement (app:audit).
+\section{An audit of MINLPLib's listed dual bounds}\label{sec:audit}
+
+One exactly feasible point whose objective value lies below a listed dual bound refutes that bound (\cref{prop:sem-refutation}).
+We screened every per-solver dual bound on MINLPLib's instance pages against the listed points, and we refuted a bound only by proving that an exactly feasible point exists below it.
+Under a stated hypothesis on how the pages display numbers, we prove 22 listed bounds on 18 instances invalid; none of them contradicts a solved mark.
+We state everything for minimization.
+
+\subsection{Population and screen}\label{sec:audit-screen}
+
+On 2026-09-30 we stored all 1,633 instance pages, which display 2,816 points and 11,086 per-solver dual bounds (11,031 finite) under 19 solver labels.
+A bound carries a solver name and a date, but no solver version, options or termination status \citep{vigerske2026-minlplib-a-library-of-mixed}.
+The refresh of 2026-10-02 found the pages and OSIL files of the 69 instances used in this paper (43 studied, 26 audited) unchanged; other OSIL files were not rechecked.
+
+The screen flags a (bound, point) pair when the displayed bound lies strictly above the displayed value of a listed point with listed violation at most $10^{-5}$: 158 pairs on 46 instances, involving 56 points and 131 per-solver bounds.
+Another 3,851 pairs on 1,133 instances are display ties, in which bound and point value agree in every displayed digit; the listed data cannot decide them.
+For each flagged point we tried to prove that an exactly feasible point exists at or near it (\cref{sec:audit-existence}); let $\varphi$ be the upper end of its objective enclosure, and call $\dval{s}-\varphi$ the \emph{margin} of a bound displayed as $s$.
+For $\dval{s}\neq0$, let $\dunit{s}$ be the largest power of ten of which $\dval{s}$ is an integer multiple; for the page strings, which have no trailing zeros, this is the unit of the last displayed digit.
+Each flagged bound gets the strongest class over its flagged points:
+(i) \emph{invalid}, if the margin is at least $\dunit{s}$;
+(i-r) \emph{invalid as displayed}, if the margin is positive but below $\dunit{s}$;
+(ii) \emph{proved valid}, if a rigorous lower bound on $\vstar$ is at least the bound;
+(ii$'$) \emph{not refuted after repair}, if the exactly feasible point found does not lie below the bound (evidence, not proof);
+(iii) \emph{undecided}.
+Every bound with a positive margin has $\dval{s}\neq0$, so its unit $\dunit{s}$ is defined.
+The audit implementation drew the line between classes (i) and (i-r) at half a unit instead of one; since no margin of a flagged pair lies between $0.44\,\dunit{s}$ and $1.115\,\dunit{s}$, both lines give the same classes (\cref{app:audit-screen}).
+The 131 bounds split into 19 of class (i) on 15 instances, 12 of class (i-r) on 4, 12 of class (ii) on the four \inst{emfl} instances, 63 of class (ii$'$) on 11 and 25 undecided on 12 (\cref{tab:audit-classes}).
+
+\subsection{Refutation under an explicit display hypothesis}\label{sec:audit-hyp}
+
+The pages show at most eight decimals, so a displayed bound is in general a rounded image of the number that the solver reported.
+
+\begin{hypothesis}{H}[display]\label{hyp:audit-display}
+If a listed dual bound is displayed as the string $s$ with $\dval{s}\neq0$, then the number $b$ that the solver reported satisfies $|b-\dval{s}|<\dunit{s}$.
+\end{hypothesis}
+
+\Cref{lem:audit-display} shows when Hypothesis~H holds.
+If $s$ arises from $b$ by finitely many roundings (to nearest or directed) or truncations to integer multiples of powers of ten, then $|b-\dval{s}|<\tfrac{10}{9}\dunit{s}$; Hypothesis~H itself holds if at most one of these operations changes the value, or if the last one that changes it rounds to nearest.
+It also holds if $|\dval{s}|\le6\cdot10^{7}$ and the site rounds a binary64 copy of $b$ to nearest at ten significant digits, stores the result in binary64 and displays it rounded to nearest at eight decimals; 13,723 of the 13,847 finite displayed values are consistent with this rule, 122 others differ only in the sign of zero (\cref{app:audit-hyp}), and every refuted bound has $|\dval{s}|<1.1\cdot10^{7}$.
+
+\begin{proposition}[refutation]\label{prop:audit-refute}
+Let $s$ be a listed dual bound of a minimization instance $\model$, let $x^\ast\in\feas$, and let $\varphi\in\Q$ with $f(x^\ast)\le\varphi$.
+\begin{enumerate}\setlength{\itemsep}{0pt}\setlength{\parsep}{0pt}
+\item[(a)] If $\dval{s}-\varphi\ge\dunit{s}$, then every $b$ with $|b-\dval{s}|<\dunit{s}$ satisfies $b>\vstar(\model)$; under Hypothesis~H, the bound that the solver reported is invalid.
+If $\dval{s}-\varphi\ge\tfrac{10}{9}\dunit{s}$, the same holds for every $b$ from which $s$ arises as in \cref{lem:audit-display}(a).
+\item[(b)] If $\dval{s}>\varphi$, the displayed number $\dval{s}$, read as an exact number, is not a valid dual bound.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+In (a), $b>\dval{s}-\dunit{s}\ge\varphi\ge f(x^\ast)\ge\vstar(\model)$, and likewise with $\tfrac{10}{9}\dunit{s}$ by \cref{lem:audit-display}(a). In (b), $\dval{s}>\varphi\ge\vstar(\model)$.
+\end{proof}
+
+Every class (i) margin is at least $1.115\,\dunit{s}>\tfrac{10}{9}\dunit{s}$, so the 19 class (i) refutations need only that the display arises from the reported number by decimal roundings or truncations (\cref{lem:audit-display}(a)); of all 22 refutations, only \inst{rocket100} (1.06 units) needs Hypothesis~H itself.
+For the 12 class (i-r) bounds, \cref{prop:audit-refute}(b) shows only that the displayed numbers are not valid dual bounds; the stored values may be valid.
+
+Because every tolerance-relaxed feasible set contains $\feas$, such a refutation holds for every feasibility tolerance; it also holds for the GAMS form whenever that form defines exactly the same model as the OSIL file (\cref{cor:audit-tolerance}).
+An exact symbolic comparison by one implementation, rerun from a clean copy in a separate agent session, proves the two forms identical for 14 of the 15 class (i) instances; the refutation on \inst{methanol50} holds for both forms (\cref{app:audit-history}).
+None of this covers \reading{c} (\cref{rem:sem-readings}).
+
+\subsection{Existence certificates}\label{sec:audit-existence}
+
+Each class (i) verdict rests on a proof that an exactly feasible point exists, with a rigorous enclosure of its objective value, by one of four methods.
+A \emph{listed-point check} verifies a listed point in rational arithmetic.
+A \emph{Krawczyk proof} fixes integer and near-bound variables at exact values, applies \cref{thm:pts-krawczyk} to the equality and nearly active rows, and encloses all other rows, the bounds and the objective over the proof box.
+A \emph{shifted Krawczyk proof} first moves a degenerate point into the interior, and a \emph{dedicated proof} uses a certificate built for one instance (\cref{app:audit-existence}).
+Each refutation was proved a second time by one of two further checkers, written separately from the audit code and from each other, each with its own OSIL reader (\cref{tab:audit-second}).
+Twelve of the 19 refutations have an exact rational proof in at least one implementation; the other seven (\inst{glider100} and \inst{ghg_3veh} with two solvers each, \inst{methanol50}, \inst{nuclear14} and \inst{topopt-cantilever_60x40_50}) rest on Krawczyk tests in both.
+These assume \cref{hyp:fp-ieee} for matrix products and, for \inst{glider100} and \inst{ghg_3veh}, mpmath's interval exponential in the audit implementation; the second checker also assumes an accurate 90-digit mpmath exponential (\cref{app:audit-existence}).
+
+\subsection{Results}\label{sec:audit-results}
+
+\input{tables/tab-audit-pairs}
+
+\Cref{tab:audit-pairs} lists the 19 class (i) bounds, which are invalid as listed (category~B).
+They form 15 distinct numerical conflicts, because in four cases two bounds share both the bound value and the point value; LINDO accounts for 13 bounds.
+We only group the margins by their size relative to $|\dval{s}|$ and attribute no cause (\cref{fig:audit-margins}): four exceed 1\% (\inst{glider100} twice, \inst{topopt-cantilever_60x40_50} and \inst{methanol50}), seven lie between $1.2\cdot10^{-5}$ and $7.4\cdot10^{-5}$, below the common relative gap tolerance $10^{-4}$, and eight are tolerance-scale, between $1.9\cdot10^{-9}$ and $3.4\cdot10^{-7}$.
+Ten of the 15 instances carry the solved mark, and the audit contradicts none of these marks.
+On all ten, the proved point has the objective value of the best listed point up to display rounding.
+On the six with tolerance-scale margins, the invalid bound may support the mark, but it lies within $10^{-6}$ relative of the best listed primal value, as MINLPLib's rule allows.
+
+On \inst{glider100}, an exactly feasible point has objective at most $-983842.2577$, about 784 times the listed bound $-1255.058601$, which is also the best listed primal value; it is a spurious period-2 solution of the discretized model and says nothing about the continuous hang-glider problem (\cref{app:audit-existence}).
+On \inst{topopt-cantilever_60x40_50}, the best listed primal value 46.34312619 is at least 4.48 times the objective value of an exactly feasible point.
+In both, the decisive points appear only under ``other points''.
+Archived copies show that the models have not changed since before the refuted and (i-r) bounds were listed, with two exceptions.
+After both of its bounds, the file of \inst{ghg_3veh} was changed to write three products of constants as rounded decimals (relative change $\le1.84\cdot10^{-15}$); the refutation also holds for the old file.
+Nine instances were added a few days before their 2014 bounds and have no older copy (\cref{app:audit-history}).
+
+\paragraph{Other classes and \inst{rocket}.}
+The 12 class (i-r) bounds, on four instances, date from 2013-09-17.
+On \inst{spring}, rounding on the page explains them (\cref{prop:spring-opt}).
+If stored as displayed, the six-digit bounds on \inst{eniplac}, \inst{lop97icx} and \inst{stockcycle} are invalid by far more than the display rounding; an unproved rounding to six digits before storage would explain them (\cref{app:audit-spring}).
+For the four \inst{emfl} instances, each of two implementations proves an enclosure of the optimal value in exact arithmetic, and each of these enclosures proves every listed dual bound valid and shows that the best listed primal values are tolerance artifacts (category~A).
+On \inst{emfl050_3_3}, which is marked solved, the best listed dual bound lies more than MINLPLib's gap tolerance below the optimum; but the mark agrees with the listed primal value and rests on tolerance-feasible points, so we do not call it wrong (\cref{prop:emfl-enclosure}).
+On \inst{rocket100}, \inst{rocket200} and \inst{rocket400}, LINDO's bounds form display ties with the only listed point; exactly feasible points prove them invalid under Hypothesis~H by at least 1.06, 4.70 and 18.9 display units, and two implementations agree (\cref{app:audit-rocket}).
+Of the 22 bounds on 18 instances proved invalid under Hypothesis~H, 16 are LINDO's (one per instance).
+
+\subsection{What the audit does not show}\label{sec:audit-limits}
+
+The 22 refuted bounds give a lower bound on the number of invalid listed bounds, not a census.
+The screen cannot decide the 3,851 display ties, which can hide invalid bounds, as on \inst{rocket}, and neither the class (ii$'$) nor the undecided bounds are settled.
+Two undecided bounds, ANTIGONE's and LINDO's on \inst{oil}, are likely invalid but unproved, because the active equality system at the listed point that beats them is rank deficient (\cref{app:audit-screen}).
+The audit attributes no cause and claims no solver defect, since the versions, options and runs behind the listed bounds are unknown; the SCIP defect of \cref{sec:solvers-invalid} concerns current versions and is not visible in the listed data.
+
+MINLPLib's aggregate values, the dual bound in the instance list and the \texttt{=bestdual=} entry of the \texttt{.solu} file, agree with every proved point, except the six-digit (i-r) entries in the instance lists of \inst{eniplac} and \inst{stockcycle}, which only the unproved six-digit rounding explains (\cref{app:audit-screen}).
+\Cref{app:audit-existence,app:audit-rocket} describe the exactly feasible points and existence certificates behind the 22 refutations, and the archive holds their code and data.
+As of 2026-10-05, we have not yet sent these refutations to the MINLPLib maintainer.

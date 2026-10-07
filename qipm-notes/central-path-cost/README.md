@@ -55,7 +55,7 @@ python scripts/make_figures.py
 
 Alternatively run `make verify` or `make figures`, with `PYTHON` set to
 the desired interpreter. The repository interpreter is
-`/home/sgusev/miniconda3/envs/qipm/bin/python`.
+`/workspace/local-home/miniconda3/envs/qipm/bin/python`.
 
 The scalar certificate verifies the appendix's finite rational
 inequalities using exact `Fraction` arithmetic; its bounds accompany the

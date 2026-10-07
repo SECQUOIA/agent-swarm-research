@@ -1,9 +1,12 @@
+from pathlib import Path as _CleanupPath
+_NOTES_ROOT = _CleanupPath(__file__).resolve().parent.joinpath('../../../..').resolve()
+
 from fractions import Fraction as Q
 from itertools import combinations, combinations_with_replacement, product
 from math import comb
 from pathlib import Path
 import json, re, hashlib
-root=Path('/home/sgusev/repo/minlp-notes/paper-relaxation-limits')
+root=Path((str(_NOTES_ROOT) + '/paper-relaxation-limits'))
 snapshot=root/'process/snapshots/whole-round01'
 result={}
 # Direct interval integration of count moments, independent of the finite-spreading induction.

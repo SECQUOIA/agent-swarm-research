@@ -1,7 +1,9 @@
+from pathlib import Path as _CleanupPath
+
 import sys
 sys.path.insert(0,'/tmp/scout'); from osil import read, V
 name=sys.argv[1]; targets=set(sys.argv[2].split(','))
-I=read('/home/sgusev/.cache/minlplib/minlplib/osil/'+name+'.osil'); N=I['names']; idx={n:i for i,n in enumerate(N)}
+I=read((str(_CleanupPath.home()) + '/.cache/minlplib/minlplib/osil/')+name+'.osil'); N=I['names']; idx={n:i for i,n in enumerate(N)}
 T={idx[t] for t in targets}
 def s(t):
     if t[0]=='num': return f"{t[1]:.4g}"

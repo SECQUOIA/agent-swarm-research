@@ -115,9 +115,9 @@ parent process only waits and enforces the per-file timeout. The scan took
 about 15 minutes; the `arki*` instances account for almost half of the analysis time.
 
 ```
-nice -n 19 uv run --project /home/sgusev/repo/minlp-notes/code/minlp_solver_lab \
+nice -n 19 uv run --project /workspace/minlp-notes/code/minlp_solver_lab \
     python scan.py ~/.cache/minlplib/minlplib/osil scan.jsonl --timeout 300 > scan.log 2>&1
-nice uv run --project /home/sgusev/repo/minlp-notes/code/minlp_solver_lab \
+nice uv run --project /workspace/minlp-notes/code/minlp_solver_lab \
     python summarize.py scan.jsonl ../../minlp_solver_lab/instances/instancedata.csv > summary.md
 ```
 

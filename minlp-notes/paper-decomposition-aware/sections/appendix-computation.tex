@@ -1,0 +1,255 @@
+\section{Additional computational results}\label{app:computation}
+
+This appendix gives the details and tables that Section~\ref{sec:computation}
+summarizes.
+
+\paragraph{Implementation (Section~\ref{sec:comp-impl}).}
+The implementation differs from the analysis in the following ways; none of
+them affects validity.
+\begin{enumerate}[label=(\alph*)]
+\item All coordinates share the mesh $h_j=s2^{-j}$, and the analysis that
+applies is Lemma~\ref{lem:commonmesh} with the Euclidean condition number
+$\kappa$, not Theorem~\ref{thm:approx}.
+\item The cap of trial $\mu$ is $100\cdot2^\mu\lceil\log_2(n+2)\rceil$,
+$12.5$ times the cap of Lemma~\ref{lem:commonmesh}, and the stage limit is the
+least $j_{\max}$ with $\frac78Lns^24^{-j_{\max}}\le\varepsilon$ instead of
+$\frac9{16}Lns^24^{-j_{\max}}\le\varepsilon$, so a trial may run one stage
+longer.
+\item Each trial starts with the center at the current incumbent instead
+of~$\ell$. Validity and the rate analysis allow any first center (the bound
+on $\norm{c-x^*}$ in (G2) of Lemma~\ref{lem:commonmesh} holds at $j=0$ for
+every $c\in X$); the bit-length analysis of Appendix~\ref{app:growth} does
+not cover it.
+\item Before stage~$0$, two sweeps of exact coordinate descent from $\ell$,
+$u$ and the box midpoint provide the first incumbent; after each stage the
+same descent, within the current box, starts from the grid minimizer $y_j$.
+An optional presolve certifies convex instances by an exact $LDL^\T$
+factorization and a rational KKT point.
+\item The lower bound used in the success test and reported at the end is the
+largest bound of all stages and trials, including the initial interval bound,
+rather than $\beta_j$ of the last stage.
+\item The ``uniform'' grids of the experiments are the grids of
+Definition~\ref{def:graded} with $\theta=0$ around one center, not the unions
+of cells of UC (Algorithm~\ref{alg:uc}).
+\item The exact-output wrapper, which implements EX (Algorithm~\ref{alg:ex}),
+uses the acceptance rule of Proposition~\ref{prop:accept} with the row-sum
+height constant of Remark~\ref{rem:heights}, with a common denominator that
+also clears $H_{ij}/2$; this constant is never smaller than the one
+in~\eqref{eq:exact-constants}. It starts at $q=4$, doubles $q$ after each
+round, restarts the grid solver from the full box in every round with the
+incumbent as its first center and, in place of $\ell$, as a start of the
+descent, and tests three candidates after each round: the incumbent, its
+coordinatewise rational reconstruction (Remark~\ref{rem:cf}) and the
+stationary point of REC (Algorithm~\ref{alg:rec}).
+\end{enumerate}
+Further modules, each with its own checker, implement exact linear and convex
+box-QP oracles with primal, dual or Farkas witnesses, affine recourse
+recognition and lifting, minimum-cut and convex value-factor recourse, the
+TU-constrained grids, the endpoint optimal-set descriptor and explicit
+polynomial factors. The convex value-factor and recourse checkers reuse the
+solver's grid, table and lifting code, so only the main checker is
+independent in the sense of Section~\ref{sec:comp-impl}.
+
+\paragraph{Planted family (Section~\ref{sec:comp-growth}).}
+Lemma~\ref{lem:growthcert}(a) gives the certified lower bound $g_0$ on the
+growth constant, by an exact $LDL^\T$ test of $H+2M-2g_0I$, and part~(b) with
+a rational approximate eigenvector of $H_{J_0J_0}$ gives an upper bound; with
+$L=2$ this brackets $\kappa$ to within $12\%$.
+
+The following observation shows when a free coordinate of $x^*$ can be a
+grid node. Within a trial every node of coordinate $i$ is either a dyadic rational or the
+sum of the first center $c_i^{(0)}$ and a dyadic rational, because the
+endpoints $\pm1$, the meshes and the gradings are dyadic, filtering moves
+endpoints only to nodes, and every later center is a node. A coordinate
+$x^*_i=k/21$ with $k\ne0$ is therefore a node only if $c_i^{(0)}$, which the
+coordinate descent provides, differs from $x^*_i$ by a dyadic rational. In the
+78 single-trial runs of E1 with filtering and of E3 with
+$\kappa_{\mathrm{target}}=4$, 153 free coordinates of $x^*$ were nodes of the
+last grid: 146 had already been set to $x^*_i$ by the initial descent, 3 had
+$x^*_i=0$, and in the other 4 the first center differed from $x^*_i$ by a
+nonzero dyadic rational.
+
+\paragraph{Experiments E1--E3 (Section~\ref{sec:comp-growth}).}
+The graded runs of E1 with filtering and the runs of E2 and E3 with the
+theorem's grading satisfy $8\kappa\theta^2\le1$. At all 876 stages of these
+runs, the gap $D(y_j)$ was at most $0.16\,Lnh_j^2$ (bound
+$\frac9{16}Lnh_j^2$), the retained radius at most $0.18$ of
+$4.2\sqrt{n\kappa}\,h_j$, and the number of nodes per coordinate at most
+$5\%$ of the cap $8\theta^{-1}\lceil\log_2(n+2)\rceil$ (and at most $0.4\%$ of
+the implementation's cap). The radius ratio uses the lower end of the
+certified interval for $\kappa$, which can only increase it.
+E3 was also run with $\kappa_{\mathrm{target}}=2$, for which the free
+coordinates are separable (Section~\ref{sec:comp-growth}); on these instances
+filtered uniform grids had exactly $4(\lfloor\sqrt{n/4}\rfloor+1)+1$ nodes
+per free coordinate in the last four stages. Section~\ref{sec:comp-growth}
+reports only $\kappa_{\mathrm{target}}=4$ for E3, because the separable case
+does not test coupling.
+
+\paragraph{Expanding-box chain (Section~\ref{sec:comp-chain}).}
+Table~\ref{tab:chain} gives the results of CT on $\Psi_m$ for each~$m$.
+
+\begin{table}[t]
+\centering\small
+\caption{CT on the expanding-box chain $\Psi_m$ (gap $\le10^{-3}$). ``Nodes'' is
+the largest number of nodes of a coordinate grid, ``entries'' the total
+number of table entries, and the last column the lower bound on the number of
+pieces of an exact message.}\label{tab:chain}
+\begin{tabular}{rrrrrrrr}
+\toprule
+$m$ & $n$ & stages & nodes & entries & solve (s) & replay (s) & message pieces\\
+\midrule
+2 & 4 & 9 & 5 & 808 & 0.01 & 0.02 & $\ge2$\\
+4 & 8 & 12 & 6 & 3{,}143 & 0.06 & 0.10 & $\ge8$\\
+8 & 16 & 16 & 8 & 9{,}403 & 0.16 & 0.29 & $\ge128$\\
+16 & 32 & 25 & 9 & 36{,}123 & 0.76 & 1.28 & $\ge3.3\cdot10^4$\\
+32 & 64 & 41 & 10 & 153{,}981 & 3.50 & 6.21 & $\ge2.1\cdot10^9$\\
+64 & 128 & 74 & 11 & 585{,}760 & 14.8 & 28.7 & $\ge9.2\cdot10^{18}$\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Exact output (Section~\ref{sec:comp-exact}).}
+In E4, the 15 certified instances that needed more than one stage needed
+67--77, 132--144, 275 and 534 stages for 49--65, 80--120, 208 and 342 bits,
+with last-round precisions $q=64$, $128$, $256$ and $512$.
+
+\paragraph{Comparison with SCIP (Section~\ref{sec:comp-scip}).}
+Table~\ref{tab:scip} gives the results of E5 per instance class. The planted
+objectives have constants between 94 and $1.6\cdot10^3$ and optimal value~$0$,
+so the absolute target $10^{-6}$ is between $6\cdot10^{-10}$ and
+$1.1\cdot10^{-8}$ of the constant; the inward derivatives at the active
+coordinates are between 23 and 192.5. A rerun of the 21 SCIP runs reproduced
+every primal bound. For SCIP's solution $(x,t)$, let $\bar x$ be the
+projection of $x$ onto the box; then $F(\bar x)-t$ is the shortfall up to at
+most $1.3\cdot10^{-14}$. The rerun evaluated $F$ exactly and split
+$F(\bar x)-t$ into the bound part $F(\bar x)-F(x)$ and the epigraph part
+$F(x)-t$. In every run the violated bounds were exactly those of the
+coordinates at a bound in $x^*$, each violated outward by about $10^{-8}$, and
+SCIP's own check accepted the solution. The bound part was $51\%$ to $94\%$ of
+the shortfall, and the epigraph part was between $9.00\cdot10^{-7}$ and
+$9.03\cdot10^{-7}$. In separate runs, giving SCIP 60
+seconds (paths with $n\ge32$), setting its primal and dual feasibility
+tolerances to $10^{-9}$ (paths with $n\ge32$), or moving the objective
+constant into an offset (all 21 instances) did not change the outcome: SCIP
+stopped at the time limit in all 27 runs on paths with $n\ge32$ (with 60
+seconds, at dual bounds between $-7.5\cdot10^{-4}$ and $-5.1\cdot10^{-5}$);
+with the offset, the exact gap on the 12 instances with $n\le16$ was still
+$1.9\cdot10^{-6}$ to $5.8\cdot10^{-6}$; and its reported interval contained
+the optimum in none of the 39 runs.
+
+\begin{table}[t]
+\centering\small
+\setlength{\tabcolsep}{4pt}
+\caption{Experiment E5: planted family, $\kappa\in[3.99,4.45]$, three seeds per
+row. ``Bag'' is the maximum bag size. CT: maximum solve and replay times
+(gap $\le10^{-6}$ certified on all instances, 60-second limit). SCIP: status,
+maximum time (20-second limit), largest exact gap (exact value of SCIP's
+incumbent, projected onto the box, minus its dual bound) and smallest dual
+bound. Because $\OPT=0$ and SCIP's projected incumbents are optimal to within
+$1.3\cdot10^{-14}$, the exact gap equals minus the dual bound to the digits
+shown.}\label{tab:scip}
+\begin{tabular}{lrrrrlrrr}
+\toprule
+&&&\multicolumn{2}{c}{CT (s)}&\multicolumn{4}{c}{SCIP}\\
+\cmidrule(lr){4-5}\cmidrule(lr){6-9}
+graph & $n$ & bag & solve & replay & status & time (s) & gap (exact) & dual bound\\
+\midrule
+path & 16 & 2 & 0.33 & 0.39 & gap reported & 5.4 & $2.9\cdot10^{-6}$ & $-2.9\cdot10^{-6}$\\
+tree & 16 & 2 & 0.30 & 0.43 & gap reported & 0.8 & $5.5\cdot10^{-6}$ & $-5.5\cdot10^{-6}$\\
+band & 12 & 3 & 1.33 & 2.12 & gap reported & 1.4 & $6.8\cdot10^{-6}$ & $-6.8\cdot10^{-6}$\\
+band & 8 & 4 & 6.66 & 11.1 & gap reported & 0.3 & $5.5\cdot10^{-6}$ & $-5.5\cdot10^{-6}$\\
+path & 32 & 2 & 0.99 & 1.20 & time limit & 20 & $1.4\cdot10^{-4}$ & $-1.4\cdot10^{-4}$\\
+path & 64 & 2 & 3.02 & 3.62 & time limit & 20 & $3.0\cdot10^{-4}$ & $-3.0\cdot10^{-4}$\\
+path & 128 & 2 & 6.90 & 9.39 & time limit & 20 & $7.6\cdot10^{-4}$ & $-7.6\cdot10^{-4}$\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Random instances (Section~\ref{sec:comp-random}).}
+The instances of E6 have diagonal entries $k/2$ with $k$ uniform in
+$\{-4,\dots,8\}$, interaction entries $\pm k/4$ with $k\in\{1,\dots,6\}$,
+linear entries $k/4$ with $k\in\{-8,\dots,8\}$, and band width~2 for the band
+instances. The candidate $\hat x$ is the stationary point of the face of the
+final incumbent at $\varepsilon=2^{-50}$. When the sufficient condition of
+Lemma~\ref{lem:growthcert}(a) holds at $\hat x$, it proves that $\hat x$ is
+the unique minimizer and gives a lower bound $g_0$ on the point-growth
+constant; an upper bound comes from part~(b) and from the definition of growth
+at the points obtained by moving one active coordinate of $\hat x$ to its
+other endpoint. With $L=\max_i\max\{H_{ii},0\}$ this brackets $\kappa$. The
+condition held on 11 instances, with the certified intervals $[6.2,6.6]$,
+$[11.6,15.7]$, $[14.0,22.3]$, $[6.1,24.4]$, $[10.0,28.6]$, $[8.1,31.6]$,
+$[5.1,55.8]$, $[9.5,67.3]$, $[6.8,141.9]$, $[4.5,182.8]$ and
+$[8.0,6662.2]$ for $\kappa$ (rounded outward). On the other 29 instances the
+matrix $H+2M$ was not positive definite. On 28 of them the localized test of
+Proposition~\ref{prop:local}, applied to the same certificate with the
+stationary point of the face of the stage incumbent as candidate, proved that
+candidate optimal; on one instance neither test succeeded. At
+$\varepsilon=2^{-50}$ the 11 instances with certified growth had 9 to 11
+nodes per coordinate, the other 29 had 8 to 18. The candidates are mostly off
+the grids: at $\varepsilon=2^{-50}$, 42 of the 213 free coordinates of the
+candidates were nodes of the last grid. Table~\ref{tab:random} gives the grid
+sizes per instance class.
+
+\begin{table}[t]
+\centering\small
+\caption{Experiment E6: CT on unplanted random box QPs, five instances per
+row. ``Bag'' is the maximum bag size. ``Growth'' counts the instances on which
+Lemma~\ref{lem:growthcert}(a) certifies point growth. ``Nodes'' is the largest
+number of nodes of a coordinate grid over all stages and the five instances,
+for each accuracy $\varepsilon$; ``stages'' and the time (maximum, seconds)
+are for $\varepsilon=2^{-50}$.}\label{tab:random}
+\begin{tabular}{lrrrrrrrrrr}
+\toprule
+&&&&\multicolumn{5}{c}{nodes at $\varepsilon=$}&&\\
+\cmidrule(lr){5-9}
+sparsity & $n$ & bag & growth & $2^{-10}$ & $2^{-20}$ & $2^{-30}$ & $2^{-40}$ & $2^{-50}$ & stages & time\\
+\midrule
+path & 8 & 2 & 3 & 16 & 16 & 16 & 16 & 16 & 27--28 & 0.20\\
+path & 12 & 2 & 3 & 15 & 15 & 16 & 16 & 16 & 28 & 0.29\\
+path & 16 & 2 & 0 & 12 & 13 & 15 & 15 & 15 & 28 & 0.42\\
+path & 24 & 2 & 0 & 16 & 17 & 17 & 17 & 17 & 29 & 0.67\\
+band & 8 & 3 & 2 & 10 & 10 & 10 & 10 & 10 & 27--28 & 0.57\\
+band & 12 & 3 & 2 & 13 & 14 & 14 & 14 & 14 & 28 & 0.81\\
+band & 16 & 3 & 1 & 15 & 16 & 18 & 18 & 18 & 28--29 & 5.22\\
+band & 24 & 3 & 0 & 15 & 15 & 15 & 15 & 15 & 29 & 1.43\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Recourse (Section~\ref{sec:comp-recourse}).}
+The affine stars have a core coordinate whose own term $-x_0^2$ is concave and
+4 or 16 leaves coupled to it by stiff convex squares $64(y_i-x_0/2)^2$, with
+the variables in random order; recognition finds the globally affine
+responses, and the reduced problem is solved exactly. The piecewise instances
+are the functions $\phi_M-z^2$ with $\phi_M$ from Example~\ref{ex:cv-fm}, for
+$M=1$ and $M=100$. The dense instances ($n=7$ and $33$) have one convex core
+coordinate and a residual that is concave in each coordinate and submodular,
+with a complete interaction graph, so the decomposition used by plain grids
+has a bag of size $n$. Table~\ref{tab:recourse} gives the results.
+
+\begin{table}[t]
+\centering\small
+\setlength{\tabcolsep}{4pt}
+\caption{Plain corrected grids (CT) versus the recourse pipeline (gap target
+$2^{-10}$, 20-second limit). Status: ``exact'', exact minimizer certified;
+``certified'', gap at most $2^{-10}$ certified; ``time limit'' and ``table
+limit'', run stopped by the time limit or because the next stage would need
+more than $2\cdot10^5$ table entries. ``Gap'' is the certified gap at the end
+of the plain run, ``bag'' the maximum bag size of the decomposition used by
+the plain grids, and ``entries'' the total number of table entries of the
+plain run; times in seconds.}\label{tab:recourse}
+\begin{tabular}{lrrlrrrrlrr}
+\toprule
+&&&\multicolumn{5}{c}{plain grids}&\multicolumn{3}{c}{recourse}\\
+\cmidrule(lr){4-8}\cmidrule(lr){9-11}
+instance & $n$ & bag & status & gap & entries & solve & replay & status & solve & replay\\
+\midrule
+affine star & 5 & 2 & time limit & 0.019 & 559{,}320 & 20.0 & 26.4 & exact & 0.005 & 0.001\\
+affine star & 17 & 2 & time limit & 1.23 & 823{,}569 & 20.0 & 50.9 & exact & 0.061 & 0.057\\
+piecewise, $M=1$ & 3 & 3 & certified & $4\cdot10^{-4}$ & 498 & 0.017 & 0.017 & certified & 0.013 & 0.003\\
+piecewise, $M=100$ & 3 & 3 & certified & $7\cdot10^{-4}$ & 35{,}600 & 0.63 & 1.12 & certified & 0.004 & 0.002\\
+dense cut & 7 & 7 & certified & $2^{-10}$ & 2{,}038 & 0.044 & 0.125 & exact & 0.003 & 0.003\\
+dense cut & 33 & 33 & table limit & 2.96 & 0 & 0.021 & 0.009 & certified & 0.078 & 0.064\\
+\bottomrule
+\end{tabular}
+\end{table}

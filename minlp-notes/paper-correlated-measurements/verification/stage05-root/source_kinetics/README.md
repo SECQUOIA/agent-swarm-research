@@ -9,7 +9,10 @@ The input is `kinetics_source_data/Q_drop0.csv` from
 [dowlinglab/measurement-opt at commit 430090e](https://github.com/dowlinglab/measurement-opt/tree/430090e610446aab88328ce495ffb15b684c56c4).
 Its SHA-256 is
 `54506ecb5606ea8900a99cb8490508bdd4b9a364aba4f26efe2676f9a7f6f3ca`.
-The local copy, `kinetics_Q_drop0.csv`, preserves those bytes. The source URL and full commit are also
+Prepare `kinetics_Q_drop0.csv` locally with `prepare_input.py`. The command
+retrieves the pinned source URL and verifies the SHA-256 before writing the
+input; a separately obtained copy can be supplied with `--from-file PATH`.
+The local input is ignored by Git. The source URL and full commit are also
 stored in the exact result. This provenance identifies the supplied numerical
 table; it does not verify how its physical sensitivities were generated.
 
@@ -41,6 +44,7 @@ we preserve their intended labels and all reported selections and objectives.
 From this directory, run:
 
 ```sh
+python prepare_input.py
 python exact_rankings.py --output rankings-rerun.json
 python check_rankings.py --record rankings-rerun.json --output rankings-rerun-check.json
 ```

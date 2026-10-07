@@ -1,0 +1,43 @@
+1c1,11
+< """Review check of a recorded retry B&B tree (record_run.py output):
+---
+> """eg-recheck: copy of reviews/eg-retry-review-checks/verify_tree.py, modified only to
+> (a) certify ALL leaves, split into interleaved chunks (leaf index = chunk mod nchunks) so that
+> several processes can share a part, (b) use MarginCertifier (margin_cert.py: the reviewer's
+> certifier with margin recording), and (c) save per-leaf results to an npz file.  The coverage
+> check and the leaf construction are unchanged (see logs/diff_verify_tree.txt).
+> 
+>     python3 recheck_leaves.py <rec.npz> <name> <theta*> <chunk> <nchunks> <out.npz>
+> 
+> Original docstring of verify_tree.py:
+> 
+> Review check of a recorded retry B&B tree (record_run.py output):
+24c34
+< from indep_cert import Certifier  # noqa: E402
+---
+> from margin_cert import MarginCertifier as Certifier  # noqa: E402
+33,34c43,44
+<     frac = float(sys.argv[4]) if len(sys.argv) > 4 else 1.0
+<     seed = int(sys.argv[5]) if len(sys.argv) > 5 else 0
+---
+>     chunk, nchunks, out = int(sys.argv[4]), int(sys.argv[5]), sys.argv[6]
+>     frac, seed = 1.0, 0
+114a125
+>     sel = sel[chunk::nchunks]                                  # eg-recheck: this chunk of all leaves
+118a130,131
+>     mg = np.full(len(kind), np.nan)                            # eg-recheck: per-leaf margin
+>     how = np.full(len(kind), -1, dtype=np.int8)                # eg-recheck: per-leaf certificate
+121a135
+>         mg[idx], how[idx] = C.last_mg, C.last_how              # eg-recheck
+131a146,156
+>     # eg-recheck: save per-leaf results of this chunk
+>     plb = np.full(len(kind), np.nan)
+>     plb[:int((~keep).sum())] = z["P_lb"][~keep]                # author's bound of closed processed boxes
+>     np.savez_compressed(out, n_leaves=len(kind), chunk=chunk, nchunks=nchunks, cov_ok=cov_ok, nbad_red=nbad_red,
+>                         n_gen=sum(gen.values()), n_proc=len(Plo), n_pre=len(z["C_lo"]), n_open=len(z["open_lo"]),
+>                         n_tiny=int(tiny.sum()), kind_counts=np.bincount(kind, minlength=5), part=str(part),
+>                         root_lo=rlo, root_hi=rhi, sel=sel, ok=ok[sel], mg=mg[sel], how=how[sel], kind=kind[sel],
+>                         plb=plb[sel], lo=leaves_lo[sel], hi=leaves_hi[sel], stats=str(C.stats),
+>                         min_lp_margin=float(C.min_margin) if C.min_margin is not None else np.nan,
+>                         time=time.time() - t0)
+>     print(f"  saved {out}; smallest leaf margin {np.min(mg[sel]) if len(sel) else None}")

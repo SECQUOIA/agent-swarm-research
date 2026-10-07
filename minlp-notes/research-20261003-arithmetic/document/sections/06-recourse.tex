@@ -1,0 +1,400 @@
+\section{Full optimizer output for residual-convex cubic recourse}
+\label{sec:recourse}
+
+Consider an objective with a small group of core variables $v$ and many
+residual variables $z$. Convex residual problems give efficient value
+queries at rational cores. They do not by themselves give a point near
+the residual optimizer at an unknown exact optimal core. This section
+closes that gap for cubics on product boxes, using one finite perturbation
+of the core coefficients. The result strengthens the earlier cubic
+completion theorem by removing its supplied joint quadratic core
+convexifier. The
+\href{../cubic-recourse/theorem.md}{complete companion proof} and its
+\href{../reviews/cubic-extension/review.md}{independent review}
+record the inherited interfaces and their verification scope.
+
+\subsection{The output contract}
+
+Let $F\in\Q[v,z]$ have total degree at most three on
+$[0,1]^k\times[0,1]^n$. Assume that $F(v,\cdot)$ is convex for every
+$v$, and supply rational $L\ge0$ with $F_{v_iv_i}\le L$ throughout
+the box. Let $\sigma>0$ be rational. The input length $I$ includes
+these data and any structural certificates; polynomial certificate
+verification is assumed, or its actual cost must be added. Fixed
+coordinates may first be substituted and positive-width boxes
+normalized. Perturb only the core:
+\[
+ F_\gamma(v,z)=F(v,z)+\gamma^Tv,
+ \qquad \gamma\in[-\sigma,\sigma]^k.
+\]
+For each draw, let $a$ be the lexicographically first globally optimal
+core. Define
+\[
+ S_a=\argmin_{z\in[0,1]^n}F(a,z),
+ \qquad p=\argmin_{z\in S_a}\norm{z}^2.
+\]
+Compactness and residual convexity make $p$ unique.
+
+\begin{theorem}[Full cubic recourse point oracle]
+\label{thm:cubic-recourse}
+There is a base-computable endpoint-inclusive uniform product grid with
+$M$ labels per coordinate and $\log M=\poly(I)$ such that, for every
+draw and every integer $q\ge0$, an evaluator returns a rational feasible
+$(v_q,z_q)$ satisfying
+\[
+ \norm{(v_q,z_q)-(a,p)}\le2^{-q}.
+\]
+Expected bit work and proof/output length are
+\begin{equation}
+ f(k)(1+L/\sigma)^k\poly(I+q),
+ \label{eq:recourse-work}
+\end{equation}
+where $f$ is computable and the polynomial exponent is absolute.
+One random work factor controls all precision queries. The noise law
+and selector are fixed before those queries. A certified gap for the
+sampled objective can be returned at the same order of cost.
+No joint convexifier, residual strong-convexity modulus, or unique
+residual optimizer is required.
+\end{theorem}
+
+For $n=0$, this is the existing selected-core theorem. For $k=0$,
+Theorem~\ref{thm:cubic-domain} supplies minimum-norm point output.
+Assume $k,n\ge1$ below. We use three established interfaces: the
+\href{../../research-20261002/new-direction/core-only-noise-core-oracle.md}{selected-core oracle},
+polynomial-time certified convex value optimization at rational cores,
+and the
+\href{../../research-20261002/new-direction/polynomial-exact-fallback.md}{exact polynomial fallback}.
+The first returns short rational approximations to $a$ with an
+all-precision work factor of the form \eqref{eq:recourse-work}. Its mesh
+requirements are lower bounds fixed from base data. The third has
+cost $B_0\poly(I+b+q)$, where $B_0=2^{\poly(I)}$ is independent of
+sampled coefficient length $b$ and requested precision $q$.
+
+\subsection{A sound certificate for exact core endpoints}
+
+Put $\bar L=\max\{1,L\}$ and fix a base rational $0<t\le1/2$.
+For each $i$, query selected cores of the two auxiliary objectives
+$F_{\gamma-te_i}$ and $F_{\gamma+te_i}$ to coordinate error
+$r\le t/(8\bar L)$. Let $[\ell_i^-,u_i^-]$ and
+$[\ell_i^+,u_i^+]$ be the resulting certified intervals. Use
+\begin{equation}
+ u_i^-<t/\bar L\ \Longrightarrow\ v_i=0,
+ \qquad
+ \ell_i^+>1-t/\bar L\ \Longrightarrow\ v_i=1.
+ \label{eq:recourse-face-test}
+\end{equation}
+Each conclusion holds for every original global optimizer, including
+on tied draws.
+
+To prove this, hold $\gamma_{-i}$ fixed and project out all other
+variables:
+\[
+ W(s)=\min_{v_{-i},z}
+       \{F(v,z)+\gamma_{-i}^Tv_{-i}:v_i=s\}.
+\]
+The function $W(s)-\bar Ls^2/2$ is concave, since each function in
+the minimum has this property. If $a_i$ minimizes
+$W(s)+\gamma_i s$ and $b_i$ minimizes
+$W(s)+(\gamma_i-t)s$, their optimality inequalities imply
+$a_i\le b_i$. At an interior minimizing contact, semiconcavity gives
+differentiability, with derivative equal to minus the tilt. Thus, if
+both coordinates are interior,
+\[
+ t=W'(b_i)-W'(a_i)\le\bar L(b_i-a_i).
+\]
+The first strict interval test contradicts this inequality whenever
+$a_i>0$. Reflection proves the other test.
+
+Failure to recognize an actual endpoint has a short conditional
+noise interval. Set
+\[
+ \theta=\sup_{s>0}\frac{W(0)-W(s)}s.
+\]
+Coefficient bounds make $W$ Lipschitz, so $\theta$ is finite. An
+original zero coordinate requires $\gamma_i\ge\theta$. If
+$\gamma_i>\theta+t$, every negatively shifted optimizer has coordinate
+zero, and the first test passes. A missed lower endpoint therefore
+requires $\gamma_i\in[\theta,\theta+t]$; the upper endpoint has the
+same bound. On an endpoint-inclusive $M$-label grid, an interval of
+length $t$ has mass at most $t/(2\sigma)+2/M$. Consequently
+\begin{equation}
+ \Pr\{\text{some endpoint of the selected core is missed}\}
+ \le kt/\sigma+4k/M.
+ \label{eq:recourse-face-tail}
+\end{equation}
+Unforced coordinates are provisionally free. A later certificate rejects
+any that are actually endpoints; probability is not used to justify a
+face declaration.
+
+\subsection{Cubic fibers and a lattice certificate for their minors}
+
+Let $A$ be the certified face, with $m$ free coordinates and relative
+center $c_A$, and let $c_z=(1/2,\ldots,1/2)$. Define
+\[
+ H_A=\nabla^2_{zz}F(c_A,c_z),\qquad
+ g_A(v)=\nabla_zF(v,c_z),\qquad
+ B_A(v)=\begin{bmatrix}H_A\\g_A(v)^T\\I_n\end{bmatrix}.
+\]
+Write $H(v,z)=\nabla^2_{zz}F(v,z)$. This matrix is affine and positive
+semidefinite. Reflection about $(c_A,c_z)$ gives
+$\ker H_A\subseteq\ker H(v,z)$ on the whole face product, and
+$\ker H(v,c_z)=\ker H_A$ for $v\in\operatorname{relint}A$.
+Individual residual boundary points can have larger kernels.
+Provided $a\in\operatorname{relint}A$, as acceptance below certifies,
+the cubic argument behind Theorem~\ref{thm:cubic-domain} gives, for
+any $y\in S_a$,
+\begin{equation}
+ S_a=\{z\in[0,1]^n:H_A(z-y)=0,\ g_A(a)^T(z-y)=0\}.
+ \label{eq:recourse-fiber}
+\end{equation}
+Only the row $g_A(v)^T$ varies with $v$, and it has degree at most two.
+Every square minor of $B_A(v)$ therefore has degree at most two.
+
+Compute integers $D,B\ge1$, with polynomial bit length, such that
+every minor on every original face, multiplied by $D$, is an integer
+polynomial of coefficient height at most $B$. This requires only
+denominator and coefficient bounds. For example, let $d$ clear all
+possible entry coefficients, and let $C$ bound their cleared heights.
+With $s_*=(k+1)(k+2)/2$, the conservative choices
+\[
+ D=d^n,\qquad B=D\,n!(s_*C)^n
+\]
+suffice. Neither minors nor faces are enumerated.
+
+For the free coordinates of $a$, let $\phi(a)$ list all monomials of
+degree at most two, including one; its length is
+$s=(m+1)(m+2)/2$. Choose an integer scale $T$ and obtain a short dyadic
+$b$ with $\norm{b-a}_\infty\le1/(4T)$. Put
+$w_j=\operatorname{round}(T\phi_j(b))$. Since these monomials are
+$2$-Lipschitz on the cube,
+$|w_j/T-\phi_j(a)|\le1/T$.
+Apply LLL reduction with parameter $3/4$
+\citep{LenstraLenstraLovasz1982} to the rank-$s$
+integer lattice generated by $[I_s\mid w]$. If $\ell_1$ is its first
+reduced vector, accept only when
+\begin{equation}
+ \norm{\ell_1}^2>2^{s-1}(4sB)^2.
+ \label{eq:recourse-lattice-test}
+\end{equation}
+The usual inequality
+$\norm{\ell_1}\le2^{(s-1)/2}\lambda_1$ then proves
+\begin{equation}
+ |h^T\phi(a)|>sB/T
+ \quad(0<\norm{h}_\infty\le B, h\in\Z^s).
+ \label{eq:recourse-all-margins}
+\end{equation}
+Indeed a violating $h$ would give the nonzero lattice vector
+$(h,h^Tw)$ of length at most $\sqrt5sB<4sB$. LLL and its reduced-basis
+certificate have cost polynomial in $s+\log T+\log B$; there is no
+enumeration of the tested polynomial family.
+
+For the success analysis, enlarge the height to $R_s=2^s4sB$.
+If every nonzero polynomial of height at most $R_s$ has value at least
+$\eta$ in absolute value, then the test accepts whenever
+\begin{equation}
+ T\eta>(s+1)R_s.
+ \label{eq:recourse-lattice-success}
+\end{equation}
+A lattice vector with $\norm{h}>R_s$ is already long. Otherwise its
+last coordinate has magnitude at least
+$T\eta-sR_s>R_s$. This proves the sufficient condition. Enlarging
+the family is necessary because a short vector can have height greater
+than $B$.
+
+The coordinate polynomials $v_i$ and $1-v_i$ belong to the tested
+family. Acceptance thus certifies that all free coordinates are truly
+interior. With $\xi=sB/T$, set
+\[
+ \delta=\min\{1/2,\xi\},\qquad
+ \mu=\min\{1,\xi/D\}.
+\]
+Every free coordinate is at least $\delta$ from its endpoints, and
+every nonzero minor at $a$ has magnitude at least $\mu$.
+Identically zero minor polynomials cause no difficulty. For a vertex
+face, use $\delta=1/2$ and $\mu=1/D$ without LLL.
+
+The
+\href{../../research-20261002/new-direction/residual-convex-cubic-boundary.md}{conditional cubic fiber bound}
+now computes a rational $\Gamma\ge1$, of bit length polynomial in
+$I+\log T$, such that
+\begin{equation}
+ \dist(z,S_a)\le\Gamma
+       [F(a,z)-\min_w F(a,w)]^{1/4}
+ \quad\text{when the gap is in }[0,1].
+ \label{eq:recourse-fiber-error}
+\end{equation}
+Its proof combines the cubic transverse estimate with a Hoffman bound
+for \eqref{eq:recourse-fiber}. The supplied nonzero-minor margin
+replaces the integer-minor bound for rational coefficients; the face
+margin bounds the positive eigenvalues transverse to $\ker H_A$.
+Rank-zero fibers are included. The lattice step supplies these premises
+without knowing exact algebraic coordinates of $a$.
+
+\subsection{Smoothed margins and the finite-grid transfer}
+
+Choose a rational $U\ge1$ with $\nabla^2_{vv}F\preceq UI$ on the
+box. Its numerical size will enter only the base precision, through
+$\log U$. On any core face, the projected value
+$V(v)=\min_zF(v,z)$ satisfies that $V(v)-U\norm{v}^2/2$ is concave.
+Let $C$ be the interior points having an affine lower support on the
+whole face. At $a\in C$ the support slope $g_a$ is unique and
+\[
+ 0\le V(x)-V(a)-g_a^T(x-a)\le(U/2)\norm{x-a}^2.
+\]
+For $a,b\in C$, put $r=\norm{a-b}$. Comparing the upper support at
+$a$ and lower support at $b$, then choosing
+$h=r(g_b-g_a)/\norm{g_b-g_a}$ when this displacement stays in the
+face, gives
+\[
+ (g_b-g_a)^Th\le(U/2)(r^2+\norm{h}^2),
+ \qquad \norm{g_b-g_a}\le U\norm{a-b}.
+\]
+Thus the contact-gradient map is locally $U$-Lipschitz. A countable
+interior cover and a disjoint measurable partition give
+$|g(E\cap C)|\le U^m|E|$. An interior optimizer under tilt has this
+contact slope, with the opposite sign. Continuous uniform noise
+therefore puts probability at most $(U/(2\sigma))^m|E|$ on such cores.
+No continuity of a residual optimizer is asserted.
+
+For every nonzero integer polynomial $p$ of degree at most two,
+\begin{equation}
+ \bigl|\{v\in[0,1]^m:|p(v)|\le\eta\}\bigr|
+ \le8\sqrt\eta,\qquad 0<\eta<1.
+ \label{eq:recourse-sublevel}
+\end{equation}
+A nonzero square coefficient permits coordinate slicing, using the
+univariate quadratic sublevel length bound $4\sqrt{\eta/|c|}$.
+If only mixed quadratic terms occur, slice along
+$(e_i+e_j)/\sqrt2$ for a nonzero mixed coefficient. The leading
+magnitude is at least $1/2$ and the projected cube volume is
+$\sqrt2$, giving the stated constant. Linear and constant polynomials
+are easier.
+
+Put $R=2^{s_*}4s_*B$ and
+\[
+ A_*=8\,3^k\max\{1,U/(2\sigma)\}^k(2R+1)^{s_*}.
+\]
+A union bound over faces and all degree-two integer polynomials of
+height at most $R$ bounds the continuous bad-margin probability by
+$A_*\sqrt\eta$. The logarithm of this family size is polynomial;
+the algorithm never lists its members.
+
+For a fixed face and polynomial, the bad event says that there exists
+an interior face optimizer with $|p(a)|\le\eta$. It is expressed by
+one existential full-variable witness block and one universal
+competitor block, with degree at most three. The inherited
+\href{../../research-20261002/new-direction/polynomial-finite-noise-tails.md}{finite-noise section bound}
+therefore gives at most $2^{\poly(I)}$ interval or point components
+in every one-dimensional noise section, uniformly in the fixed values
+of the other coefficients. Replacing continuous marginals by grid
+marginals one at a time changes each section probability by at most
+twice its component count divided by $M$. Summing over the family gives
+\begin{equation}
+ \Pr_{\rm grid}\{\text{bad margin}\}
+ \le A_*\sqrt\eta+C_*/M,
+ \qquad C_*=2^{\poly(I)}.
+ \label{eq:recourse-margin-tail}
+\end{equation}
+Exact-zero atoms are included. This argument bounds a sufficient
+condition for LLL success; it does not need a semialgebraic description
+of the LLL algorithm. The
+\href{../cubic-recourse/margin-tail.md}{margin companion proof}
+provides the complete section-count construction.
+
+\subsection{One base certificate, one law, and a fixed-selector fallback}
+
+Choose the exact full-point fallback factor $B_0\ge2$ first, then set
+\[
+ t=\min\{1/2,\sigma/(16kB_0)\},\qquad
+ \eta=\min\{1/4,(16A_*B_0)^{-2}\}.
+\]
+Choose a power of two $T>(s_*+1)R/\eta$. All these quantities have
+polynomial bit length and precede the noise mesh. Instantiate the
+selected-core interface for $F$ and the $2k$ shifted baselines
+$F\pm t v_i$. Their input lengths remain polynomial in $I$, and their
+core second derivatives are unchanged. Use the same random vector
+$\gamma$ for every instance. Choose one power-of-two $M$ satisfying
+all these interfaces' lower mesh requirements and
+\[
+ (4k+C_*)/M\le1/(8B_0).
+\]
+Hence $\log M=\poly(I)$, independently of all later accuracy queries.
+The shifted queries are auxiliary problems on the same draw, not new
+random samples.
+
+Run the face tests and one lattice test at the chosen scale. If the
+lattice test fails, use exact fallback on the original draw. Equations
+\eqref{eq:recourse-face-tail}, \eqref{eq:recourse-lattice-success},
+and \eqref{eq:recourse-margin-tail} bound this failure probability by
+$1/(4B_0)$. A missed endpoint forces rejection because its coordinate
+polynomial vanishes. Every accepted certificate is valid independently
+of the probability estimate.
+
+The exact fallback selects the same $(a,p)$. A fixed-block formula
+says that its witness is globally optimal and every equal-value
+competitor has lexicographically larger core, or the same core and
+residual squared norm at least that of the witness. Residual convexity
+makes the witness unique. The degree remains at most three, and the
+lexicographic comparison has linear-size Boolean syntax. The inherited
+singleton-coordinate construction thus costs
+$B_0\poly(I+b+q)$, with $B_0$ independent of $b,q$. Clipping the
+rational approximation to the box preserves its distance guarantee.
+Ties neither change the selector nor require resampling.
+
+\subsection{Completing the residual point at every precision}
+
+On acceptance, $\Gamma$ in \eqref{eq:recourse-fiber-error} has
+polynomial base bit length. Given $\varepsilon=2^{-q}$, put
+$e=\varepsilon/2$ and choose rational
+$R_z\ge\max\{1,\sqrt n\}$ and
+$G\ge\max\{1,\sup\norm{\nabla_vF}\}$. Set
+\[
+ \tau=\frac{e^6}{1024R_z^4\Gamma^4},\qquad
+ \eta_q=\frac{\tau e^2}{8},\qquad
+ d_q=\min\left\{\frac\varepsilon2,\frac{\tau e^2}{32G}\right\}.
+\]
+Obtain a short rational $b\in A$ with $\norm{b-a}\le d_q$, fixing
+certified endpoints exactly, and solve the rational convex cubic
+\[
+ Q_b(z)=F(b,z)+\tau\norm z^2
+\]
+to objective gap at most $\eta_q$.
+
+For the proof, let $z_\tau$ minimize
+$F(a,z)+\tau\norm z^2$. Comparison with $p$ gives
+$\norm{z_\tau}\le\norm p\le R_z$. If $s$ is its nearest point in
+$S_a$ and $d=\norm{s-z_\tau}$, then the error bound and the
+minimum-norm projection inequality imply
+\[
+ \frac{d^4}{\Gamma^4}
+ \le F(a,z_\tau)-F(a,p)\le2R_z\tau d,
+ \qquad \norm{z_\tau-p}^2\le2R_zd.
+\]
+The gap is initially at most $\tau R_z^2\le1$, so the error bound
+applies. The chosen $\tau$ gives
+$d\le e^2/(8R_z)$ and $\norm{z_\tau-p}\le e/2$.
+Uniformly in $z$, $|F(b,z)-F(a,z)|\le Gd_q$. The returned point
+therefore has true regularized gap at most
+$\eta_q+2Gd_q\le\tau e^2/4$. Strong convexity places it within
+$e/2$ of $z_\tau$, and hence within $e$ of $p$. Together with the
+core error this proves the theorem's Euclidean bound. A finer point
+query and the inherited value lower bound provide the optional sampled
+objective-gap certificate.
+
+All requested bit lengths are $\poly(I)+O(q)$. Add the common random
+work factors of the original and $2k$ auxiliary core interfaces, and
+add $B_0$ times the indicator of the single base certificate-failure
+event. This sum controls every precision query and has expectation
+\eqref{eq:recourse-work}. Independence between work factors and
+certificate events is unnecessary. Large $U$, small certified margins,
+and $\Gamma$ affect polynomial bit lengths rather than replacing $L$
+by a larger numerical parameter in the expected-work factor.
+
+The product box and total degree three are essential to this argument.
+It covers, for example, $F(v,z)=vz^2$ and
+$F(v,z)=v^2(2-z)$, which admit no finite quadratic core convexifier.
+For the latter, the minimum-norm residual selection jumps from zero at
+$v=0$ to one at every positive core. The proof avoids assuming that
+selection is continuous. It does not extend the conclusion to arbitrary
+coupled domains, quartics, expanded algebraic output, or the
+unperturbed objective at the same cost.

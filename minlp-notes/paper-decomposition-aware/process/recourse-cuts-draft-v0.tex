@@ -1,0 +1,182 @@
+\subsection{Separately concave residuals and minimum cuts}\label{sec:cuts}
+The second class removes a large, possibly dense, nonconvex part of the
+problem from discretization. Write a rational quadratic as
+\begin{equation}\label{eq:cutquad}
+F(x)=c_0+\sum_i\bigl(a_ix_i^2+b_ix_i\bigr)+\sum_{i<j}c_{ij}x_ix_j,
+\end{equation}
+and split the coordinates into a \emph{core} $C$ with $k$ coordinates and a
+\emph{residual} $R$. Assume
+\begin{equation}\label{eq:cutclass}
+a_i\le0\quad(i\in R),\qquad c_{ij}s_is_j\le0\quad(i,j\in R)
+\end{equation}
+for some signs $s_i\in\{-1,1\}$. Nothing is assumed about core--core or
+core--residual coefficients, and the residual interaction graph may be
+arbitrary. For a given core, the signs can be found, or shown not to
+exist, by propagating relative signs along the residual edges.
+
+\begin{proposition}[Minimum-cut recourse]\label{prop:cut}
+Under~\eqref{eq:cutclass}, for every rational core point $v$, every
+rational subbox of the residual box (with integer residual coordinates
+allowed), and every rational change of the linear coefficients, the
+conditional minimum $V(v)=\min_{x_R}F(v,x_R)$ and a minimizing residual
+point can be computed by one maximum-flow computation on a graph with
+$\abs R+2$ nodes and $O(\abs R+m_R)$ arcs, where $m_R$ is the number of
+residual edges. A flow whose value equals the returned cut certifies the
+value.
+\end{proposition}
+
+\begin{proof}
+For fixed $v$ and fixed other residual coordinates, $F$ is concave in each
+$x_i$, $i\in R$, so replacing $x_i$ by one of its interval endpoints does
+not increase $F$; doing this coordinate by coordinate shows that some
+minimizer has all residual coordinates at endpoints. For integer residual
+coordinates the endpoints are integers after inward rounding, so the same
+holds without enumerating integer labels. Write
+$x_i=\alpha_i+\delta_iy_i$ with $y_i\in\{0,1\}$, $\alpha_i$ the lower endpoint
+if $s_i=1$ and the upper endpoint if $s_i=-1$, and
+$\delta_i=s_i(u_i-\ell_i)$. Substitution gives
+$F=K+\sum_ih_iy_i+\sum_{i<j}q_{ij}y_iy_j$ with $q_{ij}=c_{ij}\delta_i\delta_j\le0$,
+using $y_i^2=y_i$. With $p_i=h_i+\frac12\sum_{j\ne i}q_{ij}$ and
+$r_{ij}=-q_{ij}/2\ge0$, the identity
+$q_{ij}y_iy_j=\frac{q_{ij}}2(y_i+y_j)+r_{ij}\abs{y_i-y_j}$ gives
+\[
+F=K+\sum_ip_iy_i+\sum_{i<j}r_{ij}\abs{y_i-y_j}
+=K+\sum_i\min\{0,p_i\}+\cut(y),
+\]
+where $\cut(y)$ is the capacity of the $s$--$t$ cut that puts $\{i:y_i=1\}$
+on the source side in the graph with arcs $i\to t$ of capacity
+$\max\{p_i,0\}$, $s\to i$ of capacity $\max\{-p_i,0\}$, and $i\to j$, $j\to i$
+of capacity $r_{ij}$. Minimum cuts are computed by maximum flow in strongly
+polynomial time, and weak duality certifies optimality
+\cite{KolmogorovZabih2004}.
+\end{proof}
+
+The class is far from convex. For example, a residual Hessian
+$-I-\frac1r\mathbf 1\mathbf 1^\T$ is negative definite with a complete
+interaction graph and satisfies~\eqref{eq:cutclass}. The endpoint
+reduction and the graph-cut construction are classical; what we use is that
+the class is closed under fixing the core, restricting the residual box
+and changing linear terms, so that conditional values on corrected core
+grids are exact and certified.
+
+By Lemma~\ref{lem:valuefunction}, $V$ has the core curvature bound
+$L_C=\max_{i\in C}\max\{2a_i,0\}$ and inherits growth. Treating the core as a
+single bag gives the following consequence of Theorem~\ref{thm:valuefn}.
+
+\begin{corollary}[Core search with cut recourse]\label{cor:cutcore}
+Assume~\eqref{eq:cutclass} and quadratic growth with constant $g$, and let
+$\kappa_C=\max\{1,L_C/g\}$. A certified $2^{-q}$-approximation takes
+$f(k,\kappa_C)(I+q+1)^{O(1)}$ bit operations and the exact rational
+minimizer takes $f(k,\kappa_C)(I+1)^{O(1)}$. The residual dimension and the
+residual interaction graph enter only the polynomial factor.
+\end{corollary}
+
+Without growth the core can be searched adaptively with dyadic cells. Take
+the core box $[0,1]^k$, cells of side $h_j=2^{-j}$ at level $j$, and the
+allowance $e_j=kL_Ch_j^2/8$. Query $V$ at the corners of the current cells,
+update the incumbent with the certified completions, keep a cell if the
+smallest corner value minus $e_j$ is at most the incumbent value, and split
+the kept cells. By Lemma~\ref{lem:interp} applied to $V$ on one cell, the
+cell containing a minimizer is always kept, so the smallest kept lower
+bound is a certified lower bound, and level
+$J=\lceil\frac12\log_2(kL_C/(8\varepsilon))\rceil$ reaches gap $\varepsilon$.
+In the worst case the number of kept cells can be exponential in the number
+of levels. A random perturbation of the core costs makes it small in
+expectation.
+
+\begin{proposition}[Perturbed core costs]\label{prop:smoothed}
+Add to $F$ a linear term $\gamma^\T x_C$ whose coefficients are independent
+and uniform on $M\ge\max\{2,2^J\}$ equally spaced points of
+$[-\sigma,\sigma]$. The search above is correct for every draw, and the
+expected number of conditional queries through level $J$ is at most
+\[
+2^k+8^kJ\Bigl[3+\frac{(1+k/2)L_C}{2\sigma}\Bigr]^k .
+\]
+\end{proposition}
+
+\begin{proof}
+Let $V_\gamma=V+\gamma^\T v$ and $\OPT_\gamma=\min V_\gamma$. A kept cell at
+level $j$ has a corner $v$ with $V_\gamma(v)\le U+e_j$, and $U\le\OPT_\gamma+e_j$
+because the cell containing a minimizer is queried and
+Lemma~\ref{lem:interp} gives a corner within $e_j$ of $\OPT_\gamma$. So every
+kept cell has a corner in
+$\mathcal N_j=\{v\in h_j\Z^k\cap[0,1]^k:V_\gamma(v)\le\OPT_\gamma+2e_j\}$.
+Fix a grid point $v$ and an interior coordinate $i$ ($0<v_i<1$). Comparing
+$V_\gamma(v)$ with $V_\gamma(v\pm h_je_i)\ge\OPT_\gamma$ confines $\gamma_i$, if
+$v\in\mathcal N_j$, to an interval whose length is
+\[
+\frac{V(v+h_je_i)+V(v-h_je_i)-2V(v)+4e_j}{h_j}\le L_Ch_j+\frac{4e_j}{h_j}
+=L_Ch_j\Bigl(1+\frac k2\Bigr),
+\]
+by the curvature bound of Lemma~\ref{lem:valuefunction}(a). The interval
+depends on $v$ and $V$ but not on the other coordinates of $\gamma$, so these
+events are independent across $i$, and each has probability at most
+$L_Ch_j(1+k/2)/(2\sigma)+1/M$. Summing the product over the $2^j+1$ values of
+each coordinate (two of which are boundary values with probability bound
+one) gives
+$\E\abs{\mathcal N_j}\le\bigl[2+(2^j-1)\bigl(\frac{L_Ch_j(1+k/2)}{2\sigma}+\frac1M\bigr)\bigr]^k
+\le\bigl[3+\frac{(1+k/2)L_C}{2\sigma}\bigr]^k$. A grid point is a corner of at
+most $2^k$ cells, each kept cell has $2^k$ children with $2^k$ corners, and
+level~$0$ has $2^k$ corners.
+\end{proof}
+
+The bound is exponential only in $k$ and in the ratio $L_C/\sigma$ of core
+curvature to perturbation size; the residual problem, of any size and
+density, enters through the polynomial cost of each query. The optimized
+objective is the perturbed one. The same mechanism extends to residual
+terms that are polynomial in the core, as long as~\eqref{eq:cutclass} holds
+uniformly in the core variables.
+
+\subsection{Why local corrections need exact recourse}\label{sec:local}
+The correction of Section~\ref{sec:grids} is global: every coordinate is
+rounded, and the allowance $D$ is the sum of all coordinate corrections.
+It is tempting to correct only the coordinates of one bag and to use
+ordinary grid min-marginals for the rest. That is not valid.
+
+\begin{example}[Star]\label{ex:star}
+On $[0,1]^{33}$ let
+\[
+F(x,y)=x^2-\frac x2\sum_{i=1}^{32}y_i+\sum_{i=1}^{32}y_i^2+\frac{15}{16}x ,
+\]
+with bags $\{x,y_i\}$ and $L=2$. Minimizing each $y_i$ exactly gives
+$y_i=x/4$ and $V(x)=-x^2+\frac{15}{16}x$, so the unique minimizer is
+$x=1$, $y_i=1/4$, with value $-1/16$. On the grid $\{0,\frac12,1\}$ the
+grid values of $x\mapsto\min_yF$ at $x=0,\frac12,1$ are $0,\frac{23}{32},
+\frac{31}{16}$, and the grid incumbent is $0$. The bag cell
+$[\frac12,1]\times[0,\frac12]$ of $(x,y_1)$ contains the projection of the
+minimizer, yet its smallest corner min-marginal is $\frac{23}{32}$; a bag
+correction $\abs BLh^2/8=\frac18$ leaves $\frac{19}{32}>0$, and the cell would
+be discarded. The missing error is $32\,\dist(x/4,\{0,\frac12,1\})^2$, which
+depends on $x$ and is not removed by normalizing messages.
+\end{example}
+
+Exact outside optimization repairs the local rule. For a bag $B$ let
+$W_B(v)=\min_{x_{-B}}F(v,x_{-B})$. By Lemma~\ref{lem:valuefunction}, $W_B$
+has the same coordinate curvatures, so on a cell of side at most $h$,
+\[
+\min_{v\text{ corner}}W_B(v)-e_B\le\min_{\text{cell}}W_B,\qquad e_B=\abs BLh^2/8 ,
+\]
+and only bag coordinates are rounded.
+
+\begin{proposition}[Certified conditional values]\label{prop:interface}
+Suppose an oracle returns, at each queried corner $v$, numbers
+$\ell_B(v)\le W_B(v)\le u_B(v)$ with $u_B(v)-\ell_B(v)\le\eta$ and a feasible
+completion of value $u_B(v)$. Update the incumbent $U$ with all completions
+of the current level, and keep a cell if $\min_{\text{corners}}\ell_B-e_B\le
+U$. Then every cell containing the projection of a minimizer is kept,
+$U\le\OPT+e_B+\eta$, and every kept cell has a corner with
+$W_B(v)\le\OPT+2(e_B+\eta)$.
+\end{proposition}
+
+\begin{proof}
+A cell containing the projection $v^*$ of a minimizer has
+$\min_{\text{corners}}\ell_B-e_B\le\min_{\text{corners}}W_B-e_B\le
+W_B(v^*)=\OPT\le U$, so it is kept, and its corners give
+$U\le\min u_B\le\min W_B+\eta\le\OPT+e_B+\eta$. A kept cell has a corner with
+$W_B(v)\le\ell_B(v)+\eta\le U+e_B+\eta$.
+\end{proof}
+
+Grid messages do not provide such bounds: in Example~\ref{ex:star} the
+grid value overestimates $W_B$ by an amount that varies with the separator
+value. Exact conditional values, as in
+Sections~\ref{sec:convexrecourse} and~\ref{sec:cuts}, do.

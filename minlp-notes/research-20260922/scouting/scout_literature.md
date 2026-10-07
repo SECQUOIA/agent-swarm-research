@@ -12,8 +12,8 @@ How to read this report:
 - Part I is the synthesis: cross-cutting findings, per-area summaries, the ten
   ranked open questions, runners-up, and the in-house overlap table.
 - Part II (appendices A–D) holds the four detailed area reports, each with full
-  citations and verbatim open-problem quotes.
-- "Verified" means the quoted text was checked in the full-text PDF.
+  citations and summaries of the cited open problems.
+- "Verified" means the source statement was checked in the full-text PDF.
 - "Unsolved" confidence levels are judgments from bounded searches. A failed
   search does not establish that a question is open or that a solution is new.
 
@@ -43,12 +43,10 @@ How to read this report:
 2. **Solvers ship cuts that are off by default because there is no selection
    theory.**
    - SCIP 8 and 9: quadratic intersection cuts and edge-concave cuts are
-     implemented but disabled. SCIP 8's stated reason: "not clear yet how to
-     decide when it will be beneficial" (Bestuzheva et al., arXiv:2301.00587;
+     implemented but disabled. SCIP 8's stated reason: there is no established policy for deciding when these cuts help (Bestuzheva et al., arXiv:2301.00587;
      arXiv:2402.17702).
    - SCIP 10 (arXiv:2511.18580, §3.5): flower-inequality separation for products
-     of *continuous* variables is disabled. It "requires nonnegative lower bounds
-     that are relaxed to 0, and in our tests we observed a performance loss"
+     of *continuous* variables is disabled. It needs nonnegative lower bounds, relaxes them to 0, and performed worse in the reported tests
      (verified in the PDF).
    - Gurobi: RLT cuts carry most of the cut benefit. Triangle-only BQP cuts add
      little (Gurobi 9.0 ablation slides; approximate figures).
@@ -76,8 +74,7 @@ How to read this report:
    covers expression-graph detection, reflections, and lexicographic and
    orbitopal reduction on arbitrary domains (van Doornmalen and Hojny, Math.
    Program. 212, 2025; Hojny, MPC 2025).
-   - FICO authors write that symmetry handling "has not been added to nonlinear
-     solvers" (Berthold et al., arXiv:2605.04850).
+   - FICO authors write that symmetry handling is absent from nonlinear solvers (Berthold et al., arXiv:2605.04850).
    - No theory covers spatial branch-and-bound. Van Doornmalen and Hojny,
      Remark 14, note that one representative per orbit is not guaranteed.
 
@@ -93,7 +90,7 @@ How to read this report:
 
 ## 2. Per-area summaries
 
-Details, full citations and verbatim quotes are in Part II.
+Details, full citations and summaries of the cited questions are in Part II.
 
 ### 2.1 Convexification and cuts for quadratic and polynomial problems (Appendix A)
 
@@ -165,8 +162,7 @@ by 261–1,180% (Puranik and Sahinidis, Constraints 2017).
 
 **Open problems**
 - Rate, finiteness and complexity of the iterated-OBBT fixed point, and its gap
-  to the true box hull. Caprara, Locatelli, Monaci (2016): the limit "can
-  hardly [be] guarantee[d]".
+  to the true box hull. Caprara, Locatelli, Monaci (2016): the limit is difficult to guarantee.
 - Fixed-point acceleration and filtering over *sets* of constraints (Puranik
   and Sahinidis 2017).
 - An upper complexity bound for the bilinear FBBT limit. In-house has only
@@ -182,7 +178,7 @@ by 261–1,180% (Puranik and Sahinidis, Constraints 2017).
   reliability branching and strong branching available (Couenne).
 - Branching point: a convex combination of the LP value and the midpoint. SCIP
   uses (α, β) = (1, 0.2); Couenne uses (0.25, 0.2).
-- Belotti et al. (2009): "no branching rule dominates".
+- Belotti et al. (2009): none of the branching rules uniformly outperforms the others.
 - Extreme strong branching (Dey, Han, Wang 2025) picks the variable and point
   jointly from several probes. It beats Gurobi 12, BARON and Couenne on
   bipartite bilinear and model-updating QCQPs, and it has no theory.
@@ -251,8 +247,7 @@ this.
 
 **Open problems**
 - An iteration bound for OA without constraint qualifications (Tamm and
-  Kronqvist, arXiv:2606.26897, June 2026: "we doubt that it is possible to find
-  such a bound").
+  Kronqvist, arXiv:2606.26897, June 2026: the authors doubt that such a bound can be established).
 - Two-way separation between OA and NLP branch-and-bound.
   - Hijazi, Bonami, Ouorou (IJOC 2014) give a 2^n OA example.
   - That example is also hard for NLP branch-and-bound, so it is not a
@@ -317,9 +312,8 @@ point. Use it to decide:
   convex combination of the LP value and the midpoint.
 
 **Evidence of the gap**
-- Dey, Han, Wang (arXiv:2510.20650) list as future work "Understanding why the
-  method works particularly well".
-- Belotti et al. (OMS 2009): "no branching rule dominates".
+- Dey, Han, Wang (arXiv:2510.20650) list as future work explaining its especially good performance.
+- Belotti et al. (OMS 2009): none of the branching rules uniformly outperforms the others.
 - Speakman and Lee (JOGO 2018) solve only single trilinear terms.
 - MILP analogues exist, but none is spatial:
   - Le Bodic and Nemhauser (Math. Program. 2017);
@@ -342,10 +336,9 @@ bounds stop changing. Answer the following:
 - How far is the limit from the box hull of the feasible set?
 
 **Evidence of the gap**
-- Caprara, Locatelli, Monaci (COAP 64, 2016): the limit "can hardly [be]
-  guarantee[d]", and good strategies fail when the problem class is slightly
+- Caprara, Locatelli, Monaci (COAP 64, 2016): the limit is difficult to guarantee, and good strategies fail when the problem class is slightly
   enlarged.
-- Puranik and Sahinidis (2017) call for "reliable fixed-point acceleration".
+- Puranik and Sahinidis (2017) call for dependable acceleration toward a fixed point.
 - Alpine and power-flow codes iterate to a fixed point without theory.
 
 **Impact.** The results would give stopping rules and acceleration for OBBT,
@@ -369,8 +362,7 @@ arXiv:2605.30602). What remains open:
 - S-free sets that avoid two or more quadratics at once.
 
 **Evidence of the gap**
-- SCIP 8 and 9 keep the cuts off by default because of density: "not clear yet
-  how to decide when it will be beneficial".
+- SCIP 8 and 9 keep the cuts off by default because of density: there is no established policy for deciding when these cuts help.
 - Muñoz, Paat, Serrano §8 leave the polyhedral case open.
 - Xu and Pokutta (arXiv:2608.03318) leave base-inequality selection open.
 
@@ -385,8 +377,7 @@ disabled SCIP feature into a default. No other solver has these cuts.
 of Boros–Hammer inequalities?
 
 **Source.** Dey, Jiang, Kazachkov, Lodi, Muñoz, arXiv:2604.00932 (Apr 2026), §3,
-verified: "every computational test we have devised suggests that this
-conjecture is true, but we have not been able to find a proof."
+verified: all their computational tests support the conjecture, although a proof is still missing.
 
 **Impact.**
 - True: solvers need only BH separation, and Gurobi already separates a subset
@@ -457,8 +448,7 @@ baseline.
 
 **Evidence of the gap**
 - Van Doornmalen and Hojny (Math. Program. 2025), Remark 14 and §6.
-- Hojny and Liberti (arXiv:2605.02305): "only simple techniques have been
-  developed" for rotations.
+- Hojny and Liberti (arXiv:2605.02305): only basic rotation-handling methods are available for rotations.
 - In-house: P_30 is solved by SCIP in 11 nodes with symmetry handling and times
   out without it.
 
@@ -505,11 +495,8 @@ augmented-Lagrangian duality gap NP-hard? Do polynomial-size exact penalties
 exist for QCQPs?
 
 **Source.** Lefebvre and Schmidt, "Exact augmented Lagrangian duality for
-nonconvex MINLP" (Optimization Online 2024/07, revised Dec 2025), §6, verified:
-"we do not know if computing the smallest penalty parameter that closes the
-duality gap can be done in polynomial time. We conjecture a negative answer…
-it is still open if such a result can be obtained for… quadratically
-constrained quadratic problems."
+nonconvex MINLP" (Optimization Online 2024/07, revised Dec 2025), §6, verified (summarized):
+the authors ask whether the least penalty closing the duality gap can be computed in polynomial time, and conjecture that it cannot. They also leave unresolved whether quadratically constrained quadratic problems admit polynomial-size exact penalties.
 
 **Impact.** Moderate: it governs penalty choice in augmented-Lagrangian
 decomposition for structured MINLP.
@@ -527,8 +514,7 @@ Can OA have iteration bounds without constraint qualifications, in terms of a
 Slater-type conditioning measure?
 
 **Evidence of the gap**
-- Tamm and Kronqvist (arXiv:2606.26897, June 2026): "we doubt that it is
-  possible to find such a bound".
+- Tamm and Kronqvist (arXiv:2606.26897, June 2026): the authors doubt that such a bound can be established.
 - Hijazi, Bonami, Ouorou (IJOC 2014) give a 2^n example, but it is hard for
   both methods.
 - Bonami et al. (2008) and Grossmann (2002) leave open an a-priori criterion for
@@ -613,7 +599,7 @@ headings. Their citations use `[KB:slug]` for local knowledge-base entries.
 ### Scout report, Area 1: convexification and cutting planes for nonconvex quadratic and polynomial MINLP
 
 Date: 2026-09-22. Scope: 2021-2026 work, with older anchors where needed.
-Sources: the local KB (`/home/sgusev/repo/minlp-notes/literature/papers/<slug>/paper.md`, cited as `[KB:slug]`) plus web and arXiv (cited by arXiv id or DOI). Quotes come from full texts: the KB `fulltext.md` or the arXiv PDFs saved under `/tmp/scout1/*.txt`. "Not found" means I searched for the item and did not find it. It does not mean the item is proven absent.
+Sources: the local KB (`/workspace/repo/minlp-notes/literature/papers/<slug>/paper.md`, cited as `[KB:slug]`) plus web and arXiv (cited by arXiv id or DOI). Statements and summaries draw on full texts: the KB `fulltext.md` or the arXiv PDFs saved under `/tmp/scout1/*.txt`. "Not found" means I searched for the item and did not find it. It does not mean the item is proven absent.
 
 ---
 
@@ -623,7 +609,7 @@ Sources: the local KB (`/home/sgusev/repo/minlp-notes/literature/papers/<slug>/p
 - Muñoz & Serrano, "Maximal quadratic-free sets", IPCO 2020 and Math. Prog. 2022 (doi 10.1007/s10107-021-01738-8, arXiv 1911.12341). This was the first construction of maximal S-free sets for S = {x : q(x) <= 0} with q a general quadratic. The construction runs through a homogenization to the set {||x|| <= ||y||}.
 - Chmiela, Muñoz & Serrano, "On the implementation and strengthening of intersection cuts for QCQPs", IPCO 2021 (LNCS 12707) and Math. Prog. 197:549-586 (2023) (doi 10.1007/s10107-022-01808-5). They give closed-form cut formulas, add Glover-style strengthening, and implement both in SCIP.
 - Chmiela, Muñoz & Serrano, "Monoidal strengthening and unique lifting in MIQCPs", IPCO 2023 and Math. Prog. B 210:189-222 (2025) (doi 10.1007/s10107-024-02112-0). They show unique lifting, so monoidal strengthening gives the best possible coefficients for the integer variables.
-- Muñoz, Paat & Serrano: "Towards a characterization of maximal quadratic-free sets" (IPCO 2023), then "A characterization of maximal homogeneous-quadratic-free sets" (Math. Prog. 2024, doi 10.1007/s10107-024-02092-1, arXiv 2211.05185), then "A characterization of maximal inhomogeneous-quadratic-free sets" (arXiv 2605.30602, May 2026). Together these give a **complete characterization** of full-dimensional maximal quadratic-free sets through non-expansive maps Γ. The 2026 paper: "our work completes a characterization of all maximal quadratic-free sets."
+- Muñoz, Paat & Serrano: "Towards a characterization of maximal quadratic-free sets" (IPCO 2023), then "A characterization of maximal homogeneous-quadratic-free sets" (Math. Prog. 2024, doi 10.1007/s10107-024-02092-1, arXiv 2211.05185), then "A characterization of maximal inhomogeneous-quadratic-free sets" (arXiv 2605.30602, May 2026). Together these give a **complete characterization** of full-dimensional maximal quadratic-free sets through non-expansive maps Γ. The 2026 paper: the authors state that the characterization now covers every maximal quadratic-free set.
 - Related constructions:
   - Bienstock, Chen & Muñoz, outer-product-free sets and oracle-based cuts, Math. Prog. 183 (2020) [KB:bienstock2020-outer-product-free-sets-for].
   - Serrano, intersection cuts for factorable MINLP via concave underestimators, IPCO 2019, arXiv 1812.03073.
@@ -632,15 +618,15 @@ Sources: the local KB (`/home/sgusev/repo/minlp-notes/literature/papers/<slug>/p
   - Xu & Pokutta, "Joint-range inequalities for nonconvex QCQPs", arXiv 2608.03318 [KB:xu2026-joint-range-inequalities-for-nonconvex]. They project two valid inequalities onto a 2-D joint range, convexify there, and lift back. The result is sparse cuts and a four-ray intersection cut.
 
 **Solvers**
-- SCIP 8 has quadratic intersection cuts in `nlhdlr_quadratic`, but they are **off by default**. SCIP 8's reason: "Since intersection cuts can be rather dense, it is not clear yet how to decide when it will be beneficial to generate such cuts. Their separation is therefore currently disabled by default" [KB:bestuzheva2025-global-optimization-of-mixed-integer].
-- SCIP 9 (arXiv 2402.17702) added monoidal strengthening and cut sparsification. Intersection cuts are still "currently disabled by default". SCIP 9 notes that "the strengthened intersection cuts significantly outperform the pure intersection cuts whenever monoidal strengthening can be applied."
+- SCIP 8 has quadratic intersection cuts in `nlhdlr_quadratic`, but they are **off by default**. SCIP 8's reason: dense cuts can be costly, and there is no established policy for deciding when generating them will help; consequently their separation is disabled by default [KB:bestuzheva2025-global-optimization-of-mixed-integer].
+- SCIP 9 (arXiv 2402.17702) added monoidal strengthening and cut sparsification. Intersection cuts are still disabled in the default configuration. SCIP 9 reports that monoidal strengthening, when applicable, makes the strengthened cuts substantially more effective than the pure cuts.
 - I found no evidence that Gurobi, BARON or Xpress implement quadratic-free intersection cuts.
 
 **Stated open problems**
-- Muñoz & Serrano (1911.12341): "The empirical performance of these intersection cuts remains to be seen". They also list "a theoretical and empirical comparison with the method proposed by Bienstock et al." and "devising new methods for producing other families of quadratic-free sets". Their 3-D conjecture was later settled by the Muñoz-Paat-Serrano full paper.
-- Muñoz, Paat & Serrano (2211.05185, §8): "finding a characterization of when a set of points in D^m can be used to define a maximal Q-free polyhedron is an important follow-up question". The polyhedral case and the choice of Γ remain open.
-- Serrano (1812.03073): "It remains to be seen the practical performance of these intersection cuts … the strengthening procedures … might be too expensive to be of practical use."
-- Xu & Pokutta (2608.03318): "A primary direction for future research is to automate … selecting two effective base inequalities." Their mixed cuts exclude the punctured Δ=0 cases.
+- Muñoz & Serrano (1911.12341): the practical effectiveness of the cuts needs evaluation. They also list comparing their approach with Bienstock et al., both theoretically and computationally and developing additional constructions of quadratic-free sets. Their 3-D conjecture was later settled by the Muñoz-Paat-Serrano full paper.
+- Muñoz, Paat & Serrano (2211.05185, §8): characterizing which point sets in D^m define maximal Q-free polyhedra is left open. The polyhedral case and the choice of Γ remain open.
+- Serrano (1812.03073): practical effectiveness is untested, and the cost of strengthening may outweigh its benefits
+- Xu & Pokutta (2608.03318): automatically choosing an effective pair of base inequalities is a future direction. Their mixed cuts exclude the punctured Δ=0 cases.
 
 **Missing theory**
 - The characterization tells us which S-free sets are maximal. It says nothing about which maximal set yields the strongest or deepest cut for a given LP vertex and cone. With a whole family of Γ available, choosing Γ is an optimization problem that nobody has studied.
@@ -670,11 +656,11 @@ Sources: the local KB (`/home/sgusev/repo/minlp-notes/literature/papers/<slug>/p
 - Hidden convexity with bilinear terms: Gorissen, den Hertog & Reusken, OR 2026 [KB:gorissen2026-hidden-convexity-in-a-class]. Topological view: Chandrasekaran, Duff, Rodriguez & Shu, arXiv 2510.06112.
 
 **Stated open problems**
-- Dey, Muñoz & Serrano: "An important open question is to determine if we actually require an infinite number of aggregations to obtain the convex hull". They also ask how to relax the "no low-dimensional components" condition and the PDLC condition.
-- Blekherman, Dey & Sun, Conjecture 3.1: "even with hidden hyperplane convexity there exist sets S … where infinitely many good aggregations are needed". Conjecture 3.2 claims that examples needing more than four good aggregations exist. Conjecture 3.3 states that "aggregations always provide certificates when conv(S)=R^n." Blekherman & Dunbar 2024 prove r <= 4 under extra assumptions and "leave open the case of more defining inequalities or a nonempty variety". So Conjecture 3.2 remains open for the strict or general setting.
-- Dey, Kocuk & Santana: "We conjecture that optimizing a linear function on U^row ∩ U^col is NP-hard." I found no resolution.
-- Kılınç-Karzan & Wang (2107.06885): "We additionally conjecture that V(G^⊥) = V(G^4) even without the facially exposed assumption." Wang & Kılınç-Karzan 2022: "establishing exactness conditions for strengthened SDP relaxations of QCQPs [e.g., SDP+RLT] is clearly of great interest."
-- Burer & Kılınç-Karzan 2017: "The theoretical and practical strength of this technique is of interest for future research."
+- Dey, Muñoz & Serrano: whether finitely many aggregations always suffice to recover the convex hull remains unresolved. They also ask how to relax the absence of low-dimensional components condition and the PDLC condition.
+- Blekherman, Dey & Sun, Conjecture 3.1: some sets S may require infinitely many good aggregations despite hidden hyperplane convexity. Conjecture 3.2 claims that examples needing more than four good aggregations exist. Conjecture 3.3 states that whenever conv(S)=R^n, aggregations supply certificates. Blekherman & Dunbar 2024 prove r <= 4 under extra assumptions and do not settle instances with more defining inequalities or with a nonempty variety. So Conjecture 3.2 remains open for the strict or general setting.
+- Dey, Kocuk & Santana: they conjecture NP-hardness of linear optimization over U^row ∩ U^col. I found no resolution.
+- Kılınç-Karzan & Wang (2107.06885): the conjectured equality V(G^⊥) = V(G^4) may hold without the facially exposed assumption. Wang & Kılınç-Karzan 2022: exactness criteria for strengthened QCQP SDP relaxations [e.g., SDP+RLT] are a research direction.
+- Burer & Kılınç-Karzan 2017: evaluating the technique’s theoretical strength and practical effectiveness remains future work.
 - Resolved example: Burer's conjecture that the lifted ball-QCQP relaxation dominates Kronecker RLT was proved by Kılınç-Karzan & Sun [KB:sun2025-on-the-strength-of-burers].
 
 **Missing theory**
@@ -706,11 +692,11 @@ Sources: the local KB (`/home/sgusev/repo/minlp-notes/literature/papers/<slug>/p
   - Gu, Dey & Richard, lifting convex inequalities (arXiv 2106.12625) and lifted bilinear cover cuts (arXiv 2208.00345).
 
 **Stated open problems**
-- Eigen-CG, **Conjecture 1**: "For any (v0, v), the inequality defined by E-CG(v0, v) is implied by a nonnegative combination of BH inequalities. To date, every computational test we have devised suggests that this conjecture is true, but we have not been able to find a proof."
-- Blekherman et al. (2002.02988): "Improving these bounds as a function of this ratio [k/n] is an important open question."
-- Gu, Dey & Richard (2208.00345): "We conjecture that the separation problem is NP-hard although proving this result appears nontrivial." They also leave open whether the cuts help inside QCQP relaxations.
-- Qu et al. (2510.02948): "it is not known whether the above GMC method converges in a finite number of iterations for indefinite QP … A rigorous convergence analysis is left for future work."
-- Tawarmalani (2026) [KB:tawarmalani2026-new-finite-relaxation-hierarchies-for]: RLT "is not known to terminate with the convex hull in finite steps" for disjoint bilinear programs, in contrast with the new disjunctive-decomposition hierarchy.
+- Eigen-CG, **Conjecture 1**: for any (v0, v), E-CG(v0, v) is implied by a nonnegative combination of BH inequalities. All reported computational tests support the conjecture, but no proof is given.
+- Blekherman et al. (2002.02988): sharper bounds depending on the ratio [k/n] remain unresolved.
+- Gu, Dey & Richard (2208.00345): they conjecture NP-hardness of separation, but anticipate difficulty in proving it. They also leave open whether the cuts help inside QCQP relaxations.
+- Qu et al. (2510.02948): finite convergence of GMC for indefinite QP is unresolved; a rigorous convergence analysis remains future work.
+- Tawarmalani (2026) [KB:tawarmalani2026-new-finite-relaxation-hierarchies-for]: RLT has no known guarantee of reaching the convex hull after finitely many steps for disjoint bilinear programs, in contrast with the new disjunctive-decomposition hierarchy.
 
 **Missing theory**
 - I found no approximation guarantee for sparse eigen-cut closures relative to the full SDP bound with McCormick/RLT included. Blekherman et al. bound only the distance from the PSD cone alone.
@@ -731,12 +717,12 @@ Sources: the local KB (`/home/sgusev/repo/minlp-notes/literature/papers/<slug>/p
 - Other: Xia, Vera & Zuluaga, INFORMS JoC (arXiv 1511.02423); Fix-and-Bound for BoxQP, MPC 2024 (arXiv 2211.08911).
 
 **Stated open problems**
-- Dey & Khajavirad (2508.18435) and Khajavirad (2601.18545): "to date, obtaining an explicit algebraic description for QP_3 remains an open question."
-- Khajavirad (2601.18545): "For a complete graph with three nodes and three plus loops, we leave it as an open question whether our proposed SDP relaxation gives an extended formulation for QP(G)." "We leave it as an open question whether a similar result can be obtained for |V+| > 2." "The authors of [18] leave open the question of whether a tree decomposition … satisfying conditions (I)-(III) can be constructed in polynomial time."
-- Dey & Khajavirad: "we pose an open question whether the stable set assumption on the nodes with plus loops is necessary for SOC-representability of QP(G)." They also leave open "the complexity of checking conditions (C1)-(C3)".
-- Burer, Natarajan & Willemsen: "The complexity of minimizing a submodular quadratic over [0,1]^n for n >= 4 remains open." Zhang & Wang (2609.03617): "how to systematically design non-BQP-valid cuts to reduce the relaxation gap remains an interesting topic for future research". In one construction they write "the problem still remains open".
-- Gupte et al. [KB:gupte2020-extended-formulations-for-convex-hulls]: "We conjecture that this observation extends to any wheel W_{n-1} with n >= 6, n even". Halin graphs are posed as an open question.
-- Xia, Vera & Zuluaga (1511.02423): "obtaining general and effectively computable bounds of this type is an interesting open question."
+- Dey & Khajavirad (2508.18435) and Khajavirad (2601.18545): an explicit algebraic description of QP_3 is still unknown.
+- Khajavirad (2601.18545): it is open whether their SDP relaxation is an extended formulation of QP(G) for a complete graph with three nodes and three plus loops. The analogous result for |V+| > 2 is also open. [18] leaves unresolved the polynomial-time construction of a tree decomposition satisfying (I)-(III).
+- Dey & Khajavirad: it is unknown whether SOC-representability of QP(G) requires the plus-loop nodes to form a stable set. They also leave open the computational difficulty of testing (C1)-(C3).
+- Burer, Natarajan & Willemsen: the computational complexity of submodular quadratic minimization on [0,1]^n is unresolved for n >= 4. Zhang & Wang (2609.03617): a systematic method for constructing non-BQP-valid gap-reducing cuts is still sought. In one construction they write this construction does not settle the open problem.
+- Gupte et al. [KB:gupte2020-extended-formulations-for-convex-hulls]: they conjecture extension of the observation to all wheels W_{n-1} with n >= 6, n even. Halin graphs are posed as an open question.
+- Xia, Vera & Zuluaga (1511.02423): general bounds of this kind that can be computed effectively remain a research question.
 
 ## 5. Multilinear polytope (Del Pia, Khajavirad and others)
 
@@ -760,18 +746,18 @@ Sources: the local KB (`/home/sgusev/repo/minlp-notes/literature/papers/<slug>/p
 
 **Solvers**
 - BARON: running-intersection cuts gave about a 50% average time reduction on random multilinear/polynomial instances (Del Pia, Khajavirad & Sahinidis, MPC 12:165-191, 2020).
-- SCIP 10 (arXiv 2511.18580) [KB:hojny2025-the-scip-optimization-suite-10] added `sepa_flower`, which separates k-flower inequalities for k=1,2 over AND constraints and products. Extending it to products of continuous variables caused "a performance loss, which is why this is disabled by default."
+- SCIP 10 (arXiv 2511.18580) [KB:hojny2025-the-scip-optimization-suite-10] added `sepa_flower`, which separates k-flower inequalities for k=1,2 over AND constraints and products. Extending it to products of continuous variables caused worse performance, leading to its exclusion from the default configuration.
 
 **Stated open problems**
 - Characterize the hypergraphs with MP = MP^RI (2021) and with MP = MP^ERI (2024). The 2024 paper's Example 5 shows the extended running-intersection (ERI) inequalities are not enough for all β-acyclic hypergraphs.
-- 2501.04805: "obtaining an explicit description for the multilinear polytope of β-acyclic hypergraphs in the original space remains an open question" (the authors doubt it would matter in practice).
-- CER (2507.12831): "how to generalize inequalities (40) for α-cycles of any length … The next step is to understand the complexity of separation over these inequalities … and characterize the class of hypergraphs for which the new relaxation coincides with the multilinear polytope."
-- Beyond acyclicity (2410.23045): "the complexity of checking whether the nest-set gap of a hypergraph is bounded is an open question". The complexity of constructing an elimination ordering with nsw_N(G) <= k is also open. The paper states two extension-complexity statements "we do not know if they are true or false".
-- Pseudo-Boolean polytope (2309.08693): "a complete characterization of such signed hypergraphs remains an open question."
+- 2501.04805: an original-space description of the multilinear polytope for β-acyclic hypergraphs remains unknown (the authors doubt it would matter in practice).
+- CER (2507.12831): open directions include extending inequalities (40) to arbitrary-length α-cycles, determining their separation complexity, and identifying the hypergraphs on which the new relaxation equals the multilinear polytope.
+- Beyond acyclicity (2410.23045): the complexity of deciding bounded nest-set gap for a hypergraph remains unresolved. The complexity of constructing an elimination ordering with nsw_N(G) <= k is also open. The paper states two extension-complexity claims whose truth is unresolved.
+- Pseudo-Boolean polytope (2309.08693): a full characterization of the signed hypergraphs in question remains unavailable.
 - Del Pia & Walter, Conjecture 12: redundancy of non-simple odd closed walks.
-- Schutte & Walter: "We leave it as an open problem to investigate how this strengthening of intersected recursive linearizations compares to … running intersection inequalities."
-- Cooper & Castro: "it remains open whether β-acyclic hypergraph classes admit polynomial-size compact DDs."
-- Rank-one Boolean tensor factorization (2202.07053): "obtaining recovery guarantees for the complete LP is an interesting open question."
+- Schutte & Walter: the relationship between strengthened intersected recursive linearizations and running-intersection inequalities has yet to be determined.
+- Cooper & Castro: polynomial-size compact DDs for β-acyclic hypergraph classes are not known to exist.
+- Rank-one Boolean tensor factorization (2202.07053): recovery guarantees for the complete LP remain to be established.
 
 ## 6. Bilinear, trilinear and edge-concave/vertex-polyhedral envelopes
 
@@ -783,7 +769,7 @@ Sources: the local KB (`/home/sgusev/repo/minlp-notes/literature/papers/<slug>/p
   - Tardella, vertex-polyhedral envelopes.
   - Tawarmalani, Richard & Xiong, envelopes via polyhedral subdivisions, Math. Prog. 138 (2013) [KB:tawarmalani2013-convex-envelopes-of-products-of].
   - Bao et al., multiterm polyhedral relaxations [KB:bao2009-multiterm-polyhedral-relaxations-for-nonconvex].
-- Edge-concave cuts: Misener & Floudas (GloMIQO / GloMIQO 2, JOGO 2012-2013). Available in SCIP since 3.2, but "not shown to be particularly useful for general MINLP, this separator is disabled for now" [KB:bestuzheva2025-global-optimization-of-mixed-integer].
+- Edge-concave cuts: Misener & Floudas (GloMIQO / GloMIQO 2, JOGO 2012-2013). Available in SCIP since 3.2, but no general-MINLP benefit has been established, so the separator is disabled [KB:bestuzheva2025-global-optimization-of-mixed-integer].
 - Recent results:
   - Belotti, envelopes of bounded monomials on two-variable cones, Math. Prog. 211 (2025) [KB:belotti2025-convex-envelopes-of-bounded-monomials].
   - Makhoul & Speakman, volume of the trilinear hull over general boxes, IJOO 2026 (arXiv 2512.13964) [KB:makhoul2026-volume-formulae-for-the-convex].
@@ -795,10 +781,10 @@ Sources: the local KB (`/home/sgusev/repo/minlp-notes/literature/papers/<slug>/p
   - He & Tawarmalani, MIP relaxations of composite functions, SIOPT 2024 [KB:he2024-mip-relaxations-in-factorable-programming].
 
 **Stated open problems**
-- Belotti: "The lower envelope for W_ij is an open problem for n > 2."
-- Makhoul & Speakman: closed-form volumes for the alternative McCormick relaxations P1-P3 over general boxes "remain an open question". They also ask whether the tightness ranking known for nonnegative bounds persists when bounds have mixed signs.
-- Dey, Han & Wang: "we might conjecture that the intersection of the convex hull of finitely many aggregated sets may represent the convex hull for a more general case of n1 and n2."
-- Xu, Adams & Gupte: "The convex envelope of a supermodular function is not known in general and is NP-hard to separate over." An explicit hull for symmetric multilinear polynomials in general is also missing.
+- Belotti: for n > 2, the lower envelope of W_ij is unknown.
+- Makhoul & Speakman: closed-form volumes for the alternative McCormick relaxations P1-P3 over general boxes are not yet known. They also ask whether the tightness ranking known for nonnegative bounds persists when bounds have mixed signs.
+- Dey, Han & Wang: they suggest that intersecting the convex hulls of finitely many aggregated sets might recover the hull for broader choices of n1 and n2.
+- Xu, Adams & Gupte: the general convex envelope of a supermodular function is unknown, and separation over it is NP-hard. An explicit hull for symmetric multilinear polynomials in general is also missing.
 
 **Missing theory**
 - I found no guarantee that relates edge-concave decomposition choices to the resulting bound; the decomposition is chosen heuristically.
@@ -811,9 +797,9 @@ Sources: the local KB (`/home/sgusev/repo/minlp-notes/literature/papers/<slug>/p
 | SCIP 8 (JOGO 91, 2025; arXiv 2301.00587) | Expression DAG with nonlinear handlers (quadratic, bilinear, SOC, convex/concave, perspective, quotient). McCormick, RLT (implicit and explicit products), 2x2 SDP minor cuts. Intersection cuts and edge-concave cuts implemented but **off by default**. |
 | SCIP 9 (arXiv 2402.17702) | Monoidal strengthening of intersection cuts (still off by default), signomial handler with DC cuts (off by default), sparsification. MINLP about 4% faster and 13% fewer nodes than SCIP 8. |
 | SCIP 10 (arXiv 2511.18580) | `sepa_flower` (1- and 2-flower inequalities). Handling of continuous products is off by default. MINLP gains exceed MILP gains. |
-| Gurobi 9.0 (2019-20) | Nonconvex quadratics become bilinear terms. McCormick with local bounds, spatial branching. **RLT cuts** and **BQP cuts** (only triangle inequalities at that point). The 9.0 slides state PSD cuts were "not yet implemented". |
+| Gurobi 9.0 (2019-20) | Nonconvex quadratics become bilinear terms. McCormick with local bounds, spatial branching. **RLT cuts** and **BQP cuts** (only triangle inequalities at that point). The 9.0 slides state PSD cuts were absent. |
 | Gurobi 9.5+ | `PSDCuts` parameter; also `BQPCuts` and `RLTCuts` parameters. |
-| Gurobi 11-13 | General MINLP through outer approximation and spatial B&B (11). Nonlinear expressions (12). NL barrier local solver and "over 2x faster" MINLP (13). Cut internals are not published. |
+| Gurobi 11-13 | General MINLP through outer approximation and spatial B&B (11). Nonlinear expressions (12). NL barrier local solver and a claimed speedup exceeding 2x for MINLP (13). Cut internals are not published. |
 | BARON | Multiterm polyhedral relaxations, running-intersection cuts (MPC 2020), tight quadratic relaxations (Strahl et al. 2024). |
 
 ## 8. Computational evidence on which cuts help
@@ -822,10 +808,10 @@ Sources: the local KB (`/home/sgusev/repo/minlp-notes/literature/papers/<slug>/p
 - Bestuzheva, Gleixner & Achterberg: explicit RLT cuts solved 4,434 → 4,557 instances, with time ratio 0.85 and node ratio 0.81 on MINLP. Row marking cut RLT separation time share from 16.7% to 2.6% (MINLP) and from 54.6% to 2.8% (MILP).
 - Bonami, Günlük & Linderoth: BQP cuts are highly effective on BoxQP.
 - Dey et al. 2022: sparse cuts are cheaper but weaker at n=200-250 (75% vs 85% gap closed); the hybrid is the best compromise.
-- Eigen-CG 2026: density "quickly degrades effectiveness", while sparse cuts beyond triangles help.
+- Eigen-CG 2026: density makes the cuts less effective rapidly, while sparse cuts beyond triangles help.
 - Intersection cuts: useful when monoidal strengthening applies (SCIP 9), but density prevents default use.
 - Bienstock, Chen & Muñoz: oracle cuts complement SDP+OA; neither dominates.
-- Running-intersection cuts: about 50% time cut in BARON on random polynomial instances. Simple odd β-cycle cuts: separation "often prohibitively expensive" [KB:pia2023-simple-odd-cycle-inequalities-for].
+- Running-intersection cuts: about 50% time cut in BARON on random polynomial instances. Simple odd β-cycle cuts: separation frequently too costly to be practical [KB:pia2023-simple-odd-cycle-inequalities-for].
 - Perspective cuts: convex ones give consistent gains; nonconvex ones help root bounds but can hurt hard instances [KB:bestuzheva2023-a-computational-study-of-perspective].
 - Cross-cutting gap: I found **no published cross-solver ablation** that isolates each cut family (RLT, BQP, PSD, intersection, edge-concave, flower) on QPLIB or MINLPLib under a common protocol. Evidence is solver-internal and version-specific.
 
@@ -850,7 +836,7 @@ Sources: the local KB (`/home/sgusev/repo/minlp-notes/literature/papers/<slug>/p
 
 ### Scout report, areas A and B: bound tightening and spatial branching
 
-Date: 2026-09-22. Scope: literature on domain reduction and spatial branching for nonconvex MINLP, with emphasis on explicitly stated open problems and missing theory. Sources: the local KB (`literature/papers/<slug>`, cited as [KB:slug]), in-house results and notes in `/home/sgusev/repo/minlp-notes`, and web search. Quotations come from full texts I read (Kannan–Barton 2017 and 2018, Gleixner et al. 2017, Caprara–Locatelli–Monaci 2016 abstract, Dey–Han–Wang 2025) or from KB summaries. "Unsolved" judgments reflect a bounded search. They are not proofs of novelty.
+Date: 2026-09-22. Scope: literature on domain reduction and spatial branching for nonconvex MINLP, with emphasis on explicitly stated open problems and missing theory. Sources: the local KB (`literature/papers/<slug>`, cited as [KB:slug]), in-house results and notes in `/workspace/repo/minlp-notes`, and web search. Source statements draw on full texts I read (Kannan–Barton 2017 and 2018, Gleixner et al. 2017, Caprara–Locatelli–Monaci 2016 abstract, Dey–Han–Wang 2025) or from KB summaries. "Unsolved" judgments reflect a bounded search. They are not proofs of novelty.
 
 ## In-house baseline (what the repository already covers)
 
@@ -869,13 +855,13 @@ Date: 2026-09-22. Scope: literature on domain reduction and spatial branching fo
 **State of the art.**
 - Gleixner, Berthold, Müller, Weltge, "Three enhancements for optimization-based bound tightening", *J. Glob. Optim.* 67(4) (2017), https://doi.org/10.1007/s10898-016-0450-4 (preprint: https://optimization-online.org/DB_HTML/2016/03/5356.html).
   - Enhancements: filtering with LP solutions to skip bound LPs, greedy ordering for simplex warm starts, and Lagrangian variable bounds (LVBs). LVBs are one-row aggregations obtained from OBBT duals and propagated by FBBT throughout the tree.
-  - The conclusion is purely empirical: "OBBT alone does not give a significant speedup on average, because the average reduction in the number of branch-and-bound nodes is mostly compensated by the overhead…; LVB propagation, however, leverages the effect." There is no theory of OBBT strength.
+  - The conclusion is purely empirical: on average, the cost of OBBT largely offsets the benefit of its smaller B&B trees. Propagating LVBs improves this tradeoff. There is no theory of OBBT strength.
 - Caprara & Locatelli, "Global optimization problems and domain reduction strategies", *Math. Program.* 125 (2010) 123–137.
-- Caprara, Locatelli, Monaci, "Theoretical and computational results about optimality-based domain reductions", *Comput. Optim. Appl.* 64(2) (2016) 513–533, https://doi.org/10.1007/s10589-015-9818-5. This is the main theoretical OBBT paper. Abstract: "we can easily define a lower limit for the reduction which can be attained, but we can hardly guarantee that such limit is reached… for a nontrivial class of problems, appropriate strategies exist that are always able to reach this lower limit… the same strategies lose this property as soon as we slightly enlarge the class of problems."
+- Caprara, Locatelli, Monaci, "Theoretical and computational results about optimality-based domain reductions", *Comput. Optim. Appl.* 64(2) (2016) 513–533, https://doi.org/10.1007/s10589-015-9818-5. This is the main theoretical OBBT paper. Abstract: although a lower limit on reduction is readily definable, attaining it is not generally guaranteed. They give strategies that reach the limit on a nontrivial problem class, but lose that guarantee on a slightly broader class.
 - Puranik & Sahinidis, "Domain reduction techniques for global NLP and MINLP optimization", *Constraints* 22(3) (2017) 338–376, arXiv:1706.08601 [KB:puranik2017-domain-reduction-techniques-for-global].
   - Surveys feasibility-based reduction, which solves a global min/max per variable, or a convex- or LP-relaxation surrogate, and optimality-based reduction.
   - In a solver ablation on 1,740 instances, turning reduction off increases BARON nodes by 261–1,180%, SCIP nodes by 152–417%, and Couenne nodes by 21–186%.
-  - Open directions (p. 21): filtering based on **sets** of constraints, "reliable fixed-point acceleration", principled scheduling of probing and OBBT, and reduction "that avoids the cluster effect".
+  - Open directions (p. 21): filtering based on **sets** of constraints, dependable acceleration toward a fixed point, principled scheduling of probing and OBBT, and reduction designed to prevent clustering.
 - Gómez-Casares, González-Rodríguez, González-Díaz, Rodríguez-Fernández, "Impact of domain reduction techniques in polynomial optimization: A computational study", arXiv:2403.02823 (2024; revised 2025). Covers OBBT with conic relaxations and FBBT with Lagrangian dual information inside RAPOSa's RLT scheme. Future work: machine-learning choice of the reduction technique.
 - González-Díaz, González-Rodríguez, Gómez-Casares, "Bound tightening in lifted formulations", arXiv:2509.18731 [KB:diaz2025-bound-tightening-in-lifted-formulations]. RLT bound-factor constraints already imply explicit lifted-variable bounds (Theorem 1), yet keeping the redundant rows changes solver time by −48% to +73% depending on the LP subsolver. Polyhedral equivalence does not imply algorithmic equivalence.
 
@@ -887,8 +873,8 @@ Date: 2026-09-22. Scope: literature on domain reduction and spatial branching fo
   - "Learning to accelerate globally optimal solutions to the AC OPF problem", *Electric Power Systems Research* (2022), https://www.sciencedirect.com/science/article/abs/pii/S0378779622004709.
   - "Learning to accelerate tightening of convex relaxations of the AC OPF problem", *Comput. Optim. Appl.* 92 (2025) 761–786, https://doi.org/10.1007/s10589-025-00715-7.
   - The later paper learns a dynamic policy that selects which voltage-magnitude and angle-difference variables to tighten at each OBBT iteration. It reports a 9.3× average and up to 20× speedup, on networks with up to 3,375 buses. The policy is purely empirical, with no guarantee about the fixed point.
-- Alpine.jl [KB:nagarajan2026-alpine-jl-v0-5-8] runs "iterative OBBT to a bound fixed point", then adaptive multivariate partitioning.
-  - Kannan, Nagarajan, Deka, "Strong partitioning and a ML approximation for accelerating global optimization of nonconvex QCQPs", *INFORMS J. Comput.* (2025), https://doi.org/10.1287/ijoc.2023.0424, arXiv:2301.00306. They learn the partition points and report a 2–4.5× average reduction in Alpine time. They note that "solving this max-min strong partitioning problem exactly can be very challenging".
+- Alpine.jl [KB:nagarajan2026-alpine-jl-v0-5-8] runs repeated OBBT until the bounds reach a fixed point, then adaptive multivariate partitioning.
+  - Kannan, Nagarajan, Deka, "Strong partitioning and a ML approximation for accelerating global optimization of nonconvex QCQPs", *INFORMS J. Comput.* (2025), https://doi.org/10.1287/ijoc.2023.0424, arXiv:2301.00306. They learn the partition points and report a 2–4.5× average reduction in Alpine time. They note that exact solution of the max-min partitioning problem is computationally difficult.
 - Neural-network verification is a MILP setting that reuses OBBT: Badilla, Goycoolea, Muñoz, Serra, "Computational tradeoffs of OBBT in ReLU networks", arXiv:2312.16699. Also rolling-horizon OBBT, arXiv:2401.05280.
 
 **Solvers.**
@@ -905,7 +891,7 @@ Date: 2026-09-22. Scope: literature on domain reduction and spatial branching fo
    - the complexity of computing the fixed point;
    - how far it lies from the box hull of the true feasible set.
 
-   Caprara–Locatelli–Monaci (2016) say explicitly that the limit "can hardly [be] guarantee[d]". Puranik–Sahinidis ask for "reliable fixed-point acceleration". Alpine and power-systems codes iterate to a fixed point without such theory. The in-house FBBT hardness and slow-convergence results **do not** transfer automatically: LP-OBBT combines constraints and may escape the monotone least-fixed-point construction. **Likely open (≈75%).**
+   Caprara–Locatelli–Monaci (2016) say explicitly that the limit is difficult to guarantee. Puranik–Sahinidis ask for dependable acceleration toward a fixed point. Alpine and power-systems codes iterate to a fixed point without such theory. The in-house FBBT hardness and slow-convergence results **do not** transfer automatically: LP-OBBT combines constraints and may escape the monotone least-fixed-point construction. **Likely open (≈75%).**
 2. **Constraint-set filtering** (Puranik–Sahinidis): tractability boundaries for exact bounds over a set of k constraints of a given structure. Belotti 2013 handles pairs of linear inequalities (*J. Glob. Optim.* 56(3) 787–819). For bilinear constraints: Müller, Serrano, Gleixner, "Using two-dimensional projections for stronger separation and propagation of bilinear terms", *SIAM J. Optim.* (2022), https://doi.org/10.1137/19m1249825. Open in general.
 3. **Value of OBBT in node count.** No theorem quantifies how much OBBT reduces the B&B tree, for example in convergence-order terms. See B2 and the cluster problem.
 
@@ -944,7 +930,7 @@ Date: 2026-09-22. Scope: literature on domain reduction and spatial branching fo
 **State of the art.**
 - Belotti, Lee, Liberti, Margot, Wächter, *Optim. Methods Softw.* 24 (2009) [KB:belotti2009-branching-and-bounds-tightening-techniques].
   - Couenne uses a scaled violation `|x̄_i − θ_i(x̄)|/(1 + ‖∇θ_i‖)`, violation transfer, reliability pseudocosts extended to continuous variables, and strong branching.
-  - "No branching rule dominates." Full strong branching spends 90–95% of time in its LPs on the `spar-*` instances.
+  - None of the rules uniformly outperforms the others. Full strong branching spends 90–95% of time in its LPs on the `spar-*` instances.
 - Tawarmalani & Sahinidis (2004) introduced violation transfer.
 - SCIP 8 combines violation scores with pseudocosts, and optionally domain width and fractionality. Its branching point is a convex combination of the LP value and the interval midpoint. Speakman–Lee tabulate the defaults: SCIP uses (α, β) = (1, 0.2) and Couenne (0.25, 0.2). SCIP branches on original variables only by default.
 - Speakman & Lee, "On branching-point selection for trilinear monomials in spatial B&B: the hull relaxation", *J. Glob. Optim.* 72 (2018), arXiv:1706.08438 [KB:speakman2018-on-branching-point-selection-for].
@@ -955,15 +941,15 @@ Date: 2026-09-22. Scope: literature on domain reduction and spatial branching fo
 - Dey, Han, Wang, "Extreme strong branching for QCQPs", arXiv:2510.20650 (Oct 2025).
   - Evaluates several points per variable and chooses the variable and point jointly, with bound tightening from infeasible probes.
   - Beats Gurobi 12, BARON, and Couenne on bipartite bilinear and model-updating QCQPs.
-  - There are **no theorems**. Stated future work: "a reliability-based variant", and "Understanding why the method works particularly well for BBP is also another stream of future research."
+  - There are **no theorems**. Stated future work: a variant based on reliability, and explaining the particularly strong results for BBP is a future direction.
 - Chen, Atamtürk, Oren, *Math. Program.* 165 (2017) [KB:chen2016-a-spatial-branch-and-cut]: complex QCQP with rank-one-violation branching. Violation-based rules produced smaller trees than a reliability rule.
-- Hübner, Gupte, Rebennack, *INFORMS J. Comput.* 38(2) (2026) [KB:hubner2026-spatial-branch-and-bound-for]: separable piecewise-linear sBB. Breakpoint branching terminates finitely. Largest-error branching converges only in the limit, and there is "no general … convergence theorem" for the discontinuous case.
+- Hübner, Gupte, Rebennack, *INFORMS J. Comput.* 38(2) (2026) [KB:hubner2026-spatial-branch-and-bound-for]: separable piecewise-linear sBB. Breakpoint branching terminates finitely. Largest-error branching converges only in the limit, and there is no general theorem guaranteeing convergence for the discontinuous case.
 
 **Missing theory.**
 - **No tree-size guarantee is known for any spatial branching rule.** This includes violation, pseudocost, strong, extreme strong, and volume rules.
 - The MILP analogues exist:
   - Dey, Dubey, Molinaro, Shah, "A theoretical and computational analysis of full strong-branching", *Math. Program.* 205 (2024) 303–336, arXiv:2110.10754.
-  - Cheng & Basu, "Theoretical challenges in learning for branch-and-cut", arXiv:2601.23249 (2026): local-score rules can produce trees exponentially larger than optimal, and "arbitrarily small score discrepancies … can produce trees of exponentially different sizes."
+  - Cheng & Basu, "Theoretical challenges in learning for branch-and-cut", arXiv:2601.23249 (2026): local-score rules can produce trees exponentially larger than optimal, and even tiny score differences can lead to exponential differences in tree size.
   - Abstract branching models: Le Bodic & Nemhauser, *Math. Program.* (2017); Anderson, Le Bodic, Morgan, *Math. Program.* 190 (2021); a stochastic lookahead model (2024); Jiang, arXiv:2607.06343 (2026).
 - None has a **spatial** version. In spatial branching, gains shrink with box width according to the relaxation's convergence order (gap ≈ τ·w^β), and the split point is continuous. I found no abstract model of that kind.
 
@@ -978,10 +964,10 @@ Date: 2026-09-22. Scope: literature on domain reduction and spatial branching fo
   - First-order schemes suffice if the objective or the constraint violation grows linearly and the prefactors are small.
   - Second order is required at non-isolated, equality-constrained minimizers.
   - The conclusion states no open problems.
-- Kannan & Barton, "Convergence-order analysis of branch-and-bound algorithms for constrained problems", *J. Glob. Optim.* 71 (2018) 753–813 (PDF: https://rohitkannan.github.io/PDFs/papers/KannanBarton_JOGO_ConvergenceOrder.pdf). The conclusion, verbatim: "Future work involves
-  - (i) determining whether full-space lower bounding schemes can achieve second-order convergence on a neighborhood of constrained minima that are KKT points…,
-  - (ii) analyzing the convergence orders of some other widely-applicable reduced-space lower bounding schemes in the literature (see, for example, [32]) [Stuber, Scott, Barton, implicit-function relaxations, *Optim. Methods Softw.* 30 (2015)], and
-  - (iii) determining sufficient conditions on the constraint propagation scheme to ensure second-order convergence of reduced-space lower bounding schemes at constrained minima that satisfy certain regularity conditions."
+- Kannan & Barton, "Convergence-order analysis of branch-and-bound algorithms for constrained problems", *J. Glob. Optim.* 71 (2018) 753–813 (PDF: https://rohitkannan.github.io/PDFs/papers/KannanBarton_JOGO_ConvergenceOrder.pdf). The conclusion identifies three directions for further work (summarized):
+  - (i) whether full-space bounds can converge at second order throughout a neighborhood of constrained minimizers that satisfy the KKT conditions;
+  - (ii) the orders attained by additional reduced-space schemes, including [32] [Stuber, Scott, Barton, implicit-function relaxations, *Optim. Methods Softw.* 30 (2015)];
+  - (iii) propagation conditions sufficient for second-order reduced-space bounds at constrained minimizers under suitable regularity assumptions.
 - Later extensions: a 2024 *J. Glob. Optim.* paper on the convergence order of value-function relaxations in decomposition for stochastic programs (https://doi.org/10.1007/s10898-024-01458-1); Song & Khan (*Math. Program.* 2021) on ODE relaxations with second-order pointwise convergence.
 
 **In-house coverage.**
@@ -1033,7 +1019,7 @@ Date: 2026-09-22. Scope: literature on domain reduction and spatial branching fo
    - Unsolved: ≈75%.
    - In-house: FBBT analogues only; OBBT is candidate-directions item 13, not started.
 2. **Abstract or tree-size theory for spatial branching variable and point selection with width-dependent gains**, including strong and extreme strong branching compared with violation branching.
-   - Sources: Dey–Han–Wang 2025 future work; Speakman–Lee 2018; Belotti et al. 2009 ("no rule dominates"); MILP analogues (Dey et al. 2024; Cheng–Basu 2026; Le Bodic–Nemhauser).
+   - Sources: Dey–Han–Wang 2025 future work; Speakman–Lee 2018; Belotti et al. 2009 (none of the rules uniformly outperforms the others); MILP analogues (Dey et al. 2024; Cheng–Basu 2026; Le Bodic–Nemhauser).
    - Unsolved: ≈80%.
    - In-house: not touched.
 3. **Sufficient conditions on constraint propagation (FBBT/OBBT) for second-order convergence of reduced-space schemes**, and the convergence order of the implicit-function relaxations of Stuber–Scott–Barton.
@@ -1053,7 +1039,7 @@ Date: 2026-09-22. Scope: literature on domain reduction and spatial branching fo
 
 ### Scout report: (A) MIP / piecewise-linear relaxations of MINLP, (B) symmetry handling with continuous variables
 
-Date: 2026-09-22. Sources: local knowledge base, in-house `results/`, web search, and arXiv PDFs fetched to `/tmp/scout/`. Quotes were checked against PDF text I extracted myself; a web-summarizer "quote" attributed to the unified framework paper was fabricated and is not used. A failed search does not prove that a problem is open.
+Date: 2026-09-22. Sources: local knowledge base, in-house `results/`, web search, and arXiv PDFs fetched to `/tmp/scout/`. Source statements were checked against PDF text I extracted myself; a web-summarizer "quote" attributed to the unified framework paper was fabricated and is not used. A failed search does not prove that a problem is open.
 
 ---
 
@@ -1069,8 +1055,8 @@ Date: 2026-09-22. Sources: local knowledge base, in-house `results/`, web search
 - Göß, Burlacu, Martin, JOGO (2026), arXiv 2407.06143: MIP-computed paraboloid estimators for Lipschitz functions.
 
 **Stated open problems and future work.**
-- Beach et al. 2022 (§7, App. C), on higher-order monomials: "a comparable approximation for x³ seem[s] to require a relatively large number of basis functions … interesting future work to observe if this seeming obstruction is fundamental, or if compact methods for higher-order monomials can be derived". They also leave "an implementation that iteratively refines the approximation to guarantee a pre-specified approximation error" as future work.
-- Part II conclusion: "Two of the most promising directions … are employing adaptivity and adding MIQCQP-specific cuts that are valid but not recognized by the MIP solvers. This is the subject of future work."
+- Beach et al. 2022 (§7, App. C), on higher-order monomials: the authors observe that approximating x³ comparably appears to need many basis functions; they ask whether this is unavoidable or whether higher-order monomials admit compact approximations. They also leave an iterative implementation with a guaranteed prescribed approximation error as future work.
+- Part II conclusion: proposed extensions include adaptive approximation and MIQCQP-specific valid cuts that the MIP solvers do not generate themselves.
 
 **Already addressed in-house.**
 - `results/mip-relaxation-binary-lower-bounds.md`: every MIP relaxation of `x²` with `p` binaries has error at least `2^{-2p-2}`, so sawtooth is exactly optimal. For `xy`, `p_min(ε)=log2(1/ε)+O(1)`, with the additive constant known only up to an interval of length 2.
@@ -1097,7 +1083,7 @@ These in-house results largely settle the **binary-count** part of Beach et al.'
 
 **Stated open problems.**
 - Vielma and Nemhauser 2011, concluding section: necessary conditions for logarithmic formulations are open. This is recorded in the in-house note `mip-relaxation-binary-lower-bounds.md`.
-- Lyu et al. 2026, §8: "Could we design computationally more efficient formulations for generalized 1D-ordered CDCs? What are the computational performances of different approaches for piecewise linear relaxations with more than one variable? Could we design an efficient procedure to find a piecewise linear relaxation of a given multivariate nonlinear function such that it can be modeled by generalized nD-ordered CDCs?"
+- Lyu et al. 2026, §8: they ask for faster formulations for generalized 1D-ordered CDCs, computational comparisons of multivariate piecewise-linear relaxations, and efficient construction of relaxations of multivariate nonlinear functions that fit generalized nD-ordered CDCs.
 
 **Where theory is missing.** There is no theory relating branching balance (Huchette and Vielma's metrics) to B&B tree size. There are also no lower bounds on the constraint count of ideal logarithmic formulations for general CDCs.
 
@@ -1105,7 +1091,7 @@ These in-house results largely settle the **binary-count** part of Beach et al.'
 
 **State of the art.** Pottmann et al. (2000) found optimal interpolating triangulations and conjectured they are optimal among all approximations. Atariah, Rote, Wintraecken (2018) refuted that conjecture. Bärmann, Burlacu, Hager, Kutzer, JOTA 199(2):569–599 (2023), give a constant-factor "crossing swords" triangulation for `xy`. **Burlacu, Hager, Hildebrand, arXiv 2604.04026 (Apr 2026)** give the global optimum for discontinuous ε-approximations of `xy` on the plane: density `3√3/(32ε)`. They also give one-sided density `3√3/(16ε)` and prove optimality among parallelogram tilings for continuous approximations: density `√3/(8ε)`, with constant deviation `ε/3`.
 
-**Stated open problems (verbatim, §7).** "Several directions remain open for future work. First, proving or disproving Conjecture 6.1— that the parallelogram tiling optimum extends to all continuous triangulations… Second, extending these results to higher dimensions— optimal simplicial approximations in R^n… Third, the bounded domain case, where boundary effects may permit lower densities." Bärmann et al. 2022 add: "Finding a bivariate ε-optimal triangulation for the approximation of F over a rectangular domain is still an open problem."
+**Stated open problems (summarized, §7).** the open directions are Conjecture 6.1 (whether the parallelogram-tiling optimum holds for every continuous triangulation), optimal simplicial approximations in R^n, and bounded domains, where boundary effects might allow smaller densities. Bärmann et al. 2022 add: ε-optimal bivariate triangulation for approximating F on a rectangle remains unresolved.
 
 ### A4. Adaptive partitioning (Alpine / AMP) and piecewise polyhedral relaxations (PPR)
 
@@ -1119,7 +1105,7 @@ These in-house results largely settle the **binary-count** part of Beach et al.'
 **Adaptive refinement with convergence guarantees.** Burlacu, Geißler, Schewe, OMS 35(1):37–64 (2020), classify refinement rules that guarantee convergence. They also show that earlier schemes may fail to terminate. Schmidt, Sirvent, Wollner, Math. Prog. (2019), and Optim. Lett. 16:1355–1372 (2022), treat Lipschitz nonlinearities and prove a **worst-case iteration bound** in the oracle setting.
 
 **Stated open problems.**
-- Kannan et al. §7 raise optimal allocation of partition points under a budget, which leads to a max–min problem with binary outer variables that "necessitates new techniques".
+- Kannan et al. §7 raise optimal allocation of partition points under a budget, which leads to a max–min problem with binary outer variables that calls for new solution techniques.
 
 **Where theory is missing.** I found **no convergence-rate or iteration-complexity theory for AMP/Alpine-style adaptive partitioning of explicit polynomial terms**. Existing results give asymptotic convergence only, apart from the Lipschitz-oracle bounds, which are exponential in dimension. Open questions:
 - How many AMP iterations, or how many total binaries, are needed for ε-optimality, compared with uniform or dyadic partitioning?
@@ -1147,7 +1133,7 @@ The in-house spatial-B&B lower bounds do not cover AMP.
 - **SCIP 9 and Hojny, MPC (2025), arXiv 2405.08379**: symmetry detection graphs (SDGs) for signed permutations and reflections, with gadgets for sums, `(x_i−x_j)²`, bilinear terms, and even functions. The paper states that detecting general MINLP symmetries is undecidable, and that detection is NP-hard even for binary LPs.
 - Wiese (MOSEK), "Symmetry detection in mixed-integer conic programming", MPC (2025/26).
 
-**Stated open problems (Hojny 2025, §7.4, verbatim).** "It might be promising to develop alternative approaches for detecting row and column symmetries that depend less on the structure of generators. Ideally, one would use an exact mechanism … but detecting such symmetries is as hard as the graph isomorphism problem." Also, "it could be interesting to investigate means to benefit from handling symmetries in branch-and-bound, while removing the symmetry-based restrictions in heuristics." Reflection symmetries appear in only 6/486 MINLPLib instances.
+**Stated open problems (Hojny 2025, §7.4, summarized).** future work could reduce the dependence of row/column-symmetry detection on generator structure. Exact detection would be desirable, but is as hard as graph isomorphism. Also, another direction is to use symmetry restrictions in B&B while allowing heuristics to operate without them. Reflection symmetries appear in only 6/486 MINLPLib instances.
 
 ### B2. Handling with binary variables: polyhedral and propagation methods
 
@@ -1159,8 +1145,8 @@ The in-house spatial-B&B lower bounds do not cover AMP.
 - Schreier–Sims (SST) cuts: Liberti and Ostrowski, "Stabilizer-based symmetry breaking constraints for mathematical programs", JOGO 60:183–194 (2014), and Salvagnin (2018).
 - **van Doornmalen and Hojny, IJOC 36(3):868–883 (2024), arXiv 2203.00992**: complete propagation for cyclic groups, under the assumption that generators are monotone and ordered.
 
-**Stated open problems (verbatim).**
-- van Doornmalen and Hojny 2024, intro: "It has been an open problem for at least ten years to gain further insights into the structure of lexicographically maximal points for cyclic groups." Conclusion: "since completeness of Algorithm 3 is only guaranteed for monotone and ordered permutations γ, it would be helpful to derive methods that achieve completeness even if one of the assumptions on γ are dropped."
+**Stated open problems (summarized).**
+- van Doornmalen and Hojny 2024, intro: the structure of lexicographically maximal points for cyclic groups has been unresolved for at least ten years. Conclusion: Algorithm 3 has a completeness guarantee for permutations γ that are both monotone and ordered; extending that guarantee after dropping either condition is an open direction.
 - Deciding lexicographic maximality in an orbit is coNP-complete for generator-given groups.
 
 ### B3. General (continuous) variables: unified framework, fundamental domains, rotations
@@ -1168,18 +1154,18 @@ The in-house spatial-B&B lower bounds do not cover AMP.
 **State of the art.**
 - **van Doornmalen and Hojny, "A unified framework for symmetry handling", Math. Prog. 212:217–271 (2025), arXiv 2211.01295.** Symmetry-handling constraints (SHCs) with node-dependent lexicographic orders unify orbital fixing, LexFix, orbitopal fixing, and isomorphism pruning. The paper generalizes them to arbitrary domains as *lexicographic reduction*, *orbitopal reduction*, and *orbital reduction*. These methods are implemented in SCIP 9/10.
   - Theorem 8 guarantees exactly one representative per orbit in finite B&B trees whose branchings partition the feasible region.
-  - Remark 14, verbatim: "For spatial branch-and-bound algorithms, two subtleties arise … there might not exist a finite branch-and-bound tree … branching decisions do not necessarily partition the feasible region. In this case, (2) can still be used to handle symmetries. However, in the depth-pruned tree there might exist more than one leaf containing a symmetric copy of a feasible solution."
+  - Remark 14, summarized: spatial B&B may have an infinite tree and branchings that do not partition the feasible region. Symmetry handling through (2) still applies, but the depth-pruned tree can retain multiple leaves with symmetric copies of a feasible solution.
   - Remark 15: the theorem survives for some infinite groups, such as rotations.
-  - §6 future work: "As the framework also supports other types of symmetries such as rotational and reflection symmetries, further research could involve devising symmetry handling methods for such symmetries," plus separation routines for SHCs, packing/partitioning structure, and "overlapping orbitopal subgroups within a component."
+  - §6 future work: the framework permits future methods for rotations and reflections, plus separation routines for SHCs, packing/partitioning structure, and overlapping orbitopal subgroups in the same component.
 - **Verschae, Villagra, von Niederhäusern, "On the geometry of symmetry breaking inequalities", Math. Prog. (2023), IPCO 2021, arXiv 2011.09641.** A *fundamental domain* is a minimal closed symmetry-breaking polyhedron for a finite orthogonal group acting on Rⁿ. The paper introduces generalized Dirichlet domains (GDDs).
   - Every permutation group has a fundamental domain with at most n−1 facets.
   - The closure of the lexicographically-maximal set equals the SST cuts.
   - SST cuts can over-represent a binary orbit by `2^{Ω(n)}` points, while a GDD with O(n) facets can give unique binary representatives.
   - Only reflection groups admit fundamental domains with a unique representative for every orbit in Rⁿ.
-  - §6, verbatim: "**Q1:** Does our GDD construction exhaust all possible fundamental domains for a group of isometries …? **Q2:** Does every group of isometries admit a fundamental domain with a single representative of each binary orbit, and with a polynomial number of facets?" The authors also propose variants based on extension complexity or separation complexity, and characterizing the groups with O(1) representatives per orbit in Rⁿ.
-- **Hojny and Liberti, "A computational comparison of handling distance constraints in MINLP", arXiv 2605.02305 (2026).** On rotations: "for rotation symmetries arising in applications like the kissing number problem or packing spheres into a bigger sphere, only simple techniques have been developed". They prove the simple fixings `X_{i,j}=0 (j>i)`, `X_{1,j}≥0` are "the strongest possible ones for the class of Givens rotations".
+  - §6, summarized: **Q1:** whether GDDs cover every possible fundamental domain of an isometry group; **Q2:** whether each such group has a fundamental domain with polynomially many facets and exactly one representative per binary orbit. The authors also propose variants based on extension complexity or separation complexity, and characterizing the groups with O(1) representatives per orbit in Rⁿ.
+- **Hojny and Liberti, "A computational comparison of handling distance constraints in MINLP", arXiv 2605.02305 (2026).** On rotations: applications such as kissing-number and sphere-packing problems currently have only basic methods for handling rotational symmetry. They prove the simple fixings `X_{i,j}=0 (j>i)`, `X_{1,j}≥0` are maximally strong within the class of Givens rotations.
 - **SCIP 10** (arXiv 2511.18580) extends SST cuts and orbitopes to reflections and adds a heuristic for double-lex block matrices (disk packing).
-- **Other solvers.** Berthold, Kamp, Mexi, Pokutta, Pólik (FICO), arXiv 2605.04850 (2026), footnote: symmetry handling "has not been added to nonlinear solvers" because such symmetry is rarer and harder to detect. SCIP is the documented exception. I found no documentation of symmetry handling for nonlinear constraints in Gurobi or BARON; this is uncertain.
+- **Other solvers.** Berthold, Kamp, Mexi, Pokutta, Pólik (FICO), arXiv 2605.04850 (2026), footnote: symmetry handling is absent from nonlinear solvers because such symmetry is rarer and harder to detect. SCIP is the documented exception. I found no documentation of symmetry handling for nonlinear constraints in Gurobi or BARON; this is uncertain.
 
 ### B4. Symmetry, relaxation strength, and reformulation in continuous nonconvex problems
 
@@ -1202,14 +1188,14 @@ The in-house spatial-B&B lower bounds do not cover AMP.
    - (a) Node-count theory: can lexicographic or orbitopal reduction make spatial B&B polynomial on S_n-symmetric nonconvex separable families (the in-house `P_n`)? What happens under group-preserving perturbations?
    - (b) Symmetry handling for rotation × permutation groups (point configurations) that are compatible with spatial branching (unified framework Remark 14 and §6; Hojny–Liberti 2026).
    - (c) Automatic use of the degree principle or orbit-space aggregation (Riener; Qu et al.) for non-separable invariant QCQPs.
-6. Structure of lexicographically maximal binary points under cyclic groups. Described as open "for at least ten years".
+6. Structure of lexicographically maximal binary points under cyclic groups. Described as open for a decade or longer.
 7. Necessary conditions and constraint-count lower bounds for logarithmic ideal formulations (Vielma–Nemhauser 2011; Lyu et al.).
 
 ## Appendix D. Convex MINLP, decomposition, new directions
 
 ### Scout: convex MINLP, decomposition/Lagrangian methods, and 2024–2026 directions
 
-Date: 2026-09-22. Scratch scout; not a result. Sources are primary papers or arXiv abstracts unless marked "(local KB)", meaning a summary in `literature/papers/<slug>/paper.md`. A failed search does not establish that a question is open. "In-house" refers to `/home/sgusev/repo/minlp-notes/{results,notes,paper-*}`.
+Date: 2026-09-22. Scratch scout; not a result. Sources are primary papers or arXiv abstracts unless marked "(local KB)", meaning a summary in `literature/papers/<slug>/paper.md`. A failed search does not establish that a question is open. "In-house" refers to `/workspace/repo/minlp-notes/{results,notes,paper-*}`.
 
 ---
 
@@ -1219,8 +1205,8 @@ Date: 2026-09-22. Scratch scout; not a result. Sources are primary papers or arX
 
 - **Methods.** OA (Duran–Grossmann 1986; Fletcher–Leyffer 1994), ECP (Westerlund–Pettersson 1995), ESH (Kronqvist, Lundell, Westerlund, JOGO 2016, [link](https://link.springer.com/article/10.1007/s10898-015-0322-3)), and single-tree LP/NLP-B&B (Quesada–Grossmann 1992). Serrano, Schwarz and Gleixner, JOGO 2020 ([link](https://link.springer.com/article/10.1007/s10898-020-00906-y)), show that ESH is Kelley's cutting-plane method applied to a gauge reformulation.
 - **Regularization.** Kronqvist, Bernal and Grossmann, MP 2020 ([link](https://link.springer.com/article/10.1007/s10107-018-1356-3)); Bernal, Peng, Kronqvist and Grossmann, JOGO 2022 ([link](https://link.springer.com/article/10.1007/s10898-022-01178-4)). Both are implemented in MindtPy as ROA.
-- **Nonsmooth OA.** Wei, Liu and Zeng, arXiv:2602.04122 (2026) ([link](https://arxiv.org/html/2602.04122)), strengthen OA cuts with constraint-derived parameters ρ_j. They note that the maximum used to choose these parameters "is impractical to compute in general."
-- **Constraint qualifications and cycling.** Tamm and Kronqvist, arXiv:2606.26897 (June 2026) ([link](https://arxiv.org/abs/2606.26897)). Their Theorem 3: when Slater's condition nearly fails, gradient cuts at near-exact NLP solutions need not separate the MILP iterate. Their Theorem 7: adding ECP cuts at suboptimal integer assignments gives finite convergence without CQs at non-optimal subproblems. Quote: "convergence is finite but without a bound on the number of iterations … we doubt that it is possible to find such a bound."
+- **Nonsmooth OA.** Wei, Liu and Zeng, arXiv:2602.04122 (2026) ([link](https://arxiv.org/html/2602.04122)), strengthen OA cuts with constraint-derived parameters ρ_j. They note that the maximum used to choose these parameters cannot generally be computed at a practical cost.
+- **Constraint qualifications and cycling.** Tamm and Kronqvist, arXiv:2606.26897 (June 2026) ([link](https://arxiv.org/abs/2606.26897)). Their Theorem 3: when Slater's condition nearly fails, gradient cuts at near-exact NLP solutions need not separate the MILP iterate. Their Theorem 7: adding ECP cuts at suboptimal integer assignments gives finite convergence without CQs at non-optimal subproblems. The paper establishes finite convergence, but no iteration-count bound is given; the authors doubt that such a bound can be established.
 - **Polyhedral OA for MISOCP.** Dai, arXiv:2608.10055 (local KB `dai2026-...`) proves that cut-depth gains per new supporting direction vanish linearly with angular proximity, and proposes progressive-integrality OA.
 - **Solvers.** SHOT ([Lundell, Kronqvist, Westerlund, JOGO 2022](https://link.springer.com/article/10.1007/s10898-022-01128-0)) supports CPLEX, Gurobi, Cbc and HiGHS; single-tree mode requires CPLEX or Gurobi (local KB `lundell2026-...`). Other implementations: MindtPy (OA, ECP, LP/NLP, GOA, ROA, FP), DICOPT, Bonmin, AOA (AIMMS), and Minotaur. Boscia.jl solves node relaxations with Frank–Wolfe over the mixed-integer hull through a MILP linear-minimization oracle ([Hendrych et al., MPC 2025](https://link.springer.com/article/10.1007/s12532-025-00288-w); [tutorial arXiv:2511.01479](https://arxiv.org/pdf/2511.01479)). Gurobi 13 treats general MINLP with spatial B&B over refined OA and documents no convex-specific path (in-house `notes/scout-20260912-convex-gdp-algorithms.md`).
 - **Complexity.** Hijazi, Bonami and Ouorou, INFORMS JoC 2014 ([preprint](https://optimization-online.org/wp-content/uploads/2011/06/3050.pdf)), give a ball example on which OA needs 2^n iterations. Any polyhedral outer approximation of the ball needs 2^n hyperplanes before it excludes all lattice points. Their example is also hard for NLP-B&B, because the relaxation stays feasible until every variable is fixed. It is therefore **not** a separation between the two methods. Fletcher–Leyffer (1994) give an OA instance that visits all integer points. Basu, Jiang, Kerger and Molinaro, MP 2025 (local KB `basu2025-...`), prove information-complexity lower bounds. They state Conjectures 1–3: constrained transfer of lower bounds, Ω(d² log …) for general binary queries, and upper-bound transfer.
@@ -1235,10 +1221,10 @@ Date: 2026-09-22. Scratch scout; not a result. Sources are primary papers or arX
 - **Foundations.** Frangioni and Gentile, MP 2006; Günlük and Linderoth, MP 2010 (local KB). Bestuzheva, Gleixner and Vigerske, MPC 2023, give a computational study of perspective cuts in SCIP (local KB).
 - **Rank-one and indicator hulls.** Atamtürk and Gómez, MP 2018 (M-matrices) and MP 2023 (supermodularity, [arXiv:2012.14633](https://arxiv.org/pdf/2012.14633)). Han, Gómez and Atamtürk, 2×2 convexifications, MP 2023. Wei, Gómez and Küçükyavuz, ideal formulations for constrained convex problems with indicators, MP 2022 ([arXiv:2007.00107](https://arxiv.org/abs/2007.00107)). **Wei, Atamtürk, Gómez and Küçükyavuz**, MP 204:703–737 (2024) ([arXiv:2201.00387](https://arxiv.org/abs/2201.00387)): the epigraph hull of a convex quadratic with indicators equals one PSD constraint plus linear constraints over an inverse-principal polytope. Han and Gómez, MOR 2025 (low-rank compact extended formulations). Shafiee and Kılınç-Karzan, MP 2024 ([link](https://link.springer.com/article/10.1007/s10107-023-02047-y)). Lee, Gómez and Atamtürk, MP 2026, multi-period QPs ([arXiv:2412.17178](https://arxiv.org/abs/2412.17178)). Rank-one convexification with step-function penalties ([arXiv:2504.16330](https://arxiv.org/pdf/2504.16330)). Stieltjes matrices with indicators ([arXiv:2404.04236](https://arxiv.org/pdf/2404.04236)).
 - **Algorithms over graphs.** Bhathena, Fattahi, Gómez and Küçükyavuz give an O(n²) algorithm on trees (MP 2025) and a parametric method under treewidth, volume growth and a margin condition ([arXiv:2603.02103](https://arxiv.org/html/2603.02103v1)). Xu, Fattahi, Gómez and Küçükyavuz, "Coordinate Optimality Reformulation (CORe)", [arXiv:2608.01385](https://arxiv.org/abs/2608.01385) (Aug 2026). Choi, Fattahi, Han, Gómez and Lozano use decision diagrams, O(n^{k+1}) for trees with k leaves ([arXiv:2608.22815](https://arxiv.org/html/2608.22815v1)).
-- **Solvers.** CPLEX and Gurobi apply internal perspective strengthening. Bhathena et al. 2026 "conjecture Gurobi internally exploits perspective-based strengthening more effectively" than a manual reformulation. SCIP strengthens estimators for semicontinuous variables. MOSEK solves perspective reformulations as conic problems.
+- **Solvers.** CPLEX and Gurobi apply internal perspective strengthening. Bhathena et al. 2026 conjecture that Gurobi uses perspective-based strengthening more effectively internally than a manual reformulation. SCIP strengthens estimators for semicontinuous variables. MOSEK solves perspective reformulations as conic problems.
 
 **Open problems**
-- Bhathena et al. 2026 (arXiv:2603.02103 §2.2): "For the general case ω>1 … the existence of a compact representation of f_u remains an open question." **In-house:** `results/indicator-quadratic-treewidth-two-hardness.md` proves NP-hardness at bandwidth 2, even with near-identity Hessians. `results/smoothed-indicator-block-dp.md` and `results/smoothed-spectral-indicator-messages.md` give smoothed polynomial exact algorithms. The remaining target is a conic extension-complexity lower bound for tree-structured epigraph hulls (`notes/research-20260922-frontier-scout.md`).
+- Bhathena et al. 2026 (arXiv:2603.02103 §2.2): for general ω>1, it is unresolved whether f_u admits a compact representation. **In-house:** `results/indicator-quadratic-treewidth-two-hardness.md` proves NP-hardness at bandwidth 2, even with near-identity Hessians. `results/smoothed-indicator-block-dp.md` and `results/smoothed-spectral-indicator-messages.md` give smoothed polynomial exact algorithms. The remaining target is a conic extension-complexity lower bound for tree-structured epigraph hulls (`notes/research-20260922-frontier-scout.md`).
 - Hull of conic-quadratic sets with indicators and bounded continuous variables (Gómez 2021; in-house table item #20, flagged).
 - Compact hull of on/off constraints with non-monotone functions (Hijazi et al. 2017; item #19).
 - **In-house:** `results/perspective-integer-precision.md` is a transfer lemma, not a new reformulation.
@@ -1251,14 +1237,14 @@ Date: 2026-09-22. Scratch scout; not a result. Sources are primary papers or arX
 - Dai 2026 (above); warm-startable progressive-integrality outer-inner approximation for AC unit commitment ([arXiv:2603.19012](https://arxiv.org/pdf/2603.19012)).
 
 **Open problems**
-- Lubin et al. 2018, §8: "It remains an open question what guidance we can provide to modelers on how to avoid cases where polyhedral approximation can fail, or even if this could be resolved automatically at the level of DCP." Coey et al. 2020 assume well-posed conic primal–dual pairs at every node; strong-duality failures can prevent convergence. This is in-house table item #22. Tamm–Kronqvist 2026 address only the smooth NLP-OA analogue, and only through an ECP fallback.
+- Lubin et al. 2018, §8: the unresolved questions are how to guide modelers away from polyhedral-approximation failures and whether DCP can address those failures automatically. Coey et al. 2020 assume well-posed conic primal–dual pairs at every node; strong-duality failures can prevent convergence. This is in-house table item #22. Tamm–Kronqvist 2026 address only the smooth NLP-OA analogue, and only through an ECP fallback.
 - MICP representability: sufficiency of the midpoint lemma, rationality, and the diameter assumption (item #33, partly addressed by Zadik 2024).
 - Efficient conic disjunctive-cut separation and monoidal strengthening for conic MIPs (Lodi et al. 2023; item #21).
 
 ### A4. GDP, P-split, and hull size
 
 - **State of the art.** Pyomo.GDP and GDPopt: LOA, GLOA, LBB, RIC, LD-SDA (Chen et al., Optim. Eng. 2022). LD-SDA: [arXiv:2405.05358](https://arxiv.org/html/2405.05358). DisjunctiveProgramming.jl ([arXiv:2304.10492](https://arxiv.org/pdf/2304.10492)). Hierarchy of relaxations via basic steps (Ruiz and Grossmann, EJOR 2012; Trespalacios and Grossmann 2014–2016). Conic GDP (Bernal Neira and Grossmann, COAP 2024, [arXiv:2109.09657](https://arxiv.org/abs/2109.09657)). "Between steps" (Kronqvist, Misener and Tsay, CPAIOR 2021 best paper, [arXiv:2101.12708](https://arxiv.org/abs/2101.12708)) led to the P-split paper (MP 218:57–94, 2026, [arXiv:2202.05198](https://arxiv.org/pdf/2202.05198)). Exact hull reformulation for quadratically constrained GDP (Gusev and Bernal Neira, [arXiv:2508.16093](https://arxiv.org/abs/2508.16093); the user's own work). Reaggregated hull for linear disjunctions with common coefficients (Lee and Bernal Neira, [arXiv:2601.11782](https://arxiv.org/abs/2601.11782), I&EC Res. 2026). Infinite-dimensional GDP ([arXiv:2608.27707](https://arxiv.org/abs/2608.27707)). Survey: Kronqvist, Bernal Neira and Grossmann, "50 years of MINLP and disjunctive programming", EJOR 2025 ([link](https://www.sciencedirect.com/science/article/pii/S0377221725005417)).
-- **Open problems.** P-split paper, intro: "the best encoding of a disjunctive program … as an MIP is an open question." Also open for P-split: weak (interval) bounds, strict monotonicity, adaptive partitioning (item #5). When big-M equals the hull for intersecting disjuncts (Vecchietti 2003; item #4, open). Basic-step selection is exponential (2^r combined disjuncts), and there is no theory for choosing basic steps. In-house candidate: NP-hardness of choosing bound-improving basic steps (not started).
+- **Open problems.** P-split paper, intro: the most effective MIP encoding of a disjunctive program remains unresolved. Also open for P-split: weak (interval) bounds, strict monotonicity, adaptive partitioning (item #5). When big-M equals the hull for intersecting disjuncts (Vecchietti 2003; item #4, open). Basic-step selection is exponential (2^r combined disjuncts), and there is no theory for choosing basic steps. In-house candidate: NP-hardness of choosing bound-improving basic steps (not started).
 - **In-house coverage.** P-split Theorem 6 counterexample and repair (`notes/common-factor-p-split-correction.md`); an unbounded coordinate effect (`notes/common-factor-p-split-rotation-gap.md`); scaling-disjunction hulls (`results/scaling-disjunctions-hull.md`); LB-ESH, a computational study of radial versus point separation in convex GDP (`paper-lbesh/`). The LB-ESH literature audit concludes that the method is a cut-selection policy within established perspective-cut OA (`notes/lbesh-development-literature.md`).
 
 ---
@@ -1268,19 +1254,19 @@ Date: 2026-09-22. Scratch scout; not a result. Sources are primary papers or arX
 ### B1. Lagrangian duality gaps (Shapley–Folkman line)
 
 - Udell and Boyd, "Bounding duality gap for separable problems with linear constraints" (COAP 2016, [arXiv:1410.4158](https://arxiv.org/pdf/1410.4158)). Kerdreux, Colin and d'Aspremont, MOR 48(2) 2023. Dubois-Taine and d'Aspremont, MP 2025 ([arXiv:2406.18282](https://arxiv.org/abs/2406.18282)): constructive Frank–Wolfe with Shapley–Folkman, gap at most 2D_C/√(K+1) + (m+1)·max ρ(f_i). **Dey and Xu**, [arXiv:2601.19003](https://arxiv.org/abs/2601.19003) (2026): OPT(b+E·1) − E ≤ DUAL(b) ≤ OPT(b), and E→0 for sparse smooth blocks under a projection-factor condition. Hübner, [arXiv:2503.02464](https://arxiv.org/abs/2503.02464): probabilistic gap bounds for partially nonconvex blocks.
-- **Decomposable zero-gap duals.** Cifuentes, Dey and Xu, [arXiv:2411.12085](https://arxiv.org/abs/2411.12085), IPCO 2025. Redundant RLT-type constraints make the Lagrangian dual exact while keeping it decomposable over tree decompositions. They give multiplicative bounds for packing and covering. **Stated open questions:** "whether one can achieve Lagrangian duals with decomposability and zero duality gap while solving an 'easier' subproblem in each iteration", and "It remains open whether the bound provided by Theorem 9 and Theorem 10 are tight."
+- **Decomposable zero-gap duals.** Cifuentes, Dey and Xu, [arXiv:2411.12085](https://arxiv.org/abs/2411.12085), IPCO 2025. Redundant RLT-type constraints make the Lagrangian dual exact while keeping it decomposable over tree decompositions. They give multiplicative bounds for packing and covering. **Stated open questions:** whether simpler iteration subproblems can retain a decomposable Lagrangian dual with zero gap, and whether the bounds in Theorem 9 and Theorem 10 are tight is also unresolved.
 - **Theory gap.** Dey–Xu need smoothness and hidden convexity, which excludes integer blocks. A non-asymptotic Shapley–Folkman gap bound for *mixed-integer* blocks, with integrality-aware nonconvexity measures, remains missing. **In-house:** `results/geoffrion-property-p-conjecture.md` refutes the precise common-optimizer form (P′) of Geoffrion's 1972 Property (P) without compactness. The informal Property (P) is not refuted. The Shapley–Folkman papers are used in-house as aggregation theory (`notes/research-20260922-aggregation-*`).
 
 ### B2. Augmented Lagrangian (AL) duality
 
 - **Chain.** Boland and Eberhard, MP 2015 (IP). Feizollahi, Ahmed and Sun, MP 2017 (MILP, any norm, finite ρ). Gu, Ahmed and Dey, SIOPT 30(1) 2020 (MIQP, polynomially bounded ρ). Bhardwaj, Narayanan and Pathapati, SIOPT 34(2) 2024 ([arXiv:2209.13326](https://arxiv.org/abs/2209.13326)): mixed-integer convex problems with sharp augmenting functions. **Lefebvre and Schmidt**, "Exact AL duality for nonconvex MINLP" (Optimization Online 2024/07, revised Dec 2025, [link](https://optimization-online.org/2024/07/exact-augmented-lagrangian-duality-for-nonconvex-mixed-integer-nonlinear-optimization/)). Norm penalties close the gap at finite ρ, and a finite ρ is computable in polynomial time for MILP.
-- **Explicit open questions (Lefebvre–Schmidt, §6, verbatim):** "the existence of a polynomial-time algorithm capable of computing a smaller penalty parameter is still an open and practically important question … we do not know if computing the smallest penalty parameter that closes the duality gap can be done in polynomial time. **We conjecture a negative answer** … the existence of an exact penalty representation with a penalty parameter of polynomial size is limited to MIQPs and it is still open if such a result can be obtained for … quadratically constrained quadratic problems." No follow-up resolving these was found (searched Sep 2026).
+- **Explicit open questions (Lefebvre–Schmidt, §6, summarized):** can a polynomial-time algorithm find a smaller exact penalty parameter? They also ask whether the least parameter that closes the duality gap is polynomial-time computable, and **conjecture that it is not**. A further question is whether polynomial-size exact penalty parameters, known for MIQPs, also exist for quadratically constrained quadratic problems. No follow-up resolving these was found (searched Sep 2026).
 - **Algorithms.** MIX-ALM (Cristofari, Di Pillo, Liuzzi and Lucidi, JOTA 2026): local AL with primitive integer directions (local KB). Generalized Dual Decomposition (Zhang and Jiang, [arXiv:2605.14273](https://arxiv.org/abs/2605.14273), May 2026): a nonlinear regularizer gives strong duality for two-stage MIPs while keeping parallelism.
 - **In-house:** `code/augmented_lagrangian_bb/albb.py` is a prototype of AL-based exact local bounds in αBB spatial B&B. It targets the cluster problem and is related to `results/cluster-free-branch-and-bound-constrained-minima.md`. Its docstring cites `results/augmented-lagrangian-exact-local-bounds.md`, **which does not exist in the repository**.
 
 ### B3. Column generation, ADMM, Benders, stochastic MINLP
 
-- **Decogo.** Muts, Nowak and Hendrix: DECOA, JOGO 2020 (local KB); column and disjunctive-cut generation, Optim. Eng. 2021 ([link](https://link.springer.com/article/10.1007/s11081-020-09576-x)). Wu, Muts, Nowak and Hendrix, overlapping convex-hull relaxations, JOGO 2024/25 (local KB). The FW-CG convex-hull relaxation feeds heuristics. DECOA: "large-scale and nonconvex extensions remain open."
+- **Decogo.** Muts, Nowak and Hendrix: DECOA, JOGO 2020 (local KB); column and disjunctive-cut generation, Optim. Eng. 2021 ([link](https://link.springer.com/article/10.1007/s11081-020-09576-x)). Wu, Muts, Nowak and Hendrix, overlapping convex-hull relaxations, JOGO 2024/25 (local KB). The FW-CG convex-hull relaxation feeds heuristics. DECOA: extensions to large-scale and nonconvex settings remain to be developed.
 - **ADMM and penalty-ADM.** Geißler, Morsi, Schewe and Schmidt, SIOPT 2017 (penalty ADM as a feasibility pump). Takapoui et al. (heuristic). Mix-CALADIN (Han et al., [arXiv:2604.14897](https://arxiv.org/pdf/2604.14897), 2026) claims convergence for Boolean variables under Lipschitz assumptions; the claims are unverified. ADMM for MINLP has **no global-optimality guarantee** in general. Guarantees exist only through exact-AL penalty arguments (B2).
 - **Benders and stochastic.** Li and Grossmann, JOGO 2019: GBD branch-and-cut with Lagrangian and Benders cuts, convergent in the limit (local KB). Cao and Zavala, JOGO 2019 ([link](https://link.springer.com/article/10.1007/s10898-019-00769-y)): reduced-space B&B that branches only on first-stage variables. Füllner and Rebennack's SDDP review (SIAM Rev. 2025) lists open problems: deterministic stopping, cheaper nonconvex cuts, and high-dimensional regularization. Rathi et al., JOGO 2025: column generation for multistage stochastic MINLP with discrete states. Lou, Luo, Wächter and Wei, [arXiv:2501.11700](https://arxiv.org/abs/2501.11700): barrier-smoothed nonconvex two-stage decomposition with local stationarity only. Guan et al., Proxy Benders ([arXiv:2606.07403](https://arxiv.org/abs/2606.07403)): learned duals are projected to feasibility, so the cuts remain valid.
 - **Open.** Finite exact termination for decomposition with continuous first-stage variables (Ogbe and Li 2019; Ahmed 2004; item #36). Monotone scenario-group bounds (item #12). A-priori regularization and efficient Lagrangian duals in nonconvex SDDP (item #27).
@@ -1297,15 +1283,15 @@ Date: 2026-09-22. Scratch scout; not a result. Sources are primary papers or arX
 
 ### C2. GPU first-order methods and GPU relaxations
 
-- **LP.** PDLP (Applegate et al., [arXiv:2501.07018](https://arxiv.org/abs/2501.07018)); cuPDLP.jl ([arXiv:2311.12180](https://arxiv.org/pdf/2311.12180)); cuPDLPx ([arXiv:2507.14051](https://arxiv.org/pdf/2507.14051)); D-PDLP multi-GPU ([arXiv:2601.07628](https://arxiv.org/pdf/2601.07628)). Survey: Lu and Yang, [arXiv:2506.02174](https://arxiv.org/pdf/2506.02174). Its open items include FOM-specific presolve ("remains an open research question") and unreliable primal-weight rules. Presolve for GPU FOMs: [arXiv:2604.23951](https://arxiv.org/pdf/2604.23951). NVIDIA open-sourced cuOpt in 2025, and GAMS offers it ([link](https://www.gams.com/blog/2025/09/gpu-accelerated-optimization-with-gams-and-nvidia-cuopt/)). Gurobi ships a GPU PDHG. Batched PDHG for LPs inside MIP B&B (Blin, Gualandi, Maes, Lodi and Stellato, [arXiv:2601.21990](https://arxiv.org/pdf/2601.21990)). Fix-and-propagate from low-precision FOM solutions ([arXiv:2503.10344](https://arxiv.org/pdf/2503.10344)).
+- **LP.** PDLP (Applegate et al., [arXiv:2501.07018](https://arxiv.org/abs/2501.07018)); cuPDLP.jl ([arXiv:2311.12180](https://arxiv.org/pdf/2311.12180)); cuPDLPx ([arXiv:2507.14051](https://arxiv.org/pdf/2507.14051)); D-PDLP multi-GPU ([arXiv:2601.07628](https://arxiv.org/pdf/2601.07628)). Survey: Lu and Yang, [arXiv:2506.02174](https://arxiv.org/pdf/2506.02174). Its open items include FOM-specific presolve (has not yet been settled) and unreliable primal-weight rules. Presolve for GPU FOMs: [arXiv:2604.23951](https://arxiv.org/pdf/2604.23951). NVIDIA open-sourced cuOpt in 2025, and GAMS offers it ([link](https://www.gams.com/blog/2025/09/gpu-accelerated-optimization-with-gams-and-nvidia-cuopt/)). Gurobi ships a GPU PDHG. Batched PDHG for LPs inside MIP B&B (Blin, Gualandi, Maes, Lodi and Stellato, [arXiv:2601.21990](https://arxiv.org/pdf/2601.21990)). Fix-and-propagate from low-precision FOM solutions ([arXiv:2503.10344](https://arxiv.org/pdf/2503.10344)).
 - **NLP.** MadNLP and ExaModels ([arXiv:2403.15913](https://arxiv.org/abs/2403.15913)); GPU second-order LP/NLP ([arXiv:2508.16094](https://arxiv.org/pdf/2508.16094)).
-- **Global optimization.** Gottlieb and Stuber, "Automatic generation of GPU kernels for evaluators of McCormick-based relaxations and subgradients", MPC 2026 ([doi](https://link.springer.com/article/10.1007/s12532-026-00339-w)); their STOGO 2025 talk covers GPU B&B with a specialized PDLP. Zhang et al. (KU Leuven/RWTH/FZJ), GPU mean-value-form interval B&B in MAiNGO ([arXiv:2507.20769](https://arxiv.org/abs/2507.20769)): "three orders of magnitude" over CPU interval arithmetic. B3-PWL GPU-batched B&B for SOS2 ([arXiv:2608.28988](https://arxiv.org/html/2608.28988)).
+- **Global optimization.** Gottlieb and Stuber, "Automatic generation of GPU kernels for evaluators of McCormick-based relaxations and subgradients", MPC 2026 ([doi](https://link.springer.com/article/10.1007/s12532-026-00339-w)); their STOGO 2025 talk covers GPU B&B with a specialized PDLP. Zhang et al. (KU Leuven/RWTH/FZJ), GPU mean-value-form interval B&B in MAiNGO ([arXiv:2507.20769](https://arxiv.org/abs/2507.20769)): a speedup spanning three orders of magnitude over CPU interval arithmetic. B3-PWL GPU-batched B&B for SOS2 ([arXiv:2608.28988](https://arxiv.org/html/2608.28988)).
 - **Theory gaps.** (i) No complexity theory for warm-started PDHG re-solves across B&B nodes or OA rounds. (ii) Safe dual bounds from low-accuracy FOM duals are straightforward with finite boxes (Neumaier–Shcherbina 2004), but no analysis relates bound loss to FOM accuracy. (iii) Mass-parallel box subdivision trades node count for bound quality with no guarantee. **In-house:** `results/fbbt-doubly-exponential-convergence.md` and `results/fbbt-monotone-system-hardness.md` bear on GPU FBBT; the `results/spatial-bb-*-exponential-lower-bound.md` results bound what parallel subdivision can gain.
 
 ### C3. Exact and certified solving
 
-- Cheung, Gleixner and Steffy (VIPR, 2017). Eifler and Gleixner, MP 2023 (exact rational MIP). Eifler and Gleixner, safe GMI cuts, 2024. Borst, Eifler and Gleixner, certified propagation and dual proof analysis ([arXiv:2403.13567](https://arxiv.org/abs/2403.13567)). **SCIP 10** (Hojny et al., [arXiv:2511.18580](https://arxiv.org/pdf/2511.18580)): "the exact solving mode is restricted to mixed-integer linear programs". Its certificates cover B&C only after presolve: "correctness of the presolving process can currently not be certified in this format". Presolve can be certified separately only for binary programs with integer data. Exact mode is about 10× slower than default. Hoen and Gleixner, [arXiv:2412.14710](https://arxiv.org/abs/2412.14710): exact audit of floating-point B&B decisions. Wood et al., SMT verification of VIPR ([arXiv:2312.10420](https://arxiv.org/abs/2312.10420)). CakeML/HOL4 VIPR checker.
-- **Convex MINLP certificates.** Halbig, Hümbs, Rösel, Schewe and Weninger, IJOC 36(6) 2024. **Stated open question:** "It remains open to identify special classes of problems for which either the calculation and/or the verification of certificates is provably easy or hard." Also open: exploiting non-unique certificate half-spaces to shrink certificates.
+- Cheung, Gleixner and Steffy (VIPR, 2017). Eifler and Gleixner, MP 2023 (exact rational MIP). Eifler and Gleixner, safe GMI cuts, 2024. Borst, Eifler and Gleixner, certified propagation and dual proof analysis ([arXiv:2403.13567](https://arxiv.org/abs/2403.13567)). **SCIP 10** (Hojny et al., [arXiv:2511.18580](https://arxiv.org/pdf/2511.18580)): exact mode applies only to mixed-integer linear programs. Its certificates cover B&C only after presolve: these certificates do not establish correctness of presolve. Presolve can be certified separately only for binary programs with integer data. Exact mode is about 10× slower than default. Hoen and Gleixner, [arXiv:2412.14710](https://arxiv.org/abs/2412.14710): exact audit of floating-point B&B decisions. Wood et al., SMT verification of VIPR ([arXiv:2312.10420](https://arxiv.org/abs/2312.10420)). CakeML/HOL4 VIPR checker.
+- **Convex MINLP certificates.** Halbig, Hümbs, Rösel, Schewe and Weninger, IJOC 36(6) 2024. **Stated open question:** the authors seek special problem classes where certificate construction, verification, or both are provably easy or provably hard. Also open: exploiting non-unique certificate half-spaces to shrink certificates.
 - **Gap.** No certified or exact solver exists for **nonconvex** MINLP spatial B&B. That would require certificates for bound tightening, relaxations and branching over reals. discopt reports such certification bugs (issue #1301).
 - **In-house:** `paper-certified-minlp/` gives checkable lower bounds for convex MINLP through rational OA and VIPR replay. The audit `notes/certified-minlp-literature-audit.md` rules out priority claims. Nonconvex certification and certificate-size theory are not addressed in-house.
 

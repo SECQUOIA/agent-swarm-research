@@ -1,0 +1,124 @@
+\section{Discussion}\label{sec:discussion}
+
+\subsection{Practical relevance}
+The bound of Theorem~\ref{thm:main} is far from a practical running
+time. In \eqref{eq:explicitwork}, the net size $J_*$ and the grid factor
+$(K+2)^{w+1}$ are $(w+1)$st powers of quantities that grow polynomially
+with $n$, $C$, $H$, $\mu^{-1}$, $R$, and $\sigma^{-1}$. To see the
+scale, take $n=100$, $w=2$, $H=2$, $\mu=C=R=1$, and $\sigma=1/10$. Then
+\eqref{eq:mainparameters} and \eqref{eq:gridB} give $J_*>5\cdot10^{20}$
+and $K>6\cdot10^4$, so $J_*(K+2)^{w+1}>10^{35}$ even before the factors
+$b$ and $P_w(\ell)$ are included. Moreover, every oracle call runs a
+full grid dynamic program, and each message uses at most $J_*(1+en)$
+oracle calls in expectation (Step~4 of the proof of
+Theorem~\ref{thm:main}). These factors come from bounds chosen for the
+analysis: one Lipschitz constant and one grid serve all supports, and the
+net ignores where the optimal support changes. We have not tried to
+reduce them. An exact-rational reference implementation, available from
+the authors, replaces $X$ and $L$ by bounds specific to each message. We
+used it only to check correctness on small instances, including supports
+that are optimal only at a tie point.
+
+Nor does Theorem~\ref{thm:main} imply a speedup over existing exact
+methods, such as the parametric dynamic programs of
+\cite{BhathenaTrees,BhathenaStructured} discussed in
+Section~\ref{sec:related}. In the synthetic banded experiments of
+\cite[Section~7.2, Table~1]{BhathenaStructured}, with bandwidth two or
+four and $n$ up to $2{,}000$, the reported average number of quadratic
+pieces retained after pruning (branches, in our terminology) is between
+23 and $1{,}139$. Exponential messages such as that of
+Theorem~\ref{thm:fixed-data} therefore need not arise on such data. The
+guarantee of Theorem~\ref{thm:main} matters most for instances with many
+near ties, like the example of that theorem.
+
+The grid oracle of Lemma~\ref{lem:gridoracle} solves the problem
+without side constraints. A cardinality bound on the support can be
+added at a polynomial cost, by also recording the number of active
+vertices in the dynamic-program tables. Nonlinear constraints on $x$
+would need a different oracle. Theorem~\ref{thm:dictionary} itself
+applies to any support family for which a restricted additive oracle is
+available.
+
+\subsection{Possible practical uses}
+Two parts of the analysis may still be useful in practice, although we
+have not tested either of them.
+
+The first is the penalty perturbation itself, used inside a pruned exact
+dynamic program. The exact algorithm of \cite{BhathenaStructured} prunes
+branches that are never optimal on a bounded region of boundary values.
+Its complexity bound rests on a deterministic margin condition
+\cite[Definition~5 and Theorem~1]{BhathenaStructured}. At each bag
+$B_u$, give every support of the local subproblem the optimal cost of
+that subproblem with the bag variables set to zero, and group the
+supports into classes by their indicator values on the vertices within a
+fixed graph distance of $B_u$. The $\eta$-optimal set of a class
+consists of its supports whose cost is within $\eta$ of the least cost
+in the class. The condition requires a single $k$ that bounds the size
+of every $\eta$-optimal set, over all bags and classes. Under our
+perturbation, Lemma~\ref{lem:count} bounds the expected size of each
+such set by $e$ when $\eta\le\sigma/(2n)$. An expected bound for each
+set is weaker than their uniform bound, so this gives no running-time
+guarantee for their algorithm. Perturbing the penalties may still
+shorten the lists that their algorithm keeps on instances with many near
+ties. The loss in accuracy is bounded in advance: from an exact solution
+of the perturbed problem, \eqref{eq:certificate} gives lower and upper
+bounds on the original optimum that differ by at most $n\sigma$ for
+every draw.
+
+The second is certified enumeration with oracles other than the grid
+dynamic program. Lemma~\ref{lem:enumeration} works with any restricted
+additive oracle in the sense of \eqref{eq:oracle}. From such an oracle
+it builds a list $E$ that contains every support within $\delta$ of the
+optimum and only supports within $\delta+2\varepsilon$. It makes at most
+$1+n|E|$ oracle calls, so its cost grows with the number of near-optimal
+supports, which can be exponential without perturbation.
+
+Approximate decision diagrams, described in Section~\ref{sec:related},
+can serve as such oracles on the structures they cover. In the truncated
+diagrams of \cite{GomezBanded} and the neighborhood-merged diagrams of
+\cite{ChoiDiagrams}, each support is encoded by a path whose length
+differs from the cost of that support by at most a bound that is the
+same for all supports. For \cite{GomezBanded} the bound follows by
+summing \cite[Proposition~7]{GomezBanded} along the path; for
+\cite{ChoiDiagrams} it is \cite[Proposition~9]{ChoiDiagrams}, and it is
+proportional to the merging tolerance. If the truncation depth or the
+merging tolerance is chosen so that this bound is at most
+$\varepsilon/2$, a shortest path through the arcs consistent with the
+fixed bits, returned with the exact cost of its support, is a restricted
+additive oracle with accuracy $\varepsilon$. The diagrams also need not
+be rebuilt at each net point. As noted in Section~\ref{sec:related},
+they are built from the matrix alone, and only their arc lengths change
+with the linear coefficients and penalties. In \eqref{eq:message} the
+boundary value $t$ enters only through the linear coefficients
+$c_I+2Q_{IS}t$. Hence one diagram for $Q_{II}$, with its accuracy set for
+the largest linear coefficients on the box, serves every net point of a
+message.
+
+\subsection{Open questions}
+\begin{enumerate}
+\item \emph{Computational study.} How large are the dictionaries of
+perturbed instances in practice, and how do they compare with the pruned
+lists of exact parametric dynamic programs
+\cite{BhathenaTrees,BhathenaStructured} on the same data?
+\item \emph{Avoiding the parameter net.} The net covers the whole box
+uniformly, and its size $J_*$ is a large factor in
+\eqref{eq:explicitwork}. Is there an adaptive search over boundary values
+with a provable expected bound, for example one that refines the net
+only where the enumerated lists change?
+\item \emph{Recursive composition.} Our algorithm computes each message
+directly from its own subproblem. This avoids products of child
+dictionaries but repeats work. Can child dictionaries be combined
+bottom-up, with an expected bound on the intermediate lists, without
+additional assumptions on $Q$?
+\item \emph{Deterministic conditions.} Theorem~\ref{thm:main} bounds the
+expected dictionary size over perturbation draws for every instance, but
+it does not say which unperturbed instances have small messages. Which
+checkable conditions on unperturbed data, other than the margin and
+volume-growth conditions of \cite{BhathenaStructured}, guarantee
+polynomial message size at fixed treewidth?
+\item \emph{Finer representation lower bounds.} The star argument of
+Appendix~\ref{sec:representation} concerns the inverse-principal polytope
+including its inverse entries. Are there exponential lower bounds for
+formulations that project out the inverse entries, such as extended
+formulations of the closed convex hull of the epigraph?
+\end{enumerate}

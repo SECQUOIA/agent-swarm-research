@@ -81,7 +81,7 @@ Finally, `log(1/delta)` is polynomial in the source length. Calling an additive 
 
 The independently written [rational checker](../code/bilevel_dense_box/check_conditioned_hardness_first_review.py) constructs the normalized QP, solves rational principal active systems, and accepts a follower only after checking the full exact box KKT conditions. It then verifies the relative-coordinate bound and the readout error with exact fractions. Cases include endpoints, ReLU breakpoints, Boolean leaders, and a three-variable unsatisfiable formula containing all eight sign clauses. Floating-point conditioning is not used to validate coordinates of tiny amplitude.
 
-Run with `/home/sgusev/miniconda3/envs/minlp-notes/bin/python code/bilevel_dense_box/check_conditioned_hardness_first_review.py`. It passed 42 exact follower/KKT/error/gap checks using 390 rational active systems, with follower dimensions up to 17. These finite checks complement the uniform proof and do not establish the complexity claim by themselves.
+Run with `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python code/bilevel_dense_box/check_conditioned_hardness_first_review.py`. It passed 42 exact follower/KKT/error/gap checks using 390 rational active systems, with follower dimensions up to 17. These finite checks complement the uniform proof and do not establish the complexity claim by themselves.
 
 ## 6. Near-identity and strict diagonal dominance addendum
 

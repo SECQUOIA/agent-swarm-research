@@ -1,0 +1,848 @@
+\section{Coupling constraints}\label{sec:constraints}
+
+The corrected-grid bound of Proposition~\ref{prop:cellwise} rounds each coordinate
+independently, and every rounded point is feasible because the domain is a
+product. A coupling constraint, even one as sparse as $x_1=x_2$, destroys
+this: independent rounding leaves the feasible set, and the minimum over
+feasible grid points need not be a lower bound. This section shows that
+totally unimodular (TU) coupling of the continuous variables, with data
+aligned to a uniform mesh, admits a \emph{feasible} mean-preserving rounding.
+Filtering, certificates, accuracy-independent state counts and exact output
+then carry over. The price is visible in two places: the rounding is
+correlated, so a bound on the full continuous Hessian replaces coordinate
+curvature, and the mesh must be uniform, so the per-coordinate state count is
+of order $\sqrt{n_c\kappa_c}$ instead of logarithmic in $n$. The last
+subsection shows that both prices are intrinsic to this approach.
+
+\subsection{Model}\label{sec:tu-model}
+
+\begin{definition}[Aligned TU model]\label{def:tu-model}
+Let $n_c\ge1$ and $n_d\ge0$. The feasible set is
+\[
+X=\bigl\{(x,z)\in\R^{n_c}\times\Z^{n_d}:\ \ell\le x\le u,\ z\in\mathcal Z,\
+Ax+Bz\le b\bigr\},\qquad \mathcal Z=Z_1\times\dots\times Z_{n_d},
+\]
+with the following data.
+\begin{enumerate}[label=(\roman*)]
+\item $A\in\{0,\pm1\}^{m\times n_c}$ is totally unimodular; $B$ and $b$ are
+rational.
+\item $\ell<u$ componentwise (fixed continuous coordinates have been
+substituted), and every $Z_k$ is a nonempty, explicitly listed finite set of
+integers.
+\item A rational \emph{mesh unit} $\eta>0$ is given such that
+\begin{equation}\label{eq:tu-align}
+\ell/\eta\in\Z^{n_c},\qquad u/\eta\in\Z^{n_c},\qquad
+(b-Bz)/\eta\in\Z^m\quad\text{for every }z\in\mathcal Z .
+\end{equation}
+For integral $\ell,u,B,b$ one may take $\eta=1$. Write $D_0$ for the
+denominator of $\eta$ in lowest terms.
+\item $F(x,z)=\sum_{a\in\mathcal A}f_a(v_{S_a})$ with $v=(x,z)$, and a tree
+decomposition with $N$ nodes and bags of size at most $p$ is given such that
+every scope $S_a$ and every row support
+$\{i:A_{ri}\ne0\}\cup\{k:B_{rk}\ne0\}$ is contained in some bag.
+\item (Directional curvature.) A linear subspace $\mathcal K\subseteq\R^{n_c}$
+and a rational $\bar L>0$ are given such that, for every $z\in\mathcal Z$,
+$F(\cdot,z)$ is twice continuously differentiable on an open set containing
+$[\ell,u]$ and
+\begin{equation}\label{eq:tu-curv}
+w^{\T}\nabla^2_{xx}F(x,z)\,w\le\bar L\norm w^2\qquad
+(x\in[\ell,u],\ w\in\mathcal K).
+\end{equation}
+Either $\mathcal K=\R^{n_c}$, or $\mathcal K=\ker C$, where the rows of $C$
+are the continuous parts $A_r$ of some \emph{equality pairs}, that is, pairs
+of rows $r,r'$ with $(A_{r'},B_{r'},b_{r'})=-(A_r,B_r,b_r)$.
+\end{enumerate}
+\end{definition}
+
+Equalities are thus written as two opposite inequalities; this preserves
+total unimodularity. Only the continuous columns $A$ must be TU: the integer
+columns $B$ are arbitrary, because the rounding below never changes $z$.
+Throughout we write
+\[
+W=\max_i(u_i-\ell_i),\quad d=\max\{1,\max_k\lvert Z_k\rvert\},\quad
+h_j=\eta\,2^{-j},\quad E_j=\frac{n_c\bar L h_j^2}{8},
+\]
+$S=\mathcal S=\argmin_XF$, $\OPT=\min_XF$, and $S_i=\{v_i:v\in S\}$ for the projection of
+$S$ on coordinate $i$ (continuous or discrete). When a growth constant is
+discussed, it is a set-growth constant
+\begin{equation}\label{eq:tu-setgrowth}
+F(v)-\OPT\ge g\dist(v,S)^2\qquad(v\in X),\qquad
+\kappa_c=\max\{1,\bar L/g\},
+\end{equation}
+with the Euclidean distance on $\R^{n_c+n_d}$. Point growth at a unique
+minimizer is the case $S=\{v^*\}$. Neither $g$ nor $S$ is used by any
+algorithm below.
+
+\begin{remark}[Directional versus coordinate curvature]\label{rem:tu-curv}
+With $\mathcal K=\R^{n_c}$, \eqref{eq:tu-curv} implies the coordinate
+curvature condition of Definition~\ref{def:curvature} with $L_i=\bar L$ for the
+continuous coordinates, but not conversely. For a quadratic the largest
+absolute row sum of $H_{xx}$, or any larger positive rational, is a valid
+$\bar L$. For $\mathcal K=\ker C$ and a quadratic, $\bar L$ is valid if and
+only if $V^{\T}(\bar LI-H_{xx})V\succeq0$ for a basis matrix $V$ of $\ker C$;
+no orthonormality of $V$ is needed, since $w=Vc$ gives
+$w^{\T}(\bar LI-H_{xx})w=c^{\T}V^{\T}(\bar LI-H_{xx})Vc$.
+Alternatively, if $C$ has full row rank and
+$\Pi=I-C^{\T}(CC^{\T})^{-1}C$, the largest absolute row sum of
+$\Pi H_{xx}\Pi$ is valid, because $\Pi w=w$ for $w\in\ker C$ and the spectral
+radius of a symmetric matrix is at most its largest absolute row sum. Both
+checks are rational and change no factor scope. Example~\ref{ex:tu-fullcurv}
+below shows that coordinate curvature alone is not enough.
+\end{remark}
+
+\begin{proposition}[Checking alignment without enumerating labels]\label{prop:tu-align}
+Fix $z^0\in\mathcal Z$ and let $B_k$ be the $k$th column of $B$. Condition
+\eqref{eq:tu-align} holds if and only if $\ell/\eta$ and $u/\eta$ are integral,
+$(b-Bz^0)/\eta\in\Z^m$, and $B_k(t-z^0_k)/\eta\in\Z^m$ for every $k$ and
+every $t\in Z_k$. This takes $1+\sum_k\lvert Z_k\rvert$ vector tests.
+\end{proposition}
+
+\begin{proof}
+For every $z\in\mathcal Z$,
+$(b-Bz)/\eta=(b-Bz^0)/\eta-\sum_kB_k(z_k-z^0_k)/\eta$, a sum of integral
+vectors under the stated tests. Conversely, if \eqref{eq:tu-align} holds, the
+tests are differences of two vectors $(b-Bz)/\eta$ for label vectors that
+differ in at most one coordinate.
+\end{proof}
+
+\subsection{Feasible rounding on aligned cells}\label{sec:tu-rounding}
+
+\begin{definition}[Level-$j$ domains]\label{def:tu-domain}
+A \emph{level-$j$ domain} is a product
+$D=D_1\times\dots\times D_{n_c}\times\Lambda_1\times\dots\times\Lambda_{n_d}$,
+where each $D_i\subseteq[\ell_i,u_i]$ is a nonempty union of finitely many
+closed intervals $[a,b]$, $a\le b$, with $a,b\in h_j\Z$, and each
+$\Lambda_k\subseteq Z_k$ is nonempty. Its grid in coordinate $i$ is
+$N_j(D_i)=D_i\cap h_j\Z$, its \emph{cells} are the intervals
+$[t,t+h_j]\subseteq D_i$ with $t\in h_j\Z$, and its grid is
+$G(D)=\prod_iN_j(D_i)\times\prod_k\Lambda_k$.
+\end{definition}
+
+Since $\ell,u\in\eta\Z^{n_c}\subseteq h_j\Z^{n_c}$, the box
+$[\ell,u]\times\mathcal Z$ is a level-$0$ domain, and a level-$j$ domain is
+also a level-$(j+1)$ domain. Components of $D_i$ may be single points.
+
+\begin{lemma}[Feasible corner rounding]\label{lem:tu-round}
+Let $D$ be a level-$j$ domain and $(x,z)\in X\cap D$. There is a random vector
+$Y\in\R^{n_c}$ with finitely many values such that, almost surely,
+$(Y,z)\in X\cap G(D)$ and $Y-x\in\mathcal K$, and
+\begin{enumerate}[label=(\alph*)]
+\item $\E Y=x$;
+\item if $x_i\in h_j\Z$ then $Y_i=x_i$; otherwise, with
+$t_i=h_j\lfloor x_i/h_j\rfloor$, the cell $[t_i,t_i+h_j]$ lies in $D_i$ and
+$Y_i\in\{t_i,t_i+h_j\}$;
+\item $\E\norm{Y-x}^2\le n_ch_j^2/4$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+Write $h=h_j$ and $t_i=h\lfloor x_i/h\rfloor$, so $x=t+h\theta$ with
+$\theta\in[0,1)^{n_c}$. Let $N_0=\{i:\theta_i=0\}=\{i:x_i\in h\Z\}$. If
+$i\notin N_0$, then $x_i$ lies in a component $[a,b]$ of $D_i$ with
+$a,b\in h\Z$ and $a<x_i<b$, so $a\le t_i$ and $t_i+h\le b$; the cell
+$[t_i,t_i+h]$ lies in $D_i$.
+
+Consider the polytope
+\[
+Q=\bigl\{\theta'\in\R^{n_c}:\ A\theta'\le\rho,\ 0\le\theta'\le\mathbf 1,\
+\theta'_i\le0\ (i\in N_0)\bigr\},\qquad \rho=\frac{b-Bz-At}{h}.
+\]
+The right-hand side is integral: $(b-Bz)/h=2^j(b-Bz)/\eta\in\Z^m$ by
+\eqref{eq:tu-align}, and $At/h\in\Z^m$ because $A$ is integral and
+$t/h\in\Z^{n_c}$. Appending unit rows to a TU matrix gives a TU matrix
+\cite[Section~19.1]{Schrijver1986}, so by the Hoffman--Kruskal theorem
+\cite{HoffmanKruskal1956} every vertex of $Q$ is integral, hence lies in
+$\{0,1\}^{n_c}$ and vanishes on $N_0$. Since $(x,z)\in X$, $\theta\in Q$, and the
+polytope $Q$ is the convex hull of its vertices, so
+$\theta=\sum_k\lambda_k\theta^k$ with vertices $\theta^k$ and convex weights
+$\lambda_k$. Let $Y=t+h\theta^k$ with probability $\lambda_k$.
+
+Then $\E Y=t+h\theta=x$. For each outcome,
+$AY+Bz=At+hA\theta^k+Bz\le At+h\rho+Bz=b$. For $i\in N_0$, $Y_i=t_i=x_i$; for
+$i\notin N_0$, $Y_i\in\{t_i,t_i+h\}$, which lies in the cell
+$[t_i,t_i+h]\subseteq D_i\subseteq[\ell_i,u_i]$. Hence $(Y,z)\in X\cap G(D)$
+and (b) holds. If $\mathcal K=\ker C$, each row $A_r$ of $C$ belongs to an
+equality pair, so $A_rY+B_rz=b_r=A_rx+B_rz$ and $A_r(Y-x)=0$. Finally, for
+$i\notin N_0$ the variable $Y_i$ takes two values with mean $x_i$, so
+$\E(Y_i-x_i)^2=(x_i-t_i)(t_i+h-x_i)\le h^2/4$, and coordinates in $N_0$
+contribute zero. This proves (c).
+\end{proof}
+
+The rounded coordinates are dependent: they follow a vertex decomposition of
+the cell fiber, not a product law. This is why the next lemma needs
+\eqref{eq:tu-curv} rather than coordinate curvature.
+
+\begin{lemma}[Rounding allowance]\label{lem:tu-allow}
+In the situation of Lemma~\ref{lem:tu-round},
+\[
+\E F(Y,z)\le F(x,z)+\frac{\bar L}2\E\norm{Y-x}^2\le F(x,z)+E_j .
+\]
+\end{lemma}
+
+\begin{proof}
+Fix an outcome and put $w=Y-x\in\mathcal K$. The segment from $x$ to $Y$ lies
+in the box $[\ell,u]$, and $\phi(\tau)=F(x+\tau w,z)$ satisfies
+$\phi''(\tau)=w^{\T}\nabla^2_{xx}F(x+\tau w,z)w\le\bar L\norm w^2$ by
+\eqref{eq:tu-curv}. Taylor's formula with integral remainder gives
+$\phi(1)\le\phi(0)+\phi'(0)+\bar L\norm w^2/2$, that is,
+$F(Y,z)\le F(x,z)+\nabla_xF(x,z)^{\T}(Y-x)+\frac{\bar L}2\norm{Y-x}^2$.
+Take expectations and use $\E(Y-x)=0$ and Lemma~\ref{lem:tu-round}(c).
+\end{proof}
+
+\begin{example}[Coordinate curvature is not enough]\label{ex:tu-fullcurv}
+Let $0<h\le1/2$, $X=\{x\in[0,1]^2:x_1=x_2\}$ and
+$F(x)=2x_1x_2-h(x_1+x_2)$. Both coordinate curvatures are zero, so the
+corrections of Proposition~\ref{prop:cellwise} vanish. On $X$,
+$F(s,s)=2s^2-2hs$ has minimum $\OPT=-h^2/2$ at $s=h/2$, whereas every feasible
+point of the mesh-$h$ grid has value $F(kh,kh)=2h^2k(k-1)\ge0$. A
+curvature-only correction would therefore certify the false bound $0$. The
+Hessian has eigenvalues $\pm2$, so $\bar L=2$ is valid with
+$\mathcal K=\R^2$, and $E=n_c\bar Lh^2/8=h^2/2$ gives the correct bound
+$0-h^2/2=\OPT$; the allowance is attained.
+\end{example}
+
+\subsection{Filtering and certificates}\label{sec:tu-filter}
+
+The tree computation of Lemma~\ref{lem:dp} applies to $F$ on a grid $G(D)$
+after each row $r$ is assigned to a bag containing its support, as the table
+$\iota_r(y)=0$ if $A_ry_x+B_ry_z\le b_r$ and $\iota_r(y)=+\infty$ otherwise.
+The proof of Lemma~\ref{lem:dp} only adds and minimizes tables, so it holds
+for values in $\R\cup\{+\infty\}$; when outgoing messages are formed by
+subtracting one incoming term from a sum, one stores the sum of the finite
+terms and the number of infinite ones. It returns
+\[
+v=\min\{F(y):y\in X\cap G(D)\},\qquad
+M_i(t)=\min\{F(y):y\in X\cap G(D),\ y_i=t\},
+\]
+for every coordinate $i$ (continuous or discrete) and every grid value $t$,
+and a minimizing grid point, with $\min\emptyset=+\infty$, using
+$O\bigl(p(N+\lvert\mathcal A\rvert+m)K^p\bigr)$ table operations, where $K$
+bounds the number of grid values per coordinate.
+
+\paragraph{Algorithm TU-GRID$(\varepsilon)$.}
+Set $D^{(0)}=[\ell,u]\times\mathcal Z$. For $j=0,1,2,\dots$:
+\begin{enumerate}[label=(\arabic*)]
+\item Compute $v_j$, a minimizer $y^{(j)}\in X\cap G(D^{(j)})$, and the
+min-marginals $M^{(j)}_i$ on $G(D^{(j)})$. If $v_0=+\infty$, stop and report
+$X=\emptyset$.
+\item Put $U_j=v_j$, $\beta_j=v_j-E_j$ and $m_i(t)=M^{(j)}_i(t)-E_j$. If
+$E_j\le\varepsilon$, return $y^{(j)}$ and $[\beta_j,U_j]$.
+\item (Union filter.) For each continuous $i$, let $D^{(j+1)}_i$ be the union
+of all cells $[t,t+h_j]$ of $D^{(j)}_i$ with
+$\min\{m_i(t),m_i(t+h_j)\}\le U_j$ and of all single-point components
+$\{t\}$ of $D^{(j)}_i$ with $m_i(t)\le U_j$. For each $k$, let
+$\Lambda^{(j+1)}_k=\{t\in\Lambda^{(j)}_k:m_{k}(t)\le U_j\}$.
+\end{enumerate}
+The \emph{hull variant} replaces each $D^{(j+1)}_i$ by its convex hull. The
+correction is the constant $E_j$, so $m_i$ and $\beta_j$ are the min-marginals
+and the minimum of $Q=F-E_j$ on the feasible grid, in the notation of
+Section~\ref{sec:grids}.
+
+\begin{proposition}[Soundness]\label{prop:tu-sound}
+For TU-GRID and for its hull variant, for every level $j$ that is reached:
+\begin{enumerate}[label=(\alph*)]
+\item if $X\ne\emptyset$ then $v_0<\infty$;
+\item $\beta_j\le F(v)$ for every $v\in X\cap D^{(j)}$;
+\item every $v\in(X\cap D^{(j)})\setminus D^{(j+1)}$ has $F(v)>U_j$;
+\item $D^{(j+1)}$ is a level-$(j+1)$ domain that contains $S$ and $y^{(j)}$;
+hence $y^{(j)}\in X\cap G(D^{(j+1)})$ and $U_{j+1}\le U_j$;
+\item $\beta_j\le\OPT\le U_j\le\OPT+E_j$ and $U_j-\beta_j=E_j$.
+\end{enumerate}
+Moreover, a checker that recomputes every $v_j$ and $M^{(j)}_i$ from the
+stored domains and verifies every filtering decision obtains
+$\beta_J\le\OPT$ for the last level $J$ from (b) and (c) alone, without
+using any minimizer, uniqueness or growth.
+\end{proposition}
+
+\begin{proof}
+(a) Apply Lemma~\ref{lem:tu-round} with $j=0$ to any $(x,z)\in X$; its
+outcomes are feasible points of $G(D^{(0)})$.
+
+(b) Let $v=(x,z)\in X\cap D^{(j)}$ and let $Y$ be as in
+Lemma~\ref{lem:tu-round}. Every outcome $(Y,z)$ is a feasible grid point, so
+$v_j\le\E F(Y,z)\le F(x,z)+E_j$ by Lemma~\ref{lem:tu-allow}.
+
+(c) Let $v=(x,z)\in(X\cap D^{(j)})\setminus D^{(j+1)}$ and let $Y$ be as in
+Lemma~\ref{lem:tu-round}. If some label $z_k\notin\Lambda^{(j+1)}_k$, every
+outcome has label $z_k$, so $M_k(z_k)\le F(Y,z)$ almost surely and
+$m_k(z_k)\le\E F(Y,z)-E_j\le F(v)$; removal means $m_k(z_k)>U_j$. Otherwise
+some $x_i\notin D^{(j+1)}_i$. If $x_i\in h_j\Z$, then $Y_i=x_i$ almost surely
+and as before $m_i(x_i)\le F(v)$. Since $x_i\in D^{(j)}_i$, either $\{x_i\}$ is a
+single-point component, which was removed, so $m_i(x_i)>U_j$; or $x_i$ is an
+endpoint of at least one cell, all such cells were removed, and each removed
+cell has both endpoint values above $U_j$, so again $m_i(x_i)>U_j$. If
+$x_i\notin h_j\Z$, then $Y_i\in\{t_i,t_i+h_j\}$ for the cell
+$[t_i,t_i+h_j]\subseteq D^{(j)}_i$ containing $x_i$, which was removed, and
+$F(v)\ge\E F(Y,z)-E_j\ge\min\{m_i(t_i),m_i(t_i+h_j)\}>U_j$. In the hull variant
+the retained set is larger, so (c) holds a fortiori.
+
+(d) The retained sets are finite unions of closed intervals with endpoints in
+$h_j\Z\subseteq h_{j+1}\Z$, as are their hulls. $X$ is compact and $F$ is
+continuous, so $S\ne\emptyset$ when $X\ne\emptyset$. By induction
+$S\subseteq D^{(j)}$; minimizers have value $\OPT\le F(y^{(j)})=U_j$, so by
+(c) they are not removed. The point $y^{(j)}$ has value $U_j$, so it is not
+removed either; its continuous coordinates lie in $h_j\Z\subseteq h_{j+1}\Z$,
+hence $y^{(j)}\in X\cap G(D^{(j+1)})$ and $v_{j+1}\le v_j$. In particular
+every $D^{(j+1)}_i$ and $\Lambda^{(j+1)}_k$ is nonempty.
+
+(e) $\OPT\le U_j$ because $y^{(j)}\in X$. By (d) a minimizer lies in
+$D^{(j)}$, so (b) gives $\beta_j\le\OPT$; rounding that minimizer as in (b)
+gives $v_j\le\OPT+E_j$.
+
+For the last claim, let $v\in X$. If $v\in D^{(J)}$, then $F(v)\ge\beta_J$ by
+(b). Otherwise $v$ is removed at a first level $j<J$, and
+$F(v)>U_j\ge U_J\ge\beta_J$ by (c); the inequality $U_j\ge U_J$ is checked
+directly from the recomputed values. Hence $\OPT\ge\beta_J$.
+\end{proof}
+
+The certificate record consists of the data, a TU certificate for $A$
+(a structural certificate such as a network or interval representation, or a
+run of a polynomial-time TU recognition algorithm \cite[Chapter~20]{Schrijver1986}),
+the curvature certificate for \eqref{eq:tu-curv}, $\eta$, the domains, the
+tables, and the points $y^{(j)}$. As in Theorem~\ref{thm:certificate}, the
+whole history is needed: the last grid bounds $F$ only on $X\cap D^{(J)}$.
+
+\subsection{Accuracy-independent state counts}\label{sec:tu-states}
+
+\begin{theorem}[State counts under set growth]\label{thm:tu-states}
+Assume \eqref{eq:tu-setgrowth} and put $a_j=\sqrt{n_c\bar L/(4g)}\,h_j$. For
+every level $j$ reached by TU-GRID:
+\begin{enumerate}[label=(\alph*)]
+\item every point of $D^{(j+1)}_i$ lies within $a_j+h_j$ of $S_i$, and every
+label in $\Lambda^{(j+1)}_k$ lies within $a_j$ of $S_k$;
+\item if a continuous projection $S_i$ has at most $r_i$ points, then
+\[
+\bigl\lvert N_{j+1}(D^{(j+1)}_i)\bigr\rvert\le
+r_i\Bigl(5+\bigl\lfloor2\sqrt{n_c\bar L/g}\bigr\rfloor\Bigr)
+\le r_i\bigl(5+\bigl\lfloor2\sqrt{n_c\kappa_c}\bigr\rfloor\bigr);
+\]
+\item for the hull variant the bound in (b) holds with $r_i=1$ when $S$ is a
+single point.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+(a) A retained cell has an endpoint $t$ with $m_i(t)\le U_j$, a retained
+single point $\{t\}$ has $m_i(t)\le U_j$, and a retained label $t$ has
+$m_k(t)\le U_j$. In each case $M_i(t)<\infty$, so there is a feasible grid
+point $w$ with $w_i=t$ and, by Proposition~\ref{prop:tu-sound}(e),
+\[
+F(w)=M_i(t)=m_i(t)+E_j\le U_j+E_j\le\OPT+2E_j .
+\]
+By \eqref{eq:tu-setgrowth}, $\dist(w,S)^2\le2E_j/g=a_j^2$, so some $s\in S$
+has $\lvert t-s_i\rvert\le\norm{w-s}\le a_j$. Points of a cell are within $h_j$
+of each of its endpoints.
+
+(b) By (a), $D^{(j+1)}_i$ lies in the union over $\sigma\in S_i$ of the
+intervals $[\sigma-a_j-h_j,\sigma+a_j+h_j]$. Each has length
+$2a_j+2h_j=h_{j+1}(4a_j/h_j+4)$, so it contains at most
+$\lfloor4a_j/h_j\rfloor+5$ points of $h_{j+1}\Z$, and
+$4a_j/h_j=2\sqrt{n_c\bar L/g}$. Finally $\bar L/g\le\kappa_c$.
+
+(c) In the hull variant the argument of (a) applies to the retained cells
+before the hull is taken. If $S=\{v^*\}$, they lie in the interval
+$[v^*_i-a_j-h_j,v^*_i+a_j+h_j]$, and hence so does their hull.
+\end{proof}
+
+The bound is per optimal coordinate value: different coordinates may be
+near different minimizers, and no optimal combination is enumerated. There
+can be as many as $\prod_ir_i\prod_k\lvert Z_k\rvert$ minimizers. The finite
+projection hypothesis cannot be dropped for uniform grids: if $S_i$ contains a
+nondegenerate interval $I$, then $I\subseteq D^{(j)}_i$ for every $j$ by
+Proposition~\ref{prop:tu-sound}(d), so the level-$j$ grid has at least
+$\lvert I\rvert/h_j-1$ points in coordinate $i$, which grows with the accuracy.
+
+\begin{example}[Two minimizers per block: union versus hull]\label{ex:tu-union}
+For one block take continuous $x,t,z\in[0,1]$ with the TU equality $x+t=z$
+and
+\[
+F_b(x,t,z)=(2x-z)^2+\tfrac14z(1-z).
+\]
+Both terms are nonnegative on $X_b$, so $S_b=\{(0,0,0),(\tfrac12,\tfrac12,1)\}$
+and $\OPT=0$. On $X_b$ put $w=x-z/2$, so $t=z/2-w$ and
+$F_b=4w^2+z(1-z)/4$. If $z\le1/2$, the squared distance to $(0,0,0)$ is
+$2w^2+\frac32z^2$ and $z(1-z)/4\ge z/8\ge z^2/4$, so
+$F_b\ge4w^2+z^2/4\ge\frac16(2w^2+\frac32z^2)$. If $z\ge1/2$, the same
+computation with $z'=1-z$ and the minimizer $(\frac12,\frac12,1)$ gives the
+same inequality. Hence $g=1/6$. The Hessian in the order $(x,t,z)$ has rows
+$(8,0,-4)$, $(0,0,0)$, $(-4,0,3/2)$, so $\bar L=12$ is valid. For $n_b$
+independent blocks, $n_c=3n_b$, and the bags are the blocks ($p=3$). The
+optimal set is the product of the block sets, so squared distances to it add
+over blocks and $g=1/6$ and $\bar L=12$ are unchanged; every projection has
+$r_i=2$ points, and there are $2^{n_b}$ minimizers. With $\eta=1$, the hull variant keeps $[0,1]$ in every $z$
+coordinate at every level, because both $0$ and $1$ are optimal values, so
+its level-$j$ grid has $2^j+1$ points there. The union variant has at most
+$2(5+\lfloor2\sqrt{216n_b}\rfloor)$ points per coordinate at every level
+$j\ge1$ by Theorem~\ref{thm:tu-states}.
+\end{example}
+
+\subsection{Complexity of certified approximation}\label{sec:tu-complexity}
+
+\begin{theorem}[Certified approximation with TU coupling]\label{thm:tu-approx}
+Assume Definition~\ref{def:tu-model} with factors that are explicit rational
+quadratics or explicitly encoded rational polynomials of fixed degree, and
+let $I$ be the binary input length, including $\eta$, $\bar L$ and the
+decomposition. For $\varepsilon>0$, TU-GRID$(\varepsilon)$ either certifies
+$X=\emptyset$ at level $0$, or stops at
+\[
+J=\min\{j\ge0:E_j\le\varepsilon\}\le
+\max\Bigl\{0,\Bigl\lceil\tfrac12\log_2\frac{n_c\bar L\eta^2}{8\varepsilon}\Bigr\rceil\Bigr\}
+\]
+with a feasible rational point and an interval $[\beta_J,U_J]\ni\OPT$ of width
+$E_J\le\varepsilon$, certified as in Proposition~\ref{prop:tu-sound}. All
+numbers have bit length polynomial in $I+J$, and the number of table
+operations is
+\[
+O\Bigl(p\,(N+\lvert\mathcal A\rvert+m)\sum_{j=0}^JK_j^p\Bigr),\qquad
+K_0\le\max\{d,W/\eta+1\}.
+\]
+Under \eqref{eq:tu-setgrowth} with $\lvert S_i\rvert\le r$ for every continuous
+$i$, $K_j\le K=\max\{d,r(5+\lfloor2\sqrt{n_c\kappa_c}\rfloor)\}$ for every
+$j\ge1$. The algorithm uses neither $g$ nor $r$.
+\end{theorem}
+
+\begin{proof}
+Correctness is Proposition~\ref{prop:tu-sound}, and the width is
+$U_J-\beta_J=E_J$. The bound on $J$ follows from $E_j=n_c\bar L\eta^24^{-j}/8$.
+The table count is the tree computation above, summed over levels; the
+level-$0$ grid has $(u_i-\ell_i)/\eta+1\le W/\eta+1$ points in a continuous
+coordinate and at most $d$ labels in a discrete one, and labels are never
+added. The bound $K$ is Theorem~\ref{thm:tu-states}(b) together with
+$\lvert\Lambda^{(j)}_k\rvert\le d$. Grid points at level $j$ lie in
+$h_j\Z\cap[\ell,u]$, so their coordinates are rationals with denominators
+dividing $D_02^j$ and numerators bounded by $D_02^j\max_i\max\{\lvert\ell_i\rvert,\lvert u_i\rvert\}$.
+Explicit fixed-degree factors evaluated at such points have polynomial bit
+length, and every table entry is a sum of at most $\lvert\mathcal A\rvert$ factor
+values or a minimum of such sums.
+\end{proof}
+
+Without growth the same certificate is produced, but the tables can be as
+large as $(W2^j/\eta+1)^p$; by minimality of $J$ this is
+$O\bigl((W\sqrt{n_c\bar L/(2\varepsilon)}+1)^p\bigr)$ at the last level. With
+growth, for fixed $p$ and polynomially bounded $\kappa_c$, $W/\eta$, $d$ and $r$, the
+algorithm is polynomial. It is not fixed-parameter tractable in
+$(p,\kappa_c)$: $K^p$ contains the factor $n_c^{p/2}$, and
+Proposition~\ref{prop:tu-tight} below shows that this factor is really
+incurred. Large integral capacities make the level-$0$ grid
+pseudopolynomial; a larger common unit $\eta$, certified by
+Proposition~\ref{prop:tu-align}, reduces that cost to $W/\eta+1$.
+
+\subsection{Exact output for quadratic objectives}\label{sec:tu-exact}
+
+In this subsection $F(v)=\frac12v^{\T}Hv+q^{\T}v+c_0$ is a quadratic with
+rational data on the model of Definition~\ref{def:tu-model}. Let $\Delta$ be a
+positive common denominator of the monomial coefficients $H_{ii}/2$,
+$H_{ik}$ $(i<k)$, $q_i$ and $c_0$, and put $P=\Delta H$, which is integral and
+symmetric. Write $P_{xx}$ and $P_{xz}$ for its continuous and mixed blocks and
+\[
+C_P=\max\Bigl\{1,\max_{i,k\le n_c}\lvert(P_{xx})_{ik}\rvert\Bigr\},\quad
+R=(2n_cC_P)^{n_c},\quad \Omega=\Delta(D_0R)^2,\quad
+\tau=\frac1{4m'D_0R},
+\]
+where $m'=m+2n_c$. These numbers have bit length polynomial in $I$ and are
+computed from the original data only. If $z$ is integral and
+$x\in\rho^{-1}\Z^{n_c}$ for a positive integer $\rho$, then
+$\Delta\rho^2F(x,z)\in\Z$, since $\Delta$ clears every monomial coefficient.
+
+For $z\in\mathcal Z$ let
+\[
+M=\begin{pmatrix}A\\ I\\ -I\end{pmatrix}\in\{0,\pm1\}^{m'\times n_c},\qquad
+d_z=\begin{pmatrix}b-Bz\\ u\\ -\ell\end{pmatrix}\in D_0^{-1}\Z^{m'},\qquad
+\mathcal P_z=\{x:Mx\le d_z\},
+\]
+so that $\{x:(x,z)\in X\}=\mathcal P_z$. Put $\phi_z(x)=F(x,z)$. Then
+$\Delta\nabla\phi_z(x)=P_{xx}x+c_z$ with $c_z=P_{xz}z+\Delta q_x\in\Z^{n_c}$. For
+a row set $J$ write $M_J$ for the corresponding rows.
+
+\begin{definition}[Stationary face polytope]\label{def:tu-statpoly}
+For $s=(s_x,z)\in S$ let $J_0=\{r:M_rs_x=(d_z)_r\}$ be its active rows and
+\[
+\mathcal P(s)=\bigl\{x\in\mathcal P_z:\ M_{J_0}x=(d_z)_{J_0},\ \
+\nabla\phi_z(x)\perp\ker M_{J_0}\bigr\}.
+\]
+\end{definition}
+
+\begin{lemma}[Stationary face polytopes]\label{lem:tu-statpoly}
+Let $s=(s_x,z)\in S$ and $J_0$ as above.
+\begin{enumerate}[label=(\alph*)]
+\item $\nabla\phi_z(s_x)\perp\ker M_{J_0}$, and $w^{\T}P_{xx}w\ge0$ for
+$w\in\ker M_{J_0}$.
+\item $\mathcal P(s)$ is a nonempty polytope and $\mathcal P(s)\times\{z\}\subseteq S$.
+\item Every vertex $v$ of $\mathcal P(s)$ lies in $(D_0\delta)^{-1}\Z^{n_c}$ for an
+integer $1\le\delta\le R$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+(a) For $w\in\ker M_{J_0}$ and small $\lvert\tau\rvert$, $s_x+\tau w\in\mathcal P_z$:
+active rows stay active and inactive rows keep positive slack. The function
+$\tau\mapsto\phi_z(s_x+\tau w)=\OPT+\tau\nabla\phi_z(s_x)^{\T}w+\frac{\tau^2}{2}w^{\T}H_{xx}w$
+has a minimum at $\tau=0$, which gives both claims.
+
+(b) By (a), $s_x\in\mathcal P(s)$. The condition
+$\nabla\phi_z(x)\perp\ker M_{J_0}$ reads $N^{\T}(P_{xx}x+c_z)=0$ for a basis
+matrix $N$ of $\ker M_{J_0}$, which is linear, and $\mathcal P(s)\subseteq\mathcal P_z$
+is bounded. For $x\in\mathcal P(s)$ put $w=x-s_x\in\ker M_{J_0}$. Both
+$\nabla\phi_z(x)$ and $\nabla\phi_z(s_x)$ are orthogonal to $\ker M_{J_0}$, hence so
+is their difference $H_{xx}w$, and
+\[
+\phi_z(x)-\phi_z(s_x)=\nabla\phi_z(s_x)^{\T}w+\tfrac12w^{\T}H_{xx}w=0 .
+\]
+Since $(x,z)\in X$, it is a minimizer.
+
+(c) Let $J_v\supseteq J_0$ be the rows active at $v$, let $E$ be a set of
+$r$ linearly independent rows spanning the rows of $M_{J_v}$, and let $e$ be
+the corresponding entries of $d_z$. First, $P_{xx}$ is positive definite on
+$\ker E=\ker M_{J_v}\subseteq\ker M_{J_0}$. Indeed, let $w\in\ker E$ with
+$w^{\T}P_{xx}w=0$. By (a) the quadratic form of $P_{xx}$ is nonnegative on
+$\ker M_{J_0}$ and vanishes at $w$, so for $y\in\ker M_{J_0}$ and all real
+$\tau$, $0\le(w+\tau y)^{\T}P_{xx}(w+\tau y)=2\tau y^{\T}P_{xx}w+\tau^2y^{\T}P_{xx}y$,
+whence $P_{xx}w\perp\ker M_{J_0}$. Then $v\pm\tau w\in\mathcal P(s)$ for small
+$\tau>0$: rows in $J_v$ stay active, the other rows keep positive slack, and
+the stationarity condition is preserved. As $v$ is a vertex, $w=0$.
+
+Next, $\nabla\phi_z(v)\perp\ker M_{J_0}\supseteq\ker E$, so
+$P_{xx}v+c_z=E^{\T}\mu$ for some $\mu$. Thus $(v,-\mu)$ solves
+\[
+K\begin{pmatrix}v\\ -\mu\end{pmatrix}=\begin{pmatrix}-c_z\\ e\end{pmatrix},\qquad
+K=\begin{pmatrix}P_{xx}&E^{\T}\\ E&0\end{pmatrix}.
+\]
+$K$ is nonsingular: if $P_{xx}w+E^{\T}\nu=0$ and $Ew=0$, then
+$w^{\T}P_{xx}w=-(Ew)^{\T}\nu=0$, so $w=0$, and then $E^{\T}\nu=0$ gives $\nu=0$
+because $E$ has full row rank. The matrix $K$ is integral and the right-hand
+side lies in $D_0^{-1}\Z^{n_c+r}$, so Cramer's rule gives
+$v\in(D_0\delta)^{-1}\Z^{n_c}$ with $\delta=\lvert\det K\rvert\ge1$. By Hadamard's
+inequality for rows, $\delta$ is at most the product of the row norms of $K$.
+A row of $(P_{xx}\ E^{\T})$ has $n_c$ entries of absolute value at most $C_P$
+and $r\le n_c$ entries in $\{0,\pm1\}$, so its norm is at most
+$\sqrt{2n_c}\,C_P$; a row of $(E\ 0)$ is a row of $M$ and has norm at most
+$\sqrt{n_c}$. Hence
+$\delta\le(2n_cC_P^2)^{n_c/2}n_c^{r/2}\le(\sqrt2\,n_cC_P)^{n_c}\le R$.
+\end{proof}
+
+\begin{corollary}[Rational height with TU coupling]\label{cor:tu-height}
+Some global minimizer has continuous coordinates in $\rho^{-1}\Z$ for an
+integer $1\le\rho\le D_0R$, and every isolated global minimizer has this
+property. The optimal value is $\OPT=a/W$ in lowest terms with $1\le W\le\Omega$.
+\end{corollary}
+
+\begin{proof}
+For $s\in S$ the polytope $\mathcal P(s)$ has a vertex, which is a minimizer by
+Lemma~\ref{lem:tu-statpoly}(b) and has the stated height by (c). If $s$ is
+isolated in $S$, the convex set $\mathcal P(s)\times\{z\}\subseteq S$ contains
+no other point near $s$, so $\mathcal P(s)=\{s_x\}$ and $s_x$ is its vertex.
+Evaluating $F$ at a minimizer of height $\rho\le D_0R$ gives
+$\Delta\rho^2\OPT\in\Z$, so $W\le\Delta(D_0R)^2=\Omega$.
+\end{proof}
+
+Corollary~\ref{cor:tu-height} is an explicit-constant instance of the
+classical fact that quadratic programs over polyhedra have optimal solutions
+of polynomial size \cite{Vavasis1990}; for mixed-integer quadratic programs see
+\cite{DelPiaDeyMolinaro2017}. The constant uses only the continuous Hessian
+block and the $\{0,\pm1\}$ structure of $M$.
+
+\begin{proposition}[Exact acceptance]\label{prop:tu-accept}
+Let $\beta\le\OPT$ and $v\in X$ with $F(v)=a/W$ in lowest terms. If
+$F(v)-\beta<1/(\Omega W)$, then $v\in S$.
+\end{proposition}
+
+\begin{proof}
+If $F(v)>\OPT$, the two rationals have denominators $W$ and at most $\Omega$
+(Corollary~\ref{cor:tu-height}), so $F(v)-\OPT\ge1/(\Omega W)$, contradicting
+$\beta\le\OPT$.
+\end{proof}
+
+\paragraph{Procedure TU-REC$(y,z)$.}
+Given $(y,z)\in X$, let $J=\{r:(d_z)_r-M_ry\le\tau\}$ and let $N$ be a basis
+matrix of $\ker M_J$, computed by Gaussian elimination. Find, by exact linear
+programming, a point of
+\[
+\Pi=\bigl\{x\in\mathcal P_z:\ M_Jx=(d_z)_J,\ N^{\T}(P_{xx}x+c_z)=0\bigr\},
+\]
+or report failure. All coefficients come from the original data, the index
+set $J$ and the integer vector $z$, so this takes time polynomial in $I$
+\cite{GrotschelLovaszSchrijver1988}; the large denominators of
+$y$ enter only the comparisons that define $J$.
+
+\begin{lemma}[Snapping recovery on TU faces]\label{lem:tu-snap}
+If $(y,z)\in X$ and $\dist((y,z),S)\le\tau/(2\sqrt{n_c})$, then $\Pi\ne\emptyset$
+and $\Pi\times\{z\}\subseteq S$.
+\end{lemma}
+
+\begin{proof}
+Let $s$ be a point of $S$ nearest to $(y,z)$. Since $\norm{(y,z)-s}<1$, the
+integer parts agree, so $s=(s_x,z)$ and $\norm{y-s_x}\le\tau/(2\sqrt{n_c})$. Let
+$J_0$ be the rows active at $s_x$. Every row of $M$ has norm at most $\sqrt{n_c}$,
+so for $r\in J_0$, $0\le(d_z)_r-M_ry=M_r(s_x-y)\le\tau/2$; hence $J_0\subseteq J$.
+For $r\in J\setminus J_0$ the slack at $s_x$ is at most $\tau+\tau/2$. On
+$\mathcal P(s)$ the linear function
+\[
+\psi(x)=\sum_{r\in J\setminus J_0}\bigl((d_z)_r-M_rx\bigr)
+\]
+is nonnegative and $\psi(s_x)\le m'\cdot\frac32\tau=\frac3{8D_0R}<\frac1{D_0R}$.
+Its minimum over the polytope $\mathcal P(s)$ is attained at a vertex $v$. By
+Lemma~\ref{lem:tu-statpoly}(c), $v\in(D_0\delta)^{-1}\Z^{n_c}$ with $\delta\le R$; as $M$
+is integral and $d_z\in D_0^{-1}\Z^{m'}$, $\psi(v)\in(D_0\delta)^{-1}\Z$. Since
+$0\le\psi(v)<1/(D_0R)\le1/(D_0\delta)$, $\psi(v)=0$.
+
+So $v$ satisfies every row of $J\setminus J_0$ with equality, and every row of
+$J_0$ because $v\in\mathcal P(s)$. Moreover $\ker M_J\subseteq\ker M_{J_0}$ and
+$\nabla\phi_z(v)\perp\ker M_{J_0}$, so $N^{\T}(P_{xx}v+c_z)=0$. Hence $v\in\Pi$.
+For any $x\in\Pi$ let $w=x-v\in\ker M_J$. Both $\nabla\phi_z(x)$ and
+$\nabla\phi_z(v)$ are orthogonal to $\ker M_J$, hence so is $H_{xx}w$, and
+$\phi_z(x)=\phi_z(v)+\nabla\phi_z(v)^{\T}w+\frac12w^{\T}H_{xx}w=\phi_z(v)=\OPT$,
+the last equality by Lemma~\ref{lem:tu-statpoly}(b). Since $x\in\mathcal P_z$,
+$(x,z)\in S$.
+\end{proof}
+
+No nonsingularity, strict complementarity or sign condition on multipliers is
+used: the condition $N^{\T}(P_{xx}x+c_z)=0$ allows multipliers of either
+sign. A point returned from a distant $y$ can be a nonglobal stationary point;
+for $F(x,t)=x-x^2$ on $\{0\le x=t\le1\}$ and $y=(\frac12,\frac12)$, the procedure
+returns $(\frac12,\frac12)$ with value $\frac14>\OPT=0$. Acceptance therefore always
+goes through Proposition~\ref{prop:tu-accept}.
+
+\paragraph{Algorithm TU-EXACT.}
+Run TU-GRID without a stopping accuracy. At every level $j$, apply TU-REC to
+$y^{(j)}$; if it returns $\hat x$, let $\hat v=(\hat x,z^{(j)})$, where
+$z^{(j)}$ is the label vector of $y^{(j)}$, and return $\hat v$ if
+$F(\hat v)-\beta_j<1/(\Omega W)$, where $W$ is the reduced denominator of
+$F(\hat v)$.
+
+\begin{theorem}[Exact output with TU coupling]\label{thm:tu-exact}
+Let $F$ be a rational quadratic on a nonempty set $X$ as in
+Definition~\ref{def:tu-model}.
+\begin{enumerate}[label=(\alph*)]
+\item Every point returned by TU-EXACT is a global minimizer, and
+$F(\hat v)=\OPT$. This uses neither uniqueness nor growth.
+\item TU-EXACT terminates.
+\item Under \eqref{eq:tu-setgrowth} it terminates by the first level $j$ with
+$E_j\le\min\{g\tau^2/(4n_c),\,1/(2\Omega^2)\}$, hence after at most
+\[
+J_{\rm ex}=\max\Bigl\{0,\Bigl\lceil\log_2\frac{\eta n_c\sqrt{\kappa_c}}{\tau}\Bigr\rceil,
+\Bigl\lceil\log_2\bigl(\eta\Omega\sqrt{n_c\bar L}\bigr)\Bigr\rceil\Bigr\}
+=\poly(I)+O(\log\kappa_c)
+\]
+levels. If moreover every continuous projection $S_i$ has at most $r$ points,
+the table operations are as in Theorem~\ref{thm:tu-approx} with $J$ replaced
+by $J_{\rm ex}$; the LP calls add a polynomial cost per level.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+(a) $\beta_j\le\OPT$ by Proposition~\ref{prop:tu-sound}(e), and $\hat v\in X$ is
+checked, so Proposition~\ref{prop:tu-accept} applies; then $F(\hat v)=\OPT$.
+
+(b) By Proposition~\ref{prop:tu-sound}(e), $F(y^{(j)})=U_j\to\OPT$. We claim
+$\dist(y^{(j)},S)\to0$. Otherwise a subsequence stays at distance at least
+some $\epsilon>0$ from $S$ and, $X$ being compact, converges to some
+$\bar v\in X$ with $F(\bar v)=\OPT$ and $\dist(\bar v,S)\ge\epsilon$, which is
+impossible. So for all large $j$, $\dist(y^{(j)},S)\le\tau/(2\sqrt{n_c})$ and
+$E_j<1/\Omega^2$. Then Lemma~\ref{lem:tu-snap} shows that TU-REC returns
+$\hat x$ with $\hat v\in S$; its value is $\OPT=a/W$ with $W\le\Omega$, and
+$F(\hat v)-\beta_j=\OPT-\beta_j\le U_j-\beta_j=E_j<1/\Omega^2\le1/(\Omega W)$, so
+$\hat v$ is returned.
+
+(c) By \eqref{eq:tu-setgrowth} and Proposition~\ref{prop:tu-sound}(e),
+$g\dist(y^{(j)},S)^2\le U_j-\OPT\le E_j$, so the two conditions used in (b)
+hold as soon as $E_j\le g\tau^2/(4n_c)$ and $E_j\le1/(2\Omega^2)$. Since
+$g\ge\bar L/\kappa_c$ and $E_j=n_c\bar Lh_j^2/8$, it suffices that
+$h_j\le\tau/(n_c\sqrt{\kappa_c})$ and $h_j\le2/(\Omega\sqrt{n_c\bar L})$, which hold
+for $j\ge J_{\rm ex}$ because $h_j=\eta\,2^{-j}$. The quantities $\log_2(1/\tau)$, $\log_2\Omega$,
+$\log_2\eta$ and $\log_2\bar L$ are polynomial in $I$. The last statement
+follows from Theorem~\ref{thm:tu-states}.
+\end{proof}
+
+\begin{remark}[Unique minimizers without linear programming]\label{rem:tu-cf}
+If $S=\{v^*\}$, the hull variant can return $v^*$ by continued fractions
+alone. By Corollary~\ref{cor:tu-height}, $v^*_x\in\rho^{-1}\Z^{n_c}$ with
+$\rho\le D_0R$, and by Theorem~\ref{thm:tu-states}(a) the retained hull in
+coordinate $i$ contains $v^*_i$ and has length at most $2a_j+2h_j$. Two
+distinct rationals with denominators at most $D_0R$ differ by at least
+$(D_0R)^{-2}$, so once $2a_j+2h_j<(D_0R)^{-2}$ and $a_j<1$, the rational of
+least denominator in each continuous hull is $v^*_i$, and each label set is
+$\{v^*_k\}$. Once also $E_j<\Omega^{-2}$, the candidate passes the test of
+Proposition~\ref{prop:tu-accept}; this check, not the reconstruction, carries
+the proof.
+\end{remark}
+
+\subsection{What prevents fixed-parameter tractability}\label{sec:tu-limits}
+
+The box algorithm of Section~\ref{sec:growth} is fixed-parameter tractable in
+$(p,\kappa)$ because graded grids cover a localization radius of order
+$\sqrt{n\kappa}\,h$ with $O(\theta^{-1}\log n)$ points. With TU coupling the
+radius is the same, $a_j+h_j$ in Theorem~\ref{thm:tu-states}, but the mesh is
+uniform. The next proposition shows that the resulting $\Theta(\sqrt{n_c})$
+states per coordinate are actually retained; the two after it show that
+graded or otherwise non-aligned grids cannot simply be used instead, because
+a correction computed from curvature and the grids alone is then not a valid
+lower bound.
+
+\begin{proposition}[Uniform meshes retain $\Theta(\sqrt{n_c})$ points]\label{prop:tu-tight}
+Let $n_c\ge p\ge1$, $\bar L>0$, $\eta=1$, and
+\[
+X=\{x\in[0,1]^{n_c}:x_1+\dots+x_p\le p\},\qquad
+F(x)=\frac{\bar L}2\Bigl\lVert x-\tfrac12\mathbf 1\Bigr\rVert^2 .
+\]
+The single row is TU, every admissible decomposition has a bag containing
+$\{1,\dots,p\}$, $\mathcal K=\R^{n_c}$ with $\bar L$ is valid, and point
+growth holds with $g=\bar L/2$, so $\kappa_c=2$. Let
+$k=\lfloor\sqrt{n_c}/2\rfloor$. For every level $j\ge1$ with
+$(k+1)h_j\le\frac12$, both variants of TU-GRID retain
+\[
+D^{(j+1)}_i=\bigl[\tfrac12-(k+1)h_j,\ \tfrac12+(k+1)h_j\bigr]\qquad(i=1,\dots,n_c),
+\]
+whose level-$(j+1)$ grid has $4k+5\ge2\sqrt{n_c}+1$ points. Hence the bag
+containing $\{1,\dots,p\}$ has at least $(2\sqrt{n_c}+1)^p$ table entries at
+every such level, while Theorem~\ref{thm:tu-states} gives the upper bound
+$5+\lfloor2\sqrt{2n_c}\rfloor$ per coordinate.
+\end{proposition}
+
+\begin{proof}
+The row is redundant on $[0,1]^{n_c}$, so $X$ is the box and $F$ has the
+unique minimizer $\frac12\mathbf 1$, with $F(x)-\OPT=\frac{\bar L}2\norm{x-\frac12\mathbf 1}^2$.
+Consider a level $j\ge1$ and a level-$j$ domain $D$ whose components are
+intervals $D_i$ containing $\frac12$. As $\frac12\in h_j\Z$, the minimizer is a
+grid point, so $v_j=U_j=0$. For $t\in N_j(D_i)$, setting the other
+coordinates to $\frac12$ gives $M_i(t)=\frac{\bar L}2(t-\frac12)^2$, and no
+grid point does better since $F(y)\ge\frac{\bar L}2(y_i-\frac12)^2$. Thus
+$m_i(t)\le U_j$ if and only if $\lvert t-\frac12\rvert\le\frac{\sqrt{n_c}}2h_j$, that
+is, $t=\frac12+ih_j$ with $\lvert i\rvert\le k$. If
+$D_i\supseteq[\frac12-(k+1)h_j,\frac12+(k+1)h_j]$, the retained cells are exactly
+those with an endpoint $\frac12+ih_j$, $\lvert i\rvert\le k$, and their union is the
+displayed interval, which equals its hull. That interval contains
+$[\frac12-(k+1)h_{j+1},\frac12+(k+1)h_{j+1}]$, so the hypothesis propagates.
+
+It remains to start the induction. At level $0$ the grid is $\{0,1\}^{n_c}$,
+$v_0=n_c\bar L/8=E_0$, and every $m_i(t)=0\le U_0$, so $D^{(1)}=[0,1]^{n_c}$. At
+a level $j\ge1$ with $(k+1)h_j\ge\frac12$ and $D^{(j)}=[0,1]^{n_c}$, the computation
+above keeps the cells with an endpoint within $kh_j$ of $\frac12$, whose union
+is $[0,1]$. Hence $D^{(j)}=[0,1]^{n_c}$ up to the first level with
+$(k+1)h_j\le\frac12$, which contains the required interval. The interval of
+length $2(k+1)h_j$ has $4(k+1)+1$ points of $h_{j+1}\Z$, and
+$4k+5\ge4(\sqrt{n_c}/2-1)+5$.
+\end{proof}
+
+The instance is a box problem in disguise, and the graded grids of
+Section~\ref{sec:growth} solve it with $O(\log n)$ points per coordinate. The
+proposition therefore isolates the uniform mesh, not the constraint, as the
+source of the factor $n_c^{p/2}$. Uniformity, however, is forced by the
+constraints, as follows.
+
+\begin{proposition}[Curvature-only corrections need aligned grids]\label{prop:tu-misaligned}
+Let $G_1,G_2\subseteq[0,1]$ be finite sets containing $0$ and $1$, let
+$d_i:G_i\to[0,\infty)$ be arbitrary, let $L>0$, and let $m\in(0,1)$ satisfy
+\begin{equation}\label{eq:tu-gap}
+L(\nu-m)^2>d_1(\nu)+d_2(\nu)\qquad\text{for every }\nu\in G_1\cap G_2 .
+\end{equation}
+For $\lambda\ge0$ let $X=\{x\in[0,1]^2:x_1-x_2\le0\}$ and
+$F_\lambda(x)=\frac L2\bigl((x_1-m)^2+(x_2-m)^2\bigr)+\lambda(x_2-x_1)$. Then
+$\nabla^2F_\lambda=LI$, $\OPT=0$ is attained only at $(m,m)$, and
+$F_\lambda(x)\ge\frac L2\norm{x-(m,m)}^2$ on $X$, for every $\lambda$. Let
+$\gamma=\min\{y_2-y_1:y\in G_1\times G_2,\ y_2>y_1\}$. If
+$\lambda>(\max d_1+\max d_2)/\gamma$, then
+\[
+\min\bigl\{F_\lambda(y)-d_1(y_1)-d_2(y_2):\ y\in(G_1\times G_2)\cap X\bigr\}>\OPT .
+\]
+\end{proposition}
+
+\begin{proof}
+On $X$, $\lambda(x_2-x_1)\ge0$, which gives the growth inequality and
+$\OPT=0$ at $(m,m)$ only. A feasible grid point either has $y_1=y_2=\nu\in
+G_1\cap G_2$, with corrected value $L(\nu-m)^2-d_1(\nu)-d_2(\nu)>0$ by
+\eqref{eq:tu-gap}, or has $y_2-y_1\ge\gamma$, with corrected value at least
+$\lambda\gamma-\max d_1-\max d_2>0$.
+\end{proof}
+
+For instance, $G_1=\{0,\frac12,1\}$, $G_2=\{0,\frac13,1\}$, $m=\frac25$ and the
+corrections $d_i(\nu)=\frac L8w_i(\nu)^2$ of Section~\ref{sec:grids} satisfy
+\eqref{eq:tu-gap}, since $G_1\cap G_2=\{0,1\}$,
+$\frac4{25}>\frac1{32}+\frac1{72}$ and $\frac9{25}>\frac1{32}+\frac1{18}$; here
+$\gamma=\frac13$, and any $\lambda>\frac{75}{288}L$ yields a corrected grid minimum
+above $\OPT$. Graded grids of Section~\ref{sec:growth} built around two
+different feasible centers behave in the same way: for $h=\frac1{16}$,
+$\theta=\frac14$ and the centers $\frac3{10}$ and $\frac7{10}$ on $[0,1]$, one
+checks that the two grids (eleven nodes each) have only $0$ and $1$ in common,
+and \eqref{eq:tu-gap} holds with $m=\frac12$. The
+multiplier $\lambda$ of the order constraint is invisible to the curvature
+$L$ and the growth constant, and no correction depending only on them and on
+the grids can absorb it. Aligned uniform grids escape because then
+$G_1\cap G_2$ contains a node within $h/2$ of $m$, and
+$Lh^2/4\le d_1+d_2$ there.
+
+\begin{example}[A graded grid fails on a sum equality]\label{ex:tu-sum}
+Let $X=\{x\in[0,3]^3:x_1+x_2-x_3=0\}$, which is TU with integral data, and
+$F(x)=\frac L2\norm{x-(1,1,2)}^2$, so $\OPT=0$ at $(1,1,2)\in X$,
+$\nabla^2F=LI$ and growth holds with $g=L/2$. Build the graded grid of
+Section~\ref{sec:growth} in each coordinate around the feasible center $0$,
+with $h=1$ and $\theta=\frac14$: the steps $h+\theta t$ give the common grid
+$G=\{0,1,\frac94,3\}$, clipped at $3$, and the corrections
+$d(0)=\frac L8$, $d(1)=d(\frac94)=\frac{25L}{128}$, $d(3)=\frac{9L}{128}$. The feasible
+grid points are
+$(0,0,0)$, $(1,0,1)$, $(0,1,1)$, $(\frac94,0,\frac94)$, $(0,\frac94,\frac94)$,
+$(3,0,3)$ and $(0,3,3)$, since $1+1=2\notin G$ and all other sums exceed $3$ or
+leave $G$. Their corrected values are
+$\frac{21}8L$, $\frac{31}{64}L$, $\frac{31}{64}L$, $\frac{51}{64}L$, $\frac{51}{64}L$,
+$\frac{175}{64}L$, $\frac{175}{64}L$, all positive. So the corrected grid minimum
+$\frac{31}{64}L$ exceeds $\OPT$: with a sum row, a common graded pattern around a
+feasible center already gives an invalid bound, without any multiplier
+effect. The reason is visible in the cell $[0,1]\times[0,1]\times[1,\frac94]$:
+its fiber of $x_1+x_2=x_3$ has vertices $(1,0,1)$, $(0,1,1)$ and the
+non-corner vertex $(1,1,2)$, so the minimizer is not a convex combination of
+feasible grid points of its cell.
+\end{example}
+
+\begin{remark}[Only coupled coordinates need uniform meshes]\label{rem:tu-hybrid}
+Call a continuous coordinate \emph{coupled} if it has a nonzero coefficient in
+some row of $A$, and \emph{free} otherwise. Free coordinates occur in no
+row, so Lemma~\ref{lem:tu-round} can be applied to the coupled block with the
+free coordinates fixed, after which the free coordinates can be rounded
+independently as in Proposition~\ref{prop:cellwise}; the result is a feasible grid
+point. The free coordinates may therefore use the graded grids of
+Section~\ref{sec:growth}, with the coupled coordinates on the aligned
+uniform mesh. This requires $\bar L$-curvature on the coupled block and
+coordinate curvature on the free coordinates, and the proofs of
+Lemmas~\ref{lem:inv} and~\ref{lem:states} then use only the rounding
+inequality and the mesh bound of Section~\ref{sec:growth}, both of which hold.
+The outcome is an XP factor $n^{p_c/2}$, where $p_c$ is the largest number of
+coupled continuous coordinates in a bag, instead of $n_c^{p/2}$. We record this
+only as an outline: the initial levels with mesh above $\eta$ need the same
+pseudopolynomial treatment as in Theorem~\ref{thm:tu-approx}, and we have not
+written out the resulting constants.
+\end{remark}
+
+\begin{remark}[Comparison with Bienstock and Mu\~noz]\label{rem:tu-bm}
+Bienstock and Mu\~noz \cite[Theorems~4 and~15]{BienstockMunoz2018} construct,
+for mixed-binary polynomial problems with variables scaled to $[0,1]$, a linear
+objective $c$, constraints of degree at most $\pi$ and coefficient $1$-norm at
+most $\mathfrak F$, and a constraint intersection graph of treewidth $\omega$, a
+linear program with $O\bigl((2\pi/\epsilon)^{\omega+1}n\log(\pi/\epsilon)\bigr)$
+variables and constraints whose solutions violate each constraint by at most
+$\mathfrak F\epsilon$ and are $\lVert c\rVert_1\epsilon$-optimal. They also argue that,
+unless $\mathrm P=\mathrm{NP}$, neither the pseudopolynomial dependence on
+$1/\epsilon$ nor the coefficient scaling of the violation can be removed for that
+class. The results here differ in four respects. (i) Feasibility is exact, but
+only for TU continuous columns with aligned data; their constraints are
+arbitrary polynomials. (ii) A nonlinear objective is handled directly through
+$\bar L$, whereas their objective is linear and nonlinear objectives are
+encoded by additional constraints, which may increase the width. (iii) Under
+growth with finitely many optimal coordinate values, the per-level tables do
+not depend on $\epsilon$, and $\epsilon$ enters only through $O(\log(1/\epsilon))$ levels;
+this does not conflict with their lower bounds, which concern their whole
+class and hence instances without growth or TU structure, and the factor
+$(n_c\kappa_c)^{p/2}$ can itself be exponential in $I$ because $\kappa_c$ can be. (iv) Without growth the last level of
+TU-GRID has $O\bigl((W\sqrt{n_c\bar L/\epsilon}+1)^p\bigr)$ table entries, an exponent
+$p/2$ in $1/\epsilon$ against their $\omega+1$ for comparable decompositions; the
+halving comes from second-order rounding error with exact feasibility, and
+the comparison is only indicative because the tolerances are normalized
+differently. Neither result contains the other.
+
+Proximity scaling for separable convex objectives over constraint matrices
+with bounded subdeterminants \cite{HochbaumShanthikumar1990} also refines
+aligned grids inside windows around the previous scaled solution, with a
+window radius proportional to $n$ times the scale for TU matrices. There the
+subproblems are convex and solved by linear programming. Here the objective is
+nonseparable and nonconvex, the subproblems are solved by dynamic programming
+over the decomposition, and the window radius $\sqrt{n_c\kappa_c}\,h_j$ comes
+from growth and the rounding allowance.
+\end{remark}

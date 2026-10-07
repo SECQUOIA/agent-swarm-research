@@ -134,7 +134,7 @@ the manuscript already credits generic penalty-choice hardness.
 
 The Claude review automatically cached four fetched primary PDFs outside
 the paper folder. The writer moved only those four identified files from
-`/home/sgusev/.claude/projects/-home-sgusev-repo-minlp-notes/17600d7f-d70a-4712-994b-4c9bc9d9ac31/tool-results/`
+`/workspace/local-home/.claude/projects/-workspace-minlp-notes/17600d7f-d70a-4712-994b-4c9bc9d9ac31/tool-results/`
 into the ignored `paper-exact-penalties/evidence/sources/` directory:
 `webfetch-1790546466829-wf7ohi.pdf`,
 `webfetch-1790546469936-j63p5m.pdf`,

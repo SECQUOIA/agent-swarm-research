@@ -1,0 +1,299 @@
+% Plan: development/outline.md, section 6, item B.6.
+\subsection{The \inst{powerflow} instances}\label{app:powerflow}
+
+This subsection completes the proofs of \cref{thm:pf-0030p,thm:pf-0039} and records the data behind them, in the notation of \cref{sec:other-convex}.
+Bus numbers are MATPOWER's \citep{zimmerman2011-matpower-steady-state-operations-planning}; OSIL variable names appear only where they identify a row or a variable.
+
+% ---------------------------------------------------------------------------
+\subsubsection{Models and provenance}\label{app:powerflow-models}
+
+The three instances minimize generation cost in per unit on a 100~MVA base subject to the AC power-flow equations, bus voltage limits, generator limits and apparent-power limits of the lines.
+For each branch $(k,m)$ the model has the four oriented flows $P_{km},Q_{km},P_{mk},Q_{mk}$, and each generator $g$ has outputs $P_g,Q_g$; together these form the vector $y$.
+In the polar models a branch with series admittance $g_{km}+\mathrm{i}\,b_{km}$ and total charging $b^c_{km}$ has the flow rows
+\begin{align*}
+P_{km}&=g_{km}v_k^2-v_kv_m\bigl(g_{km}\cos\theta_{km}+b_{km}\sin\theta_{km}\bigr),\\
+Q_{km}&=-\bigl(b_{km}+b^c_{km}/2\bigr)v_k^2-v_kv_m\bigl(g_{km}\sin\theta_{km}-b_{km}\cos\theta_{km}\bigr),
+\end{align*}
+with $\theta_{km}=\theta_k-\theta_m$; the stored models have no taps, no phase shifters and no bus shunts.
+The other rows are the active and reactive balances at every bus, the thermal rows $P_{km}^2+Q_{km}^2\le\bar s_{km}^2$ at both ends of every branch,
+the voltage limits, the generator limits, the reference row, and in the polar models the angle-difference rows $-0.26\le\theta_k-\theta_m\le0.26$ for both orientations of every branch.
+All OSIL variables are continuous and free; every bound is written as a row.
+Rows with a single variable become boxes on $y$: the 12 generator boxes and four flows fixed by balance rows at buses with one branch in \inst{powerflow0030p} ($x_{48}=0$, $x_{100}=-0.035$, $x_{130}=0$, $x_{182}=-0.023$), and the 20 generator boxes in the 39-bus models.
+\Cref{tab:pf-models} gives the sizes.
+
+\begin{table}[ht]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\caption{The stored \inst{powerflow} models (OSIL). Voltage limits are written on $v_k$ in the polar models and on $e_k^2+f_k^2$ in \inst{powerflow0039r}.}
+\label{tab:pf-models}
+\begin{tabular}{@{}llll@{}}
+\toprule
+ & \inst{powerflow0030p} & \inst{powerflow0039p} & \inst{powerflow0039r} \\
+\midrule
+formulation & polar & polar & rectangular \\
+variables / rows & 236 / 555 & 282 / 657 & 282 / 473 \\
+buses / branches / generators & 30 / 41 / 6 & 39 / 46 / 10 & 39 / 46 / 10 \\
+flow / thermal / balance rows & 164 / 82 / 60 & 184 / 92 / 78 & 184 / 92 / 78 \\
+angle-difference rows & 164 & 184 & none \\
+voltage limits & $[0.95,1.05]$, 5 buses $[0.95,1.10]$ & $[0.94,1.06]$ & $[0.94,1.06]$ \\
+$\bar V^2:=\sum_k\bar v_k^2$ & 33.6125 & 43.8204 & 43.8204 \\
+objective & $\sum_g(c_{2,g}P_g^2+c_{1,g}P_g)$ & $2+\sum_g(100P_g^2+30P_g)$ & same \\
+OSIL SHA-256 & \texttt{5c4b386b} & \texttt{0a27073f} & \texttt{d8ba3132} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Provenance.}
+The stored models differ from MATPOWER's case30 and case39 \citep{matpower2026-minlplib-power-flow-and-water}.
+\inst{powerflow0030p} omits the two bus shunts of case30 (0.19~MVAr at bus~5 and 0.04~MVAr at bus~24);
+a local solve of case30 with its shunts gives the floating-point value $576.8923368$, below our dual bound, so our bound does not apply to case30.
+\inst{powerflow0039p} and \inst{powerflow0039r} drop the tap ratios of 11 of the 12 tapped branches of case39 (the twelfth has ratio 1);
+the stored models' optimal value is near $41869.05$, whereas \citet{ghaddar2016-optimal-power-flow-as-a} report the floating-point global optimum $41864.18$ for tapped case39.
+The angle limit is $0.26$, not $\pi/12$.
+The rectangular twin \inst{powerflow0030r} has the same data up to rounding in the 15th--16th significant digit and no angle rows; no bound transfers between the two files without a perturbation argument, and we make no claim for it.
+Our 50-digit evaluation of the decimal \texttt{.sol} values of MINLPLib's listed points p1 ($576.8934135$, $41869.05151$ and $41869.05151$; missing entries set to $0$) gives largest row violations $\sci{2.13}{-13}$, $\sci{1.18}{-12}$ and $\sci{7.91}{-12}$, which need not agree with the violations that MINLPLib lists.
+
+% ---------------------------------------------------------------------------
+\subsubsection{The relaxation and the dual bound}\label{app:powerflow-dual}
+
+With $x=(e_1,f_1,\dots,e_n,f_n)$, $W_{kk}=e_k^2+f_k^2$, $w^R_{km}=e_ke_m+f_kf_m$ and $w^I_{km}=f_ke_m-e_kf_m$, the substitution $e_k=v_k\cos\theta_k$, $f_k=v_k\sin\theta_k$ gives $v_k^2=W_{kk}$, $v_kv_m\cos\theta_{km}=w^R_{km}$ and $v_kv_m\sin\theta_{km}=w^I_{km}$ for all real $v$ and $\theta$.
+This turns the flow rows into the identities $y_r=x^\top Q_rx$ with rational symmetric $Q_r$ of the relaxation $\mathcal Q$ of \cref{sec:other-convex} (in \inst{powerflow0039r} the rows already have this form); $\mathcal Q$ also keeps the balance and thermal rows, the boxes on $y$ and the voltage rows $\underline v_k^2\le W_{kk}\le\bar v_k^2$.
+For the polar models let $\mathcal Q^\angle$ be $\mathcal Q$ with, for each angle row on $\theta_p-\theta_q$, the two rows $w^I_{pq}\le t^+w^R_{pq}$ and $w^I_{pq}\ge t^-w^R_{pq}$, where $t^\pm$ are rationals with $t^+\ge\tan0.26$ and $t^-\le\tan(-0.26)$.
+
+\begin{lemma}[$\mathcal Q$ is a relaxation]\label{lem:pf-relaxation}
+Let $(v,\theta,y)$ be an exactly feasible point of a polar model and put $e_k=v_k\cos\theta_k$, $f_k=v_k\sin\theta_k$.
+Then $(x,y)\in\mathcal Q^\angle\subseteq\mathcal Q$, with the same cost.
+Every exactly feasible point $(e,f,y)$ of \inst{powerflow0039r} lies in $\mathcal Q$.
+\end{lemma}
+
+\begin{proof}
+The identities above hold for all real $(v,\theta)$, so every OSIL flow expression equals $x^\top Q_rx$ with the same rational coefficients.
+Since $\underline v_k\ge0$, the voltage limits imply $\underline v_k^2\le v_k^2=W_{kk}\le\bar v_k^2$.
+For an angle row on $\delta=\theta_p-\theta_q\in[-0.26,0.26]\subset(-\pi/2,\pi/2)$ we have $w^R_{pq}=v_pv_q\cos\delta\ge0$ and $w^I_{pq}=w^R_{pq}\tan\delta$;
+since $\tan$ is increasing, $t^-w^R_{pq}\le\tan(-0.26)\,w^R_{pq}\le w^I_{pq}\le\tan(0.26)\,w^R_{pq}\le t^+w^R_{pq}$.
+The balance, thermal and box rows are unchanged, dropping rows only enlarges the set, and the cost depends on $y$ alone.
+\end{proof}
+
+The rationals $t^\pm$ are a 40-digit value of $\tan(\pm0.26)$ shifted outward by $10^{-35}$; 300-bit interval arithmetic (margin \sci{1.0}{-35}) and exact bounds from alternating series both confirm them.
+Only the stored \inst{powerflow0039p} certificate uses $\mathcal Q^\angle$, and \cref{rem:pf-anglefree} removes even that use.
+
+The proof of \cref{prop:pf-duality} in \cref{sec:other-convex} applies verbatim to $\mathcal Q^\angle$ and to the leaf relaxations $\mathcal Q_i$ below, because their extra rows have the form $\mathrm{lb}_r\le h_r(x,y)\le\mathrm{ub}_r$ with $h_r$ quadratic in $x$ and affine in $y$.
+Two details complete it.
+For a boxed $y$ with $\sigma_y>0$ the minimum of $\sigma_yt^2+\kappa_yt$ over $[l_y,u_y]$ is attained at the projection of $-\kappa_y/(2\sigma_y)$ onto the box, and for $\sigma_y=0$ at an end point; for an unboxed $y$ with $\sigma_y=\kappa_y=0$ the term is $0$.
+Negative parts of computed inequality multipliers are set to $0$, which keeps $\mu^\pm\ge0$; the bound $\beta(w,\varepsilon)$ depends only on $(w,\varepsilon)$, and stored binary64 multipliers are dyadic rationals that convert exactly.
+
+\begin{lemma}[Exact test for positive semidefiniteness]\label{lem:pf-psd}
+Let $M\in\Q^{d\times d}$ be symmetric.
+Process the indices in order.
+If the current pivot $M_{11}$ is positive, replace $M$ by the Schur complement $M'=M_{2:d,2:d}-M_{2:d,1}M_{1,2:d}/M_{11}$;
+if it is negative, stop: $M\not\succeq0$;
+if it is zero and its row is nonzero, stop: $M\not\succeq0$;
+if it is zero and its row is zero, delete the index.
+Then $M\succeq0$ if and only if the procedure never stops, and $M\succ0$ if and only if every pivot is positive.
+\end{lemma}
+
+\begin{proof}
+If $M_{11}>0$, then $M=L\,\mathrm{diag}(M_{11},M')\,L^\top$ with $L$ unit lower triangular, so $M\succeq0$ if and only if $M'\succeq0$, and likewise for $\succ$.
+If $M_{11}<0$, then $\mathbf e_1^\top M\mathbf e_1<0$.
+If $M_{11}=0$ and $M_{1j}\ne0$, the principal minor on $\{1,j\}$ equals $-M_{1j}^2<0$.
+If row 1 is zero, $M=0\oplus M'$.
+Induction on $d$ completes the proof; all operations are exact in $\Q$.
+\end{proof}
+
+A third check (\cref{app:powerflow-verification}) uses a floating-point Cholesky factor $\tilde R$ with the exact residual $E=A(w)+\varepsilon I-\tilde R^\top\tilde R$ and a Gershgorin bound on $\lambda_{\min}(E)$, which proves $A(w)+(\varepsilon+\eta)I\succeq0$ at a cost of $\eta\bar V^2$, essentially the device of \citet{oustry2022-certified-and-accurate-sdp-bounds}.
+
+\begin{proposition}[Double eigenvalues]\label{prop:pf-double}
+Let $J=\mathrm{diag}(J_2,\dots,J_2)$ with $J_2=\bigl(\begin{smallmatrix}0&-1\\1&0\end{smallmatrix}\bigr)$.
+Every matrix $Q_r$ of $\mathcal Q$, $\mathcal Q^\angle$ and $\mathcal Q_i$ commutes with $J$, so for every $w$:
+(a) every eigenvalue of $A(w)$ has even multiplicity;
+(b) if $A(w)\succeq0$ and $\beta(w,0)$ equals the cost at a point $(x^*,y^*)$ of the relaxation, then $A(w)x^*=A(w)Jx^*=0$, so the kernel of $A(w)$ has dimension at least two.
+\end{proposition}
+
+\begin{proof}
+In the $2\times2$ block structure of $x$, the form $W_{kk}$ contributes the block $I_2$ at $(k,k)$, $w^R_{km}$ contributes $\tfrac12I_2$ at $(k,m)$ and $(m,k)$, and $w^I_{km}=x_k^\top J_2x_m$ contributes $\tfrac12J_2$ at $(k,m)$ and $-\tfrac12J_2$ at $(m,k)$.
+Every row matrix is a combination of these blocks, and $I_2$ and $J_2$ commute with $J_2$, so $Q_rJ=JQ_r$; this is the real form of a Hermitian matrix.
+For \inst{powerflow0039r} we also checked in exact arithmetic that all 262 quadratic rows commute with $J$.
+(a) If $A u=\lambda u$, then $A(Ju)=\lambda Ju$, so each eigenspace $E_\lambda$ is invariant under $J$; since $(J|_{E_\lambda})^2=-I$, $\det(J|_{E_\lambda})^2=(-1)^{\dim E_\lambda}$ forces $\dim E_\lambda$ to be even.
+(b) Equality in the proof of \cref{prop:pf-duality} with $\varepsilon=0$ forces $x^{*\top}A(w)x^*=0$, hence $A(w)x^*=0$ because $A(w)\succeq0$, and $A(w)Jx^*=JA(w)x^*=0$.
+The vectors $x^*$ and $Jx^*$ are orthogonal because $J$ is skew-symmetric, and nonzero because every $W_{kk}\ge\underline v_k^2>0$.
+\end{proof}
+
+At a relaxation that is tight up to the gap, nearly optimal multipliers therefore give a double eigenvalue near zero, and rounding them can move it to a double eigenvalue of either sign:
+50-digit computations give $\sci{+4.0011}{-9}$ (twice) for the \inst{powerflow0030p} multipliers, $\sci{-1.0943}{-9}$ (twice) at the decisive leaf of \inst{powerflow0039p} and about $\sci{-6.07}{-10}$ at that of \inst{powerflow0039r}.
+A shift $\varepsilon$ absorbs a negative pair at a cost of $\varepsilon\bar V^2$.
+The shifts are a choice of the stored certificates, not a necessity: the stored 39-bus certificates use $\varepsilon=10^{-8}$ (\inst{powerflow0039p}) and $\varepsilon=10^{-9}$ (\inst{powerflow0039r}) at their decisive leaves, and \cref{rem:pf-anglefree} gives multipliers for \inst{powerflow0039p} that need none.
+Paired zero eigenvalues were also observed by \citet{lavaei2012-zero-duality-gap-in-optimal}.
+
+\begin{corollary}[The Shor relaxation of \inst{powerflow0030p} is tight]\label{cor:pf-shor}
+Let $\mathrm{Shor}(\mathcal Q)$ be the relaxation obtained from $\mathcal Q$ by replacing $xx^\top$ with a symmetric matrix $X\succeq0$ in every row.
+For \inst{powerflow0030p}, its optimal value lies in $[576.8934122988004,\,576.8934134704]$, so it is within $\sci{1.18}{-6}$ (relative $\sci{2.04}{-9}$) of $\vstar(\model)$.
+\end{corollary}
+
+\begin{proof}
+For $(X,y)$ feasible, adding the multiplier terms as in \cref{prop:pf-duality} gives a cost of at least $c(w)+\sum_y(\sigma_yy^2+\kappa_yy)+\langle A(w),X\rangle$, and $\langle A(w)+\varepsilon I,X\rangle\ge0$ because both matrices are positive semidefinite.
+The lifted voltage rows give $\operatorname{tr}X\le\bar V^2$, so the cost is at least $\beta(w,\varepsilon)$.
+With the certificate of \cref{thm:pf-0030p}, $\beta\le\mathrm{val}(\mathrm{Shor}(\mathcal Q))\le\mathrm{val}(\mathcal Q)\le\vstar(\model)\le\Uprim$.
+\end{proof}
+
+For the 39-bus models only lower bounds on $\mathrm{val}(\mathrm{Shor}(\mathcal Q))$ are rigorous.
+Accurate re-solves of the root SDP certified by \cref{prop:pf-duality} give $41867.77970311977$ (\inst{powerflow0039p}, $\varepsilon=10^{-9}$) and $41867.77970316397$ (\inst{powerflow0039r}, $\varepsilon=0$), about $1.27$ below $\Uprim$.
+That the Shor relaxation itself leaves a gap of this size is a numerical observation: we computed no rigorous upper bound on its value, and the solver's primal value for \inst{powerflow0039r}, $41867.779703029$, lies \sci{1.3}{-7} below the certified root bound, so it is not an upper bound either.
+
+% ---------------------------------------------------------------------------
+\subsubsection{Proof of \texorpdfstring{\cref{thm:pf-0030p}}{the 30-bus theorem}}\label{app:powerflow-0030p}
+
+The certificate is \cref{prop:pf-duality} on $\mathcal Q$ with $\varepsilon=0$ and the stored multipliers (archived file with SHA-256 prefix \texttt{63cf1e21}) on its 332 rows (164 flow, 82 thermal, 56 balance and 30 voltage rows) and the 16 boxes on the 176 entries of $y$.
+In exact rational arithmetic: $\sigma_y\ge0$ for all $y$; every unboxed $y$ with $\sigma_y=0$ has $\kappa_y=0$, so no multiplier needs adjustment;
+and $A(w)$ is positive definite by \cref{lem:pf-psd} (60 positive pivots, the smallest $\sci{9.865}{-8}$) and by Bareiss elimination (60 positive leading minors).
+The bound is the rational
+\[
+\beta=576.89341229880046984915963178\ldots,
+\]
+truncated to $\Lcert=576.8934122988004$.
+A fresh solve of the dual SDP on the archived software stack gives only $576.8905424271796$, so the certificate is the stored multiplier file, and verification is replay, not regeneration.
+\hfill$\square$
+
+% ---------------------------------------------------------------------------
+\subsubsection{Proof of \texorpdfstring{\cref{thm:pf-0039}}{the 39-bus theorem}}\label{app:powerflow-0039}
+
+\paragraph{Leaf data.}
+Bus~30 of case39 is joined only to bus~2 by the step-up transformer 2--30, which in MATPOWER has $r=0$, $x=0.0181$, no charging and tap $1.025$; the stored models drop the tap.
+So the branch is a pure series susceptance $b_{30,2}=-b$ with
+\[
+b:=-b_{30,2}=\frac{69060773480663}{1250000000000}=55.2486187845304,
+\]
+the 15-digit rounding of $1/0.0181$.
+Bus~30 has no load and one generator with $P_g\in[0,10.4]$ and $Q_g\in[1.4,4]$ (MATPOWER's 1040~MW, 140~MVAr and 400~MVAr).
+In the OSIL files of \inst{powerflow0039p} and \inst{powerflow0039r}, bus~30 has $(v_{30},\theta_{30})=(x_{30},x_{253})$ and $(e_{30},f_{30})=(x_{214},x_{253})$, bus~2 has $(v_2,\theta_2)=(x_2,x_{225})$ and $(e_2,f_2)=(x_{186},x_{225})$, and in both $P_g=x_{263}$ and $Q_g=x_{273}$.
+The balance rows at bus~30 are e581: $x_{103}-x_{263}=0$ and e591: $x_{195}-x_{273}=0$ in \inst{powerflow0039p}, and e397: $x_{64}-x_{263}=0$ and e407: $x_{156}-x_{273}=0$ in \inst{powerflow0039r}.
+The flow rows of the branch give $P_{30\to2}=s\,b\,w^I_{30,2}$ with $s=+1$ in \inst{powerflow0039p} and $s=-1$ in \inst{powerflow0039r} (whose rows use the sign convention $f=-v\sin\theta$), and $Q_{30\to2}=b\,(W_{30,30}-w^R_{30,2})$;
+the two balance rows at bus~30 give $P_{30\to2}=P_g$ and $Q_{30\to2}=Q_g$.
+This is all that the proof of \cref{lem:pf-leaf} uses; the checking code asserts the leaf structure (the four flow forms, $b>0$ and the balance rows with zero constant) in exact arithmetic.
+
+\begin{lemma}[leaf identity]\label{lem:pf-leaf}
+Every point of $\mathcal Q$ for \inst{powerflow0039p} or \inst{powerflow0039r} satisfies
+$W_{2,2}=F(P_g,Q_g,W_{30,30}):=W_{30,30}-2Q_g/b+(P_g^2+Q_g^2)/(b^2W_{30,30})$.
+\end{lemma}
+
+\begin{proof}
+By the leaf data, $P_g=s\,b\,w^I_{30,2}$ and $Q_g=b\,(W_{30,30}-w^R_{30,2})$, and the voltage rows give $W_{30,30}\ge0.94^2>0$.
+Lagrange's identity $W_{2,2}W_{30,30}=(w^R_{30,2})^2+(w^I_{30,2})^2$ with $w^R_{30,2}=W_{30,30}-Q_g/b$ and $(w^I_{30,2})^2=P_g^2/b^2$, divided by $W_{30,30}$, gives the claim.
+\end{proof}
+
+\begin{lemma}[vertex planes]\label{lem:pf-planes}
+$F$ is convex on $\R\times\R\times(0,\infty)$; if an affine $H$ satisfies $H\ge F$ at the eight vertices of a box in this set, then $H\ge F$ on the box.
+\end{lemma}
+
+\begin{proof}
+$(p^2+q^2)/w$ is the perspective of $p^2+q^2$, hence convex for $w>0$, and the other terms of $F$ are affine.
+So $H-F$ is concave, and it is nonnegative at the vertices of the box, hence at every convex combination of them, that is, on the box.
+\end{proof}
+
+\paragraph{Why the cut is needed.}
+The Shor relaxation keeps only $W_{2,2}W_{30,30}\ge(w^R_{30,2})^2+(w^I_{30,2})^2$, that is $W_{2,2}\ge F(P_g,Q_g,W_{30,30})$ (\cref{lem:pf-leaf}).
+On a box with $P_g\in[p_1,p_2]$, an affine $H\ge F$ exceeds $F$ by up to $(P_g-p_1)(p_2-P_g)/(b^2W_{30,30})$ in the $P_g$ direction;
+over the root interval $[0,10.4]$ this is about $\sci{7.2}{-3}$ at $P_g=6.714$, $W_{30,30}=1.1236$.
+Branching on $(P_g,Q_g,W_{30,30})$ shrinks this error.
+
+\paragraph{Proof.}
+Let $B_0=[0,\tfrac{52}{5}]\times[\tfrac75,4]\times[\tfrac{2209}{2500},\tfrac{2809}{2500}]$ in the coordinates $(P_g,Q_g,W_{30,30})$, and let $B_1,\dots,B_m$ be the stored leaf boxes, $m=6$ (\inst{powerflow0039p}) and $m=9$ (\inst{powerflow0039r}); archived files with SHA-256 prefixes \texttt{8af24081} and \texttt{09e1a62a}.
+For leaf $i$ let $\mathcal H_i$ be the four affine functions stored for it, and let $\mathcal Q_i$ be $\mathcal Q$ with
+$(P_g,Q_g)$ boxed to the first two factors of $B_i$, the row $\omega_i^-\le W_{30,30}\le\omega_i^+$, where $[\omega_i^-,\omega_i^+]$ is the third factor of $B_i$, and one row $W_{2,2}-H(P_g,Q_g,W_{30,30})\le0$ for each $H\in\mathcal H_i$.
+The following are checked in exact arithmetic:
+\begin{enumerate}
+\item[(a)] $B_1\cup\dots\cup B_m=B_0$;
+\item[(b)] every $H\in\mathcal H_i$ satisfies $H\ge F$ at the eight vertices of $B_i$;
+\item[(c)] for each $i$, the stored multipliers of leaf $i$ satisfy the hypotheses of \cref{prop:pf-duality} on $\mathcal Q_i$ (for \inst{powerflow0039p}, on $\mathcal Q_i^\angle$, which is $\mathcal Q_i$ with the angle rows of $\mathcal Q^\angle$) with the stored rational shift $\varepsilon_i\ge0$, and give a bound $\beta_i$.
+\end{enumerate}
+Let $(x,y)$ be the image of an exactly feasible point (\cref{lem:pf-relaxation}).
+The boxes on $y$ and the voltage rows put $(P_g,Q_g,W_{30,30})$ in $B_0$, so by (a) in some $B_i$.
+By \cref{lem:pf-leaf}, $W_{2,2}=F(P_g,Q_g,W_{30,30})$, and by (b) and \cref{lem:pf-planes}, $F\le H$ on $B_i$ for every $H\in\mathcal H_i$.
+So $(x,y)\in\mathcal Q_i$, and for \inst{powerflow0039p} also $(x,y)\in\mathcal Q_i^\angle$ because $(x,y)\in\mathcal Q^\angle$ (\cref{lem:pf-relaxation}); by (c) its cost is at least $\beta_i\ge\min_j\beta_j$.
+The leaf boxes are closed, so points on shared faces are covered; overlaps would be harmless.
+\hfill$\square$
+
+\paragraph{Computation.}
+Each $\mathcal H_i$ consists of the four facets of the concave envelope of $F$ over the vertices of $B_i$:
+on each face $W_{30,30}=\mathrm{const}$ the function $F$ is separable in $(P_g,Q_g)$, so its four vertex values are coplanar, and on every leaf two of the planes pass through four vertices and two through five.
+Coverage (a) was checked by volume and pairwise disjointness of interiors, and separately by grids of cells (16 cells for \inst{powerflow0039p} and 45 for \inst{powerflow0039r}, each inside exactly one leaf).
+The search that produced the leaves stores, for each node, the larger of its parent's bound and its own certificate; the theorem uses only each leaf's own certificate, and every leaf stores its own multipliers.
+The exact minima over the leaves are
+\begin{align*}
+\text{\inst{powerflow0039p}:}\quad &41869.0514848501403285788486\ldots\ \ge\ 41869051484850140/10^{12},\\
+\text{\inst{powerflow0039r}:}\quad &41869.0514832724339667485968\ldots\ \ge\ 41869051483272433/10^{12},
+\end{align*}
+truncated to the displays $41869.05148485014$ and $41869.05148327243$.
+The minimum is attained at the leaf that contains the exactly feasible point; every other leaf exceeds it by at least \sci{3.0}{-3} (\inst{powerflow0039p}) and \sci{2.6}{-5} (\inst{powerflow0039r}).
+The decisive leaves, in the coordinates $(P_g,Q_g,W_{30,30})$, are
+\begin{align*}
+\text{\inst{powerflow0039p}:}\quad &\bigl[\tfrac{3024409}{450773},\tfrac{449605480}{66644851}\bigr]\times\bigl[\tfrac75,\tfrac{83}{50}\bigr]\times\bigl[\tfrac{2749}{2500},\tfrac{2809}{2500}\bigr],\\
+\text{\inst{powerflow0039r}:}\quad &\bigl[\tfrac{1327418}{197845},\tfrac{5938456}{884431}\bigr]\times\bigl[\tfrac75,\tfrac{713}{500}\bigr]\times\bigl[\tfrac{2803}{2500},\tfrac{2809}{2500}\bigr],
+\end{align*}
+and their stored shifts $\varepsilon=10^{-8}$ and $10^{-9}$ cost at most $\sci{4.4}{-7}$ and $\sci{4.4}{-8}$.
+The exactly feasible points of \cref{app:powerflow-points} lie in these leaves:
+at the \inst{powerflow0039p} point $P_g=41964029348667/6250000000000\approx6.71424$, $Q_g=7/5$ and $v_{30}=53/50$, and at the \inst{powerflow0039r} point $P_g\approx6.71424$, $Q_g=7/5$ and $W_{30,30}=1.1236$.
+
+\begin{remark}[No trigonometric bound is needed]\label{rem:pf-anglefree}
+The stored \inst{powerflow0039p} certificate uses $\mathcal Q^\angle$; its largest angle-row multiplier is \sci{2.3}{-7}.
+Setting all angle-row multipliers to zero gives a certificate for $\mathcal Q_i$ itself that needs no shift:
+the angle rows have $\mathrm{lb}_r=0$ and no $y$ terms, so $c$, $\kappa$ and $\sigma$ do not change, and on every leaf $A(w)$ is then positive definite with $\varepsilon=0$.
+The minimum over the leaves becomes $41869.05148528834432858\ldots$, which exceeds the stated bound by the cost $10^{-8}\bar V^2$ of the stored shift.
+Two separately written exact checks confirmed this: integer Bareiss elimination, and a separate reader and relaxation with a Cholesky factor, an exact residual and a Gershgorin bound (numerical smallest eigenvalues $\sci{4.29}{-9}$ to $\sci{5.80}{-8}$, decisive leaf $\sci{4.60}{-8}$).
+So \cref{thm:pf-0039}, like \cref{thm:pf-0030p}, uses only the flow, balance, thermal and voltage rows, the boxes on $y$ and the leaf rows derived from them, and no bound on a trigonometric function enters any of the three dual proofs.
+The stated value $41869.05148485014$ is the smaller value of the stored certificate.
+\end{remark}
+
+Cuts at bus~30 alone sufficed.
+Buses 31, 32 and 35 are also joined to the network by a single lossless branch without charging, so an identity of the same form, with net injections in place of $P_g$ and $Q_g$, holds there; the certificate does not use it.
+
+% ---------------------------------------------------------------------------
+\subsubsection{Exactly feasible points}\label{app:powerflow-points}
+
+Each point is defined by its certificate data, not by a decimal vector (\cref{sec:points}).
+Some variables are fixed at exact rationals:
+those fixed by single-variable rows (the reference angle or $f_{\mathrm{ref}}=0$, and fixed flows);
+those at an active single-variable bound ($x_{29}=21/20$ in \inst{powerflow0030p};
+in \inst{powerflow0039p}, $x_{30}$--$x_{36}$ and $x_{38}$ equal to $53/50$, five generator outputs at their upper bounds and $Q_g=x_{273}=7/5$;
+in \inst{powerflow0039r}, the same six generator bounds);
+and the remaining degrees of freedom, chosen by column-pivoted QR, at the decimals of the listed point p1.
+The other variables solve a square system $S$ consisting of every equality row that does not fix a single variable and every active multi-variable inequality row, taken as an equality
+(the line limits e208 and e211 in \inst{powerflow0030p}; the voltage rows e307--e313 and e315 at $e^2+f^2=1.06^2$ in \inst{powerflow0039r}; none in \inst{powerflow0039p}).
+\Cref{thm:pts-krawczyk} applies with a stored 60-digit centre $c$ and radius $10^{-45}$:
+the Krawczyk image lies in the interior of the box, and $\|I-CJ(X)\|_\infty\le\sci{1.930}{-12}$, $\sci{2.855}{-12}$ and $\sci{5.376}{-12}$, which gives existence and uniqueness in the box \citep{krawczyk1969-newton-algorithmen-zur-bestimmung-von,rump2010-verification-methods-rigorous-results-using}.
+Every other row is checked either exactly (all its variables fixed) or by an interval enclosure over the box that lies strictly inside its bounds; the smallest such margins are \sci{4.30}{-4}, \sci{1.08}{-3} and \sci{2.29}{-3}.
+\Cref{tab:pf-points} lists the sizes and the objective enclosures.
+The first implementation (mpmath interval arithmetic at 80 digits, with $+$, $-$, $\times$, $\div$, $\sin$, $\cos$) and a separately written check (\cref{app:powerflow-verification}) each prove all three points; they agree in every printed digit.
+The points are not feasible for binary64 data (\cref{rem:sem-readings}).
+
+\begin{table}[ht]
+\centering
+\small
+\caption{Exactly feasible points of the \inst{powerflow} models: free and fixed variables, rows in $S$, rows checked exactly and by intervals, and the upper end of the objective enclosure (enclosure width below $10^{-21}$), rounded up.}
+\label{tab:pf-points}
+\begin{tabular}{@{}llll@{}}
+\toprule
+instance & free / fixed & $S$ / exact / interval rows & $\Uprim$ \\
+\midrule
+\inst{powerflow0030p} & 222 / 14 & 222 / 23 / 310 & $576.8934134704$ \\
+\inst{powerflow0039p} & 262 / 20 & 262 / 39 / 356 & $41869.0515113203$ \\
+\inst{powerflow0039r} & 270 / 12 & 270 / 23 / 180 & $41869.0515113210$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ---------------------------------------------------------------------------
+\subsubsection{Certificate}\label{app:powerflow-verification}
+
+\begin{certbox}[Certificate for \cref{thm:pf-0030p,thm:pf-0039}]
+\certitem{Inputs}{OSIL files (SHA-256 prefixes \texttt{5c4b386b}, \texttt{0a27073f}, \texttt{d8ba3132}); multipliers (\texttt{63cf1e21}) and, for the 39-bus models, leaf boxes, planes, multipliers and shifts (\texttt{8af24081}, \texttt{09e1a62a}); the rationals $t^\pm$; centres and radii of the points.}
+\certitem{Computation}{dual: $\beta$ by \cref{prop:pf-duality}, exact $LDL^\top$ (\cref{lem:pf-psd}), leaf coverage and vertex planes, all \arith{E}; floating point only proposes multipliers, Cholesky factors and Newton centres, so no floating-point error analysis enters a dual bound. Primal: Krawczyk proofs (\cref{thm:pts-krawczyk}) in \arith{I} and in dyadic intervals \arith{E}.}
+\certitem{Data reading}{exact. The first and second implementations share one OSIL reader; a separately written reader and row builder reproduced every row of $\mathcal Q$ (and of $\mathcal Q^\angle$) exactly for all three files, the native and converted flow rows agree at 60 digits to $\sci{1.6}{-58}$, and the \texttt{.gms} files agree with the OSIL files term by term. The primal check has its own reader.}
+\certitem{Implementations}{dual: the first implementation (exact pivoted $LDL^\top$; coverage by volume and disjointness) and the separately written second one (exact $LDL^\top$; polar conversion checked symbolically for the 164 and 184 flow rows) reproduce or exceed every bound; a third code (the separate reader, a 60-digit Cholesky factor with exact residual and Gershgorin bound, grid-cell coverage, planes by Cramer's rule) and integer Bareiss elimination with Sylvester's criterion confirm them, and three codes give the same rational $\beta$ for \inst{powerflow0030p}. Primal: the first implementation and a separately written check in dyadic intervals at $2^{-320}$, with $\sin$ and $\cos$ from Taylor series with a Lagrange remainder and its own preconditioner.}
+\certitem{Evidence level}{\evid{hand} for the lemmas, \evid{stored} for the bounds and points.}
+\certitem{Replay}{Tier~1: 4~s (\inst{powerflow0030p}); 78~s and 24~s from the stored leaves (\inst{powerflow0039p}, \inst{powerflow0039r}).}
+\end{certbox}
+
+\paragraph{Relation to prior work.}
+\citet{lavaei2012-zero-duality-gap-in-optimal} note that zero-resistance transformers violate their exactness condition; the branch 2--30 at which the 39-bus certificates need the leaf cut is such a transformer.
+We did not read the SDP-strengthening cuts of \citet{coffrin2017-strengthening-the-sdp-relaxation-of} or the valid inequalities and minor-based cuts of \citet{kocuk2016-inexactness-of-sdp-relaxation-and,kocuk2018-matrix-minor-reformulation-and-socp} (\cref{app:literature-unread}), so we do not compare the leaf cut with them.

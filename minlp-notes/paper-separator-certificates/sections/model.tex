@@ -1,0 +1,257 @@
+\section{Problems and certificates}\label{sec:model}
+
+\subsection{The problem and its decomposition}
+Let $X=\prod_{i=1}^n[L_i,U_i]$ be a compact box and consider
+\begin{equation}\label{eq:model-problem}
+ f^*=\min_{x\in X}F(x),\qquad
+ F(x)=\sum_{t\in T}a_t(x_{V_t}).
+\end{equation}
+The set $T$ is the vertex set of a rooted tree, with root $r$ and bags
+$V_t\subseteq\{1,\ldots,n\}$. The bags cover the coordinates. For each
+coordinate $i$, the bags containing $i$ induce a connected subtree. This
+is the running intersection property. A given factorization of $F$ can be
+put in this form by assigning each factor to one bag containing its scope.
+The analysis preserves this assignment; it does not merge bags or factors.
+
+Write $\pi(t)$ for the parent of $t\ne r$, $\operatorname{ch}(t)$ for its
+children, and $\sub(t)$ for its rooted subtree. Define
+\[
+ S_t=V_t\cap V_{\pi(t)},\quad R_t=V_t\setminus S_t\quad(t\ne r),
+ \qquad S_r=\varnothing,\quad R_r=V_r.
+\]
+The relevant structural parameters are
+\[
+ N=|T|,\qquad p=\max_t|V_t|,\qquad
+ q=\max_{t\ne r}|S_t|,\qquad
+ k=\max_i|\{t:i\in V_t\}|.
+\]
+We take $q=0$ when $N=1$. In particular, $q\le p$; repeated or contained
+bags are permitted. The width of this decomposition is $w=p-1$; the
+graph's treewidth may be smaller. A bound in terms of $p$ alone does not
+control $k$.
+
+For a coordinate set $I$, $X_I$ denotes the projection of $X$ onto $I$.
+For a box $B$, $B_I$ has the same meaning, and $\width(B)$ is its largest
+side length. Fixed coordinates are substituted into the objective and
+removed before constructing partitions. All remaining intervals have
+positive length. A zero-dimensional projection has one point, one cell,
+and width zero. If all coordinates are fixed, evaluation solves the problem.
+Below $n\ge1$, $p\ge1$, and $s_0=\max_i(U_i-L_i)>0$.
+
+Initially the functions $a_t$ need only be continuous. Their conditional
+value functions are
+\[
+ \phi_t(s)=\min\left\{\sum_{u\in\sub(t)}a_u(x_{V_u}):
+ x\in X_{\cup_{u\in\sub(t)}V_u},\ x_{S_t}=s\right\}.
+\]
+Running intersection and the product domain give the recursion
+\begin{equation}\label{eq:model-value}
+ \phi_t(s)=\min_{y\in X_{R_t}}
+ \left[a_t(s,y)+\sum_{u\in\operatorname{ch}(t)}\phi_u((s,y)_{S_u})\right],
+ \qquad \phi_r=f^*.
+\end{equation}
+Every minimum is attained. Induction in this recursion also shows that
+$\phi_t$ is continuous: a continuous function minimized over a fixed compact
+box has a continuous minimum. No differentiability of $\phi_t$ is assumed.
+
+\subsection{Local models and growth}
+For every bag box $B\subseteq X_{V_t}$, let $m_{t,B}$ be a supplied
+continuous convex lower model of $a_t$ on $B$. The quantitative results use
+the uniform contract
+\begin{equation}\label{eq:model-contract}
+ 0\le a_t(v)-m_{t,B}(v)\le \frac A4\width(B)^2
+ \qquad(v\in B),
+\end{equation}
+with $A\ge0$. This is a bag-level assumption. Factorwise quadratic-error
+models imply it after summing their error bounds, but vertex exactness is
+not required. The arithmetic implementation below uses affine Taylor
+models that satisfy precisely this contract.
+
+We also assume that $a_t$ is continuously differentiable on a neighborhood
+of $X_{V_t}$ and
+\begin{equation}\label{eq:model-smooth}
+ \norm{\nabla a_t(v)-\nabla a_t(v')}\le M\norm{v-v'}
+ \qquad(v,v'\in X_{V_t}),
+\end{equation}
+where $M\ge0$ and all unmarked norms are Euclidean. The main convergence
+assumption is global quadratic growth about one minimizer:
+\begin{equation}\label{eq:model-growth}
+ F(x)-f^*\ge g\norm{x-x^*}^2\qquad(x\in X),\qquad g>0.
+\end{equation}
+It implies that $x^*$ is unique. The algorithm does not need $x^*$, and a
+search variant does not need the numerical value of $g$. The minimizer may
+lie on the boundary of $X$. Quadratic growth is an assumption on the whole
+box; local positive curvature alone would not give the stated global
+complexity bound without control of other nearly optimal regions.
+We write $\log_+z=\max\{0,\log z\}$ for $z>0$.
+
+\subsection{A finite lower certificate}
+\begin{definition}\label{def:model-certificate}
+A separator certificate consists of the following objects.
+For each bag $t$, a finite partition $\mathcal L_t$ of $X_{V_t}$ into
+closed boxes with disjoint interiors is specified. For each $t\ne r$,
+a similar partition $\mathcal P_t$ of $X_{S_t}$ is specified, with affine
+functions
+\[
+ l_{t,D}(s)=\lambda_{t,D}^{\mathsf T}s+\beta_{t,D}
+ \qquad(D\in\mathcal P_t).
+\]
+For each $B\in\mathcal L_t$ and $u\in\operatorname{ch}(t)$, a continuous
+convex function $\psi_{u,B}$ on $B_{S_u}$ satisfies
+\begin{equation}\label{eq:model-child}
+ \psi_{u,B}(s)\le l_{u,D'}(s)
+ \quad\text{for every }D'\in\mathcal P_u, s\in B_{S_u}\cap D'.
+\end{equation}
+With $\operatorname{Rel}_{t,B}(v)=m_{t,B}(v)+
+\sum_{u\in\operatorname{ch}(t)}\psi_{u,B}(v_{S_u})$, the local inequalities are
+\begin{equation}\label{eq:model-local}
+ \operatorname{Rel}_{t,B}(v)\ge l_{t,D}(v_{S_t})
+ \quad(v\in B,\ v_{S_t}\in D),\qquad t\ne r, D\in\mathcal P_t.
+\end{equation}
+At the root they read $\operatorname{Rel}_{r,B}(v)\ge\LB$ for every
+$B\in\mathcal L_r$ and $v\in B$.
+The number of boxes and cells is
+\[
+ \mathcal S=\sum_t|\mathcal L_t|+\sum_{t\ne r}|\mathcal P_t|.
+\]
+A certificate together with a feasible value $\UB\ge f^*$ proves absolute
+accuracy $\eps$ if $\UB-\LB\le\eps$.
+\end{definition}
+
+All nonempty intersections in this definition are included, even if they
+are faces of smaller dimension. This convention avoids boundary choices
+in the later configuration identity. The number $\mathcal S$ measures
+partition size, not the number of local checks or the number of bits.
+Representations of the models and local proof data must be counted
+separately. A local check minimizes a continuous convex function over
+$B\cap\{v:v_{S_t}\in D\}$, a compact box that may have fixed coordinates.
+
+\begin{proposition}[Validity]\label{prop:model-validity}
+Every certificate satisfies $l_{t,D}(s)\le\phi_t(s)$ for $s\in D$ and
+$\LB\le f^*$.
+\end{proposition}
+\begin{proof}
+Proceed from the leaves of the tree to the root. Fix $s\in D$ and choose
+$v=(s,y)$ attaining \eqref{eq:model-value}. Some $B\in\mathcal L_t$
+contains $v$. For each child $u$, choose a cell $D'\in\mathcal P_u$
+containing $v_{S_u}$. The induction hypothesis and
+\eqref{eq:model-child} imply
+$\psi_{u,B}(v_{S_u})\le\phi_u(v_{S_u})$. Therefore
+\[
+ l_{t,D}(s)\le\operatorname{Rel}_{t,B}(v)
+ \le a_t(v)+\sum_u\phi_u(v_{S_u})=\phi_t(s).
+\]
+The same argument at the root gives $\LB\le\phi_r=f^*$.
+\end{proof}
+
+\begin{proposition}[Cancellation along a consistent point]\label{prop:model-chain}
+For any $x\in X$, choose a bag leaf $B_t$ containing $x_{V_t}$ at every
+bag. Then
+\begin{equation}\label{eq:model-chain}
+ \LB\le\sum_t m_{t,B_t}(x_{V_t}).
+\end{equation}
+\end{proposition}
+\begin{proof}
+Choose any $D_t\in\mathcal P_t$ containing $x_{S_t}$. The local inequality
+at $t$ and the child inequality at its parent apply to these choices,
+because both projected boxes contain $x_{S_t}$. Substitute the local
+inequality into the parent inequality, starting at the root. Every
+nonroot affine minorant cancels once, leaving \eqref{eq:model-chain}.
+\end{proof}
+
+\subsection{A dynamic program for fixed slopes}
+The construction uses one slope $\lambda_t$ for all cells of a separator.
+For $B\in\mathcal L_t$, set
+\begin{equation}\label{eq:model-fixed-child}
+ \psi_{u,B}(s)=\lambda_u^{\mathsf T}s+
+ \min_{D'\in\mathcal P_u:\ D'\cap B_{S_u}\ne\varnothing}\beta_{u,D'}.
+\end{equation}
+This affine function satisfies \eqref{eq:model-child}. In postorder,
+compute the largest permissible intercepts
+\begin{equation}\label{eq:model-intercept}
+ \beta_{t,D}=\min_{B\in\mathcal L_t:\ B_{S_t}\cap D\ne\varnothing}
+ \min_{v\in B:\ v_{S_t}\in D}
+ \left[m_{t,B}(v)+\sum_{u\in\operatorname{ch}(t)}\psi_{u,B}(v_{S_u})
+       -\lambda_t^{\mathsf T}v_{S_t}\right],
+\end{equation}
+and at the root compute $\LB=\min_{B\in\mathcal L_r}
+\min_{v\in B}\operatorname{Rel}_{r,B}(v)$. These are convex minimization
+problems. They have minimizers because their domains are nonempty compact
+boxes and their objectives are continuous. The calculation produces a
+certificate for any choice of slopes and partitions.
+
+A \emph{configuration} chooses $B_t\in\mathcal L_t$ and $z^t\in B_t$
+for every bag, and $D_t\in\mathcal P_t$ for every nonroot bag, with
+\[
+ z^t_{S_t}\in D_t,\qquad D_t\cap(B_{\pi(t)})_{S_t}\ne\varnothing.
+\]
+It need not equate the two copies of a separator coordinate.
+\begin{proposition}[Unfolding the dynamic program]\label{prop:model-dp}
+The fixed-slope program satisfies
+\begin{equation}\label{eq:model-config}
+ \LB=\min_{\text{configurations}}\Phi,\qquad
+ \Phi=\sum_t m_{t,B_t}(z^t)+
+ \sum_{t\ne r}\lambda_t^{\mathsf T}
+       (z^{\pi(t)}_{S_t}-z^t_{S_t}).
+\end{equation}
+A minimizing configuration can be recovered from stored minimizing
+choices and local minimizers.
+\end{proposition}
+\begin{proof}
+In \eqref{eq:model-intercept}, substitute \eqref{eq:model-fixed-child}.
+For each child the minimizing cell is constrained only to meet the
+projection of $B$, independently of the parent's point $v$. Substituting
+the child's intercept introduces its own leaf and point, constrained by
+that cell. Continue down the tree. A sum of independent minima equals
+the minimum over their joint choices. Each nonroot slope occurs once
+at the parent point and once with a minus sign at its own point.
+The resulting expression is exactly \eqref{eq:model-config}. All choices
+are among finitely many compact domains, so the minimum is attained.
+Storing the choices during the postorder pass and following them from
+the root recovers a minimizing configuration.
+\end{proof}
+
+\subsection{Slopes computed at a current center}
+Let $\topbag(i)$ be the bag closest to the root among those containing
+$i$. Running intersection makes it unique. A configuration defines a
+consistent point by $x_i=z_i^{\topbag(i)}$. This point belongs to $X$.
+For any center $c\in X$, define
+\begin{equation}\label{eq:model-slope}
+ \lambda_{t,i}(c)=
+ \sum_{u\in\sub(t):\ i\in V_u}\partial_i a_u(c_{V_u})
+ \qquad(i\in S_t).
+\end{equation}
+These are subtree sums of ordinary bag gradients, not derivatives of
+conditional value functions. They can be computed by a postorder pass
+over the coordinate occurrences.
+
+\begin{lemma}[First-order cancellation]\label{lem:model-telescope}
+For every center and every configuration,
+\begin{equation}\label{eq:model-telescope}
+ \sum_t\nabla a_t(c_{V_t})^{\mathsf T}(z^t-x_{V_t})
+ =\sum_{t\ne r}\lambda_t(c)^{\mathsf T}
+       (z^t_{S_t}-z^{\pi(t)}_{S_t}).
+\end{equation}
+Consequently, if $e_t(v)=a_t(v)-m_{t,B_t}(v)$ and the slopes are
+\eqref{eq:model-slope}, then
+\begin{align}\label{eq:model-error-identity}
+ \Phi=F(x)+\sum_t\bigl[
+ a_t(z^t)-a_t(x_{V_t})
+ -\nabla a_t(c_{V_t})^{\mathsf T}(z^t-x_{V_t})\bigr]
+ -\sum_t e_t(z^t).
+\end{align}
+\end{lemma}
+\begin{proof}
+Fix $i$. On its occurrence subtree, $z_i^t-x_i$ is the sum of the
+successive differences $z_i^u-z_i^{\pi(u)}$ on the path from
+$\topbag(i)$ to $t$. Multiply by $\partial_i a_t(c_{V_t})$ and sum over
+the occurrences $t$. The coefficient of a given edge difference is the
+sum of these derivatives over the occurrences below that edge, which
+is $\lambda_{u,i}(c)$. Summing over coordinates proves
+\eqref{eq:model-telescope}. Substitution into \eqref{eq:model-config}
+gives \eqref{eq:model-error-identity}.
+\end{proof}
+
+The cancellation holds at every center in the box. It uses neither
+stationarity nor knowledge of $x^*$. This is the identity that allows a
+certificate to guide the choice of the next center.

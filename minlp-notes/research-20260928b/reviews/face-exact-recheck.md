@@ -137,12 +137,12 @@ Two presentation problems:
 
 ## 3. Proposition 5.4(d) and the incumbent-branching model
 
-**The quoted rule.** I checked the quotation in the local copy of Tawarmalani–Sahinidis
-(`literature/papers/tawarmalani2002-.../fulltext.md`, lines 12411–12416, PDF page 243). The rule
-is "bisection of the largest nonconvex interval, with the modification that the branching point is
-set to the incumbent whenever the latter lies in the current subdomain and is not one of the
-end-points of the interval of the selected branching variable". So widest-side selection with an
-incumbent point is a faithful model.
+**The documented rule.** I checked Tawarmalani–Sahinidis in the local source copy
+(`literature/papers/tawarmalani2002-.../fulltext.md`, lines 12411–12416, PDF page 243).
+They select the widest nonconvex interval for bisection, but use the incumbent's coordinate
+as the split point when the incumbent belongs to the current subdomain and that coordinate
+is strictly inside the selected interval. Thus widest-side selection with an incumbent point
+faithfully represents this rule.
 
 **(d) needs the tie rule.** The proof says "the root is a square, so `x` is selected". That holds
 only with ties broken toward `x`. The statement of (d), unlike (b) and (c), does not say so.

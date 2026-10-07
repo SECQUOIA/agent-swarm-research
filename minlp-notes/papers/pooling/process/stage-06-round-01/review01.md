@@ -22,7 +22,7 @@ I read the relevant canonical path/relay/vertex-forcing/slab and low-rank-cost n
 
 I also checked the specific limited comparisons against the [Boveroux et al. preprint, Sections 3.1 and 3.3](https://orbi.uliege.be/bitstream/2268/345162/1/OntheComplexityofLinearProgramswithparametricConstraintMatrices.pdf), the [Hladík et al. author abstract](https://kam.mff.cuni.cz/~hladik/publ/b2hd-HlaCer2021c.html), and [Grothey–McKinnon Section 3](https://arxiv.org/pdf/2002.10899v1). Those sources support the comparisons made here; this is not an exhaustive priority search.
 
-I ran a new exact `Fraction` check over dimensions 2 through 8. All **87,376 ordered vertex pairs** passed the exposing-value identity, uniqueness test and midpoint identity. Two nongeometric rational supply sequences passed all **24 endpoint identities and terminal-distinctness checks**. The following script reproduces these checks with `/home/sgusev/miniconda3/envs/minlp-notes/bin/python`:
+I ran a new exact `Fraction` check over dimensions 2 through 8. All **87,376 ordered vertex pairs** passed the exposing-value identity, uniqueness test and midpoint identity. Two nongeometric rational supply sequences passed all **24 endpoint identities and terminal-distinctness checks**. The following script reproduces these checks with `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python`:
 
 ```python
 from fractions import Fraction as Q

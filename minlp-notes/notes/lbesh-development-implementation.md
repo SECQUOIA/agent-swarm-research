@@ -96,7 +96,7 @@ Working directory: `code/minlp_solver_lab`. The final targeted command is:
 
 ```sh
 OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 \
-PATH=/home/sgusev/miniconda3/envs/solvers/bin:$PATH \
+PATH=/workspace/local-home/miniconda3/envs/solvers/bin:$PATH \
 uv run --no-sync python -m unittest discover \
   -s lbesh/tests -p test_publication_contracts.py -v
 ```

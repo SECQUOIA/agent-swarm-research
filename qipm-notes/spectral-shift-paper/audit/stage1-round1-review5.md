@@ -1,6 +1,6 @@
 # Stage 1, round 1 — independent review 5
 
-Reviewed `main.tex`, `macros.tex`, `bibliography.bib`, and all of sections 02–04, together with the four Stage 1 research notes identified in `audit/source-map.md`. I did not read other reviewer reports or edit the manuscript. The requested `../AGENTS.md` does not exist; the applicable repository instructions in `/home/sgusev/repo/qipm/AGENTS.md` were read. Joint accuracy, the LP application, and a full introduction/literature review are outside this review.
+Reviewed `main.tex`, `macros.tex`, `bibliography.bib`, and all of sections 02–04, together with the four Stage 1 research notes identified in `audit/source-map.md`. I did not read other reviewer reports or edit the manuscript. The requested `../AGENTS.md` does not exist; the applicable repository instructions in `/workspace/qipm/AGENTS.md` were read. Joint accuracy, the LP application, and a full introduction/literature review are outside this review.
 
 **Result: 0 major findings, 3 minor findings.** The staircase, including equality at every threshold and the exceptional coarse tier at `c=1`, is supported by the proofs. The minor findings concern explicit domains and definitions; none changes a claimed query exponent.
 

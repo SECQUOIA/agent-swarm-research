@@ -1,0 +1,359 @@
+\section{Numerical comparisons}
+\label{comp:section}
+
+The compact family block is useful if a relaxation has a gap that can be
+removed using three-variable moments. This section asks two separate
+questions: whether the block closes such gaps, and whether the tested
+instance classes exhibit them. The results support the first claim on
+constructed instances. They give little evidence for an additional gain
+on the benchmark and random instances. All experiments concern root
+relaxations; no branch-and-bound implementation was tested.
+
+\subsection{Models and comparison protocol}
+\label{comp:protocol}
+
+We minimize $x^THx+g^Tx$ over $C_n$, with lifted objective
+$f(m,Y)=\inner{H}{Y}+g^Tm$. For $\bar u=(1,u^T)^T$, we use
+$\mathcal M_3=\conv\{\bar u\bar u^T:u\in C_3\}$ for the normalized
+$4\times4$ matrix form of $\mathcal Q_3$.
+The baseline, denoted $B$, contains
+the Shor condition, McCormick inequalities, diagonal caps $Y_{ii}\leq m_i$,
+and the four triangle inequalities on each considered triple. For dense
+instances the Shor matrix has order $n+1$ and all pairs are recorded.
+For sparse instances it is imposed on maximal cliques of a chordal
+pattern containing the objective support. The other constraints then use
+pattern pairs and triples within those cliques. The comparisons introduce
+no first or second moment outside this pattern.
+
+The strengthening methods are as follows.
+\begin{description}[leftmargin=2.7em,labelwidth=2.1em]
+\item[$K$] The three-positive-variable disjoint-support system of
+\citet[eq.~(17)]{Khajavirad2026SparseBoxQP}: eight level-three RLT
+inequalities, twelve order-two blocks, and six order-three PSD blocks
+per selected triple. Its order-four block is already in the Shor
+condition. Higher monomials are shared when the same monomial occurs in
+different triples. Larger positive-variable sets and nonempty
+negative-variable sets were not tested.
+\item[$A$] The eight trilinear inequalities and the switched and permuted
+second-order-cone constraints of
+\citet[eqs.~(14)--(16)]{AnstreicherPuges2025ETRI}.
+\item[$F$] The family block of Section~\ref{family:section}, added only
+for a violated triple and orientation. The $24$ orientations choose
+the distinguished coordinate and independently complement the three
+coordinates.
+\item[$X$] The exact three-variable moment lift
+\eqref{comp:exact-lift}, using five tetrahedra. A selected triple adds
+five $4\times4$ DNN blocks and ten linking equations.
+\end{description}
+Combined labels mean that the corresponding systems are imposed together.
+In particular, $KA$ adds both existing systems, and $KAF$ adds the
+family blocks to $KA$. The method $XF$ uses the exact lift but selects
+triples by family separation. Individual family cuts and individual
+cube-hull cuts were also compared with the blocks.
+
+Family separation minimizes $v^T(B-bb^T)v$ over $v\geq0$,
+$\mathbf1^Tv=1$, by the fifteen-support calculation in
+Proposition~\ref{comp:family-separation}. For $K$, $A$, $KA$, and $X$,
+selection instead uses the full hull-depth problem
+\eqref{comp:depth}. Hull depth is the smallest evaluation at the triple
+moments of a cube-nonnegative quadratic with $\int_{C_3}q(u)\,du=1$;
+it is negative exactly outside $\mathcal M_3$ in exact arithmetic.
+This is a stronger test than separation of either
+existing inequality system, and its cost is reported as separation time.
+Triples with a coordinate within $10^{-6}$ of a box bound are skipped
+by this hull-based rule. At an exact bound, Shor and McCormick reduce the
+triple to a two-variable problem with an exact baseline
+\citep[Theorem~6]{AnstreicherBurer2010}; the numerical
+skip is a heuristic extension of that fact.
+
+The usual violation threshold is $10^{-6}$. Triangles are separated
+again after each solve. The default limits are $200$ new blocks or
+triples per round, $25$ rounds, and $3600$ seconds per method; the
+$3000$-triangle chains use $1000$ additions and $15$ rounds, and the
+benchmark comparisons use $10$ rounds. A run can also stop when the
+relative bound change is below $10^{-7}$ over three rounds. These
+limits define selective comparisons; they are not full-system
+optimality certificates.
+
+The main solver is Clarabel~0.11.1
+\citep{GoulartChen2024,ClarabelSoftware2025} with gap and feasibility tolerances
+$10^{-8}$ and one thread. The three-variable comparisons use
+$10^{-10}$; the hull-depth subproblems use $10^{-9}$.
+SCS~3.3.1 \citep{ODonoghueEtAl2016,SCSSoftware2026}
+provides selected accuracy comparisons. Reported relaxation
+values use the dual-residual correction in
+Proposition~\ref{comp:dual-bound}. We denote these floating-point
+lower-bound estimates by $L_M$ for method $M$. They are not interval
+certificates. Feasible objective values $U$ come from published benchmark
+optima, small-instance face enumeration, or the best archived Gurobi and
+local-search incumbents. When $U$ is only a feasible value, the fraction
+\begin{equation}\label{comp:closure}
+ \frac{L_M-L_B}{U-L_B}
+\end{equation}
+is a conservative estimate of gap closure, conditional on the accuracy
+of the reported lower bounds. It is not a claim that $U$ is optimal.
+
+\subsection{Three-variable gaps}
+\label{comp:three-variable-results}
+
+To isolate the effect of a triple block, $109$ objectives were constructed
+from separating quadratics of points of $B$ outside
+$\mathcal M_3$. The separating quadratics satisfy
+$\int_{C_3}q(u)\,du=1$ and have positive coefficients of all three
+square terms. Their baseline
+gaps have median $0.072$ and range $0.0069$--$0.123$.
+The exact lift gives the reference value. All systems are imposed in
+full for this comparison, including all $24$ family orientations.
+
+\begin{table}[htbp]
+\centering
+\caption{Fractions of the three-variable gap closed on $109$ constructed
+objectives, computed as $(L_M-L_B)/(L_X-L_B)$.}
+\label{comp:hard-three-table}
+\begin{tabular}{lrrr}
+\toprule
+Method & Mean & Median & Minimum\\
+\midrule
+$K$   & $0.9084$ & $0.9177$ & $0.7668$\\
+$A$   & $0.5766$ & $0.5811$ & $0.2619$\\
+$KA$  & $0.9084$ & $0.9177$ & $0.7668$\\
+$F$   & $1.0000$ & $1.0000$ & $0.999983$\\
+$KAF$ & $1.0000$ & $1.0000$ & $0.999912$\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Every $F$ primal value is at most $5.5\times10^{-9}$ below the
+corrected exact-lift reference. The small losses in its corrected-bound
+closures in Table~\ref{comp:hard-three-table} also reflect dual-residual
+correction; they are not accuracy guarantees at the solver's requested
+tolerance. The existing systems leave a visible fraction of the gap.
+In separate selective
+runs, exactly one family orientation was violated at each baseline
+point, and its block closed the gap in one added-block solve. Individual
+family cuts had median closure $0.38$ after one round and $0.9933$
+after $29$ rounds; none met the stopping test within the $30$-round
+limit. The comparison illustrates the difference between imposing the
+whole parameterized family and adding its current most violated member.
+
+Additional searches did not find a gap between the full family relaxation
+and the exact lift. They included $2180$ perturbations of the constructed
+objectives and $256\,556$ sampled baseline points satisfying every
+family orientation. The smallest computed hull depth in the latter set
+was $-6.4\times10^{-8}$. This evidence is consistent with the
+three-variable completeness question, but does not prove it. The samples
+are finite, nonuniform, and assessed in floating point.
+
+\subsection{Constructed sparse instances}
+\label{comp:constructed}
+
+The same hard objectives were assembled into three sparse families.
+A chain has $m$ disjoint triangles, with consecutive triangles joined by
+one bridge edge; the bridge scale is denoted $\eta$.
+A cactus adds each new triangle by sharing one vertex with an earlier
+triangle. The third family puts hard objectives on the triangles of
+a $2$-tree or $3$-tree, so triangles share edges. Random weights,
+permutations, and coefficient perturbations prevent exact repetition
+of a single subproblem. These constructions test the family when local
+gaps are deliberately present; they do not model an established
+application class.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Representative constructed instances, all with seed $1$. Closures use
+\eqref{comp:closure}. Solve times are cumulative seconds
+after the common baseline solve. $F/X$ counts family blocks and lifted
+triples, respectively. In the last two columns, each slash separates
+the $F$ value from the $X$ value; it is not a ratio.}
+\label{comp:constructed-table}
+\begin{tabular}{lrrrrrr}
+\toprule
+Instance & $n$ & $KA$ & $F$ & $X$ &
+Solve $F/X$ & Blocks $F/X$\\
+\midrule
+Chain, $m=100$, $\eta=0$ & $300$ & $.9956$ & $1.0000$ & $1.0000$
+ & $.47/2.17$ & $78/78$\\
+Chain, $m=300$, $\eta=.3$ & $900$ & $.8577$ & $.8608$ & $.8597$
+ & $2.25/24.62$ & $110/223$\\
+Chain, $m=1000$, $\eta=.3$ & $3000$ & $.8985$ & $.9021$ & $.8950$
+ & $8.13/110.62$ & $346/997$\\
+Chain, $m=3000$, $\eta=.3$ & $9000$ & $.8847$ & $.8889$ & $.8807$
+ & $26.20/201.36$ & $1051/2999$\\
+Cactus, $m=30$ & $61$ & $.8345$ & $.8718$ & $.8718$
+ & $.04/.14$ & $27/27$\\
+Cactus, $m=300$ & $601$ & $.7440$ & $.7501$ & $.7489$
+ & $2.13/11.71$ & $235/284$\\
+Cactus, $m=1000$ & $2001$ & $.7135$ & $.7208$ & $.7181$
+ & $19.37/97.19$ & $805/997$\\
+Hard $2$-tree, $n=60$ & $60$ & $.0046$ & $.0051$ & $.0041$
+ & $.06/.35$ & $4/17$\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+On the $16$ chains and eight cacti, the $F$ and $X$ primal values differ
+by at most $5.6\times10^{-6}$ relative. The larger differences between
+their corrected closures in Table~\ref{comp:constructed-table} reflect
+the accuracy limitations discussed in Section~\ref{comp:numerics};
+selected higher-accuracy comparisons support a numerical tie.
+The family added
+$0.31$--$3.73$ percentage points of closure beyond $KA$ when $KA$
+had not already matched the strengthened values. Combining $K$ and $A$ with the
+family gave no detectable further gain. With $\eta=0$, the chain
+separates into independent three-variable problems, so the triple-level
+bound is the true optimum. Bridges and vertex sharing can leave a
+global gap after all tested triple strengthenings.
+
+The block sizes explain one possible advantage: a family orientation
+adds one $5\times5$ PSD block and six nonnegative auxiliaries, whereas
+the exact lift adds five $4\times4$ blocks, thirty off-diagonal
+nonnegativity constraints, and ten equations. If all $24$ orientations
+are needed, the family can be larger. In the selective runs, however,
+$7598$ violated orientation--triple pairs occurred on $7459$ violated
+triples, or $1.02$ orientations per triple on average.
+
+Selection also matters. At $m=3000$, $X$ lifts $2999$ triples,
+whereas $F$ adds $1051$ blocks. The method $XF$ uses the same family
+selection rule as $F$, although its different iterates can select
+different triples. On chains, its solve times range from $0.23$ to
+$2.05$ times those of $F$, in separate runs. Thus the chain comparison
+does not isolate an advantage of the block type. On cacti, $XF$ and
+$F$ were run in the same invocation: $XF$ took $2.1$--$5.7$ times
+the solve time of $F$. This supports a block-size advantage there,
+subject to the timing limitations below. Full records, including
+separation time and model size, are provided in the companion archive.
+
+Edge overlap gave a different outcome. Across eight hard $k$-tree
+instances, the methods closed at most $0.514\%$ of $U-L_B$, and
+the hull test selected only zero to seven triples at the baseline
+points. Summing individually hard three-variable objectives therefore
+does not ensure that the combined problem retains substantial
+three-variable gaps. This is an empirical observation for these
+instances, not a theorem about overlapping triangles.
+
+\subsection{Benchmark and random instances}
+\label{comp:natural}
+
+The benchmark uses the BoxQP collection \citep{BurerBoxQPInstances2019}.
+The collection uses the maximization objective $\tfrac12x^TQx+c^Tx$;
+we set $H=-Q/2$ and $g=-c$ and negate its reference optima to obtain
+the minimization form used here.
+Table~\ref{comp:natural-table} summarizes the tested classes. The sparse
+positive-diagonal instances are random $2$-trees and $3$-trees with
+positive integer square coefficients and signed integer edge and
+linear coefficients. Their clique triples all have three positive
+square coefficients.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Benchmark and random-instance findings. ``Tight'' refers to
+the stated numerical tolerance, not an exact certificate.}
+\label{comp:natural-table}
+\begin{tabular}{p{.25\linewidth}rp{.53\linewidth}}
+\toprule
+Class & Count & Finding\\
+\midrule
+BoxQP benchmark & $99$ & $B$ has relative gap below $10^{-6}$ on
+$82$ instances. No family orientation was selected in the $17$
+original gap audits.\\
+Small dense, BoxQP-style generator & $18\,000$ & $n=5,\ldots,10$;
+all baseline gaps below $2.3\times10^{-7}$ relative using corrected
+dual estimates.\\
+Small dense, AP variant & $12\,000$ & One gap of
+$3.6\times10^{-6}$ relative, already closed by $KA$; no additional
+family gain.\\
+Sparse, positive diagonals & $16$ & $n=100$--$3000$; no family
+orientation selected. Computed minimum triple depths at least
+$-3\times10^{-7}$.\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The original BoxQP audits illustrate why a numerical hull violation
+must be checked against residuals of the baseline itself.
+They evaluated every triple in each of the $17$ instances with a
+recorded gap. Four computed depths were below $-10^{-6}$, but these
+were explained by triangle inequalities left violated by the original
+early stopping rule. A triangle quadratic has uniform mean $1/4$;
+a violation $r$ therefore forces normalized hull depth at most $-4r$.
+Likewise, a diagonal-cap violation $Y_{ii}-m_i=r>0$ forces depth
+at most $-6r$, since $x_i-x_i^2$ has uniform mean $1/6$.
+These are errors in satisfying $B$, not evidence of a gap between a
+feasible baseline point and the triple hull.
+
+One complete stricter audit is available, for \texttt{spar090-075-1}.
+It separates triangles at $10^{-8}$ and evaluates all $117\,480$
+triples. The computed minimum depth is $-8.10\times10^{-9}$,
+with reported primal infeasibility $2.02\times10^{-9}$. This computed
+depth is not a one-sided certificate: a remaining triangle residual
+implies that the exact minimum is below $-1.4\times10^{-8}$,
+and stored depths exceed exact triangle or cap upper bounds by up
+to $9.67\times10^{-8}$.
+The gain expression in \eqref{comp:gain}, evaluated at the computed
+depths, is $0.045\%$ of the recorded gap, or $0.54\%$ after adding
+the primal-to-dual margin. If every computed depth overestimates its
+exact value by at most $10^{-7}$, these figures become at most
+$0.60\%$ and $1.10\%$, respectively. That assumption and exact
+baseline feasibility are not certified. Only this one strict
+all-triple audit was completed; its estimate does not apply uniformly
+to the other $16$ instances. The remaining evidence is consistent
+with small triple-local gains, but does not prove a uniform bound.
+
+Proposition~\ref{comp:gain-bound} does not cover $K$ when higher
+moments are shared across triples. A separate test on
+\texttt{spar050-050-1} added $K$ to all $19\,600$ triples.
+Its primal value changed by $4\times10^{-7}$ against a gap of $1.72$.
+This is a negative finding on one instance, not a general exclusion
+of gains from higher-order consistency.
+
+The small dense BoxQP-style generator reimplements the published
+distribution with different random numbers. An additional generator
+was based on the description in
+\citet{AnstreicherPuges2025ETRI}, but includes the diagonal in the
+density mask. It does not reproduce their twelve reported gap
+instances. Its one gap, at $n=9$, is approximately $0.00104$ in
+absolute value. A targeted audit finds two violated triples; $K$,
+$A$, $KA$, and two family blocks all close the gap to their observed
+accuracy, while $KAF$ adds no family block after $KA$.
+Consequently, the study supplies a natural-generator triple-level gap,
+but no natural instance on which the family adds a detectable gain
+beyond the existing systems. These generator-specific findings do not
+justify a statement about all random box quadratic programs.
+
+\subsection{Accuracy, timing, and interpretation}
+\label{comp:numerics}
+
+The companion archive contains compact tabulations, constructed-instance
+data, selected raw records, implementation snapshots, and source checksums.
+It supports independent inspection of the reported tables. Reproduction
+of all benchmark audits and sampling campaigns also requires the larger
+original input and output archives and their software dependencies.
+
+The largest models often returned \texttt{AlmostSolved}. The exact
+lift had the largest numerical degradation: each triple adds several
+blocks and equations linking small lifted matrices to the original
+moments. For example, on the $1000$-triangle chain in
+Table~\ref{comp:constructed-table}, Clarabel reports corrected values
+$-2502.697859$ for $F$ and $-2502.791210$ for $X$.
+At tolerance $10^{-6}$, SCS instead gives $-2502.697709$ and
+$-2502.697835$, respectively. Their relative difference is
+$5.05\times10^{-8}$, supporting a numerical tie. The lower
+Clarabel value for $X$ is therefore an accuracy limitation, not
+evidence that the family is mathematically stronger than the exact
+lift. Primal-to-dual margins are retained in the records and must be
+considered before interpreting small differences.
+
+Times are wall clock on a shared $36$-core machine, whose load varied
+substantially. Methods ran sequentially, so even within-run ratios
+are affected by changing load. A separate quieter run of the
+$300$-triangle chain reproduced the bounds but changed $X/F$
+from $10.9$ to $7.5$ and $KA/F$ from $3.2$ to $1.4$.
+The tabulated solve times exclude the common baseline stage and
+separation time; they do not measure complete solver time.
+The model also stores the objective matrix densely, limiting the
+largest tested problem to $9000$ variables. These observations
+support a useful compact strengthening on deliberately constructed
+triple gaps. They establish neither a general runtime advantage nor
+an improvement in a global optimization solver.

@@ -1,0 +1,281 @@
+% Plan: development/outline.md, section 6, item B.8.
+% Sources: development/dossiers/waterno2.md and waterno2.critique.md; run
+% times as in Section 10 (R/publication/reproduction/water-audit/logs/
+% vbb2_*.time: 63 runs, 26,809 s wall; certB re-bounding 214,979 CPU-s on a
+% loaded machine, critique C2 for the unloaded estimate).
+\subsection{The \inst{waterno2} instances}\label{app:waterno2}
+
+The proof of \cref{thm:waterno2-bounds} combines a period Lagrangian (\cref{prop:waterno2-lagrangian}; \inst{waterno2_09}--\inst{waterno2_24}) or cellwise slopes (\cref{prop:waterno2-cells}; \inst{waterno2_06}) with a finite list of statements ``this period or pair problem has infimum at least~$b$'', each established by two separately written rigorous branch-and-bound codes (\cref{lem:waterno2-bb}).
+
+\subsubsection{Model}\label{app:waterno2-model}
+
+The network is n9p3a11 of \citet[Section~5.5]{huang2019-optimal-operation-of-water-supply}: the four pump-power coefficients of its Example~5.41 occur exactly $2T$ times in each file \inst{waterno2_T}.
+Water flows from a source through station~A (3 pumps) into tank~1, through parallel stations B1 and B2 (2 pumps each) into tank~2, and through station~D (2 pumps) into tank~3, which serves the demand.
+The pumps of a station share one speed and one head; \inst{waterno2_T} covers $T$ periods of one hour.
+
+Periods are $t=0,\dots,T-1$, and $w:=(1800,720,1600)/3600=(\tfrac12,\tfrac15,\tfrac49)$ collects the tank areas divided by 3600.
+In period~$t$, pump~$p$ of station~$S$ has an on/off variable $y_{t,p}$, a flow $q_{t,p}$, a head $\eta_{t,p}$ and a cost $\gamma_{t,p}$; station~$S$ has a flow $Q_{t,S}=\sum_{p\in S}q_{t,p}$ (with $Q_{t,B}=Q_{t,B1}+Q_{t,B2}$), a speed $\omega_{t,S}$ and a head $H_{t,S}$.
+The tank levels at the start and end of the period are $s_t,e_t\in\R^3$, and $h_t$ is a copy of $Q_{t,A}$.
+Every monomial ($q^2$, $q^3$, $\omega^2$, $\omega^3$, $q\omega$, $q\omega^2$, $q^2\omega$, $y\omega^3$, $Q^2$) is an auxiliary variable defined by an equality row, and a few redundant auxiliaries occur.
+With the balance rows divided by 3600, the OSIL model reads
+\begin{equation}\label{eq:waterno2-model}
+\begin{aligned}
+\min\ & \textstyle\sum_{t}\sum_{p}\gamma_{t,p}\\
+\text{s.t. }& q^{\min}_S y_{t,p}\le q_{t,p}\le q^{\max}_S y_{t,p},\qquad y_{t,p_1(S)}\ge y_{t,p_2(S)}\ (\ge y_{t,p_3(S)}),\\
+& \omega^{\min}_S\le\omega_{t,S}\le\min\{1,\ \omega^{\min}_S+(1-\omega^{\min}_S)\,y_{t,p_1(S)}\},\\
+& \eta_{t,p}=a_S\omega_{t,S}^2+b_S\,q_{t,p}\omega_{t,S}+c_S\,q_{t,p}^2,\\
+& -2000\,(1-y_{t,p})\le\eta_{t,p}-H_{t,S}\le M_S\,(1-y_{t,p}),\\
+& H_{t,A}=s_{t,1}+11+5Q_{t,A}^2,\qquad H_{t,D}=s_{t,3}-s_{t,2}+13+5Q_{t,D}^2,\\
+& H_{t,B}=\zeta_t-s_{t,1}-60+4Q_{t,B}^2,\qquad \zeta_t\ge s_{t,2}+90,\\
+& \kappa_t\,\gamma_{t,p}\ge P_S(y_{t,p},\omega_{t,S},q_{t,p}),\qquad \gamma_{t,p}\le\bar\gamma_{S,t},\\
+& w_1(e_{t,1}-s_{t,1})=Q_{t,A}-Q_{t,B},\qquad w_2(e_{t,2}-s_{t,2})=Q_{t,B}-Q_{t,D},\\
+& w_3(e_{t,3}-s_{t,3})=Q_{t,D}-d_t,\qquad s_t,e_t\in[2,5]\times[2.5,5]\times[2,6],\qquad s_0=\sigma:=(3.5,\,4.1,\,4),\\
+& s_{t+1}=e_t\ \ (t=0,\dots,T-2),\qquad \textstyle\sum_t h_t\ge r_T,
+\end{aligned}
+\end{equation}
+where $p_1(S),p_2(S),\dots$ are the pumps of~$S$ in order, $P_S$ is a cubic power polynomial, $\kappa_t$ is a tariff factor and the demand $d_t$ is fixed by a single-variable row.
+All station data are exact decimals; for station~D, which the proofs below use,
+\[
+[q^{\min},q^{\max}]=[0.24,0.58],\quad \omega^{\min}=0.7,\quad (a,b,c)=(34.92732674,\,2.03724124,\,-63.61644904).
+\]
+In \inst{waterno2_06} the periods differ only in the demands
+\[
+d=(0.296666667,\ 0.294444444,\ 0.283888889,\ 0.277222222,\ 0.293333333,\ 0.306944444).
+\]
+For every $T$ the right-hand side $r_T$ of the horizon row (\cref{sec:split-waterno2}) satisfies $r_T=\sum_t d_t$ exactly, for example $r_6=1.752499999$.
+All five instances minimize, and every row is a polynomial of degree at most~3.
+
+At a switched-off station the speed equals $\omega^{\min}_S$, and the square and cube variables sit at their lower bounds $(\omega^{\min}_S)^2$ and $(\omega^{\min}_S)^3$; under the decimal semantics of \cref{sec:semantics-model} these are identities.
+For binary64 data the speed of a switched-off station is $\fl(\omega^{\min}_S)$, and $\fl(\omega^{\min}_S)^2<\fl((\omega^{\min}_S)^2)$ and $\fl(\omega^{\min}_S)^3<\fl((\omega^{\min}_S)^3)$ for $\omega^{\min}_S\in\{0.6,0.85,0.7\}$ (for $0.8$ both inequalities are reversed).
+So under \reading{c} no point with station A, B2 or D switched off in some period is feasible.
+Beyond this, we claim nothing for \reading{c}.
+The cube residual of the $0.7$ station, $\fl(0.7)^3-\fl(0.343)<-9.2\cdot10^{-17}$, triggers the wrong SCIP results of \cref{sec:solvers-invalid}.
+
+\subsubsection{Period structure and the period Lagrangian}\label{app:waterno2-lagrangian}
+
+Write $x=(x_0,\dots,x_{T-1})$ with $x_t\in\R^{166}$ the variables of period~$t$, and $s_t(x_t)$, $e_t(x_t)$, $h_t(x_t)$ for its start levels, end levels and horizon copy.
+Let $C_t(x_t)$ be the sum of the nine cost variables of period~$t$, and $X_t$ the set of $x_t$ that satisfy the 203 rows of period~$t$, the bounds of its variables and integrality.
+
+\begin{lemma}[period structure]\label{lem:waterno2-structure}
+In each model, every row other than the horizon row and the $3(T-1)$ link rows $s_{t+1,k}=e_{t,k}$ involves variables of one period only; each period has 166 variables (9 binary) and 203 rows, and the objective is $\sum_tC_t(x_t)$.
+\end{lemma}
+
+\begin{proof}
+This is a finite property of the row--variable incidence.
+Three separately written programs recover it for all five files; one orients each link row by the sign of the area coefficient and orders the periods along the chain of link rows.
+In \inst{waterno2_06} the link rows are \texttt{e111}--\texttt{e125} and the horizon row is \texttt{e56}.
+\end{proof}
+
+The certificates also use valid boxes: if $I_t\subset\R^{166}$ is a box that contains $x_t$ for every $x\in\feas$, then $X'_t:=X_t\cap I_t$ can replace $X_t$ without changing the feasible set.
+Each implementation below uses its own file of such boxes, proved by outward-rounded or exact feasibility-based and optimization-based bound tightening (FBBT, OBBT) on the model without the horizon row, which is a relaxation of~$\model$.
+
+\begin{proposition}[period Lagrangian]\label{prop:waterno2-lagrangian}
+Let $\lambda_0,\dots,\lambda_{T-2}\in\R^3$, $\mu\ge0$ and $\lambda_{-1}=\lambda_{T-1}=0$, and let
+\[
+\varphi_t(\lambda,\mu)=\inf\bigl\{C_t(x_t)+\lambda_{t-1}^{\top}s_t(x_t)-\lambda_t^{\top}e_t(x_t)-\mu\,h_t(x_t):\ x_t\in X'_t\bigr\}.
+\]
+Then $\vstar(\model)\ge\mu r_T+\sum_t\varphi_t(\lambda,\mu)\ge\mu r_T+\sum_tB_t$ for any numbers $B_t\le\varphi_t(\lambda,\mu)$.
+\end{proposition}
+
+\begin{proof}
+Let $x\in\feas$ (if there is none, $\vstar=+\infty$).
+The link rows give $\sum_{t\le T-2}\lambda_t^{\top}(s_{t+1}(x_{t+1})-e_t(x_t))=0$, and the horizon row with $\mu\ge0$ gives $\mu(r_T-\sum_th_t(x_t))\le0$.
+Adding both to the objective and grouping by period,
+$\sum_tC_t(x_t)\ge\mu r_T+\sum_t[C_t+\lambda_{t-1}^{\top}s_t-\lambda_t^{\top}e_t-\mu h_t](x_t)\ge\mu r_T+\sum_t\varphi_t(\lambda,\mu)$, since $x_t\in X'_t$ by \cref{lem:waterno2-structure}.
+\end{proof}
+
+Any binary64 multipliers with $\mu\ge0$, read as exact rationals, give a valid bound; ours came from a bundle method that used SCIP as an untrusted oracle.
+No variable receives two Lagrangian terms, so every objective coefficient of a period problem is a binary64 number.
+
+\begin{lemma}[the horizon row is a terminal-volume row]\label{lem:waterno2-horizon}
+Every $x$ that satisfies the balance, copy, link and demand rows of \eqref{eq:waterno2-model} and the fixed initial levels $s_0=\sigma$ satisfies $\sum_th_t(x)-\sum_td_t=w^{\top}(e_{T-1}(x)-\sigma)$.
+Since $r_T=\sum_td_t$, such an $x$ satisfies the horizon row if and only if $w^{\top}e_{T-1}\ge w^{\top}\sigma=\tfrac{3913}{900}$, that is, $1800\,e_{T-1,1}+720\,e_{T-1,2}+1600\,e_{T-1,3}\ge15652$.
+\end{lemma}
+
+\begin{proof}
+After merging copies, the balance rows of period~$t$ read $w_1(e_{t,1}-s_{t,1})=h_t-Q_{t,B}$, $w_2(e_{t,2}-s_{t,2})=Q_{t,B}-Q_{t,D}$ and $w_3(e_{t,3}-s_{t,3})=Q_{t,D}-d_t$; their sum is $w^{\top}(e_t-s_t)=h_t-d_t$.
+Summing over~$t$ with $s_{t+1}=e_t$ and $s_0=\sigma$ telescopes to the identity, and $w^{\top}\sigma=\tfrac12\cdot3.5+\tfrac15\cdot4.1+\tfrac49\cdot4=\tfrac{3913}{900}$.
+\end{proof}
+
+Three separate derivations checked the identity $r_T=\sum_td_t$ in exact arithmetic for all horizons.
+
+\begin{remark}[folding the horizon multiplier]\label{rem:waterno2-folding}
+For $x$ as in \cref{lem:waterno2-horizon} but without the link rows, $\mu(r_T-\sum_th_t)=\mu w^{\top}(\sigma-e_{T-1})+\sum_{t\le T-2}\mu w^{\top}(s_{t+1}-e_t)$.
+A horizon multiplier thus shifts every link slope by $\mu w$ and adds a price on the final volume that is nonpositive under the terminal row; imposing the terminal row in the last period, setting $\mu=0$ and using the slopes $\lambda_t+\mu w$ gives a bound at least as large as \cref{prop:waterno2-lagrangian}.
+\end{remark}
+
+\subsubsection{Cells, slopes and a shortest path}\label{app:waterno2-cells}
+
+A period's value is nonconvex in its boundary levels (heads depend on the start levels, and pumps switch with minimum flows), so under linear prices one period may end at one level vector while the next starts at another.
+Cells with their own slope vectors make such jumps unprofitable.
+Let $Y_l=\{e_l(x):x\in\feas\}\subset\R^3$ for $l=0,\dots,T-2$.
+
+\begin{proposition}[cellwise slopes]\label{prop:waterno2-cells}
+Assume:
+(a) each $\mathcal P_l$ is a finite family of closed boxes (cells) with $Y_l\subseteq\bigcup\mathcal P_l$;
+(b) each cell $D\in\mathcal P_l$ carries one vector $\lambda_{l,D}\in\R^3$;
+(c) for every period~$t$ and pair $(D,D')\in\mathcal P_{t-1}\times\mathcal P_t$, the number $b_t(D,D')\in\R\cup\{+\infty\}$ satisfies $b_t(D,D')\le\varphi_t(D,D')$, where
+\[
+\varphi_t(D,D')=\inf\bigl\{C_t(x_t)+\lambda_{t-1,D}^{\top}s_t(x_t)-\lambda_{t,D'}^{\top}e_t(x_t):\ x_t\in X'_t,\ s_t(x_t)\in D,\ e_t(x_t)\in D'\bigr\},
+\]
+with the terminal row of \cref{lem:waterno2-horizon} added for $t=T-1$, $\inf\emptyset=+\infty$, no entry cell or term for $t=0$ and no exit cell or term for $t=T-1$.
+Then $\vstar(\model)\ge V:=\min_{(D_0,\dots,D_{T-2})}\sum_{t=0}^{T-1}b_t(D_{t-1},D_t)$, the length of a shortest path in the layered graph with arc weights~$b_t$; if $V=+\infty$, then $\feas=\emptyset$.
+\end{proposition}
+
+\begin{proof}
+Let $x\in\feas$.
+By~(a) choose $D_l\in\mathcal P_l$ containing $e_l(x)=s_{l+1}(x)$, and let both periods adjacent to link~$l$ use it.
+The link rows give $\sum_l\lambda_{l,D_l}^{\top}(s_{l+1}(x)-e_l(x))=0$, so
+$\sum_tC_t(x_t)=\sum_t[C_t(x_t)+\lambda_{t-1,D_{t-1}}^{\top}s_t(x_t)-\lambda_{t,D_t}^{\top}e_t(x_t)]$.
+Since $x_t\in X'_t$, $s_t(x_t)\in D_{t-1}$, $e_t(x_t)\in D_t$, and the terminal row holds by \cref{lem:waterno2-horizon}, the $t$-th term is at least $\varphi_t(D_{t-1},D_t)\ge b_t(D_{t-1},D_t)$; the sum is the length of a path, hence at least~$V$.
+\end{proof}
+
+This is the path case of \cref{prop:split-cellwise}: the exit term of period~$l$ and the entry term of period~$l+1$ use the same $\lambda_{l,D}$, so slopes may jump across cell faces but may not depend on the other cell of a pair.
+With one cell per link and slopes $\lambda_t+\mu w$, the proposition is at least as strong as \cref{prop:waterno2-lagrangian} (\cref{rem:waterno2-folding}).
+Lagrangian decomposition of multi-period pump scheduling is the subject of \citet{ghaddar2015-a-lagrangian-decomposition-approach-for}, which we could not read (\cref{app:literature}).
+Pump scheduling has other global-optimization precedents, such as the polyhedral relaxations of \citet{tasseff2022-polyhedral-relaxations-for-optimal-pump}.
+We claim no novelty for period decomposition or for cellwise slopes.
+
+\begin{lemma}[reusing a bound after a slope change]\label{lem:waterno2-reuse}
+Let $B_r\in\R\cup\{+\infty\}$ satisfy $B_r\le\inf\{C_t+a^{\top}s_t-a'^{\top}e_t:\ x_t\in X'_t,\ s_t\in A_{\mathrm{in}},\ e_t\in A_{\mathrm{out}}\}$ for boxes $A_{\mathrm{in}},A_{\mathrm{out}}$ and slopes $a,a'$ (with the terminal row if $t=T-1$).
+If $D=[\ell,\upsilon]\subseteq A_{\mathrm{in}}$ and $D'=[\ell',\upsilon']\subseteq A_{\mathrm{out}}$ carry slopes $l=\lambda_{t-1,D}$ and $l'=\lambda_{t,D'}$, then
+\[
+\varphi_t(D,D')\ \ge\ B_r+\sum_{k=1}^3\min\{(l_k-a_k)\ell_k,\ (l_k-a_k)\upsilon_k\}+\sum_{k=1}^3\min\{-(l'_k-a'_k)\ell'_k,\ -(l'_k-a'_k)\upsilon'_k\},
+\]
+and $B_r=+\infty$ implies $\varphi_t(D,D')=+\infty$.
+For $t=0$ the entry boxes, slopes and terms are absent, and for $t=T-1$ the exit ones.
+\end{lemma}
+
+\begin{proof}
+The feasible set of $(D,D')$ is contained in that of $(A_{\mathrm{in}},A_{\mathrm{out}})$; on it the pair objective equals the record objective plus $(l-a)^{\top}s_t-(l'-a')^{\top}e_t$, whose minimum over a box is attained coordinatewise at end points.
+\end{proof}
+
+Condition~(a) needs ranges for the link levels; for \inst{waterno2_06} the next lemma derives them from the rows.
+
+\begin{lemma}[level ranges at the links of \inst{waterno2_06}]\label{lem:waterno2-levels}
+Every exactly feasible point of \inst{waterno2_06} satisfies
+(a) $e_{0,3}\ge3.33249999925$, $e_{1,3}\ge2.67000000025$ and $e_{2,3}\ge2.03125$;
+(b) $e_{0,3}\le5.6976271$; and
+(c) $e_l\in[2,5]\times[2.5,5]\times[2,6]$ for every link~$l$.
+\end{lemma}
+
+\begin{proof}
+Part~(c) is the OSIL box of the levels.
+(a) The tank-3 balance gives $e_{t,3}=s_{t,3}+\tfrac94(Q_{t,D}-d_t)$ with $Q_{t,D}\ge0$.
+From $s_{0,3}=4$ and $s_{t+1,3}=e_{t,3}$:
+$e_{0,3}\ge4-\tfrac94\cdot0.296666667=3.33249999925$,
+$e_{1,3}\ge3.33249999925-\tfrac94\cdot0.294444444=2.67000000025$ and
+$e_{2,3}\ge2.67000000025-\tfrac94\cdot0.283888889=2.03125$.
+
+(b) In period~0, $s_{0,2}=4.1$ and $s_{0,3}=4$ are fixed, so $H_{0,D}=12.9+5Q_{0,D}^2$.
+The two D pumps share $\omega\in[0.7,1]$ and $H_{0,D}$, and for a running pump the big-$M$ rows force $\eta=H_{0,D}$, so its flow satisfies $c\,q^2+b\,\omega q+(a\omega^2-H_{0,D})=0$ with the station-D coefficients $a,b>0>c$ given above.
+If the first pump is off, the symmetry row switches the second off and $Q_{0,D}=0$.
+If exactly one runs, $Q_{0,D}=q\le0.58$.
+If both run with different flows, these are the two roots of the quadratic, whose sum $-b\omega/c\le2.03724124/63.61644904<0.0321$ contradicts the minimum flows ($2\cdot0.24$).
+If both run with the same flow~$q$, then $Q_{0,D}=2q$, $H_{0,D}=12.9+20q^2$ and, using $0\le\omega\le1$ and $q\ge0$,
+$83.61644904\,q^2=a\omega^2+b\,q\omega-12.9\le22.02732674+2.03724124\,q$.
+The quadratic $83.61644904\,q^2-2.03724124\,q-22.02732674$ is positive at $q=0.5255838$ and increasing beyond, so $Q_{0,D}=2q\le1.0511676$.
+In all cases $e_{0,3}=4+\tfrac94(Q_{0,D}-0.296666667)\le5.69762709925$.
+\end{proof}
+
+Part~(b) uses the period-0 rows \texttt{e44}, \texttt{e50} (pump curves), \texttt{e75}, \texttt{e516} (station flow), \texttt{e81} (demand), \texttt{e105} (balance), \texttt{e168}, \texttt{e174}, \texttt{e222}, \texttt{e228} (flow ranges), \texttt{e240}, \texttt{e246}, \texttt{e264}, \texttt{e282}, \texttt{e720}, \texttt{e721} (head of~D), \texttt{e468} (speed), \texttt{e498} (symmetry), \texttt{e564}, \texttt{e570}, \texttt{e618}, \texttt{e624} (big-$M$), the monomial rows \texttt{e900}, \texttt{e901}, \texttt{e924}, \texttt{e925}, \texttt{e1170}, \texttt{e1172}, \texttt{e1174}, \texttt{e1175}, the fixed levels $\texttt{x254}=4.1$ and $\texttt{x266}=4$, and the bounds $0.7\le\texttt{x542}\le1$ of the speed; all arithmetic was checked in exact rationals.
+
+\subsubsection{Rigorous bounds for the period and pair problems}\label{app:waterno2-bb}
+
+With the monomials replaced by auxiliary variables, a period or pair problem minimizes a linear function $c^{\top}z$ over a set $S$ defined by polynomial rows of degree at most~3, bounds and integrality.
+
+\begin{lemma}[branch-and-bound soundness]\label{lem:waterno2-bb}
+Let $\tau\in\R$, and let $N$ be a finite list of boxes such that every $z\in S$ with $c^{\top}z<\tau$ lies in a box of~$N$, each $\beta\in N$ carrying a number $b(\beta)\le\inf\{c^{\top}z:z\in S\cap\beta\}$.
+Then $\inf_Sc^{\top}z\ge\min\{\tau,\min_{\beta\in N}b(\beta)\}$ (with $\min\emptyset=+\infty$).
+The hypothesis holds for $N=\{\beta_0\}$ with $\beta_0\supseteq S$ and is preserved by
+(i) splitting a box into two closed boxes whose union is the box;
+(ii) shrinking $\beta$ to a box containing $\{z\in S\cap\beta:c^{\top}z<\tau\}$, which covers outward-rounded FBBT, OBBT with or without the cutoff $c^{\top}z\le\tau$, and reduced-cost tightening; and
+(iii) deleting $\beta$ when $b(\beta)\ge\tau$ or when $S\cap\beta=\emptyset$ is proved.
+\end{lemma}
+
+\begin{proof}
+A point $z\in S$ has $c^{\top}z\ge\tau$ or lies in some $\beta\in N$, where $c^{\top}z\ge b(\beta)$; operations (i)--(iii) keep every $z\in S$ with $c^{\top}z<\tau$ in the union of the list.
+\end{proof}
+
+Both codes return $+\infty$ only when root propagation or root OBBT, both without cutoff, proves the root box infeasible, so that $S=\emptyset$; emptiness found inside the tree only closes a box.
+Node bounds come from a linear relaxation on the box $[\ell,\upsilon]$: tangents and the secant of $w=x^2$; for $w=x^3$ with $x\ge0$, tangents $w\ge3p^2x-2p^3$ ($p\ge0$; $x^3-3p^2x+2p^3=(x-p)^2(x+2p)$) and the secant $w\le(\ell^2+\ell\upsilon+\upsilon^2)x-\ell\upsilon(\ell+\upsilon)$ (the difference is $(x-\ell)(x-\upsilon)(x+\ell+\upsilon)\le0$); and McCormick inequalities for products, including binary times continuous.
+For relaxation rows $A_Iz\le b_I$, $A_Ez=b_E$ and any $y$ with $y_I\ge0$,
+\begin{equation}\label{eq:waterno2-safe}
+\min\{c^{\top}z:\ A_Iz\le b_I,\ A_Ez=b_E,\ \ell\le z\le\upsilon\}\ \ge\ -y^{\top}b+\sum_j\min\{(c+A^{\top}y)_j\ell_j,\ (c+A^{\top}y)_j\upsilon_j\},
+\end{equation}
+because $c^{\top}z\ge c^{\top}z+y^{\top}(Az-b)$ for every feasible~$z$ \citep{neumaier2004-safe-bounds-in-linear-and}.
+HiGHS supplies~$y$; a poor~$y$ only weakens the bound.
+
+The first implementation (code~P) was written together with the certificates.
+It encloses every decimal in $[\mathrm{down}(v),\mathrm{up}(v)]$, propagates in binary64 with one \texttt{nextafter} step outward per operation and a padding of $10^{-12}\sum|\text{terms}|$ for every sum of $n\le9000$ terms (which exceeds $\gamma_{n-1}\sum|\text{terms}|$), evaluates \eqref{eq:waterno2-safe} with outward-rounded interval coefficients, and also uses reduced-cost tightening and root OBBT with cutoff.
+The second (code~V) was written later, in separate agent sessions, reads exact rationals and evaluates \eqref{eq:waterno2-safe} in exact rational arithmetic.
+Its two variants share the model builder, relaxation and node bound: V$_{\mathrm{ex}}$ propagates in exact rational arithmetic, and V$_{\mathrm{fl}}$, whose propagation a later session added, in binary64 with one outward step per $\times$, $\div$ and $\sqrt{\ }$, sums by Python's correctly rounded \texttt{math.fsum} plus two steps, and cubes and cube roots checked exactly.
+V$_{\mathrm{fl}}$'s propagation agreed with V$_{\mathrm{ex}}$'s in 3,000 compared passes and was read by a separate agent session, but it is not proved correct.
+
+\subsubsection{Proof of \texorpdfstring{\cref{thm:waterno2-bounds}}{the waterno2 theorem}}\label{app:waterno2-proof}
+
+\emph{$T\in\{9,12,18,24\}$.}
+The archive stores binary64 multipliers $\lambda$ and $\mu\ge0$ and one number $B_t$ per period.
+For each of the 63 periods, code~P and code~V$_{\mathrm{fl}}$ each established $B_t\le\varphi_t(\lambda,\mu)$ by \cref{lem:waterno2-bb} with target~$B_t$ and their own valid boxes.
+\Cref{prop:waterno2-lagrangian} gives $\vstar\ge\mu r_T+\sum_tB_t$, evaluated in exact rational arithmetic by three implementations (\cref{tab:waterno2-values}).
+
+\emph{$T=6$.}
+The certificate applies \cref{prop:waterno2-cells} with $\mu=0$ and the terminal row in period~5.
+For links $l=0,\dots,4$, split trees partition root boxes $[2,5]\times[2.5,5]\times J_l$ into $228$, $154$, $148$, $153$ and $240$ cells, with $J_0=[3.3324999992334576,\ 5.936197237759838]$, $J_1=[2.6700000002022537,\ 6]$, $J_2=[2.0312499999222715,\ 6]$ and $J_3=J_4=[2,6]$ (binary64 end points).
+By \cref{lem:waterno2-levels} each root box contains~$Y_l$.
+The leaves lie in the root, have pairwise disjoint interiors and total volume equal to the root's (checked exactly), so their union is a closed subset of the root of full measure, hence the whole root box, and~(a) holds.
+Each leaf carries one binary64 slope vector, used by both adjacent periods ($101$, $130$, $135$, $139$ and $174$ distinct vectors per link), so~(b) holds.
+The archive stores $77{,}249$ records (a period, two boxes, two slope vectors and a claimed bound $B_r$ in the sense of \cref{lem:waterno2-reuse}), of which $49{,}315$ are used.
+For each of the $117{,}736$ leaf pairs, $b_t(D,D')$ is the largest bound \cref{lem:waterno2-reuse} gives over the records of period~$t$ whose boxes contain $D$ and~$D'$, so~(c) holds given the record statements.
+The table has $79{,}919$ finite pair bounds ($52{,}826$ with a nonzero correction) and $37{,}817$ pairs proved empty.
+Code~P and code~V$_{\mathrm{fl}}$ each established every one of the $49{,}315$ record statements.
+The shortest path, computed in exact rational arithmetic and recomputed by two further implementations, is $V=39157472136693483/2^{47}=278.2305737745\ldots$.
+
+\emph{Primal values.}
+The values~$\Uprim$ in \cref{tab:unclosed} are objective values of exactly feasible points whose coordinates lie in~$\Q$ or in one quadratic field each; three exact checkers decide every row, bound and integrality requirement (\cref{app:points}).
+The \inst{waterno2_06} point is MINLPLib's listed point~p4 made exactly feasible; the other four points are ours and improve the listed primal values by at least $8.58$, $29.53$, $245.65$ and $368.92$.
+Since $0<\Lcert<\Uprim$, $\gaprel=(\Uprim-\Lcert)/\Lcert$.
+\qed
+
+\begin{table}[t]
+\centering\small
+\caption{Exact values of the \inst{waterno2} dual bounds and their displays (rounded down): $V$ of \cref{prop:waterno2-cells} for \inst{waterno2_06}, and $\mu r_T+\sum_tB_t$ of \cref{prop:waterno2-lagrangian} otherwise. Nodes: branch-and-bound nodes of code~P over all periods.}
+\label{tab:waterno2-values}
+\begin{tabular}{@{}llll@{}}
+\toprule
+instance & exact value & display & computed statements\\
+\midrule
+\inst{waterno2_06} & $39157472136693483/2^{47}$ & $278.230573$ & $49{,}315$ records\\
+\inst{waterno2_09} & $3627661341387654598825371/(2^{42}\cdot10^{9})$ & $824.834692$ & 9 periods, $108{,}519$ nodes\\
+\inst{waterno2_12} & $9190837775594918144252281/(2^{42}\cdot10^{9})$ & $2089.754565$ & 12 periods, $140{,}952$ nodes\\
+\inst{waterno2_18} & $5267563083146225483626937/(2^{40}\cdot10^{9})$ & $4790.820715$ & 18 periods, $381{,}084$ nodes\\
+\inst{waterno2_24} & $115688878681251187594323079/(2^{44}\cdot10^{9})$ & $6576.151388$ & 24 periods, $525{,}224$ nodes\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The intermediate \inst{waterno2_06} bound $272.584700$ of \cref{tab:unclosed} used one slope vector per link and $113$--$162$ cells per link.
+Cells were then refined where the minimizing path jumped inside a cell, and slopes were tuned from small LPs over pools of SCIP points; these heuristics affect only the strength of the bound.
+
+\subsubsection{Verification, trust base and regeneration}\label{app:waterno2-verification}
+
+The two lines are separately written in the sense of \cref{sec:semantics-protocol}: code~V neither imports nor runs code~P in its checks.
+The session that wrote V$_{\mathrm{fl}}$ imported code~P once, read-only, to compare the period objectives coefficient by coefficient; no certified value uses that comparison.
+Code~P has its own model builder and valid boxes, which an exact FBBT/OBBT run of the second line reproduced or improved, while V$_{\mathrm{ex}}$ and V$_{\mathrm{fl}}$ share the second line's builder, relaxation and node bound.
+A wrong value would require an error in both lines on the same statement, or in a shared component: the OSIL reader, rational arithmetic, IEEE binary64 arithmetic with correctly rounded square roots and \texttt{nextafter} (\cref{hyp:fp-ieee}), and, for V$_{\mathrm{fl}}$, Python's correctly rounded \texttt{math.fsum} (a further checking-program assumption, not part of \cref{hyp:fp-ieee}).
+No library transcendental enters, since every row is polynomial.
+SCIP and HiGHS supply only hints (multipliers, targets, slope proposals, dual vectors, branching points); no SCIP value enters a bound.
+Necessary conditions hold: the exactly feasible points satisfy every file of valid boxes; at these points each of the 69 period-Lagrangian objectives is at least its~$B_t$, and each \inst{waterno2_06} period value is at least the pair bound of the leaves that contain the point; and the second line rejected deliberately unattainable targets.
+
+The search trees are not stored, so the period and record statements can be re-established only by rerunning the searches; for fixed targets and a fixed software stack the searches are deterministic (identical status, bound and node count in repeated runs).
+A checker for stored leaf certificates would have to re-verify every tightening step, so its cost is uncertain; we did not build one.
+Regeneration derives each period target anew from time-limited SCIP runs and proves it with code~P; for \inst{waterno2_18} and \inst{waterno2_24} it gave slightly lower, also valid values (\cref{app:repro-regen}), and the values of \cref{thm:waterno2-bounds} rest on the original code-P run and the V$_{\mathrm{fl}}$ recheck at the stored targets.
+
+\begin{certbox}[Certificate for \cref{thm:waterno2-bounds}]
+\certitem{Inputs}{OSIL SHA-256 prefixes \texttt{3b0b316d7a9f} (06), \texttt{015932376b18} (09), \texttt{add485a67c22} (12), \texttt{968ff496844d} (18), \texttt{91d2612f435c} (24); multipliers and period bounds (09--24); split trees, leaf slopes and 77,249 records (06); valid-box files of both lines.}
+\certitem{Computation}{63 period statements and 49,315 record statements by branch and bound (\cref{lem:waterno2-bb}), code~P in \arith{F} and code~V with \arith{E} node bounds; sums, cover check, corrections and shortest path in \arith{E}.}
+\certitem{Data reading}{code~P: outward enclosure of each decimal; code~V: exact rationals; one shared OSIL reader, reproduced exactly by a separately written parser; the polynomial rows built by both codes equal an exact parse of the GAMS form, which separate exact parsers find identical to the OSIL form for all five instances.}
+\certitem{Implementations}{code~P established every period and record statement. Second line: V$_{\mathrm{ex}}$ with its own valid boxes certified the six period statements of the \inst{waterno2_06} period Lagrangian ($263.735099$) at the same values; V$_{\mathrm{fl}}$ with its own valid boxes certified all 63 period statements of 09--24 (exact sums identical) and, with a separate driver and terminal row, the 49,315 used records of 06 (33,899 certified, 15,416 proved empty, among them all 12,298 with $B_r=+\infty$; none failed) and the 556 leaf pairs corrected by \cref{lem:waterno2-reuse}, at the leaf slopes (436 certified, 120 empty). Either line yields every displayed value. Sums, cover check, corrections and shortest path by the exact code and two further exact codes, with identical rationals.}
+\certitem{Evidence level}{\evid{hand} for \cref{prop:waterno2-lagrangian,prop:waterno2-cells} and the lemmas; \evid{rerun} for the period and record statements.}
+\certitem{Replay}{Tier~1 for the combination steps (seconds); for the period statements of 09--24 (7.4\,h in all, V$_{\mathrm{fl}}$), Tier~2 for 09 and 12 (35 and 49\,min) and Tier~3 for 18 and 24 (2.5 and 3.5\,h); Tier~3 for the record statements of 06 (about 60 CPU-hours on a loaded machine); \cref{app:repro}.}
+\end{certbox}

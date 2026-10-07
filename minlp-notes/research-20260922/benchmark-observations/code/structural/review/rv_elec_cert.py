@@ -11,6 +11,9 @@
       require a_0 - sum_{j>=1} |a_j| r^j > 0 (a valid lower bound of g on the cell).
 5. Bound (N^2 h_0 - N h(1))/2 recomputed exactly and compared with the certificate.
 """
+from pathlib import Path as _CleanupPath
+_NOTES_ROOT = _CleanupPath(__file__).resolve().parent.joinpath('../../../../..').resolve()
+
 import json
 import sys
 import time
@@ -19,7 +22,7 @@ from fractions import Fraction as F
 import sympy as sp
 
 s, t = sp.symbols("s t")
-CERTDIR = "/home/sgusev/repo/minlp-notes/research-20260922/benchmark-observations/code/structural/certs/"
+CERTDIR = (str(_NOTES_ROOT) + '/research-20260922/benchmark-observations/code/structural/certs/')
 
 
 def taylor_shift(coeffs, c):

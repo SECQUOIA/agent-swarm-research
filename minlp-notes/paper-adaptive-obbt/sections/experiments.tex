@@ -1,0 +1,413 @@
+\section{Computational evidence}\label{sec:experiments}
+
+This section reports two archived computational studies. Neither was rerun
+for this paper, and their results are not pooled: they used different
+solvers, budgets, cohorts, and questions. The first, a precursor study,
+tested iterated OBBT as an external presolve. Its findings shaped the second,
+a prospective comparison of the numerical policy of
+Section~\ref{sec:algorithms-policy} with native SCIP. All numbers come from
+the archived records, which the supplementary archive contains. Quantities
+computed afterwards from the per-run records, rather than by the archived
+analysis, are identified as such; they are descriptive and were not part of the
+frozen protocol.
+
+\subsection{A precursor study of external iterated OBBT}\label{sec:experiments-precursor}
+
+The precursor study asked whether iterating OBBT before a solve pays off.
+Its candidates were the 377 MINLPLib instances~\cite{bussieck2003-minlpliba-collection-of-test-models,vigerske2026-minlplib-a-library-of-mixed} with quadratic nonlinearities
+that are not flagged convex, have 5--2000 variables and no semicontinuous or SOS
+variables, and have a known optimal value. It excluded 38 of them because
+feasibility-based bound tightening left some variable of a nonlinear term
+without a finite bound of magnitude at most $10^7$, leaving 339 instances from
+85 families. The
+solvers were Gurobi~13~\cite{gurobi2026-reference-manual} and
+SCIP~10~\cite{hojny2025-the-scip-optimization-suite-10}, with one thread each,
+two random seeds, and a
+600-second limit on total time. A pipeline first ran the solver at the root node
+for at most 30 seconds to obtain an incumbent $\hat f$, set the cutoff
+$U=\hat f+10^{-6}\max\{1,|\hat f|\}$, ran OBBT on a separate McCormick LP with
+five-point square tangents and secants, and restarted the solver on the
+tightened box with the incumbent and cutoff. OBBT used sequential coordinate
+updates with feasibility filtering. Five stopping rules were compared: one
+round, five rounds, a rule that stopped after a round without change or at a
+limit of 50 rounds or 400 seconds, and two adaptive rules. The adaptive rules
+computed, over the variables that moved in a round, the ratio $\rho$ of their
+total normalized width after the round to that before it, and stopped once
+$\rho$ exceeded $0.5$ or $0.8$, after a round without change, or after 120
+seconds of OBBT; later rounds were restricted to moved variables and their
+bilinear partners. A control arm repeated the root run and the restart without OBBT,
+which separates the effect of the box from the effect of restarting with an
+incumbent. Appendix~\ref{sec:precursor-details} gives the tables.
+
+No stopping rule solved more instance--seed pairs than the default solver:
+OBBT pipelines solved 637--638 of 678 pairs with Gurobi against 640 by default,
+and 561--571 with SCIP against 575. Every pipeline had a larger shifted
+geometric mean of total time than the default, by factors of 1.31--1.73 for
+Gurobi and 1.21--1.32 for SCIP. These ratios, like the node and final-solve
+ratios below, are the archived summaries; Appendix~\ref{sec:precursor-details}
+explains why two solved counts are corrected here but not in these summaries.
+On the instances where OBBT ran,
+the tightened boxes reduced node counts against the control---to $0.65$
+(Gurobi) and $0.62$ (SCIP) of the control with the no-change-or-limit rule---but
+the time of the final solve was $0.96$--$1.02$ of the control's, so the savings
+in the final solve did not offset the OBBT time. In the group of pairs where
+that rule's box closed at least half of the gap of the McCormick LP, the node
+count fell to about one fifth of the control, but the mean control time of this
+group was only 1.2 seconds (SCIP) and 4.9 seconds (Gurobi). More rounds
+strengthened the relaxation
+with diminishing returns. With the known optimal value as cutoff, OBBT closed
+on average $0.236$ of the McCormick LP gap after one round, $0.322$ after five,
+and $0.346$ with the no-change-or-limit rule; with the root incumbents that
+rule closed $0.250$ (Gurobi) and $0.287$ (SCIP). The median closure was zero for
+every rule. Each of the 4,573 tightened boxes that belonged to an instance with
+a reference solution contained that solution, up to a numerical tolerance of
+$10^{-6}(1+|x_j|)$ per coordinate.
+
+Two observations from this study shaped the integrated policy. First, an
+external presolve pays for a second root and a restart, which by themselves
+made the control slower than the default (shifted geometric mean ratios $1.08$
+for Gurobi and $1.16$ for SCIP). An integrated propagator avoids both. Second,
+much OBBT work was spent where it could not help: on 109 instances whose
+nonlinear variables are all integer, the first round changed a bound on only 25,
+yet these instances consumed more than nine tenths of all first-round OBBT time.
+This suggested a short pilot before a full round, reconsideration after an
+incumbent improves, and a test cohort that the default solver does not solve
+quickly. The prospective comparison implemented these suggestions.
+
+\subsection{Design of the prospective comparison}\label{sec:experiments-design}
+
+The comparison asks whether adding the propagator of
+Section~\ref{sec:algorithms-policy} to SCIP improves solving within a short
+budget, and whether its adaptive variant reduces the propagator's cost
+relative to its fixed-order variant. The protocol, the cohort, the policy
+parameters, and the analysis were frozen before any comparative outcome was
+observed.
+
+\emph{Arms.} The \emph{native} arm runs SCIP with default settings. The
+\emph{fixed} and \emph{adaptive} arms add the propagator with the parameters of
+Table~\ref{tab:policy-parameters}; they share the relaxation, the bound
+validation, the budgets, and the triggers, and differ in ranking, screening,
+and the pilot. All arms use identical SCIP settings and the same model
+construction: quadratic rows become SCIP nonlinear constraints, a quadratic
+objective is moved into a constraint on an auxiliary variable, and maximization
+is converted to minimization. In SCIP~10.0.2 the LP-based OBBT propagator runs at
+the root node by default, and the separate nonlinear OBBT propagator is
+disabled. Generalized variable bound propagation is enabled by
+default~\cite{scip1002-obbt,scip1002-nlobbt,scip1002-genvbounds}; these defaults
+were left unchanged in every arm. The comparison
+therefore measures additional work on top of native OBBT, not the effect of
+OBBT itself.
+
+\emph{Cohort.} Table~\ref{tab:cohort} lists the twenty models. The twelve
+public models were selected by a rule fixed in advance from the precursor
+study's in-scope instances: 5--300 variables, 1--200 nonlinear variables, at
+most 500 distinct quadratic terms, and at least five seconds in every
+historical native SCIP run. Of the 41 eligible names, ordered by the SHA-256
+digest of a fixed prefix followed by the name, the first twelve were taken, at
+most one per historical family. No known optimal value or outcome of the
+current arms entered the rule. The cohort is a selected set of harder
+instances, not a random sample. Its family labels still separate closely
+related applications: four of the twelve are circle- or point-packing models.
+Three public models contain binary variables, and four have variables without
+finite bounds in their original formulation. The eight synthetic models, two
+sizes each of four structures generated with seed 20261003, are stress tests:
+point packing, which maximizes the smallest squared distance among $k$ points
+in the unit square; coupled square budgets over $[-1,1]^n$, with concave
+diagonal and cyclic bilinear objective terms, two quadratic budget rows, and a
+two-sided sum row; bilinear cycles, with products $x_ix_{i+1}$ of $[0,1]$
+variables around a cycle and a two-sided sum row; and sparse indefinite
+quadratic programs over $[0,1]^n$ with random two-sided linear rows. Four tiny
+synthetic models of other sizes and another seed were used before freezing to
+check the interface and callback coverage; they are excluded from every result.
+The normalized public inputs were compared with the original OSiL files at five
+test points per model, and every returned public incumbent was also evaluated
+directly from the original files.
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lrrrr@{\quad}lrrr@{}}
+\toprule
+Public model & $n$ & $m$ & nonlin. & hist.\ (s) & Synthetic model & $n$ & $m$ & nonlin.\\
+\midrule
+\texttt{bayes2\_50} & 86 & 77 & 65 & 600 & packing, $k=5$ & 11 & 10 & 10\\
+\texttt{ex5\_2\_5} & 32 & 19 & 27 & 600 & packing, $k=7$ & 15 & 21 & 14\\
+\texttt{gabriel01} & 215 & 467 & 100 & 371 & coupled squares, 12 & 12 & 3 & 12\\
+\texttt{genpooling\_meyer04} & 118 & 141 & 28 & 600 & coupled squares, 24 & 24 & 3 & 24\\
+\texttt{graphpart\_3pm-0344-0344} & 144 & 48 & 144 & 12 & bilinear cycle, 12 & 24 & 13 & 12\\
+\texttt{kall\_circles\_c6b} & 18 & 54 & 16 & 73 & bilinear cycle, 20 & 40 & 21 & 20\\
+\texttt{kall\_circlespolygons\_c1p13} & 43 & 48 & 17 & 7 & indefinite QP, 20 & 20 & 5 & 20\\
+\texttt{kall\_circlesrectangles\_c1r12} & 49 & 52 & 19 & 15 & indefinite QP, 36 & 36 & 9 & 36\\
+\texttt{pointpack08} & 17 & 36 & 16 & 25 & & & & \\
+\texttt{powerflow0009r} & 60 & 103 & 57 & 20 & & & & \\
+\texttt{qp3} & 100 & 52 & 100 & 600 & & & & \\
+\texttt{wastewater15m2} & 133 & 151 & 24 & 63 & & & & \\
+\bottomrule
+\end{tabular}
+\caption{The twenty models of the prospective comparison: variables $n$,
+rows $m$, and variables occurring in quadratic terms. ``Hist.'' is the
+shorter of the two native SCIP times in the precursor study, rounded; 600
+means that both runs reached the 600-second limit.}
+\label{tab:cohort}
+\end{table}
+
+\emph{Runs and resources.} Every model was run with SCIP random seed shifts $0$
+and $1$ in all three arms: 120 runs, 40 per arm. The two seeds are repeated runs
+of one model, not independent problem families. Each run had a ten-second limit
+on the solver call, which includes model construction and all propagator work;
+construction time is subtracted from SCIP's own limit. A driver started each run
+in a fresh process, recorded the elapsed time of the whole process---interpreter
+start, model reading, solving, validation, and output---and enforced a
+30-second hard limit. SCIP, its LP solver, and the numerical libraries used one
+thread. At most two runs executed at a time, in an order shuffled with seed
+20261003, on a 36-logical-CPU machine that was also running unrelated jobs; the
+load averages at the start were 17.76, 15.65, and 14.11. The software was SCIP
+10.0.2 through PySCIPOpt 6.2.1~\cite{maher2016-pyscipopt-mathematical-programming-in-python},
+with Python 3.13.11, NumPy 2.5.3, and SciPy 1.18.1, whose HiGHS dual simplex
+solved the auxiliary LPs~\cite{huangfu2018-parallelizing-the-dual-revised-simplex}.
+
+\emph{Outcomes.} Each returned incumbent was checked against the original
+bounds, integrality, quadratic rows, and objective of the stored model. A row
+residual is scaled by the larger of one plus the sum of absolute term values at
+the point and the absolute right-hand side, and a bound residual by one plus the
+absolute coordinate; the incumbent passes if the largest scaled residual and the
+integrality residual are at most $10^{-6}$. The objective is evaluated exactly
+in rational arithmetic before conversion. This is a numerical check, not an
+exact certificate. A run counts as solved if SCIP reports optimality, the
+incumbent passes the check, the process did not fail, the dual bound does not
+exceed the incumbent value by more than $10^{-6}$ relative, and the reported and
+independently evaluated objectives agree to $10^{-6}$ relative. The primary
+time summary is the mean PAR-2 score over all 40 runs of an arm: the process time
+of a solved run and $20$ seconds, twice the limit, otherwise. The shifted
+geometric mean uses the uncapped process times of all runs with a shift of one
+second. With $p$ the validated incumbent value and $d$ the final dual bound,
+both in minimization form, the normalized gap is
+$\max\{0,p-d\}/\max\{1,|p|,|d|\}$; the gap score is this value capped at one, or
+one if there is no valid incumbent or no finite consistent dual bound. Paired
+comparisons with native use the same model and seed. A PAR-2 win or loss
+requires a value below $95\%$ or above $105\%$ of native's, and a gap win or loss
+requires a difference in normalized gap larger than $10^{-4}$, among pairs in
+which both gaps are defined.
+
+\subsection{Outcomes}\label{sec:experiments-outcomes}
+
+All 120 runs completed. There were no process failures, invalid incumbents,
+objective mismatches, or inconsistent primal and dual bounds. All 117 returned
+incumbents passed the check, with largest absolute residual
+$9.97\times10^{-7}$ and largest scaled residual $7.21\times10^{-7}$. Each arm had
+one run without an incumbent, \texttt{genpooling\_meyer04} with seed $0$.
+Table~\ref{tab:campaign} gives the main summaries.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}llrrrr@{}}
+\toprule
+Cohort & Arm & Solved & Mean PAR-2 (s) & Shifted mean (s) & Mean gap score\\
+\midrule
+All & Native & 14/40 & 13.855 & 5.957 & 0.20351\\
+All & Fixed & 14/40 & 13.988 & 6.285 & 0.18438\\
+All & Adaptive & 14/40 & 13.997 & 6.265 & 0.18806\\
+\addlinespace
+Public & Native & 2/24 & 18.964 & 10.248 & 0.33408\\
+Public & Fixed & 2/24 & 18.999 & 10.297 & 0.30209\\
+Public & Adaptive & 2/24 & 19.026 & 10.324 & 0.30798\\
+\addlinespace
+Synthetic & Native & 12/16 & 6.192 & 2.384 & 0.00767\\
+Synthetic & Fixed & 12/16 & 6.471 & 2.772 & 0.00782\\
+Synthetic & Adaptive & 12/16 & 6.453 & 2.733 & 0.00818\\
+\bottomrule
+\end{tabular}
+\caption{Outcomes of the prospective comparison. Times are process times in
+seconds. The shifted mean is the geometric mean of uncapped process times with
+a shift of one second. Lower gap scores are better.}
+\label{tab:campaign}
+\end{table}
+
+\emph{Solved runs.} Every arm solved the same 14 runs: both seeds of
+\texttt{kall\_circlespolygons\_c1p13} and 12 of the 16 synthetic runs. Neither
+added policy gained or lost a solve. Because the solved sets coincide and every
+unsolved run scores 20 seconds, the differences in mean PAR-2 come entirely from
+the process times of these 14 runs. In total they took 34.21 seconds for native,
+39.52 for fixed, and 39.88 for adaptive, increases of 5.32 and 5.67 seconds.
+The propagator's recorded time in the same runs was 5.23 seconds (fixed) and
+5.72 seconds (adaptive), comparable to these increases. In paired terms, mean
+PAR-2 rose by 0.133 seconds (fixed) and 0.142 seconds (adaptive);
+adaptive had two PAR-2 wins and eleven losses, fixed one win and ten losses, all
+among the solved runs. Both adaptive wins are the two seeds of the bilinear
+cycle with twelve factors. There both added arms finished at the root node,
+whereas native SCIP needed seven nodes; the adaptive process times were 0.1
+seconds below native's, while the fixed arm matched native's time in one seed.
+The callback records of these runs show the incumbent trigger at work: in both
+arms and both seeds, the first root callback, made before any incumbent existed,
+accepted no reduction; the callback triggered by the first incumbent accepted
+six, and the following callback, triggered by the resulting domain change, six
+more. The driver waited for each worker with Python's standard polling loop,
+whose interval grows to 50 milliseconds, and the recorded times of short runs
+cluster in steps of about 0.05 seconds. The time outside the solver
+call---interpreter start, reading, validation, output, and the wait---was
+0.41--0.59 seconds per run.
+
+\emph{Final gaps.} Both added policies lowered the mean public gap score, from
+0.334 to 0.302 (fixed) and 0.308 (adaptive). The two seeds of
+\texttt{bayes2\_50} account for this. There both added arms ended with an
+incumbent of value 0.520 instead of 6.825 while the dual bound stayed near zero,
+which changed the gap score from 1 to 0.520. The propagator constructs no
+incumbents, so this is an indirect effect of a changed search. Without
+\texttt{bayes2\_50}, the mean public gap score was 0.274 for native, 0.282 for
+fixed, and 0.289 for adaptive; these values were computed afterwards from the
+per-run records. Among the 39 pairs in which both gaps are defined, adaptive had four
+gap wins and twelve losses, and fixed had five wins and twelve losses; 23 of
+these pairs are public, with four (adaptive) and five (fixed) wins and ten losses
+each. In eleven of the twelve losses of each arm, the final dual bound was weaker
+than native's. Gaps at a wall-clock limit are sensitive to how much search fits
+into the limit: on \texttt{qp3}, where the propagator could never run, the fixed
+arm still ended one seed with a different dual bound from native.
+
+\subsection{Where the added work went}\label{sec:experiments-work}
+
+Table~\ref{tab:work} decomposes the propagator's work, using the per-callback
+records of the archived runs, which store each callback's node number and
+depth. A callback is attributed to the root node, to a nonroot node with a
+positive number, or to a nonroot node with number zero. The release-tagged
+SCIP~10.0.2 source initializes new nodes with number zero, assigns positive
+numbers to search-tree children, and leaves temporary probing nodes at
+zero~\cite{scip1002tree}. Consistently, in runs that finished at the root,
+every nonroot callback had number zero. This supports interpreting them as
+temporary probing nodes, although the logs did not record node types. We report
+them as nonroot, number-zero callbacks.
+Because the trigger state is keyed by node number,
+the policy treated all nonroot nodes with number zero in a run as one node and allowed at most
+three acting callbacks for them. The time in the row of triggers without a call is the
+remainder of the propagator time: trigger evaluations that started no acting callback,
+which are timed but produce no record.
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lrrrrrrrr@{}}
+\toprule
+& \multicolumn{4}{c}{Fixed} & \multicolumn{4}{c}{Adaptive}\\
+\cmidrule(lr){2-5}\cmidrule(l){6-9}
+& Calls & LPs & Accepted & Time (s) & Calls & LPs & Accepted & Time (s)\\
+\midrule
+Root node & 100 & 1150 & 62 & 8.224 & 98 & 336 & 62 & 3.554\\
+Tree nodes & 166 & 662 & 50 & 5.485 & 505 & 1203 & 244 & 13.287\\
+Nonroot, number 0 & 90 & 360 & 0 & 3.684 & 90 & 180 & 2 & 2.593\\
+Unsupported box (\texttt{qp3}) & 48 & 0 & 0 & 0.068 & 48 & 0 & 0 & 0.066\\
+Triggers without a call & & & & 2.069 & & & & 3.623\\
+\midrule
+Total & 404 & 2172 & 112 & 19.530 & 741 & 1719 & 308 & 23.123\\
+\addlinespace
+\quad of which LP solves & & & & 12.818 & & & & 10.393\\
+\bottomrule
+\end{tabular}
+\caption{Work of the added propagator over all 40 runs of each arm.
+``Accepted'' counts bound changes that SCIP applied. The time of LP solves
+includes the dual-bound validation of each solve. The totals are those of the
+archived analysis; the split was computed afterwards from the per-callback
+records.}
+\label{tab:work}
+\end{table}
+
+The adaptive variant solved $1{,}719$ directional LPs against $2{,}172$, a
+reduction of $20.9\%$, but its propagator time rose from 19.530 to 23.123 seconds,
+an increase of $18.4\%$. The decomposition explains the difference. The time
+spent in LP solves and dual-bound validation fell by 2.43 seconds, while the
+remaining propagator time rose from 6.71 to 12.73 seconds. This remaining time,
+including trigger visits that started no acting callback, amounted to about 17
+milliseconds per recorded callback in both variants, and an LP with its
+validation took about 6 milliseconds. The adaptive variant made
+337 more callbacks; 574 of its 693 supported callbacks stopped after the
+two-LP pilot. Its 64-LP budget was therefore rarely binding: 20 of its 38 runs
+on models other than \texttt{qp3} ended at the cap of 24 callbacks, and only 5 of
+its 40 runs used all 64 LPs. The fixed variant used all 64 LPs in 27 runs and
+never reached the callback cap outside \texttt{qp3}; 349 of its 356 supported
+callbacks ended at an LP limit. Much of the reduction in LPs is thus a consequence
+of the callback cap binding before the LP budget, not of evidence that the
+adaptive variant chose its directions better. The same budgets also kept the
+recorded work small: the largest propagator total of a run was 1.00501 seconds
+against an allowance of one second, 7 fixed and 11 adaptive runs exceeded the
+allowance at all, and the summed propagator time was $6.2\%$ (fixed) and $7.4\%$
+(adaptive) of the summed process time of all 40 runs. The share was much larger
+in some short solved runs, up to about two fifths, and the untimed admission
+tests are not included.
+
+The adaptive variant obtained more accepted bound changes with fewer LPs: 308
+against 112. At the root, both variants obtained 62 accepted changes, the
+adaptive one with 336 LPs instead of 1150; most of its other changes came from
+callbacks at tree nodes. Of the 470 bounds the adaptive variant proposed, SCIP applied 308;
+of the fixed variant's 200 proposals, it applied 112. SCIP's tightening
+interface declines a change that it does not regard as a sufficient
+improvement; the archive does not record individual reasons. Witness screening
+removed only two directions, one in each seed of
+\texttt{kall\_circlespolygons\_c1p13}. The archive does not record the outcome of
+individual feasibility checks; a check of a floating-point LP solution in exact
+arithmetic fails whenever the solution violates an active row by any positive
+amount, which limits how often such points can screen. Nonroot, number-zero callbacks consumed
+360 of the fixed variant's LPs without producing an accepted change. Directional
+LPs that produced no usable bound numbered 4 (fixed) and 26 (adaptive); their
+individual statuses were not retained. All 48 unsupported callbacks of each arm
+were on \texttt{qp3}, whose local box remained unbounded; the initially unbounded
+\texttt{powerflow0009r} became eligible after SCIP tightened its bounds. The
+numerical incumbent check never rejected SCIP's incumbent, and 124 (fixed) and
+120 (adaptive) callbacks ran without a cutoff. The time limit was a stopping
+criterion rather than an exact deadline: all 78 time-limited runs exceeded ten
+seconds slightly, the longest solver call took 10.093 seconds, and the longest
+process 10.606 seconds.
+
+\subsection{What the comparison shows}\label{sec:experiments-interpretation}
+
+The comparison supports four conclusions, each confined to this cohort,
+budget, and implementation. Neither added policy changed which runs were solved
+within ten seconds. The adaptive variant solved fewer auxiliary LPs than the
+fixed variant but spent more time in the propagator. Neither added policy showed
+a net speedup: on the runs that every arm solved, both took longer, by amounts
+comparable to their own recorded propagator time. The improvement in mean public
+gap comes from one model through a better incumbent; on the other public models
+both policies had worse mean gap scores than native.
+
+Several factors prevent stronger conclusions in either direction. The cohort
+has twenty models, twelve of them selected using historical results and eight
+synthetic, and the two seeds are repetitions rather than independent families.
+The ten-second budget left 22 of 24 public runs unsolved in every arm, so PAR-2
+differences reflect only the 14 solved runs. Most of these are short synthetic
+runs, in which a fixed overhead of about half a second is a large share of the
+process time and the recorded times move in steps of about 0.05 seconds. The
+machine was shared with unrelated jobs. Under
+these conditions the small timing differences do not establish a slowdown,
+and the absence of new solves does not show that longer runs would also see
+none. The propagator was written in Python and builds its relaxation in exact
+rational arithmetic at every callback; its per-callback cost is a property of
+this implementation, and an integrated implementation could have a very
+different cost structure. The policy was compared as a whole, not by a factorial
+design over ranking, screening, and the pilot. Finally, the protected-box,
+cutoff-threshold, and residual certificates of
+Sections~\ref{sec:certificates}--\ref{sec:residual} were not used by the measured
+policy, so the comparison says nothing about their computational value.
+
+The negative result matters for three reasons. First, it shows concretely that
+the number of auxiliary LPs is not a cost measure. Work outside the LP solves
+took about a third of the propagator time of the fixed variant and more than half
+of that of the adaptive variant, and a policy that saved LPs by stopping early
+spent the savings, and more, on additional callbacks. Second, the recorded
+propagator time was at most $1.00501$ seconds per run and amounted to
+$6.2\%$ and $7.4\%$ of the cohort's total
+process time. A better selection rule can directly save at most the time the
+propagator itself spends. A worthwhile gain must come from the search---fewer
+nodes, earlier incumbents, or new solves. The search did change in places, as
+\texttt{bayes2\_50} and the small bilinear cycles show, but 308 accepted
+reductions produced no additional solve and no demonstrated overall speedup
+within ten seconds. The archive records associations between policies and
+search outcomes; without an ablation it does not isolate the effect of
+particular reductions. This agrees with the precursor study, in which tightened
+boxes reduced nodes but the final-solve savings did not offset the cost of
+obtaining them. Third, it marks the boundary between the two kinds of results
+in this paper. The certificates bound how much a specified operator can still
+change a box or a relaxation bound, which can justify skipping work. They do not
+predict that the work, if done, would save time, and Section~\ref{sec:effort}
+shows that no budget statement can supply that prediction. On this evidence,
+native SCIP remains the appropriate default, and the added policy is an
+experimental implementation.

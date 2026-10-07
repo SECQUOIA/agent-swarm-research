@@ -1,0 +1,1851 @@
+                                                             Clash of MINLP Relaxations:
+                                                         Piecewise Linear vs. Global Parabolic
+
+                                                                                 Adrian Göβ
+
+                                                   Abstract. Solving mixed-integer nonlinear programs (MINLPs) typically
+arXiv:2603.16505v1 [math.OC] 17 Mar 2026
+
+
+
+
+                                                   relies on constructing relaxations that are easier to tackle than the original
+                                                   problem. Recently, global parabolic (PARA) relaxations were introduced,
+                                                   featuring separable quadratic functions – paraboloids – as global under- or
+                                                   overestimators of general nonlinear constraint functions. So far, the paraboloids
+                                                   are all computed at once by solving a mixed-integer linear program (MIP). For
+                                                   small tolerances or wide function domains, the corresponding MIP grows in
+                                                   size and is eventually intractable, preventing a meaningful comparison with
+                                                   established relaxation techniques.
+                                                       We therefore propose a novel iterative method to compute PARA approxi-
+                                                   mations that succeeds on all tolerance-domain combinations where the original
+                                                   one has failed. The computational study is preceded by a thorough theoretical
+                                                   explanation and analysis. Finally, the improved method enables a computa-
+                                                   tional comparison with piecewise linear (PWL) relaxations in terms of runtime
+                                                   on general MINLP instances.
+                                                       The results show that the modern solver SCIP can solve PWL relaxations
+                                                   faster when the tolerance is high, shifting strongly in favor of PARA for tighter
+                                                   tolerances. We attribute the effect to the difference in the corresponding prob-
+                                                   lem size: PWL relaxations introduce binary variables to identify the active
+                                                   linear piece and their number grows with decreasing tolerance. PARA, on
+                                                   the other hand, does not require additional variables such that the dimension
+                                                   is maintained. For problems with at least one (co)sine constraint, the effect
+                                                   significantly amplifies. Thereby, for medium tolerances, PARA relaxations out-
+                                                   perform SCIP stand-alone. Applied problems like alternating current optimal
+                                                   power flow (AC-OPF) feature such constraint types, leaving PARA a viable
+                                                   relaxation strategy.
+
+
+
+
+                                                                                1. Introduction
+                                              The modeling power of mixed-integer nonlinear programming (MINLP) is undis-
+                                           puted. The combination of integral components and nonlinear interconnection allows
+                                           for the resemblance of a great variety of applications. These range from gas network
+                                           control [30] over chemical processes [2] up to the design of water networks [8]. Along
+                                           with this power comes a certain (computational) cost, which makes it hard to solve
+                                           general mixed-integer nonlinear programs (MINLPs) at scale and necessitates a
+                                           retreat to simplified models, at least as an intermediate step. For instance, in
+                                           modern optimization software for MINLP like BARON [37], COUENNE [6], Gurobi [27],
+                                           SCIP [28], or XPRESS [22] relaxations of the original problem are constructed and
+                                           then solved.
+                                              (A. Göβ) University of Technology Nuremberg, Analytics & Optimization, Dr.-
+                                           Luise-Herzberg-Str. 4, 90461 Nuremberg, Germany
+                                              E-mail address: adrian.goess@utn.de.
+                                              Date: March 18, 2026.
+                                              2010 Mathematics Subject Classification. 90C11, 90C20, 90C26, 90C30.
+                                              Key words and phrases. Mixed-integer Nonlinear Programming, Relaxations, Mixed-Integer
+                                           Linear Programming, Mixed-Integer Quadratically-Constrained Programming.
+
+                                                                                          1
+2                                      A. GÖβ
+
+
+   A popular technique to construct relaxations of problems with general nonlinear
+constraints is their piecewise handling. With the advances in mixed-integer linear
+programming (MIP) throughout the last decades, constructing relaxations based
+on linear functions appears as a potentially successful option. In fact, piecewise
+linear (PWL) relaxations have been originally introduced in [31] – to the best of
+our knowledge – and are further developed and adjusted every since, e.g., see [3,
+12, 16, 29, 36]. Also refer to [41] for an extensive survey and to [9] for a recent
+computational comparison. As fas as we are aware, all of the aforementioned solvers
+include such relaxations.
+   There also exist piecewise techniques beyond the linear realm. For instance,
+the SC-MINLP approach [18, 20] can be seen as an extension of PWL. For a
+nonlinear and twice continuously differentiable function f , it divides the function
+domain into intervals on which f is either convex or concave, respectively. Then,
+the concave parts are relaxed by PWL, whereas the convex parts remain. This
+renders the resulting relaxed problem a convex MINLP, which is considered (more)
+tractable. Even more general approaches feature piecewise quadratic [40] or piece-
+wise polynomial approximates [17]. The resulting problems fall into the class of
+mixed-integer quadratically-constrained programming (MIQCP), at least after re-
+formulation. Though MIQCP is still a subclass of MINLP, there exist tailored
+approaches to solve such problems [3, 4, 10, 11, 21, 33, 34, 42].
+   All those piecewise approaches have the benefit to construct relaxations that
+can fulfill a prespecified tolerance. That is, given a tolerance ε > 0, one can
+compute approximates, i.e., pieces of linear/quadratic functions, that fulfill the
+ε-accuracy with respect to the original problem. Thus any solution to the relaxed
+problem constitutes an ε-approximate solution which often suffice in practice. As
+an additional advantage, the character of the relaxed problem as a MIP or MIQCP
+problem allows to leverage tailored solvers.
+   Naturally, those benefits are not without cost. Depending on the modeling
+technique, they come with the introduction of binary variables whose number
+grows with the number of pieces. The approximates – e.g., linear pieces – lack
+a global validity, i.e., they do not constitute global under-/overestimators of the
+constraint function, and thus need to be “disabled” outside their corresponding
+interval. Hence, the resulting relaxation grows in (variable) size, which may impose
+computational challenges for large problems or tight tolerances. In a first attempt to
+circumvent additional integer variables, the authors of [26] introduced a framework
+to compute global parabolic (PARA) approximations of functions. The approximates
+are paraboloids, i.e., separable quadratic functions, globally under-/overestimating a
+constraint function. Although not necessarily being convex, the global validity allows
+to incorporate the paraboloids as constraints without the necessity of additional
+binary variables. That is, the problem size grows in the number of constraints only,
+but some solvers like SCIP seem to handle those similar-shaped constraints quite
+well, compare [26].
+   Although the PARA approach seems to be a viable relaxation technique, the
+method to compute respective PARA approximations in [26] is computationally
+limited. It computes all approximating paraboloids at once by repetitively solving
+MIP problems. Thereby, their size grows with domain width and decreasing tolerance,
+leaving them eventually not solvable under limited resources. Consequently, [26]
+reports valid parabolic approximations only on artificial domains and with respect to
+moderate tolerances, preventing a meaningful comparison with established techniques
+like PWL.
+   We thus introduce a novel iterative method that leverages differentiability of the
+constraint functions in combination with a factorable problem structure to compute
+          MINLP RELAXATIONS: PIECEWISE LINEAR VS. GLOBAL PARABOLIC                         3
+
+
+PARA approximations for tight tolerances and wide domains. In Section 3, we
+introduce our method formally, give proof of its correctness, and showcase that it is
+indeed able to succeed on tolerance-domain combinations that are left as unsolved
+by the approach in [26]. Furthermore, our method then allows for a comparison
+against PWL relaxations in terms of numbers of approximates – linear pieces versus
+parabolas – (Section 3.2.2) and computational efficacy (Section 4).
+   The remainder is dedicated to establish common ground in Section 2 by a
+presentation of the notation and the optimization problem. Further, it gives a short
+introduction into PWL (Section 2.3) and the original PARA approach (Section 2.4).
+We close the article with some concluding remarks in Section 5. Proofs and additional
+results can be found in Appendix A and Appendix B, respectively.
+
+                                   2. Preliminaries
+   Before diving into the main topic of the article, we want to clarify notation
+and state the problem(s) in question. During later statements and proofs this will
+foster clarity. Additionally, we aim to explain basic concepts such as the relaxation
+techniques.
+2.1. Notation. Consider the naturals without zero N = {1, 2, 3, . . . }. We will
+use n′ , n ∈ N as the original variable dimension and the variable dimension after
+reformulation, respectively, and m′ , m ∈ N as the number of original constraints
+and constraints of interest, respectively. For counting or numbering variables,
+constraints, or other objects, we introduce the short notation [n] := {1, 2, . . . , n}.
+Vectors are given in bold such as x ∈ Rn , whereas components are italicized, e.g.,
+x = (x1 , . . . , xn )⊤ . For an interval D = [x, x], we denote its length by |D| := |x − x|,
+using D = ̸ ∅ and |D| > 0 interchangeably. The interior is denoted by int(D) = (x, x).
+2.2. Mathematical Problem. We consider general MINLP problems of the form
+                               min c(x′ )
+                             x′ ∈Rn′
+                                 s.t. gj (x′ ) ≤ 0,       j ∈ [m′ ],
+                                                                                     (Pgen )
+                                       x′i ∈ Z,              i ∈ I,
+                                       x′ ∈ [x′ , x′ ],
+where I ⊆ [n′ ]. The vectors x′ and x′ denote component-wise bounds to x′ , which
+we assume to be finite. Note that this kind of formulation is no restriction, i.e.,
+it does include equality constraints by re-modeling g(x′ ) = 0 to g(x′ ) ≤ 0 and
+−g(x′ ) ≤ 0.
+   The involved functions are assumed to be sufficiently smooth, which is common
+in MINLP, see, e.g., [19]. That is, we assume them to be once continuously
+differentiable and, if necessary, to be able to compute their optimum over any
+compact domain. Depending on the particular method the latter can require twice
+continuous differentiability.
+   We also assume the involved functions to be factorable, see, e.g., [5, 32]. That is,
+they are composed of finitely many binary operations (sum, product, division, power)
+and finitely many unary operations (sin, cos, exp, log, |·|) of constants and variables.
+Equivalently, factorable functions can be expressed in terms of an expression tree
+which has the mentioned operations as nodes as well as variables and constants as
+leaves. For a given non-leaf node N , the child node(s) represents the argument(s) of
+the operation in N . More detailed explanations can be found in [5, 14, 25, 35, 38].
+Nearly all instances from MINLPLib [13] are available in the OSiL file format [23],
+which directly provides the expression tree structure.
+4                                            A. GÖβ
+
+
+    The factorability allows to rewrite the original problem formulation in terms
+of bivariate products and one-dimensional functions by introduction of auxiliary
+variables in place of intermediate nodes. For example, consider g(x′ ) = sin(x′1 x′2 )2 .
+By introduction of variables x̃ and y we can rewrite the constraint g(x′ ) ≤ 0 to
+y 2 ≤ 0, y = sin(x̃), and x̃ = x′1 x′2 . Note that finite bounds on x′ can be propagated
+to x̃ and y. For instance, x′1 ∈ [1, 2] and x′2 ∈ [0, π/4] result in x̃ ∈ [0, π/2] and
+y ∈ [0, 1].
+    Those reformulations, as performed by the modern MINLP solvers cited in the
+introduction, allow us to focus on one-dimensional, general nonlinear constraint
+functions only. For this purpose, we denote them after reformulation as fj , e.g.,
+f1 (x̃) = sin(x̃), and collect all linear and quadratic constraints (including bounds)
+as well as integrality restrictions in a set Ω. Furthermore, vector x represents a
+concatenation of x′ − and newly introduced x̃-variables, whereas the y-variables are
+kept for clarity. In conclusion, we assume our problem at hand to be presented as
+                               min         c(x)
+                            (x,y)∈R ×R
+                                   n     m
+
+
+                                      s.t. fj (xij ) ≤ yj ,     j ∈ [m],                      (P)
+                                           (x, y) ∈ Ω.
+The number of x-variables is now denoted by n, whereas m is the number of
+“interesting” constraints and y-variables. The subindex j of ij indicates that a
+variable xi may occur in several constraints j.
+   Note that the constraint functions fj are only defined on a one-dimensional
+and finite domain, but remain general nonlinear ones. Therefore, despite any
+reformulation, it cannot be expected to compute an exact solution to (P). Instead,
+in practice the user specifies an approximation tolerance ε > 0 and is satisfied
+when obtaining an ε-approximate solution, i.e., a point that violates the nonlinear
+constraints by a value of at most ε. Such a point is equivalent to an exact optimal
+solution of the problem
+                          min c(x)
+                               s.t. fj (xij ) ≤ yj + ε,       j ∈ [m],                       (Pε )
+                                    (x, y) ∈ Ω.
+   For computing an ε-approximate solution, a natural idea is to substitute fj in (P)
+by an ε-relaxation fˆj , i.e., it holds that fj − fˆj ≤ ε on the domain of fj . The
+resulting relaxed problem reads
+                              min c(x)
+                                 s.t. fˆj (xij ) ≤ yj ,   j ∈ [m],                         (Prel )
+                                      (x, y) ∈ Ω.
+A solution (x⋆ , y⋆ ) for (Prel ) then fulfills fj (x⋆ij ) ≤ fˆj (x⋆ij ) + ε ≤ yj⋆ + ε for j ∈ [m]
+and is thus a valid ε-approximate solution.
+   A strategy for computing a linear fˆj , which has reattained recent attention, is the
+approach by piecewise linear functions. In the following, we provide an introduction
+of it.
+2.3. Piecewise Linear Model. We consider a nonlinear function f and a finite
+domain D = [x, x] such that x < x. First, we will explain the computation and
+modeling of a piecewise linear (PWL) approximation, before extending it to a PWL
+relaxation. A PWL approximation f¯ of f can be constructed as a linear interpolation
+of f and is thus defined by breakpoints {t0 , t1 , . . . , tK } with t0 = x, tK = x, and
+          MINLP RELAXATIONS: PIECEWISE LINEAR VS. GLOBAL PARABOLIC                     5
+
+
+tk−1 < tk for k ∈ [K]. Parameter K ∈ N denotes the number of intervals/linear
+pieces. Then, for x ∈ [tk−1 , tk ], it is
+                                            tk − x            x − tk−1
+                        f¯(x) = f (tk−1 )           + f (tk )           .
+                                          tk − tk−1           tk − tk−1
+   Given an approximation tolerance ε > 0, we describe one way to compute f¯.
+Starting with K = 1, t0 = x, t1 = x, we check the condition |f¯(x) − f (x)| ≤
+ε for all x ∈ [t0 , t1 ]. Since such a check can be performed by computing the
+maximum/minimum of the difference, the aforementioned sufficient differentiability
+comes into play. If the condition is met, f¯ is a valid ε-approximation of f . Otherwise,
+we execute a binary search for the largest t1 to fulfill the condition. After t1 is
+determined, we increment K and start to find the largest t2 such that the condition
+is met on [t1 , t2 ]. The procedure is iterated and stops when tK = x. We refer to [9]
+for a current implementation.
+   Besides its computation, the more important aspect is the incorporation of a
+PWL approximation f¯ into an optimization model. To the best of our knowledge,
+a PWL formulation was first introduced in [31]. The method explained there is
+referred to as incremental method or δ-method. In the meantime, there have been
+established several adjusted formulations, see [3, 12, 16, 29, 36], that try to improve
+computational performance, e.g., by reducing the number of variables in the model.
+Recently though, Braun and Burlacu [9] demonstrated that in some settings the
+incremental method is still superior to all other methods in terms of computational
+performance. Therefore, we choose it for our computational comparison later on
+and explain it in the following, rephrasing mainly from [9].
+   For a given x ∈ D, we first need to determine the corresponding interval index
+k̄ ∈ [K] such that x ∈ [tk̄−1 , tk̄ ]. In the incremental method, we introduce one
+binary variable uk for each but the last interval [tk−1 , tk ], k ∈ [K − 1], and aim to
+have uk = 1 for all intervals with tk ≤ x, else uk = 0. In other terms, the binary
+variable uk is activated whenever x exceeds the upper bound of the corresponding
+kth interval until the interval containing x is reached. Formally, this can be ensured
+by
+                                  K−1
+                                  X
+                           t0 +         uk (tk − tk−1 ) ≤ x,
+                                  k=1
+                           uk+1 ≤ uk ,           for k ∈ [K − 1].
+Besides determining the relevant interval [tk̄−1 , tk̄ ], we second need to compute the
+relative distance of x inside it. Here, the incremental method advocates to introduce
+continuous variables δk ∈ [0, 1] corresponding to the intervals, k ∈ [K]. As for the
+binary variables uk , the continuous ones δk are also set to one when x exceeds tk ,
+which is enforced by the inequalities
+                           δk+1 ≤ uk ,           for k ∈ [K − 1].                    (1)
+The continuous variables even allow to model the value of x explicitly as
+                                          K
+                                          X
+                              x = t0 +          δk (tk − tk−1 ),                     (2)
+                                          k=1
+whereas for the interpolation value w of f , we get
+                                         K
+                                         X
+                        w = f (t0 ) +          δk (f (tk ) − f (tk−1 )).             (3)
+                                         k=1
+6                                          A. GÖβ
+
+
+In conclusion, the incremental method poses a model for PWL approximation of
+the form
+                           (1),(2), (3),
+                                δ1 ≤ 1,
+                               uk ≤ δk ,       k ∈ [K − 1],                            (4)
+                               δK ≥ 0,
+                               uk ∈ {0, 1}, k ∈ [K − 1],
+where the edge cases are respected as well. Note that the binary variables are
+necessary to fix the δ-variables to their respective bounds such that only the relevant
+one is potentially fractional.
+   Since this main ingredient of “filling” or “incrementation” is often modeled via
+variables named δ, the method is also known by this respective name.
+   Note that system (4) models a PWL approximation of f such that |w − f | ≤ ε
+on D. Thus, a simply replacement of each fj in (P) with a corresponding wj
+and (4) does in general not pose a relaxation (Prel ), but an approximated problem.
+Consequently, if the approximated problem is solved, its solution is not guaranteed to
+be also a solution of (Pε ). However, to retrieve a relaxation, we can define ε′ := ε/2,
+compute a PWL approximation with respect to ε′ , and shift the result for ε/2. In
+particular, the PWL approximation then ensures that |w − f (x)| ≤ ε′ for all x ∈ D.
+This implies that w − ε′ ≤ f (x) and thus |(w − ε′ ) − f (x)| ≤ |w − f (x)| + ε′ ≤ 2ε′ = ε.
+In other terms, a shift of the function values f (tk ) in (3) by ε′ is a shift in w and
+results in a underestimation – thus relaxation like (Prel ) – satisfying a tolerance
+of ε. Such a procedure for obtaining a PWL relaxation is performed throughout the
+present article and we refer to this relaxation technique simply by PWL.
+2.4. Global One-sided Parabolic Model. The recently introduced approach
+of global one-sided parabolic (PARA) approximations and relaxations [26] aims to
+circumvent the use of binary variables as in PWL. For a given constraint function
+f , it computes an approximation f˘ as the point-wise maximum of paraboloids, i.e.,
+separable univariate quadratic functions, that underestimate f on D individually and
+satisfy the given approximation tolerance. As we consider one dimensional constraint
+functions f only, we refer to this type of approximates as parabolas. Formally, for
+a set of K ∈ N parabolas {pk }k∈[K] , the approximation is f˘(x) = maxk∈[K] pk (x)
+such that
+                               f − ε ≤ f˘ ≤ f       on D.                               (5)
+In other terms, f˘ represents an epigraph approximation of f . Due to the global
+underestimation, we can simply replace each constraint in (P) by a corresponding
+parabolic approximation and end up with (Prel ). Taking the presentation as ‘≤’-
+constraints and the pointwise maximum into account, it even simplifies to the set
+of constraints pk (x) ≤ y, k ∈ [K]. This makes the modeling of PARA relaxations
+straightforward and does not rely on the use of binary variables.
+    It remains to clarify the computation of pk in [26]. For a constraint function f
+and its domain D = [x, x], the approach requires a global Lipschitz constant L > 0
+of f . This can be considered a weaker assumption in comparison to continuous
+differentiability, since maximizing |f ′ | on D gives L. Based on the magnitude of L,
+the approach in [26] performs a binary search on the number of parabolas K. During
+one search iteration, K is fixed and a MIP problem is constructed in which the
+coefficients of the parabolas are considered as variables. The problem’s constraints
+ensure the ε-approximation property of a solution, whereas the objective controls the
+global underestimation, i.e., the first and second inequality in (5), respectively. If the
+MIP problem is solved in a given time limit with objective of zero, the corresponding
+          MINLP RELAXATIONS: PIECEWISE LINEAR VS. GLOBAL PARABOLIC                           7
+
+
+parabolas fulfill (5) and the current K is decreased. Otherwise, the number of
+parabolas K is increased.
+   The weak assumptions necessary for the approach represent a clear advantage,
+as it leaves it applicable for a really broad class of constraint functions. However,
+relying on the solution of several MIP problems can be computationally challenging
+and results in function-domain-ε combinations that are not computable, see the
+comparison below in Section 3.2 for more details.
+   In fact, the article [26] introduces a theoretically valid as well as a more practical
+option of this approach. The latter circumvents some of the challenges by relaxing
+particular constraints of the MIP and by incorporating manual checks. Those
+changes turn it into a computationally more efficient version. Hence, we conduct
+the later comparison in Section 3.2 with respect to this version and refer to it as
+practical-MIP, following the original source.
+
+                           3. Computing Parabolas Fast
+   Inspired by the computation of PWL approximations, we introduce a novel
+method to compute PARA approximations for general nonlinear functions f in
+an iterative manner. We recall that f is assumed to be sufficiently continuous
+differentiable and defined on a domain D = [x, x]. An explanation of the method
+and respective proofs of correctness are provided in Section 3.1. We refer this
+procedure as the PARA approximation method or shortly PARA. It is indeed able
+to compute parabolas for cases where the original method from [26] has failed,
+see Section 3.2. The computational performance even allows to conclude the present
+section with a comparison of number of approximates, i.e., parabolas and linear
+pieces, on general nonlinear functions that occur frequently in the MINLPLib [13].
+3.1. Method. In contrast to the method in [26], we associate one parabola
+pk , k ∈ [K], with a certain domain Dk := [tk−1 , tk ], on which it fulfills the ε-
+approximation, i.e.,
+                          f (x) − ε ≤ pk (x),      for all x ∈ Dk .                        (6)
+To construct a global ε-approximation with all parabolas, they must satisfy the first
+inequality in (5) and we thus require
+                                    [
+                                       Dk = D.                                    (7)
+                                       k∈[K]
+
+Simultaneously, as described above, each pk is supposed to serve as a global under-
+estimator of f , i.e.,
+                           pk (x) ≤ f (x),     for all x ∈ D.                              (8)
+This settles the description of the requirements.
+   Our new approach returns the parabolas “from left to right”, i.e., it computes a
+parabola which satisfies property (6) on [x, t1 ] = [t0 , t1 ], and then proceeds to [t1 , t2 ]
+until it reaches the upper bound x with the final interval [tK−1 , tK ] = [tK−1 , x].
+Here, K ≥ 0 indicates the necessary number of parabolas, which is determined
+a-posteriori. Such a procedure can be leveraged for computing PWL approximations
+as well, see Section 2.3.
+   Let’s turn to a particular iteration k and investigate the challenge at hand. The
+current lower bound is fixed at tk−1 < x. To cover a large interval, on which pk
+is a valid ε-approximation, we aim to maximize the next upper bound tk ≤ x.
+Enforcing (6) and (8), we can formulate this as the semi-infinite optimization
+8                                                      A. GÖβ
+
+
+problem
+            max tk
+          tk , ã, b̃, c̃
+
+                  s.t. ãx2 + b̃x + c̃ ≥ f (x) − ε,               for all x ∈ [tk−1 , tk ] = Dk ,    (9a)
+                            ãx2 + b̃x + c̃ ≤ f (x),              for all x ∈ D,                     (9b)
+ where we define t0 = x for D1 and (ã, b̃, c̃) denote variables for the coefficients
+of pk . A solution (ak , bk , ck ) to this problem then gives pk (x) := ak x2 + bk x + ck ,
+satisfying (6) and (8) by (9a) and (9b), respectively. However, the constraints (9)
+are infinitely many and thus require further treatment.
+   In a first attempt let us assume to have a fixed parabola pk and a fixed upper
+bound tk . Then, computing
+                             max pk (x) − f (x) = max ak x2 + bk x + ck − f (x),                     (10)
+                             x∈D                       x∈D
+and
+                            max f (x) − pk (x) = max f (x) − (ak x2 + bk x + ck ),                   (11)
+                            x∈Dk                     x∈Dk
+can be considered computational tractable, since both problems require to maximize
+differences of continuously differentiable functions on a closed interval. This can be
+conducted by means of Newton-type methods, for instance.
+   Let zk and zkε denote the solutions for (10) and (11), respectively. Then, (9a) is
+fulfilled if and only if f (zkε ) − pk (zkε ) ≤ ε, and, analogously, (9b) is fulfilled if and
+only if pk (zk ) − f (zk ) ≤ 0. In the case that at least one of these inequalities does
+not hold, a decrease of the interval length |Dk |, thus a shift of tk towards tk−1 , and
+a new computation of pk may resolve the issue.
+   Based on this observation, we propose a two-step or inner-outer approach. Let k
+be the current iteration index, then
+       • an outer loop tries to compute a maximal upper bound tk for the current
+         interval [tk−1 , tk ], but iteratively reduces the value of tk if the inner loop
+         fails, shifting tk in the direction of tk−1 , and
+       • an inner loop aims to find a feasible set of coefficients (ak , bk , ck ), defining
+         the current parabola pk such that (9) hold true.
+3.1.1. Inner Loop. We start our explanation with the inner loop. For ease of
+notation, we drop the iteration index k and thus write the current (local) domain
+Dk = Dloc = [t, t] as well as pk (x) = p(x) = ax2 + bx + c.
+   Throughout the inner loop, we force p to cross f − ε at the bounds of Dloc . In
+particular, this can be expressed as
+                                                  p(t) = f (t) − ε,
+                                                  p(t) = f (t) − ε,
+which reads in explicit form as
+                                            at2 + bt + c = f (t) − ε,                               (12a)
+                                              2
+                                            at + bt + c = f (t) − ε.                                (12b)
+Neglecting (9b) for the moment, the intuition behind this measure is as follows: If
+the parabola p fulfills (9a) and simultaneously p(t) > f (t) − ε or p(t) > f (t) − ε, the
+domain Dloc could have been chosen larger.
+   Fixing p at the bounds of Dloc reduces to original degrees of freedom when
+determining the three coefficients of p by two. In other words, given one of the
+          MINLP RELAXATIONS: PIECEWISE LINEAR VS. GLOBAL PARABOLIC                          9
+
+
+coefficients a, b, or c, this system uniquely determines the remaining two. To see
+this, assume coefficient a as fixed and rewrite the system (12) to Av = d, where
+                                                   f (t) − ε − at2
+                                                                
+                               t 1
+                       A=            ,     d=                    2 ,
+                               t 1                 f (t) − ε − at
+                ⊤
+and v = b c . When Dloc ̸= ∅, so t < t, it holds det(A) = t − t < 0 and the
+system always attains a unique solution.
+   Instead of fixing coefficient a to determine (b, c), we combine (12) with (9) and
+can derive bounds to the quadratic coefficient a. This will allow to determine the
+existence of a feasible set of coefficients (a, b, c) and constitute the main ingredient
+of the inner loop. In the following, the derivation of bounds is formalized.
+Lemma 1 (Bounds on a). Let f : D → R be as above and int(D) ̸= ∅. Further, let
+ε > 0 and Dloc := [t, t] ⊂ D such that x < t < t < x, implying int(Dloc ) ̸= ∅. For a
+parabola p(x) = ax2 + bx + c, assume (12). Then the following implications hold
+true.
+    (a) Consider x
+                 b ∈ D \ Dloc . Then p(bx) ≤ f (b
+                                                x) if and only if
+                             x) − f (t) + ε
+                          f (b                 f (t) − f (t)
+                     a≤                     −                =: A(b
+                                                                  x).
+                            x − t)(b
+                           (b      x − t)     (t − t)(b
+                                                      x − t)
+    (b) Consider x
+                 b ∈ int(Dloc ). Then p(b
+                                        x) ≤ f (b
+                                                x) if and only if
+                             x) − f (t) + ε
+                          f (b                 f (t) − f (t)
+                     a≥                     −                =: A(b
+                                                                  x).
+                            x − t)(b
+                           (b      x − t)     (t − t)(b
+                                                      x − t)
+    (c) Consider x
+                 b ∈ int(Dloc ). Then p(b
+                                        x) ≥ f (b
+                                                x) − ε if and only if
+                               x) − f (t)
+                            f (b            f (t) − f (t)
+                     a≤                   −               =: B(b
+                                                               x).
+                            x − t)(b
+                           (b      x − t) (t − t)(bx − t)
+Proof. As a preparatory step, we subtract (12a) from (12b) and get
+                              2
+                           a(t − t2 ) + b(t − t) = f (t) − f (t),
+which is equivalent to
+                                            f (t) − f (t)
+                                  a(t + t) + b =                               (13)
+                                                t−t
+by division with (t − t). This preliminary work will support the proof for every of
+the three cases.
+Case (a). Starting off, we write the condition from (a) explicitly, i.e.,
+                                     x2 + bb
+                                    ab     x + c ≤ f (b
+                                                      x).
+By subtracting (12a), this is equivalent to
+                          x2 − t2 ) + b(b
+                        a(b             x − t) ≤ f (b
+                                                    x) − f (t) + ε.
+Now, rearranging (13) for b and plugging the result into the former gives
+                          f (t) − f (t)
+                                                 
+           x2 − t 2 ) +
+         a(b                            − a(t + t) (b x − t) ≤ f (bx) − f (t) + ε
+                              t−t
+                                                                    f (t) − f (t)
+           b2 − t2 − tb       x + tt + t2 ≤ f (b
+                                          
+    ⇐⇒ a x              x − tb                   x) − f (t) + ε −                  x − t)
+                                                                                  (b
+                                                                        t−t
+                                                  f (t) − f (t)
+    ⇐⇒ a(b x − t)(bx − t) ≤ f (bx) − f (t) + ε −                 x − t).
+                                                                (b
+                                                      t−t
+As x
+   b ∈ D \ Dloc , either x
+                         b < t < t or t < t < x
+                                              b. That is, (b      x − t) > 0 and thus
+                                                           x − t)(b
+division by this term does not change the direction of the inequality but leads to (a).
+10                                          A. GÖβ
+
+
+Case (b). This is analogous to case (a), however, the last division changes the sign
+of the inequality, as x
+                      b ∈ int(Dloc ) and thus (b
+                                               x − t)(b
+                                                      x − t) < 0.
+Case (c). Again, we write the condition from (c) explicitly and get
+                                   x2 + bb
+                                  ab     x + c ≥ f (b
+                                                    x) − ε.
+Subtraction of (12a) gives
+                             x2 − t2 ) + b(b
+                           a(b             x − t) ≥ f (b
+                                                       x) − f (t).
+Following the strategy from previous cases and respecting that x
+                                                               b ∈ int(Dloc ) gives
+the desired inequality.                                                          □
+   Lemma 1 implies that every point in D \ Dloc implicitly gives an upper
+bound to the quadratic coefficient a and every point inside Dloc even im-
+plies lower and upper bounds to a. Setting a ← supx∈int(Dloc ) A(x) and
+a ← min inf x∈D\Dloc A(x), inf x∈Dloc B(x) , we ensure the existence of a feasible
+                                             
+
+coefficient a (thus parabola) if and only if a ≤ a. A feasible a can then be completed
+computing (b, c) by solving the linear system (12). In turn, if we know that a > a,
+there exists no feasible a and we need to shrink Dloc in the outer loop.
+   The computation of the minima and maxima above to determine a and a is
+non-trivial, since the variable x appears in the denominator of a fraction, especially
+in a term that converges to infinity. Hence, we compute these bounds iteratively,
+starting with some initial values a0 and a0 . In fact, as any a ∈ [a, a] is valid, we
+initialize a0 with negative infinity and always set a to be the current upper bound.
+This will facilitate the presentation of the method and showing its correctness.
+However, it remains to find a value for a0 , which can also be derived by the results
+of Lemma 1 as mentioned below.
+Remark 2. Consider a point x ∈ int(Dloc ) and Lemma 1(c). If x → t, the inequality
+bounding coefficient a turns into
+                f ′ (t) f (t) − f (t)
+            a≤          +              = (f (t) − f (t) + (t − t)f ′ (t))/(t − t)2 .
+                t−t         (t − t)2
+This directly gives an upper bound to a, which can be used for a0 .
+  For the case x → t, we first need to rewrite B(x). By respecting that
+                             1                   1                     1
+               D :=                    −                  =−                   ,
+                       (x − t)(x − t) (t − t)(x − t)            (t − t)(x − t)
+we can derive that
+                            f (x) − f (t) − f (t) + f (t)      f (t) − f (t)
+                  B(x) =                                  −
+                                  (x − t)(x − t)             (t − t)(x − t)
+                             f (x) − f (t)
+                         =                  + (f (t) − f (t))D
+                            (x − t)(x − t)
+                             f (x) − f (t)       f (t) − f (t)
+                         =                  −                   .
+                            (x − t)(x − t) (y − t)(x − t)
+Then, considering x → t for x ∈ int(Dloc ), Lemma 1(c) provides that
+                         a ≤ (f (t) − f (t) + (t − t)f ′ (t))/(t − t)2 .
+Taking the minimum of both those upper bounds, leads to a0 for our inner loop.
+  After initializing the quadratic coefficient a, the remaining coefficients (b, c)
+can be computed by solving (12). Then, the inner loop tests for (6) and (8) by
+          MINLP RELAXATIONS: PIECEWISE LINEAR VS. GLOBAL PARABOLIC                      11
+
+
+computing (10) on D \ Dloc and Dloc separately, as well as (11) on Dloc . Explicitly,
+for a fixed parabola p, this is
+                                        max       p(x) − f (x),                      (14a)
+                                     x∈D\Dloc
+
+                                       max        p(x) − f (x),                      (14b)
+                                   x∈int(Dloc )
+
+                                  max         f (x) − p(x) − ε.                      (14c)
+                               x∈int(Dloc )
+
+We denote the solutions by x1 , x2 , x3 and their values by v1 , v2 , v3 , respectively. If
+vmax := max{v1 , v2 , v3 } exceeds the threshold of zero, the current choice of coefficient
+a is infeasible and x1 , x2 , x3 are considered as candidates for “ x     b” in Lemma 1,
+implying an update of the current bounds al and al on a.
+   The process is iterated until the bounds are contradictory, signaling the absence
+of a feasible triple (a, b, c), or until the constraints (9) are satisfied. This process is
+summarized in Method 1. Arrows are always pointing towards the object that is
+returned by this step.
+
+Method 1 Inner loop – Computing (a, b, c).
+Input: (Local) Interval bounds t and t such that t < t.
+Output: Coefficients (a, b, c) defining p satisfying (9) or “Infeasible”.
+ 1: Initialize a0 according to Remark 2, a0 ← −∞, and l ← 0.
+ 2: Set a0 ← al and compute (bl , cl ) according to (12).
+ 3: while al ≤ al do
+ 4:     Compute (14) → x1 , x2 , x3 , vmax .
+ 5:     if vmax ≤ 0 then
+ 6:         return (al , bl , cl ).
+ 7:     end if
+ 8:     Update al+1 and al+1 with x1 , x2 , x3 according to Lemma 1.
+ 9:     Increment l ← l + 1.
+10:     Set al ← al and compute (bl , cl ) according to (12).
+11: end while
+12: return “Infeasible”.
+
+
+  After its presentation, we continue by formally showing the correct mode of
+operation of the inner loop.
+Theorem 3 (Correctness of Method 1). If there exists a solution (a, b, c) fulfilling (9)
+and (12), Method 1 returns one or converges to it. Otherwise, it returns that there
+is no such solution.
+  The following provides a proof sketch, for which the details can be found in
+Appendix A.1.
+Proof. By leveraging Lemma 1 the existence of finite bounds a ≤ a is equivalent to
+the existence of a solution (a, b, c). This represents the main ingredient.
+   If there exists a solution, the condition of the while-loop is always met. Since al
+in iteration l is chosen to be the current al , also al ≥ a for all l. By Lemma 1, it
+thus always holds that p ≤ f on int(Dloc ). The remaining cases, p ≤ f on D \ Dloc
+and p ≥ f − ε on int(Dloc ), are proven following the same strategy: We use (12)
+to write down a parameterized version of parabola p in the quadratic coefficient a.
+This allows us to show convergence by contradiction.                                □
+12                                       A. GÖβ
+
+
+3.1.2. Outer Loop. While the inner loop computes an approximating parabola
+for a given interval or asserts with its impossibility, it remains to consider the
+interval bounds. We propose to start with the global interval [t0 , t1 ] := [x, x] and
+consecutively shift t1 toward t0 , until a suitable parabola can be computed by
+the inner loop. After storing the parabola and the associated domain [t0 , t1 ], the
+remaining interval [t1 , x] is considered next. This is iterated until K parabolas pk
+with their associated domains Dk are computed, covering the entire global domain D,
+i.e., fulfilling (7). This procedure is presented in pseudocode in Method 2.
+
+Method 2 Outer loop – Computing Dk
+Input: (Global) Domain D = [x, x] ̸= ∅, approximation tolerance ε > 0.
+Output: A set of coefficients (ak , bk , ck ) defining pk , k ∈ [K], K ∈ N, such that (5).
+ 1: Initialize k ← 1, t0 ← x, t1 ← x.
+ 2: while tk−1 < x do
+ 3:     Call Method 1 on [tk−1 , tk ] → (a, b, c) or “Infeasible”.
+ 4:     if “Infeasible” then
+ 5:         Shift tk towards tk−1 .
+ 6:     else
+ 7:         Store (ak , bk , ck ).
+ 8:         Set tk+1 ← x and increment k ← k + 1.
+ 9:     end if
+10: end while
+11: return Parameters (ak , bk , ck ) for k ∈ [k].
+
+
+   Depending on the type of shift applied in Step 5, the number of parabolas and
+thus iterations varies. We want to briefly discuss this effect by supposing a shift
+in form of a convex combination, i.e., tk ← λtk−1 + (1 − λ)tk for λ ∈ (0, 1). If λ is
+near 1, the shift is strong towards tk−1 and the length of the current interval Dk is
+decreased rapidly. In consequence, it is likely to find a suitable parabola with (6)
+and (8) after only a couple of “Infeasible”-iterations of the inner loop. However, it
+takes a considerable number K of intervals – thus parabolas – to cover the entire
+domain, i.e., to reach (7). In turn, a value of λ close to 0 results in the opposite
+effect, potentially computing a small number of parabolas – thus few quadratic
+constraints for the PARA relaxation – but for a certain computational cost.
+   The specific number of calls of the inner loop depends on the function f and
+its domain D to be considered, as well as on the value of λ. From the theoretical
+side, however, it remains to show that Method 2 converges at all. In the following,
+we will demonstrate it, supposing the shift in Step 5 to be a true decrease of the
+interval length of Dk that still ensures |Dk | > 0. In particular, we show that for
+small enough domains Dk , there exists a respective solution pk . This allows to derive
+by Theorem 3 that the inner loop at least converges to such a solution. Considering
+numerical precision and thus finiteness of the inner loop, we can conclude that
+Method 2 terminates.
+   Note that we will only leverage Lipschitz continuity of our function f for this
+proof. As noted in Section 2.4, a global Lipschitz constant L can be computed as
+(an upper bound to) max{|f ′ (x)| | x ∈ D}, i.e., the assumptions of the theorem
+apply to the given setup. Keeping the assumptions on f low, however, allows for
+wider application and a comparison of the proof techniques to the ones in [26].
+Theorem 4 (Correctness of Method 2). Let D =
+                                           ̸ ∅, f : D → R be globally Lipschitz
+continuous with L > 0 and ε > 0. Then, for any interval length ∆ > 0 with
+∆ ≤ ε/(3L) and |D|/∆ ∈ N, one can choose Dk as a partition of D with |Dk | = ∆
+         MINLP RELAXATIONS: PIECEWISE LINEAR VS. GLOBAL PARABOLIC                      13
+
+
+                                                 domain D
+          exp   [−5, −2]       [−2, 2]       [ −5, 2] [ 2, 5]       [−2, 5] [−5, 5]
+          sin   [− π2 , π2 ]   [ π2 , 3π
+                                       2 ]   [− π2 , 3π
+                                                      2 ] [ 0, π]   [π, 2π] [ 0, 2π]
+        Table 1. Function-domain combinations to approximate with
+        Method 2 for comparison with [26].
+
+and by setting ak = −4L/∆ there exist parabolas pk (x) = ak x2 +bk +ck , k ∈ [|D|/∆],
+fulfilling the properties (6) and (8).
+  The following provides a proof sketch, since the full proof is of technical nature.
+Details can be found in Appendix A.2.
+Proof. For a given local interval Dloc with length ∆, we show the existence of a
+parabola p such that
+     a) p(x) ≥ f (x) − ε on Dloc ,
+     b) p(x) ≤ f (x) on Dloc , and
+     c) p(x) ≤ f (x) on D \ Dloc .
+For case a), we make use of Lemma 1 and show that ã ≤ B(x) for all x ∈ int(Dloc ).
+Cases b) and c) are straightforward, using the Lipschitz continuity and the assump-
+tions to ∆. Denoting the mid point of Dloc as t̃, all three cases distinguish x ≤ t̃
+and x ≥ t̃.
+                                                                                 □
+3.2. Computational Results. We aim to complement the explanation of PARA in
+the previous section with a performance evaluation compared to the existing method
+and a quantitative comparison to PWL. Our implementation is conducted in Python
+3.11.8 and can be found here: https://github.com/adriangoess/pwl-vs-para.
+For the shift in Method 2 Step 5, we use a convex combination tk ← (1−λ)tk−1 +λtk ,
+where λ = 0.9.
+3.2.1. Comparison to Existing Method. To the best of our knowledge, the only
+method achieving the same type of PARA approximation is presented in [26] and has
+been described in Section 2.4. Following the original source, we refer to the method
+as practical-MIP. The method is leveraged to compute PARA approximations on
+different domains and varying tolerance for different types of functions, including
+the sine and the exponential function. For a successful run, the resulting number of
+parabolas is reported. However, there also exist cases for which the practical-MIP
+approach was not able to generate a result.
+   We compare the number of (un)successful runs and the number of resulting
+parabolas. For sin and exp, we consider the same intervals and tolerances as in [26],
+which are summarized in Table 1.
+   For the comparison, we leverage a similar type of table as used in [26]. The
+results regarding the sine function are then summarized in Table 2. We denote
+the number of parabolas computed by practical-MIP – if any – in brackets and
+highlight the smaller such number in bold.
+   First of all, for the cases where either method is successful, we observe mixed
+results. There is no consistently superior method in terms of less parabolas, but in
+some cases Method 2 finds a significantly lower number. For a potential explanation
+of such a phenomenon, we have to take into account that practical-MIP relies on a
+binary search in this quantity. That is, after every run that reports the MIP! (MIP!)
+problem to be infeasible or hits the time limit, the search procedure doubles the
+number of parabolas and restarts. Hence, it may return high intermediate numbers
+as they are the best known when terminating after a fixed number of tries.
+14                                          A. GÖβ
+
+
+                                                           ε
+                                 −1        −2        −3
+      D             10  0
+                         10      10     10                      100 10−1      10−2   10−3
+ [−π/2, π/2]       1 (1) 3 (3)   7 (9)   22                    1 (1) 3 (3)    7 (8)   22
+ [ π/2, 3π/2]      1 (1) 3 (3)   7 (8)   22                    1 (1) 3 (3)    7 (8)   22
+ [−π/2, 3π/2]      2 (1) 5 (5) 14 (47)   44                    1 (1) 5 (3) 17 (13)    51
+    [0, π]         1 (1) 2 (1)   5 (5) 16 (40)                 1 (1) 1 (1)    5 (3) 16 (16)
+    [π, 2π]        1 (1) 1 (1)   5 (3) 16 (32)                 1 (1) 2 (1)    5 (5)   16
+    [0, 2π]        2 (2) 4 (5) 14 (24)   44                    2 (2) 4 (5) 14 (44)    44
+                               above                                       below
+          Table 2. Number of parabolas to approximate sin with Method 2
+          (practical-MIP).
+
+                                                     ε
+                            −1        −2        −3
+        D        100
+                        10       10   10                  100   10−1      10−2   10−3
+     [−5, −2]   1 (1)   1 (1)   2 (2) 5 (5)              1 (1)  1 (1)     2 (2)  5 (8)
+     [−2, 2]    2 (2)   5 (5) 15 (32) 47                 2 (2)  4 (4)    13 (20)  39
+     [−5, 2]    3 (3)   7 (8) 23 (81) 70                 2 (2)  6 (6)    16 (56)  51
+     [ 2, 5]      6      16       50  158                5 (5) 14 (20)     44    137
+     [−2, 5]     10      31       99  313                  8     23        72    225
+     [−5, 5]     13      39      122  382                  9     26        79    251
+                             above                                   below
+          Table 3. Number of parabolas to approximate exp with Method 2
+          (practical-MIP).
+
+   For the other cases, we see that Method 2 is able to return an approximating set
+of parabolas in all cases, for which practical-MIP has failed, especially refer to the
+columns with a tolerance of 10−3 . The generality of the setup in practical-MIP
+allows for wide application, but the underlying MIP problem requires a number
+of (binary) variables growing linearly in the tolerance and the global Lipschitz
+constant. The resulting MIP problems may not be solved in a considerable time
+limit, as specified in [26]. Method 2, in contrast, can make use of more restrictive
+properties like continuous differentiability (when computing the maxima in (14)) to
+return approximations on larger domains. Surely, a tighter tolerance requires more
+parabolas and thus more computations. However, the respective effort seems to be
+manageable.
+   For the exponential function, both effects are observed in even greater extent,
+compare Table 3. For cases, where both methods are successful, Method 2 returns
+at most as much approximating parabolas as practical-MIP. That is, it outper-
+forms practical-MIP on every domain-tolerance combination. In the other cases,
+practical-MIP struggles on domains with a large upper bound, since this implies
+a large global Lipschitz constant as explained in [26]. The obstacle seems to be
+circumvented with Method 2. Again, this results from avoiding to solve several
+(large) MIP problems, but instead only computing maxima on simple intervals.
+3.2.2. Number of Parabolas and Linear Pieces. Besides a computational comparison
+of the PARA and the PWL relaxation technique on MINLP problems in terms of
+run time, one might also wonder about the number of approximates – parabolas
+or linear pieces. In a relaxation each such requires an additional constraint and, in
+                    MINLP RELAXATIONS: PIECEWISE LINEAR VS. GLOBAL PARABOLIC                          15
+
+      y                                           y
+  1                                           1
+
+
+
+
+                                         x                                                            x
+                     1       2       3                    1       2       3       4       5       6
+
+
+
+ −1                                          −1
+
+
+               y
+           1
+
+
+
+
+                                                                                                  x
+                         1       2       3            4       5       6       7       8       9
+
+
+
+          −1
+
+
+
+
+                   Figure 1. PARA approximations of sin with ε = 0.1 on [0, ℓπ] for
+                   l ∈ {1, 2, 3} by 1, 4, 6 parabolas, respectively.
+
+      y                                           y
+  1                                           1
+
+
+
+
+                                         x                                                            x
+                     1       2       3                    1       2       3       4       5       6
+
+
+
+ −1                                          −1
+
+
+               y
+           1
+
+
+
+
+                                                                                                  x
+                         1       2       3            4       5       6       7       8       9
+
+
+
+          −1
+
+
+
+
+                   Figure 2. PWL approximations of sin on with ε = 0.1 on [0, ℓπ]
+                   for l ∈ {1, 2, 3} with 4, 8, 12 pieces, respectively.
+
+case of PWL, additional variables. We aim to answer the question computationally,
+considering a fixed tolerance of ε = 0.1 and varying domains for fixed functions.
+The computation of the linear pieces follows the explanation in Section 2.3 and is
+performed by slightly modifying the code provided in [9]. As explained, it is run
+with a tolerance of ε/2 and the returned approximation is then shifted by ε/2 to
+receive a true relaxation. For computing the parabolas, we use Method 2.
+   At first, we take f = sin into account and investigate the number of approximates
+on [0, ℓπ] for ℓ ∈ {1, 2, 3}. For PARA, we get 1, 6, 8, parabolas, respectively, which
+is visualized in Figure 1. For PWL, we end up with 4, 8, 12 linear pieces as shown
+in Figure 2. Such a linear growth of the number of pieces is to be expected when
+considering a periodic function like sin.
+   Contemplating the approximations on [0, π], the sin function is reminiscent of a
+concave parabola and thus requires a lower number of such. However, for the convex
+16                                         A. GÖβ
+
+
+
+                                                0
+           −2
+
+                                               −1
+
+
+
+           −3                                  −2
+
+
+                                               −3
+
+
+           −4
+                0.02    0.06        0.10       −4
+                                                        0.2       0.6         1.0
+
+
+
+
+                                2
+
+                                1
+
+                                0
+
+                               −1
+
+                               −2
+
+                               −3
+
+                               −4
+                                       1   3        5         7
+
+
+
+
+         Figure 3. PARA approximations of ln with ε = 0.1 on [e−4 , e2ℓ ]
+         for l ∈ {−1, 0, 1} with 3, 7, 13 parabolas, respectively.
+
+
+                                                0
+           −2
+
+                                               −1
+
+
+
+           −3                                  −2
+
+
+                                               −3
+
+
+           −4
+                0.02    0.06        0.10       −4
+                                                        0.2       0.6         1.0
+
+
+
+
+                                2
+
+                                1
+
+                                0
+
+                               −1
+
+                               −2
+
+                               −3
+
+                               −4
+                                       1   3        5         7
+
+
+
+
+         Figure 4. PWL approximations of ln with ε = 0.1 on [e−4 , e2ℓ ]
+         for l ∈ {−1, 0, 1} with 4, 7, 10 pieces, respectively.
+
+part, PARA needs to respect the global underestimation (8) and accordingly a larger
+domain. Hence, it has not been obvious to us that a lower number of parabolas is
+sufficient even when enlarging the respective domain. In conclusion, PARA seems to
+approximate the sine function with quite a few approximating parabolas, requiring
+even less approximates than PWL.
+   In the search for other examples, we deem a function that combines high slope
+and an asymptotically linear part as a challenge for PARA. Hence, we consider the
+natural logarithm ln on a variety of domains, in particular [e−4 , e2ℓ ] for ℓ ∈ {−1, 0, 1}.
+The corresponding illustrations for the PARA and PWL approximations can be
+found in Figure 3 and Figure 4, respectively.
+   As before, PARA requires less approximates for the smallest interval, i.e., 3 parabo-
+las versus 4 linear pieces. However, when we enlarge the function domain, the number
+of parabolas (7 and 13) increasingly exceeds the number of linear pieces (7 and
+          MINLP RELAXATIONS: PIECEWISE LINEAR VS. GLOBAL PARABOLIC                    17
+
+
+10). Indeed, this results from the described form of ln and the property of globally
+underestimating the function with every parabola on the entire domain.
+   In conclusion, those two examples showcase that there is no general statement
+about the necessary number of linear pieces with respect to the parabolas. Nonethe-
+less, the investigation provides an intuition about it.
+
+                  4. Comparison of Relaxation Techniques
+   Using the PARA method from the previous section, we are enabled to compute
+PARA relaxations for general nonlinear, one-dimensional constraint functions on
+relatively large domains and up to small approximation tolerances. It allows for
+a comparison with the PWL relaxation technique. In particular, we construct
+ε-relaxations in the form of (Prel ) for varying values of the approximation tolerance
+ε using either technique. If a solver can compute an optimal solution to such a
+relaxation, this solution is also optimal for the corresponding problem (Pε ). Hence,
+we can simply compare the run times achieved with either relaxation, fixing a
+tolerance ε. The code can again be found in https://github.com/adriangoess/
+pwl-vs-para.
+4.1. Test set. For a potential test set, we consider the MINLPLib [13] with 1595
+MINLP instances. First of all, we aim to leverage the expression tree structure ex-
+plained in Section 2.2 and thus restrict to the instances available in OSiL format [23],
+which are all but one. Second, we only consider instances that feature at least one
+exponential, natural logarithm, sine, or cosine function, since we focus on the their
+relaxation. We remain with an intermediate subset of 235 instances.
+   Besides this formal filtering we need to respect the characteristics of the relaxation
+techniques. Particularly, either one requires finite bounds for the constraint function
+to relax and the size of the resulting relaxations, i.e., the number of linear pieces
+or parabolas, depends on the size of the finite domain. Typically, the function
+domains in such instances are sterile, meaning that a part of the domain is not even
+feasible, considering function properties or the relationships in the overall problem.
+That is, we can tighten the domains by applying a presolving step. For this, we
+make use of SCIP 10.0 [28]. It already incorporates the functionality of pure
+presolving which we apply with the settings constraints/and/linearize=TRUE
+and presolving/gateextraction/maxrounds=0. These ensure to avoid so-called
+“and”-constraints in the resulting problems, which is necessary to write them in
+respective format.
+   With respect to format, SCIP has a reader-functionality for OSiL, but no writer-
+functionality, so we write in GAMS format and re-convert to OSiL using GAMS
+51.3.0 [15]. Hereby, we ruled out two instances containing the entropy func-
+tion, since they could not be converted accordingly. In addition, we had to rule out
+five instances where this conversion step failed and we could not resolve its issue.
+   Despite the presolving step, however, there remain instances featuring general
+nonlinear constraint functions defined on infinite domains or domains that we
+consider numerically challenging. Specifically, the latter may either contain very
+large absolute values and/or force the corresponding function to be very close to
+zero or tremendously large. This can lead to numerical errors when constructing
+the relaxations or even solving such problems. Hence we restrict to instances that
+show the domain of an exponential function to be a subset of [−5 · 105 , 10] and the
+domain of a natural logarithm to be a subset of [10−7 , 107 ]. We remain with a final
+test set of 174 instances.
+4.2. Computational Setup. For all instances in our test set, we analyze the
+occurring general nonlinear, one-dimensional functions with their presolved domains.
+18                                      A. GÖβ
+
+
+For computing PWL approximations, we consider each function-domain combination
+and compute a respective relaxation as detailed in Section 2.3 using a slightly
+manipulated version of the code provided in [9]. The manipulation consists of
+relaxing only the general nonlinear functions and writing the respective problem in
+GAMS format.
+   For PARA, we stick to the paradigm introduced in [26], which advocates the use
+of PARA approximations in terms of a look-up table. That is, we cluster the bounds
+obtained in the presolved instances for the general nonlinear functions and compute
+the corresponding parabolas beforehand. In particular, for the exponential function,
+we round a lower bound down to the next multiplicative order of magnitude if its
+less than -1, else to the first digit. This ensures to cluster lower bounds with similar
+function value, i.e., small lower bounds, into the same subintervals, while respecting
+larger differences with increasing bound. To give an example, -132 is rounded to
+-200, whereas -0.456 to -0.5. For the upper bound, we proceed similarly for the
+same reason, but round it up and consider the first digit if it is less or equal 0, but
+the second digit if it is positive. For the natural logarithm, a reversed procedure is
+conducted: For a bound between 10ℓ−1 and 10ℓ , l ∈ Z, it is rounded to the next
+multiplicative of 10ℓ−1 . This is capped for the lower bound with ℓ ≤ 3 and for the
+upper bound with ℓ ≥ −1, where the corresponding multiplicative of ℓ = 3 and
+ℓ = −1 is considered, respectively. For the sine and cosine function, the bounds are
+simply grouped in multiplicatives of 0.1 for domains with a length of less or equal
+4π, otherwise we concatenate an approximation on an entire period by shifting.
+   We perform the upper procedure for both relaxation techniques for varying
+approximation tolerance ε ∈ {100 , 10−1 , 10−2 , 10−3 , 10−4 }. Each problem is written
+in GAMS format and converted as explained above. The resulting problems are solved
+by leveraging SCIP 10.0 once again. All those solving processes are carried out on
+single nodes with Intel Xeon Gold 6326 “Ice Lake” multicore processors with 2.9GHz
+per core. The accessible RAM per node is set to 32GB, where SCIP is restricted to
+only use 30GB, avoiding issues with reading/modeling overhead. For every problem,
+we impose a time limit of 4h equaling 14400s.
+   Note that there occurred issues in conversion as well as memory issues and
+numerical troubles. If one or both resulting relaxations were affected by one such,
+we removed them from further consideration. This decreased the number of instances
+for the comparison to 150.
+4.3. “Clash” of Relaxations. As laid out before, we can restrict our comparison
+to sole run time. For this, we start by comparing the number of faster runs per
+tolerance ε. Two runs on the same instance are considered equally fast, if the
+solution time varies by less than 5s. Figure 5 depicts the number of instances for
+which the respective relaxation approach could be solved in less time, for decreasing
+tolerance from left to right. The lines indicate trends.
+   We observe that the number of instances without a clear winner is comparably
+high, decreasing with lower approximation tolerance. On the one hand, this is an
+effect by hard instances on which both relaxations hit the time limit throughout
+all tolerances ε. On the other hand, small-sized instances require quite simple
+relaxations and are thus solved in a short amount of time for either relaxation. The
+latter effect is reduced with very small tolerance, since it requires a considerable
+number of parabolas or linear pieces, causing the solving time to deviate significantly.
+   For the comparison of PARA and PWL, we see a great favor towards the PWL
+approach for large tolerances. In those cases, PWL requires none to only a few
+additional binary variables along the linear constraints and thus seems to be more
+tractable than, potentially non-convex, quadratic constraints. For smaller tolerance,
+however, the advantage of not introducing additional binary variables seems to
+                     MINLP RELAXATIONS: PIECEWISE LINEAR VS. GLOBAL PARABOLIC         19
+
+
+
+              100      PARA    none   PWL
+
+              80
+ #instances
+
+
+
+
+              60
+
+              40
+
+              20
+
+               0
+                         100            10−1       10−2       10−3          10−4
+                                                tolerance ε
+
+
+                    Figure 5. Number (#) of instances solved faster by PARA or
+                    PWL per tolerance ε.
+
+outweigh the nonlinearity of the parabolic – thus quadratic – constraints. The
+internal expressions in SCIP seem to handle additional similar-shaped constraints
+quite well in comparison.
+   In order to investigate this phenomenon to greater extent, we also evaluate the
+results in form of performance profiles using the software of [39]. Such performance
+profiles compare the the run time of the solver on a specific relaxation to the
+fastest/shortest run time. In particular, they depict the fraction of problems
+solved within a factor (the performance ratio) of the fastest run available. For a
+fair comparison, we also include a base run, i.e., solving the presolved instances
+without reformulation or relaxation. The profiles are showcased for the extreme
+and intermediate cases ε ∈ {100 , 10−2 , 10−4 } in Figure 6, Figure 7, and Figure 8,
+respectively.
+   For the highest tolerance ε = 100 in Figure 6, we can see the aforementioned
+strength of PWL. Few binary variables and linear constraints are tractable in
+modern solvers. Interestingly, the introduction of PARA constraints is only a
+benefit up to a certain ratio and already falls behind later on. Such effects can be
+caused by approximating already convex constraints, e.g., an underestimation of
+the exponential function, by multiple quadratic constraints. Note that this was not
+ruled out a-priorily to allow the comparison against PWL.
+   For ε = 10−2 and ε = 10−4 , we first observe that the base run is almost always
+the fastest approach, see Figure 7 and Figure 8, respectively. This may be a
+consequence by the lack of adaptivity for the presented techniques. In particular,
+a solver refines the underlying relaxation locally to avoid large overhead and thus
+adaptively incorporates additional relaxation constraints. This is the default for
+piecewise linear relaxations in modern solvers, yet there exists no implementation
+for the parabolic approach. Since the latter requires new theoretical foundations
+and implementations, we consider it as out of scope for the current paper and take
+up on it in Section 5.
+   Note that the base run is included to provide an insight about the original difficulty
+of the instances. However, the focus of this article truly lies in a comparison of the
+relaxation techniques in terms of computational efficacy.
+   Turning to this comparison of PARA and PWL in those cases, we can see that for
+ε = 10−2 , PARA already shows a better performance for ratios up to four, before
+PWL takes over. For ε = 10−4 this is even increased up until around a ratio of
+300, which is quite high. These observations reinforce the effect described above:
+20                                                              A. GÖβ
+
+
+                                                              Performance Profile
+                                      1
+
+
+
+
+                                     0.8
+     Percentage of problems solved
+
+
+
+
+                                     0.6
+
+
+
+
+                                     0.4
+
+
+
+
+                                     0.2
+                                                                                          PARA
+                                                                                          PWL
+                                                                                           base
+                                      0
+                                      100             101           102             103        104
+                                                               Performance ratio
+
+                                           Figure 6. PARA and PWL for ε = 100 and base runs.
+
+                                                              Performance Profile
+                                      1
+
+
+
+
+                                     0.8
+     Percentage of problems solved
+
+
+
+
+                                     0.6
+
+
+
+
+                                     0.4
+
+
+
+
+                                     0.2
+                                                                                          PARA
+                                                                                          PWL
+                                                                                           base
+                                      0
+                                      100             101          102           103      104
+                                                               Performance ratio
+
+                                       Figure 7. PARA and PWL for ε = 10−2 and base runs.
+                                   MINLP RELAXATIONS: PIECEWISE LINEAR VS. GLOBAL PARABOLIC       21
+
+
+                                                             Performance Profile
+                                        1
+
+
+
+
+                                       0.8
+       Percentage of problems solved
+
+
+
+
+                                       0.6
+
+
+
+
+                                       0.4
+
+
+
+
+                                       0.2
+                                                                                          PARA
+                                                                                          PWL
+                                                                                           base
+                                        0
+                                        100        101        102          103      104
+                                                              Performance ratio
+
+                                         Figure 8. PARA and PWL for ε = 10−4 and base runs.
+
+For small tolerances, (non-convex) quadratic constraints can be leveraged more
+efficiently than additional binary variables and linear pieces, but only up to a certain
+point.
+    In the light of Section 3.2.2, instances that feature sine or cosine functions and not
+the natural logarithm, maybe be especially beneficial for the PARA approach. Such
+problems occur in the optimization of power networks, see [1, 7, 24], for instance.
+Hence, we consider a subset containing only instances with at least one sine or
+cosine function, which comprises exactly those instances without a natural logarithm
+nonlinearity (on our test set). This results in a subset of 33 instances.
+    We conduct the same comparison as before and display the number of instances
+with faster runs using the respective approach in Figure 9. As expected, the
+previously detected effects are enhanced. Relaxations by PARA are solved faster
+for all but one instances for tolerances ε = 10−2 and below.
+    Turning to the performance profile for ε = 100 in Figure 10, we notice that both
+relaxations return instances being solved faster than the base ones. Though PWL
+relaxations still require less time than PARA, the effect is mitigated in comparison
+to the entire test set.
+    Now, for ε = 10−2 , PARA already consistently outperforms PWL and even is as
+least as fast as the base runs, not respecting any kind of adaptivity, see Figure 11.
+Whereas the exceed in performance between the relaxation techniques prevails for
+even smaller tolerance of ε = 10−4 in Figure 12, we observe that up until a factor of
+100, the base runs are faster. We dedicate this to the same effects mentioned above.
+    Suppose we try to solve instances that mainly feature (co)sine functions in
+their constraints and require medium to small tolerances. Then, the above results
+demonstrate that PARA relaxations can provide problem formulations that are
+being solved faster than tackling the original problem with a stand-alone solver.
+22                                                                            A. GÖβ
+
+
+
+                                                PARA       none   PWL
+              30
+ #instances
+
+
+
+
+              20
+
+
+
+              10
+
+
+
+              0
+                                                     100            10−1           10−2          10−3       10−4
+                                                                                tolerance ε
+
+
+                                        Figure 9. Number (#) of instances without ln solved faster by
+                                        PARA or PWL per tolerance ε.
+
+                                                                           Performance Profile
+                                                1
+
+
+
+
+                                               0.8
+               Percentage of problems solved
+
+
+
+
+                                               0.6
+
+
+
+
+                                               0.4
+
+
+
+
+                                               0.2
+                                                                                                        PARA
+                                                                                                        PWL
+                                                                                                         base
+                                                0
+                                                100                101           102              103           104
+                                                                           Performance ratio
+
+                                        Figure 10. PARA and PWL for ε = 100 and base runs on in-
+                                        stances without ln.
+
+This makes PARA relaxations particularly advisable for usage in fields with power
+network optimization like AC-OPF problems [1, 7, 24].
+   Lastly, we’d only like to mention that the relaxation techniques were able to
+provide dual bounds that improve on the ones reported and achieved during base
+runs. We report them and give a quick overview in Table 4 in Appendix B.
+                                     MINLP RELAXATIONS: PIECEWISE LINEAR VS. GLOBAL PARABOLIC           23
+
+
+                                                           Performance Profile
+                                          1
+
+
+
+
+                                         0.8
+Percentage of problems solved
+
+
+
+
+                                         0.6
+
+
+
+
+                                         0.4
+
+
+
+
+                                         0.2
+                                                                                          PARA
+                                                                                          PWL
+                                                                                           base
+                                          0
+                                          100       101           102               103           104
+                                                            Performance ratio
+
+                         Figure 11. PARA and PWL for ε = 10−2 and base runs on
+                         instances without ln.
+
+                                                            Performance Profile
+                                           1
+
+
+
+
+                                         0.8
+         Percentage of problems solved
+
+
+
+
+                                         0.6
+
+
+
+
+                                         0.4
+
+
+
+
+                                         0.2
+                                                                                          PARA
+                                                                                          PWL
+                                                                                           base
+                                           0
+                                           100      101          102              103       104
+                                                             Performance ratio
+
+                         Figure 12. PARA and PWL for ε = 10−4 and base runs on
+                         instances without ln.
+24                                      A. GÖβ
+
+
+                                   5. Conclusion
+   We have introduced a novel method to compute PARA approximations for one-
+dimensional, continuously differentiable functions, which outperformed the existing
+method in terms of success in formerly intractable cases and mostly returned fewer
+parabolas. The theoretical basis was complemented with a comparison to PWL with
+respect to number of linear pieces/parabolas: Whereas PARA approximations for the
+sine function require less approximates than PWL ones throughout different interval
+sizes, for the natural logarithm PWL seems to require less such with increasing
+interval size. This is accounted to the global underestimation property causing
+troubles when there exists a steep slope converging asymptotically to zero.
+   The “clash” or comparison of PARA and PWL as MINLP relaxations was per-
+formed on a subset of the well-established MINLPLib. Hereby, PWL relaxations
+seem to be particularly favorable for wider tolerances, since they require only a few
+binary variables and linear constraints. This favor shifts towards PARA for tighter
+tolerances, as the problem sizes for PWL grows too large, whereas many quadratic
+constraints without additional variables appears to be quite tractable. As before,
+there also exists a preference for trigonometric functions when using PARA, as they
+appear in power network optimization.
+   Although considering a fixed tolerance provides a valid insight for the usage
+of either relaxation, practical solvers iteratively refine the given relaxation until
+a satisfactory tolerance is reached. For PARA, this requires further theoretical
+developments and extended implementation effort, thus being out of reach for the
+present article. However, the adjustment of the presented method and a comparison
+with adaptive PWL relaxations appears to be a natural next step.
+
+                                Acknowledgments
+   We thank the Deutsche Forschungsgemeinschaft for their support within project
+A05 in the “Sonderforschungsbereich/Transregio 154 Mathematical Modelling, Simu-
+lation and Optimization using the Example of Gas Networks”, project ID 239904186.
+We also thank Robert Burlacu, Alexander Martin, and Kristina Rolsing for fruitful
+discussions about this topic and for reviewing an earlier draft.
+
+                                    References
+ [1]   K.-M. Aigner, R. Burlacu, F. Liers, and A. Martin. “Solving AC optimal power
+       flow with discrete decisions to global optimality.” In: INFORMS J. Comput.
+       35.2 (2023), pp. 458–474. doi: 10.1287/ijoc.2023.1270.
+ [2]   R. C. Baliban, J. A. Elia, R. Misener, and C. A. Floudas. “Global optimization
+       of a MINLP process synthesis model for thermochemical based conversion
+       of hybrid coal, biomass, and natural gas to liquid fuels.” In: Computers &
+       Chemical Engineering 42 (2012), pp. 64–86.
+ [3]   B. Beach, R. Burlacu, A. Bärmann, L. Hager, and R. Hildebrand. “Enhance-
+       ments of discretization approaches for non-convex mixed-integer quadratically
+       constrained quadratic programming: Part I.” In: Computational Optimization
+       and Applications 87.3 (2024), pp. 835–891.
+ [4]   B. Beach, R. Hildebrand, and J. Huchette. “Compact mixed-integer program-
+       ming formulations in quadratic optimization.” In: J. Global Optim. 84.4 (2022),
+       pp. 869–912. doi: 10.1007/s10898-022-01184-6.
+ [5]   P. Belotti, C. Kirches, S. Leyffer, J. Linderoth, J. Luedtke, and A. Mahajan.
+       “Mixed-integer nonlinear optimization.” In: Acta Numerica 22 (2013), pp. 1–
+       131. doi: 10.1017/S0962492913000032.
+                                     REFERENCES                                      25
+
+
+ [6]   P. Belotti, J. Lee, L. Liberti, F. Margot, and A. Wächter. “Branching and
+       bounds tighteningtechniques for non-convex MINLP.” In: Optimization Meth-
+       ods & Software 24.4-5 (2009), pp. 597–634.
+ [7]   D. Bienstock, M. Escobar, C. Gentile, and L. Liberti. “Mathematical program-
+       ming formulations for the alternating current optimal power flow problem.”
+       In: 4OR 18 (2020), pp. 249–292. doi: 10.1007/s10288-020-00455-w.
+ [8]   C. Bragalli, C. D’Ambrosio, J. Lee, A. Lodi, and P. Toth. “On the optimal
+       design of water distribution networks: a practical MINLP approach.” In:
+       Optimization and Engineering 13.2 (2012), pp. 219–246.
+ [9]   K. Braun and R. Burlacu. Benchmarking piecewise linear reformulations
+       for MINLPs: A computational study based on the open-source framework
+       PWL-T-REX. 2023. url: https://optimization-online.org/?p=24335.
+[10]   C. Buchheim, M. De Santis, L. Palagi, and M. Piacentini. “An exact algorithm
+       for nonconvex quadratic integer minimization using ellipsoidal relaxations.”
+       In: SIAM J. Optim. 23.3 (2013), pp. 1867–1889. doi: 10.1137/120878495.
+[11]   C. Buchheim and A. Wiegele. “Semidefinite relaxations for non-convex
+       quadratic mixed-integer programming.” In: Math. Program. 141.1-2 (2013),
+       pp. 435–452. doi: 10.1007/s10107-012-0534-y.
+[12]   R. Burlacu, B. Geißler, and L. Schewe. “Solving mixed-integer nonlinear
+       programmes using adaptively refined mixed-integer linear programmes.” In:
+       Optimization Methods and Software 35.1 (2020), pp. 37–64.
+[13]   M. R. Bussieck, A. S. Drud, and A. Meeraus. “MINLPLib—a collection of test
+       models for mixed-integer nonlinear programming.” In: INFORMS J. Comput.
+       15.1 (2003), pp. 114–119. doi: 10.1287/ijoc.15.1.114.15159.
+[14]   J. S. Cohen. Computer algebra and symbolic computation: elementary algo-
+       rithms. AK Peters/CRC Press, 2003.
+[15]   G. D. Corporation. General Algebraic Modeling System (GAMS). Ver-
+       sion 51.3.0. Oct. 27, 2025. url: https://www.gams.com/.
+[16]   K. L. Croxton, B. Gendron, and T. L. Magnanti. “A comparison of mixed-
+       integer programming models for nonconvex piecewise linear cost minimization
+       problems.” In: Management Science 49.9 (2003), pp. 1268–1273.
+[17]   M. Cuesta, C. D’Ambrosio, M. Durban, V. Guerrero, and R. S. Trindade. On
+       leveraging constrained smooth additive regression models for global optimization.
+       2025. arXiv: 2510.14122 [math.OC]. url: https://arxiv.org/abs/2510.
+       14122.
+[18]   C. D’Ambrosio, A. Frangioni, and C. Gentile. “Strengthening the Sequential
+       Convex MINLP Technique by Perspective Reformulations.” In: Optimization
+       Letters 13 (2019), pp. 673–684. doi: 10.1007/s11590-018-1360-9.
+[19]   C. D’Ambrosio, J. Lee, D. Skipper, and D. Thomopulos. “Handling separa-
+       ble non-convexities using disjunctive cuts.” In: Combinatorial optimization.
+       Vol. 12176. Lecture Notes in Comput. Sci. Springer, Cham, 2020, pp. 102–114.
+       doi: 10.1007/978-3-030-53262-8\_9.
+[20]   C. D’Ambrosio, J. Lee, and A. Wächter. “An Algorithmic Framework for
+       MINLP with Separable Non-Convexity.” In: Mixed Integer Nonlinear Program-
+       ming. Ed. by J. Lee and S. Leyffer. Vol. 154. The IMA Volumes in Mathematics
+       and its Applications. New York: Springer, 2012, pp. 315–347.
+[21]   S. Elloumi, A. Lambert, B. Neveu, and G. Trombettoni. “Global solution of
+       quadratic problems using interval methods and convex relaxations.” In: J.
+       Global Optim. 91.2 (2025), pp. 331–353. doi: 10.1007/s10898-024-01370-8.
+[22]   FICO. The FICO-Xpress Optimizer. https://www.fico.com/fico-xpress-
+       optimization/docs/latest/overview.html. 2025.
+26                                   REFERENCES
+
+
+[23]   R. Fourer, J. Ma, and K. Martin. “OSiL: an instance language for optimization.”
+       In: Comput. Optim. Appl. 45.1 (2010), pp. 181–203. doi: 10.1007/s10589-
+       008-9169-6.
+[24]   S. Frank and S. Rebennack. “An introduction to optimal power flow: Theory,
+       formulation, and examples.” In: IIE Transactions 48.12 (2016), pp. 1172–1197.
+       doi: 10.1080/0740817X.2016.1189626.
+[25]   D. M. Gay. “Using expression graphs in optimization algorithms.” In: Mixed
+       integer nonlinear programming. Vol. 154. IMA Vol. Math. Appl. Springer, New
+       York, 2012, pp. 247–262.
+[26]   A. Göß, R. Burlacu, and A. Martin. Parabolic Approximation & Relaxation
+       for MINLP. 2025. arXiv: 2407.06143 [math.OC]. url: https://arxiv.org/
+       abs/2407.06143.
+[27]   Gurobi Optimization, LLC. Gurobi Optimizer Reference Manual. 2024. url:
+       https://www.gurobi.com.
+[28]   C. Hojny, M. Besançon, K. Bestuzheva, S. Borst, A. Chmiela, J. Dionísio,
+       L. Eifler, M. Ghannam, A. Gleixner, A. Göß, A. Hoen, R. van der Hulst,
+       D. Kamp, T. Koch, K. Kofler, J. Lentz, S. J. Maher, G. Mexi, E. Mühmer,
+       M. E. Pfetsch, S. Pokutta, F. Serrano, Y. Shinano, M. Turner, S. Vigerske, M.
+       Walter, D. Weninger, and L. Xu. The SCIP Optimization Suite 10.0. Technical
+       Report. Optimization Online, Nov. 2025. url: https : / / optimization -
+       online.org/2025/11/the-scip-optimization-suite-10-0/.
+[29]   J. Huchette and J. P. Vielma. “Nonconvex piecewise linear functions: Advanced
+       formulations and simple modeling tools.” In: Operations Research 71.5 (2023),
+       pp. 1835–1856.
+[30]   T. Koch, B. Hiller, M. E. Pfetsch, and L. Schewe. Evaluating gas network
+       capacities. SIAM, 2015.
+[31]   H. M. Markowitz and A. S. Manne. “On the solution of discrete programming
+       problems.” In: Econometrica 25 (1957), pp. 84–110. doi: 10.2307/1907744.
+[32]   G. P. McCormick. “Computability of global solutions to factorable nonconvex
+       programs. I. Convex underestimating problems.” In: Math. Programming 10.2
+       (1976), pp. 147–175. doi: 10.1007/BF01580665.
+[33]   R. Misener and C. A. Floudas. “ANTIGONE: Algorithms for coNTinu-
+       ous/Integer Global Optimization of Nonlinear Equations.” In: J. Global Optim.
+       59.2-3 (2014), pp. 503–526. doi: 10.1007/s10898-014-0166-2.
+[34]   R. Misener and C. A. Floudas. “GloMIQO: global mixed-integer quadratic
+       optimizer.” In: J. Global Optim. 57.1 (2013), pp. 3–50. doi: 10.1007/s10898-
+       012-9874-7.
+[35]   A. Morsi. Solving MINLPs on Loosely-coupled Networks with Applications
+       in Water and Gas Network Optimization: Lösungsansätze Für MINLPs Auf
+       Schwach-gekoppelten Netzwerken Mit Anwendungen in Der Optimierung Von
+       Wasser-und Gasnetzen. Verlag Dr. Hut, 2013.
+[36]   S. Rebennack and J. Kallrath. “Continuous piecewise linear delta-
+       approximations for univariate functions: computing minimal breakpoint
+       systems.” In: Journal of Optimization Theory and Applications 167.2 (2015),
+       pp. 617–643.
+[37]   N. V. Sahinidis. “BARON: A general purpose global optimization software
+       package.” In: Journal of Global Optimization 8.2 (1996), pp. 201–205.
+[38]   H. Schichl and A. Neumaier. “Interval analysis on directed acyclic graphs
+       for global optimization.” In: J. Global Optim. 33.4 (2005), pp. 541–562. doi:
+       10.1007/s10898-005-0937-x.
+                                 REFERENCES                                  27
+
+
+[39] A. S. Siqueira, R. G. C. da Silva, and L.-R. Santos. “Perprof-py: A python
+     package for performance profile of mathematical optimization software.” In:
+     Journal of Open Research Software 4.1 (2016), e12–e12.
+[40] Y. Song and C. T. Maravelias. “Constructing optimal piecewise quadratic ap-
+     proximations for enhancing deterministic global optimization.” In: INFORMS
+     Journal on Computing (2025). doi: 10.1287/ijoc.2024.0909.
+[41] J. P. Vielma. “Mixed Integer Linear Programming Formulation Techniques.”
+     In: SIAM Review 57.1 (2015), pp. 3–57. doi: 10.1137/130915303.
+[42] S. Wiese. A computational practicability study of MIQCQP reformulations.
+     2021. url: https://docs.mosek.com/whitepapers/miqcqp.pdf.
+28                                      REFERENCES
+
+
+
+
+      Appendix A. Proofs for Correctness Theorems in Section 3.1
+   In this section, we provide the detailed proofs for Theorem 3 and Theorem 4. For
+the sake of completeness, we restate them and provide the proof afterwards.
+A.1. Proof of Theorem 3.
+Theorem 3 (Correctness of Method 1). If there exists a solution (a, b, c) fulfilling (9)
+and (12), Method 1 returns one or converges to it. Otherwise, it returns that there
+is no such solution.
+Proof. First of all, note that the results in Lemma 1 suggest that there exists a
+solution (a, b, c) for (9) and (12) if and only if there exist finite bounds
+                                    a≥         sup      A(x)
+                                         x∈int(Dloc )
+
+and                                                                      
+                      a ≤ min         inf      A(x),       inf        B(x)
+                                    x∈D\Dloc           x∈int(Dloc )
+with a ≤ a. In other terms, a > a if and only if there exists no such solution.
+   Assume first that there exists a solution (a, b, c). Further, let l be the iteration
+index of the while-loop, i.e., the initialization sets a0 , a0 ← −∞, and a0 ← a0 and
+every update increments l. With this notation it holds true that al ≤ a and al ≤ a
+for all l ∈ N0 . In turn, since al is always chosen to be al , it is al ≥ a for all l ∈ N0
+and thus the condition (9b) is always met on Dloc .
+   Method 1 has two potential outcomes: Either it returns a solution in Step 6
+or it executes the while-loop infinitely often. In the former case, the solution is
+valid for (9) by the definition of the maxima in (14), as well as satisfies (12) by
+construction.
+   If Method 1 does not return a solution, it produces a sequence of points (xl )l∈N0
+that achieve the maximum of (14a) and (14c) and a sequence of (al )l from evaluating
+the respective term in Lemma 1 at xl .
+   Note that by using the equalities (12) we can write the parabola p as parameterized
+in the quadratic coefficient a. Specifically, subtraction and a rearrangement of (12)
+gives
+                                     f (t) − f (t)
+                               b=                  − a(t + t).
+                                         t−t
+Plugging this back into either of the equalities and rearranging for c leads to
+                                                     f (t) − f (t)
+                                                                  
+                           c = f (t) − ε + t at −
+                                                         t−t
+and
+                                                    f (t) − f (t)
+                                                                 
+                          c = f (t) − ε + t at −                     ,
+                                                        t−t
+respectively. The parameterized version of a parabola p is then given as
+                                                          f (t) − f (t)
+                                                                       
+          p(x; a) = a(x2 − (t + t)x + tt) + (x − t)                       + f (t) − ε
+                                                              t−t
+                                                                                       (15)
+                                                          f (t) − f (t)
+                                                                       
+                  = a(x2 − (t + t)x + tt) + (x − t)                       + f (t) − ε.
+                                                              t−t
+The term in brackets after a can also be written as q(x) := (t − x)(t − x). Note
+that q is a convex parabola symmetric to its global minimum at (t + t)/2 and thus
+attains its maximum as x or x. We denote the corresponding function values as
+qmin and qmax . Further, see that q(x) > 0 for x ∈ D \ Dloc , whereas q(x) < 0 for
+                                             REFERENCES                                            29
+
+
+x ∈ int(Dloc ). Combined with the fact that al is non-increasing throughout the
+method, i.e., al ≤ al−1 , this representation allows to derive
+                          p(x; al ) ≤ p(x; al−1 ),         for x ∈ D \ Dloc ,                     (16)
+and
+                     p(x; al ) ≥ p(x; al−1 ),     for x ∈ int(Dloc ).                             (17)
+   Now, we aim to show that
+    (a) for all x ∈ D \ Dloc , lim p(x; al ) − f (x) ≤ 0, and
+                                    l→∞
+      (b) for all x ∈ Dloc , lim p(x; al ) − f (x) + ε ≥ 0.
+                               l→∞
+   We start with case (a). Without loss of generality, D \ Dloc ̸= ∅, otherwise we
+are done. It follows that x < t or t < x, thus qmax > 0.
+   We aim to prove the case by contradiction and thus assume there exists x̃ ∈ D\Dloc
+such that
+                           p(x̃; al ) − f (x̃) > ν, for all l ∈ N0 ,
+for a ν > 0. Let x1l and x3l denote the optimal points for (14a) and (14c) in iteration l,
+respectively. Then, al+1 = al+1 = min{A(x1l ), B(x3l )} and by Lemma 1(a) it follows
+that p(x1l ; al+1 ) ≤ f (x1l ).
+   In turn, this implies that (x1l )l∈N0 is a sequence of distinct points and, as they
+represent the optimal point, it is
+                p(x1l ; al ) − f (x1l ) ≥ p(x̃; al ) − f (x̃) > ν,       for all l ∈ N0 .
+Combining both statements, we have
+            ν < p(x1l ; al ) − f (x1l ) ≤ p(x1l ; al ) − f (x1l ) − (p(x1l ; al+1 ) − f (x1l ))
+              = p(x1l ; al ) − p(x1l ; al+1 ) = (al − al+1 )q(x1l ) ≤ (al − al+1 )qmax .
+A rearrangement gives al+1 < al − ν/qmax , which implies al → −∞ for l → ∞,
+when applying induction. This is a contradiction to −∞ < a ≤ a ≤ al for all l ∈ N0 .
+   For case (b), we can proceed analogously. So, int(Dloc ) ̸= ∅ without loss and we
+thus know qmin < 0. We assume there exists x̃ ∈ int(Dloc ) such that
+                         p(x̃; al ) − f (x̃) + ε < −ν,          for all l ∈ N0 ,
+for a ν > 0. By Lemma 1(c) and the statements from before we can follow that
+p(x3l ; al+1 ) ≥ f (x3l ) − ε for l ∈ N0 . In addition, we derive
+          f (x3l ) − p(x3l ; al ) − ε ≥ f (x̃) − p(x̃; al ) − ε > −ν,          for all l ∈ N0 .
+A combination of the statements leads to
+                       −ν < p(x3l ; al+1 ) − p(x3l ; al ) ≤ (al+1 − al )qmin ,
+and thus al+1 < al − ν/qmin . This implies the same contradiction as before and
+we have shown case (b). In conclusion, if there exists a feasible solution (a, b, c),
+Method 1 converges to it.
+   In the light of Lemma 1 the above results also imply that al → a for l → ∞.
+If there exists no solution (a, b, c), the introductory statements imply that a > a.
+That is, there exists some L ∈ N such that a > al for all l ≥ L and, in turn, there
+exists x̃ ∈ Dloc such that p(x̃; al ) > f (x̃).
+   For the update of al , note that there exist x1l−1 and x3l−1 that cause it. Then,
+either p(x1l−1 ; al ) = f (x1l−1 ) or p(x3l−1 ; al ) = f (x3l−1 ) − ε. In conclusion, to mitigate
+the violation in x̃, there needs to be a reduction in parameter al in the next iteration,
+whereas this directly causes the respective equality to be violated again. Hence, the
+method has found a pair al < a and exits the while-loop.                                       □
+30                                   REFERENCES
+
+
+A.2. Proof of Theorem 4.
+Theorem 4 (Correctness of Method 2). Let D =   ̸ ∅, f : D → R be globally Lipschitz
+continuous with L > 0 and ε > 0. Then, for any interval length ∆ > 0 with
+∆ ≤ ε/(3L) and |D|/∆ ∈ N, one can choose Dk as a partition of D with |Dk | = ∆
+and by setting ak = −4L/∆ there exist parabolas pk (x) = ak x2 +bk +ck , k ∈ [|D|/∆],
+fulfilling the properties (6) and (8).
+Proof. Consider a local interval Dk = Dloc = [t, t] with |Dloc | = ∆. We show that
+there exists a particular p such that
+       a) p(x) ≥ f (x) − ε on Dloc ,
+      b) p(x) ≤ f (x) on Dloc , and
+       c) p(x) ≤ f (x) on D \ Dloc .
+For case a) we make use of Lemma 1, whereas for cases b) and c) the approach is
+straightforward. Throughout the following section denote the mid point of Dloc as
+t̃ = (t + t)/2.
+    Case a). Without loss of generality, consider x ∈ int(Dloc ). This implies
+(x − t)(x − t) < 0.
+    If we can show that ak = −4L/∆ ≤ B(x), we have proven case a) by Lemma 1.
+We make a distinction and consider x ∈ (t, t̃] first. Then, the distance of t to x is at
+most ∆/2. Formally, this is t − x ≥ ∆/2 or equivalently x − t ≤ −∆/2.
+    By the Lipschitz continuity of f , it is
+      −L|x − y| ≤ −|f (x) − f (y)| ≤ f (x) − f (y) ≤ |f (x) − f (y)| ≤ L|x − y|,
+for y ∈ Dloc . Combining it with (x − t)(x − t) < 0 and respecting x − t < 0 we can
+now estimate
+                                  f (x) − f (t)     f (t) − f (t)
+                       B(x) =                   −
+                                (x − t)(x − t) (t − t)(x − t)
+                                     L|x − t|        −L|t − t|
+                            ≥                   −
+                                (x − t)(x − t) (t − t)(x − t)
+                                  2L         4L
+                            =           ≥−      = ak ,
+                                x−t           ∆
+This was to show and concludes the first part of case a).
+   It remains to consider x ∈ [t̃, t). Analogously, we derive t − x ≤ −∆/2. Now, we
+recall that B(x) has an equivalent reformulation, as stated in Remark 2, that says
+                               f (x) − f (t)   f (t) − f (t)
+                       B(x) =                −               .
+                              (x − t)(x − t) (t − t)(x − t)
+Following the previous strategy, we get
+                                 L|x − t|       L|t − t|
+                       B(x) ≥               −
+                              (x − t)(x − t) (t − t)(x − t)
+                                 L        L      4L
+                             ≥−       −      ≥−      = ak .
+                                x−t x−t          ∆
+Note that we have used |x − t| = −(x − t). This concludes case a).
+  Case b). We make the same distinction as in case a) and consider x ∈ (t, t̃] first.
+Thus x − t ≤ ∆/2 and t − x ≤ ∆. By the Lipschitz continuity of f , we can derive
+                                                             1
+                 f (t) − f (x) ≤ |f (t) − f (x)| ≤ L|t − x| ≤ L∆,
+                                                             2
+                                      REFERENCES                                       31
+
+
+or equivalently f (t) ≤ f (x) + 12 L∆. Using the parameterized version of p as stated
+in (15), this gives
+                         4L                          f (t) − f (t)
+           p(x; ak ) = −    (x − t)(x − t) + (x − t)               + f (t) − ε
+                         ∆                               t−t
+                                              
+                                     4L
+                   ≤ (x − t) L +        (t − x) + f (t) − ε
+                                     ∆
+                                     
+                      1          4L         1
+                   ≤ ∆ L+           ∆ + L∆ + f (x) − ε
+                      2           ∆         2
+                      5        1
+                   ≤ L∆ + L∆ + f (x) − ε = f (x) + 3L∆ − ε ≤ f (x),
+                      2        2
+where the last inequality follows from the assumption on ∆.
+   Considering x ∈ [t̃, t), we can make an analogous derivation. That is, we have
+t − x ≤ ∆/2 and x − t ≤ ∆, as well as f (t) ≤ f (x) + 12 ∆. Combining this, we get
+                          4L                           f (t) − f (t)
+           p(x; ak ) = −     (x − t)(x − t) + (x − t)                + f (t) − ε
+                          ∆                                t−t
+                                                 
+                                       4L
+                    ≤ (t − x) L +          (x − t) + f (t) − ε
+                                        ∆
+                                         
+                       1           4L         1
+                    ≤ ∆ L+             ∆ + L∆ + f (x) − ε
+                       2            ∆         2
+                       5         1
+                    ≤ L∆ + L∆ + f (x) − ε ≤ f (x) + 3L∆ − ε = f (x),
+                       2         2
+taking the other representation of parameterized p in (15) into account. Note that
+the first step uses f (t) − f (t) ≥ −L|t − t|, but the sign is turned due to x − t ≤ 0.
+This concludes case b).
+   Case c). First, we consider x ∈ D with x ≥ t. Since p(t) = f (t) − ε < f (t), it is
+sufficient to show that p′ ≤ f ′ for all such x. In other terms, p strictly underestimates
+f at t and decreases faster than f from t on.
+   Let’s investigate the derivative of p at t, which is
+                     4L                   f (t) − f (t)       t−t
+        p′ (t; ak ) = −  (2t − (t + t)) +               ≤ −4L     + L = −3L.
+                      ∆                       t−t              ∆
+Since ak < 0, p is strictly concave and thus
+                            p′ (x; ak ) ≤ −3L < −L ≤ f ′ (x),
+for all x ≥ t.
+   Second, consider x ∈ D with x ≤ t. Analogously to above we need to show
+p′ ≥ f ′ for all such x. Inspecting the derivative at t gives
+                       4L                  f (t) − f (t)      t−t
+          p′ (t; ak ) = − (2t − (t + t)) +               ≥ 4L     − L = 3L.
+                       ∆                       t−t             ∆
+Again, due to strict concavity, we have
+                              p(x; ak ) ≥ 3L > L ≥ f ′ (x),
+for all x ≤ t. This concludes case c).
+                                                                                       □
+32                                  REFERENCES
+
+
+             Table 4. Dual and Gap Improvements by Relaxations
+ instance          sense type      ε     time [s]    dual    rep. dual   gap [%]   rep. gap [%]
+ arki0017          min    PWL      100     limit    -9.8e2     -1.4e3      70.35        101.24
+ lnts100           min    PARA    10−4       161    5.5e-1     5.0e-1       0.00          0.94
+ lnts200           min    PARA    10−4       505    5.5e-1     5.0e-1       0.00          0.98
+ lnts400           min    PARA    10−3       576    5.5e-1     4.5e-1       0.01          1.89
+ lnts50            min    PARA    10−4        39    5.5e-1     5.1e-1       0.00          0.87
+ polygon100        min    PARA    10−3     limit    -3.1e0     -2.8e1      29.78        352.32
+ polygon25         min    PARA    10−3     limit    -2.2e0     -4.3e0      17.89         44.80
+ polygon50         min    PARA    10−4     limit    -3.0e0     -1.1e1      28.47        133.76
+ polygon75         min    PARA    10−4     limit    -3.1e0     -1.9e1      29.17        234.13
+ powerflow0039p    min    PARA    10−4     limit     4.0e2      4.0e2       9.90          9.90
+ powerflow0300p    min    PARA    10−3     limit     1.2e4          0          –             –
+ procurement1large max    PWL     10−2     limit     7.1e3      1.8e4      28.66         36.97
+ procurement1mot max      PWL     10−1     limit     4.6e2      1.4e3      25.74         36.89
+
+
+                    Appendix B. Dual Gap Improvements
+   As mentioned in Section 4, there exist instances for which one relaxation method
+resulted in improved dual bounds. We compare to the dual bounds achieved during
+the base run and the ones reported on the MINLPLib [13] webpage.
+   In Table 4 we list all instances, where at least one improvement was detected
+and give the respective relaxation type and tolerance. If the same type has achieved
+the same dual bound for several tolerances ε, we report the result for its largest
+value. The column “sense” reports on the objective sense in order to classify the dual
+bounds correctly. The gaps are computed with respect to the reported primal value
+on the webpage and – for the relaxations – the dual value achieved when solving a
+relaxation. The term “rep.” stands for “reported” and refers to the value from the
+reference value from the webpage.
+   We limit our interpretation to the “lnts” and the “polygon” instances, as they
+show the most significant improvements. For all those, PARA was able to construct
+relaxation that lead to dual bounds which can reduce the original gap to nearly
+zero or by a factor of up to 10, respectively. Once again, this strengthens our
+observation that PARA seems to be quite efficient when tackling (co)sine constraint
+functions, since all those are nonlinear programs with quite an extensive number of
+such constraints.
+

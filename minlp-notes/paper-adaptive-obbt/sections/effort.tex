@@ -1,0 +1,160 @@
+\section{Accounting for optional work}\label{sec:effort}
+
+OBBT inside a branch-and-bound solver is optional work: the solver remains
+correct without it. A budget can limit this work on the execution where the
+policy runs. The question a user cares about is different: does the solver
+with the policy finish sooner than the same solver without it? This section
+separates the two questions. Proposition~\ref{prop:ledger} bounds the optional
+work of one execution. Proposition~\ref{prop:no-comparison} shows that such a
+bound implies nothing about a comparison with an independent execution of the
+unchanged solver. Appendix~\ref{sec:scheduling} gives comparison guarantees
+for constructions that leave the baseline execution unchanged. These are elementary accounting
+and scheduling facts, and we claim no novelty for them. Their role here is to
+fix which conclusions the measurements of Section~\ref{sec:experiments} can
+support.
+
+\subsection{What must be charged}\label{sec:effort-charges}
+
+The work of a callback-based tightening policy is not the number of auxiliary
+LPs it solves. For the policy of Section~\ref{sec:algorithms-policy}, a
+propagation call can involve seven kinds of work:
+\begin{enumerate}
+\item an admission test, evaluated at every propagation call;
+\item a trigger evaluation, which reads the local box and validates the
+incumbent to compute a cutoff;
+\item construction of the auxiliary relaxation, with exact row arithmetic and
+outward rounding;
+\item exact feasibility checks of cached points for screening;
+\item the directional LP solves;
+\item validation of each candidate bound by directed rounding, and its
+application;
+\item bookkeeping.
+\end{enumerate}
+An LP count measures only item~5. A policy that solves fewer LPs but enters
+more callbacks can spend more in total, since items~2--4 and~7 are paid per
+callback. If a callback costs $c_0$ outside its LP solves and an LP with its
+validation costs $c_1$, a change that saves $\Delta L$ LPs but adds $\Delta C$
+callbacks saves time only if $c_1\Delta L>c_0\Delta C$.
+Section~\ref{sec:experiments-work} measures this trade-off: there the non-LP
+time per recorded callback was about three times the time of one LP with
+validation.
+The implementation charges items~2--7 to a timer for the added propagator that starts after
+the admission test. Item~1 is not timed. Its cost appears only in the total
+elapsed time of the run. The following accounting keeps such untimed work as
+a separate term.
+
+\subsection{A ledger for the enhanced execution}\label{sec:effort-ledger}
+
+Consider one execution of the solver with the policy. Let $N(t)$ and $E(t)$
+be the native and optional work charged up to time $t$; both are
+nondecreasing, and $E(0)=0$. Optional work is spent in operations. An
+operation is admitted at its start time $s$ only if
+\begin{equation}\label{eq:admission}
+ E(s)<b+\eta N(s),\qquad b\ge0,\ \eta\ge0 .
+\end{equation}
+Operations are serial: an admitted operation finishes before the next one
+starts. Native work may be charged at any time.
+
+\begin{proposition}[Ledger]\label{prop:ledger}
+Suppose every increment of $E$ belongs to an admitted operation and every
+admitted operation adds at most $\delta\ge0$ to $E$. Then, at every time $t$,
+\begin{equation}\label{eq:ledger}
+ E(t)\le b+\eta N(t)+\delta,\qquad
+ N(t)+E(t)\le(1+\eta)N(t)+b+\delta .
+\end{equation}
+If each operation instead has an enforced upper bound $r$ on its charge, and
+admission requires $E(s)+r\le b+\eta N(s)$, then $E(t)\le b+\eta N(t)$ for all
+$t$. If the admission tests cost $J$ in total and this cost is not charged to
+$E$, the total work is at most $(1+\eta)N(t)+b+\delta+J$.
+\end{proposition}
+
+\begin{proof}
+If no operation has started by time $t$, then $E(t)=0\le b$. Otherwise let $s$
+be the start of the last operation admitted at or before $t$. Because
+operations are serial and every increment of $E$ belongs to an admitted
+operation, only this operation charges $E$ during $(s,t]$, so
+$E(t)\le E(s)+\delta$. Admission and monotonicity of $N$ give
+$E(s)<b+\eta N(s)\le b+\eta N(t)$, which proves the first inequality; adding
+$N(t)$ proves the second. With reservation, $E(t)\le E(s)+r\le b+\eta N(s)\le
+b+\eta N(t)$. The last statement adds the uncharged cost $J$.
+\end{proof}
+
+The serial premise is necessary for the stated rule. With $b=1$, $\eta=0$, and
+$\delta=1$, three concurrent operations can all be admitted while $E=0$; if
+each then costs one unit, $E=3>b+\delta$. A concurrent implementation must
+include outstanding reservations in its admission test. Callbacks of a
+sequential solver are serial.
+
+The constant $\delta$ must cover the whole operation, not one of its parts. A
+time limit on each auxiliary LP does not bound relaxation construction,
+screening, or validation, and an LP solver may itself return slightly after its
+limit. The policy of Section~\ref{sec:algorithms-policy} uses $b$ equal to
+$10\%$ of the time limit and $\eta=0$. Each callback receives a deadline equal
+to the remaining allowance and checks it between construction blocks, cached
+points, and LPs. Steps between these checks are not interrupted, so the
+implementation enforces no fixed $\delta$; it records the actual overrun
+instead. Section~\ref{sec:experiments-work} reports the largest recorded
+propagator times. The admission test is evaluated outside the timer and
+contributes to $J$; the proposition gives no bound on $J$ without a further
+premise on the number of propagation calls.
+
+\subsection{A ledger does not compare executions}\label{sec:effort-comparison}
+
+In Proposition~\ref{prop:ledger}, $N$ is the native work on the
+\emph{enhanced} execution. Let $N_0$ be the work of an independent execution
+of the unchanged solver on the same input. Tightened bounds change LP
+solutions, branching scores, heuristics, and node order, so the native part of
+the enhanced execution follows a different trajectory. The ledger contains no
+premise relating $N$ to $N_0$, and none can be derived from it.
+
+\begin{proposition}[No comparison from a ledger]\label{prop:no-comparison}
+Let $b>0$ and let $g$ be any real function of two variables. There is a
+deterministic search procedure and an optional operation that satisfies the
+reservation form of Proposition~\ref{prop:ledger} with $\eta=0$ and $E=b$, such
+that $N+E>g(N_0,b)$.
+\end{proposition}
+
+\begin{proof}
+Consider an abstract search procedure whose first decision has two legal
+options, explored in the order of a score. Exploring the first option first
+completes a proof after one unit of work. Exploring the second option first
+spends $M$ units before the proof is complete, for instance because its subtree
+must be exhausted first. The unchanged procedure scores the first option
+higher, so $N_0=1$. The optional operation adds a valid redundant row at cost
+$b$. Its cost is reserved at the start: the test $E+b\le b$ holds at $E=N=0$.
+The row changes the scores, the second option is explored first, and $N=M$.
+Then $N+E=M+b$, which exceeds $g(1,b)$ for large $M$.
+\end{proof}
+
+The example is a model of search, not a constructed solver instance, and it
+predicts no particular solver's runtime. It shows which premise is missing from
+a speedup argument based on a budget: a statement connecting the two
+trajectories. The same caution applies to the certificates of
+Sections~\ref{sec:certificates} and~\ref{sec:residual}. A certified ceiling on
+remaining endpoint movement bounds the benefit of a specified operator in a
+specified measure. It does not bound remaining search time. A small width
+reduction can enable a decisive inference, and a large one can leave the
+relevant relaxation error unchanged.
+
+Guarantees against an unchanged baseline require a construction that
+preserves its execution trace. Appendix~\ref{sec:scheduling} gives two such
+constructions: interleaving bounds the work until one solver finishes, and a
+capped enhanced run followed by a fresh baseline run gives an additive
+bound on the extra work. Both use an ideal preemptible work model with
+separate solver states, fixed random tapes, and traces that depend only on
+charged work. The appendix also states the limit on a first action chosen
+from indistinguishable histories.
+
+\subsection{Consequences for evaluation}\label{sec:effort-evaluation}
+
+The results of this section lead to three requirements, which the comparison
+of Section~\ref{sec:experiments} follows. First, the cost of a policy must
+include every item of Section~\ref{sec:effort-charges}, and auxiliary LP counts
+must be reported separately from time. Second, a claim about speed must come
+from independent complete runs of the solver with and without the policy,
+charging startup, construction, and validation, and keeping unsolved runs and
+failures in every summary; restricting a comparison to instances solved by
+every variant hides lost solves and all differences among unsolved runs.
+Third, a budget statement and a remaining-benefit certificate are
+statements about one execution and about an operator, respectively. Neither
+predicts the effect on search time, so neither can replace the measurement.

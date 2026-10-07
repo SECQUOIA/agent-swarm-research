@@ -84,7 +84,7 @@ The new elasticity exclusions use a0=68743/50000, the correct switch at E=2, and
 
 ## Verification and literature
 
-Both scripts passed in `/home/sgusev/miniconda3/envs/qipm/bin/python`, without package installation:
+Both scripts passed in `/workspace/local-home/miniconda3/envs/qipm/bin/python`, without package installation:
 
 - `verify_scalar_certificate.py`: all exact rational series-tail, logarithm, radical, lower/upper, and every-maximizer localization checks passed.
 - `verify_barrier_dependence.py`: all 96 independently solved radial centers passed parameter, Hessian, speed, and finite-difference checks; three central-arc checks passed. The largest tangent discrepancy was about 1.23e-9. Its independent scalar-envelope root calculation gave a=0.6501143834529713 and C_SC=1.831856422983876.

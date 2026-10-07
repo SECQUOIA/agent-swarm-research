@@ -56,7 +56,7 @@ The four local PDFs' hashes match the four retained `primary_source_sha256` valu
 
 ## Reproduction and retained evidence
 
-The isolated copy is `/tmp/s6a-r3-gpv5x0dt`; the numerical interpreter is `/home/sgusev/miniconda3/envs/minlp-notes/bin/python`. Reproduced commands include:
+The isolated copy is `/tmp/s6a-r3-gpv5x0dt`; the numerical interpreter is `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python`. Reproduced commands include:
 
 - `python paper-potential-flow/verification/check_s6a_certificates.py --numerical`, output `diagnostic-numerical.json`.
 - `python -S -O paper-potential-flow/verification/check_s6a_certificates.py`, output `diagnostic-optimized.json`.

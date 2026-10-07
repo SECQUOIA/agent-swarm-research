@@ -1,0 +1,308 @@
+% Plan: development/outline.md, section 6, item C. Proposition prop:pts-exact and
+% Remark rem:lukvle10-seeds moved here from Section 6 (development/moves/m-points-audit.md,
+% Moves 1-3); the waterno2 p4 violation from development/moves/m-results.md, Move 3.
+% Round-2 revision (adjudication G6-01, G6-10): "the authors' code" -> "the first
+% code"; implementation details that the certificate box or the family sections of
+% S1 state are not repeated; test records to development/moves/r2-G6.md.
+\section{Exactly feasible points}\label{app:points}
+
+All statements below concern the stored OSIL model under \reading{b}; the claim register (\cref{app:repro-register}) names the checkers of each point.
+
+\subsection{Proof of \texorpdfstring{\cref{thm:pts-krawczyk}}{the Krawczyk theorem}}\label{app:points-krawczyk}
+
+\begin{proof}[Proof of \cref{thm:pts-krawczyk}]
+Let $w_1,\dots,w_m>0$ be the widths of $X$, and write $|\mathbf{B}_{ij}|=\max\{|b|:b\in\mathbf{B}_{ij}\}$.
+
+\emph{Step 1 (mean-value form).}
+Let $u,z\in X$.
+The box $X$ is convex, so the segment $[u,z]$ lies in $X$.
+For each $i$, the mean value theorem applied to $s\mapsto G_i(u+s(z-u))$ on $[0,1]$ gives a point $\zeta_i\in[u,z]$ with $G_i(z)-G_i(u)=\nabla G_i(\zeta_i)^{\top}(z-u)$.
+Let $M$ be the matrix whose $i$th row is $\nabla G_i(\zeta_i)^{\top}$.
+Its entries satisfy $M_{ij}=\partial_jG_i(\zeta_i)\in\mathbf{A}_{ij}$, because $G'(\zeta_i)\in\mathbf{A}$.
+An interval matrix contains every real matrix whose entries lie in its entries, so $M\in\mathbf{A}$, and
+\begin{equation}\label{eq:pts-mvf}
+G(z)=G(u)+M(z-u),\qquad M\in\mathbf{A}.
+\end{equation}
+
+\emph{Step 2 (existence).}
+Define $T(z)=z-CG(z)$ for $z\in X$.
+By \eqref{eq:pts-mvf} with $u=y$, $T(z)=y-CG(y)+(I-CM)(z-y)$ with $M\in\mathbf{A}$.
+Here $G(y)\in\mathbf{v}$ and $I-CM\in\mathbf{B}$ by (b), so $T(z)\in K\subseteq X$ by (c).
+The map $T$ is continuous and maps the nonempty, compact, convex set $X$ into itself.
+By Brouwer's fixed-point theorem there is $z^*\in X$ with $T(z^*)=z^*$, that is, $CG(z^*)=0$, and $z^*=T(z^*)\in K$.
+
+\emph{Step 3 (nonsingularity).}
+Choose $M\in\mathbf{B}$ with $|M_{ij}|=|\mathbf{B}_{ij}|$ for all $i,j$ (an endpoint of each entry), and fix $v\in\mathbf{v}$.
+As $z$ ranges over $X$, its coordinates range independently over intervals of widths $w_j$.
+So the $i$th component of $y-Cv+M(z-y)$ ranges over a closed interval of width $\sum_j|\mathbf{B}_{ij}|w_j$.
+By (c), the closed interval $K_i$ contains this interval and lies in the open interval $\operatorname{int}X_i$ of length $w_i$.
+Hence $\sum_j|\mathbf{B}_{ij}|w_j<w_i$ for every $i$, and
+\[
+q:=\max_i\frac{1}{w_i}\sum_j|\mathbf{B}_{ij}|w_j<1 .
+\]
+Let $D=\operatorname{diag}(w)$ and $A\in\mathbf{A}$.
+By (b), $I-CA\in\mathbf{B}$, so $|(I-CA)_{ij}|\le|\mathbf{B}_{ij}|$ and
+$\|D^{-1}(I-CA)D\|_\infty=\max_i w_i^{-1}\sum_j|(I-CA)_{ij}|w_j\le q<1$.
+A matrix $I-P$ with $\|P\|_\infty<1$ is nonsingular (Neumann series), so $D^{-1}CAD=I-D^{-1}(I-CA)D$ is nonsingular, and so are $CA$, $C$ and $A$.
+
+\emph{Step 4 (zero and uniqueness).}
+$C$ is nonsingular and $CG(z^*)=0$, so $G(z^*)=0$.
+If also $G(z)=0$ for some $z\in X$, then \eqref{eq:pts-mvf} with $u=z^*$ gives $0=M(z-z^*)$ with $M\in\mathbf{A}$.
+$M$ is nonsingular by step 3, so $z=z^*$.
+
+\emph{Step 5 (feasibility).}
+At $x^*=(\xi,z^*)$ every row $i\in E$ has body value $t_i$, which is one of its bounds (its right-hand side if it is an equality), so the row holds; its expressions are defined by (a).
+By (d), every other row and every bound holds at $x^*\in\{\xi\}\times X$, the objective and every expression are defined there, and every integer variable is fixed at an integer.
+Hence $x^*\in\feas$.
+Finally $z^*\in K$, so $f(x^*)$ lies in every enclosure of $f$ over $\{\xi\}\times K$.
+\end{proof}
+
+The implementations store a box $X$ with decimal endpoints, compute $\mathbf{A}$ by forward-mode interval differentiation of the OSIL expression trees, evaluate $\mathbf{v}$, $\mathbf{B}$ and $K=y-C\mathbf{v}+\mathbf{B}(X-y)$ in outward-rounded interval arithmetic, and test $K\subseteq\operatorname{int}X$.
+The matrix $C$, a binary64 approximate inverse of a midpoint Jacobian, is used as an exact rational matrix and needs no error analysis.
+If the enclosures are computed over an outward-rounded box $X'\supseteq X$ and the computed $K$ lies in $\operatorname{int}X$, the theorem applied to $X'$ places the unique zero of $X'$ in $K\subseteq X$, because $\operatorname{int}X\subseteq\operatorname{int}X'$.
+The midpoint--radius test of the audit is a special case (\cref{lem:audit-krawczyk}, whose proof gives the reduction).
+Condition (d) also shows that an equality row outside $E$ can pass only if it is constant on $\{\xi\}\times X$, for example because all its variables are fixed; no equality row passes by accident.
+
+\subsection{Points in quadratic fields; proofs of the other results of \texorpdfstring{\cref{sec:points}}{Section 6}}\label{app:points-props}
+
+Explicit exact points (\cref{sec:points-constructions}) rest on the following proposition.
+
+\begin{proposition}[Points in $\Q$ or $\Q(\sqrt D)$]\label{prop:pts-exact}
+Let $D>0$ be a rational number that is not the square of a rational.
+\begin{itemize}
+\item[(a)] Every element of $\Q(\sqrt D)$ has a unique form $p+q\sqrt D$ with $p,q\in\Q$, and its sign is decidable.
+If $pq\ge0$, it is the sign of whichever of $p$ and $q$ is nonzero, and the element is zero if and only if $p=q=0$.
+If $pq<0$, it is the sign of $p$ when $p^2>q^2D$ and the sign of $q$ when $p^2<q^2D$, and $p^2=q^2D$ cannot occur.
+\item[(b)] Let $x$ be a point with coordinates in $\Q(\sqrt D)$, and let every row and bound of $\model$ be built from the coordinates and rational constants by $+$, $-$, $\times$, $\div$, integer powers and \texttt{sqrt}.
+Evaluate every expression exactly in $\Q(\sqrt D)$; at a \texttt{sqrt} node with argument $a$, use a given candidate $s\in\Q(\sqrt D)$ after checking $s\ge0$ and $s^2=a$.
+If every check passes, every denominator is nonzero, every row and bound comparison holds by the sign test in (a), and every integer variable has an integer value, then $x\in\feas$.
+If the objective is built in the same way, $f(x)$ is the computed element of $\Q(\sqrt D)$.
+\end{itemize}
+The same holds row by row when each row involves coordinates from $\Q$ and at most one field $\Q(\sqrt{D_k})$.
+\end{proposition}
+
+\begin{proof}
+(a) If $p+q\sqrt D=p'+q'\sqrt D$ with $q\ne q'$, then $\sqrt D=(p-p')/(q'-q)$ would be rational; so $q=q'$ and $p=p'$.
+If $p,q\ge0$, then $p+q\sqrt D\ge0$, with equality if and only if $p=q=0$; the case $p,q\le0$ is symmetric.
+If $pq<0$, then $p$ and $-q\sqrt D$ have the same sign, so $p-q\sqrt D\neq0$ has the sign of $p$.
+From $(p+q\sqrt D)(p-q\sqrt D)=p^2-q^2D$, the sign of $p+q\sqrt D$ is the sign of $p$ times the sign of $p^2-q^2D$: the sign of $p$ if $p^2>q^2D$, and the sign of $-p$, which is the sign of $q$, if $p^2<q^2D$.
+Since $q\ne0$, the equality $p^2=q^2D$ would make $D=(p/q)^2$ a rational square.
+
+(b) $\Q(\sqrt D)$ is a field, so $+$, $-$, $\times$, integer powers (repeated products) and division by nonzero elements are exact operations on the pairs $(p,q)$, and part (a) decides whether a denominator is zero.
+At a \texttt{sqrt} node with argument $a$, the value is the unique nonnegative real whose square is $a$; if $s\ge0$ and $s^2=a$, then $a\ge0$ satisfies the domain rule and the node equals $s$.
+Every row and bound comparison is a sign test of a difference in $\Q(\sqrt D)$, decided by (a).
+If all tests pass and the integer variables have integer values, every row, bound and integrality requirement holds and every expression is defined, so $x\in\feas$.
+If the objective is built from the same operations, its value is the computed element.
+For the row-by-row version apply the argument to each row in its own field.
+\end{proof}
+
+\begin{proof}[Proof of \cref{prop:pts-triangular}]
+We show by induction on $t$ that $z^*_0,\dots,z^*_t$ are defined and lie in $Z_0,\dots,Z_t$.
+For $t=0$ this holds because $Z_0=\{z_0\}$.
+If it holds for $t-1$, then $(z^*_0,\dots,z^*_{t-1})\in Z_0\times\dots\times Z_{t-1}\subseteq\mathcal{D}_t$, so $z^*_t=\varphi_t(z^*_0,\dots,z^*_{t-1})$ is defined, and it lies in $Z_t$ because $\varphi_t(Z_0\times\dots\times Z_{t-1})\subseteq Z_t$.
+The rows in $R_t$ involve only $z_0,\dots,z_t$, so by the defining property of $\varphi_t$ they hold exactly at $z^*$, with all their expressions defined.
+Hence $z^*\in Z$ satisfies every row in $R_1\cup\dots\cup R_T$.
+Every other row and bound holds at all points of $Z$, hence at $z^*$, the objective is defined there, and every integer variable equals its integral singleton value, so $z^*\in\feas$.
+Finally $f(z^*)$ lies in every enclosure of $f$ over $Z$.
+\end{proof}
+
+The proof makes the symbolic step explicit: each row of $R_t$ must be rewritten correctly as a definition $z_t=\varphi_t(z_{<t})$.
+Evaluating the defining rows over the boxes afterwards gives enclosures that contain $0$; this is consistent with exact satisfaction but does not prove it.
+The safeguard is that the separately written implementations re-derived every defining row from the OSIL file and obtained the same definitions.
+
+\begin{proof}[Proof of \cref{prop:pts-lindemann}]
+Among the rows of \inst{lnts}$N$ are, for $i=0,\dots,N-1$,
+\begin{gather*}
+vx_{i+1}-vx_i-50h(\cos\theta_i+\cos\theta_{i+1})=0,\qquad
+vy_{i+1}-vy_i-50h(\sin\theta_i+\sin\theta_{i+1})=0,\\
+py_{i+1}-py_i-\tfrac h2(vy_i+vy_{i+1})=0,
+\end{gather*}
+with the fixed values $vx_0=vy_0=py_0=0$, $vx_N=45$ and $py_N=5$ (\cref{app:lnts}).
+Suppose that a feasible point has algebraic $\theta_0,\dots,\theta_N$ and $h$.
+Summing the $vx$ rows gives $45=100h\sum_{j=0}^{N}w_j\cos\theta_j$ with $w_0=w_N=\tfrac12$ and $w_j=1$ otherwise.
+Hence $h\ne0$ and $\sum_jw_j\cos\theta_j=q:=9/(20h)$, which is algebraic.
+Let $\mathcal{A}=\{|\theta_j|:\theta_j\ne0\}$, let $c_a=\sum_{j:|\theta_j|=a}w_j>0$ for $a\in\mathcal{A}$, and let $c_0=\sum_{j:\theta_j=0}w_j\ge0$.
+Since $\cos$ is even and $\cos a=(e^{ia}+e^{-ia})/2$,
+\[
+(c_0-q)\,e^{0}+\sum_{a\in\mathcal{A}}\tfrac{c_a}{2}\,e^{ia}+\sum_{a\in\mathcal{A}}\tfrac{c_a}{2}\,e^{-ia}=0 .
+\]
+The exponents $0$ and $\pm ia$ ($a\in\mathcal{A}$) are distinct algebraic numbers, and the coefficients are algebraic.
+By the Lindemann--Weierstrass theorem in the form of \citet[Chapter~1]{baker1975-transcendental-number-theory}, $e^{\beta_1},\dots,e^{\beta_k}$ are linearly independent over the algebraic numbers whenever $\beta_1,\dots,\beta_k$ are distinct algebraic numbers; hence every coefficient vanishes.
+Since $c_a>0$, the set $\mathcal{A}$ is empty, so every $\theta_j=0$.
+Then the $vy$ rows give $vy_i=vy_0=0$ for all $i$, and the $py$ rows give $py_N=py_0=0\ne5$, a contradiction.
+\end{proof}
+
+\subsection{Constructions by instance}\label{app:points-instances}
+
+For each family we state the point, how its feasibility is proved, how its objective is enclosed and which implementations prove it, summarizing where \cref{app:families} gives the construction in full; ``separately written'' has the meaning of \cref{sec:semantics-protocol}.
+Unless stated otherwise, $\Uprim$ is the upper end of the objective enclosure rounded up, as in \cref{tab:points-all}.
+
+\begin{proposition}[Exactly feasible points for the 13 closures]\label{prop:pts-former}
+For each instance of \cref{tab:points}, the point defined below exists and lies in $\feas$, and its objective lies in an enclosure of the width shown there.
+For \inst{dtoc5}, \inst{lukvle10}, the \inst{chain} instances and the \inst{powerflow} instances, the upper end of this enclosure, rounded up, is the value $\Uprim$ of \cref{tab:closures}.
+For the \inst{lnts} instances, $\Uprim$ is the attained optimum of \cref{thm:lnts-opt}, and the points of this proposition are a second, strictly suboptimal witness.
+\end{proposition}
+
+\begin{certbox}[Certificate for \cref{prop:pts-former}]
+\certitem{Inputs}{OSIL files of the 13 instances (SHA-256 prefixes in \cref{tab:sem-hashes}). Point data: the 40-digit \inst{lnts} controls with their boxes; the \inst{dtoc5} decimal point; the 640-decimal \inst{lukvle10} seeds; the \inst{chain} generators (20-decimal $t_i$, $R_N$, root order); the \inst{powerflow} fixed values, square systems and 60-digit centres.}
+\certitem{Computation}{Krawczyk tests (\cref{thm:pts-krawczyk}) on systems of 3 (\inst{lnts}) and 222, 262 and 270 (\inst{powerflow}) equations, with enclosures of all other rows and of the objective; exact evaluation of every row in $\Q$ (\inst{dtoc5}) or $\Q(\sqrt{R_N})$ (\inst{chain}); a forward recursion with enclosures (\inst{lukvle10}). Arithmetic: \arith{I} (mpmath at 110, 750 and 80 digits) in the first implementation for \inst{lnts}, \inst{lukvle10} and \inst{powerflow}; \arith{E} for \inst{dtoc5} and \inst{chain} and in every second implementation.}
+\certitem{Data reading}{exact decimals in every reader.}
+\certitem{Implementations}{each point is proved by the first implementation and again by a separately written implementation with its own OSIL reader that uses only integers and rationals with explicit series remainders: dyadic intervals with alternating-series bounds for $\sin$ and $\cos$ (\inst{lnts}); \texttt{Fraction} arithmetic, plus a third exact reader (\inst{dtoc5}); integer fixed point with integer logarithm and exponential (\inst{lukvle10}); its own arithmetic in $\Q(\sqrt D)$ (\inst{chain}); dyadic intervals at $2^{-320}$ with Taylor bounds for $\sin$ and $\cos$ (\inst{powerflow}). Either implementation alone proves the claim.}
+\certitem{Evidence level}{\evid{hand} (\cref{thm:pts-krawczyk,prop:pts-exact,prop:pts-triangular}) $+$ \evid{stored}.}
+\certitem{Replay}{Tier~1; seconds to minutes per family (\cref{app:repro}).}
+\end{certbox}
+
+\paragraph{\inst{lnts50}--\inst{lnts400}.}
+Each instance has two exactly feasible points.
+The first, which gives $\Uprim$, is the attaining point of \cref{thm:lnts-opt}; its existence rests on the intermediate value theorem for a scalar root, and two integer-only implementations enclose its objective in exact rational arithmetic \arith{E}, with width below $\sci{1.11}{-91}$ (\cref{app:lnts}).
+The second is the point of \cref{prop:pts-former}, a second, strictly suboptimal witness (\cref{rem:lnts-stored}).
+Its controls $\theta_1,\dots,\theta_{N-1}$ are fixed at 40-digit decimal rationals that round the linear-tangent law.
+Given $(\theta_0,\theta_N,h)$, the rows define $vx$, $vy$, $px$ and $py$ by $v_{i+1}=v_i+50h(\phi(\theta_i)+\phi(\theta_{i+1}))$ and $p_{i+1}=p_i+\tfrac h2(v_i+v_{i+1})$, with $(v,p,\phi)=(vx,px,\cos)$ or $(vy,py,\sin)$, starting from $0$.
+Every row has coefficient $1$ on its next state, so all $4N$ rows hold identically (\cref{prop:pts-triangular}).
+The fixed values that remain give $G(\theta_0,\theta_N,h)=(vx_N-45,\ vy_N,\ py_N-5)=0$; $px_N$ is free.
+\Cref{thm:pts-krawczyk} with $m=3$ is applied on a box around a 75-digit centre with radius $10^{-50}$ in $\theta_0$ and $\theta_N$ and $10^{-52}$ in $h$, with the Jacobian obtained by forward-mode differentiation of the recursion and $C$ the inverse of the midpoint Jacobian.
+On the box $|\theta_j|\le0.9523$ and $h>0$, so all bounds hold.
+The first implementation uses mpmath intervals at 110 digits; the separately written one re-derived the elimination from the OSIL file and repeated the test in mpmath at 120 digits and in integer dyadic arithmetic.
+
+\paragraph{\inst{dtoc5}.}
+The model has the rows $-\tfrac{1}{50000}u_t+y_t-y_{t+1}+\tfrac{1}{12500}y_t^2=0$ (decimal strings \texttt{2e-5} and \texttt{8e-5}) for $t=0,\dots,49998$, the fixed value $y_0=1$ and no other bounds (\cref{app:dtoc5}).
+The states $y_1,\dots,y_{49999}$ of a Newton solution polished at 50 digits are rounded to 30 decimals, and each control is \emph{defined} by its row, $u_t:=50000\,(y_t-y_{t+1})+4y_t^2$, a decimal with at most 60 places.
+So every row holds identically, and the objective is an exact rational whose value gives $\Uprim$.
+Exact checks with separate readers confirm every row, the fixed value $y_0=1$ and the objective: the first code's generic checker with a cross-check by another reader, a separately written implementation with its own reader, and a third exact reader.
+As a negative control, adding $10^{-60}$ to one control makes exactly its row fail.
+
+\paragraph{\inst{lukvle10}.}
+
+\begin{remark}[Seeds for \inst{lukvle10}]\label{rem:lukvle10-seeds}
+Every row of \inst{lukvle10} reads $-x_j+3x_{j+1}-2x_{j+2}-2x_{j+1}^2=-1$ ($j=0,\dots,997$), and all 1000 variables are free.
+Row $j$ defines $x_{j+2}=(1-x_j+3x_{j+1}-2x_{j+1}^2)/2$, and the objective is defined at every real point, because its \texttt{power} nodes have exponents of the form $x_k^2+1>0$ (\cref{def:sem-model}).
+Any two rational seeds $x_0,x_1$ therefore define a rational, exactly feasible point (\cref{prop:pts-triangular}).
+The denominators roughly square at every step, so the point cannot usefully be printed.
+Useful seeds must also be very precise.
+At the fixed point $-1/\sqrt2$ of the recursion, its linearization has the eigenvalues $2.731$ and $0.183$, so seed errors grow by a factor of about $2.73^{998}\approx10^{435}$ along the chain.
+In a floating-point experiment at 1500 digits, the 15-digit seeds of MINLPLib's listed point p5 drive $|x_j|$ above $10$ at index $40$.
+Seeds that agree with a numerical local minimizer to 50--420 decimals give objective values between $352.89$ and $353.01$; seeds with 440 decimals give a value within $\sci{2}{-14}$ of the local minimizer's, and 460 or more decimals reproduce it to 20 digits.
+Our seeds are the local minimizer's values rounded to 640 decimals; the seeds and the recursion define our point.
+MINLPLib's listed point p5, whose rows hold to $\sci{3.48}{-15}$, evaluates about $\sci{5.1}{-13}$ above the objective of our point.
+\end{remark}
+
+The first implementation encloses all coordinates in mpmath intervals at 750 digits; the smallest $|x_k|$ is $0.26003$, so every \texttt{power} base $x_k^2$ is at least $0.0676$, and the objective is enclosed through $\exp(b\ln a)$ with positive bases $a$.
+The objective enclosure gives $\Uprim=352.2380254064957$.
+A further implementation on the first side uses integer fixed point with an $\operatorname{atanh}$-series logarithm and a Taylor exponential; the separately written one uses integer fixed point at $2^{-3400}$ with its own integer logarithm and exponential.
+Both reproduce the enclosure, so the primal side of \inst{lukvle10} does not depend on mpmath.
+The point agrees with the numerical local minimizer to about 205 digits.
+This is evidence of local stationarity only; global optimality of the point is not proved.
+
+\paragraph{\inst{chain50}--\inst{chain400}.}
+The model has variables $x_0,\dots,x_N$ (heights) and $u_0,\dots,u_N$ (slopes), all free except $x_0=1$ and $x_N=3$, the rows $x_{i+1}-x_i-\eta(u_i+u_{i+1})=0$ for $i<N$, and the length row $\eta\sum_{i<N}(s_i+s_{i+1})=4$, where $\eta=1/(2N)$ and $s_i=\sqrt{1+u_i^2}$ are \texttt{sqrt} nodes.
+Let $\omega_0=\omega_N=1$ and $\omega_i=2$ otherwise.
+
+\begin{lemma}[Rational parametrization of \inst{chain}]\label{lem:pts-chain}
+For $t\in\R^{N+1}$ with $t>0$, put $u_i=(t_i-t_i^{-1})/2$, let $x_0=1$ and define $x_1,\dots,x_N$ by the linear rows.
+Then $s_i=(t_i+t_i^{-1})/2$ for every $i$, and $(x,u)$ is exactly feasible if and only if
+\[
+\sum_{i=0}^N\omega_it_i=12N\qquad\text{and}\qquad\sum_{i=0}^N\omega_i/t_i=4N .
+\]
+Every exactly feasible point arises in this way, from $t_i=u_i+\sqrt{1+u_i^2}$.
+\end{lemma}
+
+\begin{proof}
+Put $\sigma_i=(t_i+t_i^{-1})/2$.
+Then $\sigma_i>0$ and $\sigma_i^2-u_i^2=1$, so $\sigma_i=\sqrt{1+u_i^2}=s_i$.
+Summing the linear rows gives $x_N=1+\eta\sum_{i<N}(u_i+u_{i+1})=1+\eta\sum_i\omega_iu_i$, so $x_N=3$ if and only if $\sum_i\omega_iu_i=4N$; the length row reads $\sum_i\omega_is_i=8N$.
+Since $t_i=s_i+u_i$ and $t_i^{-1}=s_i-u_i$, these two conditions are equivalent to $\sum_i\omega_it_i=12N$ and $\sum_i\omega_i/t_i=4N$.
+All other rows hold by the definition of $x$, and every expression is defined.
+Conversely, for any real $u_i$, $t_i=u_i+\sqrt{1+u_i^2}>0$ satisfies $u_i=(t_i-t_i^{-1})/2$, and the linear rows determine $x$ from $x_0=1$.
+\end{proof}
+
+Starting from a floating-point local minimizer, we fix $t_i$ for $i\notin\{1,N-1\}$ at 20-decimal rationals.
+With $\alpha=(12N-\sum'\omega_it_i)/2$ and $\beta=(4N-\sum'\omega_i/t_i)/2$, where $\sum'$ omits $i=1$ and $i=N-1$, the lemma requires $t_1+t_{N-1}=\alpha$ and $t_1^{-1}+t_{N-1}^{-1}=\beta$, that is, $t_1t_{N-1}=\alpha/\beta$.
+So $t_1$ and $t_{N-1}$ are the roots of $T^2-\alpha T+\alpha/\beta$; we take $t_1$ to be the smaller root.
+Both roots are positive because $\alpha>0$, $\alpha/\beta>0$ and the discriminant $\alpha^2-4\alpha/\beta$ is positive, as the checks verify.
+Writing the discriminant as $n/d$ in lowest terms and $R_N=nd$, which is not a square, every coordinate lies in $\Q(\sqrt{R_N})$; $R_N$ has 1,928, 3,755, 7,323 and 14,507 digits.
+Feasibility is decided by \cref{prop:pts-exact}: every row and both fixed values hold exactly in $\Q(\sqrt{R_N})$, and each \texttt{sqrt} node is accepted because the candidate $(t_i+t_i^{-1})/2$ is nonnegative and squares to $1+u_i^2$.
+The objective is enclosed to 40 decimals with integer square roots.
+The first code's build and verification scripts are separate programs, and the separately written implementation repeated every check.
+SCIP's floating-point solution check accepts binary64 roundings of the points at feasibility tolerance $10^{-13}$ (evidence only).
+For \inst{chain50}, the other root order also gives an exactly feasible point, with a much larger objective ($6.326$), so the root order is part of the definition.
+We do not know whether a rational feasible point exists near the optimum.
+
+\paragraph{\inst{powerflow0030p}, \inst{powerflow0039p}, \inst{powerflow0039r}.}
+\Cref{app:powerflow-points} gives the construction and the two implementations.
+Starting from MINLPLib's p1, rows with slack below $10^{-9}$ are treated as active; the active slacks are at most $\sci{6.8}{-13}$ and the next slacks at least $\sci{4.3}{-4}$.
+Compared with the scheme of \citet{kearfott1998-on-proving-existence-of-feasible}, the fixed coordinates are exact rationals, active multi-variable inequality rows are imposed as equalities, and the box is far smaller (radius $10^{-45}$).
+The free variables of the exact points differ from those of p1 by at most $\sci{1.4}{-14}$, $\sci{2.5}{-13}$ and $\sci{7.8}{-12}$, and their objectives exceed those of p1 by $\sci{2.87}{-12}$, $\sci{4.64}{-12}$ and $\sci{1.83}{-10}$.
+SCIP's floating-point check accepts the centres rounded to binary64 at feasibility tolerance $10^{-9}$ (evidence only).
+
+\paragraph{\inst{optcdeg2}.}
+\Cref{prop:optcdeg2-point} gives the point and its proof (\cref{app:optcdeg2-point}): the controls are $\pm1/5$ on the three arcs, one switching control is a stored binary64 value, and the other is bracketed by the intermediate value theorem applied to the terminal condition $v_N=0$, in integer interval arithmetic and again, separately written, in mpmath.
+The point concerns MINLPLib's coefficient $0.2$ in the velocity rows, not CUTEst's $0.05$ (\cref{app:optcdeg2-model}).
+
+\paragraph{\inst{catmix100}--\inst{catmix800}.}
+With $a=1/(2N)$ and the stored coefficient $c$, the rows of \eqref{eq:catmix-model} are $P(u_{i+1})x_{i+1}=Q(u_i)x_i$ for $i<N$, with $x_0=(1,0)$, free states and controls $u\in[0,1]^{N+1}$.
+Since $\det P(u)\ge1+a$ for $u\in[0,1]$ (\cref{lem:catmix-nonneg}), any controls in $[0,1]$ define the states uniquely by $2\times2$ blocks, and every row holds exactly (\cref{prop:pts-triangular,lem:catmix-reduction}).
+For binary64 controls the states and the objective $x_{1,N}+x_{2,N}-1$ are exact rationals, and $\Uprim$ is the exact objective rounded up.
+We use the controls of the points computed by the first code for $N=100,200,400$ and those of the policy of the dual certificate for $N=800$.
+For each $N$, at least two separately written implementations with their own readers computed the objective in exact rational arithmetic; one of them solves each pair of rows as a $2\times2$ linear system without using the structure of $P$ and $Q$.
+For $N=400$ the first code's 60-digit mpmath interval simulation agrees.
+
+\paragraph{\inst{camshape100}--\inst{camshape800}.}
+The point is the envelope $E$ of \cref{lem:camshape-envelope} with the slope variables $d_i=E_{i+1}-E_i$; all coordinates are rationals computed by exact recurrences.
+\Cref{lem:camshape-envelope}(b) proves feasibility, and two separately written exact implementations confirm it by evaluating every OSIL row and bound in rational arithmetic.
+The objective equals $v_n$ exactly, so $\Uprim$ is the ceiling display of the exact optimum.
+A binary64 rounding of $E$ violates rows by $\sci{2.8}{-16}$ to $\sci{4.8}{-16}$; the exact point is the witness.
+
+\paragraph{The six small instances.}
+\Cref{app:small} gives each construction and its proof.
+The \inst{ex6_2_5} and \inst{ex6_2_7} points are rational, so their rows and bounds hold exactly; their objectives are enclosed in mpmath intervals and, without mpmath, in rational intervals.
+The \inst{pricing050} point is a saved 17-digit point whose five rows hold, by mpmath interval evaluation in two separately written implementations with their own readers, with slack at least $\sci{3.49}{-15}$; its bounds hold exactly and its linear objective is exact.
+The \inst{etamac} point is defined forward from saved 17-digit decisions (\cref{prop:pts-triangular}); mpmath intervals prove its bounds and enclose its objective.
+The \inst{pindyck} point fixes the prices; each supply row $s-\hat a-\hat b\,e^{-Ks}=0$ with $\hat b>0$ and $K>0$ has a strictly increasing left side with limits $\mp\infty$, so it defines the supply uniquely, and a one-dimensional interval test in mpmath encloses it in two implementations (\cref{lem:pindyck-reduction}).
+The \inst{hvycrash} point fixes $c_k=0.08$ and is defined backwards from $\theta_{50}=3$: the rows of stage $k$ give $r_k=(-\cos\theta_k/D(0.08))^{1/2}$, then $\theta_{k-1}$ and $s_k=-kh$, which are defined because every $\cos\theta_k<-0.85$; \cref{prop:hvycrash-identity} proves its feasibility in a written proof, two codes checked this witness in mpmath intervals and a third code a second witness.
+The stored decimal vectors of the \inst{hvycrash}, \inst{etamac} and \inst{pindyck} points are not exactly feasible; the points are the real points defined by the recursions.
+
+\paragraph{\inst{eg_int_s}, \inst{eg_disc_s}, \inst{eg_disc2_s}.}
+\Cref{app:eg-primal} lists the points, their slacks and the tests of the exponential below.
+All 28 rows are inequalities.
+The objective variable, whose value is the objective, is a 20-digit decimal rounded up from a high-precision evaluation of the largest of the 24 right-hand sides; this rounding gives the smallest margins, $\sci{5.57}{-20}$, $\sci{7.80}{-20}$ and $\sci{7.49}{-20}$.
+A library-free implementation with its own OSIL reader proves all 28 rows in dyadic intervals (integers times $2^{-256}$, with floor and ceiling rounding), bounding $\exp$ by the alternating Taylor series of $\exp(-y)$ for $0\le y\le2^{-8}$ followed by outward squaring.
+A separate agent session reran this check, read it in full and confirmed the three points; its tests support, and do not replace, the alternating-series proof.
+Two separately written mpmath interval implementations with their own readers give the same margins, and six perturbed copies of the \inst{eg_int_s} point are rejected.
+MINLPLib's listed points p1 are not claimed to be feasible.
+
+\paragraph{\inst{waterno2_06}--\inst{waterno2_24}.}
+The construction starts from MINLPLib's p4 for \inst{waterno2_06} and from our own window-reoptimized points for the other four instances.
+First, the binaries are fixed, the variables forced by single rows are pinned (an off pump has flow $0$ and minimal speed), and the big-M rows of running pumps become equalities.
+Second, the flows of the running pumps of one station are aliased, because a shared speed and head force equal flows.
+Third, the linear rows are solved exactly, with active level bounds and the horizon row imposed by a minimum-norm exact rational correction of the station flows; the largest correction per instance lies between $\sci{3.0}{-16}$ and $\sci{8.8}{-9}$.
+Fourth, each running station's pump-curve row becomes a quadratic $Aw^2+Bw+C=0$ in its speed $w$ with rational coefficients; the speed is the root nearest the numerical speed, isolated in a rational interval of width $\sci{2}{-45}$ by a sign change, and written $w=(-B+\sigma\sqrt{B^2-4AC})/(2A)$ with the sign $\sigma$ fixed by that interval.
+The points have 9, 18, 28, 48 and 63 such irrational speeds.
+Finally, the cost variables are set to rational upper bounds of the power expressions on a $10^{-30}$ grid, so the objective is an exact rational.
+Every coordinate lies in $\Q$ or in one quadratic field, and no row mixes two fields, so \cref{prop:pts-exact} decides every row, bound and integrality requirement exactly.
+Three exact checkers ran: two of the first code, one over the quadratic fields and one that decides signs by comparing $p^2$ with $q^2D$, and a separately written evaluator over the multi-quadratic field $\Q(\sqrt{D_1},\dots,\sqrt{D_k})$ with its own reader, whose mutation tests reject perturbations of $10^{-30}$.
+The \inst{waterno2_06} point lies within $\sci{3.1}{-13}$ of p4; it is MINLPLib's point made exact, not our own.
+The point p4 itself violates row \texttt{e94} by $\sci{1.08}{-11}$.
+The binary64 reading of these points is treated in \cref{app:waterno2-model}.
+
+\paragraph{\inst{ann_cumene_tanh}.}
+The five inputs are fixed at the rationals given by the 16-digit decimals of a computed point.
+Every other variable is defined by one of the 789 equality rows, in an acyclic order, in which it is the only unknown and appears linearly with a nonzero coefficient: a constant, or, in rows \texttt{e749} and \texttt{e782}--\texttt{e787}, a previously defined variable ($x_{753}$, $x_{746}$ or $x_{766}$) whose enclosure excludes $0$ (\cref{prop:pts-triangular}).
+The inequality row \texttt{e789} holds with margin $\sci{9.979}{-13}$, and the bounds of all 728 bounded variables hold.
+The tightest are $x_{647}\ge-1$, with margin $\sci{1.25}{-12}$, and the saturated neurons $x_{650}$ and $x_{657}$, whose enclosures touch $\pm1$; this still proves their non-strict bounds.
+The first implementation uses mpmath intervals at 60 digits; a separately written implementation with its own reader uses rational intervals with a Taylor exponential and Lagrange remainder, and its enclosures (width $\sci{2.8}{-89}$) lie inside those of the first.
+The 30- and 40-digit decimal roundings of the point are not exactly feasible.
+
+\paragraph{KAN instances.}
+The points of the six KAN instances of our set lie in $\RP$, the OSIL model without the partition-of-unity rows (\cref{app:annkan-kan}), because the stored models have no exactly feasible point (\cref{prop:kan-infeasible}).
+The inputs are fixed at the binary64 values of computed minimizers.
+For each edge, the binary variable of the first knot interval whose big-M rows hold over the whole enclosure of the edge argument is set to $1$, so the one-hot rows hold exactly.
+Every other equality row except the partition-of-unity rows defines one variable as in \cref{prop:pts-triangular}.
+The big-M rows hold exactly in the first layer, where the arguments are rational, and by enclosures in the second, with smallest margins between $\sci{7.3}{-5}$ and $\sci{6.5}{-2}$ across the six instances; every OSIL variable bound holds, including the bounds that $\Rnet$ drops.
+The first implementation uses mpmath intervals at 60 digits; a separately written implementation uses rational intervals and encloses each objective with width at most $\sci{3.2}{-89}$.
+The values $\Uprim$ are those of \cref{tab:kan}.
+
+\subsection{All 43 points}\label{app:points-table}
+
+\Cref{tab:points-all}, generated from the number file of the archive (\cref{app:repro}), gives for each family the construction of its points and the arithmetic of their proofs.
+
+\input{tables/tab-points-all}

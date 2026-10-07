@@ -1,0 +1,131 @@
+% Adapted from the 2026-10-02 report; inherited result and implementation.
+\section{A larger exact class: quadratic stars with affine rows}\label{sec:star}
+
+The obstruction in Section~\ref{sec:overlap} motivates support directions
+that span adjacent pairs. A tractable extension is a center variable $y$
+with leaves $x_1,\ldots,x_k$. The objective is
+\begin{equation}\label{eq:star}
+q(y,x)=a_0+a_1y+a_2y^2+
+\sum_{i=1}^k\{d_ix_i^2+(e_iy+f_i)x_i\}.
+\end{equation}
+All objective coefficients, affine-row coefficients, right-hand sides,
+and finite variable bounds are rational; finite binary floating-point
+inputs mean their exact rational values. Each supplied affine row contains
+only $y$ and at most one leaf. Rows containing only $y$ are allowed;
+rows involving two different leaves are outside this class. Every
+quadratic coefficient can have either sign. The same structure must hold
+for the scalar support objective obtained from a proposed direction.
+
+For fixed $y$, each leaf is constrained to an interval
+\begin{equation}\label{eq:leaf-bounds}
+L_i(y)\le x_i\le U_i(y),\qquad
+L_i(y)=\max_{r\in\mathcal L_i}(\alpha_{ir}+\beta_{ir}y),\quad
+U_i(y)=\min_{r\in\mathcal U_i}(\gamma_{ir}+\delta_{ir}y).
+\end{equation}
+The original bounds provide at least one function in each envelope.
+Projecting each bounded center--leaf polygon onto the center gives a
+closed rational interval. Their intersection, together with the center
+bounds and center-only rows, is exactly the feasible center interval
+$I$: conditional leaf feasibility is independent across leaves. An
+empty intersection proves this support domain empty.
+
+\begin{theorem}[Exact rational star support]\label{thm:star}
+For the nonempty domain just described, the minimum of
+\eqref{eq:star} is rational and has a rational minimizer. It is obtained
+by a finite rational partition of $I$ on which each leaf has an affine
+minimizer and the conditional optimum is quadratic in $y$. Both the
+partition and the attained minimum can be reconstructed exactly from
+the supplied rows, bounds, and coefficients.
+\end{theorem}
+\begin{proof}
+Partition $I$ at all intersections of affine functions in the envelopes
+of each leaf. On every open resulting interval, the active functions
+$L_i$ and $U_i$ are fixed and affine.
+
+If $d_i>0$, the unconstrained leaf minimizer is the affine function
+$v_i(y)=-(e_iy+f_i)/(2d_i)$. The constrained minimizer is
+$\max\{L_i(y),\min\{v_i(y),U_i(y)\}\}$. Further partition at
+intersections of $v_i$ with its two active bounds. Each remaining
+interval has one affine minimizing rule.
+
+If $d_i\le0$, a minimizing leaf value is an endpoint. The difference
+between the upper and lower endpoint objectives factors as
+\[
+q_i(y,U_i(y))-q_i(y,L_i(y))
+=(U_i(y)-L_i(y))
+\{d_i(U_i(y)+L_i(y))+e_iy+f_i\}.
+\]
+The first factor is nonnegative on the feasible center interval. The
+second is affine on the current interval, so at most one additional
+rational root determines the preferred endpoint; an identically zero
+factor permits either endpoint. This also gives an affine minimizing
+rule after refinement.
+
+Take the union of all leaf breakpoints. Substituting the selected affine
+rules into~\eqref{eq:star} gives a rational quadratic on every closed
+piece. The rule remains feasible and minimizing at its endpoints:
+bound switches coincide there, and endpoint-choice switches have equal
+values there. Minimize each quadratic at its endpoints and, for a
+positive square coefficient, its feasible stationary point. These
+candidates are rational and exhaustive. The selected center and leaf
+rules supply an attained rational minimizer. A singleton center interval
+uses the same conditional scalar minimization at that point.
+\end{proof}
+
+If leaf $i$ has $m_i$ envelope lines, their pair intersections produce
+at most $O(m_i^2)$ center breakpoints; a constant number of further
+switches per envelope interval gives the same order. The union of
+breakpoints has polynomial size. The present implementation deliberately
+uses straightforward pair enumeration and scanning. Its arithmetic
+cost is polynomial in the supplied row counts and number of leaves;
+no claim of an optimal complexity bound is needed for this small-block
+oracle. Unlike general elimination on a deeper graph, this construction
+does not repeatedly nest piecewise messages along a tree.
+
+The inherited implementation
+\pathref{../../research-20261002-convexification/theory/quadratic_star.py}{theory/quadratic_star.py}
+records the complete center partition, affine leaf rules, quadratic
+value functions, and attained minima. Unsupported mixed terms or rows
+raise an explicit error instead of being dropped. Replay rebuilds the
+same exact object from trusted input. As with the polytope oracle, this
+is exact support for a supplied direction; completeness of the
+integration's direction search is a separate question.
+
+\begin{corollary}[Sharp gain for specified pair directions]\label{cor:gain}
+Let compact rational center--leaf polygons $P_i$ assemble into a nonempty
+star, and fix rational quadratic pair objectives $q_i(y,x_i)$. Define
+\[
+\beta_i=\min_{P_i}q_i,\qquad
+\beta_* = \min_{(y,x_i)\in P_i\ \forall i}\sum_iq_i(y,x_i),
+\qquad \Delta=\beta_*-\sum_i\beta_i.
+\]
+Then $\Delta\ge0$ is the largest possible constant improvement in
+the sum of these fixed pair inequalities. It is exactly computable by
+the pair and star support algorithms. Moreover, $\Delta>0$ if and
+only if the center projections of the pair minimizing sets have no
+common point.
+\end{corollary}
+\begin{proof}
+Every pair objective is at least its individual minimum, proving
+$\Delta\ge0$. Equality holds precisely when one feasible assembled
+point minimizes every pair objective. Such a point exists precisely
+when their minimizing center sets intersect, since leaves can then
+be chosen independently. If no such point exists, compactness makes
+the attained assembled minimum strictly larger. The attained value
+$\beta_*$ is the largest valid constant in this summed direction.
+\end{proof}
+
+This gives a precise diagnostic for a proposed merger of directions.
+It does not choose the normals or predict whether computing the gain
+will improve total runtime. In the example below, both pair minima
+are zero and the exact gain is $1/128$.
+
+The box-only case is a specialization of Del Pia and Khajavirad's
+forest-QP algorithm, which gives an $O(n^2)$ arithmetic bound for general
+forests \cite{DelPiaKhajavirad2026}. Piecewise-affine responses of
+strictly convex parametric quadratic programs are also classical
+\cite{BemporadEtAl2002}. The additional domain handled explicitly here
+consists of center--leaf affine rows with all signs of scalar leaf
+curvature. That scope distinction and its exact implementation are
+documented; a first-result claim does not follow from a bounded source
+search.

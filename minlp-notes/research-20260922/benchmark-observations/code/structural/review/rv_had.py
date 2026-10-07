@@ -8,6 +8,9 @@
 (c) Primal matrices from certs evaluated in the parsed model (exact integers) and by own
     fraction-Gaussian determinant.
 """
+from pathlib import Path as _CleanupPath
+_NOTES_ROOT = _CleanupPath(__file__).resolve().parent.joinpath('../../../../..').resolve()
+
 import itertools
 import json
 import math
@@ -18,8 +21,8 @@ from fractions import Fraction as F
 
 from rv_osil import read, strip
 
-OSIL = "/home/sgusev/.cache/minlplib/minlplib/osil/hadamard_{}.osil"
-CERT = "/home/sgusev/repo/minlp-notes/research-20260922/benchmark-observations/code/structural/certs/hadamard_{}.json"
+OSIL = (str(_CleanupPath.home()) + '/.cache/minlplib/minlplib/osil/hadamard_{}.osil')
+CERT = (str(_NOTES_ROOT) + '/research-20260922/benchmark-observations/code/structural/certs/hadamard_{}.json')
 
 
 def mul(p, q):

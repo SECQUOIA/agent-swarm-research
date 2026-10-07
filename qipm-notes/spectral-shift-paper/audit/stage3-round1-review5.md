@@ -54,6 +54,6 @@ I found no remaining reliance on an unproved overlap-free solver guarantee or an
 
 ## Independent numerical diagnostics
 
-Using `/home/sgusev/miniconda3/envs/qipm/bin/python`, I checked 135 parameter samples across `rho` values `1.01, 1.5, 2, 7, 100`, three admissible gap sizes for each ratio, and nine hidden parameters per interval. Checks covered basis orthogonality, `AA^T=H`, the normal equation, primal-direction feasibility, the complementarity predictor equation, both full oracle unitarities, right-side preparation, the projector-compression factor identity, the support overlap, endpoint state distance, the coarse approximation, and the successful-estimate angle bound.
+Using `/workspace/local-home/miniconda3/envs/qipm/bin/python`, I checked 135 parameter samples across `rho` values `1.01, 1.5, 2, 7, 100`, three admissible gap sizes for each ratio, and nine hidden parameters per interval. Checks covered basis orthogonality, `AA^T=H`, the normal equation, primal-direction feasibility, the complementarity predictor equation, both full oracle unitarities, right-side preparation, the projector-compression factor identity, the support overlap, endpoint state distance, the coarse approximation, and the successful-estimate angle bound.
 
 The maximum algebraic residual was `1.33e-15`. The largest sampled successful-estimate trace error divided by its stated `epsilon_0/4` upper bound was about `0.999845`. These floating-point checks corroborate the analytic verification; they are not proof certificates. No manuscript or stored artifact was changed.

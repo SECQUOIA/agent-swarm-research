@@ -1,0 +1,412 @@
+% Introduction. Labels defined here use the prefix "intro:".
+\section{Introduction}\label{sec:introduction}
+
+Branch-and-bound produces a feasible solution and a proof of its quality.
+The proof excludes every region that might contain a substantially better
+solution, using relaxation bounds, disjunctions, and domain reductions. Its
+size can vary greatly between instances of the same dimension. A large
+search tree can reflect a weak relaxation, poorly chosen splits, expensive
+propagation, or difficulty finding a good incumbent. These causes require
+different explanations.
+
+This paper studies the size of the proof for a fixed instance, relaxation,
+and class of permitted operations. We call this size the
+\emph{certification complexity}. The central question is how the
+relaxation's error interacts with the instance's near-optimal points.
+We develop geometric characterizations for continuous box relaxations,
+combinatorial lower bounds for convex integer relaxations, and probabilistic
+laws in two Gaussian models. We then examine how propagation, branching,
+and decomposition change the certificates that can be constructed.
+
+\subsection{Certificate size and search work}\label{intro:certificates}
+
+Let $f_*$ be the global minimum and let $\epsilon>0$ be an additive
+optimality tolerance. A lower-bound certificate covers the points that must
+be considered by regions on which a specified test proves that the objective
+is at least $f_*-\epsilon$. A finished branch-and-bound tree supplies such a
+certificate when its incumbent is optimal. With any feasible incumbent of
+value $U\geq f_*$, pruning at $L(B)\geq U-\epsilon$ still implies
+$L(B)\geq f_*-\epsilon$, so the same lower bounds apply. Constructive upper
+bounds usually fix an optimal incumbent; the relevant exceptions state an
+explicit search convention.
+
+For spatial certificates, three minima are useful:
+$N_{\mathrm{cover}}$ counts a smallest cover by valid boxes,
+$N_{\mathrm{rect}}$ a smallest rectangular partition, and
+$N_{\mathrm{tree}}$ the leaves of a smallest tree formed by coordinate
+cuts. They satisfy
+\[
+ N_{\mathrm{cover}}\leq N_{\mathrm{rect}}\leq N_{\mathrm{tree}}.
+\]
+These finite minima need not be equal. A lower bound for covers and an upper
+bound realized by a tree can nevertheless identify their common asymptotic
+order. A complete binary tree with $L$ leaves has $2L-1$ nodes.
+
+Domain reduction requires additional care. A closed discarded slab can
+contain a retained feasible face, whose points the reduction did not
+exclude. We therefore pair each closed test box with the subset of points
+it \emph{owns}; retained boundaries continue into the surviving region.
+These owned families need not be ordinary covers by boxes valid on their
+whole closures. The geometric lower bounds apply to them directly through
+per-test estimates. \Cref{sec:certificates} gives the ownership construction
+and charges removed pieces, probe tests used in stopping bounds, and
+relaxation evaluations (\cref{cert:lem-events}). Lower bounds after reduction require the stated
+pointwise gap assumptions. A weaker bound-gap assumption suffices for raw
+certificates without reduction.
+
+We distinguish four quantities:
+\begin{enumerate}[label=(\roman*)]
+\item the size of a smallest certificate in the chosen class;
+\item the number of nodes processed while finding one;
+\item the work needed to check its regions, including relaxation evaluations,
+  tightening rounds, and propagation rounds;
+\item the work needed to find an incumbent of the required quality.
+\end{enumerate}
+The branching results compare item~(ii) with item~(i). Propagation and
+probing can shift work from nodes to item~(iii). A geometric lower bound on
+owned events becomes a node lower bound only when the relevant rounds per
+node are bounded and the model accounts for probe tests. Every result fixes
+its relaxation and operation class; a stronger relaxation or an additional
+operation must satisfy the hypotheses anew.
+
+\subsection{Main results}\label{intro:results}
+
+The continuous results concern $\epsilon\downarrow0$ for a fixed instance.
+Write $D\subset\R^n$ for the compact root box, $F\subseteq D$ for its
+feasible set, $m=f-f_*$, and
+$E(\eta)=\{x\in F:m(x)\leq\eta\}$. Constants may depend on the instance,
+relaxation, and dimension. The random-model results instead let the problem
+size grow and state their probability and scaling assumptions separately.
+
+\paragraph{Near-optimal geometry.}
+For a box $B=\prod_i[l_i,u_i]$, put
+\[
+ q_B(x)=\sum_i(x_i-l_i)(u_i-x_i).
+\]
+Suppose the bound satisfies $L(B)\leq f(x)-\alpha q_B(x)$ at every
+feasible $x\in B$, for a fixed $\alpha>0$. A valid box then obeys
+$\alpha q_B(x)\leq m(x)+\epsilon$. Each summand of $q_B$ is at least
+the squared distance to the nearer endpoint, so every point of
+$E(\eta)$ certified by that box lies within sup-norm distance
+$\sqrt{(\epsilon+\eta)/\alpha}$ of a box vertex. This gives the
+covering lower bound that drives the continuous theory.
+
+Let $N_\infty(S,r)$ count the least number of axis-aligned cubes of side
+$r$ covering $S$, and define
+\begin{equation}\label{intro:eq-profile}
+ \Phi_\alpha(\epsilon)=\sup_{\eta\geq0}
+ N_\infty\!\left(E(\eta),2\sqrt{(\epsilon+\eta)/\alpha}\right).
+\end{equation}
+Under second-order upper error in both objective and constraint violation,
+a local violation-to-distance error bound near the full feasible set, and a
+Lipschitz objective, dyadic subdivision yields
+\begin{equation}\label{intro:eq-comparison}
+ c\Phi_\alpha(\epsilon)
+ \leq N_{\mathrm{cover}}\leq N_{\mathrm{rect}}\leq N_{\mathrm{tree}}
+ \leq T_{\mathrm{bis}}
+ \leq C_0+C\log(1/\epsilon)\Phi_\alpha(\epsilon)
+\end{equation}
+for sufficiently small $\epsilon$ (\cref{geom:thm-profile}). The supremum over
+levels is essential: one near-optimal level can miss many separated wells.
+With quadratic growth away from the optimal set and the specified density
+conditions, positive-dimensional optimal manifolds give the familiar
+$\epsilon^{-p/2}$ rate for dimension $p$. An isolated degenerate minimizer
+can also give a polynomial rate, so the dimension of the optimal set alone
+does not determine complexity.
+
+Integral lower bounds sharpen this geometry on strata with controlled
+coordinate-projection multiplicity. Relaxed constraints can supply further
+witnesses: slightly infeasible points with objective below $f_*-\epsilon$
+must be excluded too. Under an inner-tube hypothesis, a global KKT minimizer
+with a positive-dimensional active stratum and a nonzero multiplier for a
+relaxed constraint forces $\Omega(\log(1/\epsilon))$ all-owner events. This
+result excludes reductions using original feasibility. It allows nonlinear
+exactly kept constraints, with a $C^2$ objective and compatible original
+exact and relaxed constraint data, and LICQ and multipliers for that same
+description. Changing only the description
+of the feasible set does not preserve these hypotheses (\cref{geom:thm-tube-kkt}).
+
+\paragraph{All root-box faces can matter.}
+For unconstrained $f$ with a Lipschitz gradient, a lower bound gap
+$\alpha q_B$, and pointwise upper error $\alpha' q_B$, the three spatial
+minima and dyadic node count are within constant factors of
+\begin{equation}\label{intro:eq-faces}
+ 1+\sum_{G:\,\dim G\geq1}
+ \int_G(m(x)+\epsilon)^{-\dim G/2}\,d\mathcal H^{\dim G}(x),
+\end{equation}
+where $G$ ranges over the faces of $D$, including $D$ itself
+(\cref{face:thm:characterization,face:rem:gap-scope}). This characterization
+needs no quadratic-growth
+assumption. For analytic objectives, classical analytic sublevel asymptotics
+convert each face integral into a polynomial or logarithmic rate. On a
+nonzero face restriction with zeros, small sublevel volumes have order
+$t^{\lambda_G}\log^{\theta_G-1}(1/t)$; $\lambda_G$ is the real log
+canonical threshold and $\theta_G$ its multiplicity. That face contributes
+$\epsilon^{\lambda_G-\dim G/2}\log^{\theta_G-1}(1/\epsilon)$ when
+$\lambda_G<\dim G/2$, and $\log^{\theta_G}(1/\epsilon)$ at equality;
+positive-minimum and identically-zero faces are treated separately.
+When all minimizers are interior, the full-dimensional integral suffices,
+and the rate is logarithmic exactly when all minimizers are nondegenerate.
+At the boundary a proper face can give a larger exponent than the full box
+(\cref{face:cor:analytic-rate,face:ex:boundary}).
+
+McCormick relaxations have a different exactness geometry. For separately
+relaxed bilinear terms, the zero-gap faces correspond to vertex covers of
+the interaction graph. \Cref{sec:geometry} derives matching, transversality,
+and fractional-cover bounds from this structure. A two-dimensional convex
+example with an aligned optimal segment has a two-leaf exact certificate
+(\cref{geom:prop-aligned-two}), while an aligned three-dimensional example
+still requires
+$\Theta(\epsilon^{-1/2})$ boxes (\cref{geom:ex-aligned-three}). Alignment
+alone therefore does not supply a
+general characterization. These results explain why convergence order alone
+can miss the placement of exact regions that determines certificate size.
+
+\paragraph{Changing the certificate representation.}
+\Cref{sec:decomposition} retains a fixed factorization and local relaxation,
+but allows local bag certificates connected by affine separator minorants.
+For a tree decomposition with $M$ bags and width $w$, global quadratic
+growth, $C^{1,1}$ bag objectives, vertex-vanishing factor error, and fixed width,
+incidence, and conditioning parameters give a certificate of size
+$O(M\log(M/\epsilon))$, with explicit dependence on those parameters
+(\cref{decomp:small-certificate}). This is an existence result using the
+minimizer and separator slopes. A nonconvex quartic path family has a unique
+nondegenerate minimizer and an exponential spatial-cover lower bound in
+dimension, yet admits an $O(n\log(n/\epsilon))$ decomposition certificate
+under the same separate unary and bilinear oracle
+(\cref{decomp:path-separation}). The comparison concerns
+proof size. Construction, local checking queries, and solution time carry
+separate costs.
+
+\paragraph{Propagation and branching.}
+\Cref{sec:propagation} models objective-only cutoff propagation by the
+greatest hull-consistent fixed point of a specified finite expression graph.
+Local exactness gives an ideal certificate count independent of tolerance;
+one-sided graphs supply a sufficient condition. Conversely, specified
+coordinatewise derivative cancellation with a uniform no-dominance margin
+transfers geometric lower bounds through charged propagation phases. These
+are sufficient conditions in different classes. The round count remains
+schedule dependent, and a bounded ideal node count can coexist with a
+diverging number of rounds
+(\cref{prop:local-exactness,prop:cnd-transfer}).
+
+For the exact oracle $L(B)=\min_B(f-\alpha q_B)$ on an interval,
+splitting at any relaxation minimizer is 4-competitive against the smallest
+finished tree, with an optimal incumbent and continuous $f$
+(\cref{branching:four-competitive}). Convexity is unnecessary for this
+counting theorem.
+Smooth nonanalytic examples give information lower bounds for node-local
+rules, and fixed interior safeguards impose an unbounded worst-case loss on
+kink families. A recentring safeguard attains the shortest safe chain that
+hits the kink; its finite-tolerance bound is stated separately. In several
+dimensions, splitting every available coordinate can lose a logarithmic
+factor even on a separable quadratic. Repeated coordinate ambiguity forces
+an exponential dependence on dimension for node-local rules with
+coordinatewise minimizer selection, nonanalytic germ information, and no
+objective-dependent information from siblings
+(\cref{branching:dimension-obstruction}). The rule selecting the largest
+coordinate contribution to $q_B$ at the relaxation minimizer has a constant
+ratio for one arbitrary separable coordinate and a fixed number of sharp
+coordinates, with an exact coordinatewise oracle satisfying the sharpness
+assumptions (\cref{branching:sharp-induction}). Its general
+fixed-dimensional competitiveness remains open.
+
+\paragraph{Integer certificates.}
+For a fixed convex projected relaxation $\phi$, a required integer set
+$P$, and threshold $\tau$, call a class admissible if $\phi\geq\tau$
+on its convex hull. The minimum number of such classes covering $P$ is the
+\emph{class number} $\kappa_\tau(P)$. It bounds the leaves of every
+$P$-covering convex-piece certificate. An unrestricted semantic binary
+certificate attains $\kappa_\tau(P)$ leaves when its root may be any convex
+set containing $P$ and its convex children cover the required integer
+points. This existence statement asserts no efficient construction or
+checking algorithm (\cref{lattice:class-number}). Convex cuts preserving
+every required point in $P$ preserve the lower bound. Certified incumbent removals require an augmented
+leaf-and-removal count.
+
+The class number can be much smaller than the best variable-branching
+tree. For a Haar random unimodular lattice with a uniform torus target, vanishing tolerance relative
+to the Gaussian-heuristic squared radius gives class-number bounds between
+$2^{(\frac12\log_2(3/2)-o(1))n}$ and $2^{(1/2+o(1))n}$ with high probability.
+They are invariant under basis changes (\cref{lattice:cvp}). A separate
+block-curvature family
+has exponentially many classes for a perspective relaxation and an exact
+root bound from small block hulls.
+
+\paragraph{Gaussian statistical models.}
+Condition C1 requires every single-variable fixing that disagrees with a
+specified optimal binary point to have relaxation bound at least $\OPT$.
+When the relaxation is exact at fully fixed assignments, it gives a path
+certificate with at most $2p+1$ nodes for $p$ binary variables if the optimal
+incumbent is available. Strict bounds above $\OPT$ give the same search
+bound under exact best-bound selection when a fully fixed optimal node
+recovers its feasible extension (\cref{lattice:path}). Failure
+of C1 alone gives no lower bound on tree size.
+
+For sparse ridge regression, \cref{sec:regression} identifies separate
+planted-support thresholds for root and single-variable certification.
+They are governed by $2\log p$ and $2\log(p\lambda/n)$ for an explicit
+ridge-dependent statistic, under the stated Gaussian high-dimensional
+scaling and fixed margins. With $k=p^{\gamma+o(1)}$ and
+$n=a k\log p$, a suitable ridge yields a unique planted optimum, an inexact
+root, and a linear path certificate when $2-\gamma<a<2$ (\cref{regression:window}).
+Selected local second-moment lifts preserve these first-order thresholds
+under explicit sandwich and growth assumptions. In a separate pure-noise
+or low-total-signal regime, conflict packings force
+$\binom pk^{c+o(1)}$ leaves. The pairwise-lift hard bound requires that
+zero-fixed helper columns remain in the lift.
+
+For binary least squares, let $A=\sqrt{\rho/N}H$ with $H$ an $M\times N$
+standard Gaussian matrix, independent standard Gaussian noise, and
+$\beta_N=M/N\to\beta\geq1$. For $\rho\to\infty$, $\rho=o(N)$, and the
+tolerances $0\leq\epsilon_N\leq\rho_N$, the logarithm of the minimum convex-piece
+certificate size and of the minimum variable-tree leaf count is
+$\Theta((N/\rho)\log\rho)$; sufficiently large fixed $\rho$ gives
+$\Theta(N)$ instead (\cref{bls:certificate-law}). A finite Gaussian
+nonnegative least-squares coefficient bound proves the simultaneous C1
+threshold $\theta_c=1/[4(2\beta-1)]$ when $\rho=\theta N$ with fixed
+$\theta>0$ separated from $\theta_c$ (\cref{bls:c1-threshold}). It also yields an exact
+coefficient mixture and a random root threshold asymptotic to
+$\log N/(2\beta_N-1)$ for equality of box and orthant values (\cref{bls:root-threshold}). This root
+event concerns upper-box inactivity. Planted recovery, rounding correctness,
+and an integral root optimum are distinct events.
+
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.12}
+\begin{tabular}{@{}p{0.22\textwidth}p{0.44\textwidth}p{0.28\textwidth}@{}}
+\toprule
+Certificate or search model & Governing structure & Scope of the comparison \\
+\midrule
+Spatial box certificates & Near-optimal covering profile; all root-face
+integrals & Specified lower gap and upper-error assumptions \\
+McCormick certificates & Interaction graph and placement of near-optimal
+strata & Separate lower bounds and exact examples \\
+Decomposition certificates & Bag width, incidence, and quadratic growth &
+Fixed local oracle; size and query costs distinguished \\
+Cutoff propagation & Expression graph and hull-consistent fixed point &
+Objective-only phases; rounds counted separately \\
+Branching search & Relaxation minimizers and available node information &
+Exact-gap oracle; incumbent and selection hypotheses \\
+Convex integer certificates & Admissible classes of required integer points &
+Fixed projected relaxation and retained point set \\
+Gaussian models & Correlation extremes, convex conflicts, and NNLS
+coefficients & Distinct asymptotic regimes and certificate events \\
+\bottomrule
+\end{tabular}
+\caption{The certificate models compared in this paper. Each chapter states
+its hypotheses and cost measure; a bound in one row does not automatically
+transfer to another.}
+\label{intro:tab-models}
+\end{table}
+
+\subsection{Relation to prior work}\label{intro:prior}
+
+The cluster problem in global optimization concerns the accumulation of
+boxes near minimizers. Earlier analyses relate this accumulation to the
+convergence order and constants of bounding schemes
+\citep{duKearfott1994Cluster,wechsungSchaberBarton2014Cluster}.
+Constrained analyses also identify nearly feasible points with low objective
+values as a source of clustering
+\citep{kannanBarton2017ConstrainedCluster}.
+Our profile comparison and root-face characterization address the size of
+adaptive certificates, with lower bounds applying to every valid cover and
+constructive upper bounds realized by subdivision. The nonlinear
+constraint-gap argument retains the original exact/relaxed partition and
+makes the operation restrictions explicit.
+
+Instance-dependent certified Lipschitz optimization also uses near-optimal
+covering numbers
+\citep{bachocCesariGerchinovitz2021LipschitzCertificates}.
+That work measures function evaluations under a Lipschitz oracle. Here the
+local relaxation specifies the regions that can be certified and the
+relevant resolution. Classical analytic singularity theory supplies the
+sublevel-volume asymptotics used in \cref{sec:face-exact}
+\citep{lin2017LearningCoefficient}; our result connects these asymptotics on
+all box faces to spatial certificate sizes.
+
+McCormick and multilinear envelope formulas are established tools
+\citep{mccormick1976Computability,rikun1997MultilinearEnvelope}.
+We use them to relate gap-zero faces and graph projections to certificate
+counts. Interval overestimation and validated exclusion regions are also
+established tools
+\citep{schichlMarkotNeumaier2014ExclusionRegions}. Our objective-cutoff
+propagation analysis fixes the expression graph and distinguishes its ideal
+bound from its round cost. Competitive comparison with an optimal certificate has analogues in
+other approximation problems, including analysis of the chord algorithm
+\citep{daskalakisDiakonikolasYannakakis2016ChordAlgorithm}. Our branching
+results compare tree counts under an exact quadratic-gap oracle, with
+explicit information and incumbent assumptions.
+
+Tree decompositions and reuse of conditioned subproblems are established
+in discrete AND/OR branch-and-bound and weighted constraint optimization
+\citep{marinescuDechter2009AndOrBranchAndBound,deGivrySchiexVerfaillie2006TreeDecomposition}.
+Treewidth also controls approximate LP formulations for polynomial
+optimization \citep{bienstockMunoz2018LpFormulations}. The focused
+decomposition comparison here fixes the continuous factor relaxation and
+proves a separation between global-box and affine-separator certificate
+sizes. Its existence and checking statements keep the costs of local
+optimization explicit.
+
+Integer branch-and-bound lower bounds already use midpoint conflicts and
+bounds on the number of integer points that one leaf can contain
+\citep{deyDubeyMolinaro2023BranchAndBoundLowerBounds}. Hiding sets give a
+related obstruction to small formulations
+\citep{kaibelWeltge2015LowerBoundsBranchAndBound}.
+The class-number formulation records the full convex-class covering
+obstruction for a specified projected relaxation. It also isolates the
+additional restriction imposed by variable or split branching. The
+statistical applications use these distinctions to compare conflict bounds,
+convex-piece certificates, and path certificates.
+
+The Boolean and perspective formulations of sparse regression are prior
+work
+\citep{pilanciWainwrightElGhaoui2015BooleanRelaxation,xieDeng2018BooleanRelaxation,dongChenLinderoth2015SparseRegression}.
+Gaussian support-recovery thresholds for other estimators, including the
+Lasso, concern different optimization and certificate events
+\citep{wainwright2009SharpLassoThresholds}. Our sparse-regression results
+compare root certification, single-variable certification, and selected
+local lifts in explicit asymptotic regimes. We also prove a narrow
+fixed-dimensional limitation of the Gaussian exactness assertion in
+\citet[Theorem~2]{pilanciWainwrightElGhaoui2015BooleanRelaxation} under its
+printed per-entry noise and ridge normalization: the true support becomes
+optimal, while the exactness probability approaches a constant below one.
+The underlying reformulation and deterministic exactness conditions remain
+valid.
+
+For binary least squares, maximum-likelihood recovery and box-decoder
+recovery have been studied previously
+\citep{hansenHassibiDimakisXu2009NearOptimalDetection,huLu2020LimitingPoissonMIMO}.
+A theorem about rounding one relaxation supplies no simultaneous conclusion
+for all wrong-fixing nodes without an appropriate probability bound.
+Gaussian cone face-dimension and chi-square projection mixtures are
+classical
+\citep{hugSchneider2016RandomConicalTessellations,mccoyTropp2014SteinerFormulas}.
+We give a direct sign-orbit proof and use a finite coefficient tail to control
+all single-wrong-fixing nodes, including square systems. The resulting C1
+threshold, root inactivity threshold, and certificate-size law address
+distinct branch-and-bound questions.
+
+\subsection{Scope and organization}\label{intro:scope}
+
+The continuous constants can grow exponentially with dimension, and some
+explicit statistical lower-bound constants make the bounds vacuous at the
+sizes of the archived computations. \Cref{sec:experiments} presents those
+computations as finite-size evidence with their recorded solver settings,
+precision, and provenance. They illustrate mechanisms and limitations;
+they establish no general practical speedup.
+
+\Cref{sec:certificates} defines the certificate classes and operation
+accounting. \Cref{sec:geometry} proves covering, stratified, constraint-gap,
+and McCormick results. \Cref{sec:face-exact} gives the root-face integral
+characterization and analytic consequences, and \cref{sec:decomposition}
+compares spatial and decomposition certificates under the same local
+oracle. \Cref{sec:propagation,sec:branching} study propagation and branching.
+\Cref{sec:lattice} develops convex integer certificates, followed by sparse
+regression and binary least squares in
+\cref{sec:regression,sec:binary-least-squares}.
+\Cref{sec:experiments,sec:discussion} give the computational evidence,
+limitations, and open questions. Long proofs are collected in the
+appendices.

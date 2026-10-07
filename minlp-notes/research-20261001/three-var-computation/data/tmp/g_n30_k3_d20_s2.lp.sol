@@ -1,0 +1,32 @@
+# Solution for model obj
+# Objective value = -1169
+x0 1
+x1 1
+x2 0
+x3 1
+x4 1
+x5 0
+x6 0
+x7 1
+x8 1
+x9 1
+x10 1
+x11 0
+x12 0
+x13 1
+x14 1
+x15 1
+x16 0
+x17 1
+x18 0
+x19 0
+x20 0
+x21 1
+x22 0
+x23 1
+x24 1
+x25 1
+x26 1
+x27 1
+x28 1
+x29 0

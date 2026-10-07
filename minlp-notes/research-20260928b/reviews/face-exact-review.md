@@ -545,8 +545,8 @@ BARON `(.7, .01)`, Couenne `(.25, .2)`. It then states:
 - "defaults `(1, 0.2)` for SCIP" (Section 5.3);
 - the labels `SCIP(1,.2)` used throughout Section 8.
 
-Speakman–Lee themselves say that SCIP "(mostly)" uses the relaxation point, and that "especially
-in BARON" other factors, including "available incumbent solutions", supersede formula (1)
+Speakman–Lee describe the relaxation point as SCIP's usual choice, while noting that formula (1)
+can be overridden by other information, such as incumbent solutions, particularly in BARON
 [[speakman2018-on-branching-point-selection-for]] p.3.
 
 - **SCIP 10 (PySCIPOpt 6.2.1, checked with `getParam`).**
@@ -590,9 +590,10 @@ in BARON" other factors, including "available incumbent solutions", supersede fo
      (SCIP with `midpull = 0`)". A column for SCIP's actual rule would be informative.
 - **BARON.** Tawarmalani–Sahinidis describe BARON's branching point as a convex combination of the
   relaxation solution and the midpoint [[tawarmalani2002-convexification-and-global-optimization-in]]
-  p.215. They also state that BARON adopts the finite branching scheme of Shectman–Sahinidis: "the
-  branching point is set to the incumbent whenever the latter lies in the current subdomain and is
-  not one of the end-points ... This renders the incumbent gapless" (p.243).
+  p.215. For finite branching, they report BARON's use of the Shectman–Sahinidis scheme: when
+  the incumbent is in the current subdomain and its selected coordinate is strictly inside the
+  interval, that coordinate becomes the split point. They explain that the resulting split makes
+  the relaxation gap at the incumbent zero (p.243).
   - On the kink family, any optimal incumbent `(a, y*)` then gives a split exactly at `a`
     whenever `x` is selected.
   - So "BARON-type" `R(.7, .01)` does not model BARON, and "never splits at the optimal face" does

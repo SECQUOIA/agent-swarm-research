@@ -1,0 +1,45 @@
+\subsection{What the separator does and what it costs}\label{sec:funnel}
+
+Table~\ref{tab:funnel} in Appendix~\ref{app:instances} follows the certified
+rows from the support calls to the cuts that reach SCIP. Three observations explain most of the results of
+Section~\ref{sec:minlplib}.
+
+
+
+First, most certified supports are not violated at the LP point: on the
+MINLPLib models, 65 to 86\% of the certified rows fell below the violation
+threshold, because SCIP's relaxation already implied them up to the
+threshold. Certification failed in few support calls. In the campaign-3 reruns
+that recorded the outcome, every failure was \emph{incomplete} (a Bernstein
+or ball-arithmetic bound reached its depth budget, or did not certify the
+required value) or \emph{unsupported} (a quadratic block whose number of row
+subsets exceeded the enumeration budget and which the fallback bounds do not
+cover); none was an empty domain. In Part~4D, 307 of the 313 failures came
+from one model.
+
+Second, the stored-row check lost a substantial share of the violated rows
+on MINLPLib models, mainly to presolve aggregation (Section~\ref{sec:minlplib}),
+and a small share on the constructed families, where SCIP dropped coefficients
+below its epsilon of $10^{-9}$ in at most 3\% of the violated rows. Each such loss would
+be a silent change of a certified row if the check were absent. A separator
+that declares its variables non-aggregatable before presolve avoids most of the
+presolve losses; we did this only as an experiment (Part~4B2), because it
+changes SCIP's own relaxation. A separator that works in the presolved space
+would instead have to treat SCIP's reductions, which are made in floating
+point, as part of the model that the certificate refers to. The losses to dropped and snapped coefficients could be avoided by
+applying SCIP's coefficient handling in the exporter, followed by the
+correction of Proposition~\ref{prop:export}.
+
+Third, on the MINLPLib models the whole slowdown is the separator's own time.
+SCIP's solving time without the callback was unchanged in every part: its
+shifted geometric mean differed from SCIP's by at most 4\% in Parts~3A
+and~3B, and the median per-run ratio was between 0.96 and 1.01 in Parts~4B2
+and~4D. The callback cost about half a second per run in Part~3B, more than
+SCIP's whole solving time on most of these models (median 0.16\,s). In
+campaign~3, exact certification took 70\% of the callback time on Part~3B, the
+direction search and discovery the rest; on the larger models of Part~4D,
+discovery took 85\% of the callback time in mode \code{all}. All of this is
+Python code; a compiled implementation would reduce it, but on these models it
+would at best break even, because the cuts did not reduce SCIP's work. On the
+constructed families, in contrast, the cuts reduced SCIP's own time sharply
+(Section~\ref{sec:mechanism}), and the callback was the dominant remaining cost.

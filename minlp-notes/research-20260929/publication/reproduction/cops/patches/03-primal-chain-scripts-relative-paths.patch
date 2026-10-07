@@ -1,0 +1,100 @@
+Patch 03 (repro-cops): primal-chain track and its reviewer use absolute main-tree paths.
+
+Problem: publication/primal/chain/{build_points,verify_points,scip_crosscheck}.py and
+publication/reviews/primal-chain-r1/rev_chain_exact.py set HERE/TRACK/PRIMAL/BOUND/OSIL to
+literal /workspace/local-home/... paths, so in a clean checkout they read and WRITE the main tree.
+Fix: paths relative to the script location (HERE = dirname(__file__), R29 = three levels up)
+and the expanduser OSIL path. Outputs are unchanged except that the metadata field
+"source_point" of points/chainN_generator.json records the checkout's absolute path (it is
+written, never read). rev_negative_controls.py imports rev_chain_exact, so its printed assert
+line numbers shift by 2.  Apply:  git apply 03-primal-chain-scripts-relative-paths.patch
+
+--- a/research-20260929/publication/primal/chain/build_points.py
++++ b/research-20260929/publication/primal/chain/build_points.py
+@@ -34,14 +34,16 @@
+ """
+ import json
+ import math
++import os
+ import sys
+ from fractions import Fraction as F
+ 
+ import mpmath as mp
+ 
+ sys.set_int_max_str_digits(0)
+-HERE = "/workspace/minlp-notes/research-20260929/publication/primal/chain"
+-PRIMAL = "/workspace/minlp-notes/research-20260929/open-instances-wave2/cops/logs/chain%d_primal.txt"
++HERE = os.path.dirname(os.path.abspath(__file__))
++R29 = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))  # research-20260929/
++PRIMAL = os.path.join(R29, "open-instances-wave2/cops/logs/chain%d_primal.txt")
+ K = 20            # decimal places of the fixed t_i
+ DIGITS = 45       # significant digits of the box centres
+ RADIUS = F("1e-40")
+--- a/research-20260929/publication/primal/chain/scip_crosscheck.py
++++ b/research-20260929/publication/primal/chain/scip_crosscheck.py
+@@ -10,12 +10,13 @@
+ Usage: python3 scip_crosscheck.py 50 100 200 400
+ """
+ import json
++import os
+ import sys
+ 
+ import pyscipopt
+ 
+-HERE = "/workspace/minlp-notes/research-20260929/publication/primal/chain"
+-OSIL = "/workspace/local-home/.cache/minlplib/minlplib/osil/chain%d.osil"
++HERE = os.path.dirname(os.path.abspath(__file__))
++OSIL = os.path.join(os.path.expanduser("~/.cache/minlplib/minlplib/osil"), "chain%d.osil")
+ 
+ for N in [int(a) for a in sys.argv[1:]]:
+     box = json.load(open("%s/points/chain%d_box.json" % (HERE, N)))
+--- a/research-20260929/publication/primal/chain/verify_points.py
++++ b/research-20260929/publication/primal/chain/verify_points.py
+@@ -18,6 +18,7 @@
+ """
+ import json
+ import math
++import os
+ import sys
+ import xml.etree.ElementTree as ET
+ from fractions import Fraction
+@@ -25,9 +26,10 @@
+ import mpmath as mp
+ 
+ sys.set_int_max_str_digits(0)
+-HERE = "/workspace/minlp-notes/research-20260929/publication/primal/chain"
+-OSIL = "/workspace/local-home/.cache/minlplib/minlplib/osil/chain%d.osil"
+-BOUND = "/workspace/minlp-notes/research-20260929/open-instances-wave2/cops/logs/chain%d_bound.json"
++HERE = os.path.dirname(os.path.abspath(__file__))
++R29 = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))  # research-20260929/
++OSIL = os.path.join(os.path.expanduser("~/.cache/minlplib/minlplib/osil"), "chain%d.osil")
++BOUND = os.path.join(R29, "open-instances-wave2/cops/logs/chain%d_bound.json")
+ INF = ("INF", "+INF", "-INF", "inf", "-inf", "Infinity", "-Infinity")
+ 
+ 
+--- a/research-20260929/publication/reviews/primal-chain-r1/rev_chain_exact.py
++++ b/research-20260929/publication/reviews/primal-chain-r1/rev_chain_exact.py
+@@ -28,6 +28,7 @@
+ """
+ import json
+ import math
++import os
+ import sys
+ import time
+ import xml.etree.ElementTree as ET
+@@ -35,10 +36,11 @@
+ 
+ sys.set_int_max_str_digits(0)
+ 
+-TRACK = "/workspace/minlp-notes/research-20260929/publication/primal/chain"
+-OSIL = "/workspace/local-home/.cache/minlplib/minlplib/osil/chain%d.osil"
+-BOUND = "/workspace/minlp-notes/research-20260929/open-instances-wave2/cops/logs/chain%d_bound.json"
+-PRIMAL = "/workspace/minlp-notes/research-20260929/open-instances-wave2/cops/logs/chain%d_primal.txt"
++R29 = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))  # research-20260929/
++TRACK = os.path.join(R29, "publication/primal/chain")
++OSIL = os.path.join(os.path.expanduser("~/.cache/minlplib/minlplib/osil"), "chain%d.osil")
++BOUND = os.path.join(R29, "open-instances-wave2/cops/logs/chain%d_bound.json")
++PRIMAL = os.path.join(R29, "open-instances-wave2/cops/logs/chain%d_primal.txt")
+ 
+ POS_INF = object()
+ NEG_INF = object()

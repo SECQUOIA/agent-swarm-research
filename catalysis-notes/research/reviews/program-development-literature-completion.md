@@ -17,7 +17,7 @@ Closeout of the identified-literature queue supplied through 2026-09-16. This le
 
 ## Validation
 
-- `lit.py check /home/sgusev/repo/catalisys-notes/literature`: `KB_CHECK=ok`.
+- `lit.py check /workspace/catalisys-notes/literature`: `KB_CHECK=ok`.
 - Final check counts: `UNREAD=98`, `READ_UNCITED=137`. The latter is the repository-wide check count, including prior corpus packages; it is not a claim that every read note is cited by a synthesis topic.
 - New read-note sample: Pang 2021 accepted manuscript, NSF award 2151176 project record, and Wachs/Briand US6037290A patent. Each has source-grounded claims and valid p.1 or multi-page locators.
 
@@ -275,7 +275,7 @@ These mappings preserve the canonical KB source before any research-file cleanup
 | Research path | Canonical KB path | Hash / cleanup disposition |
 |---|---|---|
 | `research/working/program-development/source-checks/lactate-amine-2023.xml` and `.txt` (historical paths) | `literature/papers/pang2023-multifunctional-amine-modifiers-for-selective/source.xml` and `original.txt` | Root already removed only byte-identical duplicates after verification; canonical XML and extracted text remain. |
-| `research/working/program-development/source-checks/lactate-alcohol-nsf-project.html` | `literature/papers/nicholas2023-sttr-phase-i-effect-of/original.html` | Exact SHA-256 match `8b4d7066…fb8c`; package is the durable copy. |
+| NSF award 2151176 | [NSF award record](https://www.nsf.gov/awardsearch/showAward?AWD_ID=2151176); [funder project record](https://nsf.elsevierpure.com/en/projects/sttr-phase-i-effect-of-alcohol-concentration-on-lactic-to-acrylic-2/) | Proposed Lakril–Dauenhauer work on alcohol concentration, amine-treated zeolites, selectivity and deactivation; research interpretation in [alternative acid–base search](../working/program-development/alternative-acidbase-search.md). The award description is not evidence that the experiments succeeded. |
 | `research/working/program-development/source-checks/lactate-methanol-patent-2021.html` | `literature/papers/catalytic0000-catalytic-conversion-of-methyl-lactate/original.html` | Not byte-identical: research `7710c9ac…c50e`, KB `49800c29…75c`; retain research file until normalized comparison/active-link update. |
 | `research/working/program-development/source-checks/lactate-patent-2025.html` | `literature/papers/alkali0000-alkali-and-amine-zeolite-formulations/original.html` | Not byte-identical: research `e3edb85c…75d`, KB `796c15df…21e`; retain research file until normalized comparison/active-link update. |
 | `research/working/program-development/source-artifacts/alternative-oxidation/bowker2024.txt` | `literature/papers/bowker2024-ensemble-effects-on-methanol-oxidation/{original.pdf,fulltext.md}` | Extracted-text artifact; canonical PDF and KB extraction retained. |

@@ -1,0 +1,43 @@
+> Public export: downloaded literature copies in this source inventory are omitted. The recorded URLs, versions and hashes identify upstream originals, not files shipped in this copy.
+
+# Sources downloaded by the intersection-literature stream
+
+Access date for all files: 2026-10-01. `.txt` files are `pdftotext -layout` extractions of the PDFs (not listed separately).
+Only open copies were used (arXiv, institutional repositories, author pages, a public technical report via the Internet Archive). No paywall, login or CAPTCHA was bypassed.
+
+| File | URL | Version | Work | sha256 |
+|---|---|---|---|---|
+| `arxiv-1302.2556.pdf` | https://arxiv.org/pdf/1302.2556 | arXiv v3 | Modaresi-Kilinc-Vielma, Intersection cuts for nonlinear integer programming: convexification techniques for structured sets (Math. Program. 155, 2016) | `febb1ac45c46c76ef2bd956fcd11c79de9e0db5abd998b4d9e2bb751e3437020` |
+| `arxiv-1610.04604.pdf` | https://arxiv.org/pdf/1610.04604 | arXiv v7 (30 Jan 2020) | Bienstock-Chen-Munoz, Outer-product-free sets for polynomial optimization and oracle-based cuts (Math. Program. 183, 2020) | `53c8e125d10fb2ec50f0fc90a436f70436cf03e3ca2dff56e22cda033573df51` |
+| `arxiv-1701.06692.pdf` | https://arxiv.org/pdf/1701.06692 | arXiv v1 | Basu-Conforti-Di Summa, A geometric approach to cut-generating functions (survey; Math. Program. 151, 2015) | `124a7e7684dd6761384f651fefc9003a9e3490ef60b392a320276a1aeb6e2227` |
+| `arxiv-1703.02221.pdf` | https://arxiv.org/pdf/1703.02221 | arXiv v2 | Kazachkov-Nadarajah-Balas-Margot, Partial hyperplane activation for generalized intersection cuts (Math. Program. Comput. 12, 2020) | `ccb94d70142fb16aee0d17a3ff29eaa1e7610f6aad3f1036ca308c9e0c2a4b40` |
+| `arxiv-1812.03073.pdf` | https://arxiv.org/pdf/1812.03073 | arXiv v1 (ZIB report form) | Serrano, Intersection cuts for factorable MINLP (IPCO 2019) | `d77b1ae01e16d0e3210ee40d066705a90d6262fb6e29f0c5e06362da974ca1a1` |
+| `arxiv-1901.02112.pdf` | https://arxiv.org/pdf/1901.02112 | arXiv v5 | Towle-Luedtke, Intersection disjunctions for reverse convex sets (Math. Oper. Res., DOI 10.1287/moor.2021.1132) | `f04d1e98684993019042c0e4ff61284ece5eac3175b3a58fbda279e3122beab8` |
+| `arxiv-1911.12341.pdf` | https://arxiv.org/pdf/1911.12341 | arXiv v2 | Munoz-Serrano, Maximal quadratic-free sets (Math. Program. 192, 2022) | `dd4b78dbfe741b7dd1b049f1225c0c2ea67c8ad99b958bdc69a0388cc7ee5873` |
+| `arxiv-2112.08872.pdf` | https://arxiv.org/pdf/2112.08872 | arXiv v1 | Bestuzheva et al., The SCIP Optimization Suite 8.0 | `6dd25ffdb582419c524218d70191ea258c879dd295c6c7f49ba857132bbc14dc` |
+| `arxiv-2211.05185.pdf` | https://arxiv.org/pdf/2211.05185 | arXiv v2 | Munoz-Paat-Serrano, A characterization of maximal homogeneous-quadratic-free sets (Math. Program. 210, 2025) | `d7b85770ced279c30c172edff19bd10acc10b95530f675f504c05c46bc3766dd` |
+| `arxiv-2301.00587.pdf` | https://arxiv.org/pdf/2301.00587 | arXiv v1 | Bestuzheva et al., Global optimization of mixed-integer nonlinear programs with SCIP 8 (J. Glob. Optim. 2023) | `8609a2d25daeb5eb66ff129da886b824e816a604e0fab984012ff2807afb1302` |
+| `arxiv-2302.14020.pdf` | https://arxiv.org/pdf/2302.14020 | arXiv v1 | Xu-Liberti, Submodular maximization and its generalization through an intersection cut lens (Math. Program. 2024) | `8c081ba14bc9b8ef07ded4ca0134be0e1d5b2bc3a9fa4d810c0e060d2b504a03` |
+| `arxiv-2402.17702.pdf` | https://arxiv.org/pdf/2402.17702 | arXiv v2 | Bolusani et al., The SCIP Optimization Suite 9.0 | `e01df8cfc961d8460f17fd8bbd5a51f69066cbe79f2272fc51943a24acdaa48c` |
+| `arxiv-2506.02520.pdf` | https://arxiv.org/pdf/2506.02520 | arXiv v3 | Duguet-Harks-Schmidt-Schwarz, Branch-and-cut for mixed-integer Nash equilibrium problems | `107c1390eb03638fcda4d7d503af0430f69454ec96335a17fc8a282cd0ca1da6` |
+| `arxiv-2511.18580.pdf` | https://arxiv.org/pdf/2511.18580 | arXiv v1 | Hojny et al., The SCIP Optimization Suite 10.0 | `23630340bd311c11ff3cfcf2fbcaab7ec1eca84c5b3a8ec54d398f37d9c1af8d` |
+| `arxiv-2605.30602.pdf` | https://arxiv.org/pdf/2605.30602 | arXiv v1 (28 May 2026; only version on 2026-10-01) | Munoz-Paat-Serrano, A characterization of maximal inhomogeneous-quadratic-free sets | `a8e101a2eb7596325ba53c8000c60316c3a8908dae26ec0a4b58ceb49c452fe7` |
+| `arxiv-2608.03318.pdf` | https://arxiv.org/pdf/2608.03318 | arXiv v1 (4 Aug 2026) | Xu-Pokutta, Joint-range inequalities for nonconvex QCQPs | `c9e12a96df94492d8c4af4f3b029a24ceff26d0f1972d897c7442504615b4fd8` |
+| `arxiv-2609.33946.pdf` | https://arxiv.org/pdf/2609.33946 | arXiv v1 (27 Sep 2026) | Pathy-Rahimian, An intersection cutting plane algorithm for chance-constrained programs with finite support | `23e28924138fd05fa473de2f67adf928cabf8e89e8fcc708b8ba1e767ffc1073` |
+| `ccdlm2015-uab-preprint.pdf` | https://mat.uab.cat/departament/Publ/prep/p05_13.pdf | UAB Prepublicacio 05/2013 (preprint of MOR 40(2) 2015) | Conforti-Cornuejols-Daniilidis-Lemarechal-Malick, Cut-generating functions and S-free sets | `cbba143a13e106e9e32205a3619941e0b5e42173bc01ad15173fd445bc8df166` |
+| `eckstein-nediak2003-RRR23r.ps` | http://web.archive.org/web/20100718073757id_/http://rutcor.rutgers.edu/pub/rrr/reports2003/23_2003r.ps | RUTCOR RRR 23-2003, revised Nov 2003 (Wayback snapshot 2010-07-18 of the public report; origin now HTTP 403) | Eckstein-Nediak, Depth-optimized convexity cuts (Ann. Oper. Res. 139, 2005) | `59e02e605e2e0571b5edc30dcd60de12fbe6e9c5708741b60a82d1860f4b3fb1` |
+| `eckstein-nediak2003-RRR23r.pdf` | (converted locally from the .ps with ps2pdf) | derived | same | `742ce7460fa2b3bf74fec57a8fb84f7868d8e92047a48bfe5260912ee7d85acc` |
+| `glover1973-convexity-cuts.pdf` | https://leeds-faculty.colorado.edu/glover/36%20-%20Convexity%20Cuts%20and%20Cut%20Search.pdf | author-hosted JSTOR scan of the published article | Glover, Convexity cuts and cut search, Oper. Res. 21(1) 1973, 123-134 | `62d707e198ca29cadae83757a4c9847c4a900216e14aa134f94c03b66f551ad3` |
+| `kilinc-yang2015-sufficiency-draft.pdf` | http://www.andrew.cmu.edu/user/fkilinc/files/draft-sufficiency-web.pdf | author draft, submitted Dec 2015, revised Oct 2017 | Kilinc-Karzan-Yang, Sufficient conditions and necessary conditions for the sufficiency of cut-generating functions | `18fc551116f8e2f27d783b37971cafa1dcd8f47b530e066bb882a72738412944` |
+| `konno1974-WP-74-075.pdf` | https://pure.iiasa.ac.at/id/eprint/96/1/WP-74-075.pdf | IIASA WP-74-075 (Dec 1974) | Konno, A cutting plane algorithm for solving bilinear programs (working paper) | `ee481883a2ed8d42c23f7d17a5b33ff1c25cfe88ec41080feb97b9306a47b584` |
+| `konno1975-RM-75-061.pdf` | https://pure.iiasa.ac.at/id/eprint/455/1/RM-75-061.pdf | IIASA RM-75-061 (Dec 1975; precursor of Math. Program. 11, 1976) | Konno, A cutting plane algorithm for solving bilinear programs | `aecf9b166fe035b061a58cff4fddd5e2c3913ab989ad9cc1ce873ab63f5a34c7` |
+| `yildiz2016-thesis.pdf` | https://ndownloader.figshare.com/files/12260141 | CMU PhD thesis, April 2016 (KiltHub/figshare article 6724562) | Yildiz, Valid inequalities for mixed-integer linear and mixed-integer conic programs (Ch. 4 = Cornuejols-Wolsey-Yildiz, Math. Program. 152, 2015) | `10c8991f00bb0bbe161a1c6dd53a3a193837c69666898417b96d3bbca2eef2c1` |
+| `zib-report-20-29-chmiela.pdf` | https://opus4.kobv.de/opus4-zib/files/7999/ZIBReport_20-29.pdf | ZIB-Report 20-29 (PDF created 2020-11-12); identical sha256 to the scout's copy | Chmiela-Munoz-Serrano, On the implementation and strengthening of intersection cuts for QCQPs | `01d55d0d6be14c791b7af1754c9f9ebd303643a57df1e33f6e77fde2ef6297be` |
+| `ccdlm2015-hal-01123860v1.pdf` | https://hal.science/hal-01123860v1/file/cut-generating-functions.pdf | HAL v1 (deposited 5 Mar 2015; author version in MOR layout) | Conforti-Cornuejols-Daniilidis-Lemarechal-Malick, Cut-generating functions and S-free sets, MOR 40(2) 2015 | `3955d8e23bc7f737fb4e475713057804c22ad495a5f63a1f1d0eac3798f8515c` |
+
+Added in revision round 1 (access date 2026-10-02):
+
+| File | URL | Version | Work | sha256 |
+|---|---|---|---|---|
+| `kilinc-steffy-sublinear-draft-web.pdf` | https://www.andrew.cmu.edu/user/fkilinc/files/sublinear-draft-web.pdf | author draft, submitted Dec 2014, revised Jul 2015 | Kilinc-Karzan-Steffy, On sublinear inequalities for mixed integer conic programs (Math. Program. 159, 2016, 585-605, DOI 10.1007/s10107-015-0968-0) | `233a1fc5d9d73b2cfc76c10480dfbde39f8b8e9a2c101fda316e4a030327f43e` |
+| `serrano-mip2022-monoidal-slides.pdf` | https://www.mixedinteger.org/2022/slides/serrano.pdf | MIP Workshop talk slides, 24 May 2022 | Serrano (with Wiese, Munoz, Chmiela), Monoidal strengthening (talk; 25 slides, no computational results) | `d46bc1d7f28238a684324fea38dcd576b053235ff0595077d0e07c380b68743d` |

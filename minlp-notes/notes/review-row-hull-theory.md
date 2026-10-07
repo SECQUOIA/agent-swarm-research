@@ -232,7 +232,7 @@ True only when `X` is nondegenerate (`r != 0` in the equal-width case) and
 ## (c) What the scripts checked
 
 All commands were run from `code/row_hull/review/`, single-threaded, with
-`PY="uv run --project /home/sgusev/repo/minlp-notes/code/minlp_solver_lab python"`.
+`PY="uv run --project /workspace/minlp-notes/code/minlp_solver_lab python"`.
 
 1. `OMP_NUM_THREADS=1 nice -n 10 $PY check_theorem2.py` (21 s).
    Generators come from brute-force enumeration of the row polytope written

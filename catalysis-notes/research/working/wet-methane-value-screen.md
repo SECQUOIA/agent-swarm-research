@@ -96,7 +96,7 @@ Compatibility with an upstream/downstream NOx-treatment location is an eventual 
 
 **Superseded access snapshot.** The entries below preserve the original researcher handoff, not current missing-source requests. Auvinen2021, Tan2025, Sadokhina2017/2018, Hutter2018, Kinnunen2013/2018 and Fujimoto1998 main texts are now retained. See the [post-upload audit](../reviews/post-upload-methane-audit.md), [current literature status](../literature-status.md) and individual packages for current main/SI status. Retention does not imply that every figure or supplement was independently checked here.
 
-Original instruction: send all entries below sequentially to `/root/literature`, using **Add identified literature** in `/home/sgusev/repo/skills/literature/SKILL.md`; project `/home/sgusev/repo/catalisys-notes`; KB `/home/sgusev/repo/catalisys-notes/literature`. No KB mutations or `lit.py check` were performed by this researcher. A DOI search of local `paper.md` records found none of the central newly used sources. Metadata-only entries remain required when full text is unavailable; retain missing SI and main-paper requests.
+Original instruction: send all entries below sequentially to `/root/literature`, using **Add identified literature** in `/workspace/skills/literature/SKILL.md`; project `/workspace/catalisys-notes`; KB `/workspace/catalisys-notes/literature`. No KB mutations or `lit.py check` were performed by this researcher. A DOI search of local `paper.md` records found none of the central newly used sources. Metadata-only entries remain required when full text is unavailable; retain missing SI and main-paper requests.
 
 | Source identifier | Reason / access and reading limits |
 |---|---|

@@ -17,7 +17,7 @@ The source audit may change the grouping. A stage is complete only after the aut
 - New deliverable directory: `conic-lift-complexity/`.
 - Existing `formal/` is untracked user work and is left untouched.
 - Existing manuscripts and research notes are left unchanged.
-- Run project scripts through `/home/sgusev/miniconda3/envs/qipm/bin/python` or `conda run -n qipm`.
+- Run project scripts through `/workspace/local-home/miniconda3/envs/qipm/bin/python` or `conda run -n qipm`.
 - Priority claims require source-specific comparison. A negative literature search does not establish novelty.
 
 ## Stage 1

@@ -1,0 +1,189 @@
+\section{Implementation and numerical scope}\label{sec:implementation}
+
+The software has two separate roles. The exact reference modules check
+the mathematical certificate formats on declared rational relaxation
+families. The integrated solver prototype applies a limited scheduling
+policy to a numerical search. Its outcomes test that policy, not the
+automatic discovery of protected boxes or uniform contraction matrices.
+
+\subsection{Exact reference modules}
+
+\pathref{../theory/certificates.py}{theory/certificates.py} checks
+current-round witness ceilings, protected boxes, cutoff mixing, objective
+ceilings, and residual supersolutions. Exact-data constructors reject
+floating-point inputs: intended coefficients must be integers, rational
+strings, or rational numbers. The optional SciPy proposal routine can
+solve up to $2n$ endpoint LPs, rationalize the proposed points, and check
+their hull. It returns no certificate if any exact row check fails.
+An optional additional objective LP proposes a stronger objective ceiling
+after a protected box is found; only its primal feasibility must be
+verified. Its cost is also charged.
+This complete check of a proposed certificate is not a complete search
+for every certificate that might exist.
+
+\pathref{../theory/check_constrained_obbt.py}{theory/check_constrained_obbt.py}
+verifies exact basis calculations and the explicit changing-cell and
+cutoff examples. It does not enumerate basis regions of an arbitrary
+solver model. The remaining-motion majorant routine checks
+$d+Me\le e$; the caller is responsible for the uniform sensitivity
+and invariance premises. The distinction prevents a successful arithmetic
+test from being mistaken for an unsupported theorem about the native
+solver's complete OBBT map.
+
+\subsection{A standalone certified stopping workflow}
+
+\pathref{../theory/certified_driver.py}{theory/certified_driver.py}
+makes the protected-box check operational for the rational reference
+family. A numerical solver proposes a primal point $z$ and multipliers
+$\alpha$ for each endpoint LP $\min c^Tz$ subject to $Az\le b$.
+The driver reconstructs rationals and checks exactly
+\[
+ Az\le b,\qquad \alpha\le0,\qquad
+ A^T\alpha=c,\qquad c^Tz=\alpha^Tb.
+\]
+Weak duality proves the endpoint optimum. All variable bounds are
+explicit rows. The driver commits a Jacobi round only after every
+endpoint proof passes, then rechecks its witness pool on the rebuilt
+coordinate hull. If that check succeeds, it stops with a protected
+fixed box. An optional objective proposal needs only verified primal
+feasibility to improve the objective ceiling.
+
+The statuses distinguish a certified fixed box, an exhausted round
+budget (\texttt{unfinished}), and a failed exact reconstruction
+(\texttt{inconclusive}). An incomplete round is discarded while previous
+certified rounds remain valid. Exact termination need not occur in
+finite time, and rational reconstruction can fail even when the
+underlying mathematical LP is well behaved. The driver retains proof
+objects and reports all LP calls and elapsed time including exact checks.
+This is a complete workflow for checking and using the stated stopping
+certificate; it is not a complete exact LP solver or an all-future
+stopping rule for native SCIP's changing relaxation.
+
+\subsection{A limited policy inside SCIP}
+
+\pathref{../solver/adaptive_obbt.py}{solver/adaptive_obbt.py} builds
+the same original quadratic constraints in SCIP for all arms. It
+normalizes maximization to minimization and uses an epigraph variable
+for a quadratic objective. The additional propagator uses current local
+bounds of the transformed original variables to construct a separate
+linear relaxation. Native SCIP OBBT remains enabled in every arm.
+The campaign uses SCIP 10.0.2 through PySCIPOpt 6.2.1, with Python
+3.13.11 and SciPy 1.18.1. The newer pinned SCIP source inspected for
+the literature audit is a separate artifact, not the benchmark binary.
+
+The side relaxation contains the original linearized quadratic rows,
+McCormick inequalities for bilinear products, square tangents and a
+secant, auxiliary interval bounds, and an incumbent cutoff when available.
+The square relaxation uses five current tangent locations and a bounded
+pool of retained tangents. It is a finite LP approximation, not the
+exact square epigraph used in Proposition~\ref{prop:equality}. It also
+differs from the endpoint-only square relaxation of the smallest exact
+reference checker. The theoretical statements apply to their declared
+families; their quantitative rates are not transferred between them.
+
+The fixed and adaptive arms share the same total directional LP allowance.
+The adaptive arm orders nonlinear-variable directions using quadratic
+coefficient and current-width scores, rechecks cached witnesses to screen
+directions with small possible current-round gain, and stops a pilot
+after unproductive probes. Scheduling state is indexed by node. A first
+visit, a sufficiently improved incumbent, or a sufficiently reduced box
+can admit another call, subject to depth, call, LP, and time limits.
+Cutoff and box-change thresholds are policy parameters, not certified
+predictions of runtime savings.
+
+The frozen default allowance is 64 directional LPs in total, at most
+12 per root call and 4 per nonroot call, 24 calls in total, 3 calls per
+node, and depth at most 64. Each auxiliary LP has a nominal 0.25-second
+limit, and sidecar work has a nominal allowance of 10\% of the run's
+time budget. The adaptive pilot uses two LPs and stops if the accumulated
+relative tightening is below $10^{-3}$. A 1\% scaled cutoff improvement
+or a 10\% decrease in a coordinate width can retrigger a call. The
+campaign source snapshot is the authority for every parameter actually
+used in the experiments.
+
+Cached primal points are rechecked against the current frozen side LP
+before screening. A direction is screened when a checked point is within
+$10^{-7}\max\{1,u_i-\ell_i\}$ of its endpoint. This is a tolerance
+ceiling for the frozen LP, not proof that every future round is useless.
+The protected-box and matrix-tail certificates are not used to control
+the measured policy. No claim is made that a cheaply available
+all-future-round certificate was demonstrated on the application cohort.
+
+\subsection{Validated sidecar bounds}
+
+The auxiliary numerical LP solver proposes dual information. The
+propagator does not use a reported primal coordinate optimum directly as
+a lower bound. The following residual formula explains its validation.
+
+\begin{proposition}[A bound from any signed dual vector]\label{prop:dual-residual}
+Consider minimizing $c^Tz$ over $Az\le b$ and a finite box
+$z\in[\ell,u]$. For any $y\le0$, set $r=c-A^Ty$. Then
+\begin{equation}\label{eq:dual-residual}
+ \min c^Tz\ \ge\ y^Tb+
+ \sum_j\min\{r_j\ell_j,r_ju_j\}.
+\end{equation}
+No exact dual stationarity is required.
+\end{proposition}
+\begin{proof}
+Since $y\le0$ and $Az\le b$, one has $y^TAz\ge y^Tb$.
+Therefore $c^Tz=y^TAz+r^Tz\ge y^Tb+r^Tz$. Minimizing the latter
+linear residual independently over the finite coordinate intervals
+gives~\eqref{eq:dual-residual}.
+\end{proof}
+
+The implementation rounds the products, sums, and residual intervals
+outward, rejecting nonfinite inputs or overflow. This validates a bound
+for the stored binary floating-point LP rows. The row builder separately
+forms exact dyadic expressions from the imported binary data and rounds
+the coefficients outward. For an exact row $a^Tz\le\beta$, a rounded
+coefficient vector $\widetilde a$ is made valid by choosing
+\[
+ \widetilde\beta\ge\beta+
+ \sum_j\max\{(\widetilde a_j-a_j)\ell_j,
+              (\widetilde a_j-a_j)u_j\}.
+\]
+Every point satisfying the exact row on the box then satisfies the
+rounded row. The rounding arithmetic and residual-bound tests concern
+this imported binary model, not an independent reconstruction of exact
+decimal or symbolic data upstream of the importer.
+
+The plugin adds a further outward margin before submitting a local bound
+to SCIP. It rejects a proposal outside the current domain and checks
+compatibility with integer rounding. It never turns a side-LP
+infeasibility report into a node cutoff. Unsupported finite-domain or
+arithmetic cases are recorded and leave native search available. A
+cached witness from another node is only a proposal; passing every
+current row check is required before use.
+
+These safeguards do not constitute a certificate for the entire SCIP
+solve. In particular, the cutoff comes from a numerically accepted SCIP
+incumbent after a numerical original-model residual check. Its objective
+is evaluated exactly for the imported binary coefficients and incumbent
+coordinates, rounded upward, and given a safety margin. Exact objective
+evaluation does not prove exact original-model feasibility. The
+conditional validity of cutoff-derived reductions still
+depends on that premise. Native presolve, propagation, branching, and
+optimality claims are not replayed by an independent checker. Returned
+solutions receive the declared numerical original-model validation in
+the experiment, and this is reported as numerical validation.
+
+\subsection{Cost and failure accounting}
+
+The run deadline includes model construction and optimization. Once the
+initial admission checks pass, the sidecar timer charges box inspection,
+construction, witness checks, LP solves, validation, and application time.
+The earlier budget, depth, and node checks are outside that timer;
+their cost remains in complete process elapsed time. Expensive setup can overrun
+the nominal sidecar allowance before the next admission check. An LP
+time limit is likewise subject to the numerical solver's return behavior.
+LP construction checks its deadline every 64 generated rows, and cached
+witness screening also checks the callback deadline.
+The implementation records these costs; it does not claim the exact
+ledger bound in Proposition~\ref{prop:ledger} with a hard whole-callback
+value of $\delta$.
+
+The experiment measures complete worker process elapsed time separately,
+including startup, parsing, validation, and output. Exceptions, unsupported
+models, failed LP proposals, missing incumbents, and time-limit overshoot
+remain visible. A failure to produce a bound has an unresolved status;
+it is not a certificate of no benefit or infeasibility.

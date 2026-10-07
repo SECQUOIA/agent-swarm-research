@@ -14,9 +14,8 @@ pyomo    : instances/pyomo_examples_src/examples/gdp (sparse checkout of the
            Pyomo 6.10.1 repository; the pip wheel does not ship examples)
 pyomo_tests : models defined inside pyomo.contrib.gdpopt.tests
 
-Solvers used by the catalog run: ipopt at
-/home/sgusev/miniconda3/envs/solvers/bin (prepend to PATH), gurobipy, and GAMS
-(BARON) at /home/sgusev/.local/opt/gams/gams54.3_linux_x64_64_sfx.
+Solvers used by the catalog run: ipopt, gurobipy, and GAMS 54.3 (BARON).
+Configure ipopt and gams on PATH before running the catalog.
 """
 
 from __future__ import annotations

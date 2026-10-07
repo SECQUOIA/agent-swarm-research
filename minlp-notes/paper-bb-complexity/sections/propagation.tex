@@ -1,0 +1,315 @@
+\section{Objective-cutoff propagation and its representation}
+\label{sec:propagation}
+
+An objective cutoff can certify a box before its relaxation is solved. Its
+strength depends on the expression graph, and its cost depends on the
+propagation schedule. We first separate these two dependencies. Throughout
+this section, the graph contains the objective alone. Revising original
+constraints jointly with the objective, imposing new auxiliary-variable
+bounds, and branching on auxiliary variables define different schemes.
+Natural interval extensions and validated exclusion regions are established
+tools \citep{schichlMarkotNeumaier2014ExclusionRegions}. The results below
+concern objective-cutoff propagation and the certificates it can produce
+under a fixed graph.
+
+Let $\mathcal D$ be a finite directed acyclic graph representing a continuous
+function $f$ on a compact box $D$. Its nodes are variables, fixed constants,
+and continuous operations on the compact forward domains. Each operation
+has an elementary graph constraint $E$. Repeated references in such a
+constraint refer to the same coordinate. For $C\subseteq D$, let $Z_0(C)$
+be the lifted box obtained by forward interval evaluation, and let
+$F_{\rm lo}(C)$ be its root lower endpoint. Forward evaluation is assumed
+inclusion isotone and to use the exact image of each elementary operation
+over its input intervals. This permits dependency loss between operations.
+
+For a lifted box $Z$, the exact revise $\rho_E(Z)$ replaces the coordinates
+in $E$ by the interval hull of their projections from $E\cap Z$; it returns
+the empty box if this intersection is empty. Other coordinates remain
+unchanged. The closed cutoff revise intersects the root interval with
+$(-\infty,c]$. A box is \emph{hull-consistent} if it is fixed by every
+elementary revise and by this cutoff revise. Hull consistency asks that
+interval endpoints have support within each elementary constraint. Those
+supports need not agree between constraints.
+An exact schedule is fair when every elementary revise and the cutoff
+revise occur infinitely often. For partial revises, fairness requires both
+the forward and backward revise of every operation, and the cutoff revise,
+infinitely often.
+
+\begin{theorem}[The objective-DAG bound]
+\label{prop:fixed-point}
+There is a greatest hull-consistent box $Z^*(C,c)\subseteq Z_0(C)$.
+Every sequence of steps satisfying
+$\rho_E(Z)\subseteq\rho(Z)\subseteq Z$ preserves this box. A fair sequence
+of exact revises converges to $Z^*(C,c)$, and reaches an empty iterate if
+this limit is empty. The same conclusions hold for fair exact forward and
+backward partial revises.
+
+For $y\in C$, the minima
+\begin{align}
+ \pi_{\mathcal D}(C)&=\min\{c:Z^*(C,c)\ne\varnothing\},\label{prop:pi-box}\\
+ \pi_{\mathcal D}(C,y)&=\min\{c:y\in\Pi_xZ^*(C,c)\}\label{prop:pi-point}
+\end{align}
+exist and satisfy
+\begin{equation}
+ F_{\rm lo}(C)\le\pi_{\mathcal D}(C)
+ \le\pi_{\mathcal D}(C,y)\le f(y).
+ \label{prop:bound-chain}
+\end{equation}
+Both bounds increase when $C$ shrinks. The limiting propagation empties $C$
+exactly when $c<\pi_{\mathcal D}(C)$ and removes $y$ exactly when
+$c<\pi_{\mathcal D}(C,y)$. Any allowed finite schedule removes only points
+satisfying this strict inequality.
+\end{theorem}
+
+The fixed-point viewpoint is standard in FBBT
+\citep{belottiCafieriLeeLiberti2012FBBT}. The proof for the present schedule
+and cutoff model is in \cref{app:propagation-fixed-point}. The strict comparisons
+matter: a closed cutoff remains consistent at its threshold. Relaxation
+pruning, in contrast, can use $L(C)\ge f_* -\epsilon$. Computing the limiting
+box as a node oracle does not provide a finite stopping test for every
+nonempty limit.
+
+\begin{definition}[Flat objective sum]
+\label{prop:flat-definition}
+The root equation is
+$w=b+\sum_{j=1}^J a_jp_j$, with nonzero coefficients and \emph{distinct}
+root-child node coordinates $p_j$. Each $p_j$ is a base node $z_{k(j)}$ or
+a unary operation $p_j=\varphi_j(z_{k(j)})$ used only by the root. Write
+$t_j=a_j\varphi_j$, with $\varphi_j(z)=z$ for direct base terms. A base can
+feed several distinct unary nodes. Repeated references to the same root
+coordinate must first be collected into one coefficient. For base intervals
+$U_k=[s_k,t_k]$, set
+\begin{align}
+ \mu_j(U)&=\min_{v\in U_{k(j)}}t_j(v),&
+ h_j(U)&=\max\{t_j(s_{k(j)}),t_j(t_{k(j)})\},\\
+ \Phi(U)&=b+\sum_j\mu_j(U)+\max_j\{h_j(U)-\mu_j(U)\}.
+ \label{prop:flat-functional}
+\end{align}
+\end{definition}
+
+\begin{theorem}[Exact flat-sum formula]
+\label{prop:flat-formula}
+If $Z^*(C,c)$ is nonempty, its base intervals $U$ satisfy $\Phi(U)\le c$.
+If the bases are the original variables, then
+\begin{equation}
+ \pi_{\mathcal D}(C)=\min_{\varnothing\ne U\subseteq C}\Phi(U),\qquad
+ \pi_{\mathcal D}(C,y)=\min_{y\in U\subseteq C}\Phi(U),
+ \label{prop:flat-minima}
+\end{equation}
+where $U$ ranges over closed subboxes, including degenerate ones.
+\end{theorem}
+
+\begin{proof}
+In a consistent box, the signed term interval $T_j=a_jZ_{p_j}$ has lower
+endpoint at least $\mu_j$, and upper endpoint at least $h_j$: each base
+endpoint must have support in its unary constraint. Supporting the upper
+endpoint of $T_j$ in the root constraint gives
+$c\ge b+h_j+\sum_{i\ne j}\mu_i$. This proves the necessary inequality.
+
+Conversely give the variables the intervals $U$, give each signed term
+the interval $[\mu_j,h_j]$, and give the root
+$[b+\sum_j\mu_j,\min\{c,b+\sum_jh_j\}]$. Unary constraints support their
+base endpoints and their term endpoints. Direct variable terms have
+their exact signed intervals. For the root, any term endpoint can be
+supported by putting all other terms at their minima; the resulting sum
+is at most $\Phi(U)\le c$. The root endpoints are attainable in a sum
+of intervals. Distinct root coordinates make these root supports legitimate.
+This constructs a consistent box containing $U$. The necessary inequality
+applied to $\Pi_x Z^*$ proves both formulas. Continuity of term minima and
+endpoint values, on the compact set of subbox endpoints, proves attainment.
+\end{proof}
+
+The endpoint maximum in \eqref{prop:flat-functional} cannot be replaced by
+the full range maximum. For example, representing $x^2$ on $[-1,1]$ by
+three distinct power nodes with coefficients $-3,2,2$ gives
+$\Phi([-a,a])=-a^2$, and hence $\pi_{\mathcal D}([-1,1])=-1$.
+Indeed a same-side subinterval gives $\Phi=\min_Ux^2\ge0$; a subinterval
+crossing zero gives $\Phi\ge-\max_Ux^2\ge-1$.
+The single-node square representation has bound zero. Moreover the formula
+does not apply to the root equation $w=x+x-x$: its repeated references
+give the exact equation $w=x$, not three independent root coordinates.
+
+\begin{corollary}[Sufficient exactness in exposed coordinates]
+\label{prop:one-sided}
+For one base coordinate, call an interval $U$ one-sided if there are a term
+$j_0$ and an endpoint $e$ such that
+$t_{j_0}(e)=h_{j_0}(U)$ and $t_j(e)=\mu_j(U)$ for every $j\ne j_0$.
+If every subinterval of its forward base range is one-sided, then
+\[
+ \pi_{\mathcal D}(C)\ge\min_{z\in Z_0(C)_z}
+ \left(b+\sum_jt_j(z)\right).
+\]
+When the base is the original variable, this is equality with $\min_Cf$.
+
+More generally write $\widehat f(z)=b+\sum_jt_j(z_{k(j)})$ and let
+$B_z=\prod_kZ_0(C)_{z_k}$. For each coordinate group define
+\[
+ e_k(U_k)=\min_{U_k}\sum_{j:k(j)=k}t_j-
+                   \sum_{j:k(j)=k}\mu_j\ge0.
+\]
+If on every subbox of $B_z$ each coordinate group is one-sided and at
+most one $e_k$ is positive, then
+$\pi_{\mathcal D}(C)\ge\min_{B_z}\widehat f$.
+This bound is exact if $z(C)=B_z$.
+\end{corollary}
+
+\begin{proof}
+In the first case $\Phi(U)\ge\widehat f(e)$.
+For the second, put
+$G_k=\max_{j:k(j)=k}(h_j-\mu_j)-e_k$. One-sidedness gives $G_k\ge0$, and
+direct substitution gives
+\[
+ \Phi(U)=\min_U\widehat f+
+ \max_k\left(G_k-\sum_{\ell\ne k}e_\ell\right).
+\]
+Choose the sole coordinate with positive excess, or any coordinate if
+all excesses vanish. The last maximum is nonnegative. Apply the necessary
+part of \cref{prop:flat-formula} and \eqref{prop:bound-chain}.
+\end{proof}
+
+Thus exposing a coordinate such as $z=x_1-x_2$ can change certification.
+For example $h(z)=(z-1)^2((z+1)^2+1/2)$, written as
+$z^4-1.5z^2-z+1.5$, is one-sided on every positive interval: only $z^4$
+increases. Adding a second exposed coordinate with one nonnegative square
+term preserves the sufficient criterion. These are sufficient conditions;
+they do not classify all exact graphs.
+
+\begin{theorem}[Local exactness and ideal node counts]
+\label{prop:local-exactness}
+Assume $F=D$, $f$ is $L$-Lipschitz in the sup norm, and
+$L(C)\ge\min_Cf-\tau w(C)^2$, where $w(C)$ is the largest side length.
+Suppose a relatively open set $R$ contains the minimizing set and, for
+some $w_0>0$,
+$\pi_{\mathcal D}(C)\ge f_*$ for all $C\subseteq R$ with $w(C)\le w_0$.
+An ideal algorithm with incumbent $f_*$ first decides whether the objective
+fixed point at cutoff $f_* -\epsilon$ is empty, then optionally contracts
+to a box containing its variable projection, then applies the relaxation
+test and widest-side bisection. Its node count is bounded independently of
+$\epsilon>0$.
+\end{theorem}
+
+\begin{proof}
+If $R=D$, boxes of width at most $w_0$ are pruned by propagation.
+Otherwise $\delta=\min_{D\setminus R}(f-f_*)>0$. Choose $0<h\le w_0$ with
+$Lh\le\delta/2$ and $\tau h^2\le\delta/2$. A box of width at most $h$
+is either contained in $R$, or contains a point outside $R$. In the latter
+case $f-f_*\ge\delta/2$ throughout it, so any contracted box passes the
+relaxation test. Thus no such box is split. The integer potential
+$\sum_i\max\{0,\lceil\log_2(w_i(C)/h)\rceil\}$ never increases under
+contraction and falls by at least one at each split. If its root value is
+$d$, the tree has at most $2^{d+1}-1$ nodes.
+\end{proof}
+
+This theorem concerns the fixed-point oracle. Its decision may require
+many rounds. It is the exact-bound mechanism behind absence of clustering
+\citep{duKearfott1994Cluster,wechsungSchaberBarton2014Cluster}, applied to
+a graph-dependent bound. No representation-free node lower bound can hold
+in this unconstrained model: the representation
+$f_*+|f-f_*|$ equals $f$ on $D$ and has forward lower bound $f_*$.
+It encodes the answer in its constant $f_*$. For a constrained optimum this
+identity need not hold at infeasible points.
+
+\begin{lemma}[A surviving-point witness]
+\label{prop:witness}
+Suppose the root is a sum of distinct child nodes, over any continuous
+DAG below them. Regard their signed expressions as $t_j(x)$. For every
+$y\in U\subseteq C$,
+\begin{equation}
+ \pi_{\mathcal D}(C,y)\le
+ b+\sum_j\min_Ut_j+\max_j\left(\max_Ut_j-\min_Ut_j\right).
+ \label{prop:full-witness}
+\end{equation}
+If each term is an expression tree with each variable used at most once,
+then its forward range is exact and
+\[
+ F_{\rm lo}(C)\le\pi_{\mathcal D}(C)
+ \le F_{\rm lo}(C)+\max_j\bigl(\max_Ct_j-\min_Ct_j\bigr).
+\]
+\end{lemma}
+
+\begin{proof}
+Give every nonroot node its exact range over $U$. Every value in each
+interval is attained by a point of $U$, and therefore has support within
+its elementary graph constraint, even if different values use different
+points. Give the root the interval from the proof of
+\cref{prop:flat-formula}, now using full term maxima. This gives a
+consistent witness with variable box $U$. For a single-use term, the
+children of each binary operation use disjoint variables, so their joint
+range is the product of their ranges. Induction proves exact forward
+evaluation, giving the second assertion.
+\end{proof}
+
+\begin{theorem}[Coordinatewise loss preserves geometric lower bounds]
+\label{prop:cnd-transfer}
+Assume $F=D$ and the root is a sum of distinct term nodes with $C^2$
+signed expressions $t_j$. Let $s_0>0$ be the largest root side. On a set
+$N\subseteq D$, assume, for every coordinate,
+\[
+ d_i(y):=\sum_j|\partial_it_j(y)|-2\max_j|\partial_it_j(y)|\ge d_0>0.
+\]
+On coordinate segments of radius $\rho>0$ about these points, suppose
+$|\partial_{ii}t_j|\le H_j$, and put
+$K_0=\sum_jH_j/2+\max_jH_j$,
+$\rho_* =\min\{\rho,d_0/(2K_0)\}$,
+$\vartheta=d_0\rho_*/2$, interpreting $d_0/(2K_0)=+\infty$ if $K_0=0$.
+If propagation removes $y\in N\cap C$ at cutoff $f_* -\epsilon$, and
+$m(y)+\epsilon<\vartheta$, then
+\begin{equation}
+ \min\{y_i-l_i,u_i-y_i\}<\frac{2(m(y)+\epsilon)}{d_0},\qquad
+ m(y)+\epsilon\ge\frac{d_0}{2ns_0}q_C(y).
+ \label{prop:cnd-validity}
+\end{equation}
+
+Consider finite runs using coordinate splits, objective-only propagation
+phases with inherited lifted bounds, and a pointwise relaxation test that
+certifies $m(y)+\epsilon\ge\alpha q_C(y)$ on each discarded owned region.
+Let $K$ count terminal boxes plus at most $2n$ removed-piece certificates
+per phase. Set $\alpha_{\rm eff}=\min\{\alpha,d_0/(2ns_0)\}$. Then
+\begin{align}
+ K&\ge 2^{-n}\mathcal N_\infty\left(E(\eta)\cap N,
+                     \sqrt{(\epsilon+\eta)/\alpha_{\rm eff}}\right),
+      &&\epsilon+\eta<\vartheta,\label{prop:cnd-cover}\\
+ K&\ge\left(\frac{\alpha_{\rm eff}n}{\pi^2}\right)^{n/2}
+       \int_{N\cap\{m+\epsilon<\vartheta\}}
+             (m(y)+\epsilon)^{-n/2}\,dy.
+ \label{prop:cnd-integral}
+\end{align}
+Here $E(\eta)=\{m\le\eta\}$ and $\mathcal N_\infty(S,r)$ counts
+sup-norm balls of radius $r$ covering $S$.
+\end{theorem}
+
+The full event and inheritance proof is in
+\cref{app:propagation-transfer}. In particular, shared closed boundaries
+stay with the retained box; the discarded owner, rather than every point
+of its closed test box, satisfies the strict propagation comparison.
+A $p$-dimensional smooth piece of minimizers in $N$ therefore forces
+$K=\Omega(\epsilon^{-p/2})$. An interior minimizer with a neighborhood
+contained in $N$ and
+$m(y)\le\Gamma\|y-x_*\|^2$ locally forces
+$K=\Omega(\log(1/\epsilon))$. These become node lower bounds when the
+number of phases per node is uniformly bounded. Arbitrarily many phases
+cannot be charged to a bounded number of nodes.
+
+Coordinatewise no-dominance is stronger than the aggregate condition
+\[
+ \ell(y)=\sum_j\|\nabla t_j(y)\|_1
+                  -2\max_j\|\nabla t_j(y)\|_1>0.
+\]
+Aggregate loss confines removed points to thin face layers, rather than
+to vertex neighborhoods. Under uniform aggregate loss, an interior
+nondegenerate minimum in dimension $n\ge2$ still forces a logarithmic
+event count; a minimizing arc whose tangent has every coordinate bounded
+away from zero still forces $\Omega(\epsilon^{-1/2})$ events. Precise
+hypotheses and complete proofs are in \cref{app:propagation-face-loss}.
+These weaker hypotheses do not establish the general
+$\epsilon^{-p/2}$ rate in dimension $p\ge3$.
+
+Finally, the node reduction in \cref{prop:local-exactness} can move work
+into propagation rounds. For the graph $s^2-2as+a^2$ on a fixed interval
+around $a>0$, a forward-cutoff-backward schedule needs
+$\Omega(a\epsilon^{-1/2})$ rounds before emptying, although its limiting
+bound is exact. For $u=t^2$, $v=u^2$, $f=u-2v$, a schedule with initial
+$0<U_0<1/2$ on $u$ empties in $O(\log\log(1/\epsilon))$ rounds.
+\Cref{app:propagation-rounds} proves both statements for the specified
+schedules. Neither is a bound for all graphs or all schedules. General
+criteria for bounded-round propagation remain open.

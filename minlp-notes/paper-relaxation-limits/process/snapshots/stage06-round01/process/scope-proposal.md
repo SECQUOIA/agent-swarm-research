@@ -144,7 +144,7 @@ Paths below are relative to the repository root. Every row should receive one or
 
 ## Verification artifacts
 
-Use `/home/sgusev/miniconda3/envs/minlp-notes/bin/python` where dependencies require networkx or gurobipy; root reports that environment has numpy/scipy/sympy/networkx/gurobipy. Verify license-dependent code separately. Exact checks are supporting evidence, never replacements for general proofs.
+Use `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python` where dependencies require networkx or gurobipy; root reports that environment has numpy/scipy/sympy/networkx/gurobipy. Verify license-dependent code separately. Exact checks are supporting evidence, never replacements for general proofs.
 
 - Bilinear: code/mccormick_degeneracy/audit_cut_identity.py, check_cut_inequality.py, kn_pm1_ratio.py.
 - Universal/cubic: code/multilinear_ratio/dyadic_exact.py, multiscale_counterexample.py, universal_coupling.py, cubic_integer_certificate.py, verify_cubic_bounds.py, verify_cubic_analytic_family.py, verify_cubic_two_level.py, verify_cubic_rounding_upper.py; code/verify_multilinear_second_order.py.

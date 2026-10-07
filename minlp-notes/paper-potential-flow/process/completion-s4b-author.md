@@ -62,7 +62,7 @@ No priority claim rests on the absence of a matching search result. The comparis
 
 ## Checks
 
-Full commands, stdout, stderr, return codes, and elapsed times are retained in `completion-s4b-checks.json`. All checks used `/home/sgusev/miniconda3/envs/minlp-notes/bin/python` and passed.
+Full commands, stdout, stderr, return codes, and elapsed times are retained in `completion-s4b-checks.json`. All checks used `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python` and passed.
 
 | Check | Distinct evidence |
 | --- | --- |

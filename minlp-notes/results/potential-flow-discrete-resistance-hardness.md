@@ -104,7 +104,7 @@ Both independent reviews verified the leaf nomination sign, series resistance ag
 
 [`discrete_resistance_hardness_checks.py`](../code/potential_flow_mpd/discrete_resistance_hardness_checks.py) verifies the gadget balance, cycle, span, and leaf-shift formulas as exact symbolic identities. It exhaustively checks 1,976 resistance scenarios from 48 small Subset-Sum instances, including 14 yes and 34 no instances, at 80-digit precision. Every claimed no-case gap passed, with the smallest observed actual gap divided by the stated lower bound equal to about `1.88`. Topology checks confirm maximum degree three and block ranks `[0,2]`; integer resistance scaling is checked exactly with rational arithmetic. These checks are independent mechanism evidence alongside the reduction proof.
 
-Run with `/home/sgusev/miniconda3/envs/minlp-notes/bin/python code/potential_flow_mpd/discrete_resistance_hardness_checks.py`.
+Run with `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python code/potential_flow_mpd/discrete_resistance_hardness_checks.py`.
 
 The [second review](../notes/review-potential-flow-discrete-resistance-hardness-second.md) also includes an independent implementation, [`discrete_resistance_second_review_checks.py`](../code/potential_flow_mpd/discrete_resistance_second_review_checks.py), which passed 2,550 scenarios across 40 instances and four exact symbolic identities. These independent checks supplement the proof; they do not establish novelty.
 

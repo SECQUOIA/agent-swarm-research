@@ -5,15 +5,22 @@ report cluster count and CG iterations at the smallest mu. Chord law predicts
 alpha in {0, 1, 1.5, 2} universality classes (vertex / quadratic growth /
 singularity-degree-2 / positive-dim face).
 """
+from pathlib import Path as _CleanupPath
+import os as _cleanup_os
+# Point QIPM_SOURCE_ROOT to the external QIPM checkout containing standard_form.py.
+if 'QIPM_SOURCE_ROOT' not in _cleanup_os.environ:
+    raise RuntimeError('Set QIPM_SOURCE_ROOT to the QIPM source checkout before running this probe.')
+_QIPM_ROOT = _CleanupPath(_cleanup_os.environ['QIPM_SOURCE_ROOT']).expanduser().resolve()
+
 import numpy as np, sys
-sys.path.insert(0, '/home/sgusev/repo/qipm')
+sys.path.insert(0, (str(_QIPM_ROOT)))
 from pathlib import Path
 from standard_form import load_standard_form
 from scipy.optimize import linprog
 import scipy.linalg as sla
 
 rng = np.random.default_rng(2)
-CACHE = Path('/home/sgusev/repo/qipm/cache_dir/netlib')
+CACHE = Path((str(_QIPM_ROOT) + '/cache_dir/netlib'))
 
 def survey(name, max_dim=260):
     c, b, A, off = load_standard_form(CACHE/name/f'{name}.std')

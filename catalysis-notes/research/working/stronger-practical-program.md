@@ -98,7 +98,7 @@ The source checks are not exhaustive. In particular, the 2022 and 2025 full text
 
 ## Exact literature handoff to the sole literature agent
 
-Use `$lit`, **Add identified literature**, sequentially. Skill: `/home/sgusev/repo/skills/literature/SKILL.md`; project: `/home/sgusev/repo/catalisys-notes`; knowledge base: `/home/sgusev/repo/catalisys-notes/literature`. No KB edits or maintenance were performed by this reviewer. Include metadata and relevance for inaccessible sources, preserve their unread status, and report unresolved full texts. Do not equate an inspected abstract with a read full paper.
+Use `$lit`, **Add identified literature**, sequentially. Skill: `/workspace/skills/literature/SKILL.md`; project: `/workspace/catalisys-notes`; knowledge base: `/workspace/catalisys-notes/literature`. No KB edits or maintenance were performed by this reviewer. Include metadata and relevance for inaccessible sources, preserve their unread status, and report unresolved full texts. Do not equate an inspected abstract with a read full paper.
 
 Core sources:
 

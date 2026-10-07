@@ -45,7 +45,7 @@ Bibliography additions preserve the four existing accepted entries. The newly ad
 
 Added `verification/check_etr_source_identities.py`, a focused symbolic check of both original source diagrams, plus exact rational interval enclosures for every diagram coordinate on the whole box `|x|,|y|<=10^-6`. It checks identities, denominator positivity, and `[1/2,2]` ranges; it is not another pooling forward checker. Command:
 
-`/home/sgusev/miniconda3/envs/minlp-notes/bin/python papers/pooling/verification/check_etr_source_identities.py`
+`/workspace/local-home/miniconda3/envs/minlp-notes/bin/python papers/pooling/verification/check_etr_source_identities.py`
 
 Result: `PASS: both source diagram identities, nonzero denominators, and exact full-box range bounds`.
 

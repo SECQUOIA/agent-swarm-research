@@ -1,7 +1,7 @@
 #!/bin/bash
 # waits for the gen1 300 s comparison, then runs the (c) bounds and short SYNHEAT smoke tests
 export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
-cd /home/sgusev/repo/minlp-notes/code/minlp_solver_lab/hens
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")" || exit
 until [ -f results/heatexch_gen1_solvers300.json ]; do sleep 5; done
 echo "=== gen1_bounds ==="
 uv run python -u gen1_bounds.py 600 2>&1 | grep -v "^$\|WORKING"

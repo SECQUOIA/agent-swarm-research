@@ -160,7 +160,7 @@ ingredients are not claimed as new query theorems.
 
 ## Independent numerical and build checks
 
-Using `/home/sgusev/miniconda3/envs/qipm/bin/python`, I ran direct full-matrix
+Using `/workspace/local-home/miniconda3/envs/qipm/bin/python`, I ran direct full-matrix
 Newton elimination for 40 independently generated two-source packed
 instances with exact source allocations. Maximum discrepancies from the
 stated quotient Hessian and reduced gradient were approximately

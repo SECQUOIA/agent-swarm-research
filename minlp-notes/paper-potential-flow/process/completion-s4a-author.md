@@ -1,6 +1,6 @@
 # S4a author report
 
-Date: 2026-09-10. Status: authored and ready for five independent reviews; not accepted. Worktree: `/home/sgusev/repo/minlp-notes-potential-flow`.
+Date: 2026-09-10. Status: authored and ready for five independent reviews; not accepted. Worktree: `/workspace/minlp-notes-potential-flow`.
 
 ## Deliverable and scope
 
@@ -46,7 +46,7 @@ The separate Hasler–Wang 1993 nonlinear-tolerance paper remains unread, which 
 
 ## Validation
 
-`completion-s4a-checks.json` records the interpreter, script hashes, return codes, and full output for ten existing scripts. All passed using `/home/sgusev/miniconda3/envs/minlp-notes/bin/python`. Their imports/source references were checked before execution.
+`completion-s4a-checks.json` records the interpreter, script hashes, return codes, and full output for ten existing scripts. All passed using `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python`. Their imports/source references were checked before execution.
 
 | Check | Distinct evidence |
 | --- | --- |

@@ -1,0 +1,291 @@
+\section{Separation and comparison tools}
+\label{comp:tools}
+
+This appendix gives the exact statements behind the numerical comparisons.
+The statements concern exact arithmetic. The archived implementations use
+floating point, so their reported values need the qualifications in
+Section~\ref{comp:numerics}.
+
+\subsection{Family separation on the simplex}
+
+Write $\Delta_S=\{v\in\R_+^S:\mathbf1^Tv=1\}$ for a nonempty
+$S\subseteq\{1,2,3,4\}$. For $A\in\Sn4$, define
+\begin{equation}\label{comp:simplex-min}
+ \mu(A)=\min_{v\in\Delta_{\{1,2,3,4\}}}v^TAv,
+ \qquad
+ K_S=\begin{pmatrix}A_{SS}&\mathbf1\\\mathbf1^T&0\end{pmatrix}.
+\end{equation}
+The normalization in \eqref{comp:simplex-min} differs from the Euclidean
+normalization in Proposition~\ref{family:separation}; both detect exactly
+whether $A$ is copositive.
+
+\begin{proposition}[Fifteen-support separation]\label{comp:family-separation}
+For each nonempty support $S$, solve
+\begin{equation}\label{comp:bordered}
+ K_S\begin{pmatrix}v_S\\\nu\end{pmatrix}
+   =\begin{pmatrix}0\\1\end{pmatrix}.
+\end{equation}
+Retain a solution whenever $v_S\geq0$, and extend it by zero outside $S$.
+The least objective value among these feasible stationary solutions is
+$\mu(A)$. If a system is singular but has feasible solutions, all of them
+have the same objective value. Moreover, a global minimizer occurs on a
+support for which $K_S$ is nonsingular. Thus singular systems may be omitted
+in exact arithmetic without losing the minimum.
+\end{proposition}
+
+\begin{proof}
+Every retained vector is feasible for \eqref{comp:simplex-min}, so its
+objective is at least $\mu(A)$. A global minimizer exists by compactness.
+Choose one, $v^*$, with the smallest support $S$. It lies in the relative
+interior of $\Delta_S$, so first-order stationarity on its affine hull gives
+$A_{SS}v^*_S=\lambda\mathbf1$. Hence $(v^*_S,-\lambda)$ solves
+\eqref{comp:bordered}.
+
+Suppose $K_S$ were singular. There would be a nonzero pair $(d,\eta)$ with
+$A_{SS}d+\eta\mathbf1=0$ and $\mathbf1^Td=0$. Necessarily $d\ne0$.
+For every $t\in\R$,
+\[
+ (v^*_S+td)^TA_{SS}(v^*_S+td)
+ = (v^*_S)^TA_{SS}v^*_S
+   +2t\lambda\mathbf1^Td-t^2\eta\mathbf1^Td
+ =\mu(A).
+\]
+Because $d$ has both positive and negative coordinates and $v^*_S>0$,
+one can move in this direction until a coordinate first becomes zero.
+The resulting point is feasible and has a smaller support, a contradiction.
+Thus $K_S$ is nonsingular and $v^*$ is among the retained candidates.
+
+Finally, if $u,v\in\Delta_S$ solve the stationary equations with
+$A_{SS}u=\lambda\mathbf1$ and $A_{SS}v=\rho\mathbf1$, symmetry gives
+$\lambda=v^TA_{SS}u=u^TA_{SS}v=\rho$. Their objective values are
+therefore equal. This also handles degenerate faces with infinitely many
+stationary solutions. No positive-definiteness assumption on $A_{SS}$
+is needed: nonminimizing stationary points remain feasible candidates and
+cannot lower the minimum below $\mu(A)$.
+\end{proof}
+
+For the family of Section~\ref{family:section}, take
+$A=B-bb^T$ from \eqref{family:lmi}. Minimization over the unrestricted
+parameter $h$ gives $h=-b^Tv$ and family value $v^TAv$.
+A negative value in \eqref{comp:simplex-min} therefore gives a violated
+family inequality, with $(d_1,d_2,d_3,k)=v$. Any vector $v\geq0$
+gives a valid inequality, even if it is not a minimizer. The archived
+implementation clips tiny negative coordinates, renormalizes the vector,
+and evaluates the resulting feasible candidate. This preserves the
+mathematical validity of its parameter choice, but skipping a nearly
+singular system can miss a violation. A floating-point value of $\mu(A)$
+is consequently a separation diagnostic, not a certificate of copositivity.
+
+\subsection{The five-tetrahedron lift and normalized hull depth}
+
+For $u\in C_3$, put $\bar u=(1,u)^T$, and write
+\[
+ \mathcal M_3
+   =\conv\{\bar u\bar u^T:u\in C_3\}.
+\]
+This is the matrix form of $\mathcal Q_3$. Let
+\begin{equation}\label{comp:uniform}
+ M_c=\begin{pmatrix}
+ 1&1/2&1/2&1/2\\
+ 1/2&1/3&1/4&1/4\\
+ 1/2&1/4&1/3&1/4\\
+ 1/2&1/4&1/4&1/3
+ \end{pmatrix},
+\end{equation}
+the moment matrix of the uniform distribution on $C_3$.
+Use the following five tetrahedra; strings denote cube vertices:
+\begin{equation}\label{comp:tetrahedra}
+ \begin{split}
+ &(000,110,101,011),\qquad(100,000,110,101),\\
+ &(010,000,110,011),\qquad(001,000,101,011),\\
+ &(111,110,101,011).
+ \end{split}
+\end{equation}
+Let $\bar A_p$ have the four homogenized vertices of tetrahedron $p$
+as columns. To see that these tetrahedra cover the cube, the central
+tetrahedron has barycentric coordinates
+\[
+ 1-\tfrac{x+y+z}{2},\quad\tfrac{x+y-z}{2},\quad
+ \tfrac{x+z-y}{2},\quad\tfrac{y+z-x}{2}.
+\]
+Outside it, one of $x>y+z$, $y>x+z$, $z>x+y$, or $x+y+z>2$
+holds. These regions are the four remaining tetrahedra, and their interiors
+are disjoint.
+
+The exact lift of \citet{AnstreicherBurer2010} specializes to
+\begin{equation}\label{comp:exact-lift}
+ \mathcal M_3
+ =\left\{\sum_{p=1}^5\bar A_pW_p\bar A_p^T:
+      W_p\in\DNN_4,\quad
+      \sum_{p=1}^5\mathbf1^TW_p\mathbf1=1\right\}.
+\end{equation}
+For completeness, $\DNN_4=\CP_4$: factor each $W_p$ into a sum of
+$ww^T$ with $w\geq0$. For $w\ne0$, let
+$\alpha=\mathbf1^Tw$ and $u$ be the point of tetrahedron $p$ with
+$\bar u=\bar A_pw/\alpha$. Then
+$\bar A_pww^T\bar A_p^T=\alpha^2\bar u\bar u^T$, and the
+normalization in \eqref{comp:exact-lift} says that these weights sum to one.
+Conversely, every cube point belongs to a tetrahedron and has nonnegative
+barycentric coordinates, yielding a feasible rank-one $W_p$.
+
+\begin{proposition}[Hull depth and exact cut correction]\label{comp:hull-depth}
+For $M\in\Sn4$ with $M_{00}=1$, define
+\begin{equation}\label{comp:depth}
+ \begin{split}
+ \delta(M)=\min\quad&\inner{C}{M}\\
+ \text{subject to}\quad&\inner{C}{M_c}=1,\\
+ &\bar A_p^TC\bar A_p-N_p\succeq0\quad(p=1,\ldots,5),\\
+ &N_p\geq0\ \text{entrywise},\qquad\diag(N_p)=0.
+ \end{split}
+\end{equation}
+The minimum is finite and attained. The projected feasible matrices $C$
+are exactly the quadratics $q_C(u)=\bar u^TC\bar u$ that are
+nonnegative on $C_3$ and have uniform mean one. Consequently,
+\[
+ \delta(M)<0\quad\Longleftrightarrow\quad
+ M\notin\mathcal M_3.
+\]
+If $\varepsilon\geq\max\{0,-\delta(M)\}$, then
+\begin{equation}\label{comp:depth-mixing}
+ \frac{M+\varepsilon M_c}{1+\varepsilon}
+       \in\mathcal M_3.
+\end{equation}
+For any symmetric $C$, the shifted quadratic $q_C+s$ is nonnegative
+on $C_3$ whenever
+\begin{equation}\label{comp:shift}
+ s\geq\max\left\{0,-\min_{1\leq p\leq5}
+          \mu(\bar A_p^TC\bar A_p)\right\}.
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+On tetrahedron $p$, $q_C(u)=\lambda^T\bar A_p^TC\bar A_p\lambda$
+for $\lambda\geq0$ with $\mathbf1^T\lambda=1$. Thus $q_C$ is
+nonnegative on the cube exactly when all five matrices
+$\bar A_p^TC\bar A_p$ are copositive. The equality
+$\COP_4=\mathbb S^4_++(\R_+^{4\times4}\cap\Sn4)$ gives precisely the constraints
+in \eqref{comp:depth}; any nonnegative diagonal component can be moved
+into the positive semidefinite component.
+
+The cone of cube-nonnegative quadratics is closed. A nonzero element has
+strictly positive uniform mean: a continuous nonnegative polynomial with
+zero integral vanishes on the cube and hence is the zero polynomial.
+Its mean-one slice is compact. Indeed, an unbounded sequence in this
+slice, divided by its coefficient norm, would have a subsequence converging
+to a nonzero nonnegative quadratic of mean zero, a contradiction.
+The slice is nonempty because it contains the constant one. Therefore
+\eqref{comp:depth} has a finite attained minimum in $C$, and a
+copositive decomposition supplies the auxiliary $N_p$.
+
+Every $M\in\mathcal M_3$ evaluates all nonnegative
+quadratics nonnegatively. If $M$ is outside this compact convex hull,
+strict separation gives a matrix $D$ and a scalar $a$ with
+$\inner{D}{M}<a\leq\inner{D}{\bar u\bar u^T}$ for every cube
+point. Subtracting $a$ from the constant term yields a nonzero
+cube-nonnegative quadratic with negative value at $M$, because
+$M_{00}=1$. Its positive uniform mean permits normalization in
+\eqref{comp:depth}. This proves the equivalence.
+
+For every normalized nonnegative quadratic,
+$\inner{C}{M+\varepsilon M_c}\geq\delta(M)+\varepsilon\geq0$.
+The preceding separation characterization and the leading entry
+$1+\varepsilon$ give \eqref{comp:depth-mixing}. Finally, on tetrahedron
+$p$, $q_C(u)\geq\mu(\bar A_p^TC\bar A_p)$, proving
+\eqref{comp:shift}.
+\end{proof}
+
+Formula~\eqref{comp:shift} is an exact certification rule if its five
+simplex minima are evaluated exactly, or if certified lower bounds replace
+them. Applying the floating-point routine of
+Proposition~\ref{comp:family-separation} with a small rounding margin
+does not establish this rule in exact arithmetic.
+
+\subsection{An upper bound on triple-local improvement}
+
+Let $y$ be a vector of first and second moments on a fixed pattern, with
+every diagonal recorded. For a recorded triple $T$, write $M_T(y)$ for
+its normalized $4\times4$ moment matrix. Let $y_c$ be the restriction of
+the uniform cube moments to this pattern. Thus each $M_T(y_c)$ equals
+\eqref{comp:uniform}.
+
+\begin{proposition}[Triple-local gain bound]\label{comp:gain-bound}
+Let $R$ be a convex set of moment vectors containing $y_c$, let $y^*\in R$,
+and let $f$ be an affine objective. Let $\mathcal T$ be a set of recorded
+triples and assume
+\[
+ \varepsilon\geq\max_{T\in\mathcal T}
+                      \max\{0,-\delta(M_T(y^*))\}.
+\]
+For each $T$, add any system involving its moments and auxiliaries used
+only by that triple, whose projection contains
+$\mathcal M_3$. Let $R'$ be the resulting moment feasible set.
+Then
+\begin{equation}\label{comp:gain}
+ \inf_{y\in R'}f(y)
+ \leq \frac{f(y^*)+\varepsilon f(y_c)}{1+\varepsilon}
+ =f(y^*)+\frac{\varepsilon}{1+\varepsilon}
+                         \bigl(f(y_c)-f(y^*)\bigr).
+\end{equation}
+If $y^*$ minimizes $f$ over $R$, the last term bounds the improvement
+of the relaxation value.
+\end{proposition}
+
+\begin{proof}
+Convexity gives $y_\varepsilon=(y^*+\varepsilon y_c)/(1+\varepsilon)\in R$.
+By Proposition~\ref{comp:hull-depth}, $M_T(y_\varepsilon)$ belongs to
+$\mathcal M_3$ for every $T\in\mathcal T$. Each added system
+has feasible auxiliaries at these moments. Because the auxiliaries are
+independent between triples, they can all be chosen at once. Hence
+$y_\varepsilon\in R'$. Evaluating $f$ there proves \eqref{comp:gain}.
+\end{proof}
+
+This argument applies unchanged to clique moment patterns. It covers the
+family blocks, tetrahedral lifts, and the Anstreicher--Puges systems with
+their own trilinear moment for each triple. It also covers the disjoint-support
+systems when their additional moments are not identified across triples.
+It does not cover a common auxiliary such as $x_i^2x_j$ used by two
+different triples: local representing measures need not give the same
+value to that shared auxiliary.
+
+For the objective $f(m,Y)=\inner{H}{Y}+g^Tm$,
+\[
+ f(y_c)=\tfrac13\sum_iH_{ii}
+        +\tfrac14\sum_{i\ne j}H_{ij}+\tfrac12\sum_i g_i.
+\]
+An application to a numerical $y^*$ requires actual feasibility for $R$
+and a one-sided upper bound on every $-\delta(M_T(y^*))$.
+If $L_R$ is a reported lower bound on the baseline value, the comparison
+with $L_R$ must also include the margin $f(y^*)-L_R$.
+
+\subsection{Dual residual correction}
+
+\begin{proposition}\label{comp:dual-bound}
+Consider $\inf\{c^Tu:Au+s=b,\ s\in K\}$, where every feasible $u$
+satisfies $\ell_i\leq u_i\leq h_i$. For any $z\in K^*$, put
+$r=c+A^Tz$. Then every feasible point satisfies
+\begin{equation}\label{comp:dual-correction}
+ c^Tu\geq-b^Tz+\sum_i\min\{r_i\ell_i,r_ih_i\}.
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+Since $\inner{z}{s}\geq0$,
+$c^Tu=r^Tu-z^TAu=r^Tu-b^Tz+\inner{z}{s}
+\geq r^Tu-b^Tz$. Minimize each component of $r^Tu$ over its interval.
+\end{proof}
+
+The implementation projects the approximate dual vector onto the relevant
+cones and subtracts rounding allowances before using
+\eqref{comp:dual-correction}. The variables have explicit finite bounds:
+recorded moments lie in $[0,1]$, the six family auxiliaries lie in
+$[0,3]$, and tetrahedral weights lie in $[0,1]$. The family bound is
+implied by the block at a baseline-feasible point: each entry of $B$
+and $b$ has absolute value at most one, while
+$S=B-N-bb^T\succeq0$ has diagonal at most one and hence entries
+of absolute value at most one. Thus $N_{ij}=B_{ij}-b_ib_j-S_{ij}\leq3$.
+For the tetrahedral lift, nonnegativity and
+$\sum_p\mathbf1^TW_p\mathbf1=1$ imply each entry of $W_p$ is at
+most one. These restrictions preserve the intended lifts. The reported corrected values are careful
+floating-point estimates. They become rigorously certified lower bounds
+only if cone membership, residuals, and the rounding allowances are
+themselves verified with rigorous arithmetic.

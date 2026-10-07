@@ -1,0 +1,309 @@
+\section{Computational study}\label{sec:computations}
+
+The experiments address four questions: whether the exported cuts are
+valid in practice; whether they change SCIP's results on benchmark
+models; how often the targeted structure occurs and what the separator
+costs; and how much of SCIP's root gap the cuts close on instances that
+have the structure of Section~\ref{sec:composition}. We report three
+campaigns on MINLPLib models and one on a constructed family. The first
+two campaigns were run with time budgets fixed in advance; the third
+repeats the comparison with the final implementation, longer budgets,
+several seeds and a structure-selected sample. All three are reported in
+full, including failures.
+
+\subsection{Setup}\label{sec:setup}
+
+All runs use SCIP~10.0.2 through PySCIPOpt~6.2.1, Python~3.13, one SCIP
+thread and one BLAS thread per process, on a 36-core Linux host that was
+shared with unrelated jobs (one-minute load average between about 10 and
+17). Timings are therefore descriptive; we compare modes only within
+the same job, where the modes run back to back. Models come from a cached
+copy of MINLPLib \citep{BussieckDrudMeeraus2003} in OSiL format, restricted
+by size (Appendix~\ref{app:instances}) and stratified by the library's
+metadata into convex models, nonconvex models without integer variables,
+and nonconvex models with integer variables.
+
+A model counts as \emph{solved} if SCIP reports optimality or the relative
+gap limit $10^{-4}$, and the returned incumbent passes an independent check
+of all original rows, bounds, domains, integrality restrictions and the
+objective at a scaled tolerance of $10^{-5}$; the checker evaluates the
+source expressions without the model builder. Times are compared by
+shifted geometric means with shift one second over models solved in every
+mode. Dual bounds are compared at a relative tolerance of $10^{-4}$, the
+gap limit; smaller differences are within the noise of a single run (we
+report the effect of the tolerance below). Every recorded cut is replayed
+in a fresh process against the archived source model and the stored SCIP
+row, and deliberately corrupted records check that replay rejects
+altered inputs. A run whose worker failed has no complete cut log; its cut
+count is reported as unknown, not as zero.
+
+\subsection{Campaign 1: lifted cuts with auxiliary variables}\label{sec:campaign1}
+
+The first implementation added an auxiliary variable $w=f(x)$ for each
+selected expression of one or two variables and separated support cuts in
+$(x,w)$, using the polygon and star oracles, Bernstein bounds and ball
+arithmetic. Because the auxiliary variables change the model, it was
+compared with a \emph{control} mode that adds them without cuts. The
+campaign used 24 MINLPLib models selected by a fixed hash ordering, 13
+constructed mechanism cases, a six-second budget and a two-second root
+budget.
+
+Of the 24 models, 20 passed the model import in every mode; three were
+rejected because a domain restriction could not be proved on the declared
+box, and one failed with an unsupported variable power. Baseline and
+control solved 19 of the 20, both cut modes 18; the lost model,
+\code{genpooling\_lee2}, reached the time limit in both cut modes. On the
+models solved in every mode, the shifted geometric mean time was
+$0.38$\,s for the baseline, $0.52$\,s for the control, and $0.57$\,s and
+$0.46$\,s for the two cut modes. On the mechanism cases, the control and
+both cut modes solved all 13 and the baseline 12, so the additional solve
+is explained by the reformulation, not by the cuts. All 1{,}082 recorded
+cuts passed replay, and all 270 returned incumbents passed the
+original-model check. The auxiliary variables thus cost time on their own,
+and the cuts did not recover it. This motivated the original-variable cuts
+of Section~\ref{sec:original}.
+
+\subsection{Campaign 2: cuts in the original variables}\label{sec:campaign2}
+
+The second implementation is the one described in
+Section~\ref{sec:implementation}. Its prospective campaign used 30 new
+MINLPLib models, ten per stratum, selected by a fixed hash ordering from
+the 422 eligible models that had not been used before, with a 30-second
+budget, root runs with one node, 13 mechanism cases, ten diagnostic models
+from the first campaign, and seed-one repeats on six models (282 runs).
+
+All 30 models were admitted, and every mode solved the same 25. The five
+unsolved models received no cut in any mode. Cuts were added on 7 models
+in mode \code{all} (38 cuts) and on 3 in mode \code{auto} (10 cuts), all of
+which the baseline also solved; four of them were solved at the root in
+every mode. At the gap-limit tolerance, no final or root dual bound was
+better in a cut mode than in the baseline; four time-limited models had
+worse final bounds in both cut modes. At a tolerance of $10^{-6}$ two models
+appeared better and up to seven worse, but these differences are of the
+same size as the variation between identical baseline reruns. The cut
+modes were slower: on the 25 commonly solved models the shifted geometric
+mean time rose from $0.55$\,s to $0.99$\,s (\code{all}) and $0.96$\,s
+(\code{auto}), and both cut modes were more than 10\% slower on 21 of the
+25. Discovery accounted for 24.4 of the 27.6 callback seconds of mode
+\code{all}; direction LPs took 0.7\,s and certification 2.4\,s.
+
+The campaign also exposed two defects of the frozen code. On two
+diagnostic models, symbolic polynomial conversion over all model symbols
+crashed during discovery (four worker errors, with unknown cut logs), and
+discovery did not check the time allowance between rows, so it exceeded
+the allowance in 46 cut-mode runs, by up to 19\,s. Both were repaired, and
+a matched cohort of the 25 affected model and seed groups, 75 runs, was
+rerun with all three modes. It had no worker errors; every mode solved the
+same models; and the largest remaining overrun of the separator allowance
+was 0.03\,s. On \code{graphpart\_clique-40}, for example, the worse cut-mode
+bound of the original runs disappeared after the repair. All 123 cuts of
+the prospective campaign and all 42 of the repair cohort passed replay,
+and all 338 returned incumbents passed the original-model check.
+
+\subsection{Campaign 3: corrected code, longer runs, structured models}\label{sec:campaign3}
+
+Campaign~3 uses the repaired implementation with its frozen limits and
+three parts fixed in a protocol before any run. Part~A repeats the 30
+models of campaign~2 with a 300-second budget and seeds 0, 1 and 2, plus
+root runs with one node. Part~B uses a sample selected by structure: from
+the 392 eligible models not used in campaign~2, the 111 on which discovery
+finds a block that the \code{auto} rule admits, ranked by a hash of a
+fixed prefix and the name; we take the first 30, seeds 0 and~1. Part~C is
+the constructed family of Section~\ref{sec:mechanism}. The root runs of
+Parts~A and~B include a diagnostic mode \code{all-diag} with raised limits
+(128 blocks, 200 cuts, 50 per callback, 10 callbacks, 500 support calls,
+30\,s), which tests whether the frozen limits, rather than the cuts, bound
+their effect. Parts~A and~B together comprise 690 runs.
+
+\begin{table}[t]
+\centering\small
+\caption{Campaign 3 on MINLPLib models: runs solved, recorded cuts (runs
+with cuts), and shifted geometric mean time over the runs solved by every
+mode. Part~A: the 30 models of campaign~2, seeds 0--2, 300\,s. Part~B: 30
+structure-selected models, seeds 0--1, 300\,s.}\label{tab:campaign3}
+\begin{tabular}{@{}llrrrr@{}}
+\toprule
+Part & Mode & Solved & Cuts (runs) & SGM time (s) & Runs faster than baseline\\
+\midrule
+A & baseline & 80/90 & 0 & 1.05 & ---\\
+  & all      & 80/90 & 151 (33) & 1.27 & 11/80\\
+  & auto     & 80/90 & 37 (15) & 1.21 & 6/80\\
+\midrule
+B & baseline & 52/60 & 0 & 1.33 & ---\\
+  & all      & 52/60 & 179 (40) & 1.87 & 8/52\\
+  & auto     & 52/60 & 145 (38) & 1.82 & 9/52\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:campaign3} summarizes the full runs. In both parts and in
+every seed, all modes solved the same models. In Part~A, the longer budget
+solved \code{graphpart\_clique-40}, which had timed out in campaign~2, and
+\code{tln7} in two of three seeds; \code{ex5\_2\_5}, \code{ex8\_3\_4} and
+\code{waterx} remained unsolved in every mode and seed. Cuts were added on
+11 of the 30 models in mode \code{all} and on 5 in mode \code{auto}. At the
+gap-limit tolerance the final dual bounds of the 90 paired runs were
+better in 2 and worse in 4 for \code{all}, and better in 3 and worse in 3
+for \code{auto}; between seeds, the baseline itself differed in 3 of 30
+comparisons, so these differences are within run-to-run variation. The cut
+modes were slower by 15--21\% in shifted geometric mean and by a median
+factor of 1.3 per run.
+
+In Part~B, all 30 models were admitted, and in each seed the same 26 were
+solved in every mode; \code{bayes2\_20}, \code{bayes2\_30}, \code{bayes2\_50}
+and \code{kall\_circles\_c8a} timed out. Cuts were added on 20 of the 30
+models. The final bounds were better in 2 of 60 comparisons in each cut
+mode, both on \code{kall\_circles\_c8a} at the time limit, and never worse.
+At the root the cuts had a visible effect on four models: they closed the
+root gap of \code{pooling\_bental4tp} in every cut mode and that of
+\code{pooling\_bental4pq} in modes \code{auto} and \code{all-diag}, which
+were then solved at the root node, and
+they improved the root bounds of \code{ex3\_1\_4} (from $-6$ to $-5.79$,
+and to $-5.69$ with raised limits; the optimum is $-4$) and of
+\code{pointpack04}. In two root comparisons, \code{auto} ended with a worse
+root bound (\code{pooling\_haverly2pq} and \code{pointpack04}): valid cuts
+cannot weaken an LP, but they change SCIP's subsequent separation and its
+cut selection, and the final root bound need not improve. These effects did
+not change any full solve, because SCIP solves these models in about a
+second regardless, and the cut modes were about 40\% slower in shifted
+geometric mean and slower on 44 of 52 runs. Raising the limits at the root
+(\code{all-diag}) added more cuts, 403 in Part~A and 358 in Part~B, but
+improved the root bound beyond the gap tolerance on only one more model in
+each part (\code{cvxnonsep\_psig20r} in Part~A and \code{pooling\_bental4pq}
+in Part~B).
+
+All returned incumbents of campaign~3, 679 in Parts~A and~B and 80 in
+Part~C, passed the original-model check. Replay passed for all recorded
+cuts: 7{,}498 cuts in Parts~A to~C (188 in the full and 465 in the root runs of
+Part~A, 845 in Part~B and 6{,}000 in Part~C), and in each part all 14
+corrupted records were rejected.
+
+\subsection{How common is the structure, and what does it cost?}\label{sec:coverage}
+
+The structural scan of Part~B ran discovery alone on the 392 eligible
+models outside the campaign-2 sample. The importer admitted 389 of them
+(three timed out while building the model). Discovery found at least one
+admissible block in 234 models, a quadratic block of dimension at least two
+in 185, a block with at least two nonlinear rows in 110, and a block that
+the \code{auto} rule admits in 111; none of the latter are convex models.
+Discovery took a median of 0.04\,s and at most 4.2\,s per model. The
+structure is therefore common in MINLPLib; what is rare is a model in which
+it is decisive for SCIP.
+
+The separator's cost is dominated by Python-level work. In campaign~2,
+before the repair, discovery accounted for 24.4 of 27.6 callback seconds in
+mode \code{all}. In campaign~3, discovery is fast and exact certification
+dominates: in Part~B, certification took 23.0 of 32.9 callback seconds in
+mode \code{all}, the direction LPs 3.9\,s and discovery 4.4\,s. Over the 60
+full runs this is about half a second per run, which is of the same order as
+SCIP's whole solving time on most of these models.
+
+\subsection{A family with the path structure}\label{sec:mechanism}
+
+The path family of Section~\ref{sec:interleave} is a natural test of
+whether the cuts supply strength that SCIP lacks. We built 20 instances,
+five for each $n\in\{10,20,40,80\}$, each consisting of $n$ independent copies
+of~\eqref{eq:family} with $\omega_A=\omega_C=1$, coupled by one nonbinding
+row $\sum_iy_i\le0.8n$: variables $x_i,y_i,z_i\in[0,1]$ and $t_i$, rows
+$D_i(x_i,y_i,z_i)-t_i\le0$, objective $\min\sum_it_i$. For each copy, four
+distinct values are drawn from $\{k/64:k=0,\dots,48\}$ and split into two
+interleaving two-point sets with random orientation. By
+Theorem~\ref{thm:interleave} the optimum is $\sum_i\delta_i^2/2$, which we
+know exactly. The protocol, fixed before any run, compares the baseline
+with mode \code{all} under limits proportional to $n$ ($n$ blocks, $4n$ cuts,
+$n$ per callback, 10 callbacks, $20n$ support calls, 60\,s), in root runs
+and in full runs of 300\,s.
+
+\begin{table}[t]
+\centering\small
+\caption{The path family: median fraction of the root gap closed,
+$(\text{root bound with cuts}-\text{baseline root bound})/(\text{optimum}-\text{baseline root bound})$,
+and instances solved within 300\,s (of five per $n$). ``Frozen'' is the
+separator as used in all campaigns; ``row direction'' is the post hoc
+variant described in the text, with the same limits and with wider
+limits.}\label{tab:mechanism}
+\begin{tabular}{@{}rccccccc@{}}
+\toprule
+& \multicolumn{3}{c}{Root gap closed (median)} & \multicolumn{4}{c}{Solved in 300\,s}\\
+\cmidrule(lr){2-4}\cmidrule(l){5-8}
+$n$ & frozen & row dir. & row dir., wide & baseline & frozen & row dir. & row dir., wide\\
+\midrule
+10 & 0.35 & 0.44 & 1.00 & 5 & 5 & 5 & 5\\
+20 & 0.25 & 0.44 & 1.00 & 4 & 4 & 5 & 5\\
+40 & 0.19 & 0.43 & 1.00 & 0 & 0 & 0 & 5\\
+80 & 0.22 & 0.46 & 1.00 & 0 & 0 & 0 & 5\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+SCIP's root bound on these instances is weak: between $-0.031$ and $-0.022$ per copy on average, while
+each copy contributes at least $1/8192$ to the optimum, and SCIP closes the
+gap by branching on the leaves, which its presolve turns into binaries
+(Section~\ref{sec:path-example}). The frozen separator improved the root
+bound on all 20 instances but closed only a median of 19--35\% of the root
+gap (Table~\ref{tab:mechanism}). In full runs both modes solved the same 9
+instances; on these the cuts reduced the number of nodes, for example from
+30{,}798 to 2{,}316 and from 166{,}693 to 69{,}996, and the shifted geometric
+mean time from 10.3\,s to 6.7\,s. All other instances timed out in both
+modes.
+
+The reason for the partial closure is in the direction search, not in the
+support computation. For each block, the exact support in the direction of
+its own row, $a$ equal to the row's coefficients of the block variables and
+$\lambda=1$, is the block minimum, and the $n$ resulting cuts
+$t_i\ge\min D_i$ make the root bound equal to the optimum. The frozen
+separator's first directions, one per row, set $a=0$ and therefore bound
+only the nonlinear remainder of the row; the row's affine terms in the block
+variables enter the cut only through the elimination. In addition, the
+first blocks of a round take up to four cuts each, so with $n$ cuts per
+callback later blocks receive none. After seeing the results of Part~C, we
+ran a diagnostic, reported separately from the prospective results: the
+same separator with the row direction tried first, once with the same
+limits and once with $4n$ cuts per callback, $16n$ cuts and $40n$ support
+calls. The row direction alone raised the median closure to 43--46\%; with
+the wider limits, the root gap closed completely on all 20 instances, and
+all 20 full runs were solved, mostly at the root node, in 3 to 39\,s, against
+9 of 20 for a rerun of the baseline. The diagnostic also ran the row
+direction on the root runs of Parts~A and~B: the root bounds of all 60 models were unchanged at the gap tolerance;
+the variant changed the number of cuts in 8 of 180 cut-mode runs and no
+bound. The conclusions for the benchmark models therefore do not depend on
+this defect.
+
+This family was constructed to have the structure of
+Section~\ref{sec:composition}, and its objective is a sum of block
+functions, which is the most favorable case for block support cuts. It
+shows that exact block support can supply strength that SCIP's root
+relaxation lacks, that the strength reaches the solver only if the
+direction search tries the right directions, and that, on such instances,
+it can turn time-outs into root solves. It is not evidence about other
+models.
+
+\subsection{Summary and limitations}\label{sec:comp-summary}
+
+Across three campaigns and the constructed family, every recorded cut
+passed replay against the source model and the row stored by SCIP, and
+every returned incumbent passed the original-model check. On benchmark
+models the cuts never changed which models SCIP solved, in any campaign,
+mode or seed. They improved root bounds on a few pooling and small
+nonconvex models that SCIP solves in a second anyway, and they cost time:
+in the final implementation about 15--20\% in shifted geometric mean on the
+campaign-2 models and about 40\% on the structure-selected models. On the
+constructed family they turned time-outs into root solves once the
+direction search tried each row's own direction. We therefore do not
+recommend enabling the separator by default.
+
+The study has limitations that the reader should weigh. The test sets are
+small models (at most 120 variables), because the exact oracles are
+limited to small blocks and the implementation is in Python; larger models
+may contain more or less useful structure. Time limits are short by the
+standards of MINLP benchmarking, although 300\,s is long relative to the
+solve times of most of the models used. The host was shared, so timing
+differences of a few percent are not meaningful; we have reported them
+only as shifted geometric means over paired runs, with the variation
+between baseline seeds for comparison \citep{LodiTramontani2013}. Only SCIP
+was used, because the separator is a SCIP component; the baseline is SCIP
+with all its default nonlinear machinery, which is the relevant comparison
+for such a component. Finally, the post hoc diagnostic of
+Section~\ref{sec:mechanism} was designed after the prospective results were
+seen and is reported as such; it explains the mechanism results and does
+not change the benchmark conclusions.

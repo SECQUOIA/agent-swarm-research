@@ -112,7 +112,7 @@ I independently ran this targeted command from
 pinned to version `v4.33.1`:
 
 ```bash
-lake env lean /home/sgusev/repo/minlp-notes/research-20260925/formal/PenaltyEncoding.lean
+lake env lean /workspace/minlp-notes/research-20260925/formal/PenaltyEncoding.lean
 ```
 
 It exited with status zero and no warnings. The nine printed transitive

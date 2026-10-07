@@ -77,7 +77,7 @@ The strongest next editorial action is a focused correction pass, beginning with
 
 ## Literature handoff
 
-Two identified source gaps were routed sequentially to the sole reusable literature worker using the [lit skill](/home/sgusev/repo/skills/literature/SKILL.md). This completes evidence records for existing screens, not a new research direction. The [completed intake report](../../literature/runs/2026-09-16-lundin-membrane/run.md) records:
+Two identified source gaps were routed sequentially to the sole reusable literature worker using the [lit skill](/workspace/skills/literature/SKILL.md). This completes evidence records for existing screens, not a new research direction. The [completed intake report](../../literature/runs/2026-09-16-lundin-membrane/run.md) records:
 
 - **Lundin2024**, DOI `10.1016/j.memsci.2023.122345`: lawful DOE PAGES accepted manuscript retrieved and read. Its coupled membrane model strengthens existing prior art; agreement for conversion/recovery is better supported than trace-impurity prediction, and the reactor experiments do not establish long-duration durability.
 - **Shimura2026 supporting information**, parent DOI `10.1039/D6CY00105J`: bibliographic package added, still unretrieved and unread. The RSC SI route returned HTTP 404 and an alternate route returned HTTP 500. The carbonylation audit's SI-dependent definitions remain unresolved.

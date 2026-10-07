@@ -19,7 +19,7 @@ I read all eleven section sources, `main.tex`, `macros.tex`, and the complete bi
 
 ## Diagnostic evidence
 
-I ran `scripts/verify_cyclic.py` using `/home/sgusev/miniconda3/envs/qipm/bin/python`; its cyclic-history, public-metadata, tilt, decrement, tree, and completion checks passed. These numerical checks supplement the algebraic review and are not substitutes for proofs.
+I ran `scripts/verify_cyclic.py` using `/workspace/local-home/miniconda3/envs/qipm/bin/python`; its cyclic-history, public-metadata, tilt, decrement, tree, and completion checks passed. These numerical checks supplement the algebraic review and are not substitutes for proofs.
 
 ## Scope limitations, not defects
 

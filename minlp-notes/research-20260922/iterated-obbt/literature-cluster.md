@@ -33,55 +33,55 @@ and 8). This check supplements `literature.md`, which did not read these sources
 - **(c)** No result implies Theorem 4, Theorem 6, Proposition 7 or Proposition 8. Proposition 3's threshold corresponds to Wechsung–Schaber–Barton (WSB) Theorem 1(a) and Kannan–Barton 2017 Theorem 3 case 1, so Proposition 3 should cite them.
 - **(d)** The known results are sufficient, scalar, worst-case covering bounds for branch and bound. `r*(Phi) < 1` is a strictly weaker (broader) condition for OBBT contraction, and it comes with a matching lower bound on the rate and a stall certificate. See §4.
 
-## 1. Quoted statements
+## 1. Source statements, summarized
 
 ### Wechsung–Schaber–Barton 2014 (= Wechsung thesis, Ch. 2)
 
-- **Definition 2.1** (p. 31). This defines convergence order through the minimum, not pointwise: "The relaxations are said to have convergence order β ≥ 1 if there exists K > 0 such that `min_{x∈X} f(x) − min_{x∈X} f̌_X(x) ≤ K w(X)^β, ∀X ∈ IC`."
-- **Assumption 2.3** (p. 34): "Assume that there exists only one box X̃ visited by the branch-and-bound algorithm such that w(X̃) = δ and x* ∈ X̃. Furthermore, assume that x* is in the center of X̃."
-- **Theorem 2.1(a)** (journal Theorem 1; p. 36): "Let λ1 > 0 be the smallest eigenvalue of ∇²f(x*) and r = sqrt(2ε/λ1). (a) If δ ≥ 2r or, equivalently, if (ε/K)^{1/β} ≥ 2 sqrt(2ε/λ1), then let N = 1." Here `δ = (ε/K)^{1/β}`, and N is "an upper bound on the number of boxes with width δ required to cover B̃".
-- **§2.2 and Table 2.2** (pp. 37–38): "When K is sufficiently small, i.e., K ≤ λ1/8, the cluster problem is completely absent (N = 1) … when K ≤ λ1/4, then N grows linearly with problem size and when K ≤ 3λ1/8 the number of boxes grows quadratically with n."
+- **Definition 2.1** (p. 31). Convergence order is defined by the gap between minima rather than by pointwise error: for β ≥ 1, there must be K > 0 with `min_{x∈X} f(x) − min_{x∈X} f̌_X(x) ≤ K w(X)^β, ∀X ∈ IC`.
+- **Assumption 2.3** (p. 34): the algorithm visits exactly one box X̃ with w(X̃) = δ containing x*, and x* lies at the center of that box.
+- **Theorem 2.1(a)** (journal Theorem 1; p. 36): with λ1 > 0 the least eigenvalue of ∇²f(x*) and r = sqrt(2ε/λ1), the case δ ≥ 2r, equivalently (ε/K)^{1/β} ≥ 2 sqrt(2ε/λ1), gives N = 1. Here `δ = (ε/K)^{1/β}`, and N bounds the number of width-δ boxes needed to cover B̃.
+- **§2.2 and Table 2.2** (pp. 37–38): K ≤ λ1/8 suffices for no clustering (N = 1). Larger prefactors permit dimension-dependent growth: linear when K ≤ λ1/4, and quadratic when K ≤ 3λ1/8.
   - The table rows are: `K ≤ λ1/8: 1`; `λ1/8 < K ≤ λ1/4: 1+2n`; `λ1/4 < K ≤ 3λ1/8: 1+2n²`; … `K > 9λ1/4`: exponential in `n`.
-- Page 31: "assuming second-order convergence, the exponential dependence on the problem dimension can be avoided if the pre-factor is sufficiently small and the minimizer is always in the interior of a box … not all relaxations with second-order convergence are equal in higher dimensions."
-- **Domain reduction.** §1.1.2 (p. 23) calls it optional: "branch-and-bound algorithms are shown to converge without it, but it can reduce the iteration count". Appendix A (p. 159) gives a one-shot subgradient bound update (Theorem A.1). No iteration or rate appears anywhere in the thesis.
+- Page 31: for second-order bounds with a sufficiently small prefactor and a minimizer always interior to a box, exponential growth with dimension can be avoided. Thus second-order schemes can behave differently in high dimension.
+- **Domain reduction.** §1.1.2 (p. 23) treats reduction as optional for convergence, while allowing it to save iterations. Appendix A (p. 159) gives a one-shot subgradient bound update (Theorem A.1). No iteration or rate appears anywhere in the thesis.
 
 ### Kannan–Barton 2017 (= Kannan thesis, Ch. 5)
 
 - **Lemma 1:** the node containing `x*` can be fathomed, in the worst case, only if `w(X*) ≤ (ε/τ*)^{1/β*}`.
 - **Lemma 8:** if `∇f(x*)ᵀd + ½dᵀ∇²f(x*)d ≥ γ dᵀd` on feasible `d`, then the ε-optimal feasible set near `x*` lies in `{γ‖x−x*‖² ≤ 2ε}`.
-- **Theorem 3.1:** "Let δ = (ε/τ*)^{1/β*} and r = sqrt(2ε/γ). 1. If δ ≥ 2r, let N = 1." This is followed by the same polynomial and exponential cases as WSB. The paper states: "For the case of unconstrained global optimization, Theorem 3 effectively reduces to Theorem 1 in [29] with γ equal to half the smallest eigenvalue of ∇²f(x*)".
-- **Remark 9.1:** "the cluster problem on X3 can be eliminated using second-order convergent schemes with sufficiently small prefactors."
-- **Abstract:** "Conditions on the convergence order prefactor that are sufficient to altogether eliminate the cluster problem are also provided."
-- Page 2: "This work assumes that boxes can be placed such that global minimizers are always in their relative interior … epsilon-inflation [16] or back-boxing [21, 27]".
+- **Theorem 3.1:** for δ = (ε/τ*)^{1/β*} and r = sqrt(2ε/γ), case 1 takes N = 1 when δ ≥ 2r. The remaining cases have the same polynomial and exponential dependence as WSB. In the unconstrained setting, the paper identifies Theorem 3 with Theorem 1 in [29], taking γ as half the least eigenvalue of ∇²f(x*).
+- **Remark 9.1:** a small enough prefactor together with second-order convergence suffices to avoid clustering on X3.
+- **Abstract:** the paper gives sufficient prefactor conditions for complete removal of clustering.
+- Page 2: minimizers are assumed to lie in the relative interiors of the boxes. The paper cites epsilon-inflation [16] and back-boxing [21, 27] as ways to obtain this placement.
 
 ### Kannan–Barton 2018 and Kannan thesis
 
-- Page 17 (Definition 14 context): "The set X(Z) could, for instance, correspond to an interval subset of X that is obtained using bounds tightening techniques … the restriction X(Z) ⊃ F_X(Z) can be relaxed when optimality-based bounds tightening techniques are employed."
-- After Example 6 (`f = −xy`, `x + y ≤ 1`, `f^cv_Z(0.5,0.5) = −0.25 − ε²`): "the use of feasibility-based bounds tightening techniques is ineffective in boosting the convergence order for the above example."
+- Page 17 (Definition 14 context): X(Z) may be an interval subbox produced by bounds tightening. When OBBT is used, the containment requirement X(Z) ⊃ F_X(Z) need not hold.
+- After Example 6 (`f = −xy`, `x + y ≤ 1`, `f^cv_Z(0.5,0.5) = −0.25 − ε²`): FBBT does not increase the convergence order in this example.
 - **Thesis §2.3.2.2** (p. 63) defines OBBT as the FBBT problem plus the constraint `f^cv(x) ≤ UBD`. It gives no analysis.
-- **Thesis p. 307, footnote 2:** "While our analysis indicates that domain reduction techniques are not necessary for full-space B&B algorithms to mitigate clustering, such techniques usually empirically boost the convergence rates of full-space B&B algorithms."
-- **Thesis §7.2** (p. 309): "establishing sufficient conditions on the domain reduction techniques so that the resulting reduced-space B&B algorithms can mitigate clustering remains an open problem."
+- **Thesis p. 307, footnote 2:** full-space B&B can mitigate clustering without domain reduction, although reduction often accelerates convergence empirically.
+- **Thesis §7.2** (p. 309): the thesis leaves open which conditions on domain reduction would let reduced-space B&B mitigate clustering.
 
 ### Du–Kearfott 1994
 
-- **Abstract:** "we consider bounds obtained with interval arithmetic, with the 'midpoint test,' but no acceleration procedures."
+- **Abstract:** the analysis uses interval-arithmetic bounds and the midpoint test, without acceleration.
 - **Theorem 1:** `x*` is a vertex of the grid, and the extension has order α with constant K (Hausdorff excess width). Then at most `N = (2⌊sqrt(2K/λ_{1,0}) · ε^{(α−2)/2}⌋ + 1)^m` boxes remain. The proof uses the sufficient rejection condition `K w(X)^α < ½ (nε)² λ_{1,0}` (eq. 12).
-  - For α = 2 and `2K < λ_{1,0}`, this gives N = 1. The paper does not state this case explicitly. Corollary 1(2) says only that "the cluster is not serious, but there may always be a constant number N > 1 of boxes".
-- **Conclusions:** future work is to "Incorporate acceleration devices such as an interval Newton method."
+  - For α = 2 and `2K < λ_{1,0}`, this gives N = 1. The paper does not state this case explicitly. Corollary 1(2) describes a bounded cluster, potentially with a constant number N > 1 of boxes.
+- **Conclusions:** the proposed extension is to add acceleration, for example interval Newton.
 
 ### Bompadre–Mitsos 2012 (via BMC 2013 §2 and Kannan thesis pp. 56–58)
 
 - **Definition 9 (pointwise convergence):** `sup_{z∈Y} |h(z) − h^cv_Y(z)| ≤ τ w(Y)^γ`.
 - **BM Theorem 2:** a nonlinear C² function has pointwise order at most 2.
 - **BM Theorem 10:** envelopes have pointwise order at least 2.
-- **BMC 2013, Appendix A:** "the benefit of using tight estimators early on, an effect not captured by either convergence orders". It gives one B&B example. It says nothing about domain reduction, and it has no limit of `h^cv/w²`.
+- **BMC 2013, Appendix A:** an example shows that tight estimators early in B&B can help in ways not measured by either convergence order. It says nothing about domain reduction, and it has no limit of `h^cv/w²`.
 
 ### Neumaier 2004 §15 and Schichl–Markót–Neumaier 2014
 
-- **Neumaier p. 44:** "the above argument shows that o(ε²) is sufficient". This means the bounding error must be `o(w²)` relative to the quadratic model, which is the same order as the remainder in `theory.md` Assumption (T).
-- **Backboxing:** "apply the available reduction techniques until no significant improvement results … If second-order techniques are used to do the box reduction, then z is usually a tiny box or empty."
-- **Schichl–Markót–Neumaier §2:** requires "at least the cubic approximation property k = 3" and notes that constraint propagation has `k = 1`.
-- **Schichl–Markót–Neumaier §3:** "performing the iteration x_{n+1} = K(z, x_n) … A few iterations will be sufficient, since … the iteration converges quadratically." This is an iterated Krawczyk contraction for an inclusion region. It is not OBBT.
+- **Neumaier p. 44:** the argument gives sufficiency of o(ε²). This means the bounding error must be `o(w²)` relative to the quadratic model, which is the same order as the remainder in `theory.md` Assumption (T).
+- **Backboxing:** reduction is repeated until improvement is negligible. With second-order reduction, the resulting z is generally very small or empty.
+- **Schichl–Markót–Neumaier §2:** the required approximation order is at least cubic (k = 3), whereas constraint propagation has `k = 1`.
+- **Schichl–Markót–Neumaier §3:** the inclusion-region iteration x_{n+1} = K(z, x_n) has quadratic convergence, so the authors expect only a few steps to be needed. This is an iterated Krawczyk contraction for an inclusion region. It is not OBBT.
 
 ## 2. What no source contains
 

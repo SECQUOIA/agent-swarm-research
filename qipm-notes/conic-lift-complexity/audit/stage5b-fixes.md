@@ -118,7 +118,7 @@ conda run -n qipm --live-stream make
 Both exited successfully. The clean build regenerated `main.pdf` with 167
 pages (1,359,843 bytes). The final `main.log` has zero warnings, undefined
 references/citations, multiply defined labels, overfull boxes or underfull
-boxes. A check using `/home/sgusev/miniconda3/envs/qipm/bin/python` confirmed
+boxes. A check using `/workspace/local-home/miniconda3/envs/qipm/bin/python` confirmed
 unique 12c labels and balanced theorem/proof environments. PDF text and
 rendered pages 125–127 were inspected: the new contract, theorem, proofs,
 tradeoff and caching formula are legible and unclipped. Poppler commands

@@ -62,7 +62,7 @@ python -S -O code/potential_flow_mpd/check_certified_envelope_review.py
 The optional producer audit additionally passed **six triangle solves**, in both directions at unit scales and at reciprocal supply/resistance scales `10^400` and `10^-400`. It compares the normalized *rational* final returned intervals for exact equality across units, including the integrated target improvement, independently checks the closed-form optimum, and re-verifies every emitted certificate. Run:
 
 ```sh
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python code/potential_flow_mpd/check_certified_envelope_review.py --producer
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python code/potential_flow_mpd/check_certified_envelope_review.py --producer
 ```
 
 ## Publication implications

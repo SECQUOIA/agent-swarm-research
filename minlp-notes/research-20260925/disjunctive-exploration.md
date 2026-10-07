@@ -351,8 +351,8 @@ Targeted commands run included:
 * `python research-20260925/verify_disjunctive_review.py` (passed);
 * `python research-20260925/check_star_counterexample.py` (passed);
 * `python research-20260925/check_star_independent_review.py` (passed);
-* `/home/sgusev/miniconda3/envs/minlp-notes/bin/python /tmp/minlp_star_gap_probe.py`
-  and `/home/sgusev/miniconda3/envs/minlp-notes/bin/python /tmp/minlp_star_gap_targeted.py`
+* `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python /tmp/minlp_star_gap_probe.py`
+  and `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python /tmp/minlp_star_gap_targeted.py`
   for the limited randomized star probes (temporary exploratory code);
 * `curl` retrieval and `pdftotext -layout` of Drury's open paper for
   source verification after a browser authentication error.

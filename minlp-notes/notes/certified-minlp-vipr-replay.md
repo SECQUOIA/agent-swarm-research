@@ -37,7 +37,7 @@ The interpretation follows the ordinary solution rule and assumption semantics f
 
 ## Source audit and regressions
 
-The inspected upstream checkout was `/home/sgusev/build-scip/vipr`, revision `30f2951d1e90e47afa821bdd1b12b82246656c42`. Its `code/viprchk.cpp` SHA-256 was `2baf9c4593f5b8ef42323fbfb7cbfa0e4dfafff65e636cf6a143561b9dca2738`.
+The inspected upstream checkout was `/workspace/local-home/build-scip/vipr`, revision `30f2951d1e90e47afa821bdd1b12b82246656c42`. Its `code/viprchk.cpp` SHA-256 was `2baf9c4593f5b8ef42323fbfb7cbfa0e4dfafff65e636cf6a143561b9dca2738`.
 
 The source audit found that its solution rule uses an initially zero best objective even with no solution witness, and its rounding function fails to reject a nonzero continuous-variable coefficient. Other unchecked or incompletely checked parser and reference cases make a success-message wrapper unsuitable as the sole acceptance boundary. These observations concern the inspected checkout, not every release or implementation of VIPR.
 

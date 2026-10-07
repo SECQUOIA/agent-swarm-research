@@ -70,9 +70,9 @@ The numerical producer uses the existing explicit cubic SOCP lift with CVXPY/Cla
 From the repository root:
 
 ```sh
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python code/potential_flow_mpd/certified_envelope_benchmarks.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python code/potential_flow_mpd/certified_envelope_benchmarks.py
 python -S -O code/potential_flow_mpd/certified_envelope.py verify code/potential_flow_mpd/certified_envelope_example.json
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python code/potential_flow_mpd/certified_envelope.py solve code/potential_flow_mpd/certified_envelope_water_topology_instance.json /tmp/water-topology-certificate.json
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python code/potential_flow_mpd/certified_envelope.py solve code/potential_flow_mpd/certified_envelope_water_topology_instance.json /tmp/water-topology-certificate.json
 python -S -O code/potential_flow_mpd/certified_envelope.py verify /tmp/water-topology-certificate.json
 ```
 

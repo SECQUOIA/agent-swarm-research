@@ -1,0 +1,629 @@
+\section{Finite witness certificates}\label{sec:certificates}
+
+Before paying for another OBBT round, a solver would like to know how much
+that round, or all remaining rounds, can still change. This section bounds
+the change from above with finite sets of points that are feasible for the
+relaxation. The bounds concern a specified tightening procedure and a
+specified relaxation family. They are not new variable bounds, and they do
+not by themselves predict solving time. Three statements must be kept apart.
+\begin{enumerate}
+\item A point feasible for the current relaxation bounds the improvement
+  of one frozen round (Section~\ref{sec:cert-current}).
+\item Points feasible for the relaxation rebuilt on an inner box $P$ bound
+  the improvement of every later round, directional update, and compatible
+  cutoff, provided the box being tightened contains $P$
+  (Sections~\ref{sec:cert-protected}--\ref{sec:cert-scope}).
+\item A residual and a verified sensitivity bound limit the remaining
+  movement of an exact iteration (Section~\ref{sec:residual}).
+\end{enumerate}
+Statement~1 is the feasibility filtering of Gleixner et
+al.~\cite{gleixner2017-three-enhancements-for-optimization-based}.
+Statement~2 rests on the persistence of fixed boxes
+(Lemma~\ref{lem:fixed-persist}), the order argument behind monotone
+domain-reduction iterations
+\cite{tarski1955fixpoint,caprara2010-global-optimization-problems-and-domain}.
+The OBBT-specific content of this section is a finite certificate for a
+fixed box, checked exactly on the rebuilt relaxation; a description of the
+operations it covers and of those it does not; its exactness at the limit
+of the iteration; and the difference between finding such a certificate
+and checking it.
+
+\subsection{Witnesses and lifted reuse}\label{sec:cert-setting}
+
+We use the setting of Section~\ref{sec:foundations}: the relaxation family
+is valid~\eqref{eq:validity} and monotone~\eqref{eq:monotonicity}, each
+$\phi_B$ is lower semicontinuous, and a lifted family has compact sets
+$R(B)$ and a continuous objective $v$. The cutoff sets $K_U(B)$, the
+operator $T_U$, the relaxation bound $L(B)$, fixed boxes, and the Jacobi,
+directional, sequential, and selective update schemes are as defined
+there.
+
+A \emph{lifted witness} on a box $P$ at cutoff $U$ is a complete lifted
+vector $z\in R(P)$, including every auxiliary coordinate, that satisfies
+every row of the relaxation rebuilt on $P$ and has $v(z)\le U$. By
+\eqref{eq:projected}, its projection $\pi(z)$ satisfies
+$\phi_P(\pi(z))\le v(z)\le U$, so $\pi(z)\in K_U(P)$. This direction needs
+no attainment premise; a checked lifted witness always certifies a
+projected one.
+
+Two order properties play different roles below. All coordinate and
+objective-value ceilings in this section need only the monotonicity
+\eqref{eq:monotonicity} of the projected objectives. Lifted monotonicity,
+$R(B')\subseteq R(B)$ for $B'\subseteq B$ with a common objective, is
+needed for a different use: to treat a stored lifted point $z\in R(P)$
+itself, with its stored value $v(z)$, as a feasible point of the linear
+program on a box $B\supseteq P$. Such reuse lets a solver screen a later
+frozen round, mix witnesses for a new cutoff (Section~\ref{sec:cutoff}),
+or warm-start a later solve without recomputing auxiliary coordinates.
+Under monotonicity alone, $\phi_B(\pi(z))\le\phi_P(\pi(z))\le v(z)$ still
+holds, but a feasible lift on $B$ must be recomputed.
+
+\paragraph{The reference family.}
+Several examples use the lifted linear family with McCormick product rows
+listed in Section~\ref{sec:foundations}. Its rows are of three kinds. Fixed rows
+$Gz\le g$ do not depend on the box; they include the original linear
+constraints, quadratic constraints written linearly in lifted product
+variables, and valid inequalities such as $y_k\ge0$ for a lifted square.
+Bound rows are $\ell\le x\le u$. For each lifted variable $y_k$ standing
+for a product $x_ix_j$, with $i=j$ allowed, the four McCormick
+inequalities~\cite{mccormick1976-computability-of-global-solutions-to} on
+$B=[\ell,u]$ can be written as
+\begin{equation}\label{eq:mccormick-gap}
+\begin{aligned}
+ y_k-x_ix_j&\ge-\min\{(x_i-\ell_i)(x_j-\ell_j),\,(u_i-x_i)(u_j-x_j)\},\\
+ y_k-x_ix_j&\le\min\{(u_i-x_i)(x_j-\ell_j),\,(x_i-\ell_i)(u_j-x_j)\}.
+\end{aligned}
+\end{equation}
+After the product $x_ix_j$ cancels, each of the four inequalities is
+affine in $(x,y_k)$. For example, the first reads
+$y_k\ge\ell_jx_i+\ell_ix_j-\ell_i\ell_j$. When $i=j$ the two upper
+inequalities coincide, and the rows are the tangents of $x_i^2$ at both
+endpoints together with the secant. This is a finite linear relaxation of
+the square, not its convex epigraph. The objective is a fixed affine
+function $v(z)=c^Tz+c_0$.
+
+\begin{lemma}[The reference family]\label{lem:reference-family}
+The reference family is lifted monotone with a common objective, and hence
+monotone. Each $R(B)$ is a polytope. If the fixed rows are valid for the
+original problem and $v$ evaluated at the graph lift $y_k=x_ix_j$ equals
+$f(x)$, the family is valid.
+\end{lemma}
+\begin{proof}
+Let $B'=[\ell',u']\subseteq B=[\ell,u]$ and $x\in B'$. Then
+$0\le x_i-\ell'_i\le x_i-\ell_i$ and $0\le u'_i-x_i\le u_i-x_i$ for every
+$i$. Each product in~\eqref{eq:mccormick-gap} multiplies two such
+nonnegative distances, so its value on $B'$ is at most its value on $B$.
+Consequently each lower bound on $y_k-x_ix_j$ on $B'$ is at least the
+corresponding lower bound on $B$, and each upper bound is at most the
+corresponding upper bound. Fixed rows and the objective do not depend on
+the box, and bound rows on $B'$ imply those on $B$. Thus
+$R(B')\subseteq R(B)$. The set $R(B)$ is a polyhedron; it is bounded
+because $x\in B$ and each $y_k$ lies between affine functions of $x$.
+At the graph lift the middle terms in~\eqref{eq:mccormick-gap} vanish,
+and all bounds have the correct sign because every distance is
+nonnegative on $B$. Together with valid fixed rows, this puts the graph
+lift of each $x\in X\cap B$ in $R(B)$, so $\phi_B(x)\le f(x)$.
+\end{proof}
+
+\begin{example}[Monotonicity without lifted monotonicity]\label{ex:lambda}
+Relax $s=x^2$ on a box $[\ell,u]$ by the convex-combination formulation
+common in piecewise-linear relaxations: auxiliary weights
+$\lambda_0,\lambda_1\ge0$ with $\lambda_0+\lambda_1=1$ and
+$x=\lambda_0\ell+\lambda_1u$, the secant row
+$s\le\lambda_0\ell^2+\lambda_1u^2$, the two endpoint tangents, and the
+objective $v=s$. In every case
+$\lambda_0\ell^2+\lambda_1u^2=(\ell+u)x-\ell u$, and for $\ell<u$ the
+weights are determined by $x$. The projection onto
+$(x,s)$ is therefore the square relaxation of the reference family, and
+since the objective depends only on $s$, the projected objectives are
+those of that family, which are monotone by
+Lemma~\ref{lem:reference-family}. Lifted monotonicity fails: on
+$P=[0,1/2]$ the point $x=1/2$ has weights $(0,1)$, while on $B=[0,1]$ it
+requires $(1/2,1/2)$. A stored lifted witness for $P$ is not a feasible
+point of the relaxation on $B$, although its projection remains in every
+projected set that the certificates below use.
+\end{example}
+
+\subsection{The current frozen round}\label{sec:cert-current}
+
+\begin{proposition}[Current-round ceilings]\label{prop:current-round}
+Let $B=[\ell,u]$, let $W$ be a nonempty finite subset of $K_U(B)$, and
+write $T_U(B)=[\ell',u']$. For every coordinate $i$,
+\begin{equation}\label{eq:current-ceilings}
+ 0\le\ell'_i-\ell_i\le\min_{x\in W}x_i-\ell_i,\qquad
+ 0\le u_i-u'_i\le u_i-\max_{x\in W}x_i.
+\end{equation}
+\end{proposition}
+\begin{proof}
+The coordinate minimum over $K_U(B)$ is at most the minimum over its
+subset $W$, and the maximum is at least the maximum over $W$. Since
+$K_U(B)\subseteq B$, the new endpoints lie in $[\ell_i,u_i]$.
+\end{proof}
+
+A witness attaining an endpoint proves that this direction cannot move in
+the present round, and one point can screen several directions. The
+ceilings bound possible benefit; a witness coordinate is not a valid new
+bound. Points produced by earlier support solves of the same round, or
+an optimal solution of the relaxation itself, are typical witnesses.
+Checking $k$ lifted points against $N$ nonzero row coefficients costs
+$O(kN)$ arithmetic operations. Finding good points can cost as much as the
+round itself. A ceiling on coordinate movement also says nothing about
+side products of a support solve, such as dual information used for
+Lagrangian variable
+bounds~\cite{gleixner2017-three-enhancements-for-optimization-based}.
+
+The ceiling~\eqref{eq:current-ceilings} concerns the frozen relaxation
+on $B$. After rebuilding on a smaller box, the same point may be
+infeasible, and later rounds may move much further.
+
+\begin{example}[A frozen witness does not bound later rounds]\label{ex:halving}
+Minimize $f(x)=x^2$ over $B_0=[-r_0,r_0]$, $r_0>0$, with the square
+relaxation of the reference family, objective $v=s$, and the cutoff $U=0$
+given by the incumbent $x=0$; this is the case $n=1$ of
+Example~\ref{ex:finite-square}. On $[-r,r]$ the rows are $s\ge2r|x|-r^2$
+(the two tangents) and $s\le r^2$ (the secant). With $s\le0$ they give
+$|x|\le r/2$, and every such $x$ has the lift $s=0$. Hence
+$T_0([-r,r])=[-r/2,r/2]$, and the exact Jacobi iterates are
+$B_k=[-2^{-k}r_0,2^{-k}r_0]$. In the first round the witness $(r_0/2,0)$
+bounds the decrease of the upper endpoint by $r_0/2$, which is exact for
+that round. After rebuilding on $[-r_0/2,r_0/2]$, the new upper tangent
+requires $s\ge r_0x-r_0^2/4=r_0^2/4>0$ at $x=r_0/2$, so the witness is
+excluded. The total decrease over all rounds is $r_0$.
+\end{example}
+
+\subsection{Protected boxes}\label{sec:cert-protected}
+
+A witness remains useful in all later rounds if it is feasible for the
+relaxation built on a box that every later box contains. The following
+definitions make this precise and describe the operations that preserve
+such a box.
+
+\begin{definition}[Relaxation-sound step]
+A box $C'$ is obtained from a box $C$ by a relaxation-sound step at
+cutoff $U'$ if $T_{U'}(C)\subseteq C'\subseteq C$.
+\end{definition}
+
+A Jacobi round is a relaxation-sound step with $C'=T_{U'}(C)$. So is a
+directional update, and so is the simultaneous update of any selected set
+of endpoints on one frozen relaxation. Sequential and selective rounds
+are sequences of such steps. Conservative versions, which move each
+selected endpoint at most to its exact support, are also relaxation-sound.
+This includes OBBT whose endpoint bounds are proved by safe dual bounds
+evaluated with directed rounding (Proposition~\ref{prop:dual-residual}).
+Rounding an approximate optimum outward alone does not prove such a bound.
+The identity step is relaxation-sound.
+
+\begin{definition}[Witness pool and protected box]
+Let $P=[a,b]$ be a nonempty box. A \emph{witness pool} for $P$ is a
+finite set $W\subseteq K_U(P)$ with $\hull W=P$; that is, for every
+coordinate $i$ some $x\in W$ has $x_i=a_i$ and some $x'\in W$ has
+$x'_i=b_i$. The \emph{threshold} of $W$ is
+$U_W=\max_{x\in W}\phi_P(x)\le U$. A box with a witness pool is
+\emph{protected} at every cutoff $U'\ge U_W$.
+\end{definition}
+
+The definition evaluates $\phi_P$, the relaxation \emph{rebuilt on $P$},
+not the relaxation on a larger current box. In lifted form, a pool
+consists of lifted witnesses on $P$; their stored values $v(z)$ bound the
+threshold from above. At most $2n$ points are needed, one for each
+endpoint, and fewer suffice when one point attains several endpoints. A
+protected box is a fixed box; the word \emph{protected} refers to the
+finite certificate and its threshold.
+
+\begin{theorem}[Protection]\label{thm:protected}
+Let $W$ be a witness pool for $P=[a,b]$ with threshold $U_W$. Let
+$C_0\supseteq P$ be a box in $B_0$, and for $k\ge0$ let $C_{k+1}$ be
+obtained from $C_k$ by a relaxation-sound step at a cutoff $U_k\ge U_W$.
+Then:
+\begin{enumerate}[label=(\alph*)]
+\item $T_{U'}(P)=P$ for every $U'\ge U_W$;
+\item $P\subseteq C_k$ and $W\subseteq K_{U_k}(C_k)$ for every $k$; in
+  particular no step proves $C_k$ infeasible at its cutoff;
+\item writing $C_k=[\ell^k,u^k]$, for every $i$ and $k$,
+\begin{equation}\label{eq:protected-ceilings}
+ 0\le\ell^k_i-\ell^0_i\le a_i-\ell^0_i,\qquad
+ 0\le u^0_i-u^k_i\le u^0_i-b_i.
+\end{equation}
+\end{enumerate}
+\end{theorem}
+\begin{proof}
+(a) For $U'\ge U_W$, $W\subseteq K_{U_W}(P)\subseteq K_{U'}(P)$, so
+$P=\hull W\subseteq T_{U'}(P)\subseteq P$.
+(b) By (a), $P$ is a fixed box of $T_{U_W}$. If $P\subseteq C_k$, then
+Lemma~\ref{lem:fixed-persist} gives $P\subseteq T_{U_k}(C_k)\subseteq
+C_{k+1}$, and induction gives $P\subseteq C_k$ for every $k$.
+Lemma~\ref{lem:order} gives $W\subseteq K_{U_W}(P)\subseteq
+K_{U_k}(C_k)$.
+(c) The inequalities restate $P\subseteq C_k\subseteq C_0$.
+\end{proof}
+
+The theorem needs no continuity, convergence, or fairness in the choice of
+directions; the steps may mix Jacobi rounds and directional updates and
+may use different cutoffs above $U_W$. The witnesses need not be
+feasible for the original problem, and none of them needs to be an
+optimal solution of a support problem. The essential requirement is
+feasibility in the relaxation rebuilt on $P$. In
+Example~\ref{ex:halving} the first-round witnesses are feasible on $B_0$
+but not on their own hull, and indeed that hull is not retained.
+
+A protected box limits what the specified OBBT procedure can remove. It
+is not a domain reduction and never replaces the search domain. For
+instance, minimize $f(x)=x$ over $[0,1]$ with the exact relaxation
+$\phi_B(x)=x$ and the cutoff $U=1$ of the incumbent $\hat x=1$. The
+singleton $\{1\}$ is protected by the witness $\hat x$, and every OBBT
+iterate contains it, but the minimizer $0$ lies outside it. Optimal
+solutions may lie anywhere in the current box. A protected box need not
+contain any original feasible point either: its pool may consist of
+relaxation-only points.
+
+The finite certificate loses nothing when a prescribed box is tested: a
+box is fixed exactly when a short witness pool exists.
+
+\begin{proposition}[Fixed boxes have short certificates]\label{prop:fixed-box}
+A box with a witness pool is a fixed box. Conversely, every fixed box $P$
+of $T_U$ has a witness pool $W\subseteq K_U(P)$ with $|W|\le2n$, and for
+a lifted family the pool can be chosen to consist of at most $2n$ lifted
+witnesses. If, moreover, $R(P)$ is a polytope given by rational data, $v$
+has rational coefficients, and the endpoints of $P$ and $U$ are rational,
+then these lifted witnesses can be chosen rational, so an exact rational
+check accepts them.
+\end{proposition}
+\begin{proof}
+The first claim is Theorem~\ref{thm:protected}(a). Let $P$ be fixed. The
+set $K_U(P)$ is a sublevel set of the lower semicontinuous function
+$\phi_P$ on the compact box $P$, hence compact, and $T_U(P)=P$ means that
+each coordinate attains its minimum $a_i$ and maximum $b_i$ on it.
+Choosing one minimizer and one maximizer per coordinate gives at most $2n$
+points whose hull is $P$. For a lifted family, the infimum
+in~\eqref{eq:projected} is attained, so each chosen point has a lift in
+$R(P)$ with value at most $U$. In the rational case, the set of lifts
+attaining a given endpoint, such as $\{z\in R(P):v(z)\le U,\ x_i=a_i\}$,
+is a nonempty polytope defined by rational data, and any of its vertices
+is the solution of a nonsingular rational linear system.
+\end{proof}
+
+The proposition makes the certificate complete as a \emph{test} for a
+prescribed box. It is not a search procedure: it says nothing about how
+to find a fixed box, and Section~\ref{sec:cert-cost} shows that natural
+proposals can miss one.
+
+Certificates from different sources can be combined.
+
+\begin{proposition}[Combining certificates]\label{prop:join}
+If $W_1$ and $W_2$ are witness pools for $P_1$ and $P_2$ with thresholds
+$U_1$ and $U_2$, then $W_1\cup W_2$ is a witness pool for
+$\hull(P_1\cup P_2)$ with threshold at most $\max\{U_1,U_2\}$.
+\end{proposition}
+\begin{proof}
+Let $P=\hull(P_1\cup P_2)$ and $U'=\max\{U_1,U_2\}$. For $x\in W_j$,
+$\phi_P(x)\le\phi_{P_j}(x)\le U_j\le U'$ by monotonicity. Every endpoint
+of $P$ is an endpoint of $P_1$ or $P_2$ and is attained by the
+corresponding pool.
+\end{proof}
+
+For example, the singleton of an incumbent that lies in the current box,
+which is protected (Corollary~\ref{cor:original-points}), can be merged
+with a stalled box that does not contain the incumbent. The ceilings of the merged box are
+no larger than those of either part, and some are smaller.
+
+\subsection{Exact ceilings at the limit}\label{sec:cert-limits}
+
+Theorem~\ref{thm:protected} gives upper bounds on remaining movement. The
+best of these bounds is exact whenever the limit of the iteration is a
+fixed box.
+
+\begin{corollary}[Exact ceilings at the limit]\label{cor:limit-ceilings}
+Let $U\ge f^*$, let $B_k$ be the Jacobi iterates from $B_0$, and assume
+the closedness condition~\eqref{eq:closed-family}. Then the limit
+$B_\infty$ has a witness pool of at most $2n$ points. For every $k$, the
+ceilings~\eqref{eq:protected-ceilings} of $P=B_\infty$ from $C_0=B_k$
+equal the exact remaining movements of the Jacobi iteration. The same
+holds for complete sequential rounds $S_{k+1}=S_U(S_k)$ with $S_0=B_0$:
+$B_\infty\subseteq S_k$, the iterates $S_k$ converge to $B_\infty$, and
+the ceilings of $B_\infty$ from $S_k$ equal their remaining movements.
+\end{corollary}
+\begin{proof}
+By Proposition~\ref{prop:fixed-limit}, $B_\infty$ is a fixed box, and
+Proposition~\ref{prop:fixed-box} gives the pool. The ceilings of
+$B_\infty$ from $B_k$ are the distances between corresponding endpoints
+of $B_k$ and $B_\infty$, which are the remaining movements because $B_k$
+converges to $B_\infty$. A complete sequential round is a sequence of
+directional updates, so Theorem~\ref{thm:protected} gives
+$B_\infty\subseteq S_k$, and Lemma~\ref{lem:sequential} shows that the
+$S_k$ have the same intersection $B_\infty$.
+\end{proof}
+
+The reference family satisfies~\eqref{eq:closed-family} by the argument
+following Proposition~\ref{prop:fixed-limit}, with the compact set
+$R(B_0)$ containing every $R(B)$ by Lemma~\ref{lem:reference-family}.
+Under this condition, no information is lost by measuring remaining
+benefit through protected boxes: the exact remaining movement is a
+protected-box ceiling. The difficulty lies entirely in finding the right
+box. Without~\eqref{eq:closed-family} the corollary can fail. In
+Example~\ref{ex:not-fixed} the greatest fixed box is $\{0\}$, while the
+iterates converge to $[0,1/2]$; from $B_k=[0,s_k]$ the ceiling of
+$\{0\}$ is $s_k$, whereas the remaining movement is $s_k-1/2$.
+
+\begin{example}[Exact ceilings without finite termination]\label{ex:sharp-halving}
+Return to Example~\ref{ex:halving}. The limit is $B_\infty=\{0\}$. It is
+protected by the lifted witness $(x,s)=(0,0)$; on the degenerate box the
+square rows force $s=0$. The ceilings~\eqref{eq:protected-ceilings} from
+$B_0$ are $r_0$ in both directions, and they equal the total movement,
+although no finite number of rounds reaches $\{0\}$. The relaxation bound
+behaves in the same way: $L(B_k)=-4^{-k}r_0^2$, attained at
+$(0,-4^{-k}r_0^2)$, while Corollary~\ref{cor:objective-ceiling} below
+gives the ceiling $0$, which is the limit. The witnesses produced by any
+single round, $(\pm r/2,0)$ on $[-r,r]$, never pass the rebuilt check.
+\end{example}
+
+\subsection{Objective ceilings}\label{sec:cert-objective}
+
+The relaxation bound $L(C)=\inf_{x\in C}\phi_C(x)$ of
+Section~\ref{sec:foundations} is also controlled by a protected box.
+
+\begin{corollary}[Objective ceiling]\label{cor:objective-ceiling}
+Let $W$, $P$ and $(C_k)$ be as in Theorem~\ref{thm:protected}. For every
+$k$ and every $x\in P$,
+\begin{equation}\label{eq:objective-ceiling}
+ L(C_0)\le L(C_k)\le L(P)\le\phi_P(x).
+\end{equation}
+In particular, a lifted point $z\in R(P)$ of any objective value gives
+$L(C_k)\le v(z)$. If $\lambda\le L(C_0)$, the relaxation bound can
+increase by at most $v(z)-\lambda$ along the sequence.
+\end{corollary}
+\begin{proof}
+Since $C_k\subseteq C_0$, monotonicity of $L$ gives $L(C_k)\ge L(C_0)$.
+Since $P\subseteq C_k$ and $\phi_{C_k}\le\phi_P$ on $P$,
+$L(C_k)\le\inf_{x\in P}\phi_P(x)=L(P)$.
+\end{proof}
+
+The objective point need not be feasible for the original problem, and
+it need not be optimal for the relaxation on $P$; any lifted point
+feasible on $P$ gives a valid ceiling, and the minimum of $v$ over $R(P)$
+gives the best one. Monotonicity suffices for this value statement.
+Under lifted monotonicity the simpler argument applies: $z$ itself stays
+feasible in every $R(C_k)$ with the same value. The lower bound $\lambda$
+must bound the value of \emph{this} relaxation on $C_0$. A lower bound on
+the original optimum cannot be substituted, because the relaxation value
+can lie far below it; Example~\ref{ex:three-variable} has $L=-3$ and
+original optimum $0$, and substituting $0$ would give a negative ceiling.
+
+The practical reading concerns pruning. If $L(P)<U$, then
+$U-L(C_k)\ge U-L(P)>0$ for every $k$: no amount of OBBT with this family
+closes the gap at this node. Branching, cuts, or a stronger relaxation
+are needed. The corollary bounds only the relaxation value along a
+sequence of relaxation-sound steps. A child node created by branching need
+not contain $P$, and a stronger relaxation has a different value.
+
+\begin{example}[A strongly convex objective with a permanent gap]\label{ex:three-variable}
+Minimize
+\[
+ f(x)=x_1^2+x_2^2+x_3^2+x_1x_2+x_1x_3+x_2x_3
+     =\tfrac12\bigl(\norm{x}_2^2+(x_1+x_2+x_3)^2\bigr)
+\]
+over $[-1,1]^3$, the case $a=1$, $n=3$ of Example~\ref{ex:many-term}. The
+unique minimizer is $0$, with $f^*=0$. Use the reference family with
+square variables $s_i$, product variables $y_{ij}$ for $i<j$, fixed rows
+$s_i\ge0$, objective $v=\sum_is_i+\sum_{i<j}y_{ij}$, and the cutoff $U=0$
+of the optimal incumbent. On the cube $P=[-1,1]^3$ the square rows are
+$s_i\ge2|x_i|-1$ and $s_i\le1$, and the product rows are
+$|x_i+x_j|-1\le y_{ij}\le1-|x_i-x_j|$.
+
+For the endpoint $x_1=1$, take $x=(1,0,0)$, $s=(1,0,0)$,
+$y_{12}=y_{13}=0$ and $y_{23}=-1$. Every row holds: $s_1=1$ meets its
+tangent and secant, the other squares satisfy $0\ge-1$, the incident
+products satisfy $0\le y_{1j}\le0$, and the opposite product satisfies
+$-1\le y_{23}\le1$. Its value is $1-1=0\le U$. The symmetric points for
+the other five endpoints have the same value. Hence the cube is protected
+with threshold $0=f^*$. Every relaxation-sound step at every cutoff
+produced by a feasible incumbent leaves the whole cube unchanged.
+
+The point $x=0$, $s=0$, $y_{ij}=-1$ has value $-3$, so $L(C_k)\le-3$ for
+every such sequence. The value is exactly $-3$: $s_i\ge0$ and
+$y_{ij}\ge|x_i+x_j|-1\ge-1$. The gap $U-L=3$ therefore persists. All
+these points satisfy $s_i\ge x_i^2$; replacing the finite square rows by
+the convex epigraphs would not remove the stall, in agreement with the
+tangent-model analysis of Example~\ref{ex:many-term}. The cause is the
+accumulated McCormick gap of the three products. This is the equality
+case of condition~(a) of Proposition~\ref{prop:quadratic-rows}:
+$H_{kk}/2=S_k=1$ for every $k$.
+\end{example}
+
+\subsection{Original feasible points}\label{sec:cert-original}
+
+Validity gives protected boxes without any relaxation solve.
+Lemma~\ref{lem:sublevel-hull} shows that every iterate contains the hull
+$H_U$ of the whole original sublevel set. A finite part of that set gives
+a certificate that a checker can verify.
+
+\begin{corollary}[Hulls of original feasible points]\label{cor:original-points}
+Let $S$ be a finite nonempty subset of $X\cap B_0$ with $f(x)\le U$ for
+all $x\in S$, and let $P=\hull S$. Then $S$ is a witness pool for $P$
+with threshold at most $\max_{x\in S}f(x)$. Moreover, $P$ is retained by
+every box operation that keeps all points of
+$\{x\in X\cap C:f(x)\le U'\}$ in the current box $C$, for cutoffs
+$U'\ge\max_{x\in S}f(x)$.
+\end{corollary}
+\begin{proof}
+Each $x\in S$ lies in $X\cap P$, so validity gives $\phi_P(x)\le f(x)\le
+U$, and $\hull S=P$. An operation that keeps every original feasible
+point with objective at most $U'$ keeps $S$, hence its hull.
+\end{proof}
+
+The second statement covers more operations than
+Theorem~\ref{thm:protected}: every reduction that is valid for the
+original problem, including cuts, propagation of original constraints,
+stronger relaxations, and integer rounding when $S$ respects integrality.
+In that case the integer-coordinate endpoints of $P$ are automatically
+integral. The singleton of the incumbent is the simplest instance: OBBT
+never removes the incumbent from a box that contains it. At a node whose
+box excludes the incumbent, the incumbent still supplies the cutoff but
+no protected singleton. With several known solutions, for example
+images of the incumbent under a symmetry of the model, the hull can be
+large. A lifted checker needs exact lifts of the points in $S$, which can
+be hard to obtain for nonlinear equalities; a numerically accepted
+incumbent is not exactly feasible in general.
+
+\subsection{Rounding, cuts, and branching}\label{sec:cert-scope}
+
+A solver interleaves OBBT with integer rounding, cut generation,
+propagation, and branching. A certificate for a fixed relaxation family
+covers these operations only under the conditions below.
+
+\begin{proposition}[Integer rounding]\label{prop:integer-rounding}
+Let $I$ be the set of integer-constrained coordinates, and let rounding
+replace $\ell_i$ by $\lceil\ell_i\rceil$ and $u_i$ by $\lfloor u_i\rfloor$
+for $i\in I$. If $P=[a,b]$ is protected and $a_i,b_i\in\mathbb Z$ for all
+$i\in I$, then the conclusions of Theorem~\ref{thm:protected} remain true
+when roundings are interleaved with the relaxation-sound steps.
+\end{proposition}
+\begin{proof}
+Rounding a box $C\supseteq P$ keeps $P$: from $\ell_i\le a_i\in\mathbb Z$
+follows $\lceil\ell_i\rceil\le a_i$, and from $u_i\ge b_i\in\mathbb Z$
+follows $\lfloor u_i\rfloor\ge b_i$. The induction in
+Theorem~\ref{thm:protected} therefore continues through rounding steps.
+\end{proof}
+
+Fractional faces can be removed. Minimize $x^2$ over $[-1,1]$ with the
+square relaxation and the cutoff $U=1/4$. The box $[-1/2,1/2]$ is
+protected by the lifted witnesses $(\pm1/2,1/4)$: on it the tangents read
+$s\ge|x|-1/4$ and the secant reads $s\le1/4$. It is the limit of the exact
+iteration from $[-1,1]$, whose first round gives $[-5/8,5/8]$. If $x$ is
+integer, the first rounding gives $\{0\}$, removing the protected faces;
+here this is correct, because $0$ is the only integer point with
+$x^2\le1/4$. If the support problems themselves enforce integrality, the
+operator changes: $K_U$ is replaced by its subset of points satisfying
+integrality, which is again monotone, and a pool must consist of such
+points. Its endpoints are then integral on $I$.
+
+New rows change the family. If a lifted monotone family receives the same
+row on every box, lifted monotonicity is preserved; if every lifted
+witness of a pool satisfies the row, the pool remains a certificate for
+the modified family. Otherwise a new check is required. A cut can remove
+an objective witness while keeping the face witnesses. On $[-1/2,1/2]$ at
+cutoff $1/4$ above, the lifted point $(0,-1/4)$ is feasible and gives
+$L\le-1/4$, although $x^2\ge0$. The valid row $s\ge0$ excludes this point,
+and the strengthened relaxation has bound $0$, while the face witnesses
+$(\pm1/2,1/4)$ survive. Reductions valid for the original problem but
+stronger than the relaxation can remove relaxation-only faces altogether.
+A solver that recognizes convexity of $f$ in
+Example~\ref{ex:three-variable} reduces the cube to $\{0\}$ at cutoff $0$.
+Pools of original feasible points (Corollary~\ref{cor:original-points})
+are guaranteed to survive every valid reduction that keeps their points.
+
+A certificate applies at a node only if the node box contains $P$. The
+intersection of $P$ with a child box need not be protected.
+Example~\ref{ex:shape-change} shows the same objective tightening on a
+thinner box for the tangent model; the next example shows it for a child
+created by branching in the lifted family.
+
+\begin{example}[A protected box does not pass to a child]\label{ex:child}
+In Example~\ref{ex:three-variable}, branch on $x_1\ge0$, giving the child
+$C=[0,1]\times[-1,1]^2=P\cap C$. On $C$ the product rows for $y_{12}$ are
+$y_{12}\ge\max\{-x_1,\,x_1+x_2-1\}$ and the two upper rows, and similarly
+for $y_{13}$. At the endpoint $x_2=1$, every relaxed point satisfies
+$s_2\ge1$, $y_{12}\ge x_1$, $y_{13}\ge-x_1$, $y_{23}\ge x_2+x_3-1=x_3$,
+$s_1\ge0$ and $s_3\ge\max\{0,-2x_3-1\}$. Hence
+\[
+ v\ge1+x_3+\max\{0,-2x_3-1\}\ge\tfrac12,
+\]
+where the last bound follows by considering $x_3\ge-1/2$ and
+$x_3\le-1/2$. The value $1/2$ is attained at $x=(0,1,-1/2)$ with
+$y_{23}=-1/2$ and all other lifted variables at their lower bounds. No
+point of $K_0(C)$ attains $x_2=1$, so OBBT on the child tightens $u_2$.
+The parent witness for this endpoint has $y_{13}=-1$, which violates the
+child row $y_{13}\ge-x_1=0$.
+\end{example}
+
+\subsection{Finding a certificate versus checking it}\label{sec:cert-cost}
+
+Checking a proposed certificate is inexpensive. Given a candidate box $P$
+and a lifted pool of $k\le2n+1$ points, one builds the relaxation on $P$
+and evaluates every row at every point: with $N$ nonzero row
+coefficients, this is $O(kN)$ arithmetic operations, plus $O(kn)$
+comparisons for endpoint attainment and $k$ objective evaluations. No
+optimization problem is solved. The check must be exact, for example in
+rational arithmetic. A feasibility test with a tolerance can accept a
+point that violates a rebuilt row slightly, and then the conclusion that
+no later round moves an endpoint is unfounded.
+
+Finding a certificate is a different matter. By
+Proposition~\ref{prop:fixed-box}, a candidate must be a fixed box of
+$T_U$, and useful ceilings require a fixed box close to the limit of the
+iteration. Computing such a box can require the support solves that OBBT
+itself performs, and particular proposals can fail even at a fixed box.
+Two concrete proposals are available. The first uses the points that an
+exact round produces anyway.
+
+\begin{proposition}[Checking a completed round]\label{prop:round-check}
+Let $B'=T_U(B)$ be nonempty and put
+$R_U(C)=\{z\in R(C):v(z)\le U\}$ for a box $C$. Let
+$\widehat W\subseteq R_U(B)$ be a finite set of complete lifted points
+whose projections $W=\pi_x(\widehat W)$ attain all $2n$ endpoints of $B'$,
+where $\pi_x(x,y)=x$, such as lifted optimal solutions of the support problems.
+\begin{enumerate}[label=(\alph*)]
+\item If $\widehat W\subseteq R_U(B')$, then $W$ is a witness pool for $B'$, and
+  Theorem~\ref{thm:protected} applies with $P=B'$.
+\item If $T_U(B)=B$, the hypothesis of~(a) holds.
+\item The hypothesis of~(a) can fail although $T_U(B')=B'$.
+\end{enumerate}
+Consequently, if exact Jacobi iterates reach a fixed box after finitely
+many rounds, the test in~(a) succeeds no later than in the round that
+starts at the fixed box. If they never reach one, the test never
+succeeds.
+\end{proposition}
+\begin{proof}
+(a) The lifted check gives $W\subseteq K_U(B')$, and by construction
+$\hull W=B'$. (b) Then $B'=B$, so
+$\widehat W\subseteq R_U(B)=R_U(B')$. (c) See Example~\ref{ex:round-check}. For the
+consequence, if $B_j$ is the first fixed box, part~(b) applies to the
+round that starts at $B_j$. If the test succeeded in some round, the
+resulting box would be fixed by part~(a).
+\end{proof}
+
+\begin{example}[A fixed box missed by its own round]\label{ex:round-check}
+Minimize $f(x)=x^2$ over $B=[0,1]$ subject to $x\le1/2$, kept as a fixed
+row, with the square relaxation and the cutoff $U=1/4$ of the incumbent
+$x=1/2$. On $B$ the rows are $s\ge0$, $s\ge2x-1$, $s\le x$, $x\le1/2$ and
+$s\le1/4$. The lower support is $0$, attained at $(0,0)$. The upper
+support is $1/2$, attained on the segment $\{1/2\}\times[0,1/4]$, with
+vertices $(1/2,0)$ and $(1/2,1/4)$. Thus $B'=[0,1/2]$. On $B'$ the tangent
+at $1/2$ and the secant force $s=1/4$ at $x=1/2$. The vertex $(1/2,0)$
+fails the rebuilt check, while $(1/2,1/4)$ passes, so the outcome depends
+on which optimal vertex the solver returns. The box $B'$ is fixed either
+way; it is the hull of the original feasible points $0$ and $1/2$.
+\end{example}
+
+In exact arithmetic, a Jacobi round that returns its input box already
+proves a fixed box. The rebuilt check adds three things. It can detect
+the fixed box one round earlier and save that round's $2n$ support
+solves. It produces a portable certificate, which also covers directional
+updates, other cutoffs above its threshold, and every containing box.
+Finally, it needs only primal points. A valid \emph{reduction} of a bound
+needs a dual proof that no relaxed point lies beyond the new bound.
+Proving the \emph{absence} of further reduction needs only primal
+witnesses, which is exactly what a pool supplies.
+Section~\ref{sec:algorithms} describes an exact driver that verifies each
+round by rational primal--dual proofs and then applies the test of
+Proposition~\ref{prop:round-check}; Theorem~\ref{thm:closure} states its
+guarantees. When the iterates converge only asymptotically, as in
+Example~\ref{ex:halving}, this proposal never succeeds, although
+Corollary~\ref{cor:limit-ceilings} guarantees that the limit is
+protected.
+
+The second proposal uses original feasible points in the current box:
+the incumbent, other solutions found by heuristics, and their images under
+known symmetries (Corollary~\ref{cor:original-points}). It needs no relaxation solve, only
+exact lifts, and it survives all valid reductions. Its ceilings are exact
+when the hull equals the limit. In Example~\ref{ex:sharp-halving} the
+incumbent singleton $\{0\}$ is the limit, and in
+Example~\ref{ex:round-check} the hull of $0$ and $1/2$ is the fixed box.
+In general the hull of known solutions can be far inside the limit.
+Proposition~\ref{prop:join} merges certificates from both proposals.
+
+A protected box therefore does not make the round that finds it cheaper.
+Its value lies in later work that it makes unnecessary: rounds after a
+certified stall, repeated tightening after cutoff changes above its
+threshold, repeated tightening at nodes that contain it, and certified
+bounds on the remaining relaxation gap. Whether these savings exceed the
+cost of discovery depends on how often such events occur during search.

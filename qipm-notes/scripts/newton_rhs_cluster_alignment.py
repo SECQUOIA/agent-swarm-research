@@ -1,5 +1,12 @@
+from pathlib import Path as _CleanupPath
+import os as _cleanup_os
+# Point QIPM_SOURCE_ROOT to the external QIPM checkout containing standard_form.py.
+if 'QIPM_SOURCE_ROOT' not in _cleanup_os.environ:
+    raise RuntimeError('Set QIPM_SOURCE_ROOT to the QIPM source checkout before running this probe.')
+_QIPM_ROOT = _CleanupPath(_cleanup_os.environ['QIPM_SOURCE_ROOT']).expanduser().resolve()
+
 import numpy as np, sys
-sys.path.insert(0, '/home/sgusev/repo/qipm')
+sys.path.insert(0, (str(_QIPM_ROOT)))
 from pathlib import Path
 from standard_form import load_standard_form
 from scipy.optimize import linprog
@@ -41,7 +48,7 @@ A = np.ones((1,n)); b=np.array([1.0])
 _,_,Vt = np.linalg.svd(A); Z = Vt[1:].T
 analyze(A, b, c, np.ones(n)/n, [1e-2,1e-4,1e-6], Z, "degenerate family:")
 
-cc, bb, AA, off = load_standard_form(Path('/home/sgusev/repo/qipm/cache_dir/netlib/afiro/afiro.std'))
+cc, bb, AA, off = load_standard_form(Path((str(_QIPM_ROOT) + '/cache_dir/netlib/afiro/afiro.std')))
 AA = AA.toarray(); m, nn = AA.shape
 r0 = linprog(np.r_[np.zeros(nn), -1.0], A_eq=np.c_[AA, np.zeros(m)], b_eq=bb,
               A_ub=np.c_[-np.eye(nn), np.ones(nn)], b_ub=np.zeros(nn),

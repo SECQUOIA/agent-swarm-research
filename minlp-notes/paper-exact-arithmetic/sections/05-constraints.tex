@@ -1,0 +1,1063 @@
+\section{Linear constraints and integer variables}
+\label{sec:constraints}
+
+Branch-and-bound methods for mixed-integer nonlinear programming solve
+constrained continuous relaxations, and the decisions they take are exact
+comparisons. A node is discarded when its bound is at least the incumbent
+value, a constraint is either binding or slack, and an integer assignment is
+either optimal or not. For a globally strongly convex objective without
+constraints, Theorem~\ref{thm:exact-upper} reduces every such comparison at
+the optimizer to one $\PosSLP$ instance. This section asks what rational
+linear constraints and integer variables add to that picture.
+
+The answer has three parts.
+
+\emph{Arbitrary polyhedra.} The set of all constraints that are tight at the
+unique optimizer is a certificate of polynomial length, and it is the only
+certificate that our verifier accepts. Exact comparisons therefore lie in
+$\mathrm{UP}^{\PosSLP}\cap\mathrm{coUP}^{\PosSLP}$
+(Theorem~\ref{thm:constraints-unambiguous}). We do not know how to find the
+active set deterministically in polynomial time with a $\PosSLP$ oracle.
+Section~\ref{sec:constraints-open} explains what a deterministic method would
+have to supply.
+
+\emph{Structure.} Three different kinds of structure remove the guess. If the
+cubic and quartic part of the objective depends on only $k$ linear forms,
+exact comparison needs no oracle and is fixed-parameter tractable in $k$
+(Theorem~\ref{thm:constraints-nonlinear}). If every Taylor quadratic program
+can be solved exactly with polynomially many arithmetic operations,
+independently of the bit lengths of its data, then exact Newton steps give a
+deterministic polynomial-time algorithm with a $\PosSLP$ oracle
+(Theorem~\ref{thm:constraints-transfer}). Boxes with forest-structured or
+Stieltjes Hessians and separable polynomial network flows are examples, and
+for them each exact predicate reduces to a single $\PosSLP$ instance
+(Corollary~\ref{cor:structured-single-sign}). If the constraint normals span a
+space of small dimension $r$, a Las Vegas algorithm with a $\PosSLP$ oracle
+runs in expected time $(r+1)^{O(r)}L^{C}$
+(Theorem~\ref{thm:constraints-rank}).
+
+\emph{Integer variables.} The search over integer blocks needs only ordinary
+rational computation at polynomial precision. It produces a list that
+contains every optimal integer block
+(Theorems~\ref{thm:constraints-candidates}
+and~\ref{thm:constraints-mixed-candidates}). Exact arithmetic is needed only
+to compare the continuous fiber minima of the listed blocks. Knowing the
+optimal value does not remove that arithmetic: one binary decision can carry
+a $\PosSLP$-hard sign (Corollary~\ref{cor:constraints-binary}).
+
+Table~\ref{tab:constraints-summary} summarizes the results. All of them assume
+global strong convexity, or global strong monotonicity in the
+variational-inequality versions, with a supplied rational modulus. The
+established ingredients are credited where they are used: polyhedral
+optimality and Farkas' lemma, essential-variable extraction, the quadratic
+convergence of exact constrained Newton steps, exact box and flow quadratic
+programming, linear programming with an arithmetic count independent of the
+objective and right-hand-side lengths, Clarkson-type sampling
+for violator spaces, and integer feasibility with integer-point separation
+oracles. What this section adds to them is the exact-arithmetic analysis
+that connects them: separation bounds that hold uniformly over the unknown
+active face, circuit simulations whose cost does not depend on the length of
+expanded rational numbers, and oracle constructions whose answers never
+require an exact fiber value.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}X
+  >{\raggedright\arraybackslash}p{3.9cm}
+  >{\raggedright\arraybackslash}p{2.9cm}
+  >{\raggedright\arraybackslash}p{2.1cm}@{}}
+\toprule
+Additional structure & Computation & Output & Result\\
+\midrule
+none (arbitrary rational polyhedron)
+ & $\mathrm{UP}^{\PosSLP}\cap\mathrm{coUP}^{\PosSLP}$
+ & sign of $h(p)$
+ & Thm.~\ref{thm:constraints-unambiguous}\\
+supplied lower bound on nonzero optimal slacks
+ & one $\PosSLP$ instance
+ & sign of $h(p)$
+ & Prop.~\ref{prop:upper-slack-gap}\\
+nonlinear dimension $k$
+ & ordinary, $F(k)L^{C}$
+ & sign, active set, implicit $p$
+ & Thm.~\ref{thm:constraints-nonlinear}\\
+exact Taylor QP with polynomial arithmetic cost
+ & $\mathrm P^{\PosSLP}$
+ & sign, active set
+ & Thm.~\ref{thm:constraints-transfer}\\
+box with forest, Stieltjes, or comparison-matrix Hessians; separable flows
+ & one $\PosSLP$ instance per predicate
+ & sign, one active bound
+ & Cor.~\ref{cor:constraints-boxes}--\ref{cor:structured-single-sign}\\
+constraint rank $r$
+ & Las Vegas with $\PosSLP$ oracle, expected $(r+1)^{O(r)}L^{C}$
+ & sign, implicit $p$
+ & Thm.~\ref{thm:constraints-rank}\\
+\midrule
+$t$ integer variables, unconstrained continuous fibers
+ & ordinary list in $2^{O(t\log(t+1))}L^{C}$; nonadaptive $\PosSLP$ selection
+ & every optimal integer block
+ & Thm.~\ref{thm:constraints-candidates}, Cor.~\ref{cor:constraints-selection}\\
+$t$ integer variables, mixed linear constraints
+ & ordinary list in $F(t)L^{C}$
+ & list containing every optimal block
+ & Thm.~\ref{thm:constraints-mixed-candidates}\\
+same, with nonlinear dimension $k$
+ & ordinary, $F(k+t)L^{C}$
+ & optimal block, value signs
+ & Cor.~\ref{cor:constraints-nonlinear-mixed}\\
+same, with continuous constraint rank $r$
+ & Las Vegas with $\PosSLP$ oracle, expected $F(t,r)L^{C}$
+ & first optimal block, implicit $p$
+ & Thm.~\ref{thm:constraints-mixed-rank}\\
+one binary variable, rank one, known optimal value
+ & $\PosSLP$-hard
+ & the optimal bit
+ & Cor.~\ref{cor:constraints-binary}\\
+\bottomrule
+\end{tabularx}
+\caption{Exact comparison at the optimizer of a globally strongly convex
+explicit quartic (or the solution of a strongly monotone cubic variational
+inequality) under linear constraints and integer variables. Here $F$ denotes
+a computable function and $C$ an absolute constant. ``Implicit $p$'' means a
+rational affine chart together with an explicit polynomial system whose unique
+real solution determines $p$.}
+\label{tab:constraints-summary}
+\end{table}
+
+\subsection{Setting}
+\label{sec:constraints-setting}
+
+Unless stated otherwise, $f\in\Q[x_1,\ldots,x_n]$ is an explicitly encoded
+polynomial of degree at most four, and a rational $\mu>0$ is supplied with the
+promise
+\begin{equation}\label{eq:constraints-curvature}
+ \nabla^2 f(x)\succeq\mu I\qquad(x\in\R^n).
+\end{equation}
+The feasible set is an explicit rational polyhedron
+$P=\{x\in\R^n:Ax\le b\}$ with $A\in\Q^{m\times n}$, rows $a_i^{\mathsf T}$,
+and $b\in\Q^m$. Rows may be zero, repeated, or redundant; $P$ may be unbounded
+or lower-dimensional; an equality is written as two inequalities. An
+\emph{observable} is an explicitly encoded $h\in\Q[x]$ of degree at most four,
+and ${\bowtie}$ ranges over $\{<,\le,=,\ne,\ge,>\}$. Value and coordinate
+comparisons $f(p)\bowtie\tau$ and $p_j\bowtie\tau$ with $\tau\in\Q$ are the
+observables $h=f-\tau$ and $h=x_j-\tau$. We write $L\ge2$ for the total binary
+length of all these data, including $\mu$, $h$, thresholds, and any supplied
+certificate.
+
+When $P\ne\varnothing$, \eqref{eq:constraints-curvature} makes $f$ coercive,
+so $f$ has a unique minimizer $p$ on $P$. Its \emph{active set} is
+$S(p)=\{i:a_i^{\mathsf T}p=b_i\}$, the complete set of tight rows rather than
+a selected support. Emptiness of $P$ is decided by rational linear programming
+before any question about $p$ is asked, and value comparisons use the
+convention $\min\varnothing=+\infty$.
+
+Several results hold for variational inequalities without a potential. Let
+$T:\R^n\to\R^n$ be an explicitly encoded polynomial map of degree at most
+three, with a supplied rational $\mu>0$ and the promise
+\begin{equation}\label{eq:constraints-monotone}
+ \bigl(T(x)-T(y)\bigr)^{\mathsf T}(x-y)\ge\mu\|x-y\|^2
+ \qquad(x,y\in\R^n).
+\end{equation}
+A solution of $\mathrm{VI}(T,P)$ is a point $p\in P$ with
+$T(p)^{\mathsf T}(x-p)\ge0$ for every $x\in P$. For $T=\nabla f$, condition
+\eqref{eq:constraints-monotone} is equivalent to
+\eqref{eq:constraints-curvature}, and the solutions of $\mathrm{VI}(\nabla f,P)$
+are the minimizers of $f$ on $P$.
+
+The curvature conditions are promises; nothing below recognizes them. If the
+input instead carries a checked certificate, namely a positive definite full
+Hessian Gram for $f$ or the Jacobian Gram of Theorem~\ref{thm:upper-monotone}
+for $T$, then an invalid certificate is rejected before anything else is done.
+Each statement below then becomes a statement about an ordinary language, with
+a positive rational modulus derived from the certificate. The nonlinear
+dimension theorem uses a weaker checkable format
+(Remark~\ref{rem:constraints-psd-certificate}).
+
+The structural parameters of this section are the nonlinear dimension $k$
+(Section~\ref{sec:constraints-nonlinear}), the rank $r$ of the continuous
+constraint normals (Section~\ref{sec:constraints-rank}), and the number $t$
+of integer variables (Section~\ref{sec:constraints-integer}). An algorithm is
+\emph{fixed-parameter tractable} (FPT) in a parameter $\kappa$ if its running
+time is at most $F(\kappa)L^{C}$ for a computable function $F$ and an absolute
+constant $C$. A constant that depends on the parameter never enters the
+exponent of $L$.
+
+The following geometric facts are used throughout. Their proofs are
+elementary and are given in Appendix~\ref{app:constraints-geometry}. Index
+sets of rows are denoted by $J$; $A_J$ and $b_J$ are the corresponding
+submatrix and subvector.
+
+\begin{lemma}[Polyhedral optimality and affine charts]
+\label{lem:constraints-polyhedral}
+Let $P\ne\varnothing$, let $T$ satisfy \eqref{eq:constraints-monotone}, and
+for $x\in P$ write $S(x)=\{i:a_i^{\mathsf T}x=b_i\}$.
+\begin{enumerate}[label=(\alph*)]
+\item $\mathrm{VI}(T,P)$ has exactly one solution $p$.
+\item A point $x\in P$ solves $\mathrm{VI}(T,P)$ if and only if
+$-T(x)\in\operatorname{cone}\{a_i:i\in S(x)\}$. In that case there are a set
+$J\subseteq S(x)$ of linearly independent rows, so $|J|\le\rank A$, and a
+vector $\lambda\in\R^J_{\ge0}$ with $T(x)+A_J^{\mathsf T}\lambda=0$.
+\item For every set $J$ of linearly independent rows, rational linear algebra
+computes in polynomial time $\bar x\in\Q^n$ and $Z\in\Q^{n\times(n-|J|)}$
+with
+\[
+ \{x:A_Jx=b_J\}=\{\bar x+Zy:y\in\R^{n-|J|}\},\qquad Z^{\mathsf T}Z\succeq I.
+\]
+Their bit lengths are bounded by one polynomial in $L$ for all $J$. The
+explicit cubic map $U_J(y)=Z^{\mathsf T}T(\bar x+Zy)$ satisfies
+\eqref{eq:constraints-monotone} with the same $\mu$. For $T=\nabla f$ it is
+the gradient of $g_J(y)=f(\bar x+Zy)$, and $\nabla^2g_J\succeq\mu I$.
+\item If $A_Jp=b_J$ and $T(p)\in\Span\{a_i:i\in J\}$, then $p=\bar x+Zy_J$,
+where $y_J$ is the unique zero of $U_J$. This applies to every support $J$
+given by (b) at $x=p$, and to every row basis $J$ of $A_{S(p)}$.
+\end{enumerate}
+\end{lemma}
+
+When $|J|=n$, the matrix $Z$ is empty and the chart is the single rational
+point $\bar x$; we then read every statement about $U_J$ and its zero as a
+statement about this point. Part~(d) is what makes a guessed or computed
+active set useful: it converts a constrained problem into the unconstrained
+zero of an explicit strongly monotone map, to which
+Theorems~\ref{thm:exact-upper} and~\ref{thm:upper-monotone} apply. Part~(c)
+needs no conditioning assumption, because the identity block in $Z$ gives
+$Z^{\mathsf T}Z\succeq I$.
+
+\subsection{Arbitrary polyhedra: a unique active-set certificate}
+\label{sec:constraints-general}
+
+Lemma~\ref{lem:constraints-polyhedral}(b) suggests a certificate. Guess an
+independent support $J$, compute the zero $y_J$ of $U_J$, and check primal
+feasibility, nonnegativity of the multipliers
+\begin{equation}\label{eq:constraints-multipliers}
+ \lambda_J(y)=-(A_JA_J^{\mathsf T})^{-1}A_J\,T(\bar x+Zy),
+\end{equation}
+and stationarity $T(\bar x+Zy)+A_J^{\mathsf T}\lambda_J(y)=0$ at $y=y_J$.
+Every tested quantity is an explicit polynomial of degree at most three
+evaluated at the zero of a strongly monotone cubic map, so
+Theorem~\ref{thm:upper-monotone} decides each test with $\PosSLP$. This puts
+exact comparison in $\NP^{\PosSLP}\cap\mathrm{coNP}^{\PosSLP}$, but the
+certificate is not unique: with degenerate multipliers many supports pass. The
+complete active set $S(p)$ is unique. Verifying it, however, requires showing
+that $-T(p)$ lies in the cone of the active normals without knowing which
+multipliers to use. That is a linear program whose objective is the algebraic
+vector $T(p)$.
+
+\begin{theorem}[Unambiguous certificates]
+\label{thm:constraints-unambiguous}
+Let $T$ satisfy \eqref{eq:constraints-monotone}, let $P=\{x:Ax\le b\}$ be an
+explicit rational polyhedron, let $h$ be an observable, and let
+${\bowtie}\in\{<,\le,=,\ne,\ge,>\}$. Consider the promise problem whose
+yes-instances satisfy $P\ne\varnothing$ and $h(p)\bowtie0$, where $p$ is the
+unique solution of $\mathrm{VI}(T,P)$. It belongs to
+$\mathrm{UP}^{\PosSLP}\cap\mathrm{coUP}^{\PosSLP}$. In particular, for an
+explicit quartic $f$ satisfying \eqref{eq:constraints-curvature}, every exact
+value, coordinate, and observable comparison at the minimizer of $f$ on $P$
+belongs to $\mathrm{UP}^{\PosSLP}\cap\mathrm{coUP}^{\PosSLP}$. With a checked
+Hessian or Jacobian Gram in place of the bare modulus, the same holds for the
+ordinary languages in which invalid certificates are rejected.
+\end{theorem}
+
+\begin{proof}[Proof idea]
+The machine first rejects invalid certificates and decides $P\ne\varnothing$
+by linear programming. It then guesses one bit per row, that is, a set
+$S\subseteq\{1,\ldots,m\}$. Deterministically it chooses a row basis $J$ of
+$A_S$, the chart of Lemma~\ref{lem:constraints-polyhedral}(c), and the zero
+$p_S=\bar x+Zy_J$ of $U_J$. It accepts the optimality part of the certificate
+exactly when two conditions hold: the slack $b_i-a_i^{\mathsf T}p_S$ is zero
+for $i\in S$ and positive for $i\notin S$; and
+\begin{equation}\label{eq:constraints-cone-test}
+ T(p_S)^{\mathsf T}v\ge0\quad\text{for every }v\in Q_S,
+ \qquad Q_S=\{v:A_Sv\le0,\ -1\le v_j\le1\ (j\le n)\}.
+\end{equation}
+Every slack is an affine observable at the zero of $U_J$. The test
+\eqref{eq:constraints-cone-test} is the delicate step. Every vertex $v$ of
+$Q_S$ has coordinates of polynomial bit length, so all vertex observables
+$v^{\mathsf T}T(\bar x+Zy)$ have one common encoding bound. One shared Newton
+circuit $\hat y$ for $y_J$ (Lemma~\ref{lem:newton-circuit}) therefore
+approximates all of them to within one eighth of their common separation
+bound. A linear-programming algorithm whose arithmetic count depends only on
+the encoded constraint matrix, simulated on
+rational circuits with $\PosSLP$ comparisons, minimizes the rational circuit
+objective $T(\bar x+Z\hat y)^{\mathsf T}v$ over $Q_S$. Its optimal vertex is
+recovered as printed rational numbers, and one exact comparison of its true
+observable decides \eqref{eq:constraints-cone-test}. A passing set $S$ forces
+$p_S=p$ and $S=S(p)$, and $S(p)$ passes. Thus exactly one guess passes, and
+the machine finally tests $h(p_S)\bowtie0$, or its complement for the
+$\mathrm{coUP}$ side. Appendix~\ref{app:constraints-unambiguous} gives the
+complete proof, including the circuit-objective linear program
+(Lemma~\ref{lem:constraints-circuit-lp}).
+\end{proof}
+
+\begin{remark}[What the theorem does and does not give]
+\label{rem:constraints-unambiguous}
+Guessing an independent support instead of the full mask gives the simpler
+$\NP^{\PosSLP}\cap\mathrm{coNP}^{\PosSLP}$ bound described above
+(Lemma~\ref{lem:constraints-support-test}). Enumerating all supports is
+deterministic but takes $\sum_{s\le n}\binom ms$ steps. By
+\citet{AllenderEtAl2009}, $\PosSLP$ lies in the counting hierarchy, hence so do
+all predicates of Theorem~\ref{thm:constraints-unambiguous}. The theorem does
+not reduce the constrained problem to one $\PosSLP$ instance, and the adaptive
+compilation of Theorem~\ref{thm:posslp-closure}(b) does not apply, because the
+guess of the active set is not removed. Nor does ordinary approximation
+find the active set in general: nothing in the separation bound prevents a
+nonzero slack at $p$ from being doubly exponentially small in $L$, and an
+approximation to polynomially many bits cannot distinguish such a slack from
+zero.
+\end{remark}
+
+If the input also supplies a margin that separates the active rows from the
+inactive ones, ordinary approximation finds the active set, and the oracle is
+needed only for one final comparison. Proposition~\ref{prop:upper-slack-gap}
+states this: when every nonzero optimal slack is at least a supplied rational
+$\delta>0$, an exactly feasible rational approximation of the minimizer
+determines every slack to within $\delta/8$, thresholding at $\delta/2$
+returns $S(p)$, and
+Theorem~\ref{thm:exact-upper}, applied on the chart of a row basis of
+$A_{S(p)}$, yields one $\PosSLP$ instance per relation. No lower bound on
+nonzero multipliers is needed. The promise is substantial and is not verified,
+and the separation bound for algebraic numbers does not supply a margin of
+polynomial bit length.
+
+\subsection{Few nonlinear directions}
+\label{sec:constraints-nonlinear}
+
+Many models are quadratic except for a few higher-degree terms in a few
+linear combinations of the variables, for example a strongly convex quadratic
+plus a quartic penalty $(a^{\mathsf T}x)^4$, or a quartic risk term in a few
+factors. The constraints of such a model may be numerous and of full rank.
+The next theorem shows that the algebraic difficulty of the optimizer then
+lives in few dimensions, and that exact comparison needs no oracle.
+
+\begin{definition}[Nonlinear dimension]
+\label{def:constraints-nonlinear-dimension}
+Write $f=f_{\le2}+f_3+f_4$, where $f_j$ is homogeneous of degree $j$ and
+$f_{\le2}$ has degree at most two. The \emph{nonlinear kernel} of $f$ is
+\[
+ K_f=\{v\in\R^n:D_vf_3\equiv0\text{ and }D_vf_4\equiv0\},
+\]
+where $D_vg=\sum_iv_i\,\partial_ig$ and $\equiv$ denotes equality of
+polynomials. The \emph{nonlinear dimension} of $f$ is $k=n-\dim K_f$.
+\end{definition}
+
+\begin{lemma}[Essential directions]
+\label{lem:constraints-essential}
+\begin{enumerate}[label=(\alph*)]
+\item Let $W$ be the rational matrix with rows indexed by the monomials
+$x^\beta$ of degrees two and three, whose entry $W_{\beta,i}$ is the
+coefficient of $x^\beta$ in $\partial_i(f_3+f_4)$. Then $K_f=\ker W$. Hence
+$k=\rank W$, and rational matrices $U\in\Q^{k\times n}$ with $\ker U=K_f$ and
+$V\in\Q^{n\times k}$ with $UV=I_k$ are computable in polynomial time.
+\item $f_3(x)+f_4(x)=\theta(Ux)$ for all $x$, where
+$\theta(u)=f_3(Vu)+f_4(Vu)$.
+\item The nonlinear dimension does not change under an invertible rational
+affine change of variables.
+\end{enumerate}
+\end{lemma}
+
+Part~(b) is the essential-variable construction; for homogeneous forms it is
+\citet[Proposition~1]{Carlini2006}. Here it is applied separately to the cubic
+and quartic parts, and part~(c) shows that the resulting parameter is
+intrinsic even though translation mixes these parts.
+
+\begin{theorem}[Exact comparison in few nonlinear directions]
+\label{thm:constraints-nonlinear}
+Let $f$ satisfy \eqref{eq:constraints-curvature} and have nonlinear
+dimension $k$, let $P=\{x:Ax\le b\}$ be an explicit rational polyhedron, and
+let $h$ be an observable. There are a function $F(k)=2^{O(k)}$ and an
+absolute constant $C$ such that a deterministic ordinary algorithm, using no
+oracle, runs in time $F(k)L^{C}$ and either reports $P=\varnothing$ or
+\begin{enumerate}[label=(\roman*)]
+\item decides whether $h(p)$ is negative, zero, or positive;
+\item computes the active set $S(p)$; and
+\item computes $\bar c\in\Q^n$ and $D\in\Q^{n\times s}$ of full column rank
+$s\le k$ such that $p=\bar c+Du_*$, where $u_*$ is the unique zero of the
+gradient of the explicit quartic $\varphi(u)=f(\bar c+Du)$ on $\R^s$, and
+$\nabla^2\varphi\succeq\mu D^{\mathsf T}D\succeq\nu I$ with the rational
+modulus $\nu=\mu\det(D^{\mathsf T}D)/\tr(D^{\mathsf T}D)^{s-1}>0$ when $s\ge1$.
+\end{enumerate}
+The data in (iii) have bit length at most $T(L)$ for a polynomial $T$ that
+does not depend on $k$. The number of constraints, their rank, the ambient
+dimension, and the rank of the quadratic part are unrestricted.
+\end{theorem}
+
+\begin{proof}[Proof idea]
+The proof uses the unknown active set only to establish a bound. Let $J$ be
+a row basis of $A_{S(p)}$ and $\bar x+Zy$ its chart. By
+Lemma~\ref{lem:constraints-polyhedral}(d), $p$ is the unconstrained minimizer
+of $f(\bar x+Zy)$. Split $y$ along $\ker(UZ)$ and a complement. On the kernel
+directions the cubic and quartic parts are constant, so $f$ is a strongly
+convex quadratic there and can be minimized in closed form. What remains is
+a strongly convex quartic $\varphi$ in $s=\rank(UZ)\le k$ variables, with
+data of bit length $T(L)$ for every possible $J$. The formula
+$\exists u\,(\nabla\varphi(u)=0\wedge z=h(\bar c+Du))$ has $s$ quantified
+variables and defines the singleton $\{h(p)\}$. The coefficient bound in
+one-block quantifier elimination is linear in the input coefficient length,
+with a factor depending only on the number of quantified variables
+(Lemma~\ref{lem:separation}). Hence $h(p)\ne0$ implies
+$|h(p)|\ge2^{-G(k)T(L)}$ with $G(k)=2\cdot4^{c_0k}$, where $c_0$ is the
+absolute constant of that lemma. An exactly feasible rational
+point with objective error $2^{-O(G(k)T(L))}$ is within distance
+$2^{-G(k)T(L)}/(8B)$ of $p$, where $B$ bounds $\|\nabla h\|$, and is
+computable in ordinary time $F(k)L^{C}$ (Lemma~\ref{lem:convex-value}).
+Comparing its rational observable value with $\pm2^{-G(k)T(L)-1}$ decides
+the sign exactly. The slacks give $S(p)$, and then the elimination above is
+carried out on the now known set. Appendix~\ref{app:constraints-nonlinear}
+gives the details.
+\end{proof}
+
+The algorithm prints $G(k)T(L)$ accuracy bits. This number is FPT in $k$,
+but for unconstrained objectives of nonlinear dimension $n$ it is
+exponential in $n$, and Theorem~\ref{thm:exact-upper} is then the better
+bound. The
+two results measure different sources of difficulty.
+
+\begin{example}\label{ex:constraints-rank-one-quartic}
+Let $f(x)=\tfrac12x^{\mathsf T}Qx+c^{\mathsf T}x+(a^{\mathsf T}x)^4$ with
+rational $Q\succeq\mu I$, $a\ne0$, and $c$. Then $K_f=a^\perp$ and $k=1$.
+Theorem~\ref{thm:constraints-nonlinear} decides every exact comparison at the
+minimizer over an arbitrary rational polyhedron in ordinary polynomial time,
+although $Q$ may be dense, the constraint matrix may have rank $n$, and the
+polyhedron may have exponentially many faces. The optimizer is an explicit
+affine function of the unique real root of one univariate cubic equation.
+\end{example}
+
+\begin{remark}[A checkable curvature certificate]
+\label{rem:constraints-psd-certificate}
+A rational positive semidefinite matrix $G_0$ with
+$v^{\mathsf T}(\nabla^2f(x)-\mu I)v=w^{\mathsf T}G_0w$, where
+$w=(v,x\otimes v)$, certifies \eqref{eq:constraints-curvature}. Coefficient
+matching and rational semidefiniteness testing check it in polynomial time.
+A positive definite full Hessian Gram is the wrong format here: if $k<n$, it
+cannot exist. Indeed, for $0\ne e\in K_f$ the Hessian $\nabla^2f(se)$ does not
+depend on $s$, whereas a positive definite Gram would give
+$v^{\mathsf T}\nabla^2f(se)v\ge c(1+s^2\|e\|^2)\|v\|^2$ for some $c>0$. We do
+not claim that every globally strongly convex quartic has a certificate of
+either kind.
+\end{remark}
+
+\begin{remark}[Related parameters]
+\label{rem:constraints-nonlinear-prior}
+Low-rank optimization usually bounds the rank of the whole objective
+\citep{MittalSchulz2013} and asks for approximation. \citet{KannanRademacher2009}
+treat a convex function plus a polynomial perturbation in $k$ variables, again
+with an approximation guarantee whose cost grows with the reciprocal
+accuracy. Here only the cubic and quartic part is restricted, the quadratic
+part and the constraints are arbitrary, the output is exact including zero,
+and the exponent of $L$ does not depend on $k$. The ingredients that make this
+possible are strong convexity, which turns objective accuracy into point
+accuracy and eliminates the quadratic directions, and the linear dependence of
+the elimination bound on coefficient length.
+\end{remark}
+
+\subsection{Exact constrained Newton steps}
+\label{sec:constraints-newton}
+
+For an unconstrained problem, a Newton step is a linear solve, so exact
+Newton steps can be carried out on shared rational circuits; this is the
+mechanism behind Theorem~\ref{thm:exact-upper}. With constraints, a Newton
+step is a quadratic program over $P$. Its convergence is classical. The
+difficulty is arithmetic: the Taylor data of the $j$-th step can have bit
+length exponential in $j$, so a quadratic-programming algorithm whose running
+time is polynomial in the bit length of its data is of no use. What is needed is an
+algorithm whose number of arithmetic operations does not depend on the bit
+length of the Hessian and linear cost.
+
+\begin{definition}[Arithmetic Taylor-QP solver]
+\label{def:constraints-qp-solver}
+Let $\mathcal C$ be a class of instances $(f,P)$ with $f$ explicit,
+satisfying \eqref{eq:constraints-curvature}, and $P\ne\varnothing$. An
+\emph{arithmetic Taylor-QP solver} for $\mathcal C$ is a deterministic
+algorithm with the following properties. It receives the explicit data of an
+instance in $\mathcal C$ and rational $H\in\Q^{n\times n}$, $c\in\Q^n$ such
+that $H=\nabla^2f(x)$ and $c=\nabla f(x)-\nabla^2f(x)x$ for some $x\in P$. It
+returns the exact minimizer of $\tfrac12y^{\mathsf T}Hy+c^{\mathsf T}y$ over
+$P$. Its operations on numbers are addition, subtraction, multiplication,
+division by a nonzero number, and comparison, applied to the entries of $H$
+and $c$, to earlier results, and to rational constants computed from the
+explicit data in time polynomial in $L$. The choice of each operation is
+determined by the outcomes of earlier comparisons through a control that runs
+in time polynomial in $L$, and the number of operations is at most a
+polynomial in $L$ for all admissible $(H,c)$, independently of their bit
+lengths.
+\end{definition}
+
+A dependence on logarithms of numerical bounds that are themselves of
+polynomial bit length is allowed; a dependence on the bit lengths of $H$ or
+$c$ is not. A quadratic-programming algorithm that is polynomial only in the
+bit length of its data does not satisfy the definition.
+
+\begin{lemma}[Constrained Newton step]
+\label{lem:constraints-newton-step}
+Let $f$ be twice continuously differentiable with $\nabla^2f\succeq\mu I$, let
+$P$ be a nonempty closed convex set with minimizer $p$ of $f$, and let $x\in P$.
+Let $\Lambda$ be a Lipschitz constant of $\nabla^2f$, in operator norm, on a
+convex set containing $x$ and $p$. Then the minimizer
+\[
+ N(x)=\argmin_{y\in P}\Bigl\{\nabla f(x)^{\mathsf T}(y-x)
+ +\tfrac12(y-x)^{\mathsf T}\nabla^2f(x)(y-x)\Bigr\}
+\]
+satisfies $\|N(x)-p\|\le\frac{\Lambda}{2\mu}\|x-p\|^2$.
+\end{lemma}
+
+\begin{proof}
+Write $y=N(x)$ and $H=\nabla^2f(x)$. The first-order conditions of the two
+convex problems give
+$(\nabla f(x)+H(y-x))^{\mathsf T}(p-y)\ge0$ and
+$\nabla f(p)^{\mathsf T}(y-p)\ge0$. Add them and put
+$\rho=\nabla f(p)-\nabla f(x)-H(p-x)$. Then
+\[
+ \mu\|y-p\|^2\le(y-p)^{\mathsf T}H(y-p)\le\rho^{\mathsf T}(y-p)
+ \le\|\rho\|\,\|y-p\|.
+\]
+Taylor's formula gives
+$\rho=\int_0^1\bigl(\nabla^2f(x+\vartheta(p-x))-H\bigr)(p-x)\,d\vartheta$, so
+$\|\rho\|\le\frac\Lambda2\|x-p\|^2$.
+\end{proof}
+
+This is the exact proximal Newton estimate of
+\citet[Theorem~3.4]{LeeSunSaunders2014}, with the indicator function of $P$ as
+the nonsmooth term. We record the proof because it shows a point that matters
+here: the estimate never identifies the optimal face. It holds when the Taylor
+model and the true problem have different active sets, and when optimal
+multipliers vanish.
+
+\begin{theorem}[Transfer from arithmetic QP solvers]
+\label{thm:constraints-transfer}
+Fix $D\ge2$. Let $\mathcal C$ be a class of instances $(f,P)$ with $f$
+explicit of degree at most $D$ satisfying \eqref{eq:constraints-curvature}
+and $P$ a nonempty explicit rational polyhedron, and suppose that
+$\mathcal C$ has an arithmetic Taylor-QP solver. For every explicit observable
+$h$ of degree at most $D$, each predicate $h(p)\bowtie0$ is decided in
+deterministic polynomial time with a $\PosSLP$ oracle, and $S(p)$ is computed
+in the same way. If $f(p)<\tau$ for a rational $\tau$, the computation also
+yields a point $x\in P$ with $f(x)<\tau$, given by a shared rational circuit
+of polynomial size.
+\end{theorem}
+
+\begin{proof}[Proof idea]
+An ordinary convex-optimization call gives an exactly feasible rational warm
+start $x_0$ with $\|x_0-p\|\le1/(2\kappa)$, where $\kappa=\max\{1,\Lambda/(2\mu)\}$
+and $\Lambda$ is an explicit Hessian-Lipschitz bound on a ball that contains
+all iterates. Lemma~\ref{lem:constraints-newton-step} gives
+$\|x_j-p\|\le\kappa^{-1}2^{-2^j}$ for the exact iterates $x_{j+1}=N(x_j)$.
+Each iterate is computed by the solver, with every number held as a shared
+numerator-denominator circuit and every comparison answered by $\PosSLP$.
+The Karush--Kuhn--Tucker system of the original instance, extended by
+$z=h(x)$, defines the singleton $\{h(p)\}$, so Lemma~\ref{lem:separation}
+gives $h(p)=0$ or $|h(p)|\ge2^{-2^{e_D(L)}}$ for a polynomial $e_D$ that
+depends only on $D$. After polynomially many steps a final comparison of
+$h(x_j)$ with $\pm2^{-2^{e_D(L)}-1}$ decides the predicate.
+The comparisons inside the solver depend on earlier oracle answers, so the
+procedure is a Turing reduction. Appendix~\ref{app:constraints-newton} gives
+the complete argument.
+\end{proof}
+
+The theorem isolates the arithmetic interface; it does not assert that
+arbitrary convex quadratic programs have such solvers. We now give two classes
+that do.
+
+For a symmetric matrix $H$, its \emph{comparison matrix} $M(H)$ has
+$M(H)_{ii}=H_{ii}$ and $M(H)_{ij}=-|H_{ij}|$ for $i\ne j$.
+
+\begin{corollary}[Structured boxes]
+\label{cor:constraints-boxes}
+Let $P=\{x:\ell\le x\le u\}$ with $\ell_i\in\Q\cup\{-\infty\}$ and
+$u_i\in\Q\cup\{+\infty\}$, and let $f$ be explicit of fixed degree $D$ and
+satisfy \eqref{eq:constraints-curvature}. Suppose that one of the following
+holds for every $x\in P$:
+\begin{enumerate}[label=(\roman*)]
+\item every pair $i\ne j$ with $\partial_i\partial_jf(x)\ne0$ is an edge of a
+supplied forest on $\{1,\ldots,n\}$;
+\item $\partial_i\partial_jf(x)\le0$ for all $i\ne j$;
+\item $M(\nabla^2f(x))$ is positive definite.
+\end{enumerate}
+Then for every explicit observable $h$ of degree at most $D$, the predicates
+$h(p)\bowtie0$ are in $\mathrm P^{\PosSLP}$, and so is the set of active
+bounds. The number of active bounds and the dimension are unrestricted, and
+zero multipliers are allowed.
+\end{corollary}
+
+Conditions (i) and (ii) imply (iii). For (ii), $M(H)=H$. For (i), choosing
+signs along each tree gives a diagonal sign matrix $\Sigma$ with
+$M(H)=\Sigma H\Sigma$. The proof (Appendix~\ref{app:constraints-boxes})
+first truncates infinite bounds without changing $p$
+(Lemma~\ref{lem:constraints-truncation}). It then shows that every positive
+definite $H$ with $M(H)\succ0$ admits a rational vector $v\ge\mathbf 1$,
+computable by rational linear algebra and sign tests, such that
+$H_{SS}^{-1}v_S\ge0$ for every nonempty $S$
+(Lemma~\ref{lem:constraints-admissible}). With such a vector, a parametric
+principal pivoting method in the style of \citet[Algorithm~I]{PangHan2023}
+solves the box quadratic program with at most $2n$ pivots and $O(n^4)$
+arithmetic operations (Lemma~\ref{lem:constraints-box-qp}). We include
+complete proofs of both lemmas so that the operation count is explicit.
+Condition~(i) can be checked from the coefficients of $f$ when the box is
+full-dimensional. Conditions (ii) and (iii) are promises.
+
+For any graph $G$, rational $w_{ij}\ge0$, and rational $c$,
+\[
+ f(x)=\frac\mu2\|x\|^2+\sum_{ij\in E(G)}w_{ij}(x_i-x_j)^4+c^{\mathsf T}x
+\]
+has Hessian $\mu I$ plus a graph Laplacian with nonnegative weights
+$12w_{ij}(x_i-x_j)^2$, so it satisfies (ii) on every box. The graph may be
+dense, the box constraints have rank $n$, and the nonlinear dimension can be
+$n-1$. For example, if $G$ is a star with center $1$ and positive weights,
+the forms $x_1-x_j$ are linearly independent, so their cubes are linearly
+independent and $K_f$ is spanned by the all-ones vector. Neither
+Theorem~\ref{thm:constraints-nonlinear} nor Theorem~\ref{thm:constraints-rank}
+then gives a polynomial bound. Replacing each difference by
+$x_i+x_{i+1}$ along a path gives a tridiagonal Hessian with positive
+off-diagonal entries, covered by (i) but not by (ii).
+
+\begin{corollary}[Separable network flows]
+\label{cor:constraints-flows}
+Let $G=(V,E)$ be a directed graph with incidence matrix $A_G$, and let
+$P=\{x\in\R^E:A_Gx=b,\ \ell\le x\le u\}$ with rational $b$ and with
+$\ell_e\in\Q\cup\{-\infty\}$, $u_e\in\Q\cup\{+\infty\}$. Let
+$f(x)=\sum_{e\in E}f_e(x_e)$ with explicit $f_e\in\Q[s]$ of fixed degree $D$
+and $f_e''\ge\mu$ on $\R$. Then for every explicit observable $h$ of degree at
+most $D$, the predicates $h(p)\bowtie0$ are in $\mathrm P^{\PosSLP}$, and so is
+the set of active bounds. The graph, the dimension, and the constraint rank
+are unrestricted; parallel arcs, redundant balance equations, and fixed arcs
+are allowed.
+\end{corollary}
+
+The Taylor model of a separable objective is a separable strictly convex
+quadratic flow problem with arc costs
+$\tfrac12f_e''(x_e)y_e^2+\bigl(f_e'(x_e)-f_e''(x_e)x_e\bigr)y_e$. The strongly
+polynomial algorithm of \citet[Theorem~20]{Vegh2016} solves it exactly with a
+number of arithmetic operations and comparisons that depends only on the size
+of the graph. Appendix~\ref{app:constraints-flows} states the precise
+interface and proves that the artificial arc costs used by such algorithms can
+be chosen from the circuit data. For $D\le4$ the curvature promise is
+checkable: $f_e''-\mu$ is a univariate quadratic. The observable $h$ may
+couple many arcs; only the objective must be separable.
+
+The deterministic oracle algorithms of
+Corollaries~\ref{cor:constraints-boxes} and~\ref{cor:constraints-flows} make
+adaptive queries. The compilation theorem for deterministic $\PosSLP$
+computations removes the adaptivity.
+
+\begin{corollary}[One sign instance for structured classes]
+\label{cor:structured-single-sign}
+Under the hypotheses of Theorem~\ref{thm:constraints-transfer}, and in
+particular of Corollary~\ref{cor:constraints-boxes} or
+Corollary~\ref{cor:constraints-flows}, there is a deterministic
+polynomial-time algorithm that maps each instance, observable $h$, and relation
+${\bowtie}$ to one integer arithmetic circuit $\Phi$ such that, on every
+promised instance, $\Phi>0$ if and only if $h(p)\bowtie0$. The same holds for
+each predicate ``bound $i$ is active at $p$'' and for every polynomial-size
+Boolean combination of such predicates.
+\end{corollary}
+
+\begin{proof}
+The algorithm of Theorem~\ref{thm:constraints-transfer} is a deterministic
+oracle Turing machine whose queries are integer circuits. Its running time
+and the lengths of its queries are bounded by one polynomial in $L$ that does
+not depend on the expanded values of the circuits: the warm start is an
+ordinary computation, the number of Newton steps and of solver operations per
+step is polynomial in $L$, and each query is a circuit that the machine has
+written. A clock and syntax checks make the machine total on all inputs
+without changing it on promised ones.
+Theorem~\ref{thm:posslp-closure}(b) compiles such a machine into one circuit.
+Appendix~\ref{app:constraints-single-sign} checks these hypotheses in detail.
+\end{proof}
+
+The corollary concerns one requested predicate at a time. The set of active
+bounds is a vector of bits; it is obtained from a nonadaptive list of compiled
+instances, one per bound, not from one circuit. The structured classes are not
+claimed to be $\PosSLP$-hard, and no ordinary polynomial-time algorithm is
+claimed. Theorem~\ref{thm:constraints-unambiguous} and the Las Vegas
+Theorem~\ref{thm:constraints-rank} are not covered: the first guesses its
+certificate, and the second uses randomness with an expected rather than a
+worst-case time bound. For parameterized compositions, for example the
+candidate lists of Section~\ref{sec:constraints-integer} with structured
+fibers, the same compilation gives a many-one reduction whose construction
+time is FPT in the parameter, not polynomial when the parameter grows.
+
+\subsection{Few constraint directions}
+\label{sec:constraints-rank}
+
+A third parameter is the rank $r=\rank A$ of the constraint normals. A
+polyhedron can have very many constraints whose normals lie in a space of
+small dimension, for example many inequalities on a few linear forms of the
+variables. By Lemma~\ref{lem:constraints-polyhedral}(b) the solution is then
+determined by at most $r$ active rows, but enumerating the candidate supports
+takes $m^{O(r)}$ steps, with $r$ in the exponent of the input length.
+Random sampling in the style of Clarkson removes $r$ from that exponent.
+
+\begin{theorem}[Constraint rank]
+\label{thm:constraints-rank}
+Let $T$ satisfy \eqref{eq:constraints-monotone}, let $P=\{x:Ax\le b\}$ be an
+explicit rational polyhedron with $r=\rank A$, and let $h$ be an observable.
+There is a Las Vegas algorithm with a $\PosSLP$ oracle that decides whether
+$P=\varnothing$ and otherwise decides any predicate $h(p)\bowtie0$ at the
+unique solution $p$ of $\mathrm{VI}(T,P)$. Its expected running time is
+$(r+1)^{O(r)}L^{C}$ for an absolute constant $C$, every oracle query has
+length polynomial in $L$, and every answer it returns is correct. It also
+returns a set $J$ of at most $r$ linearly independent rows such that, in the
+notation of Lemma~\ref{lem:constraints-polyhedral}, $p=\bar x+Zy_J$ with
+$y_J$ the unique zero of the explicit map $U_J$. For $T=\nabla f$ this covers
+exact value, coordinate, and observable comparisons for strongly convex
+quartic optimization.
+\end{theorem}
+
+\begin{proof}[Proof idea]
+After checking that $P$ is nonempty, every subset $G$ of the rows defines a
+nonempty polyhedron $P_G$ with a unique solution $p_G$ of
+$\mathrm{VI}(T,P_G)$. The map $V(G)=\{i:a_i^{\mathsf T}p_G>b_i\}$ defines a
+violator space in the sense of \citet{GaertnerMatousekRuestSkovron2008}.
+Locality follows from uniqueness, so no potential function is needed.
+Applying Lemma~\ref{lem:constraints-polyhedral}(b) to an inclusion-minimal
+basis shows that every basis consists of linearly independent rows, so the
+combinatorial dimension is at most $r$. The sampling algorithms need only
+violation tests whose first argument has at most $r$ elements. Such a test
+enumerates the at most $2^r$ independent subsets of its argument and checks
+each with the support test of Lemma~\ref{lem:constraints-support-test}, using
+Theorem~\ref{thm:upper-monotone}. Clarkson's algorithms, as analyzed for
+violator spaces by \citet{GaertnerMatousekRuestSkovron2008}, use an expected
+$O(rm+r^{O(r)})$ such tests. Appendix~\ref{app:constraints-rank} gives the
+complete proof, including the binary implementation of the weighted sampling.
+\end{proof}
+
+The parameter is the rank of all constraint normals, not the size of the
+final active support; the sampling analysis bounds the bases of all
+subproblems. A box has rank $n$, so the theorem does not make box-constrained
+problems easy. The oracle is essential even for $r=0$: unconstrained exact
+comparison is already $\PosSLP$-hard (Theorem~\ref{thm:quartic-complete}).
+Randomness affects only the running time. We do not claim a deterministic
+algorithm with this parameter dependence, and the compilation of
+Corollary~\ref{cor:structured-single-sign} does not apply to this algorithm.
+
+\subsection{Integer variables}
+\label{sec:constraints-integer}
+
+We now add $t$ integer variables. Consider
+\begin{equation}\label{eq:constraints-mixed-problem}
+ \min\bigl\{f(z,y):z\in\Z^t,\ y\in\R^n,\ (z,y)\in P\bigr\},
+\end{equation}
+where $f\in\Q[z,y]$ is explicit of degree at most four with a supplied
+rational $\mu>0$ and the promise $\nabla^2f(z,y)\succeq\mu I_{t+n}$ on all of
+$\R^{t+n}$. We treat two kinds of feasible sets: $P=Q\times\R^n$ with an
+explicit rational polyhedron $Q\subseteq\R^t$ (unconstrained continuous
+fibers), and $P=\{(z,y):Az+By\le d\}$ with explicit rational $A$, $B$, $d$
+(mixed linear constraints). An \emph{optimal integer block} is the $z$-part of
+an optimal solution. For $z$ in the projection of $P$ onto the $z$-coordinates,
+write $g(z)=\min\{f(z,y):(z,y)\in P\}$ for its fiber minimum; $z$ is
+\emph{feasible} if it is an integer point of this projection. When
+\eqref{eq:constraints-mixed-problem} is feasible, coercivity on the closed set
+$(\Z^t\times\R^n)\cap P$ gives an optimal solution, each fiber has a unique
+minimizer, and $g$ is $\mu$-strongly convex on the projection of $P$.
+
+The fiber values $g(z)$ are algebraic numbers, typically irrational. An
+integer optimization method that compares them, or bisects on the objective,
+needs exact arithmetic at every step. Our search avoids exact values
+altogether. At each queried integer point it computes, at polynomial
+precision, a rational inequality that is violated by the query and satisfied
+by every other integer point whose fiber value is no larger. The following
+lemma is the source of all such cuts.
+
+\begin{lemma}[Integer cut]
+\label{lem:constraints-integer-cut}
+Let $z\in\Z^t$ be feasible and let $c_z\in\Q^t$ satisfy
+\begin{equation}\label{eq:constraints-integer-cut}
+ g(w)-g(z)\ge c_z^{\mathsf T}(w-z)+\tfrac\mu4\|w-z\|^2
+\end{equation}
+for every feasible $w\in\Z^t\setminus\{z\}$. If $c_z=0$, then $z$ is the
+unique optimal integer block. Otherwise the inequality
+$c_z^{\mathsf T}(x-z)\le-\mu/4$ is violated by $z$ and satisfied by every
+feasible integer $w\ne z$ with $g(w)\le g(z)$, in particular by every optimal
+integer block other than $z$.
+\end{lemma}
+
+\begin{proof}
+If $c_z=0$, \eqref{eq:constraints-integer-cut} gives $g(w)>g(z)$ for every
+feasible integer $w\ne z$. Otherwise $g(w)\le g(z)$ and $\|w-z\|\ge1$ give
+$c_z^{\mathsf T}(w-z)\le-\frac\mu4\|w-z\|^2\le-\frac\mu4$.
+\end{proof}
+
+Such a cut may remove points of the continuous sublevel set
+$\{x:g(x)\le g(z)\}$, including nonintegral points of smaller value. It is
+therefore not a separation oracle for that convex set. We use integer
+feasibility algorithms whose oracle is queried only at integer points and
+must separate a fixed closed convex set from each rejected query
+(Theorem~\ref{thm:constraints-integer-query}). The proofs fix the target set
+after the fact: the empty set for the running-time bound, and a single
+omitted optimal block for completeness.
+
+\begin{theorem}[Candidate lists with unconstrained fibers]
+\label{thm:constraints-candidates}
+Let $P=Q\times\R^n$ with an explicit rational polyhedron $Q\subseteq\R^t$,
+possibly unbounded or lower-dimensional. A deterministic ordinary algorithm,
+using no oracle, either certifies $Q\cap\Z^t=\varnothing$ or outputs a finite
+list $\mathcal Z\subseteq Q\cap\Z^t$ that contains every optimal integer
+block. Its running time and the total encoding length of $\mathcal Z$ are at
+most $2^{O(t\log(t+1))}L^{C}$, with $C$ independent of $t$ and $n$. There are
+at most $2^t$ optimal integer blocks, and this bound is attained.
+\end{theorem}
+
+\begin{proof}[Proof idea]
+Fixed-dimensional integer linear feasibility gives a feasible block, and
+strong convexity gives a radius $R$, of bit length $2^{O(t)}L^{O(1)}$, that
+contains every optimal block. The fiber minimum $g$ is differentiable with
+$\nabla g(z)=\nabla_zf(z,y(z))$, where $y(z)$ is the fiber minimizer. An
+ordinary approximation of $y(z)$ at polynomial precision gives $c_z$ with
+$\|c_z-\nabla g(z)\|\le\mu/4$, and strong convexity then gives
+\eqref{eq:constraints-integer-cut}. The integer-query feasibility algorithm is
+run with these cuts and is never told that a point is feasible. Every point it
+queries in $Q\cap[-R,R]^t$ is recorded. Viewed against the empty target set,
+the run is valid, which bounds its length. If an optimal block $w$ were never
+queried, the same run would be a valid run for the target $\{w\}$, and the
+algorithm would wrongly report that $\{w\}$ has no integer point. The parity
+bound follows because two optimal blocks with the same parity have an integer
+midpoint with strictly smaller value. Appendix~\ref{app:constraints-lists}
+gives the details.
+\end{proof}
+
+The list separates discrete search from exact arithmetic. The search uses
+ordinary rational computation at polynomial precision, and its length is FPT
+in $t$ with an exponent of $L$ that is independent of both $t$ and $n$. Exact
+arithmetic is needed only to compare the finitely many fiber minima of the
+list. Two fiber minima are compared through one observable: $g(z)-g(z')$ is
+the value of $f(z,y)-f(z',y')$ at the minimizer of the separable strongly
+convex quartic $f(z,y)+f(z',y')$, so no comparison of two independently
+represented algebraic numbers is needed.
+
+Fixed-dimensional integer minimization from first-order information is
+classical; the closest predecessor is the method of
+\citet{OertelWagnerWeismantel2014}, whose oracle contract differs from the
+integer-point separation interface used here. The integer feasibility theorem
+and the idea of avoiding bisection on the objective by keeping visited
+candidates are imported \citep{AriHildebrand2026,HildebrandGoess2024,Basu2023Integers}.
+Those results do not by themselves optimize an algebraic fiber value. What is
+added here is an implementation of the integer-point interface for the fiber
+minimum from rational data of polynomial precision, the proof that every
+optimal block is listed, and the extension to mixed linear constraints without
+a constraint qualification.
+
+\begin{corollary}[Exact selection by nonadaptive queries]
+\label{cor:constraints-selection}
+In the setting of Theorem~\ref{thm:constraints-candidates}, let $\tau\in\Q$.
+\begin{enumerate}[label=(\alph*)]
+\item Each predicate $\min\bowtie\tau$ for problem
+\eqref{eq:constraints-mixed-problem} is a Boolean combination of the
+predicates $g(z)\bowtie'\tau$ with $z\in\mathcal Z$ and
+${\bowtie'}\in\{<,\le\}$. Each of these reduces to one $\PosSLP$ instance by
+Theorem~\ref{thm:exact-upper}, and all instances are built from $\mathcal Z$
+before any oracle answer is known. By Theorem~\ref{thm:posslp-closure}(c), the
+predicate therefore has a many-one reduction to a single $\PosSLP$ instance,
+computable in time $2^{O(t\log(t+1))}L^{C}$.
+\item The set of all optimal integer blocks is computed in time
+$2^{O(t\log(t+1))}L^{C}$ with at most $|\mathcal Z|^2$ nonadaptive $\PosSLP$
+queries. For an optimal block $z_*$, the continuous part of the optimal
+solution is the unique real solution of $\nabla_yf(z_*,y)=0$.
+\end{enumerate}
+In particular, for each fixed $t$, exact optimization of
+\eqref{eq:constraints-mixed-problem} with unconstrained fibers is in
+$\mathrm P^{\PosSLP}$, and each predicate $\min\bowtie\tau$ has a
+polynomial-time many-one reduction to $\PosSLP$.
+\end{corollary}
+
+The construction time in (a) is FPT; it is polynomial only for bounded $t$.
+The oracle cannot be removed unless $\PosSLP\in\mathrm P$, even for fixed $t$:
+the case $t=0$ is unconstrained exact comparison, which is $\PosSLP$-hard
+(Theorem~\ref{thm:quartic-complete}), and new integer variables can be added
+without changing the optimal value. With the padding of
+Lemma~\ref{lem:constraints-padding} the instances even keep a positive
+definite full Hessian Gram, so the hardness holds in the certified format for
+every fixed $t\ge1$. Corollary~\ref{cor:constraints-selection}
+returns the complete optimal set; a sequential tournament with $|\mathcal Z|-1$
+adaptive comparisons returns one optimal block.
+
+\begin{theorem}[Candidate lists with mixed linear constraints]
+\label{thm:constraints-mixed-candidates}
+Let $P=\{(z,y):Az+By\le d\}$ with explicit rational data. A deterministic
+ordinary algorithm, using no oracle, either certifies that
+\eqref{eq:constraints-mixed-problem} is infeasible or outputs a finite list of
+feasible integer blocks that contains every optimal integer block. Its running
+time and the total length of the list are at most $F(t)L^{C}$ for a computable
+$F$ and an absolute constant $C$. The polyhedron may be unbounded or
+lower-dimensional, with redundant or degenerate constraints; no Slater
+condition and no bound on Lagrange multipliers is assumed. There are at most
+$2^t$ optimal integer blocks.
+\end{theorem}
+
+\begin{proof}[Proof idea]
+Fibers may now be infeasible, and $g$ need not be differentiable. At an
+integer query with an infeasible fiber, a rational Farkas certificate gives a
+cut that is valid for the projection of $P$. At a query $z$ with a feasible
+fiber, let $\hat y$ be an exactly feasible rational fiber point and
+$\lambda\ge0$ a rational multiplier vector. Joint strong convexity and the
+multiplier inequality give
+\[
+ g(w)-g(z)\ge c_z^{\mathsf T}(w-z)+\tfrac\mu2\|w-z\|^2-E,\qquad
+ c_z=\nabla_zf(z,\hat y)+A^{\mathsf T}\lambda,
+\]
+for every feasible $w$, where
+$E=\lambda^{\mathsf T}\sigma+\|\nabla_yf(z,\hat y)+B^{\mathsf T}\lambda\|^2/(2\mu)$
+and $\sigma=d-Az-B\hat y\ge0$. If $E\le\mu/4$, this is
+\eqref{eq:constraints-integer-cut}. To make $E$ small without a constraint
+qualification, choose $\hat y$ close to the fiber minimizer by an ordinary
+convex approximation. A true optimal multiplier $\lambda_*$ exists by
+Lemma~\ref{lem:constraints-polyhedral}(b), and complementary slackness gives
+the identity
+$\lambda_*^{\mathsf T}\sigma=\nabla_yf(z,y_z)^{\mathsf T}(\hat y-y_z)$, where
+$y_z$ is the fiber minimizer. This bounds the multiplier term without bounding
+$\|\lambda_*\|$. The best rational multiplier then comes from an exact convex
+quadratic program in $\lambda$. Appendix~\ref{app:constraints-mixed} gives the
+details.
+\end{proof}
+
+The sharper parameter function $2^{O(t\log(t+1))}$ of
+Theorem~\ref{thm:constraints-candidates} is not claimed here; it depends on the
+initial mixed-integer feasibility step. Exact selection among the listed
+blocks is a separate problem, because the fibers are now constrained. Each of
+the constrained results of this section gives a selection method, with its own
+computational model.
+
+\begin{corollary}[Mixed selection in few nonlinear directions]
+\label{cor:constraints-nonlinear-mixed}
+In the setting of Theorem~\ref{thm:constraints-mixed-candidates}, let $k$ be
+the nonlinear dimension of $f$ as a polynomial on $\R^{t+n}$. A deterministic
+ordinary algorithm, using no oracle, decides each predicate $\min\bowtie\tau$,
+returns every optimal integer block, and represents the corresponding
+continuous optimizers as in Theorem~\ref{thm:constraints-nonlinear}, in time
+$F(k+t)L^{C}$.
+\end{corollary}
+
+\begin{theorem}[Mixed constraints and constraint rank]
+\label{thm:constraints-mixed-rank}
+In the setting of Theorem~\ref{thm:constraints-mixed-candidates}, let
+$r=\rank B$. A Las Vegas algorithm with a $\PosSLP$ oracle either detects
+infeasibility or returns the lexicographically smallest optimal integer block
+$z_*$ together with a representation $y_*=\bar y+Zu_*$ of the optimal
+continuous part, where $u_*$ is the unique zero of an explicit strongly
+monotone cubic map. It also decides each predicate $\min\bowtie\tau$, and can
+return every optimal integer block. Its expected running time is
+$F(t,r)L^{C}$ for a computable $F$ and an absolute constant $C$, and every
+returned answer is correct.
+\end{theorem}
+
+The fibers of a pair of candidates are compared on their product, whose
+constraint matrix $\diag(B,B)$ has rank $2r$, by
+Theorem~\ref{thm:constraints-rank}; each fiber of $f$ has the curvature bound
+$\mu$, and the nonlinear dimension of a product of fibers is at most $2k$.
+Appendix~\ref{app:constraints-mixed} proves both compositions. The rank of
+$A$ does not enter: its effect is absorbed by the ordinary list.
+
+Without any structure on the fibers, the list still reduces the mixed problem
+to the general constrained bound.
+
+\begin{corollary}[Mixed unambiguous certificates]
+\label{cor:constraints-mixed-unambiguous}
+In the setting of Theorem~\ref{thm:constraints-mixed-candidates}, the language
+of instances that are feasible with $\min\bowtie\tau$ is decided by an
+unambiguous nondeterministic machine with a $\PosSLP$ oracle, and so is its
+complement, both in time $F(t)L^{C}$. In particular, for each fixed $t$ these
+predicates are in $\mathrm{UP}^{\PosSLP}\cap\mathrm{coUP}^{\PosSLP}$.
+\end{corollary}
+
+The machine computes the list, guesses one active set for each listed fiber,
+and verifies all of them as in Theorem~\ref{thm:constraints-unambiguous}.
+Exactly one guess passes for each fiber. The fiber minima are then the
+unconstrained minima of explicit quartics on charts, which are compared as
+above (Appendix~\ref{app:constraints-mixed}).
+
+Knowing the optimal value does not make the integer decision easy. In the
+following problem there are two candidate integer blocks, the optimal value is
+known in advance, the optimizer is rational and bounded, and the continuous
+constraint normals have rank one; nevertheless, the optimal bit is
+$\PosSLP$-hard.
+
+\begin{corollary}[A hard binary decision at a known optimum]
+\label{cor:constraints-binary}
+There is a polynomial-time map from integer straight-line programs to
+instances
+\begin{equation}\label{eq:constraints-binary}
+ \min\Bigl\{H(x,z)=F(x)+\bigl(z-\tfrac12\bigr)^2:\
+ x\in\R^N,\ z\in\Z,\ 0\le z\le1,\ z-1\le x_j\le z\Bigr\},
+\end{equation}
+where $F$ is a rational quartic with $N+1$ rational quadratic square factors
+and a positive definite rational full Hessian Gram, such that: the optimal
+value is $1/4$; the optimal solution $(x_*,z_*)$ is unique, with
+$x_*\in\Q^N\cap[-1,1]^N$; $\nabla^2H\succeq\frac32I$; the continuous
+constraint normals have rank one; and $z_*=1$ exactly when the program's
+output is positive. Adding $\epsilon z(z-1)\|x\|^2+\frac14z^2(z-1)^2$ with a
+suitable rational $\epsilon>0$ changes no feasible objective value and gives
+the objective a positive definite rational full Hessian Gram on all $N+1$
+variables.
+\end{corollary}
+
+Subtracting $\frac14$ from $H$ gives an equivalent instance with known
+optimal value zero; the optimal solution, the Hessian, and the full Hessian
+Gram matrices do not change.
+
+The proof (Appendix~\ref{app:constraints-binary}) starts from
+Theorem~\ref{thm:rational-optimizer}: the designated coordinate $p_j$ of the
+rational optimizer of $F$ is nonzero, and the constraints admit $x=p$ exactly
+for the bit $z=\mathbf 1[p_j>0]$. A polynomial-time algorithm that returns the
+optimal integer block of \eqref{eq:constraints-binary} would therefore decide
+$\PosSLP$. The gap between the two fiber values lies between
+$\frac34p_j^2$ and $\frac{\Lambda_F}2p_j^2$, where $\Lambda_F$ bounds
+$\|\nabla^2F\|$ on $[-1,1]^N$. No inverse-polynomial lower bound on $|p_j|$ is
+assumed, and Lemma~\ref{lem:separation} guarantees only a doubly
+exponentially small one. That separation bound gives no guarantee that fiber
+values approximated to polynomially many bits certify the bit. The Las Vegas oracle algorithm of
+Theorem~\ref{thm:constraints-mixed-rank} cannot be replaced by an ordinary
+polynomial-time algorithm, even for $t=r=1$, unless $\PosSLP\in\mathrm P$.
+
+\subsection{The open case: arbitrary polyhedra and unrestricted structure}
+\label{sec:constraints-open}
+
+For an arbitrary rational polyhedron, unrestricted nonlinear dimension, and
+unrestricted constraint rank, the strongest bound proved here is
+Theorem~\ref{thm:constraints-unambiguous}. Exact comparison is
+$\PosSLP$-hard already without constraints. Whether it is in
+$\mathrm P^{\PosSLP}$ is open; by Theorem~\ref{thm:posslp-closure}(b) this is the
+same as asking for a polynomial-time many-one reduction to one $\PosSLP$
+instance. We record what the methods of this section need and why three
+natural routes fall short. These are limitations of particular proofs, not
+lower bounds.
+
+\emph{Exact quadratic programming with circuit Hessians.}
+Lemma~\ref{lem:constraints-newton-step} does not depend on the polyhedron.
+Theorem~\ref{thm:constraints-transfer} would therefore settle the general case
+if every Taylor quadratic program over an arbitrary rational polyhedron could
+be solved exactly with a number of arithmetic operations that is polynomial in
+the encoding of $A$ and $b$ and independent of the encoding of the Hessian and
+the linear cost. The classical polynomial-time algorithm for convex quadratic
+programming \citep{KozlovTarasovKhachiyan1980} is polynomial in the bit length
+of all data, which grows exponentially along the Newton iteration.
+\citet{GranotSkorinKapov1990} remove the dependence on the linear cost and the
+right-hand side, but not on the Hessian. The linear program with a circuit
+objective in the proof of Theorem~\ref{thm:constraints-unambiguous} handles a
+varying linear objective over a fixed polytope, not a varying Hessian. We know
+of no algorithm with the required interface for general polyhedra and
+Hessians; the sufficient condition is not claimed to be necessary.
+
+\emph{Penalties.} One could try to remove the constraints by a penalty and
+apply Theorem~\ref{thm:exact-upper}. For $\min_{x\ge0}\frac12(x+1)^2$, with
+minimizer $0$, the squared-hinge penalty
+$\frac12(x+1)^2+\frac\lambda2\max\{0,-x\}^2$ has minimizer
+$-1/(1+\lambda)$. Reaching distance $\gamma$ requires
+$\lambda\ge\gamma^{-1}-1$. At the separation scale
+$\gamma=2^{-2^{\poly(L)}}$ allowed by Lemma~\ref{lem:separation}, the penalty coefficient
+needs exponentially many printed bits, and the penalty is piecewise quadratic
+rather than polynomial. A short circuit for $\lambda$ does not help, because
+Theorem~\ref{thm:exact-upper} accepts explicitly encoded polynomials and
+starts from an ordinary warm start of polynomial bit length.
+
+\emph{Accuracy-driven iteration.} An interior-point or ellipsoid method with
+iteration count polynomial in $\log(1/\varepsilon)$ needs exponentially many
+iterations at $\varepsilon=2^{-2^{\poly(L)}}$. Storing $\varepsilon$ as a circuit
+does not shorten the iteration. A rapid refinement phase with a polynomial
+number of steps, which exact Newton steps provide when the subproblems can be
+solved, is the missing ingredient.
+
+The positive results of this section supply such refinement or avoid it in
+different ways: a small nonlinear dimension makes the separation bound singly
+exponential, so that ordinary approximation suffices; structured quadratic
+programs make exact Newton steps arithmetic; low constraint rank confines the
+combinatorial search to small subproblems. None of them covers a general
+strongly convex quartic over a general polyhedron.

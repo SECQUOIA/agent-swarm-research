@@ -1,0 +1,396 @@
+\section{Exact comparisons and succinct arithmetic}
+\label{sec:exact-arithmetic}
+
+Polynomial-time approximation at every requested accuracy does not
+settle an exact order test. A nonzero quantity may require exponentially
+many printed accuracy bits to distinguish from zero. For globally
+strongly convex polynomial optimization, shared Newton circuits reach
+that accuracy with polynomially many arithmetic operations. Algebraic
+separation then converts exact comparisons, including equality, into
+one $\PosSLP$ instance.
+
+\subsection{One sign circuit for a polynomial observable}
+
+\begin{theorem}[Strong-convexity upper reduction]
+\label{thm:exact-upper}
+Let $n\ge1$ and let $f,h\in\Q[X_1,\ldots,X_n]$ be explicitly supplied sparse
+polynomials, with unary degree bounds. Suppose the input supplies
+$\mu\in\Q$, $\mu>0$, and promises
+\[
+ \nabla^2f(X)\succeq\mu I\qquad(X\in\R^n).
+\]
+Let $p$ be the unique unconstrained minimizer of $f$. Each strict
+order, weak order, and equality predicate on $h(p)$ versus zero has a
+deterministic polynomial-time many-one reduction to one $\PosSLP$
+instance. The circuit is constructed without $\PosSLP$ queries.
+A rational threshold is absorbed in $h$ and counted in the input.
+The same conclusion holds under any degree encoding guaranteeing
+numerical degrees polynomially bounded by the input length.
+\end{theorem}
+
+The degree-four theorem and its observable extension are proved in the
+\href{../../research-20260927/strong-convex-quartic-posslp-upper.md}{quartic upper-bound companion}.
+The explicit sparse, unary-degree extension is proved in the
+\href{../reviews/exact-core/general-degree/strong-convex-polynomial-posslp-upper.md}{variable-degree companion}.
+The argument below states the common mechanism and its representation
+requirements.
+
+\paragraph{A polynomial-bit starting point.}
+Let $L\ge2$ include the dimension, both polynomials, the degree
+bounds, and $\mu$. Increasing it by a fixed constant if necessary,
+assume $n,\deg f,\deg h\le L$, coefficient one-norms at most
+$2^{2L}$, and $2^{-L}\le\mu\le2^L$. Strong convexity gives
+coercivity and
+\[
+ \|p\|\le\|\nabla f(0)\|/\mu\le2^{3L}.
+\]
+Set $R=2^{4L}$ and $B=2^{16L^2}$. On $\|X\|\le R$,
+$B$ bounds values and derivative operator norms through order three
+for both polynomials. Indeed, an order-$j$ component is bounded by
+$2^{2L}L^jR^L$, and passage to a tensor norm costs at most
+$L^{j/2}$. The third derivative bound makes $B$ a Hessian Lipschitz
+constant.
+
+Put
+\[
+ \rho=\mu/(4B),\qquad \varepsilon_0=\mu^3/(32B^2).
+\]
+These rationals have polynomial binary length. Convex value
+optimization gives a rational $x_0$ with
+$f(x_0)-f(p)\le\varepsilon_0$ in polynomial bit time;
+Corollary~1.2 of \citet{SlotSteurerWiedmer2025} applies directly. Strong convexity
+implies $\|x_0-p\|\le\rho$. The radius-$\rho$ ball about $p$
+is contained in the radius-$R$ ball used above. This preliminary
+computation asks for polynomially many explicit accuracy bits and
+does not use a sign oracle.
+
+\paragraph{A separation bound used only in the proof.}
+For $\alpha=h(p)$, the real solution set of
+\begin{equation}
+ \exists X:\quad\nabla f(X)=0,\qquad z=h(X)
+ \label{eq:exact-singleton}
+\end{equation}
+is the singleton $\{\alpha\}$. Effective one-block real quantifier
+elimination supplies a quantifier-free description whose polynomial
+degrees and coefficient bit lengths are at most $2^{a(L)}$, for a
+fixed effective polynomial $a$. This uses the degree estimate
+$D^{O(n)}$ and $n\log D=\poly(L)$; the
+primary theorem is \citet[Theorem~2.27]{Basu2014}.
+The companion proof specifies its coefficient-height use.
+The reduction does not execute quantifier elimination.
+
+Some nonzero integer polynomial in that description must vanish at
+$\alpha$; otherwise every sign condition would be locally constant
+near $\alpha$, contradicting the singleton. Remove a power of $z$
+from that polynomial. Its nonzero integer constant coefficient and
+the elementary root bound give
+\begin{equation}
+ \alpha\ne0\quad\Longrightarrow\quad
+ |\alpha|\ge g:=2^{-2^{a(L)+1}}.
+ \label{eq:exact-separation}
+\end{equation}
+We enlarge $a$ so that $a(L)\ge32L^2+10$. The number $g$ has a
+short circuit: start with $1/2$ and square $a(L)+1$ times. No
+assumption on the dimension of the complex critical locus is needed;
+\eqref{eq:exact-singleton} isolates one real value.
+
+\paragraph{Newton iteration with shared arithmetic.}
+Take exact rational Newton steps
+\[
+ x_{t+1}=x_t-\nabla^2f(x_t)^{-1}\nabla f(x_t).
+\]
+Within the established neighborhood, $e_t=\|x_t-p\|$ obeys
+\[
+ e_{t+1}\le\frac{B}{2\mu}e_t^2,\qquad
+ e_t\le\frac{2\mu}{B}\,2^{-3\cdot2^t}.
+\]
+These estimates also keep every iterate in that neighborhood. A
+positive definite Hessian is solved by rational
+$LDL^{\mathsf T}$ elimination without pivoting, square roots, or
+sign queries. Sparse differentiation and monomial evaluation add
+polynomially many circuit gates per step. Shared nodes preserve the
+values of previous steps without expanding their rational fractions.
+
+After $k=a(L)+2$ steps, the bound on $\nabla h$ gives
+\[
+ |h(x_k)-\alpha|\le B e_k\le g/8.
+\]
+Let $\widehat\alpha=h(x_k)$. Each row of the following table gives
+a rational circuit positive exactly for its listed predicate:
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+Circuit output & Predicate\\
+\midrule
+$\widehat\alpha-g/2$ & $\alpha>0$\\
+$\widehat\alpha+g/2$ & $\alpha\ge0$\\
+$-\widehat\alpha-g/2$ & $\alpha<0$\\
+$-\widehat\alpha+g/2$ & $\alpha\le0$\\
+$g^2/4-\widehat\alpha^2$ & $\alpha=0$\\
+\bottomrule
+\end{tabular}
+\end{center}
+For zero, the approximation is within $g/8$; for a nonzero value,
+its magnitude is at least $7g/8$. This verifies all equality cases
+without an unknown nonzero-gap promise.
+
+Represent every rational gate as $N/D$ with $D>0$. In particular,
+division can be removed by
+\[
+ \frac{N_a/D_a}{N_b/D_b}
+ =\frac{N_aD_bN_b}{D_aN_b^2}.
+\]
+All divisors are nonzero, by the positive-definite elimination
+argument. Ordinary fraction rules handle the other operations, and
+each rational gate adds only constantly many integer gates. Building
+printed binary constants from $0$ and $1$ leaves a polynomial-size
+integer circuit. Its final numerator is the required single
+$\PosSLP$ instance. This proves Theorem~\ref{thm:exact-upper}.
+
+The sparse input and degree bound are essential to the warm start and
+the ordinary bit cost. This proof does not give a polynomial bound in
+sparse binary-degree length alone or for a succinct circuit encoding
+of the input polynomial. It also does not remove the supplied global
+strong-convexity modulus.
+
+\subsection{Checkable curvature and matching quartic lower bounds}
+
+A useful input class replaces the semantic curvature promise with a
+supplied rational identity
+\begin{equation}
+ v^{\mathsf T}\nabla^2f(X)v
+ =w(X,v)^{\mathsf T}Mw(X,v),\qquad M\succ0,
+ \label{eq:full-hessian-certificate}
+\end{equation}
+where the monomial vector $w$ is linear in $v$ and contains all
+$v_i$. The matrix and monomial list are included in the input.
+Sparse coefficient comparison checks the identity, and rational
+symmetric elimination checks positive definiteness in polynomial
+time. If $m=\dim M$, then
+\[
+ \mu=\det(M)/(\operatorname{tr}M)^{m-1}>0
+\]
+is a rational lower bound on $\lambda_{\min}(M)$ of polynomial
+binary length. Because $\|w(X,v)\|^2\ge\|v\|^2$, it also
+bounds the Hessian below. Enlarge $L$ to include this derived $\mu$;
+the enlarged length is polynomial in the certificate input length.
+For quartics we use the full basis
+$w=(v,X\otimes v)$. Invalid certificates can be rejected before
+applying the reduction, giving an ordinary decision language. The
+construction does not recognize all strongly convex polynomials.
+
+\begin{theorem}[Certified quartic order comparisons]
+\label{thm:quartic-exact-complete}
+For rational quartics on $\R^n$ supplied with a positive definite
+rational Hessian Gram on $(v,X\otimes v)$, exact strict and weak
+minimum-value comparisons and minimizer-coordinate comparisons are
+$\PosSLP$-complete under polynomial-time many-one reductions.
+The minimum-sign lower reduction has nonzero minimum on both source
+branches. Equality has the upper bound of
+Theorem~\ref{thm:exact-upper}; no matching equality lower bound is
+asserted here.
+\end{theorem}
+
+The upper bound follows by choosing $h=f-r$ or $h=X_j-r$.
+The lower reductions require a globally convex realization of
+arithmetic computation, which is a separate substantive construction.
+The
+\href{../../research-20260927/posslp-certified-cubic-root-reduction.md}{signed-root sign compiler}
+simulates a source integer circuit with bounded analytic signals,
+and the
+\href{../../research-20260927/signed-odd-root-circuit-quartic.md}{quartic realization}
+places those signals at a unique zero of a rational sum of squares.
+A carefully weighted exposing quadratic controls the otherwise
+negative Hessian terms of squared residuals. The construction supplies
+a positive definite Gram on the full Hessian basis, not merely a
+positive semidefinite form evaluated on rank-one tensor vectors.
+
+For minimum-sign comparison, a cubic perturbation encodes the signal
+in the minimum without losing the full Hessian certificate. The
+\href{../../research-20260927/unconstrained-quartic-posslp-reduction.md}{unconstrained sign reduction}
+uses distinct signal coordinates $u,v$, with $u>0$, $v\ne0$,
+$|v|\le1/8$, and $u^2\le|v|/2$ at the old zero. After scaling,
+the perturbed objective has Hessian at least $I$. At that zero its
+value is $-u^2v$ and its squared gradient norm is
+$4u^2v^2+u^4$. If $v>0$, the value is already negative. If $v<0$,
+strong convexity bounds the possible further decrease by half the
+squared gradient norm, leaving a strictly positive minimum. The
+scaling, the signal generator, and the full rational Gram all have
+polynomial encoding length; they do not require printing the tiny
+signals. The complete construction and its
+\href{../reviews/exact-core/lower-review.md}{independent lower-bound review}
+provide these quantitative interfaces.
+
+The architecture of using accurate Newton circuits, algebraic
+separation, and division elimination is established prior work
+\citep{AllenderEtAl2009,EtessamiStewartYannakakis2012}. Exact semidefinite feasibility already has
+arithmetic-circuit comparison reductions \citep{TarasovVyalyi2008}. The content
+of Theorem~\ref{thm:quartic-exact-complete} is the classification for
+the stated explicit quartic class and its strong certificates; it is
+not a claim that exact convex feasibility or compressed Newton
+simulation was first studied here.
+
+\subsection{A rational optimizer and a known minimum do not settle coordinates}
+
+\begin{theorem}[Rational-optimizer restriction]
+\label{thm:rational-optimizer}
+The coordinate-comparison lower bound in
+Theorem~\ref{thm:quartic-exact-complete} holds even with all of the
+following additional promises:
+\begin{enumerate}[label=(\roman*)]
+\item the unique optimizer $p$ lies in $\Q^N\cap[-1,1]^N$;
+\item the minimum is the known value zero, and the input supplies
+$N+1$ rational quadratic square factors;
+\item $\nabla^2F\succeq(3/2)I$, with a supplied full positive
+definite rational Hessian Gram;
+\item the queried coordinate is nonzero and the threshold is zero.
+\end{enumerate}
+Rationality is a promise, not a property recognized by the theorem.
+\end{theorem}
+
+The
+\href{../../research-20260927/rational-optimizer-posslp-coordinate-comparison.md}{complete reduction}
+first compiles an integer source circuit with output $A$ into a shared
+circuit of rational unit quaternions. Multiplication and inversion
+preserve rationality and bounded coordinates. A designated coordinate
+is nonzero with the sign of $2A-1$. A specialized quartic realization
+has as its unique zero exactly the list of quaternion gate values,
+with their coordinates preserved. It supplies the stated square
+factors and full Hessian Gram in polynomial time. The
+\href{../reviews/exact-core/rational-review.md}{independent review}
+checks the sign compiler, realization, rational certificate, and
+encoding bounds.
+
+Every optimizer coordinate is rational, but expanding the gate
+fractions is not part of the construction. Thus the result distinguishes
+field membership from representation size and arithmetic comparison
+cost. It concerns an optimizer coordinate. The minimum is already
+known to be zero, and the theorem does not claim hardness of its sign
+under this same promise. A perturbation encoding a minimum sign can
+move the optimizer to an irrational point.
+
+For the general upper theorem, the Newton vector $x_k$ is likewise a
+rational vector represented by a polynomial-size shared circuit. When
+$\min f<0$, choosing $h=f$ ensures $f(x_k)<0$, so the construction
+supplies a short rational-circuit feasible witness without first
+deciding feasibility. Checking its exact objective sign is still the
+$\PosSLP$ comparison. This supplies neither polynomial-size expanded
+fractions nor a rational feasible point when the minimum equals zero.
+
+\subsection{Exact witnesses: existence and expanded size}
+
+Even a strongly convex quartic with rational minimum need not have a
+rational optimizer. The following small instance makes the distinction
+between a point approximation and an exact feasible witness explicit.
+
+\begin{proposition}[An irrational zero in two variables]
+\label{prop:irrational-quartic-zero}
+Put
+\begin{align*}
+ A(x,y)&=12599x^2-10000xy+7937y^2-15874x-12599y+20000,\\
+ F(x,y)&=A(x,y)^2+10000\bigl((x^2-y)^2+(y^2-2x)^2\bigr).
+\end{align*}
+Then $F$ is a rational sum of squares with a supplied positive
+definite rational full Hessian Gram, and
+\[
+ \nabla^2F\succeq4096I,\qquad
+ \min_{\R^2}F=0,\qquad
+ \argmin_{\R^2}F=\{(\sqrt[3]{2},\sqrt[3]{4})\}.
+\]
+Consequently $\{F\le0\}$ is nonempty and contains no rational
+point. The same is true when the domain is $[1,2]^2$.
+\end{proposition}
+
+Any zero must satisfy $y=x^2$ and $y^2=2x$, hence
+$x(x^3-2)=0$. The origin is excluded by $A(0,0)=20000$.
+At $(r,r^2)$ with $r^3=2$, substitution gives $A=0$.
+This proves the zero-set assertion. The curvature statement is an
+exact rational identity, provided in the
+\href{../../research-20260927/convex-quartic-rational-sos.md}{full Hessian certificate}:
+after an invertible rational affine change, the Hessian biform minus
+$4096\|v\|^2$ is represented by a strictly positive definite
+rational matrix on all six monomials
+$(v_1,v_2,xv_1,xv_2,yv_1,yv_2)$. Its displayed diagonal-dominance
+certificate and invertible congruence prove positivity; numerical
+matrix tests are not part of the argument. The
+\href{../reviews/exact-core/singleton-review.md}{independent singleton audit}
+checks this identity and the zero-set proof.
+
+The example answers negatively the rational-feasible-point witness
+question for quartics in Table~1 of \citet{SlotSteurerWiedmer2025}, version~1.
+It is consistent with that paper's univariate result: the present
+quartic is bivariate. Its optimizer has a short algebraic description,
+so the absence of a rational point excludes neither other certificate
+formats nor NP membership of the decision problem. A full positive
+definite \emph{ordinary polynomial} Gram cannot represent this $F$,
+because it vanishes at a real point and the ordinary monomial vector
+contains the constant one. Its positive definite \emph{Hessian} Gram
+represents a different polynomial in a different basis.
+
+\begin{theorem}[Expanded witness bounds]
+\label{thm:expanded-witnesses}
+The following assertions concern ordinary binary fractions.
+\begin{enumerate}[label=(\roman*)]
+\item There are polynomial-size rational quartics in $n=2k$
+variables, with supplied full Hessian Grams at least the identity,
+whose zero sublevel sets are bounded and have nonempty interior,
+but every rational feasible point requires
+$\Omega(n2^{n/2})$ bits. All feasible coordinate magnitudes are
+bounded by an absolute constant.
+\item There are strictly positive rational quartics with such
+Hessian certificates that admit both a short rational positive
+semidefinite ordinary Gram and a rational positive definite ordinary
+Gram. Every rational positive definite ordinary Gram requires
+$\Omega(n2^{n/2})$ total denominator bits. The basis is the
+full vector of monomials of degree at most two, each occurring once.
+\item Every strictly positive rational quartic supplied with a
+positive definite full rational Hessian Gram has a positive definite
+rational ordinary Gram with total expanded size
+$\poly(L)2^{O(n)}$, where $L$ counts the polynomial and supplied
+Hessian Gram. This is a size bound, not a polynomial-time construction
+in $L$ alone.
+\end{enumerate}
+\end{theorem}
+
+The complete proofs are the
+\href{../../research-20260927/strict-convex-quartic-rational-witness-lower-bound.md}{feasible-point lower bound},
+\href{../../research-20260927/interior-gram-bit-lower-bound.md}{positive definite Gram lower bound},
+and
+\href{../../research-20260927/interior-gram-single-exponential-upper.md}{Gram size upper bound}.
+The lower constructions encode a positive signal at most
+$1000^{-(k+3)2^k}$ using $k$ bounded cubic-root gates. One
+perturbation confines the whole feasible body extremely close to a
+cubic irrational coordinate; the integer difference of cubes then
+forces a large rational denominator. Another perturbation produces a
+strictly positive polynomial with an extremely small value. A uniform
+trace bound for its ordinary Grams and that small Rayleigh quotient
+force a tiny positive determinant, hence long denominator encodings.
+This second argument requires positive definiteness; the same family
+has a short singular Gram.
+
+For the upper bound, rational sampling in a nonempty open
+semialgebraic set supplies a center of singly exponential size where
+$f-\|\nabla f\|^2/(2\mu)>0$. Taylor integration of the supplied
+Hessian Gram then gives an ordinary positive definite rational Gram
+with the claimed size. The
+\href{../reviews/exact-core/witness-review.md}{witness audit}
+checks the sampling theorem, the full-span Taylor construction, and
+both lower bounds. Exponential dependence on dimension is therefore
+qualitatively necessary and sufficient for these interior Grams;
+the exponent constants are not matched. The lower bounds are
+superpolynomial in the constructed input length, but are not asserted
+as $2^{\Omega(L)}$. None excludes a compact arithmetic or algebraic
+description. Section~\ref{sec:certificates} states the corresponding
+certificate interfaces.
+
+Finally, a globally convex polynomial of degree at most three is
+quadratic: its affine Hessian must remain positive semidefinite in
+both directions of every line, forcing each nonconstant matrix
+coefficient to vanish. Strongly convex rational quadratic minimization
+on all of $\R^n$ reduces to rational linear algebra. Degree four is
+therefore the first degree supporting the constructions above. This
+degree statement and $\PosSLP$-completeness do not prove a separation
+from P, an NP-hardness theorem, or a practical exact solver. The
+\href{../literature/exact-prior.md}{primary-source comparison}
+records the established methodological precedents and the remaining
+publication-priority limits.

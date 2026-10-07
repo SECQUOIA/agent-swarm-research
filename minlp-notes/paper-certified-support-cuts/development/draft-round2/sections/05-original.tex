@@ -1,0 +1,246 @@
+\section{Cuts in the original variables}\label{sec:original}
+
+Proposition~\ref{prop:support} produces inequalities in lifted coordinates
+$(x,w)$. Using them requires variables $w_j$ with $w_j=f_j(x)$ in the model.
+If the solver's representation does not already contain exactly these
+variables, adding them changes the model: new equalities, new variables for
+branching and propagation, and possibly a different presolve. Our first
+implementation used such a reformulation and needed a control mode to
+separate its effect from that of the cuts (Appendix~\ref{app:campaigns12}).
+This section shows how to avoid the auxiliary variables. The nonlinear
+functions are minimized jointly over the block domain, and the rows of the
+model then eliminate them. The underlying facts are classical Lagrangian
+duality; we state them in the form that the implementation and its
+certificates need.
+
+\subsection{Aggregating nonlinear rows}\label{sec:aggregation}
+
+Let $v\in\R^N$ be the vector of all model variables, including an objective
+variable if there is one, and let $x=Sv$ be a block of $n$ of them, selected
+by a $0/1$ matrix $S$. Suppose the model contains rows
+\begin{equation}\label{eq:rows}
+g(Sv)+Av\le b
+\end{equation}
+with $g:D\to\R^m$ and affine remainders $Av$ that may involve any variables,
+including block variables; an equality is written as two opposite rows. Here
+$D$ is a compact set that contains the block part $Sv$ of every point to
+which the cuts must apply, for example the block box intersected with the
+affine rows that involve only block variables.
+
+\begin{proposition}[Aggregated support cut]\label{prop:aggregate}
+Let $a\in\R^n$, $\lambda\in\R^m_{\ge0}$ and
+\begin{equation}\label{eq:agg-support}
+\beta\ \le\ \varphi(a,\lambda):=\inf_{u\in D}\bigl\{a\T u+\lambda\T g(u)\bigr\}.
+\end{equation}
+Then every point that satisfies~\eqref{eq:rows} and $Sv\in D$ satisfies
+\begin{equation}\label{eq:agg-cut}
+(S\T a-A\T\lambda)\T v\ \ge\ \beta-\lambda\T b .
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+At such a point, $\lambda\ge0$ gives $\lambda\T g(Sv)\le\lambda\T(b-Av)$.
+Substitute this into $a\T Sv+\lambda\T g(Sv)\ge\beta$.
+\end{proof}
+
+This is weak Lagrangian duality
+\citep[Sections~5.1.3 and~5.2.2]{BoydVandenberghe2004}. It needs neither
+convexity nor optimal multipliers. The same inequality is the Lagrangian
+cut of a block in the extended block-separable reformulation of
+\citet[Section~7.1]{Nowak2005}, after the block's auxiliary variables are
+eliminated with the rows~\eqref{eq:rows}; related cuts and range reductions
+appear in \citet{TawarmalaniSahinidis2004}, \citet{KaruppiahGrossmann2008}
+and \citet{DomesNeumaier2016}. Its strength comes from minimizing the
+nonlinear functions jointly over their common domain before they are
+eliminated. Nonnegative combinations of linear rows that are already in the
+relaxation cannot cut off any point of it.
+
+An objective is handled through its epigraph. For minimization of
+$g_0(x)+\ell_0(v)+c_0$ with objective variable $t$, the row
+$g_0(x)+\ell_0(v)-t\le-c_0$ is one of the rows~\eqref{eq:rows}; for
+maximization the hypograph row $-g_0(x)-\ell_0(v)+t\le c_0$ is used. The two
+multipliers of the rows of an equality may be combined into one free
+multiplier. Validity uses only $Sv\in D$ and the selected rows. Integrality,
+the other constraints and the objective play no role, so the cut is valid
+for the mixed-integer feasible set and for its closed convex hull. If $D$ is
+built from bounds valid only at a node of the search tree, or from an
+incumbent cutoff, the cut is valid only there; our implementation uses only
+original bounds and rows, so its cuts are global.
+
+The choice of $D$ matters: affine rows that involve only block variables
+belong in $D$, not only in the LP. On the triangle $\{(x,y):x,y\ge0,\ x+y\le1\}$
+every point satisfies $x^2+2xy+y^2\le x+y$ and $xy\le\tfrac14$, because
+$s=x+y\in[0,1]$ gives $s^2\le s$ and $4xy\le s^2$. In the coordinates
+$(m_x,m_y,s_x,s_y,p_{xy})$ these are linear inequalities valid for the hull
+of the quadratic graph over the triangle. The point
+$(\tfrac12,\tfrac12,\tfrac12,\tfrac12,\tfrac12)$, the average of the graph points
+at $(0,0)$ and $(1,1)$ of the box $[0,1]^2$, lies in the hull over the box and
+satisfies $m_x+m_y\le1$, but violates both inequalities. Intersecting the
+hull over the box with the row is therefore strictly weaker than
+convexifying over the row-constrained domain, as is known for factorable
+relaxations \citep{Anstreicher2012,ZhuHeTawarmalani2026,WuMutsNowakHendrix2025}.
+Here the first inequality is the sum of the RLT products $(1-x-y)x\ge0$ and
+$(1-x-y)y\ge0$, so the example shows the weakness of the box hull, not an
+advantage over RLT or semidefinite relaxations; for a single bilinear term,
+SCIP's projection-based envelopes \citep{MullerSerranoGleixner2020} exploit
+linear rows in the same spirit.
+
+\subsection{What the cuts can express}\label{sec:closure}
+
+Let $K=\conv\{(u,g(u)):u\in D\}$ and $Q=\{0\}\times\R^m_{\ge0}$. The affine
+map $T(v)=(Sv,\ b-Av)$ places a model point in the lifted space of the block.
+The next theorem identifies the set described by all cuts~\eqref{eq:agg-cut}.
+It is the set version of the classical fact that the Lagrangian dual bound of
+a nonconvex problem equals the optimal value of its convexification in the
+joint space of variables and constraint values
+\citep{Falk1969,Geoffrion1974,FeltenmarkKiwiel2000,LemarechalRenaud2001}; the
+separation argument is the one that \citet[Theorem~3]{ChenLuedtke2022} use
+for Lagrangian cuts in two-stage integer programs. We include the short proof
+because our setting has nonlinear rows and affine remainders on arbitrary
+variables, and because no constraint qualification is needed.
+
+\begin{theorem}[Closure of the aggregated cuts]\label{thm:closure}
+Let $D\subset\R^n$ be nonempty and compact and let $g$ be continuous on $D$.
+A point $v$ satisfies every inequality~\eqref{eq:agg-cut} with
+$\beta=\varphi(a,\lambda)$, over all $a\in\R^n$ and $\lambda\in\R^m_{\ge0}$, if
+and only if
+\begin{equation}\label{eq:closure}
+v\in\mathcal C:=T^{-1}(K+Q)=\bigl\{v:\ \exists\,y\ \text{with}\ (Sv,y)\in K\ \text{and}\ y\le b-Av\bigr\}.
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+The set $K$ is compact and convex, and $Q$ is a closed convex cone, so
+$U=K+Q$ is closed and convex. A linear functional $(a,\lambda)$ has finite
+infimum on $U$ only if $\lambda\ge0$, and then the infimum is
+$\varphi(a,\lambda)$. Evaluating the valid inequality
+$a\T u+\lambda\T y\ge\varphi(a,\lambda)$ of $U$ at $T(v)$ gives
+exactly~\eqref{eq:agg-cut}, so every point of $\mathcal C$ satisfies all cuts.
+Conversely, if $T(v)\notin U$, a linear functional strictly separates $T(v)$
+from $U$; its infimum on $U$ is finite, so $\lambda\ge0$, and the
+corresponding cut is violated at $v$.
+\end{proof}
+
+If auxiliary variables $w=g(x)$ were added, the joint-graph relaxation of the
+block would be $(x,w)\in K$, $w+Av\le b$, and its projection onto $v$ is
+$\mathcal C$. The direct cuts can therefore express exactly what this lifted
+relaxation expresses about the original variables, without adding variables
+or equalities to the model, and no more. Relaxations that keep the rows
+inside the block, such as the convex-hull relaxations of block-decomposition
+methods \citep[Section~3]{Nowak2005}, \citep{WuMutsNowakHendrix2025}, can be
+strictly stronger (Example~\ref{ex:quarter}). There is also a cost: with the
+same linearization points, outer approximation of a lifted formulation can be
+tighter than outer approximation in the original space
+\citep{TawarmalaniSahinidis2005}, and a finite set of direct cuts may need
+more members than a lifted description. For one row, $\mathcal C$ is the
+familiar envelope relaxation. Write $\operatorname{vex}g$ and
+$\operatorname{cav}g$ for the convex and concave envelopes of a scalar
+function $g$ over $D$, so that $\operatorname{vex}g(x)=\min\{y:(x,y)\in K\}$.
+
+\begin{corollary}[One row]\label{cor:one-row}
+If $m=1$, then $\mathcal C=\{v:\ Sv\in\conv D,\ \operatorname{vex}g(Sv)+Av\le b\}$.
+For an equality $g(Sv)+Av=b$, written as two rows, $\mathcal C$ is the set of
+$v$ with $Sv\in\conv D$ and
+$\operatorname{vex}g(Sv)\le b-Av\le\operatorname{cav}g(Sv)$.
+\end{corollary}
+
+\begin{proof}
+The projection of $K$ onto $x$ is $\conv D$, and for each $x\in\conv D$ the
+fiber $\{y:(x,y)\in K\}$ is the interval
+$[\operatorname{vex}g(x),\operatorname{cav}g(x)]$. A suitable $y$
+in~\eqref{eq:closure} exists if and only if $\operatorname{vex}g(Sv)\le b-Av$.
+For the equality, the lifted point of the two rows is $(y,-y)$ with $y$ in the
+same fiber, and the two conditions $y\le b-Av$ and $-y\le-(b-Av)$ force
+$y=b-Av$.
+\end{proof}
+
+Joint treatment can only help when rows share block variables or when $D$
+couples them: if $D$ is a product $D^1\times D^2$ and the rows split into two
+groups whose nonlinear functions depend only on $x^1$ and only on $x^2$, then
+$\mathcal C$ is the intersection of the closures of the two groups, because the
+convex hull of a product of sets is the product of their convex hulls.
+When the rows do share variables, the gain can be strict.
+
+\begin{example}[Two rows sharing one variable]\label{ex:two-rows}
+Let $D=[-1,1]$ and consider the rows $x^2-v_1\le0$ and $-x^3+v_2\le0$. The
+convex envelope of $x^2$ is $x^2$, and the convex envelope of $-x^3$ on
+$[-1,1]$ takes the value $-1/4$ at $x=0$ (on $[-1/2,1]$ it is the line through
+$(1,-1)$ that is tangent to $-x^3$ at $x=-1/2$). By
+Corollary~\ref{cor:one-row}, the intersection of the two one-row closures
+contains $(x,v_1,v_2)=(0,0,1/4)$. The aggregated cut with $a=0$ and
+$\lambda=(1,1)$ uses $\min_{u\in[-1,1]}(u^2-u^3)=0$ and reads $v_1-v_2\ge0$,
+which this point violates. In terms of~\eqref{eq:closure}, the only
+probability measure on $[-1,1]$ with mean $0$ and second moment $0$ is the
+point mass at $0$, whose third moment is $0$, not $1/4$.
+\end{example}
+
+That joint relaxations dominate separate envelopes is well known
+\citep[Lemma~3.4]{Nowak2005}, \citep{Tawarmalani2010,LiersEtAl2021}; the
+example makes the effect concrete for the cut family used here.
+
+\subsection{Relation to the hull of the feasible set}\label{sec:feasible-hull}
+
+The closure $\mathcal C$ is a relaxation of the set
+$\Sigma=\{v:\ Sv\in D,\ v\text{ satisfies~\eqref{eq:rows}}\}$, so
+$\conv\Sigma\subseteq\mathcal C$. Equality holds when every row has its own
+free direction in the remainders.
+
+\begin{proposition}[Free remainders]\label{prop:free-remainders}
+Write $v=(x,z)$ with $x$ the block, and let $M$ be the matrix formed by the
+columns of $A$ that belong to $z$, with one row for each inequality and one
+row for each equality (of the two opposite rows of an equality, $M$ keeps one).
+If $M$ has full row rank, then $\mathcal C=\conv\Sigma$.
+\end{proposition}
+
+\begin{proof}
+Let $v=(x,z)\in\mathcal C$. By Carath\'eodory's theorem there are $u_j\in D$ and
+weights $\theta_j>0$ summing to one with $\sum_j\theta_ju_j=x$ and
+$\bar y:=\sum_j\theta_jg(u_j)\le b-Av$, with equality in the rows of each
+equality. Let $A_x$ denote the block columns of $A$, restricted like $M$, let
+$M^+$ be a right inverse of $M$, put $\rho_j=\bar y-g(u_j)+A_x(x-u_j)$ in the
+same rows, and $z_j=z+M^+\rho_j$. A direct substitution shows that each row
+of $(u_j,z_j)$ has the same left-hand side as $\bar y+Av$, so
+$(u_j,z_j)\in\Sigma$. Since $\sum_j\theta_j\rho_j=0$, the convex combination of
+the points $(u_j,z_j)$ is $v$.
+\end{proof}
+
+The objective row always contains $-t$, so for the objective alone the
+closure is the hull of the epigraph over $D$. The setting of
+\citet{LiersEtAl2021}, rows $z_j=g_j(x)$ with a separate variable $z_j$ for
+each row, is also covered by Proposition~\ref{prop:free-remainders}. Without
+free remainders the gap can be strict.
+
+\begin{example}[Gap to the feasible hull]\label{ex:quarter}
+Let $D=[0,1]$ and take the equality row $x^2=1/4$, whose feasible set is
+$\{1/2\}$. By Corollary~\ref{cor:one-row}, $\mathcal C=\{x:x^2\le1/4\le x\}=[1/4,1/2]$,
+and the two cuts $x\ge1/4$ and $x\le1/2$ describe it. The point $x=1/4$ is the
+mean of the measure with mass $3/4$ at $0$ and $1/4$ at $1$, which satisfies
+the row in expectation.
+\end{example}
+
+This is a Lagrangian duality gap \citep{Geoffrion1974,Nowak2005}: the rows are
+imposed on averages, after convexification. Even the complete family of cuts
+accepts $x=1/4$, so the gap is not a failure of direction search. It is
+closed by convexifying aggregated sets instead of aggregated functions, as in
+the aggregation closure of \citet{DeyMunozSerrano2022}: here
+$\conv\{x\in[0,1]:x^2\le1/4\}=[0,1/2]$ and $\conv\{x\in[0,1]:x^2\ge1/4\}=[1/2,1]$
+intersect in $\{1/2\}$. It is also closed by placing the row inside $D$, which
+changes the support problem; our implementation keeps nonlinear rows out of
+$D$ so that the support problems stay in the classes of
+Section~\ref{sec:quadratic}. With
+$\Sigma_\lambda=\{v:\ Sv\in D,\ \lambda\T(g(Sv)+Av-b)\le0\}$ for $\lambda\ge0$, the
+hierarchy is
+\[
+\conv\Sigma\ \subseteq\ \bigcap_{\lambda\ge0}\conv\Sigma_\lambda\ \subseteq\ \mathcal C .
+\]
+The middle set is the convexified closure of the surrogate relaxations of
+\citet{MullerEtAl2022}, and the gap to $\mathcal C$ is a surrogate--Lagrangian
+gap. Example~\ref{ex:quarter} shows that the second inclusion can be strict.
+The first can be strict as well, even when $D$ is exactly the projection of
+$\Sigma$: with $D=[0,2]$, a free $z$ and the rows $z\le(x-2)^2/2$ and
+$z\le x^2/2$, the set $\Sigma$ satisfies $z\le\min\{x/2,1-x/2\}$ on its hull,
+so $z\le1/2$ at $x=1$. Every aggregated row reads $z\le q_\lambda(x)$ with
+$q_\lambda=[\lambda_1(x-2)^2+\lambda_2x^2]/(2(\lambda_1+\lambda_2))$ convex and
+$q_\lambda(0)+q_\lambda(2)=2$, so the chord gives $(1,1)\in\conv\Sigma_\lambda$ for
+every $\lambda$, and $(1,1)$, the mean of the point masses at $x=0$ and $x=2$,
+also lies in $\mathcal C$.

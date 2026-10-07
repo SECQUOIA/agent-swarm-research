@@ -1,7 +1,9 @@
+from pathlib import Path as _CleanupPath
+
 import sys, math
 sys.path.insert(0,'/tmp/scout'); from osil import read, V
 name=sys.argv[1]; maxnl=int(sys.argv[2]) if len(sys.argv)>2 else 12; maxlin=int(sys.argv[3]) if len(sys.argv)>3 else 6
-I=read('/home/sgusev/.cache/minlplib/minlplib/osil/'+name+'.osil'); N=I['names']
+I=read((str(_CleanupPath.home()) + '/.cache/minlplib/minlplib/osil/')+name+'.osil'); N=I['names']
 def vn(j):
     t=I['vt'][j]; l,u=I['lb'][j],I['ub'][j]
     return f"{N[j]}"

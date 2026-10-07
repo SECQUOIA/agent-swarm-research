@@ -1,6 +1,6 @@
 # Independent S4b review instructions
 
-Review Paper A in `/home/sgusev/repo/minlp-notes-potential-flow`. Read the complete frozen `paper-potential-flow/complexity/sections/07-weighted-cactus.tex`, relevant earlier-section dependencies, and the bibliography entries used by this section. The lead's assignment supplies the frozen SHA-256. Verify it before and after review. The user requests five independent reviews prioritizing mathematical correctness, complete proofs, precise scope, literature support, and readable standalone exposition. Each reviewer must assess the whole section; a focus area is additional emphasis, not a scope limit.
+Review Paper A in `/workspace/minlp-notes-potential-flow`. Read the complete frozen `paper-potential-flow/complexity/sections/07-weighted-cactus.tex`, relevant earlier-section dependencies, and the bibliography entries used by this section. The lead's assignment supplies the frozen SHA-256. Verify it before and after review. The user requests five independent reviews prioritizing mathematical correctness, complete proofs, precise scope, literature support, and readable standalone exposition. Each reviewer must assess the whole section; a focus area is additional emphasis, not a scope limit.
 
 Read applicable AGENTS.md, including `literature/AGENTS.md` when using the local primary-source collection. Do not edit the manuscript, bibliography, other reviews, or literature store. Do not run shared builds. Write only your assigned `completion-s4b-rN.md` report; temporary independent checks may use `/tmp`.
 

@@ -1,0 +1,240 @@
+\section{Computational evidence and its limits}
+\label{exp:computation}
+\label{exp:section}
+
+The computations distinguish four questions: whether a formula reproduces
+the implemented ray intersections, how strong a cut is on one corner,
+what happens after LP reoptimization, and whether a rule improves a solver
+run. A positive answer to an earlier question does not imply a positive
+answer to a later one. We report retained experiments and corrected
+records; no new optimization experiment was conducted for this paper.
+The companion contains the compact records and their provenance.
+\Cref{exp:protocols} gives cohort definitions and numerical conventions.
+
+\subsection{Implementation fidelity and numerical corner values}
+\label{exp:fidelity}
+
+The source audit and instrumented runs concern SCIP~10.0.3. Across
+610,193 ray comparisons from 7,945 ray-bearing attempts, the corrected
+set model differs from SCIP's step on 1,211 rays (0.1985\%). The retained
+classifications are 819 model-cutoff cases, 31 SCIP infinity classifications,
+307 conservative bisection cases, and 54 rounding or root-formula cases.
+The set case agrees in every attempt. The relative scaling of the
+Case~4 eigen-coordinate blocks matters when
+$\kappa_{\mathrm{SCIP}}\ne0$: an incorrect scaling need not describe
+an $S$-free set. The bilinear experiments used
+$\kappa_{\mathrm{SCIP}}=0$ and are unaffected by this formula pitfall.
+They required a separate corner-oracle correction described below.
+
+On the sampled MINLPLib corners, numerical degeneracy often leaves the
+corner-bound criterion without a positive quantity to optimize. Of 4,578
+ray-bearing attempts, 3,347 (73.1\%) have a numerically zero-rate face
+meeting $S$. The classification treats
+$\omega_j\le10^{-9}\max_i\omega_i$ as zero. Another 164 records have
+all costs in the zero class. Reachability distinguishes zero corner value
+from infinite corner value in the latter class.
+
+The remaining 1,067 records, from 26 instances, have a positive value
+under the reduced-space numerical test. Both $z_C$ and $\zK$ in the
+reported ratios use costs floored at the same threshold. The median
+SCIP-set ratio $z_C/\zK$ is 0.923 per corner
+and 0.818 with equal instance weighting; 371 records (34.8\%) have ratio
+below 0.5. These are numerical ratios. Support-at-most-two calculations,
+generic three-ray KKT enumeration, and higher-dimensional solver estimates
+have different guarantees; their counts and limitations appear in
+\Cref{exp:corner-oracles}.
+
+In 183 of the 371 low-ratio records, the determining numerically zero-rate
+ray exits the SCIP set but has no detected one-ray intersection with $S$.
+Four additional records have approximately $10^{-14}$ drift in the dumped
+LP values. Their exact dumped-data ray restrictions reach $S$ only after
+steps of order $10^{18}$. Whether this drift occurs at the true LP corner
+is undetermined. Those four records do not establish a geometric gap.
+
+\begin{table}[t]
+\centering
+\caption{Implementation and rejection diagnostics. Each row has its own
+denominator. Rescaling passes concern the first restriction piece only.}
+\label{exp:diagnostic-table}
+\begin{tabular}{@{}lrr@{}}
+\toprule
+Observation & Count & Fraction \\
+\midrule
+Classified step discrepancies & $1,211/610,193$ & $0.20\%$ \\
+Numerical zero-rate face meets $S$ & $3,347/4,578$ & $73.1\%$ \\
+Generated cuts, all MINLPLib attempts & $29,022/76,914$ & $37.7\%$ \\
+Dynamism aborts, all attempts & $38,105/76,914$ & $49.5\%$ \\
+Free-basis-status aborts, all attempts & $9,784/76,914$ & $12.7\%$ \\
+First-piece rescaling passes, sample & $1,728/1,799$ & $96.1\%$ \\
+First-piece rescaling passes, full diagnostic & $31,926/34,834$ & $91.7\%$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Consistent ray rescaling changes the intersection parameter inversely
+and preserves the mathematical cut after conversion to the original
+coordinates. The inspected implementation does not normalize these rays.
+Rescaling makes many recorded first-piece dynamism tests pass
+(\Cref{exp:diagnostic-table}). This is a diagnostic of a noninvariant
+rejection test. It does not count valid cuts recovered by a complete
+implementation: later pieces and numerical safeguards remain untested.
+The observed LP-seen rates are lower bounds, since a cut may enter and
+leave between snapshots. The attempt counts describe the instrumented
+binary, including its overhead on time-limited runs.
+
+\subsection{A corner optimum and an LP re-solve are different quantities}
+\label{exp:one-cut}
+
+The one-cut experiment starts from a McCormick LP, selects its most
+violated bilinear term, and compares cuts after re-solving the full LP.
+Its denominator is the gap between the initial LP and a global solve
+enforcing that one term. The retained sample has 47 small and 73 larger
+corners. Ten old corner values were infeasible underestimates caused by
+antiparallel projected rays. Rational lower and upper checks correct those
+ten values; \Cref{exp:ten-corrections} identifies them.
+
+\begin{table}[t]
+\centering
+\caption{Corrected one-cut experiment: mean fraction of the single-term
+gap. The orbit search attains the numerical corner value to bisection
+resolution on these 120 corners.}
+\label{exp:one-cut-table}
+\begin{tabular}{@{}p{0.47\textwidth}cc@{}}
+\toprule
+Quantity & \shortstack{4 variables, 4 products\\($n=47$)} & \shortstack{6 variables, 8 products\\($n=73$)} \\
+\midrule
+SCIP-set corner increment & 0.724 & 0.616 \\
+Orbit/corner increment & 0.783 & 0.675 \\
+SCIP-cut LP re-solve & 0.895 & 0.870 \\
+Orbit-cut LP re-solve & 0.931 & 0.910 \\
+Objective-parallel corner cut, LP re-solve & 0.783 & 0.675 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The objective-parallel cut gains exactly the corner increment. Tilted
+cuts can gain more through other LP rows. The orbit cut improves on the
+SCIP-model cut by more than 0.01 of the single-term gap on 62 corners,
+and loses by more than 0.01 on 22. Thus even numerical corner attainment
+does not give LP dominance. The numerical minimum orbit/corner ratio is
+about $0.999999989$; this is not a collection of 120 exact certificates.
+SCIP's ratio is below 0.9 on 27 corners and below 0.5 on three.
+
+The minor experiment leads to the same distinction for signature $(2,2)$.
+It contains 86 and 71 LP corners from random $3\times3$ and $4\times4$
+models. On all 157, the orbit search attains the numerical corner value,
+whereas SCIP's set does so on 12. Yet the maximum-margin choice decreases
+mean full-LP gap closure relative to SCIP by 0.0758 and 0.0651.
+The orbit-optimal set nearest SCIP has mean differences $+0.0225$ and
+$+0.0057$; the comparisons do not establish a mean advantage.
+These are single-minor LP re-solves, without branch-and-bound integration.
+The exact minor examples in \Cref{mi:examples} establish geometric
+obstructions independently of these frequencies.
+
+\subsection{Later rounds and explored policies}
+\label{exp:multiround}
+
+The larger experiment is an external root cutting loop. At each round
+it re-solves the LP, forms its corner, and cuts violated bilinear terms.
+There are 220 paired constructed instances: 60 each at sizes $4\times4$
+and $6\times8$, and 50 each at $8\times12$ and $10\times20$.
+Here the denominator is the gap to a global solve enforcing all bilinear
+equations. The implemented orbit search floors reduced costs and uses
+floating-point bisection. We call it the orbit rule without claiming exact
+optimization for raw zero reduced costs.
+
+\begin{table}[t]
+\centering
+\caption{Mean root-gap fraction closed by the external loop. Intervals
+are 95\% paired-$t$ intervals for orbit minus SCIP model after round 10.}
+\label{exp:multiround-table}
+\small
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Size ($n$) & SCIP r1 & Orbit r1 & SCIP/orbit r10 & Difference r10 \\
+\midrule
+$4\times4$ (60) & 0.757 & 0.761 & 0.974 / 0.966 & $-0.008\ [-0.016,+0.001]$ \\
+$6\times8$ (60) & 0.754 & 0.755 & 0.968 / 0.957 & $-0.011\ [-0.019,-0.002]$ \\
+$8\times12$ (50) & 0.804 & 0.799 & 0.974 / 0.969 & $-0.005\ [-0.010,+0.000]$ \\
+$10\times20$ (50) & 0.705 & 0.699 & 0.937 / 0.912 & $-0.025\ [-0.045,-0.005]$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Let $\Delta_r$ denote the pooled orbit-minus-SCIP difference after round $r$.
+The estimates and 95\% paired intervals are
+\begin{align*}
+\Delta_1&=-0.001, &[-0.016,+0.014],\\
+\Delta_{10}\ \text{and}\ \Delta_{20}&=-0.012, &[-0.017,-0.006].
+\end{align*}
+The antiparallel-ray correction changes the first-round orbit result by
+$+0.011\ [+0.004,+0.019]$ against the bug-affected implementation, but
+the round-10 difference is $-0.001\ [-0.003,+0.002]$.
+It therefore does not explain the later-round reversal.
+
+Switching after one orbit root round to SCIP-model rounds already leaves
+a pooled round-10 deficit $-0.006\ [-0.011,-0.002]$. Cross-evaluations
+of retained states after early schedules report different amounts of
+subsequent progress under the tested rules. Bound attainment and ties
+alone do not explain the loss:
+nonattaining, low-tie policies also lose. Shorter steps on many rays are
+a plausible common feature. The intervention contrasting a majority-ray
+selection rule with random orbit selection is inconclusive and does not
+hold orbit exposure constant. These observations do not identify a causal
+mechanism.
+
+The efficacy policy chooses, per term, the largest Euclidean efficacy
+among the SCIP cut, the orbit cut, two cost-perturbed orbit choices, and
+a Euclidean-depth orbit choice. Selected after examining the records,
+it has pooled
+advantage 0.004 in AUC, defined as the mean gap fraction at rounds 1--10,
+with Holm-adjusted $p=0.025$. The Holm family has 14 complete-cohort rule
+comparisons against SCIP and is applied separately to AUC and round 10;
+the latter adjusted $p$ is 0.33. Comparisons of switching from orbit to
+SCIP-model rounds against continuing orbit also depend on the tested
+family and statistical test (\Cref{exp:policy-details}). Both findings need fresh
+data. The convergence hypotheses of the mathematical results are not
+verified by these finite trajectories.
+
+\subsection{Selection inside SCIP}
+\label{exp:selection}
+
+The inside-SCIP experiment searches alternative admissible directions
+using 24 half-circle samples with local refinement in two dimensions,
+and projected subgradient ascent in higher dimensions. This is a
+heuristic search. Root-gap closure is measured against recorded reference
+values on complete, comparable cases; its denominator differs from the
+one-term experiment above.
+
+\begin{table}[t]
+\centering
+\caption{Paired mean changes in root-gap fraction inside SCIP~10.0.3.
+The comparisons within each seed use the same eligible cohort.}
+\label{exp:root-table}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Comparison & Seed 0 ($n=251$) & Seed 1 ($n=250$) & Seed 2 ($n=248$) \\
+\midrule
+Point rule minus disabled cuts & $+0.114$ & $+0.104$ & $+0.106$ \\
+Corner criterion minus point rule & $-0.008$ & $-0.007$ & $-0.010$ \\
+Efficacy criterion minus point rule & $+0.001$ & $+0.003$ & $-0.004$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The corner criterion provides no consistent improvement in this sample.
+In a full summary scan of 305 instances and 109,389 corners, 81.6\% of
+the floored criterion minima occur at numerically zero-rate rays. The
+positive surrogate then measures a flooring convention rather than a
+positive true corner gain. Degeneracy alone does not explain every loss.
+The raw individual corners from this full scan were not retained, so
+the companion preserves its summaries rather than a full reconstruction.
+
+Full solves do not repair the inference. Row capture in the patched
+build changes some tree paths; the subsequent 120 stock reruns were made
+in a different batch. Their CPU timing comparison is uncontrolled and
+is excluded from the performance conclusions. The 300 debug-solution
+runs are a separate validity audit with incomplete objective mappings
+and unresolved diagnostics, not ordinary full-solve benchmarks or a
+clean validity certificate (\Cref{exp:debug}). The evidence establishes
+neither a stock-SCIP timing benefit nor a generally better selection rule.

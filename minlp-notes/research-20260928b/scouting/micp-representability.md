@@ -118,11 +118,14 @@ sets or the midpoint question; a grep for "compact" found only restatements of L
 
 ## 2. Open questions
 
-LZV's verbatim open questions ([[lubin2022-mixed-integer-convex-representability]] p.33):
+LZV's open questions, paraphrased from
+[[lubin2022-mixed-integer-convex-representability]] p.33:
 
-> 1. The "midpoint lemma" (Lemma 4.1) developed a simple necessary condition for MICP representability. Is it also a sufficient condition?
-> 2. Is the assumption of rationality in the statement of Proposition 5.4 necessary? That is, are all compact MICP-R sets finite unions of compact convex sets?
-> 3. Can the geometric assumption on the diameter of convex subsets in Theorem 5.1 be relaxed?
+1. Does the necessary condition for MICP representability given by the midpoint lemma
+   (Lemma 4.1) also suffice?
+2. Can Proposition 5.4 dispense with rationality? Equivalently, must every compact
+   MICP-R set be a finite union of compact convex sets?
+3. Is Theorem 5.1 still valid under a weaker condition on the diameter of its convex subsets?
 
 **Q-A (best candidate; LZV Q2).** Let `M` be closed convex and let
 `S = proj_x(M ∩ (R^{n+p} × Z^d))` be compact. Is `S` a finite union of compact

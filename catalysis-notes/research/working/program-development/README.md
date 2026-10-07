@@ -24,7 +24,7 @@ The proposed experimental entry points are the [reviewed water challenge](water-
 
 ## Literature handling
 
-One reusable literature agent processed identified works sequentially using `/home/sgusev/repo/skills/literature/SKILL.md`, the **Add identified literature** path. Research agents do not write the knowledge base. Relevant contrary evidence is included even when a candidate is rejected. Missing sources remain metadata-only and unread unless source content is obtained and read.
+One reusable literature agent processed identified works sequentially using `/workspace/skills/literature/SKILL.md`, the **Add identified literature** path. Research agents do not write the knowledge base. Relevant contrary evidence is included even when a candidate is rejected. Missing sources remain metadata-only and unread unless source content is obtained and read.
 
 - [Tracked parent handoff](literature-handoff.md): identifiers, relevance and recovered artifacts.
 - [Completed agent manifest](../../../literature/runs/2026-09-16-queued-supplied/manifest.jsonl): final request dispositions.

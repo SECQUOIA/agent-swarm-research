@@ -136,7 +136,7 @@ for the whole manuscript is left to the Stage 5 literature synthesis.
 Command, from `conditioning-paper`:
 
 ```sh
-/home/sgusev/miniconda3/envs/qipm/bin/python development/stage4_verify.py
+/workspace/local-home/miniconda3/envs/qipm/bin/python development/stage4_verify.py
 latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex
 ```
 

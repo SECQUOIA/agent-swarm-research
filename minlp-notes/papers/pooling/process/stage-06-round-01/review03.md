@@ -22,7 +22,7 @@ The abstract, contribution paragraphs, table, and roadmap were checked against t
 
 ## Independent exact physical check
 
-I wrote and ran `papers/pooling/verification/check_stage06_physical_exact.py` using `/home/sgusev/miniconda3/envs/minlp-notes/bin/python`. The script is self-contained and requires only Python 3 standard-library modules `fractions` and `itertools`. Its retained output is `papers/pooling/verification/logs/stage06-review03-physical-exact.txt`.
+I wrote and ran `papers/pooling/verification/check_stage06_physical_exact.py` using `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python`. The script is self-contained and requires only Python 3 standard-library modules `fractions` and `itertools`. Its retained output is `papers/pooling/verification/logs/stage06-review03-physical-exact.txt`.
 
 The check passed **4,482** exact rational cases in dimensions 2–7. It reconstructs the original source/product/pool network and checks individual arcs, exact supplies and demands, product capacities and homogeneous quality rows, pool mass and quality balance, standard economics, and the physical telescoping identity. It covers the geometric descending path, the two-quality relay plus interface, nongeometric descending supplies, all endpoint patterns, adjacent midpoint path points, and minimum/intermediate/maximum clean flows. This finite check supplements the algebraic review; it does not establish the parameterized theorem.
 

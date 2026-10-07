@@ -54,7 +54,7 @@ Use the existing solver-lab environment and committed `uv.lock`:
 ```sh
 cd code/minlp_solver_lab
 OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
-PATH=/home/sgusev/miniconda3/envs/solvers/bin:$PATH \
+PATH=/workspace/local-home/miniconda3/envs/solvers/bin:$PATH \
 uv run --frozen --no-sync python -m lbesh_research.environment \
   --out results/lbesh_development/environment.json
 ```
@@ -94,7 +94,7 @@ quadratic conic baseline. Its command was:
 
 ```sh
 OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
-PATH=/home/sgusev/miniconda3/envs/solvers/bin:$PATH \
+PATH=/workspace/local-home/miniconda3/envs/solvers/bin:$PATH \
 uv run --frozen --no-sync python -m lbesh_research.benchmark \
   --instances lbesh.exp.small.s104729,lbesh.log.small.s104729,lbesh.reciprocal.small.s104729,lbesh.quadratic.small.s104729,lbesh.logsumexp.small.s104729 \
   --methods all --time-limit 30 --wall-limit 60 --threads 1 --parallel 4 \

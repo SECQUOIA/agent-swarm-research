@@ -49,7 +49,7 @@ Six bibliography entries were added: Agrawal–Boyd, Megiddo, Mignotte, Boyd–V
 
 ## Reproducible verification
 
-`completion-s5a-checks.json` retains all nine command lines, script hashes, exit codes, full stdout/stderr, runtimes, and limitations. All passed under `/home/sgusev/miniconda3/envs/minlp-notes/bin/python`:
+`completion-s5a-checks.json` retains all nine command lines, script hashes, exit codes, full stdout/stderr, runtimes, and limitations. All passed under `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python`:
 
 - Convex design: 12 coupled numerical QPs, 24 exact rational cycle recoveries, six narrow frozen cycles; largest observed reference loss 1.6074184507886002e-6 at requested 1e-3.
 - Capacity recovery: 403 exact cases, 229 feasible and 174 infeasible, 227 retained rational recoveries and two frozen endpoints, including singleton cases.

@@ -1,0 +1,207 @@
+# Fresh review of the Fenchel negative-inertia QP theorem
+
+Date: 2026-10-02. Verdict: no blocking mathematical issue found after the
+minor presentation clarifications listed below.
+
+Reviewed
+[`negative-inertia-qp.md`](../new-direction/negative-inertia-qp.md)
+independently. The rational spectral-normalization result is taken as a
+separately reviewed lemma. The exact convex-QP oracle is taken as its
+documented polynomial-bit theorem. This review covers the lift, growth,
+pruning, packing, bit accounting, and exact recovery rather than
+rechecking those two external inputs.
+
+## The fixed-domain lift and growth constants
+
+For `A=P-alpha T^T T`, direct expansion gives
+
+```
+W(a) = min_{x in X} [F(x)+(alpha/2)||a-Tx||^2].
+```
+
+All inner feasible sets are the same bounded rational polytope `X`.
+The convex residual oracle therefore remains valid even for an auxiliary
+point outside the image `TX`. This resolves the changing-domain problem
+that invalidated the direct spectral-coordinate corner argument.
+
+The auxiliary minimizers are exactly the projections of original global
+optimizers. Subtracting `alpha||a||^2/2` leaves an infimum of affine
+functions, so the required upper coordinate curvature is `alpha`.
+Neither differentiability nor uniqueness of an inner optimizer is needed.
+
+Both displayed growth transfers are correct. With projected growth,
+minimizing
+`g_T||z||^2+(alpha/2)||v-z||^2` gives
+
+```
+g_W = g_T alpha/(2g_T+alpha).
+```
+
+With full-vector growth, weighted Cauchy–Schwarz applied to
+`||v||<=||v-Tu||+||T|| ||u||` gives
+
+```
+g_W = g alpha/(2g+alpha||T||^2),
+alpha/g_W = 2+alpha||T||^2/g.
+```
+
+Thus the separately supplied normalization `alpha=2H`, `||T||<=1`
+has exactly the claimed conditioning dependence. The dimensions and
+encoding lengths of the normalization output remain part of its separate
+polynomial-time guarantee.
+
+## Two incumbent quantities are handled correctly
+
+The algorithm deliberately uses original feasible values
+`U=min F(x_a)` for stronger pruning, but keeps the least auxiliary corner
+value `W(v_j)` separately for projection reconstruction. This distinction
+is essential and is correctly made in the reviewed version.
+
+For every generated cell, its minimizing corner supplies
+`U<=F(x_v)<=W(v)=L_B+delta_B`. Therefore the minimum retained lower bound
+and `U` form a certified interval of width at most `delta_j`. Equality
+pruning is safe, and later improvements of `U` cannot invalidate an old
+discarded lower bound.
+
+If `U>F*`, an optimal auxiliary cell cannot be discarded and its corner
+bound gives both `U<=F*+delta_j` and `W(v_j)<=F*+delta_j`. If instead
+`U=F*`, the original witness is already optimal; after value isolation
+the algorithm recognizes this and returns it. Thus the proof never
+incorrectly applies auxiliary growth to the queried parameter attached
+to a merely good original witness.
+
+Every retained cell has a corner with
+`W(v)<F*+2delta_j`. The displayed ball radius follows from auxiliary
+growth. Counting lattice endpoints and the at most `2^r` cells sharing
+one endpoint tuple gives the stated packing bound, including clipping
+and closed boundaries. The number of exact convex calls per level is a
+function of `r,alpha/g_W`.
+
+## Exact recovery and uniform bit exponent
+
+The minimal-face rational-height proof on a bounded polytope is valid;
+the companion
+[slab review](low-inertia-qp-adversary.md)
+gives a direct nonsingular KKT formulation of its determinant bound.
+It yields computable polynomial-bit denominator bounds for the optimal
+value and the common optimal image. This does not require that all
+original optimizers be isolated or rational; one polynomial-height
+rational optimizer suffices to bound the unique image.
+
+The value interval isolates `F*` once it is narrower than `1/(2V^2)`.
+Each coordinate interval of radius `1/(4R^2)` contains at most one
+denominator-at-most-`R` rational. Early reconstruction is harmless because
+the algorithm accepts only an original-feasible oracle witness whose
+original objective equals the already certified `F*`.
+
+At the true reconstructed `a*`, every inner optimizer works: the completed
+square is a sum of `F(x)-F*>=0` and a nonnegative squared norm. Equality
+of their sum forces both to vanish. A separate equality-constrained
+slice solve is unnecessary.
+
+Auxiliary growth puts the least-`W` corner within the reconstruction
+radius after `poly(I)+O(log(alpha/g_W))` levels. The algorithm does not
+need the growth constant to know when a candidate is valid. Parameters
+enter the number of cells and the extra level allowance; exact convex-QP
+calls, rational arithmetic, LP range computation, and reconstruction
+have absolute polynomial input exponents. Polynomial factors in
+`log(alpha/g_W)` can be absorbed in the parameter function.
+
+The added convex-oracle certificates are also valid on lower-dimensional
+polytopes. The polyhedral normal cone is generated by the active input
+constraint normals even without a Slater point. Rational nonnegative
+stationarity/complementarity multipliers can be found by linear
+programming and checked directly.
+
+## Clarifications requested and applied
+
+- The zero-dimensional auxiliary case is now explicit: if every
+  projection range is constant, one convex inner solve at the common
+  image is exact.
+- The general-polytope stage bound now reads
+  `poly(I)+O(q+log(r+1))`, accounting for polynomial-height LP range
+  endpoints. This leaves the FPT theorem unchanged.
+- Several malformed displayed `qquad` tokens were corrected.
+- The separate original and auxiliary incumbent quantities were retained
+  explicitly; no change to their mathematics was required.
+
+## Targeted exact-rational checks
+
+Ran `python - <<'PY'` with `fractions.Fraction` on the same
+lower-dimensional, flat-residual example used in the slab review:
+
+```
+X = {(x,y,z): x=y, 0<=x<=1, 0<=z<=1},
+F=x^2-y^2/2-x/3+1/18,
+T(x,y,z)=y,  alpha=1,
+W(a)=(a-1/3)^2/4,
+x_a=y_a=(a+1/3)/2.
+```
+
+Here the original witness value is strictly smaller than `W(a)` away
+from the optimum. Exact refinement passed 38 convex-oracle evaluations,
+12 retained-cell checks, and every interval/growth inequality. With
+denominator bound `R=3`, two premature reconstructed candidates were
+correctly rejected; the true projection `1/3` was recovered at level
+four and produced an exact optimal witness.
+
+A second exact case used `F(x,y)=2xy+x+y` on `[0,1]^2` with
+`T(x,y)=x-y`. At the initial auxiliary endpoints `a=+/-1`, the inner
+optimizer is already the original optimum `(0,0)` although `W(a)=1/2`.
+The initial corner lower bound equals the original incumbent zero, so
+all cells are correctly pruned and exactness is certified immediately.
+This checks the important case where original optimization succeeds
+before auxiliary minimization.
+
+These are targeted mechanism checks, not a full implementation of the
+general algorithm. No project-wide verification, CI inspection, or
+external literature search was performed.
+
+## Limits of this review
+
+This is a conditioned continuous-QP theorem with an exact polynomial-bit
+convex oracle. It is not a negative-inertia-only tractability result or a
+claim about arbitrary mixed-integer residual optimization. The review
+does not establish practical performance or novelty relative to earlier
+spectral branch-and-bound and approximation algorithms. Those source
+comparisons remain a separate literature task.
+
+## Addendum: replacing full curvature by negative curvature
+
+The later flagship statement using
+`nu=max(0,-lambda_min(A))` was rechecked. It follows from the separately
+reviewed strengthened normalization; no change to the Fenchel,
+refinement, or recovery proof is needed.
+
+For `k>0`, that lemma supplies polynomial-length rational data with
+
+```
+nu <= nu_bar < 2nu,
+||U||_2 <= 1,
+A+2nu_bar U U^T >= 0.
+```
+
+Taking `T=U^T` and `alpha=2nu_bar` in the already checked full-growth
+transfer gives
+
+```
+alpha/g_W = 2+alpha||T||_2^2/g < 2+4nu/g.
+```
+
+Thus the parameter function can depend on `k,max(1,nu/g)`. A full
+spectral bound is computed from the rational input and used only inside
+polynomial-bit preprocessing. Its possibly large numerical magnitude
+does not enter the retained-cell bound. The one-sided halving procedure
+may take more than `O(log n)` steps, but its separately verified bound
+is polynomial in input bit length, which is all the theorem needs.
+
+The `k=0` case is handled by the convex-QP branch before halving or using
+a positive-alpha lift. All-constant projection ranges likewise retain
+their one-solve branch. The original `H/g` statement is a valid weaker
+corollary when `H>=||A||_2`.
+
+This addendum accepts the strengthened normalization as its independently
+reviewed input and checks its downstream use. It does not duplicate the
+normalization proof or its arithmetic tests. No new executable check was
+needed: the reviewed refinement and reconstruction already allow a
+general positive rational `alpha`.

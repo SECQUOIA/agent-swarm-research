@@ -35,7 +35,7 @@ The text explicitly instructs readers to concatenate both blocks. `verification/
 ## Validation and preserved scope
 
 - `python verification/check_stage02_finite.py`: passed all original three-group certificates (343+729+274625 states), all 289 original m=16 two-level states, and all 275 new smaller-member states, together with exact primal/dual and envelope checks.
-- `/home/sgusev/miniconda3/envs/minlp-notes/bin/python verification/check_stage02_symbolic.py`: passed the original Bernstein and scalar identity checks, both exact m=36 evaluations, and the positive derivative of the lower bound for positive m. Output: `verification/stage02-symbolic.json`.
+- `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python verification/check_stage02_symbolic.py`: passed the original Bernstein and scalar identity checks, both exact m=36 evaluations, and the positive derivative of the lower bound for positive m. Output: `verification/stage02-symbolic.json`.
 - Replayed the concatenated code extracted from the actual revised appendix and verified exact equality with the supplied executable.
 - `python verification/build_and_check.py`: clean 33-page compilation, zero warnings, no duplicate labels, and matching printed/executable code. Output: `verification/build-report.json`.
 - Visually inspected PDF pages 20, 22, 23, 26, and 30–33. All changed statements, the table, and both complete checker blocks are legible and within the page boundaries. Page renderings are in `verification/stage02-corrections-pages/`.

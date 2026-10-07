@@ -37,7 +37,7 @@
 
 ## Numerical and build verification
 
-Ran `scripts/verify_primal_dual_formulations.py` with `/home/sgusev/miniconda3/envs/qipm/bin/python`. All 80 full KKT projection/progress tests, four dyadic ranks, 80 arbitrary-fiber minor/packing checks, 1100 integer-envelope checks, four tree center/speed checks, and 100 root Schur checks passed.
+Ran `scripts/verify_primal_dual_formulations.py` with `/workspace/local-home/miniconda3/envs/qipm/bin/python`. All 80 full KKT projection/progress tests, four dyadic ranks, 80 arbitrary-fiber minor/packing checks, 1100 integer-envelope checks, four tree center/speed checks, and 100 root Schur checks passed.
 
 Added two independent ephemeral checks under the same interpreter:
 

@@ -42,6 +42,6 @@ No major findings. In particular, I found no error in the predictor-decrement fo
 
 ## Validation and attribution
 
-`/home/sgusev/miniconda3/envs/qipm/bin/python notes/scalar-newton-paper/checks/check_temporal_identities.py` passed. The diagnostic covers the numerical kernel constants, threshold/XOR identities, scaled KKT solutions, and rank-volume inequalities. The proof checks above, rather than the finite tests, establish the conclusions.
+`/workspace/local-home/miniconda3/envs/qipm/bin/python notes/scalar-newton-paper/checks/check_temporal_identities.py` passed. The diagnostic covers the numerical kernel constants, threshold/XOR identities, scaled KKT solutions, and rank-volume inequalities. The proof checks above, rather than the finite tests, establish the conclusions.
 
 The sections appropriately credit direct-sum/XOR theory, robust quantum input recovery, parity lower bounds, and recycling/reduced-basis methods. Their limited original-contribution language concerns explicit sparse optimization realizations, quantitative kernels, and output/access contracts; I found no unsupported priority claim here.

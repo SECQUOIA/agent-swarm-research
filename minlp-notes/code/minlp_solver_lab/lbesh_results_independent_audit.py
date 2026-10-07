@@ -10,6 +10,7 @@ from pathlib import Path
 import random
 import re
 import statistics
+import tarfile
 
 LAB = Path(__file__).resolve().parent
 REPO = LAB.parents[1]
@@ -22,6 +23,31 @@ def read(path):
 
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def artifact_directory(root, recorded):
+    """Locate frozen run artifacts below the selected exported result root."""
+    _, separator, suffix = str(recorded).partition('/results/lbesh_development/')
+    assert separator and suffix, ('Unexpected recorded artifact path', recorded)
+    relative = Path(suffix)
+    assert not relative.is_absolute() and '..' not in relative.parts, recorded
+    return Path(root) / relative
+
+
+def verify_source_archive(root, manifest):
+    """Check the exported source bytes independently of original run metadata."""
+    archive = root / manifest['source_archive']
+    assert digest(archive) == manifest['archive_sha256'], 'Source archive hash mismatch'
+    with tarfile.open(archive, 'r:gz') as stream:
+        members = stream.getmembers()
+        names = [item.name for item in members]
+        assert len(names) == len(set(names)), 'Duplicate source archive members'
+        assert set(names) == set(manifest['files']), 'Source archive member mismatch'
+        for item in members:
+            assert item.isfile() and not Path(item.name).is_absolute(), item.name
+            assert all(part not in ('', '.', '..') for part in item.name.split('/')), item.name
+            data = stream.extractfile(item).read()
+            assert hashlib.sha256(data).hexdigest() == manifest['files'][item.name], item.name
 
 
 def finite(x):
@@ -229,7 +255,7 @@ def audit_sensitivity(path, root, freeze):
         assert row['effective_feasibilitytol'] == 1e-8
         assert row['native_versions'] == {'gams':versions['gams_executable'],'gurobi':versions['gams_gurobi']}
         assert row['option_file_sha256'] == hashlib.sha256(b'feasibilitytol 1e-8\n').hexdigest()
-        artifacts = Path(row['artifacts'])
+        artifacts = artifact_directory(root, row['artifacts'])
         log = (artifacts/'gams.log').read_text()
         match = re.search(r'(?m)^\s*FeasibilityTol\s+([0-9.eE+-]+)\s*$',log)
         assert match and float(match.group(1)) == 1e-8
@@ -245,7 +271,9 @@ def audit_initialization(path, root, freeze):
     assert plan['instances'] == farms + ['gdplib.batch_processing']
     assert plan['methods'] == ['gams-'+s+'-bigm-initialized' for s in ('shot','gurobi','scip')]
     assert digest(LAB/'lbesh_legacy_initialization.py') == plan['metadata']['supplementary_wrapper_sha256']
-    assert digest(root/'source_v1_manifest.json') == plan['metadata']['source_manifest_sha256']
+    source_manifest = read(root/'source_v1_manifest.json')
+    historical_manifest_sha256 = source_manifest.get('original_manifest_sha256', digest(root/'source_v1_manifest.json'))
+    assert historical_manifest_sha256 == plan['metadata']['source_manifest_sha256']
     assert freeze['code/minlp_solver_lab/lbesh_research/benchmark.py'] == plan['metadata']['copied_adapter_source_sha256']
     assert plan['validator_tolerances'] == {'absolute':1e-6,'relative':1e-7,'integrality':1e-6}
     schedule, records = load_batch(path, plan, freeze)
@@ -285,7 +313,7 @@ def audit_initialization(path, root, freeze):
             assert row['native_versions'][solver] in (None,expected_version)  # Known frozen metadata-parser limitation.
         else:
             assert row['native_versions'][solver] == expected_version
-        log=(Path(row['artifacts'])/'gams.log').read_text()
+        log=(artifact_directory(root, row['artifacts'])/'gams.log').read_text()
         assert f"GAMS {versions['gams_executable']}" in log
         patterns={'shot':r'SHOT[^\n]*?version[: ]+(\d+\.\d+(?:\.\d+)?)','gurobi':r'Gurobi Optimizer version (\d+\.\d+\.\d+)','scip':r'SCIP version (\d+\.\d+\.\d+)'}
         match=re.search(patterns[solver],log,re.I)
@@ -325,8 +353,11 @@ def main():
     args = parser.parse_args()
     assert not args.out.exists(), 'Use a new audit output file'
     root = args.root
-    manifest = read(root/'source_v1_manifest.json'); freeze = manifest['files']
-    assert digest(root/manifest['source_archive']) == manifest['archive_sha256']
+    manifest = read(root/'source_v1_manifest.json')
+    # Recorded workers bind the original frozen sources, not privacy edits.
+    freeze = dict(manifest['files'])
+    freeze.update(manifest.get('original_file_sha256', {}))
+    verify_source_archive(root, manifest)
     primary = read(root/'study_plan_v1.json')['primary_schedule']
     expected_names = {f'lbesh.{family}.{size}.s{seed}' for family in ('exp','log','reciprocal','quadratic','trig','logsumexp')
                       for size in ('small','medium','large') for seed in (104729,130363,155921)
@@ -345,7 +376,8 @@ def main():
     if args.legacy_initialization:
         batches.append(audit_initialization(args.legacy_initialization,root,freeze))
     if args.fresh_validation:
-        for path, value in freeze.items():
+        # Fresh checks require the exact exported frozen source bytes.
+        for path, value in manifest['files'].items():
             if path.endswith('.py') and ('/lbesh/' in path or '/lbesh_research/' in path or path.endswith('/gdp_instances.py')):
                 assert digest(REPO/path) == value, ('Current validation/model source not frozen', path)
     ref_info, refs = ({}, []) if args.main_only or args.batches else audit_references(root, primary, freeze, args.fresh_validation)

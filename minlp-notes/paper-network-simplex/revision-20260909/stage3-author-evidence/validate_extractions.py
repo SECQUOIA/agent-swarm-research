@@ -54,8 +54,8 @@ for filename in ['main.pdf','main.fls']:
 info=subprocess.check_output(['pdfinfo',SOURCE/'main.pdf'],text=True);(HERE/'pdfinfo.txt').write_text(info)
 text=subprocess.check_output(['pdftotext','-layout',SOURCE/'main.pdf','-'],text=True);(HERE/'manuscript.txt').write_text(text)
 assert 'Author:' not in info or re.search(r'^Author:\s*$',info,re.M)
-assert not re.search(r'(/home/|/tmp/|sgusev|@)',info)
-assert not re.search(r'(/home/|/tmp/|sgusev)',text)
+assert not re.search(r'(/home/|/tmp/|@)',info)
+assert not re.search(r'(/home/|/tmp/)',text)
 # Verify every archive input is anonymously named and has no private paths.
 scanned=0
 for folder in [SOURCE,SUPP]:
@@ -63,7 +63,7 @@ for folder in [SOURCE,SUPP]:
   digest,name=row.split('  ',1);p=folder/name
   assert hashlib.sha256(p.read_bytes()).hexdigest()==digest,name
   if p.suffix in ['.md','.tex','.bib','.py','.json','.txt']:
-   body=p.read_text();assert not re.search(r'(/home/|/Users/|sgusev)',body),name
+   body=p.read_text();assert not re.search(r'(/home/|/Users/)',body),name
    scanned+=1
 # Check the document's explicit inputs and bibliography exist in the source archive.
 refs=[]

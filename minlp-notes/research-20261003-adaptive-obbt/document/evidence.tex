@@ -1,0 +1,242 @@
+\section{Prospective comparison and verification}\label{sec:evidence}
+
+\subsection{Exact certificate demonstrations}
+
+The exact checks and LP proposals are recorded in
+\href{run:../theory/remaining-benefit-checks.json}{the certificate-check results}
+and
+\href{run:../theory/remaining-benefit-driver-checks.json}{the certified-driver results}.
+Automatic discovery finds protected boxes on six of eight fixed
+fixtures: three simple square-stall examples, a three-variable quadratic
+with nonnegative square variables, and two linear models. On both
+strictly contracting square fixtures the proposals do not certify a
+fixed box. Those outcomes are inconclusive, not evidence that useful
+tightening is absent. Every accepted certificate is replayed exactly.
+
+The three-variable example minimizes
+\[
+ f(x)=\sum_{i=1}^3x_i^2+\sum_{i<j}x_ix_j
+     =\tfrac12\left(\norm{x}_2^2+(x_1+x_2+x_3)^2\right)
+\]
+on $[-1,1]^3$, with unique optimum zero at the origin. The lifted LP
+has square variables $s_i\ge0$, McCormick product variables $w_{ij}$,
+and cutoff $\sum_i s_i+\sum_{i<j}w_{ij}\le0$.
+At each face $x_i=\pm1$, set the other original coordinates to zero,
+$s_i=1$, other squares to zero, the products involving $i$ to zero,
+and the opposite product to $-1$. These feasible lifted points protect
+all six faces. At the origin, squares zero and all three products $-1$
+give objective $-3$, so every later OBBT relaxation has lower bound
+at most $-3$. Nonnegative squares and $w_{ij}\ge-1$ prove that the
+current LP bound is exactly $-3$. The witness also satisfies exact
+convex square epigraphs: negative square variables do not cause this
+stall. This instantiates the earlier study's row-stall mechanism.
+
+Table~\ref{tab:driver} records representative standalone driver outcomes.
+The linear coupled example reaches its fixed box after one exact round.
+The zero-cutoff square contracts by one half each round and correctly
+remains unfinished after five rounds. For the positive-cutoff square,
+three rounds are certified; a later rational reconstruction fails an
+exact primal row check. The last completed box is retained, with an
+inconclusive status. This is an implementation precision limit, not a
+mathematical stall.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}lrrll@{}}
+\toprule
+Fixture & Rounds & LPs & Status & Retained box or upper bound\\
+\midrule
+Quadratic stall & 1 & 7 & fixed & $[-1,1]^3$\\
+Linear coupling & 1 & 4 & fixed & $[1/2,2]^2$\\
+Negative linear interval & 1 & 2 & fixed & $[-3,-1]$\\
+Zero-cutoff square & 5 & 10 & unfinished & $u=1/32$\\
+Positive-cutoff square & 3 & 6 & unfinished & $u=3281/3280$\\
+Same, further round attempted & 3 & 8 & inconclusive & $u=3281/3280$\\
+\bottomrule
+\end{tabular}
+\caption{Exact reference workflow. The quadratic-stall LP count includes
+one objective proposal. All other shown calls are endpoint proposals.
+Recorded times include exact checks; these tiny fixtures test correctness,
+not solver performance.}\label{tab:driver}
+\end{table}
+
+Additional checks cover zero round budgets, invalid dual proofs,
+rollback of incomplete rounds, preservation of earlier certified rounds,
+invalid optional objective proposals, model and domain changes,
+degenerate boxes, cutoff mixing, cached-pool frontiers, and the residual
+majorant. The constrained checker verifies basis regions, the changing-cell
+example, and the exact constants and identities in the nonlinear
+feasible-repair example. These targeted checks supplement the proofs;
+they do not replace their uniform assumptions.
+
+\subsection{Frozen protocol}
+
+The protocol in
+\pathref{../experiments/PROTOCOL.md}{experiments/PROTOCOL.md}
+selects 12 public models and 8 synthetic diagnostics before the current
+comparative outcomes. Public admission uses the earlier September
+study's metadata: between 5 and 300 variables, between 1 and 200
+nonlinear variables, at most 500 quadratic terms, and at least five
+seconds in every available historical native SCIP baseline run.
+Eligible names are sorted by the SHA-256 digest of a fixed study prefix
+and the name; the first twelve are retained, at most one per historical
+family. The entire eligibility list and input hashes are frozen.
+This is a selected cohort informed by separate historical results, not
+a random sample of MINLP applications.
+
+The synthetic structures are point packing, coupled square budgets,
+bilinear cycles, and sparse indefinite quadratic programs, with two sizes
+of each and generator seed 20261003. Distinct tiny pilot instances
+exercise APIs and callback coverage and are excluded from the comparison.
+Synthetic outcomes are reported separately from public-instance outcomes.
+
+Each model is run with SCIP seed shifts 0 and 1 in native, fixed, and
+adaptive arms, for 120 planned jobs. The native arm has no additional
+propagator. The fixed and adaptive arms share the LP allowance and native
+settings; the adaptive arm adds ordering, witness screening, and pilot
+stopping. Native SCIP OBBT stays enabled throughout. No known optimum,
+external feasible solution, or reference warm start enters the experiment.
+The task order is shuffled with seed 20261003. Numerical libraries and
+SCIP use one thread, with at most two worker processes at a time.
+
+Each solver call has a ten-second budget including model construction and
+sidecar work. Process elapsed time additionally includes startup, parsing,
+validation, and output and is recorded separately. Every returned
+incumbent is evaluated against the original bounds, integrality,
+quadratic constraints, and objective. The declared numerical acceptance
+threshold is $10^{-6}$ for the maximum scaled constraint residual and
+integrality residual. An optimal status with an invalid incumbent counts
+as unsuccessful. This is a floating-point diagnostic, not exact
+feasibility certification.
+
+The primary reported penalized time uses full process elapsed time for
+successful jobs and 20 seconds for unsuccessful jobs (PAR-2). The
+one-second-shift geometric mean reported below uses full process time.
+Archived capped means instead use $\min\{t,10\}$ for process time $t$;
+they are diagnostic, can hide overruns, and do not penalize a fast
+unsuccessful termination. Raw total process time exposes startup
+and overrun costs. The normalized final gap is
+\[
+ \min\left\{1,\frac{\max\{0,p-d\}}{\max\{1,|p|,|d|\}}\right\},
+\]
+where $p$ is a valid numerical incumbent objective and $d$ is a finite
+dual bound; missing admissible values receive score one. Paired gap
+comparisons report their eligible denominators. No timing statistic is
+restricted silently to cases solved by every arm. The two seeds are
+repeated runs on each model, not forty independent application families.
+
+\subsection{Complete campaign outcomes}
+
+All 120 scheduled jobs in \texttt{campaign-01} completed. Each arm solved
+the same 14 of 40 model--seed pairs: 2 of 24 public pairs and 12 of 16
+synthetic pairs. Neither extra policy added or lost a solve. Each arm
+had one no-incumbent run: \texttt{genpooling\_meyer04}, seed zero.
+No process failure, invalid incumbent, material objective mismatch, or
+inconsistent primal--dual pair was reported under the declared numerical
+checks.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}llrrrr@{}}
+\toprule
+Cohort & Arm & Solved & Mean PAR-2 & Shifted process mean & Mean gap score\\
+\midrule
+All & Native & 14/40 & 13.855 & 5.957 & 0.20351\\
+All & Fixed & 14/40 & 13.988 & 6.285 & 0.18438\\
+All & Adaptive & 14/40 & 13.997 & 6.265 & 0.18806\\
+\addlinespace
+Public & Native & 2/24 & 18.964 & 10.248 & 0.33408\\
+Public & Fixed & 2/24 & 18.999 & 10.297 & 0.30209\\
+Public & Adaptive & 2/24 & 19.026 & 10.324 & 0.30798\\
+\addlinespace
+Synthetic & Native & 12/16 & 6.192 & 2.384 & 0.00767\\
+Synthetic & Fixed & 12/16 & 6.471 & 2.772 & 0.00782\\
+Synthetic & Adaptive & 12/16 & 6.453 & 2.733 & 0.00818\\
+\bottomrule
+\end{tabular}
+\caption{Prospective outcomes. Times are seconds. PAR-2 includes every
+run; the geometric mean uses full observed process time with a one-second
+shift and no cap. Lower gap scores are better, with
+missing valid incumbent or finite consistent dual bound scored as one.}
+\label{tab:campaign}
+\end{table}
+
+Summed full process elapsed times were 308.050 seconds for native,
+313.407 for fixed, and 313.618 for adaptive. The corresponding uncapped
+one-second-shift geometric means were 5.957, 6.285, and 6.265 seconds.
+These totals retain startup, validation, output, and deadline overrun.
+The largest solver-call elapsed time was 10.093 seconds; the largest
+complete process time was 10.606 seconds. The experiments shared a
+36-logical-CPU machine with unrelated studies; starting load averages
+were 17.76, 15.65, and 14.11. The small timing differences do not support
+a claim of a stable speed advantage for either extra policy. The
+comparison provides no evidence of a net solving benefit.
+
+The adaptive policy used 1,719 directional LPs compared with 2,172 for
+fixed, a 20.9\% reduction. This did not reduce measured sidecar time:
+adaptive used 23.123 seconds versus fixed's 19.530 seconds, an 18.4\%
+increase. Adaptive entered 741 calls, including 639 nonroot calls and
+43 incumbent retriggers; fixed entered 404 calls, including 300 nonroot
+calls and 39 incumbent retriggers. Accepted bound changes numbered
+308 and 112, respectively. These counts show that the experiment
+exercised in-tree tightening and retriggering. The lower LP count did
+not translate into lower complete plugin cost; the additional calls
+also required construction and checks.
+
+The adaptive policy screened only two directions from cached feasible
+witnesses. It stopped 574 calls after an unproductive pilot, 113 at the
+per-call LP allowance, and six at a time budget. The corresponding fixed
+counts were 349 LP-budget stops and seven time-budget stops. Both extra
+arms recorded 48 unsupported-domain calls, all on \texttt{qp3}, where
+the current box was unbounded for this sidecar. These calls remain in
+the costs and outcomes. Four fixed and 26 adaptive directional attempts
+did not supply a usable bound; individual LP status details for those
+attempts were not retained, so their causes are not inferred.
+
+Mean public gap scores improved relative to native, with much of the
+change concentrated in \texttt{bayes2\_50} under both seeds. Among 23
+public pairs with finite comparable gaps, adaptive improved four and
+worsened ten by more than $10^{-4}$; fixed improved five and worsened
+ten. Across all 39 comparable pairs, adaptive had four gap wins and
+twelve losses. The averages reflect the sizes of changes as well as
+their counts. Across all 40 pairs, adaptive had two PAR-2 wins and eleven
+losses exceeding 5\% relative to native; fixed had one win and ten
+losses. These are descriptive counts from a small, short-budget cohort,
+not statistical evidence across independent problem families. The
+practical conclusion is to retain native SCIP as the default and keep
+the additional policy experimental.
+
+\subsection{Provenance and targeted checks}
+
+The campaign directory
+\pathref{../experiments/runs/campaign-01}{experiments/runs/campaign-01}
+contains immutable input and source hashes, the actual worker source,
+every raw outcome and solver log, per-run analysis, and the complete
+summary. The policy and analyzer were frozen before holdout outcomes.
+During the uninterrupted campaign, review found that an interrupted
+attempt could be overwritten by the live runner's resume path. The live
+runner was fixed to archive incomplete attempts before retrying. This
+recovery-only change did not alter the running campaign, its frozen
+sources, or any measured attempt; a separate targeted recovery check
+passed. The frozen campaign remains the authority for its reported data.
+
+The final combined solver, reviewer, and experiment suite passed 31
+targeted tests. Separate exact checks cover the certificate contracts,
+constrained-theory examples, and optional-work accounting. A direct
+OSiL evaluator checked all twelve normalized public models independently
+of the experiment importer. The completed campaign audit checked all
+120 expected jobs and numerically validated all 69 returned public
+incumbents against the original OSiL data. The document build checks
+references, citations, and PDF metadata. These are local checks for this
+continuation; no project-wide verification or CI status/log inspection
+is represented as evidence here.
+
+The exact commands and outcomes are recorded in
+\pathref{../VERIFICATION.md}{VERIFICATION.md} and the
+\href{run:README.md}{document README}. The
+\href{run:COVERAGE.md}{claim and evidence map} distinguishes proved
+statements, checked proposals, numerical validation, and empirical
+outcomes. Internal independent review is not formal verification or
+external peer review.

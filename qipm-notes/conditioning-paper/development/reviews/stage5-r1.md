@@ -29,7 +29,7 @@ The synthetic CG experiment uses the actual symmetrized rounded matrix for both 
 Copied `repro/`, `figures/`, and `tables/` to `/tmp/conditioning-stage5-r1-8otnjzvh` and ran:
 
 ```sh
-OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 /home/sgusev/miniconda3/envs/qipm/bin/python repro/reproduce.py
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 /workspace/local-home/miniconda3/envs/qipm/bin/python repro/reproduce.py
 ```
 
 The command reported `All reproduction checks passed.` It reproduced the exact input certificates, Netlib accepted counts `14/27`, `19/27`, and `12/27`, their last accepted gaps and condition values, and CG counts `43,71,96,124`. The deepest true residual is approximately `2.5184e-8`, while the recursive residual is approximately `2.9498e-9`, matching the paper's caution. Comparing manifests found **no changed artifact hashes** across inputs, scripts, numerical outputs, tables, or figures.

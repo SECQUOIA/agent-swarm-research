@@ -35,7 +35,7 @@ To also reproduce the joined optimality result, run:
 
 ```sh
 .venv/bin/python -m certify.audit_solver_discrepancies --verify-certificate \
-  --viprchk /home/sgusev/.local/opt/scip-exact/bin/viprchk
+  --viprchk /workspace/local-home/.local/opt/scip-exact/bin/viprchk
 ```
 
 This writes `results/solver_discrepancy_audit/clay0204m_optimality.json`, which

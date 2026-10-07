@@ -1,0 +1,286 @@
+% Plan: development/outline.md, section 6, item B.3.
+% Round-1 revision (adjudication G5): one certificate box per result, the
+% verification record merged into the boxes.
+\subsection{The \inst{camshape} instances}\label{app:camshape}
+
+This subsection proves \cref{thm:camshape-opt}, \cref{lem:camshape-sturm,lem:camshape-envelope} and \cref{prop:camshape-deficit}, and it determines the exact optima of the four rounded QPLIB copies used in \cref{prop:qplib-copies}.
+
+\subsubsection{Model and data}\label{app:camshape-model}
+
+The instances come from problem~4 of COPS~2.0 \citep{dolan2001-benchmarking-optimization-software-with-cops}.
+MINLPLib's \inst{camshape100}, \inst{camshape200}, \inst{camshape400} and \inst{camshape800} are scalar forms of the GAMS model library model \texttt{camshape} \citep{library2026-cops-and-gams-source-models}, negated to a minimization.
+Their model is~\eqref{eq:camshape-problem} of \cref{sec:other-camshape}, with the radii $r_j = \texttt{x}\langle j\rangle$ at the angles $j\Delta\theta$ and the slope variables $d_i = \texttt{x}\langle n+i\rangle$, all continuous; the COPS radii $r_0 = 1$ and $r_{n+1} = 2$ are constants, so $G_1$ reads $-r_1 + c\,r_2 - r_1 r_2 \le 0$, and $d_1$ is free.
+The rows are $G_j = \texttt{e}\langle j\rangle$ ($2 \le j \le n-1$), $G_1 = \texttt{e}\langle n\rangle$, $G_n = \texttt{e}\langle n+1\rangle$, $H = \texttt{e}\langle n+2\rangle$ and $D_i = \texttt{e}\langle n+2+i\rangle$.
+$G_1,\dots,G_n$ and $H$ are the COPS convexity condition $2\cos(\Delta\theta)\,r_{j-1}r_{j+1} \le r_j(r_{j-1}+r_{j+1})$ for $j = 1,\dots,n+1$ (with $r_{n+2} = r_n$), which says that the point $(r_j, j\Delta\theta)$ lies on or outside the chord through its neighbours.
+The bound $\bar u$ is the same condition at $j = 0$ (with $r_{-1} = r_0 = 1$), and $\ell$ and $\alpha$ come from the curvature condition.
+The GAMS source does not bound $d_1$, so MINLPLib omits the COPS curvature condition $|r_2 - r_1| \le \alpha$; it is slack at the optimum (\cref{app:camshape-proof}).
+\Cref{tab:camshape-constants} lists the stored decimals, which approximate the values given in \cref{sec:other-camshape}; the proofs use only the stored decimals.
+In every file $c_H = c$, and $c_2 = 2c$ except for $n = 400$ ($c_2 - 2c = -10^{-14}$).
+
+\begin{table}[ht]
+\centering
+\small
+\caption{Constants of the stored \inst{camshape} models (OSIL decimals; the \texttt{.gms} files are identical).}
+\label{tab:camshape-constants}
+\begin{tabular}{@{}lllll@{}}
+\toprule
+ & $n = 100$ & $n = 200$ & $n = 400$ & $n = 800$ \\
+\midrule
+$c_0$ & 0.0314159265358979 & 0.015707963267949 & 0.00785398163397448 & 0.00392699081698724 \\
+$c = c_H$ & 1.99984519984971 & 1.99996091355262 & 1.99999017956722 & 1.99999753875636 \\
+$c_2$ & 3.99969039969942 & 3.99992182710524 & 3.99998035913443 & 3.99999507751272 \\
+$\bar u$ & 1.00015482411709 & 1.00003908797519 & 1.00000982052922 & 1.0000024612497 \\
+$\ell$ & 1.98133707334501 & 1.99062211148182 & 1.99529936261308 & 1.99764674707596 \\
+$\alpha$ & 0.0186629266549889 & 0.00937788851817849 & 0.0047006373869174 & 0.0023532529240373 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+All radii are positive on the feasible set, because the lower bounds are $1$ and $\ell > 0$.
+Dividing $G_1$ by $r_1r_2$ and $G_j$ by $r_{j-1}r_jr_{j+1}$ therefore turns $G_1,\dots,G_{n-1}$ into the rows $e_j(u) \ge 0$ ($1 \le j \le n-1$) of \cref{sec:other-camshape}, which are linear in $u_j = 1/r_j$, with $u_0 = 1$.
+Since the objective decreases in every radius, the problem asks for the largest feasible radii.
+
+\subsubsection{Recurrences, finite checks and the optimal value}\label{app:camshape-proof}
+
+We state the objects and checks of \cref{sec:other-camshape} for arbitrary rational constants $c_0, c, c_2, c_H, \bar u, \ell, \alpha$ in a model of the form~\eqref{eq:camshape-problem}; the MINLPLib files and the QPLIB copies are instances.
+
+\begin{definition}[comparison sequence and envelope]\label{def:camshape-envelope}
+In exact rational arithmetic, let $U_0 = 1$, $U_1 = c$, $U_{m+1} = c\,U_m - U_{m-1}$ (so $U_m$ is the Chebyshev polynomial of the second kind at $c/2$), and $S_0 = 1$, $S_1 = 1/\bar u$, $S_{j+1} = c\,S_j - S_{j-1}$ for $1 \le j \le n-1$.
+Let $R_j = 1/S_j$ if $S_j > 0$ and $R_j = +\infty$ otherwise, $b_1 = \bar u$, $b_j = 2$ for $j \ge 2$, and $B_j = \min(R_j, b_j)$.
+The envelope is $E_1 = B_1$ and $E_j = \min_{2 \le k \le n}(B_k + \alpha|j-k|)$ for $2 \le j \le n$; put $d^E_i = E_{i+1} - E_i$ and $v_n = -c_0\sum_{j=1}^n E_j$.
+The finite checks are:
+(K1) $U_m \ge 0$ for $0 \le m \le n-1$;
+(K2) $0 < S_j \le 1$ for $1 \le j \le n$;
+(K3) $E_{n-1} = E_n = 2$;
+(K4) $\bar u \le 1 + \alpha$;
+(K5) $c_0 > 0$, $1 \le \bar u \le 2$, $0 < c < 2$, $c_2 \le 4$ and $0 < \ell \le 2$;
+(K6) $c_H \le 2$.
+\end{definition}
+
+Since $R_1 = \bar u = b_1$, $E_1 = \bar u$; (K4) and (K5) give $\alpha \ge \bar u - 1 \ge 0$.
+For $\alpha \ge 0$ the envelope is a forward pass $F_2 = B_2$, $F_j = \min(B_j, F_{j-1} + \alpha)$ followed by a backward pass $E_n = F_n$, $E_j = \min(F_j, E_{j+1} + \alpha)$, so all quantities cost $O(n)$ rational operations.
+
+\begin{lemma}[Green's function of the second difference]\label{lem:camshape-green}
+Let $c \in \R$, let $U_m$ be defined from $c$ as in \cref{def:camshape-envelope}, let $N \ge 1$, and let $u_0,\dots,u_N$ and $s_0,\dots,s_N$ be real with $u_0 = s_0$ and $s_{j+1} = c\,s_j - s_{j-1}$ for $1 \le j \le N-1$.
+Put $e_j = u_{j-1} - c\,u_j + u_{j+1}$ for $1 \le j \le N-1$.
+Then for $1 \le j \le N$
+\begin{equation}\label{eq:camshape-green}
+u_j - s_j = U_{j-1}\,(u_1 - s_1) + \sum_{k=1}^{j-1} U_{j-1-k}\, e_k .
+\end{equation}
+If moreover $U_m \ge 0$ for $0 \le m \le N-1$, $u_1 \ge s_1$ and $e_k \ge -\beta$ for all $k$, with $\beta \ge 0$, then $u_j \ge s_j - \beta W_j$ for $0 \le j \le N$, where $W_0 = W_1 = 0$ and $W_j = \sum_{m=0}^{j-2} U_m$.
+\end{lemma}
+
+\begin{proof}
+Put $z_j = u_j - s_j$.
+Then $z_0 = 0$ and $z_{j+1} = c\,z_j - z_{j-1} + e_j$ for $1 \le j \le N-1$.
+Formula~\eqref{eq:camshape-green} holds for $j = 1$ and $j = 2$ ($z_2 = c\,z_1 + e_1 = U_1 z_1 + U_0 e_1$).
+If it holds for $j-1$ and $j$, where $2 \le j \le N-1$, then
+\[
+z_{j+1} = (c\,U_{j-1} - U_{j-2})\,z_1 + \sum_{k=1}^{j-2}(c\,U_{j-1-k} - U_{j-2-k})\,e_k + c\,U_0\,e_{j-1} + e_j = U_j z_1 + \sum_{k=1}^{j} U_{j-k}\,e_k ,
+\]
+which is~\eqref{eq:camshape-green} for $j+1$; the indices of $U$ that occur are at most $N-1$.
+Under the additional hypotheses every term is at least $-\beta U_{j-1-k}$ or nonnegative, and $\sum_{k=1}^{j-1}U_{j-1-k} = W_j$.
+\end{proof}
+
+\begin{proof}[Proof of \cref{lem:camshape-sturm}]
+Apply \cref{lem:camshape-green} with the given $N \le n$, $s = S$ and $\beta = 0$; $S$ satisfies the recurrence for $1 \le j \le N-1$.
+The formula uses only $u_0 = 1 = S_0$; the inequality uses in addition (K1), $u_1 \ge S_1$ and $e_k(u) \ge 0$.
+\end{proof}
+
+The numbers $U_{j-1-k}$ are the Green's function of the second-difference operator with initial data at $0$ and $1$.
+For $0 < c < 2$, $U_m = \sin((m+1)\varphi)/\sin\varphi$ with $\varphi = \arccos(c/2)$, so (K1) holds exactly when $n\varphi \le \pi$: the discrete form of disconjugacy \citep[see][for the discrete Sturm--Liouville theory]{bohner1996-linear-hamiltonian-difference-systems-disconjugacy}.
+For the stored constants $n\varphi$ is close to $0.4\pi$; the computation checks (K1) directly.
+
+\begin{lemma}[min-plus envelope]\label{lem:camshape-minplus}
+If $r \in \R^n$ satisfies $r_j \le B_j$ for all $j$ and $|r_{j+1} - r_j| \le \alpha$ for $2 \le j \le n-1$, then $r \le E$.
+\end{lemma}
+
+\begin{proof}
+$r_1 \le B_1 = E_1$.
+For $j, k \ge 2$ every consecutive pair between $j$ and $k$ is slope-constrained, so $r_j \le r_k + \alpha|j-k| \le B_k + \alpha|j-k|$; minimize over $k$.
+\end{proof}
+
+\begin{lemma}[the envelope point is feasible]\label{lem:camshape-feasible}
+If (K2)--(K6) hold, then $(E, d^E)$ is feasible for~\eqref{eq:camshape-problem}.
+\end{lemma}
+
+\begin{proof}
+\emph{Bounds and linear rows.}
+By (K2) and (K5), $R_k \ge 1$ and $b_k \ge 1$, so $B_k \ge 1$ and $E_j \ge 1$ (as $\alpha \ge 0$); also $E_j \le B_j \le b_j$, $E_1 = \bar u$, and $E_n = 2 \ge \ell$ by (K3) and (K5).
+The rows $D_i$ hold by definition of $d^E$.
+On $\{2,\dots,n\}$, $E$ is a minimum of $\alpha$-Lipschitz functions, so $|d^E_i| \le \alpha$ for $i \ge 2$.
+
+\emph{Rows $H$ and $G_n$.}
+With $E_n = 2$, $H$ reads $4c_H - 8 \le 0$, which holds since $c_H \le 2$, and $G_n$ reads $(c_2 - 2)E_{n-1} - 4 \le 2\max(c_2 - 2, 0) - 4 \le 0$ since $1 \le E_{n-1} \le 2$ and $c_2 \le 4$.
+
+\emph{Rows $G_1,\dots,G_{n-1}$.}
+They are equivalent to $e_j(w) \ge 0$ for $w_j = 1/E_j$, $w_0 = 1$, and $E \le R$ gives $w \ge S$.
+Fix $1 \le j \le n-1$.
+If $E_j = R_j$, then $w_j = S_j$ and $e_j(w) \ge S_{j-1} - cS_j + S_{j+1} = 0$.
+Otherwise $j \ge 2$, and we show $E_{j-1} + E_{j+1} \le 2E_j$.
+If $E_j = B_j$, then $E_j = b_j = 2 \ge E_k$ for all $k$ (recall $E_1 = \bar u \le 2$).
+If $E_j < B_j$, then $E_j = B_k + \alpha|j-k|$ for some $k \ge 2$, $k \ne j$.
+For $k < j$, $E_{j-1} \le B_k + \alpha(j-1-k) = E_j - \alpha$ and $E_{j+1} \le E_j + \alpha$ (Lipschitz).
+For $k > j$, $E_{j+1} \le E_j - \alpha$ likewise, and $E_{j-1} \le E_j + \alpha$: by the Lipschitz property if $j \ge 3$, and for $j = 2$ because $E_1 = \bar u \le 1 + \alpha \le E_2 + \alpha$ by (K4).
+By the inequality between arithmetic and harmonic means, $w_{j-1} + w_{j+1} \ge 4/(E_{j-1} + E_{j+1}) \ge 2/E_j = 2w_j$, so $e_j(w) \ge (2 - c)\,w_j > 0$.
+\end{proof}
+
+\Cref{lem:camshape-envelope} consists of \cref{lem:camshape-minplus,lem:camshape-feasible}.
+
+\begin{proposition}[optimal value for general constants]\label{prop:camshape-general}
+Consider a model of the form~\eqref{eq:camshape-problem} with rational constants.
+\begin{enumerate}
+\item[(a)] If (K1) holds and $c_0, \bar u, \ell > 0$, then every feasible $(r,d)$ satisfies $r \le E$, and hence $f(r,d) \ge v_n$, where $f$ is the objective.
+\item[(b)] If (K2)--(K6) hold, then $(E, d^E)$ is feasible and $f(E, d^E) = v_n$.
+\item[(c)] Under both sets of hypotheses, $v_n$ is the optimal value, $(E, d^E)$ is the only optimal solution, and $E$ is the componentwise greatest feasible radius vector; so $(E, d^E)$ also maximizes every componentwise nondecreasing function of $r$ over the feasible set.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+(a) The bounds give $r_j \ge 1$ for $j < n$ and $r_n \ge \ell > 0$.
+With $u = 1/r$ and $u_0 = 1$, the rows $G_1,\dots,G_{n-1}$ give $e_j(u) \ge 0$, and $r_1 \le \bar u$ gives $u_1 \ge S_1$.
+\Cref{lem:camshape-green} and (K1) give $u \ge S$, so $r_j \le R_j$ when $S_j > 0$, and with $r_j \le b_j$ we get $r \le B$.
+The rows $D_j$ and $|d_j| \le \alpha$ give $|r_{j+1} - r_j| \le \alpha$ for $j \ge 2$, and \cref{lem:camshape-minplus} gives $r \le E$.
+Since $c_0 > 0$, $f(r,d) \ge -c_0\sum_j E_j = v_n$.
+(b) is \cref{lem:camshape-feasible}.
+(c) By (a) and (b) the bound $v_n$ is attained.
+If $f(r,d) = v_n$, then $\sum_j r_j = \sum_j E_j$ and $r \le E$, so $r = E$, and the rows $D_i$ give $d = d^E$.
+\end{proof}
+
+Part (a) uses only the rows $G_1,\dots,G_{n-1}$, the upper bounds, positivity and the slope rows for $j \ge 2$; the rows $G_n$, $H$, $D_1$ and the values of $c_2$ and $\ell$ (beyond $\ell > 0$) do not enter.
+
+\begin{proof}[Proof of \cref{thm:camshape-opt}]
+For each $n$ we read the constants of \cref{tab:camshape-constants} from the OSIL file as exact rationals, assert that the file has the form~\eqref{eq:camshape-problem}, and evaluate (K1)--(K6) and $v_n$ in exact rational arithmetic.
+All checks pass, and \cref{prop:camshape-general}(c) gives the claims.
+\Cref{tab:camshape-values} shows the floor and ceiling of the rational $v_n$ (for $n = 100$ its denominator has 28,165 digits); no rounding enters before the final display.
+\end{proof}
+
+\begin{table}[ht]
+\centering
+\small
+\caption{Exact optima of the \inst{camshape} instances (attained, so $\gapabs = 0$) and the structure of $E$. Floor and ceiling of $v_n$ at 14 decimals; phases $E_j = R_j$ (contact), $E_j = E_{j-1} + \alpha$ (maximal slope) and $E_j = 2$; number of rows $G_j$ active at $E$.}
+\label{tab:camshape-values}
+\begin{tabular}{@{}rllrrrr@{}}
+\toprule
+$n$ & floor of $v_n$ & ceiling of $v_n$ & contact & max.\ slope & $E_j = 2$ & active rows \\
+\midrule
+100 & $-4.28414712174675$ & $-4.28414712174674$ & 1--64 & 65--94 & 95--100 & 63 \\
+200 & $-4.27850023299273$ & $-4.27850023299272$ & 1--128 & 129--187 & 188--200 & 127 \\
+400 & $-4.27568847892555$ & $-4.27568847892554$ & 1--256 & 257--374 & 375--400 & 255 \\
+800 & $-4.27427414195420$ & $-4.27427414195419$ & 1--513 & 514--749 & 750--800 & 512 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+For $0 < c < 2$, $S_j = A\cos(j\varphi) + A'\sin(j\varphi)$, so the points with polar coordinates $(R_j, j\varphi)$ lie on one straight line; for the unrounded COPS constants it extends the last chord of the base circle.
+In the cam picture, \cref{lem:camshape-sturm} says that a discretely convex arc starting on the base circle cannot pass outside this line.
+The exact computation shows the three phases of \cref{tab:camshape-values}: $E$ follows the line up to the last index $m$ with $R_m - R_{m-1} \le \alpha$, then $E_j = \min(R_m + \alpha(j-m), 2)$.
+The omitted COPS condition is slack: $|E_2 - E_1| \le 3.10\cdot10^{-4}$, $7.82\cdot10^{-5}$, $1.97\cdot10^{-5}$ and $4.93\cdot10^{-6}$ for the four sizes, far below $\alpha$.
+
+\begin{certbox}[Certificate for \cref{thm:camshape-opt}]
+\certitem{Inputs}{OSIL files (SHA-256 \texttt{9e17da72}, \texttt{76d6141d}, \texttt{a53174a4}, \texttt{d0692d0f}).}
+\certitem{Computation}{(K1)--(K6), the rational $v_n$ and every row and bound at $(E,d^E)$; \arith{E}; no floating point or branching.}
+\certitem{Data reading}{exact, by three separately written readers (two match a template, one evaluates every row generically and checks the case split of \cref{lem:camshape-feasible} row by row).}
+\certitem{Implementations}{three separately written codes, two exact (printing $v_n$ to 20 and 30 digits) and one in fixed point with directed rounding at scale $10^{-120}$, agree on $v_n$ to all printed digits; all find zero violation at $(E,d^E)$, the third for $n=100$ and $200$ only.}
+\certitem{Evidence level}{\evid{hand}+\evid{stored}.}
+\certitem{Replay}{Tier~1; 8\,s for all four sizes (6\,min and under 2\,s for the other codes).}
+\end{certbox}
+
+\begin{remark}[sensitivity to the constants]\label{rem:camshape-robust}
+The certificate is monotone in the constants: for $u > 0$ the rows $e_j(u) \ge 0$ become stronger as $c$ grows, the bounds on $r_1$ and on the slopes become stronger as $\bar u$ and $\alpha$ shrink, and $f$ decreases as $c_0$ grows.
+Write $E(c, \bar u, \alpha)$ for the envelope built from these three constants.
+Every feasible point of a model of the form~\eqref{eq:camshape-problem} with $\ell > 0$, $c \ge c^-$, $\bar u \le \bar u^+$, $\alpha \le \alpha^+$ and $0 < c_0 \le c_0^+$ satisfies the relaxed rows with the corner constants $(c^-, \bar u^+, \alpha^+)$; if (K1) holds at $c^-$, the proof of \cref{prop:camshape-general}(a) bounds the optimal value from below by $-c_0^+\sum_j E_j(c^-, \bar u^+, \alpha^+)$.
+Conversely, suppose that the corner envelope $E^+ = E(c^+, \bar u^-, \alpha^-)$ satisfies every row and bound of the model with the corner constants and has $E^+_{n-1} = E^+_n = 2$.
+A model with $c \le c^+$, $\bar u \ge \bar u^-$, $\alpha \ge \alpha^-$, $c_0 \ge c_0^- > 0$, $c_2 \le 4$, $c_H \le 2$ and $\ell \le 2$ has weaker rows $G_1, \dots, G_{n-1}$, bound on $r_1$ and slope bounds than the corner model, and its rows $G_n$ and $H$ and its bounds on $r_n$ hold at $E^+$ as in the proof of \cref{lem:camshape-feasible}; so $(E^+, d^{E^+})$ is feasible for it, and its optimal value is at most $-c_0^-\sum_j E^+_j$.
+For $c^\pm$, $\bar u^\pm$, $\alpha^\pm$ and $c_0^\pm$ at distance $10^{-14}$ from the stored constants, we checked (K1) at $c^-$ and the hypotheses on $E^+$ in exact arithmetic, by evaluating every row and bound at $E^+$.
+With the corner sums, this shows that every model of the form~\eqref{eq:camshape-problem} whose seven constants each differ from the stored ones by at most $10^{-14}$ has an optimal value within $5.9\cdot10^{-11}$, $2.3\cdot10^{-10}$, $9.0\cdot10^{-10}$ and $3.6\cdot10^{-9}$ of $v_n$ for $n = 100, 200, 400, 800$; a second implementation reproduced the endpoints for $n = 100$ and $800$ and for two copies of \cref{app:camshape-copies}.
+This concerns perturbed models of the same structure; it does not extend the exact values of \cref{thm:camshape-opt} to other readings of the data.
+\end{remark}
+
+\subsubsection{Tolerance-feasible points: the deficit bound}\label{app:camshape-deficit}
+
+Let $0 \le \varepsilon < 1$, and call a point $\varepsilon$-feasible if every row and bound of~\eqref{eq:camshape-problem} is violated by at most $\varepsilon$ (\cref{def:sem-feasible}); the objective is evaluated exactly.
+Put $\beta_\varepsilon = \varepsilon/(1-\varepsilon)^3$ and define $S^\varepsilon$ by $S^\varepsilon_0 = 1$, $S^\varepsilon_1 = 1/(\bar u + \varepsilon)$ and the recurrence of $S$; $R^\varepsilon_j = 1/(S^\varepsilon_j - \beta_\varepsilon W_j)$ if this denominator is positive and $+\infty$ otherwise; caps $b^\varepsilon_1 = \bar u + \varepsilon$ and $b^\varepsilon_j = 2 + \varepsilon$; $B^\varepsilon = \min(R^\varepsilon, b^\varepsilon)$; and the envelope $E^\varepsilon$ of \cref{def:camshape-envelope} with $B^\varepsilon$ and slope $\alpha + 2\varepsilon$.
+Set $D_n(\varepsilon) = c_0\sum_j(E^\varepsilon_j - E_j)$, an explicit bound, rational when $\varepsilon$ is rational, with $D_n(0) = 0$ and $v_n - D_n(\varepsilon) = -c_0\sum_j E^\varepsilon_j$.
+
+\begin{proof}[Proof of \cref{prop:camshape-deficit}]
+Let $(r,d)$ be $\varepsilon$-feasible.
+All lower bounds in~\eqref{eq:camshape-problem} are at least $1$ (in all four files $\ell \ge 1$), so $r_j \ge 1 - \varepsilon > 0$.
+Dividing $G_j$ ($2 \le j \le n-1$) by $r_{j-1}r_jr_{j+1} \ge (1-\varepsilon)^3$ and $G_1$ by $r_1r_2 \ge (1-\varepsilon)^2$ gives $e_j(u) \ge -\beta_\varepsilon$ for $u = 1/r$, and $r_1 \le \bar u + \varepsilon$ gives $u_1 \ge S^\varepsilon_1$.
+\Cref{lem:camshape-green} with $s = S^\varepsilon$, $\beta = \beta_\varepsilon$ and (K1), which holds for the four files by \cref{thm:camshape-opt}, gives $u_j \ge S^\varepsilon_j - \beta_\varepsilon W_j$, so $r \le B^\varepsilon$.
+For $i \ge 2$, $|d_i| \le \alpha + \varepsilon$ and $|r_i - r_{i+1} + d_i| \le \varepsilon$ give $|r_{i+1} - r_i| \le \alpha + 2\varepsilon$.
+\Cref{lem:camshape-minplus} with slope $\alpha + 2\varepsilon$ gives $r \le E^\varepsilon$, hence $f(r,d) \ge v_n - D_n(\varepsilon)$.
+\end{proof}
+
+The computation evaluates the construction exactly and rounds each $R^\varepsilon_j$ up to a fine dyadic grid, which keeps an upper bound on $D_n(\varepsilon)$.
+Two separately written implementations agree on every value in \cref{tab:camshape-deficit}, and a third reproduces those it recomputed.
+For the tabulated $\varepsilon \le 10^{-8}$ the ratio $D_n(\varepsilon)/(n^2\varepsilon)$ is at most $0.605$, and it is smaller for larger $\varepsilon$ (on \inst{QPLIB_3177}, $D(10^{-6}) \approx 0.43\,n^2\varepsilon$).
+$D_n(\varepsilon)$ is a proved upper bound, not the worst case: the explicit $\varepsilon$-feasible points of the last column, which violate every $G_j$ by $\varepsilon$ and use the caps $2 + \varepsilon$ and the slopes $\alpha + 2\varepsilon$, reach about 87\% of it (numerical evidence).
+MINLPLib's points p2 for \inst{camshape400} and \inst{camshape800} violate row $G_1$ by $3.0\cdot10^{-10}$, and 360 and 722 rows by more than $10^{-12}$, most by about $10^{-10}$; \cref{sec:other-camshape} gives their deficits, and \cref{app:solvers-points} compares the points returned in our runs with $D_n$.
+
+\begin{table}[ht]
+\centering
+\small
+\caption{Upper bounds on the deficit of $\varepsilon$-feasible points (\cref{prop:camshape-deficit}) and their ratio to $n^2\varepsilon$, rounded up; fraction of $D_n(\varepsilon)$ reached by explicit $\varepsilon$-feasible points built in floating point (numerical evidence, rounded down).}
+\label{tab:camshape-deficit}
+\begin{tabular}{@{}rrlrr@{}}
+\toprule
+$n$ & $\varepsilon$ & $D_n(\varepsilon) \le$ & $D_n(\varepsilon)/(n^2\varepsilon)$ & reached \\
+\midrule
+100 & $10^{-10}$ & $6.05\cdot10^{-7}$ & 0.605 & 87.3\% \\
+100 & $10^{-8}$ & $6.05\cdot10^{-5}$ & 0.605 & 87.3\% \\
+200 & $10^{-10}$ & $2.36\cdot10^{-6}$ & 0.589 & 87.3\% \\
+400 & $10^{-10}$ & $9.35\cdot10^{-6}$ & 0.585 & 87.3\% \\
+400 & $3\cdot10^{-10}$ & $2.81\cdot10^{-5}$ & 0.585 & 87.3\% \\
+800 & $3\cdot10^{-10}$ & $1.13\cdot10^{-4}$ & 0.587 & 87.2\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{The rounded QPLIB copies}\label{app:camshape-copies}
+
+QPLIB contains the four models as \inst{QPLIB_2738}, \inst{QPLIB_2480}, \inst{QPLIB_2703} and \inst{QPLIB_3177} \citep{furini2018-qplib-a-library-of-quadratic,cache2026-qplib-pages-and-rounded-camshape}, with another variable order and constants rounded to 8--10 digits (for example $c = 1.9998452$ for $n = 100$).
+They are different models, so \cref{thm:camshape-opt} does not apply to them, but \cref{prop:camshape-general} does.
+
+\begin{proposition}[exact optima of the QPLIB copies]\label{prop:camshape-copies}
+Read with exact decimals, the \texttt{.gms} files of the four copies have the form~\eqref{eq:camshape-problem}, and (K1)--(K6) hold.
+Hence each copy's optimal value is the rational $-c_0\sum_j E_j$ of its own constants, attained at its own envelope point, with the values and shifts of \cref{tab:camshape-copies}.
+QPLIB's reference points \citep{furini2026-qplib-official-solution-point-records} for \inst{QPLIB_2703} and \inst{QPLIB_3177} violate row $G_1$ by $3.0\cdot10^{-10}$ and lie at least $8.15\cdot10^{-6}$ and $3.27\cdot10^{-5}$ below their copies' optima; the one for \inst{QPLIB_2738} violates rows by up to $2.0\cdot10^{-14}$ and lies more than $5.8\cdot10^{-14}$ below; the one for \inst{QPLIB_2480} violates rows by up to $2.2\cdot10^{-14}$ and lies about $1.5\cdot10^{-12}$ above.
+\end{proposition}
+
+\begin{proof}
+The structure and the checks are verified in exact rational arithmetic, and \cref{prop:camshape-general}(c) gives the optima; the remaining claims follow by exact evaluation of each point in its own copy and exact subtraction.
+\end{proof}
+
+\begin{table}[ht]
+\centering
+\small
+\caption{Exact optima of the rounded QPLIB copies (floor and ceiling at 16 decimals), shift above the MINLPLib optimum $v_n$ (rounded down), and position of QPLIB's reference point.}
+\label{tab:camshape-copies}
+\begin{tabular}{@{}lllll@{}}
+\toprule
+copy & floor of optimum & ceiling of optimum & shift $\ge$ & reference point \\
+\midrule
+\inst{QPLIB_2738} & $-4.2841462678046117$ & $-4.2841462678046116$ & $8.539\cdot10^{-7}$ & ${>}\,5.8\cdot10^{-14}$ below \\
+\inst{QPLIB_2480} & $-4.2784904096736786$ & $-4.2784904096736785$ & $9.823\cdot10^{-6}$ & about $1.5\cdot10^{-12}$ above \\
+\inst{QPLIB_2703} & $-4.2756507125126530$ & $-4.2756507125126529$ & $3.776\cdot10^{-5}$ & $\ge 8.15\cdot10^{-6}$ below \\
+\inst{QPLIB_3177} & $-4.2741871514717434$ & $-4.2741871514717433$ & $8.699\cdot10^{-5}$ & $\ge 3.27\cdot10^{-5}$ below \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{certbox}[Certificate for \cref{prop:camshape-copies}]
+\certitem{Inputs}{QPLIB \texttt{.gms} copies (SHA-256 \texttt{b30f2827} for 2738, \texttt{2ca3dde5} for 2480, \texttt{0ac46c15} for 2703, \texttt{4d0e595f} for 3177); reference points \texttt{1d903458}, \texttt{18a8e5bf}, \texttt{7052af94}, \texttt{115ae675}.}
+\certitem{Computation}{structure assertions; (K1)--(K6), envelope and optimum; every row and bound at the envelope and reference points; \arith{E}.}
+\certitem{Data reading}{exact decimals.}
+\certitem{Implementations}{two separately written GAMS parsers, the first checking every row at the envelope point and the second applying \cref{prop:camshape-general}, print identical 16-decimal floors; an earlier code for the lower bounds agrees.}
+\certitem{Evidence level}{\evid{hand}+\evid{stored}.}
+\certitem{Replay}{Tier~1; under 2\,s for the second parser, which also evaluates the reference points; about 10\,min for the first on the four copies and the four MINLPLib files together, and about 5\,min for its evaluation of the reference points.}
+\end{certbox}
+
+All four copies round $c$ up, which tightens every convexity row, and the net effect of all roundings raises the optimum in each case, by about $2\cdot10^{-7}$ to $2\cdot10^{-5}$ relative; the MINLPLib optima are not feasible for the copies.
+The deficit construction of \cref{app:camshape-deficit}, applied to the copies with the same exact arithmetic and upward rounding, shows that every point of \inst{QPLIB_2738} with violations at most $2.5\cdot10^{-8}$ has objective at least $-4.2842974$, and every point of \inst{QPLIB_3177} with violations at most $8\cdot10^{-9}$ has objective at least $-4.2771732$ (both rounded down).
+Both values lie above $-4.284301$ and $-4.2773$, which exceed every number within one unit of the last displayed digit of ANTIGONE's $-4.284302$ and MINOTAUR's $-4.2774$, so reaching these reported values needs larger violations (\cref{prop:qplib-copies}).
+
+The listed and QPLIB points were evaluated exactly by two or three implementations each.
+The ingredients are classical (polar convexity, discrete Sturm comparison, the greatest Lipschitz minorant on a path); what is new is their exact application to these stored models.

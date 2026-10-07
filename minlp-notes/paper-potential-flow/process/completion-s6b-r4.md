@@ -73,7 +73,7 @@ At review start and again at review end, the supplied manifest hash was `a530e91
 
 ## Extracted delivery and actual reproduction
 
-I extracted the supplied final archive to `/tmp/s6b-r4-66egwp2g/potential-flow-paper-a/` and ran the following commands there, with the absolute interpreter `/home/sgusev/miniconda3/envs/minlp-notes/bin/python` in place of `python`:
+I extracted the supplied final archive to `/tmp/s6b-r4-66egwp2g/potential-flow-paper-a/` and ran the following commands there, with the absolute interpreter `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python` in place of `python`:
 
 ```sh
 python -S paper-potential-flow/reproducibility/reproduce.py --output /tmp/s6b-r4-exact.json

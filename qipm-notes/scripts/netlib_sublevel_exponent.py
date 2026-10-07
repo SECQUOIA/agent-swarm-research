@@ -1,5 +1,12 @@
+from pathlib import Path as _CleanupPath
+import os as _cleanup_os
+# Point QIPM_SOURCE_ROOT to the external QIPM checkout containing standard_form.py.
+if 'QIPM_SOURCE_ROOT' not in _cleanup_os.environ:
+    raise RuntimeError('Set QIPM_SOURCE_ROOT to the QIPM source checkout before running this probe.')
+_QIPM_ROOT = _CleanupPath(_cleanup_os.environ['QIPM_SOURCE_ROOT']).expanduser().resolve()
+
 import numpy as np, sys
-sys.path.insert(0, '/home/sgusev/repo/qipm')
+sys.path.insert(0, (str(_QIPM_ROOT)))
 from pathlib import Path
 from standard_form import load_standard_form
 from scipy.optimize import linprog
@@ -7,7 +14,7 @@ import scipy.linalg as sla
 rng = np.random.default_rng(4)
 
 def theta_fit(name, ndir=30):
-    c, b, A, off = load_standard_form(Path(f'/home/sgusev/repo/qipm/cache_dir/netlib/{name}/{name}.std'))
+    c, b, A, off = load_standard_form(Path(f'{_QIPM_ROOT}/cache_dir/netlib/{name}/{name}.std'))
     A = A.toarray(); m, n = A.shape
     r = np.linalg.matrix_rank(A)
     if r < m:

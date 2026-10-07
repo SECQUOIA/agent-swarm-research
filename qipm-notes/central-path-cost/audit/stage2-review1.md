@@ -27,7 +27,7 @@ Reviewed the complete new mathematics in `sections/03-sharp-centrality.tex`, `03
 
 ## Independent execution and literature checks
 
-Both supplied scripts were read and run with `/home/sgusev/miniconda3/envs/qipm/bin/python`; both passed. The Fraction-based certificate checks every displayed finite arithmetic margin and radical enclosure. The geometry script is correctly labeled numerical evidence, not a proof.
+Both supplied scripts were read and run with `/workspace/local-home/miniconda3/envs/qipm/bin/python`; both passed. The Fraction-based certificate checks every displayed finite arithmetic margin and radical enclosure. The geometry script is correctly labeled numerical evidence, not a proof.
 
 Additional independently written checks integrated $\rho$ directly rather than reusing the supplied $H$ routine. Finite-difference elasticity checks passed at $x=0.05,0.4,0.8,0.95$. Exact rational dyadic exponents were reconstructed at ranks 32, 128, and 512; the first accurate labels were respectively approximately $T-0.03725$, $T-0.01756$, and $T-0.00678$. The minimum early-cutoff gaps exceeded $\log2$, and the normalized progress $P(b)/(r\log r)$ stayed of constant order. These checks support, but do not replace, the analytic arguments.
 

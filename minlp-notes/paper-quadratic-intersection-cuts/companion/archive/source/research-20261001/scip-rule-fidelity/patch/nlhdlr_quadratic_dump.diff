@@ -1,0 +1,794 @@
+--- scipoptsuite-10.0.3/scip/src/scip/nlhdlr_quadratic.c	2026-07-02 05:02:15.000000000 -0400
++++ fidelity/src/scip/src/scip/nlhdlr_quadratic.c	2026-10-01 23:43:10.980467605 -0400
+@@ -174,6 +174,396 @@
+ };
+ typedef struct Rays RAYS;
+ 
++/*
++ * Intersection-cut dump instrumentation (research copy, not part of SCIP).
++ * If the environment variable SCIP_INTERCUT_DUMP names a file, every call of the
++ * quadratic nlhdlr enforcement that reaches generateIntercut writes one JSON line
++ * with the data needed to recompute the cut. Counters of early returns are written
++ * as a final line when the nlhdlr data is freed.
++ */
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <stdarg.h>
++
++/* POSIX 2008; declared here because SCIP compiles with -std=c99 */
++extern FILE* open_memstream(char** ptr, size_t* sizeloc);
++
++static FILE* icdfile = NULL;        /* output file (NULL: dumping off) */
++static int icdinit = 0;             /* whether getenv was checked */
++static char* icdbuf = NULL;         /* buffer of current record */
++static size_t icdbufsize = 0;
++static FILE* icdmem = NULL;         /* memstream of current record (NULL: no record open) */
++static const char* icdfail = NULL;  /* failure reason of current attempt */
++static int icdnperray = 0;          /* number of per-ray entries written */
++static long long icdcount[16];      /* counters of enfo outcomes */
++static void* icdmainscip = NULL;    /* main SCIP (subscip depth 0) */
++static const char* icdcountname[16] = {"calls", "skip_branchcandonly", "skip_convex", "skip_off", "skip_lpnotgood",
++   "skip_node", "skip_limit", "skip_noeig", "skip_viol", "skip_rootandsub", "skip_feasible", "attempts",
++   "generated", "cleanup_ok", "added", "highre"};
++
++static
++SCIP_Bool icdActive(void)
++{
++   if( !icdinit )
++   {
++      const char* fn = getenv("SCIP_INTERCUT_DUMP");
++      icdinit = 1;
++      if( fn != NULL && fn[0] != '\0' )
++         icdfile = fopen(fn, "a");
++   }
++   return icdfile != NULL;
++}
++
++static
++void icdPrintf(const char* fmt, ...)
++{
++   va_list ap;
++   if( icdmem == NULL )
++      return;
++   va_start(ap, fmt);
++   vfprintf(icdmem, fmt, ap);
++   va_end(ap);
++}
++
++static
++void icdReal(SCIP_Real x)
++{
++   if( x != x )
++      icdPrintf("NaN");
++   else if( x > 1e300 )
++      icdPrintf("Infinity");
++   else if( x < -1e300 )
++      icdPrintf("-Infinity");
++   else
++      icdPrintf("%.17g", x);
++}
++
++static
++void icdRealArray(const char* key, const SCIP_Real* x, int n)
++{
++   int i;
++   icdPrintf(",\"%s\":[", key);
++   for( i = 0; i < n; ++i )
++   {
++      if( i > 0 )
++         icdPrintf(",");
++      icdReal(x[i]);
++   }
++   icdPrintf("]");
++}
++
++static
++void icdStr(const char* s)
++{
++   icdPrintf("\"");
++   for( ; s != NULL && *s != '\0'; ++s )
++   {
++      if( *s == '"' || *s == '\\' )
++         icdPrintf("\\%c", *s);
++      else if( (unsigned char)*s < 32 )
++         icdPrintf("?");
++      else
++         icdPrintf("%c", *s);
++   }
++   icdPrintf("\"");
++}
++
++static
++void icdBegin(void)
++{
++   if( !icdActive() )
++      return;
++   icdmem = open_memstream(&icdbuf, &icdbufsize);
++   icdfail = NULL;
++   icdnperray = 0;
++   icdPrintf("{\"v\":1");
++}
++
++static
++void icdEnd(void)
++{
++   if( icdmem == NULL )
++      return;
++   if( icdfail != NULL )
++      icdPrintf(",\"fail\":\"%s\"", icdfail);
++   icdPrintf("}\n");
++   fclose(icdmem);
++   icdmem = NULL;
++   fputs(icdbuf, icdfile);
++   fflush(icdfile);
++   free(icdbuf);
++   icdbuf = NULL;
++   icdbufsize = 0;
++}
++
++static
++void icdCounterLine(void)
++{
++   int i;
++   if( !icdActive() )
++      return;
++   fprintf(icdfile, "{\"counters\":{");
++   for( i = 0; i < 16; ++i )
++      fprintf(icdfile, "%s\"%s\":%lld", i > 0 ? "," : "", icdcountname[i], icdcount[i]);
++   fprintf(icdfile, "}}\n");
++   fflush(icdfile);
++}
++
++/** writes the quadratic data, bounds and LP values of the constraint variables */
++static
++void icdQuadData(
++   SCIP*                 scip,
++   SCIP_NLHDLREXPRDATA*  nlhdlrexprdata,
++   SCIP_EXPR*            expr,
++   SCIP_CONS*            cons,
++   SCIP_SOL*             sol
++   )
++{
++   SCIP_EXPR* qexpr = nlhdlrexprdata->qexpr;
++   SCIP_EXPR** linexprs;
++   SCIP_Real* lincoefs;
++   SCIP_Real* eigenvalues;
++   SCIP_Real* eigenvectors;
++   SCIP_Real constant;
++   SCIP_VAR* auxvar;
++   int nlinexprs;
++   int nquadexprs;
++   int nbilinexprs;
++   int i;
++   int j;
++
++   if( icdmem == NULL )
++      return;
++
++   SCIPexprGetQuadraticData(qexpr, &constant, &nlinexprs, &linexprs, &lincoefs, &nquadexprs, &nbilinexprs,
++      &eigenvalues, &eigenvectors);
++   auxvar = (nlhdlrexprdata->cons != cons) ? SCIPgetExprAuxVarNonlinear(expr) : NULL;
++
++   icdPrintf(",\"auxvar\":");
++   if( auxvar != NULL )
++      icdStr(SCIPvarGetName(auxvar));
++   else
++      icdPrintf("null");
++   icdPrintf(",\"nquad\":%d,\"nlin\":%d,\"constant\":", nquadexprs, nlinexprs);
++   icdReal(constant);
++   if( nlhdlrexprdata->cons != NULL )
++   {
++      icdPrintf(",\"lhs\":");
++      icdReal(SCIPgetLhsNonlinear(nlhdlrexprdata->cons));
++      icdPrintf(",\"rhs\":");
++      icdReal(SCIPgetRhsNonlinear(nlhdlrexprdata->cons));
++   }
++   icdPrintf(",\"vars\":[");
++   for( i = 0; i < nquadexprs; ++i )
++   {
++      SCIP_EXPR* e;
++      SCIPexprGetQuadraticQuadTerm(qexpr, i, &e, NULL, NULL, NULL, NULL, NULL);
++      if( i > 0 )
++         icdPrintf(",");
++      icdStr(SCIPvarGetName(SCIPgetExprAuxVarNonlinear(e)));
++   }
++   for( i = 0; i < nlinexprs; ++i )
++   {
++      icdPrintf(",");
++      icdStr(SCIPvarGetName(SCIPgetExprAuxVarNonlinear(linexprs[i])));
++   }
++   if( auxvar != NULL )
++   {
++      icdPrintf(",");
++      icdStr(SCIPvarGetName(auxvar));
++   }
++   icdPrintf("]");
++
++   /* lincoef and sqrcoef of quadratic exprs */
++   icdPrintf(",\"qlin\":[");
++   for( i = 0; i < nquadexprs; ++i )
++   {
++      SCIP_Real lc;
++      SCIPexprGetQuadraticQuadTerm(qexpr, i, NULL, &lc, NULL, NULL, NULL, NULL);
++      if( i > 0 )
++         icdPrintf(",");
++      icdReal(lc);
++   }
++   icdPrintf("],\"qsqr\":[");
++   for( i = 0; i < nquadexprs; ++i )
++   {
++      SCIP_Real sc;
++      SCIPexprGetQuadraticQuadTerm(qexpr, i, NULL, NULL, &sc, NULL, NULL, NULL);
++      if( i > 0 )
++         icdPrintf(",");
++      icdReal(sc);
++   }
++   icdPrintf("],\"bilin\":[");
++   for( i = 0; i < nbilinexprs; ++i )
++   {
++      SCIP_EXPR* e1;
++      SCIP_EXPR* e2;
++      SCIP_Real bc;
++      int pos2;
++      int pos1 = -1;
++      SCIPexprGetQuadraticBilinTerm(qexpr, i, &e1, &e2, &bc, &pos2, NULL);
++      for( j = 0; j < nquadexprs; ++j )
++      {
++         SCIP_EXPR* e;
++         SCIPexprGetQuadraticQuadTerm(qexpr, j, &e, NULL, NULL, NULL, NULL, NULL);
++         if( e == e1 )
++         {
++            pos1 = j;
++            break;
++         }
++      }
++      icdPrintf("%s[%d,%d,", i > 0 ? "," : "", pos1, pos2);
++      icdReal(bc);
++      icdPrintf("]");
++   }
++   icdPrintf("]");
++   icdRealArray("lincoefs", lincoefs, nlinexprs);
++   if( eigenvalues != NULL )
++   {
++      icdRealArray("eigval", eigenvalues, nquadexprs);
++      icdRealArray("eigvec", eigenvectors, nquadexprs * nquadexprs);
++   }
++
++   /* LP values and local bounds of [quad vars, lin vars, aux var] */
++   {
++      int nv = nquadexprs + nlinexprs + (auxvar != NULL ? 1 : 0);
++      SCIP_VAR** vs;
++      if( SCIPallocBufferArray(scip, &vs, nv) != SCIP_OKAY )
++         return;
++      for( i = 0; i < nquadexprs; ++i )
++      {
++         SCIP_EXPR* e;
++         SCIPexprGetQuadraticQuadTerm(qexpr, i, &e, NULL, NULL, NULL, NULL, NULL);
++         vs[i] = SCIPgetExprAuxVarNonlinear(e);
++      }
++      for( i = 0; i < nlinexprs; ++i )
++         vs[nquadexprs + i] = SCIPgetExprAuxVarNonlinear(linexprs[i]);
++      if( auxvar != NULL )
++         vs[nv - 1] = auxvar;
++      icdPrintf(",\"zlp\":[");
++      for( i = 0; i < nv; ++i )
++      {
++         if( i > 0 )
++            icdPrintf(",");
++         icdReal(SCIPgetSolVal(scip, sol, vs[i]));
++      }
++      icdPrintf("],\"lb\":[");
++      for( i = 0; i < nv; ++i )
++      {
++         if( i > 0 )
++            icdPrintf(",");
++         icdReal(SCIPvarGetLbLocal(vs[i]));
++      }
++      icdPrintf("],\"ub\":[");
++      for( i = 0; i < nv; ++i )
++      {
++         if( i > 0 )
++            icdPrintf(",");
++         icdReal(SCIPvarGetUbLocal(vs[i]));
++      }
++      icdPrintf("],\"integral\":[");
++      for( i = 0; i < nv; ++i )
++         icdPrintf("%s%d", i > 0 ? "," : "", SCIPvarIsIntegral(vs[i]) ? 1 : 0);
++      icdPrintf("]");
++      SCIPfreeBufferArray(scip, &vs);
++   }
++}
++
++/** writes the rays (dense over the constraint variables) with basis status and objective rates */
++static
++void icdRays(
++   SCIP*                 scip,
++   RAYS*                 rays,
++   int                   nv
++   )
++{
++   SCIP_COL** cols;
++   SCIP_ROW** rows;
++   int r;
++   int k;
++
++   if( icdmem == NULL )
++      return;
++   cols = SCIPgetLPCols(scip);
++   rows = SCIPgetLPRows(scip);
++   icdPrintf(",\"nrays\":%d,\"raylppos\":[", rays->nrays);
++   for( r = 0; r < rays->nrays; ++r )
++      icdPrintf("%s%d", r > 0 ? "," : "", rays->lpposray[r]);
++   icdPrintf("],\"raystat\":[");
++   for( r = 0; r < rays->nrays; ++r )
++   {
++      int lppos = rays->lpposray[r];
++      int st = lppos >= 0 ? (int)SCIPcolGetBasisStatus(cols[lppos]) : (int)SCIProwGetBasisStatus(rows[-lppos - 1]);
++      icdPrintf("%s%d", r > 0 ? "," : "", st);
++   }
++   icdPrintf("],\"rayrate\":[");
++   for( r = 0; r < rays->nrays; ++r )
++   {
++      int lppos = rays->lpposray[r];
++      if( r > 0 )
++         icdPrintf(",");
++      icdReal(lppos >= 0 ? SCIPgetColRedcost(scip, cols[lppos]) : SCIProwGetDualsol(rows[-lppos - 1]));
++   }
++   icdPrintf("],\"raywidth\":[");
++   for( r = 0; r < rays->nrays; ++r )
++   {
++      int lppos = rays->lpposray[r];
++      if( r > 0 )
++         icdPrintf(",");
++      if( lppos >= 0 )
++         icdReal(SCIPcolGetUb(cols[lppos]) - SCIPcolGetLb(cols[lppos]));
++      else
++         icdReal(SCIProwGetRhs(rows[-lppos - 1]) - SCIProwGetLhs(rows[-lppos - 1]));
++   }
++   icdPrintf("],\"rayname\":[");
++   for( r = 0; r < rays->nrays; ++r )
++   {
++      int lppos = rays->lpposray[r];
++      if( r > 0 )
++         icdPrintf(",");
++      icdStr(lppos >= 0 ? SCIPvarGetName(SCIPcolGetVar(cols[lppos])) : SCIProwGetName(rows[-lppos - 1]));
++   }
++   /* sparse rays: for each ray a list of [index into constraint variables, value] */
++   icdPrintf("],\"nv\":%d,\"rays\":[", nv);
++   for( r = 0; r < rays->nrays; ++r )
++   {
++      icdPrintf("%s[", r > 0 ? "," : "");
++      for( k = rays->raysbegin[r]; k < rays->raysbegin[r + 1]; ++k )
++      {
++         icdPrintf("%s[%d,", k > rays->raysbegin[r] ? "," : "", rays->raysidx[k]);
++         icdReal(rays->rays[k]);
++         icdPrintf("]");
++      }
++      icdPrintf("]");
++   }
++   icdPrintf("]");
++}
++
++/** writes a rowprep */
++static
++void icdRowprep(
++   const char*           key,
++   SCIP_ROWPREP*         rowprep
++   )
++{
++   int i;
++   if( icdmem == NULL )
++      return;
++   icdPrintf(",\"%s\":{\"side\":", key);
++   icdReal(SCIProwprepGetSide(rowprep));
++   icdPrintf(",\"sidetype\":%d,\"vars\":[", (int)SCIProwprepGetSidetype(rowprep));
++   for( i = 0; i < SCIProwprepGetNVars(rowprep); ++i )
++   {
++      if( i > 0 )
++         icdPrintf(",");
++      icdStr(SCIPvarGetName(SCIProwprepGetVars(rowprep)[i]));
++   }
++   icdPrintf("]");
++   icdRealArray("coefs", SCIProwprepGetCoefs(rowprep), SCIProwprepGetNVars(rowprep));
++   icdPrintf("}");
++}
++
+ 
+ /*
+  * Callback methods of the table
+@@ -2570,9 +2960,23 @@
+ 
+    usemonoidal = nlhdlrdata->usemonoidal && case2;
+ 
++   if( icdmem != NULL )
++   {
++      int icdnq;
++      SCIPexprGetQuadraticData(nlhdlrexprdata->qexpr, NULL, NULL, NULL, NULL, &icdnq, NULL, NULL, NULL);
++      icdPrintf(",\"case2\":%d,\"usemonoidal\":%d", case2 ? 1 : 0, usemonoidal ? 1 : 0);
++      if( case2 && apex != NULL )
++         icdRealArray("apex", apex, icdnq);
++      icdPrintf(",\"perray\":[");
++      icdnperray = 0;
++   }
++
+    /* for every ray: compute cut coefficient and add var associated to ray into cut */
+    for( i = 0; i < rays->nrays; ++i )
+    {
++      SCIP_Real icdc[13];
++      SCIP_Real icdt = -1.0;
++      int icdhave = 0;
+       SCIP_Real interpoint;
+       SCIP_Real cutcoef;
+       int lppos;
+@@ -2605,16 +3009,39 @@
+                   rays->raysbegin[i], vb, vzlp, wcoefs, wzlp, kappa, coefs1234a, coefs4b, coefscondition, success) );
+ 
+          if( ! *success )
++         {
++            icdfail = "phi0_restrict";
+             goto TERMINATE;
++         }
+ 
+          /* if restriction to ray is numerically nasty -> abort cut separation */
+          *success = areCoefsNumericsGood(scip, nlhdlrdata, coefs1234a, coefs4b, iscase4);
+ 
+          if( ! *success )
++         {
++            icdfail = "numerics";
++            if( icdmem != NULL )
++            {
++               icdPrintf("%s{\"i\":%d,\"fail\":1", icdnperray > 0 ? "," : "", i);
++               icdRealArray("c1234a", coefs1234a, 5);
++               if( iscase4 )
++                  icdRealArray("c4b", coefs4b, 5);
++               icdPrintf("}");
++               ++icdnperray;
++            }
+             goto TERMINATE;
++         }
+ 
+          /* compute intersection point */
+          interpoint = computeIntersectionPoint(scip, nlhdlrdata, iscase4, coefs1234a, coefs4b, coefscondition);
++         icdt = interpoint;
++         icdhave = 1;
++         memcpy(icdc, coefs1234a, 5 * sizeof(SCIP_Real));
++         if( iscase4 )
++         {
++            memcpy(icdc + 5, coefs4b, 5 * sizeof(SCIP_Real));
++            memcpy(icdc + 10, coefscondition, 3 * sizeof(SCIP_Real));
++         }
+ 
+ #ifdef  DEBUG_INTERSECTIONCUT
+          SCIPinfoMessage(scip, NULL, "interpoint for ray %d is %g\n", i, interpoint);
+@@ -2650,13 +3077,19 @@
+                rays->raysbegin[i], vb, vzlp, kappa, apex, coefs1234a, success) );
+ 
+             if( ! *success )
++            {
++               icdfail = "minrep_phi0";
+                goto TERMINATE;
++            }
+ 
+             /* if restriction to ray is numerically nasty -> abort cut separation */
+             *success = areCoefsNumericsGood(scip, nlhdlrdata, coefs1234a, NULL, FALSE);
+ 
+             if( ! *success )
++            {
++               icdfail = "minrep_numerics";
+                goto TERMINATE;
++            }
+ 
+             coefs1234a[1] *= -1.0;
+             coefs1234a[3] *= -1.0;
+@@ -2668,6 +3101,26 @@
+          }
+       }
+ 
++      if( icdmem != NULL )
++      {
++         icdPrintf("%s{\"i\":%d,\"t\":", icdnperray > 0 ? "," : "", i);
++         icdReal(icdhave ? icdt : -1.0);
++         icdPrintf(",\"coef\":");
++         icdReal(cutcoef);
++         icdPrintf(",\"mono\":%d", monoidalsuccess ? 1 : 0);
++         if( icdhave )
++         {
++            icdRealArray("c1234a", icdc, 5);
++            if( iscase4 )
++            {
++               icdRealArray("c4b", icdc + 5, 5);
++               icdRealArray("cond", icdc + 10, 3);
++            }
++         }
++         icdPrintf("}");
++         ++icdnperray;
++      }
++
+       /* keep track of average cut coefficient */
+       ++counter;
+       avecutcoefsum += cutcoef;
+@@ -2691,6 +3144,7 @@
+          {
+             INTERLOG(printf("Bad numeric: now not nonbasic enough\n");)
+             nlhdlrdata->nbadnonbasic++;
++            icdfail = "badnonbasic";
+             goto TERMINATE;
+          }
+       }
+@@ -2725,6 +3179,7 @@
+       nlhdlrdata->currentavemonoidalimprovement = avemonoidalimprovsum / monoidalcounter;
+ 
+ TERMINATE:
++   icdPrintf("]");
+    SCIPfreeBufferArrayNull(scip, &apex);
+ 
+    return SCIP_OKAY;
+@@ -3416,8 +3871,10 @@
+       if( ! *success )
+       {
+          INTERLOG(printf("Failed to get rays: there is a var with base status ZERO!\n"); )
++         icdfail = "zerostat";
+          return SCIP_OKAY;
+       }
++      icdRays(scip, rays, nquadexprs + nlinexprs + (auxvar != NULL ? 1 : 0));
+ 
+       soltoseparate = sol;
+    }
+@@ -3482,6 +3939,19 @@
+       }
+    }
+ 
++   if( icdmem != NULL )
++   {
++      icdRealArray("vb", vb, nquadexprs);
++      icdRealArray("vzlp", vzlp, nquadexprs);
++      if( iscase4 )
++         icdRealArray("wcoefs", wcoefs, nquadexprs);
++      icdPrintf(",\"wzlp\":");
++      icdReal(wzlp);
++      icdPrintf(",\"kappa\":");
++      icdReal(kappa);
++      icdPrintf(",\"case4\":%d,\"sidefactor\":%g", iscase4 ? 1 : 0, sidefactor);
++   }
++
+    /* compute (strengthened) intersection cut */
+    if( nlhdlrdata->usestrengthening )
+    {
+@@ -4264,14 +4734,24 @@
+    assert(result != NULL);
+    *result = SCIP_DIDNOTRUN;
+ 
++   if( SCIPgetSubscipDepth(scip) == 0 )
++   {
++      icdcount[0]++;
++      icdmainscip = (void*)scip;
++   }
++
+    if( branchcandonly )
++   {
++      icdcount[1]++;
+       return SCIP_OKAY;
++   }
+ 
+    /* estimate should take care of convex quadratics */
+    if( ( overestimate && nlhdlrexprdata->curvature == SCIP_EXPRCURV_CONCAVE) ||
+        (!overestimate && nlhdlrexprdata->curvature == SCIP_EXPRCURV_CONVEX) )
+    {
+       INTERLOG(printf("Convex or concave, no need of interesection cuts!\n");)
++      if( SCIPgetSubscipDepth(scip) == 0 ) icdcount[2]++;
+       return SCIP_OKAY;
+    }
+ 
+@@ -4279,6 +4759,7 @@
+    if( ! nlhdlrdata->useintersectioncuts )
+    {
+       INTERLOG(printf("We don't use intersection cuts!\n");)
++      if( SCIPgetSubscipDepth(scip) == 0 ) icdcount[3]++;
+       return SCIP_OKAY;
+    }
+ 
+@@ -4288,6 +4769,7 @@
+    if( sol != NULL || SCIPgetLPSolstat(scip) != SCIP_LPSOLSTAT_OPTIMAL || !SCIPisLPSolBasic(scip) )
+    {
+       INTERLOG(printf("LP solutoin not good!\n");)
++      if( SCIPgetSubscipDepth(scip) == 0 ) icdcount[4]++;
+       return SCIP_OKAY;
+    }
+ 
+@@ -4297,6 +4779,7 @@
+    if( (nlhdlrdata->atwhichnodes == -1 && depth != 0) || (nlhdlrdata->atwhichnodes != -1 && depth % nlhdlrdata->atwhichnodes != 0) )
+    {
+       INTERLOG(printf("Don't separate at this node\n");)
++      if( SCIPgetSubscipDepth(scip) == 0 ) icdcount[5]++;
+       return SCIP_OKAY;
+    }
+ 
+@@ -4314,6 +4797,7 @@
+       nlhdlrexprdata->ncutsadded >= nlhdlrdata->ncutslimitroot) )
+    {
+       INTERLOG(printf("Too many cuts added already\n");)
++      if( SCIPgetSubscipDepth(scip) == 0 ) icdcount[6]++;
+       return SCIP_OKAY;
+    }
+ 
+@@ -4322,6 +4806,7 @@
+    if( eigenvalues == NULL )
+    {
+       INTERLOG(printf("No known eigenvalues!\n");)
++      if( SCIPgetSubscipDepth(scip) == 0 ) icdcount[7]++;
+       return SCIP_OKAY;
+    }
+ 
+@@ -4340,6 +4825,7 @@
+    if( violation < nlhdlrdata->minviolation )
+    {
+       INTERLOG(printf("Violation %g is just too small\n", violation); )
++      if( SCIPgetSubscipDepth(scip) == 0 ) icdcount[8]++;
+       return SCIP_OKAY;
+    }
+ 
+@@ -4348,6 +4834,7 @@
+    if( nlhdlrexprdata->cons != NULL && cons != nlhdlrexprdata->cons )
+    {
+       INTERLOG(printf("WARNING!! expr is root of one constraint and subexpr of another!\n"); )
++      if( SCIPgetSubscipDepth(scip) == 0 ) icdcount[9]++;
+       return SCIP_OKAY;
+    }
+ 
+@@ -4358,6 +4845,7 @@
+             (! overestimate && (auxvalue - SCIPgetRhsNonlinear(cons) < SCIPfeastol(scip)))) )
+    {
+       INTERLOG(printf("We are actually feasible for the sides of the constraint\n"); )
++      if( SCIPgetSubscipDepth(scip) == 0 ) icdcount[10]++;
+       return SCIP_OKAY;
+    }
+ 
+@@ -4383,8 +4871,61 @@
+    SCIP_CALL( SCIPcreateRowprep(scip, &rowprep, SCIP_SIDETYPE_LEFT, TRUE) );
+    INTERLOG(printf("Generating inter cut\n"); )
+ 
++   if( SCIPgetSubscipDepth(scip) == 0 )
++   {
++      icdcount[11]++;
++      icdBegin();
++   }
++   if( icdmem != NULL )
++   {
++      int icdr;
++      int icdnrows;
++      SCIP_ROW** icdrows;
++      char icdpre[2][SCIP_MAXSTRLEN];
++      icdPrintf(",\"lp\":%lld,\"node\":%lld,\"depth\":%d,\"cons\":", (long long)SCIPgetNLPs(scip),
++         (long long)SCIPnodeGetNumber(node), depth);
++      icdStr(cons != NULL ? SCIPconsGetName(cons) : "");
++      icdPrintf(",\"expr\":\"%p\",\"over\":%d,\"isroot\":%d,\"auxvalue\":", (void*)expr, overestimate ? 1 : 0,
++         cons == nlhdlrexprdata->cons ? 1 : 0);
++      icdReal(auxvalue);
++      icdPrintf(",\"violation\":");
++      icdReal(violation);
++      icdPrintf(",\"lpobj\":");
++      icdReal(SCIPgetLPObjval(scip));
++      icdPrintf(",\"exprncuts\":%d,\"nphinonneg0\":%d,\"nbadray0\":%d", nlhdlrexprdata->ncutsadded,
++         nlhdlrdata->nphinonneg, nlhdlrdata->nbadrayrestriction);
++      icdQuadData(scip, nlhdlrexprdata, expr, cons, sol);
++      /* intersection cuts of this expression currently in the LP (by LP count in their name) */
++      (void) SCIPsnprintf(icdpre[0], SCIP_MAXSTRLEN, "under_intersection_quadratic%p_lp", (void*)expr);
++      (void) SCIPsnprintf(icdpre[1], SCIP_MAXSTRLEN, "over_intersection_quadratic%p_lp", (void*)expr);
++      icdrows = SCIPgetLPRows(scip);
++      icdnrows = SCIPgetNLPRows(scip);
++      icdPrintf(",\"lpcuts\":[");
++      {
++         int icdn = 0;
++         for( icdr = 0; icdr < icdnrows; ++icdr )
++         {
++            const char* nm = SCIProwGetName(icdrows[icdr]);
++            int side;
++            for( side = 0; side < 2; ++side )
++            {
++               size_t len = strlen(icdpre[side]);
++               if( strncmp(nm, icdpre[side], len) == 0 )
++               {
++                  icdPrintf("%s[%d,%s]", icdn > 0 ? "," : "", side, nm + len);
++                  ++icdn;
++               }
++            }
++         }
++      }
++      icdPrintf("],\"nlprows\":%d,\"nlpcols\":%d", icdnrows, SCIPgetNLPCols(scip));
++   }
++
+    SCIP_CALL( generateIntercut(scip, expr, nlhdlrdata, nlhdlrexprdata, cons, sol, rowprep, overestimate, &success) );
+    INTERLOG(if( !success) printf("Generation failed\n"); )
++   if( icdmem != NULL )
++      icdPrintf(",\"gen\":%d,\"nphinonneg1\":%d,\"nbadray1\":%d,\"nbadnonbasic\":%d", success ? 1 : 0,
++         nlhdlrdata->nphinonneg, nlhdlrdata->nbadrayrestriction, nlhdlrdata->nbadnonbasic);
+ 
+    /* we generated something, let us see if it survives the clean up */
+    if( success )
+@@ -4395,6 +4936,9 @@
+ 
+       /* merge coefficients that belong to same variable */
+       SCIPmergeRowprepTerms(scip, rowprep);
++      icdRowprep("rowraw", rowprep);
++      if( SCIPgetSubscipDepth(scip) == 0 )
++         icdcount[12]++;
+ 
+       /* sparsify cut */
+       if( nlhdlrdata->sparsifycuts )
+@@ -4402,6 +4946,14 @@
+ 
+       SCIP_CALL( SCIPcleanupRowprep(scip, rowprep, sol, nlhdlrdata->mincutviolation, &violation, &success) );
+       INTERLOG(if( !success) printf("Clean up failed\n"); )
++      if( icdmem != NULL )
++      {
++         icdPrintf(",\"cleanup\":%d,\"cutviol\":", success ? 1 : 0);
++         icdReal(violation);
++         icdRowprep("row", rowprep);
++      }
++      if( success && SCIPgetSubscipDepth(scip) == 0 )
++         icdcount[13]++;
+    }
+ 
+    /* if cut looks good (numerics ok and cutting off solution), then turn into row and add to sepastore */
+@@ -4434,6 +4986,15 @@
+        * SCIPgetCutEfficacy(scip, NULL, row));
+        */
+       assert(SCIPgetCutEfficacy(scip, NULL, row) > 0.0);
++      if( icdmem != NULL )
++      {
++         icdPrintf(",\"rowname\":");
++         icdStr(SCIProwGetName(row));
++         icdPrintf(",\"eff\":");
++         icdReal(SCIPgetCutEfficacy(scip, NULL, row));
++         icdPrintf(",\"re\":");
++         icdReal(SCIPgetRowMaxCoef(scip, row) / SCIPgetRowMinCoef(scip, row) / SCIPgetCutEfficacy(scip, NULL, row));
++      }
+       if( ! nlhdlrdata->ignorehighre || SCIPgetRowMaxCoef(scip, row) / SCIPgetRowMinCoef(scip, row) / SCIPgetCutEfficacy(scip, NULL, row) < 1e9 )
+       {
+ #ifdef SCIP_DEBUG
+@@ -4442,6 +5003,9 @@
+ #endif
+ 
+          SCIP_CALL( SCIPaddRow(scip, row, FALSE, &infeasible) );
++         icdPrintf(",\"added\":1,\"infeasible\":%d", infeasible ? 1 : 0);
++         if( SCIPgetSubscipDepth(scip) == 0 )
++            icdcount[14]++;
+ 
+          if( infeasible )
+          {
+@@ -4460,10 +5024,14 @@
+       else
+       {
+          nlhdlrdata->nhighre++;
++         icdPrintf(",\"added\":0,\"highre\":1");
++         if( SCIPgetSubscipDepth(scip) == 0 )
++            icdcount[15]++;
+       }
+       SCIP_CALL( SCIPreleaseRow(scip, &row) );
+    }
+ 
++   icdEnd();
+    SCIPfreeRowprep(scip, &rowprep);
+ 
+    return SCIP_OKAY;
+@@ -5078,6 +5646,19 @@
+ { /*lint --e{715}*/
+    assert(nlhdlrdata != NULL);
+ 
++   if( (void*)scip == icdmainscip && icdActive() )
++   {
++      icdCounterLine();
++      fprintf(icdfile, "{\"nlhdlrstats\":{\"ncutsgenerated\":%d,\"ncutsadded\":%d,\"nphinonneg\":%d,"
++         "\"nbadrayrestriction\":%d,\"nbadnonbasic\":%d,\"nhighre\":%d,\"ncouldimprovedcoef\":%d,"
++         "\"nmonoidal\":%d,\"nstrengthenings\":%d,\"ncalls\":%g}}\n",
++         (*nlhdlrdata)->ncutsgenerated, (*nlhdlrdata)->ncutsadded, (*nlhdlrdata)->nphinonneg,
++         (*nlhdlrdata)->nbadrayrestriction, (*nlhdlrdata)->nbadnonbasic, (*nlhdlrdata)->nhighre,
++         (*nlhdlrdata)->ncouldimprovedcoef, (*nlhdlrdata)->nmonoidal, (*nlhdlrdata)->nstrengthenings,
++         (*nlhdlrdata)->ncalls);
++      fflush(icdfile);
++   }
++
+    SCIPfreeBlockMemory(scip, nlhdlrdata);
+ 
+    return SCIP_OKAY;

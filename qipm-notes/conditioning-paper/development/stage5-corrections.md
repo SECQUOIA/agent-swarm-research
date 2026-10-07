@@ -29,7 +29,7 @@ the next stage.
 Ran the complete reproduction with the configured qipm Python:
 
 ```sh
-make -C conditioning-paper reproduce PYTHON=/home/sgusev/miniconda3/envs/qipm/bin/python
+make -C conditioning-paper reproduce PYTHON=/workspace/local-home/miniconda3/envs/qipm/bin/python
 ```
 
 The Makefile fixes both BLAS thread counts to one. All reproduction checks

@@ -91,8 +91,8 @@ Executed commands, from the extraction root unless stated otherwise:
 
 ```sh
 python paper-potential-flow/reproducibility/build_paper.py
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python -S paper-potential-flow/reproducibility/reproduce.py --output /tmp/s7-r4-srsi0739/exact-replay.json
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python paper-potential-flow/reproducibility/reproduce.py --numerical --output /tmp/s7-r4-srsi0739/numerical-replay.json
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python -S paper-potential-flow/reproducibility/reproduce.py --output /tmp/s7-r4-srsi0739/exact-replay.json
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python paper-potential-flow/reproducibility/reproduce.py --numerical --output /tmp/s7-r4-srsi0739/numerical-replay.json
 ```
 
 The build returned 0. The newly generated `complexity/build/build-check.json` reports zero errors, undefined references, undefined citations, duplicate labels and overfull boxes. It records the 23 expected manuscript input hashes. The resulting PDF has 216 pages. Tools: latexmk 4.83, pdfTeX 1.40.25, TeX Live 2023/Debian.

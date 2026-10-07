@@ -18,7 +18,7 @@ make
 In the repository's configured environment, the exact command is:
 
 ```sh
-make reproduce PYTHON=/home/sgusev/miniconda3/envs/qipm/bin/python
+make reproduce PYTHON=/workspace/local-home/miniconda3/envs/qipm/bin/python
 ```
 
 Reproduction requires no network access, no downloaded literature, no parent-repository imports, and no additional optimization package. It verifies exact rational certificates for the frozen benchmark representations and records all accepted and rejected numerical points. See [repro/README.md](repro/README.md) for the data definition, numerical contracts, and provenance. The manifest records the versions and hashes used for the supplied artifacts; small numerical differences on another BLAS implementation can change a threshold-based stopping iteration.

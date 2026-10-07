@@ -95,7 +95,7 @@ This is a structural existence proof. It does not give or need a polynomial bit 
 
 [`cactus_uncertainty_hulls_checks.py`](../code/potential_flow_mpd/cactus_uncertainty_hulls_checks.py) verifies all three theta states with exact rational arithmetic. It also checks 18 cactus coefficient grids and 18 one-coordinate sweeps, with zero observed excess over corner extrema and zero monotonicity violations. Adding the missing edge of the theta graph with resistances `100`, `10000`, and `1000000` gives positive interior gaps approximately `0.03095`, `0.04056`, and `0.04156`, approaching the exact theta gap `1/24`. The numerical solves use the smooth law `beta*(x|x|+10^(-9)x)` to avoid a singular initial Newton Hessian; the exact rational identity checks use the original quadratic law. These tests support the mechanisms, while the original-law topology characterization rests on the proof.
 
-Run with `/home/sgusev/miniconda3/envs/minlp-notes/bin/python code/potential_flow_mpd/cactus_uncertainty_hulls_checks.py`.
+Run with `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python code/potential_flow_mpd/cactus_uncertainty_hulls_checks.py`.
 
 ## Quantitative strengthening of the restoration step
 

@@ -8,7 +8,7 @@ C. Maximisation with a nonlinear objective (epigraph + sense handling).
 D. Solution mapping by name with string indices containing spaces.
 
 Run from code/minlp_solver_lab:
-  OMP_NUM_THREADS=1 PATH=/home/sgusev/miniconda3/envs/solvers/bin:$PATH \
+  OMP_NUM_THREADS=1 \
     uv run python lbesh/tests/review_handmade.py
 """
 import logging, math

@@ -1,0 +1,532 @@
+% lit-ext-proofs.tex -- cluster "lit-ext" (prior work for conditional recourse, constraints,
+% optimal sets and structural limits).  Fragment without preamble.  Citation keys refer to
+% lit-ext.bib.  Labels of the form sec:..., lem:round, prop:filter, lem:contraction,
+% lem:localize, lem:states, thm:approx, thm:exact, eq:growth, eq:semiconcavity refer to the
+% corresponding statements of the main paper (main.tex of the report).
+%
+% Contents
+%   A. Classical facts about conditional values (with attribution).
+%   B. Exact grid oracles for balanced quadratics: a width-free instance of the certified
+%      grid algorithm (new corollary obtained in this audit).
+%   C. Optimal sets: the face criterion and the diagonal Lagrangian certificate.
+%   D. Mean-preserving rounding in totally unimodular fibres.
+%   E. Draft of the related-work section.
+
+\section*{A. Conditional values: concavity and curvature}
+
+Throughout, a function $\phi$ on a box has \emph{upper coordinate curvature} $\ell_j$ in
+coordinate $j$ if $t\mapsto\phi(v+te_j)-\ell_jt^2/2$ is concave on every coordinate segment
+contained in the box. This is coordinatewise semiconcavity with a linear modulus in the sense
+of \cite{CannarsaSinestrari2004}.
+
+\begin{lemma}[Infima preserve concavity and coordinate curvature]\label{lit:lem:inf}
+Let $V\subseteq\R^k$ be convex, let $\mathcal Y$ be a nonempty index set, and let
+$\{f_y\}_{y\in\mathcal Y}$ be functions on $V$ with $\phi(v)=\inf_{y}f_y(v)>-\infty$ for all
+$v\in V$.
+\begin{enumerate}
+\item If every $f_y$ has upper coordinate curvature $\ell_j$ in coordinate $j$, so does $\phi$.
+\item If $f_y(v)=a(y)+w(y)^{\mathsf T}v+\tfrac12v^{\mathsf T}Av+d^{\mathsf T}v+e$ with $A$
+symmetric and $A,d,e$ independent of $y$, then $\phi(v)-\tfrac12v^{\mathsf T}Av-d^{\mathsf T}v$
+is concave on $V$. Consequently $\phi$ has upper coordinate curvature $\ell_j$ for every
+$\ell_j\ge A_{jj}$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+For (1), fix a coordinate segment and write $g_y(t)=f_y(v+te_j)-\ell_jt^2/2$, which is concave.
+For $t_1,t_2$ in the segment and $\lambda\in[0,1]$,
+\[
+\inf_y g_y(\lambda t_1+(1-\lambda)t_2)\ge\inf_y\bigl[\lambda g_y(t_1)+(1-\lambda)g_y(t_2)\bigr]
+\ge\lambda\inf_y g_y(t_1)+(1-\lambda)\inf_y g_y(t_2),
+\]
+and $\inf_yg_y(t)=\phi(v+te_j)-\ell_jt^2/2$. For (2), $f_y(v)-\tfrac12v^{\mathsf T}Av-d^{\mathsf T}v$
+is affine in $v$; a finite pointwise infimum of affine functions is concave by the same
+inequality. On a coordinate line the subtracted quadratic is $A_{jj}t^2/2$ plus an affine
+function, so $\phi(v+te_j)-A_{jj}t^2/2$ is concave; subtracting $(\ell_j-A_{jj})t^2/2\ge0$ preserves
+concavity.
+\end{proof}
+
+\begin{remark}[Use and attribution]
+Part (2) gives, for a private convex block with a parameter-independent feasible set,
+$\psi(v)=\min_{y\in Y}\{\tfrac12y^{\mathsf T}Cy+y^{\mathsf T}Dv+c^{\mathsf T}y\}$, that $\psi$ is
+concave, so a value factor adds no positive coordinate curvature. Part (1) gives the conditional
+value $W_B(v)=\min_{x_{-B}}F(v,x_{-B})$ the same curvature bound as $F$ when the outside domain
+does not depend on $v$. Both are classical: concavity of optimal values in parameters that enter
+the objective concavely over a fixed feasible set is recorded in \cite{MangasarianRosen1964} and
+systematically in \cite{FiaccoKyparisis1986}; stability of semiconcavity under infima is standard
+\cite{CannarsaSinestrari2004}. Neither the convexity of the inner problem nor uniqueness of the
+inner minimizer is used.
+\end{remark}
+
+\begin{lemma}[Concave kinks]\label{lit:lem:kinks}
+Let $g:[\alpha,\omega]\to\R$ be continuous and let $\alpha=\tau_0<\dots<\tau_N=\omega$. Suppose
+that on each $[\tau_{r-1},\tau_r]$ the function $g$ agrees with a quadratic $q_r$ with
+$q_r''\le\ell$, and that $g-\psi$ is concave for some continuously differentiable $\psi$. Then
+$t\mapsto g(t)-\ell t^2/2$ is concave on $[\alpha,\omega]$.
+\end{lemma}
+
+\begin{proof}
+Put $h=g-\ell t^2/2$. On each piece $h$ is a quadratic with $h''\le0$. A concave function has
+left derivative at least its right derivative at every interior point; adding the
+$C^1$ function $\psi-\ell t^2/2$ does not change the difference of one-sided derivatives. Hence
+$h'_-(\tau_r)\ge h'_+(\tau_r)$ for $0<r<N$. The right derivative $h'_+$ therefore exists on
+$[\alpha,\omega)$ and is nonincreasing: within a piece it is the derivative of a concave
+quadratic, and across $\tau_r$ it satisfies $h'_+(t)\ge h'_-(\tau_r)\ge h'_+(\tau_r)$ for
+$t<\tau_r$ in the previous piece. Since $h$ is continuous and piecewise $C^1$,
+$h(t)=h(\alpha)+\int_\alpha^th'_+$, and a function with a nonincreasing derivative of this kind is
+concave.
+\end{proof}
+
+\begin{corollary}[Curvature across a certified partition]\label{lit:cor:partition}
+Let $f(y,v)=\tfrac12y^{\mathsf T}Cy+y^{\mathsf T}Dv+c^{\mathsf T}y+\tfrac12v^{\mathsf T}Av+d^{\mathsf T}v+e$
+with $C\succeq0$, $y\in Y=[\underline y,\overline y]$ and $v$ in a box $V$. Suppose $V$ is covered by finitely many
+closed convex polyhedra $P_r$ and on each $P_r$ the conditional value
+$\phi(v)=\min_{y\in Y}f(y,v)$ equals a quadratic $q_r$ with Hessian $H_r$. Then $\phi$ has
+upper coordinate curvature $\max_r(H_r)_{jj}$ in coordinate $j$.
+\end{corollary}
+
+\begin{proof}
+The function $\phi$ is continuous because $f$ is continuous and $Y$ is compact. A
+coordinate segment meets each $P_r$ in a closed interval. Discarding degenerate intervals and
+refining overlaps (on an overlap of positive length two quadratics that both equal $\phi$ coincide)
+yields consecutive intervals on which $\phi$ is a quadratic with second derivative
+$(H_r)_{jj}$ in $t$. By Lemma~\ref{lit:lem:inf}(2) with $\mathcal Y=Y$, $\phi$ minus a
+smooth quadratic is concave. Lemma~\ref{lit:lem:kinks}, applied with curvature bound $\max_r(H_r)_{jj}$, concludes.
+\end{proof}
+
+\begin{remark}
+When each $P_r$ carries an affine primal response and affine nonnegative bound multipliers
+satisfying the KKT conditions on $P_r$, the identity
+$f(y,v)-f(\hat y_r(v),v)=\tfrac12(y-\hat y_r)^{\mathsf T}C(y-\hat y_r)+\lambda_r^{\mathsf T}(y-\underline y)
++\mu_r^{\mathsf T}(\overline y-y)\ge0$ certifies $\phi=q_r$ on $P_r$. For $C\succ0$ and linearly independent
+active constraints such regions are the critical regions of multiparametric quadratic
+programming \cite[Theorems~2 and~4]{BemporadEtAl2002}; for merely positive semidefinite $C$, where
+optimizers can be nonunique, see \cite{SpjotvoldTondelJohansen2005,SpjotvoldTondelJohansen2007,
+PatrinosSarimveis2011}. Corollary~\ref{lit:cor:partition} only needs the value function on each
+region, so no global overlay of the regions of different blocks is required. The concave-kink
+structure of univariate value functions is also the key structural fact of the forest algorithm
+of \cite{DelPiaKhajavirad2026}.
+\end{remark}
+
+\begin{lemma}[Constant gradient on the optimal set of a convex quadratic]\label{lit:lem:mangasarian}
+Let $K\subseteq\R^m$ be convex and $f(y)=\tfrac12y^{\mathsf T}Cy+c^{\mathsf T}y$ with $C\succeq0$.
+If $S=\arg\min_Kf\neq\emptyset$ and $\bar y\in S$, then
+\[
+S=\{y\in K:\ Cy=C\bar y,\ c^{\mathsf T}y=c^{\mathsf T}\bar y\}.
+\]
+In particular all minimizers have the same gradient $C\bar y+c$.
+\end{lemma}
+
+\begin{proof}
+For $y_1,y_2\in S$, $(y_1+y_2)/2\in K$ and the exact identity
+$f(\tfrac{y_1+y_2}2)=\tfrac12f(y_1)+\tfrac12f(y_2)-\tfrac18(y_1-y_2)^{\mathsf T}C(y_1-y_2)$ gives
+$(y_1-y_2)^{\mathsf T}C(y_1-y_2)\le0$, hence $C(y_1-y_2)=0$ because $C\succeq0$. Then
+$y_1^{\mathsf T}Cy_1=y_1^{\mathsf T}Cy_2=y_2^{\mathsf T}Cy_2$, and $f(y_1)=f(y_2)$ forces
+$c^{\mathsf T}y_1=c^{\mathsf T}y_2$. Conversely, if $y\in K$ satisfies the two displayed equations,
+the same computation gives $f(y)=f(\bar y)$.
+\end{proof}
+
+\begin{remark}
+This is \cite[Lemma~1 and Corollary~1]{Mangasarian1988}. It is the fact behind the observation
+that all central minimizers of a private convex block share one gradient, which fixes the
+sign pattern of every globally affine optimal selector.
+\end{remark}
+
+\section*{B. Exact grid oracles for balanced quadratics}
+
+The certified grid algorithm uses its tree decomposition only to compute, on the current product
+grid $\prod_iG_i$, the corrected minimum $\beta=\min Q$, one minimizer, and the coordinate
+min-marginals $m_i(v)$ of $Q=F-D$. Any exact oracle for these quantities can replace the
+messages. For one sign structure such an oracle exists without any width bound.
+
+\begin{definition}[Balanced quadratic]
+A quadratic $F(x)=\tfrac12x^{\mathsf T}Hx+b^{\mathsf T}x+e$ is \emph{balanced} if there are signs
+$\sigma\in\{-1,1\}^n$ with $\sigma_i\sigma_jH_{ij}\le0$ for all $i\neq j$.
+\end{definition}
+
+Equivalently, after the substitution $x_i\mapsto\sigma_ix_i$ all off-diagonal Hessian entries
+are nonpositive, that is, $F$ becomes submodular on $\R^n$. No sign condition is imposed on the
+diagonal or the linear terms.
+
+\begin{lemma}[Recognizing balance]\label{lit:lem:balance}
+Balance can be decided, and signs $\sigma$ found, in time linear in $n$ plus the number of
+nonzero off-diagonal entries.
+\end{lemma}
+
+\begin{proof}
+The conditions are $\sigma_i=\sigma_j$ when $H_{ij}<0$ and $\sigma_i=-\sigma_j$ when $H_{ij}>0$.
+Breadth-first search assigns signs on each connected component of the graph of nonzero entries
+and reports failure exactly when an edge contradicts the assignment, that is, when some cycle has
+an odd number of positive entries \cite{Harary1953}.
+\end{proof}
+
+\begin{lemma}[Grid minimization by one minimum cut]\label{lit:lem:chaincut}
+Let $F$ be balanced with signs $\sigma$, let $G_i\subset\R$ be finite and nonempty with
+$|G_i|=m_i+1$, and let $\eta_i:G_i\to\Q$ be arbitrary. Put
+$\Phi(y)=F(y)+\sum_i\eta_i(y_i)$ for $y\in\prod_iG_i$. Then $\min\Phi$ and a minimizer can be
+computed from one minimum $s$--$t$ cut in a directed graph with $\sum_im_i+2$ nodes and at most
+$3\sum_im_i+2\sum_{i<j:\,H_{ij}\neq0}m_im_j$ arcs whose capacities are computed from the
+coefficients, the grid points and the values $\eta_i$ by polynomially many rational operations.
+A maximum flow of equal value certifies the minimum. The same
+holds for each min-marginal $\min\{\Phi(y):y_i=v\}$, by replacing $G_i$ with $\{v\}$.
+\end{lemma}
+
+\begin{proof}
+List $G_i$ as $g_{i,0},\dots,g_{i,m_i}$ in increasing order if $\sigma_i=1$ and decreasing order
+if $\sigma_i=-1$, so that $\delta_{i,k}=g_{i,k}-g_{i,k-1}$ has the sign of $\sigma_i$. Encode
+$y_i=g_{i,k}$ by $z_i\in\{0,1\}^{m_i}$ with $z_{i,l}=1$ exactly for $l\le k$. This is a bijection
+between $G_i$ and the monotone vectors $z_{i,1}\ge\dots\ge z_{i,m_i}$, and on monotone vectors
+\[
+y_i=g_{i,0}+\sum_l\delta_{i,l}z_{i,l},\qquad
+\theta(y_i)=\theta(g_{i,0})+\sum_l\bigl[\theta(g_{i,l})-\theta(g_{i,l-1})\bigr]z_{i,l}
+\]
+for every function $\theta$ on $G_i$. Apply the second formula to
+$\theta_i(t)=\tfrac12H_{ii}t^2+b_it+\eta_i(t)$ and substitute the first into each cross term
+$H_{ij}y_iy_j$, $i<j$. On monotone vectors this gives
+\[
+\Phi=E(z)=E_0+\sum_ah_az_a+\sum_{a<b}w_{ab}z_az_b,\qquad
+w_{(i,k),(j,l)}=H_{ij}\delta_{i,k}\delta_{j,l}\le0,
+\]
+for suitable rational $E_0,h_a$; all other pair coefficients are zero. For binary
+variables $z_az_b=\tfrac12(z_a+z_b)-\tfrac12|z_a-z_b|$, so with $r_{ab}=-w_{ab}/2\ge0$ and
+$p_a=h_a+\tfrac12\sum_{b\neq a}w_{ab}$,
+\[
+E(z)=E_0+\sum_ap_az_a+\sum_{a<b}r_{ab}|z_a-z_b|.
+\]
+Build a graph with a node for each $z_a$, an arc $a\to t$ of capacity $\max\{p_a,0\}$, an arc
+$s\to a$ of capacity $\max\{-p_a,0\}$, two opposite arcs of capacity $r_{ab}$ between $a$ and
+$b$, and an arc $(i,l+1)\to(i,l)$ of infinite capacity for each $i$ and $1\le l<m_i$. Identify
+$z$ with the cut whose source side is $\{s\}\cup\{a:z_a=1\}$. A finite cut has no
+infinite arc from the source side to the sink side, which says exactly that $z$ is monotone; and
+for monotone $z$ the cut capacity is
+$\sum_a[\max\{p_a,0\}z_a+\max\{-p_a,0\}(1-z_a)]+\sum_{a<b}r_{ab}|z_a-z_b|$, so that
+\[
+E(z)=E_0+\sum_a\min\{p_a,0\}+\operatorname{cut}(z).
+\]
+The all-zero vector is monotone, so the minimum cut is finite and decodes to a minimizer of
+$\Phi$. By max-flow min-cut duality, a feasible flow whose value equals the capacity of the
+returned cut certifies its optimality. Fixing $y_i=v$ is the same construction with $G_i=\{v\}$,
+and the restricted function is still balanced.
+\end{proof}
+
+\begin{remark}
+Encoding finite ordered labels by threshold variables, and solving pairwise problems that are
+submodular with respect to the label orders by one minimum cut, is classical; see
+\cite[Section~4]{SchlesingerFlach2006} and, for convex functions of label differences,
+\cite{Ishikawa2003}. For binary variables the construction is that of
+\cite{Ivanescu1965,PicardRatliff1975,KolmogorovZabih2004}. The point of
+Lemma~\ref{lit:lem:chaincut} here is only that the arbitrary unary terms $\eta_i$ may be the
+negative interpolation corrections $-d_i$ on arbitrary nonuniform grids.
+\end{remark}
+
+\begin{theorem}[Balanced box quadratics without a width parameter]\label{lit:thm:balanced}
+Let $F(x)=\tfrac12x^{\mathsf T}Hx+b^{\mathsf T}x+e$ be an explicit rational quadratic on a
+mixed box $X$ with binary input length $I$, and suppose $F$ is balanced. Let
+$L=\max_iH_{ii}$.
+\begin{enumerate}
+\item If $L\le0$, an exact minimizer and the optimal value are obtained from one minimum cut on
+the endpoint labels, in time polynomial in $I$.
+\item If $L>0$ and $F$ has a unique minimizer satisfying the growth condition~\eqref{eq:growth}
+with constant $g>0$, put $\kappa=\max\{1,L/g\}$. The capped algorithm of
+Section~\ref{sec:rate}, with $\beta$, a minimizer and all min-marginals computed by
+Lemma~\ref{lit:lem:chaincut} instead of tree messages, returns a feasible rational point and an
+independently checkable certificate of gap at most $2^{-q}$ in
+$(n\kappa(I+q+1))^{O(1)}$ bit operations. The exact minimizer and optimal value are returned in
+$(n\kappa(I+1))^{O(1)}$ bit operations.
+\end{enumerate}
+No decomposition is used, $g$ and $\kappa$ are not inputs, and the validity of every certificate
+uses neither growth nor uniqueness.
+\end{theorem}
+
+\begin{proof}
+(1) If every $H_{ii}\le0$, then $F$ is concave along every coordinate line of the continuous
+hull, so successive replacement of coordinates by endpoints of their (inward-rounded) intervals
+does not increase $F$, and the minimum over $X$ equals the minimum over the endpoint labels.
+Lemma~\ref{lit:lem:chaincut} with $|G_i|\le2$ and $\eta_i=0$ computes it.
+
+(2) The correctness statements used by the capped algorithm, namely Lemma~\ref{lem:round},
+Proposition~\ref{prop:filter}, Lemma~\ref{lem:contraction}, Lemma~\ref{lem:localize} and
+Lemma~\ref{lem:states}, depend on $F$ only through the coordinate curvature
+condition~\eqref{eq:semiconcavity}, which holds with this $L$ because the restriction of $F$ to a
+coordinate line has second derivative $H_{ii}$, and through the exact values $\beta$, a
+minimizer of $Q$, and $m_i(v)$ on the current grids. The tree decomposition enters those proofs
+only through the computation of these values by \eqref{eq:messages}--\eqref{eq:calibrated}.
+Since $Q=F-D$ and $D$ is a sum of unary terms, Lemma~\ref{lit:lem:chaincut} with
+$\eta_i=-d_i$ computes $\beta$ and a minimizer by one cut, and each $m_i(v)$ by one further cut.
+Hence all correctness and state bounds hold verbatim, including the abort rule of the capped
+trials, and the certificate consists of the same filtering record with each tree computation
+replaced by a cut and an equal-value flow.
+
+For the work, the trial with $\theta=2^{-\mu}$ has at most
+$K_\mu=100\cdot2^\mu\lceil\log_2(n+2)\rceil$ nodes per coordinate (Lemma~\ref{lem:states}),
+and the first successful trial has $2^\mu\le6\sqrt\kappa$. A stage therefore performs at most
+$1+nK_\mu$ cut computations on graphs with at most $nK_\mu+2$ nodes and
+$3nK_\mu+n^2K_\mu^2$ arcs. As in the proof of Theorem~\ref{thm:approx}, grid coordinates at
+stage $j$ have denominators dividing $A_j=D2^{j+\mu K_\mu}$ and all values of $Q$ on grid points
+have the common denominator $8DA_j^2$ and numerators of bit length polynomial in
+$I+j+\mu K_\mu$. The capacities of Lemma~\ref{lit:lem:chaincut} are sums of at most
+$O(n^2)$ products of input coefficients with grid coordinates and of correction values, so they
+have the same common denominator and numerators of polynomial bit length. After multiplication by
+the common denominator, capacities are integers, and the Edmonds--Karp algorithm performs a
+number of augmentations polynomial in the graph size, each on integers bounded by the total
+capacity. The number of stages per trial is $O(I+q+1)$ by~\eqref{eq:stagebudget}, and the number
+of trials is $O(\log\kappa)$. Multiplying these polynomial bounds gives the first claim. The
+exact claim follows from the proof of Theorem~\ref{thm:exact}, which uses only the approximation
+algorithm, the height bounds of Lemma~\ref{lem:height}, rational reconstruction and exact
+checks; it requires $q=\poly(I)+O(\log\kappa)$.
+\end{proof}
+
+\begin{corollary}[Balanced after deleting a supplied core]\label{lit:cor:core}
+Let $F$, $X$, $L>0$, growth and $\kappa$ be as in Theorem~\ref{lit:thm:balanced}(2), except that
+$F$ need not be balanced. Suppose a set $C$ of $k$ coordinates is supplied such that the
+quadratic obtained from $F$ by fixing $x_C$ is balanced, that is, there are signs $\sigma$ with
+$\sigma_i\sigma_jH_{ij}\le0$ for all $i\neq j$ outside $C$. Then the conclusions of
+Theorem~\ref{lit:thm:balanced}(2) hold with work multiplied by
+$K^{k}$, where $K=O(\sqrt\kappa\log n)$ bounds the labels per coordinate.
+\end{corollary}
+
+\begin{proof}
+Fixing the labels of the core coordinates on their grids changes only unary and constant terms of
+the remaining quadratic. Hence $\beta$ and each min-marginal are minima, over at most $K^k$ core
+label vectors, of balanced grid problems solved by Lemma~\ref{lit:lem:chaincut}; min-marginals of
+core coordinates restrict the enumeration. The remainder of the proof of
+Theorem~\ref{lit:thm:balanced} is unchanged.
+\end{proof}
+
+This removes the restriction to nonpositive residual diagonals in the cut-based recourse of the
+report: residual coordinates with positive diagonal are gridded and filtered like the core, and
+the residual graph may be dense.
+
+\begin{remark}[Position of Theorem~\ref{lit:thm:balanced}]
+After sign changes, a balanced box quadratic is a continuous submodular quadratic. For it,
+\cite{BurerNatarajanWillemsen2026v3} prove that a polynomial-size SDP relaxation is exact when
+$n\le3$, give a four-variable gap, and state that the complexity for $n\ge4$ is open
+(Theorem~1, Example~4 and footnote~2). Exactness of the basic SDP relaxation is known under an
+additional sign condition on the linear term \cite{KimKojima2003}, and the case of nonpositive
+diagonal is solved by endpoint reduction and a cut, as in part (1)
+\cite{BurerNatarajanWillemsen2026v3,Padberg1989}. Discretization methods for continuous
+submodular minimization \cite{Bach2019,Bach2018Isotonic,AxelrodLiuSidford2020} are polynomial
+in $1/\varepsilon$. Theorem~\ref{lit:thm:balanced} instead has polynomial dependence on
+$\log(1/\varepsilon)$ and on $\kappa$. Since $\kappa$ can be exponential in $I$, it does not
+settle the open complexity question; it shows that under quadratic growth the cost is
+polynomial in the conditioning.
+\end{remark}
+
+\section*{C. Optimal sets}
+
+\begin{proposition}[Face criterion for coordinatewise concave quadratics]\label{lit:prop:faces}
+Let $F(x)=x^{\mathsf T}Ax+c^{\mathsf T}x+e$ on a mixed box $X$ whose continuous hull is
+$[l,u]$, $l<u$, with integer endpoints for integer coordinates, and suppose $A_{ii}\le0$ for all
+$i$. Let $\mathcal V=\prod_i\{l_i,u_i\}$, $F^*=\min_{\mathcal V}F$, and for $x\in[l,u]$ let
+$\Phi(x)=\prod_i\Phi_i(x_i)$ with $\Phi_i(x_i)=\{x_i\}$ if $x_i\in\{l_i,u_i\}$ and
+$\Phi_i(x_i)=\{l_i,u_i\}$ otherwise. Then $F^*=\min_XF$ and, for $x\in X$,
+\[
+F(x)-F^*=\sum_{v\in\mathcal V}\bigl(F(v)-F^*\bigr)W(v;x)-\sum_iA_{ii}(x_i-l_i)(u_i-x_i),
+\qquad W(v;x)=\prod_i\frac{|x_i-\bar v_i|}{u_i-l_i},
+\]
+where $\bar v_i$ is the endpoint different from $v_i$. Consequently $F(x)=F^*$ if and only if
+(a) $x_i\in\{l_i,u_i\}$ whenever $A_{ii}<0$, and (b) $F(v)=F^*$ for every $v\in\Phi(x)$.
+If moreover $F=\sum_t\varphi_t(x_{B_t})$ for a rooted tree decomposition, and
+$r_t\ge0$ are the endpoint Bellman residuals of the min-sum recursion on $\mathcal V$, so that
+$F(v)-F^*=\sum_tr_t(v_{B_t})$ on $\mathcal V$, then (b) holds if and only if
+$r_t(w)=0$ for every $t$ and every $w$ in the projection of $\Phi(x)$ to $B_t$.
+\end{proposition}
+
+\begin{proof}
+Let $Y$ have independent coordinates with $Y_i\in\{l_i,u_i\}$ and $\E Y_i=x_i$; then
+$\Pr(Y=v)=W(v;x)$, and $W(v;x)>0$ exactly for $v\in\Phi(x)$. Independence gives
+$\E Y_iY_j=x_ix_j$ for $i\neq j$ and $\E Y_i^2=x_i^2+(x_i-l_i)(u_i-x_i)$. Hence
+$\E F(Y)=F(x)+\sum_iA_{ii}(x_i-l_i)(u_i-x_i)$, which is the displayed identity after subtracting
+$F^*=\sum_vF^*W(v;x)$. Every term on the right is nonnegative, so $F\ge F^*$ on $[l,u]\supseteq
+X$, and $\mathcal V\subseteq X$ gives $F^*=\min_XF$. The left side vanishes exactly when every
+term vanishes, which is (a) and (b). For the factored statement, (b) says
+$\sum_tr_t(v_{B_t})=0$ for all $v\in\Phi(x)$; since each $r_t\ge0$ and $\Phi(x)$ is a product
+set, every $w$ in the projection of $\Phi(x)$ to $B_t$ extends to some $v\in\Phi(x)$, which gives
+the equivalence. The residual identity is the telescoping of the min-sum recursion: with
+$m_t(v_{S_t})=\min_{v_{B_t\setminus S_t}}[\varphi_t+\sum_{c}m_c]$ over endpoint labels and
+$m_{\mathrm{root}}=F^*$, put $r_t=\varphi_t+\sum_cm_c-m_t\ge0$; summing over $t$, each nonroot
+message appears once with each sign.
+\end{proof}
+
+\begin{remark}[Attribution]
+For multilinear functions on a box ($A_{ii}=0$), the criterion ``the optimal set is the union of
+the faces all of whose vertices are optimal'' is \cite[Lemma and Proposition~1, p.~96]{Rosenberg1972}.
+The zero-residual description of all optimal labelings of a tree-structured discrete problem is
+the reparameterization (equivalent transformation) view of max-sum problems
+\cite[Section~III-D, Theorem~4]{Werner2007}, \cite[Proposition~1]{WainwrightJaakkolaWillsky2005}.
+Endpoint reduction for nonpositive diagonals is used in
+\cite{DelPiaKhajavirad2026,Khajavirad2026PolyBox}. Proposition~\ref{lit:prop:faces} combines these:
+it adds the exclusion (a) for strictly concave coordinates, mixed integer boxes, and a factored
+certificate of size $O(N2^p)$.
+\end{remark}
+
+\begin{proposition}[Diagonal Lagrangian certificate and the full optimal set]\label{lit:prop:diag}
+Let $F(x)=\tfrac12x^{\mathsf T}Hx+b^{\mathsf T}x$ on $B=[l,u]$, $l<u$, and let $s\in B$ satisfy
+the box KKT conditions: $\partial_iF(s)\ge0$ if $s_i=l_i$, $\partial_iF(s)\le0$ if $s_i=u_i$, and
+$\partial_iF(s)=0$ otherwise. Define $d_i=2\partial_iF(s)/(u_i-l_i)$ if $s_i=l_i$,
+$d_i=-2\partial_iF(s)/(u_i-l_i)$ if $s_i=u_i$, $d_i=0$ otherwise, and $D=\operatorname{diag}(d)$.
+\begin{enumerate}
+\item For every $x\in\R^n$,
+$F(x)-F(s)=\tfrac12(x-s)^{\mathsf T}(H+D)(x-s)+\tfrac12\sum_id_i(x_i-l_i)(u_i-x_i)$, and $d\ge0$.
+\item If $H+D\succeq0$, then $s$ is a global minimizer on $B$ and
+\[
+\arg\min_BF=\{x\in B:\ (H+D)(x-s)=0,\ d_i(x_i-l_i)(u_i-x_i)=0\ \text{for all }i\}.
+\]
+\item Under (2), every $t\in\arg\min_BF$ satisfies the box KKT conditions and defines the same
+vector $d$. Thus the test $H+D\succeq0$ is passed at every global minimizer as soon as it is
+passed at one.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+(1) Nonnegativity of $d$ is the KKT sign condition. Exact expansion gives
+$F(x)-F(s)=\nabla F(s)^{\mathsf T}(x-s)+\tfrac12(x-s)^{\mathsf T}H(x-s)$. For $s_i=l_i$,
+$\tfrac12d_i[(x_i-l_i)^2+(x_i-l_i)(u_i-x_i)]=\tfrac12d_i(x_i-l_i)(u_i-l_i)=\partial_iF(s)(x_i-s_i)$;
+for $s_i=u_i$ the same computation gives $\tfrac12d_i(u_i-x_i)(u_i-l_i)=\partial_iF(s)(x_i-s_i)$;
+for interior $s_i$ both sides are zero. Summing proves the identity.
+(2) On $B$ both terms are nonnegative, so $F\ge F(s)$, and $F(x)=F(s)$ exactly when both vanish;
+for a positive semidefinite matrix the quadratic form vanishes exactly on its kernel.
+(3) Let $t$ be optimal. By (2), $(H+D)(t-s)=0$, so $\nabla F(t)=\nabla F(s)+H(t-s)=\nabla F(s)-D(t-s)$,
+and $t_i\in\{l_i,u_i\}$ whenever $d_i>0$. If $d_i>0$ and $t_i=s_i$, then
+$\partial_iF(t)=\partial_iF(s)$. If $d_i>0$ and $t_i$ is the other endpoint, say $s_i=l_i$ and
+$t_i=u_i$, then $\partial_iF(t)=d_i(u_i-l_i)/2-d_i(u_i-l_i)=-d_i(u_i-l_i)/2\le0$, which is the
+KKT sign at an upper bound and yields the same $d_i$; the case $s_i=u_i$, $t_i=l_i$ is symmetric.
+If $d_i=0$, then $\partial_iF(s)=0$ by the definition of $d$ and the KKT conditions, so
+$\partial_iF(t)=\partial_iF(s)-d_i(t_i-s_i)=0$ and the $i$th entry for $t$ is $0$ whatever the
+position of $t_i$. Hence $t$ is a KKT point with the same $d$.
+\end{proof}
+
+\begin{remark}[Attribution]
+With $\lambda_i=d_i/2$, (1) states that
+$F(x)+\sum_i\lambda_i(x_i-l_i)(x_i-u_i)=F(s)+\tfrac12(x-s)^{\mathsf T}(H+D)(x-s)$, the Lagrangian
+of the quadratic description $(x_i-l_i)(x_i-u_i)\le0$ of the box. Statement (2) is the box
+Lagrangian sufficient condition stated as \cite[Corollary~2]{LiWuQuan2015}; related earlier
+conditions are \cite[Theorem~2.3]{BeckTeboulle2000} for $\{-1,1\}^n$ and
+\cite{JeyakumarRubinovWu2006} for boxes (see \cite[Proposition~2.1]{HuyJeyakumarLee2006}).
+The description of the whole optimal set and statement (3) are instances of the classical fact
+that a multiplier certifying a zero duality gap is a multiplier for every optimal solution;
+for the convexified Lagrangian this is Lemma~\ref{lit:lem:mangasarian}
+\cite{Mangasarian1988,BurkeFerris1991,JeyakumarLeeDinh2004}. The direct proof above is given
+because the paper needs exactly this form.
+\end{remark}
+
+\section*{D. Mean-preserving rounding in totally unimodular fibres}
+
+\begin{lemma}[Corner rounding in a dilated TU fibre]\label{lit:lem:tu}
+Let $A\in\Z^{m\times n}$ be totally unimodular, $r\in\Z^m$, $\alpha,\omega\in\Z^n$, $h>0$, and
+$k\in\Z^n$. Let $P=\{t\in[0,1]^n:\ At\le r,\ \alpha\le t\le\omega\}$. Then every $t\in P$ is a
+convex combination of points of $P\cap\{0,1\}^n$. Consequently, if $x=h(k+t)$ with $t\in P$,
+there is a random vector $Y$ with values in $h(k+(P\cap\{0,1\}^n))$, $\E Y=x$, and
+$\E(Y_i-x_i)^2=h^2t_i(1-t_i)\le h^2/4$ for each $i$. If $\nabla^2F\preceq LI$ on the convex hull
+of the support of $Y$ and $x$, then $\E F(Y)\le F(x)+Lnh^2/8$. Moreover, if $x_i$ lies in the
+grid interval $[hk_i,h(k_i+1)]$, then $Y_i$ takes only its two endpoints.
+\end{lemma}
+
+\begin{proof}
+The matrix obtained by stacking $A$, $I$ and $-I$ is totally unimodular, and the right-hand
+sides $r$, $\min\{\omega,1\}$ and $-\max\{\alpha,0\}$ are integral, so $P$ is an integral
+polytope \cite{HoffmanKruskal1956}; its vertices lie in $[0,1]^n\cap\Z^n=\{0,1\}^n$. Write
+$t=\sum_v\pi_vv$ as a convex combination of vertices and let $\Pr(Y=h(k+v))=\pi_v$. Then
+$\E Y=x$, and since $Y_i\in\{hk_i,h(k_i+1)\}$ with mean $x_i$, its variance is
+$h^2t_i(1-t_i)$. Taylor's formula with the Hessian bound gives
+$F(Y)\le F(x)+\nabla F(x)^{\mathsf T}(Y-x)+\tfrac L2\norm{Y-x}^2$; taking expectations removes
+the linear term and gives the bound.
+\end{proof}
+
+\begin{remark}
+In the TU extension of the paper, $P$ is the fibre $\{t: At\le2^j(b-Bz)-Ak\}$ of the cell
+containing a feasible point at mesh $h=2^{-j}$, with the box bounds rescaled; integrality of
+$l,u,B,b$ and the dyadic mesh make all right-hand sides integral. Only the integrality of $P$ is
+used; any Carath\'eodory decomposition provides the rounding. The rounding is correlated, which is
+why a full Hessian bound rather than a diagonal one is needed. Marginal-preserving rounding under
+hard constraints is classical in approximation algorithms
+\cite{GandhiEtAl2006,ChekuriVondrakZenklusen2010}; the requirement here is only exact
+feasibility and the mean.
+\end{remark}
+
+\section*{E. Draft: related work for the extensions}
+
+\paragraph{Value functions, multiparametric programming and condensation.}
+Eliminating private variables through their optimal response is a standard form of
+decomposition: Benders and generalized Benders decomposition optimize over value functions of
+subproblems \cite{Benders1962,Geoffrion1972}, partial minimization of a quadratic is a Schur
+complement \cite{Zhang2005Schur}, and condensing eliminates states in model predictive control
+\cite{BockPlitt1984,JerezKerriganConstantinides2012,Axehill2015}. When the eliminated block has
+active bound constraints, multiparametric quadratic programming gives piecewise-affine optimizers
+and piecewise-quadratic values on polyhedral critical regions
+\cite{BemporadEtAl2002,TondelJohansenBemporad2003}, also for positive semidefinite Hessians with
+nonunique optimizers \cite{SpjotvoldTondelJohansen2005,SpjotvoldTondelJohansen2007,
+SpjotvoldEtAl2006,PatrinosSarimveis2011}. Value functions of parameters that enter the objective
+linearly over a fixed feasible set are concave \cite{MangasarianRosen1964,FiaccoKyparisis1986},
+and infima preserve semiconcavity \cite{CannarsaSinestrari2004}. Our use of these facts is
+different in purpose: we need an \emph{upper coordinate curvature} bound for the reduced
+objective, valid globally, so that the corrected grid remains a certified lower bound. The
+closest algorithmic precedents eliminate continuous components exactly: Khajavirad
+\cite{Khajavirad2026PolyBox} and Del Pia and Khajavirad \cite{DelPiaKhajavirad2026} reduce box
+QPs to binary problems on small neighborhoods of positive-diagonal components, evaluating each
+component's value function at all binary neighbor labels, and use the concave kinks of univariate
+value functions for forests. In our setting the retained neighbors are continuous, gridded and
+filtered, and the parameter is curvature over growth. Low negative inertia with convex recourse
+is treated by spatial branching in \cite{Vavasis1992,LuoBaiLimPeng2019}.
+
+\paragraph{Cut oracles, submodularity and smoothing.}
+Binary quadratic functions with nonpositive pair coefficients are minimized by one minimum cut
+\cite{Ivanescu1965,PicardRatliff1975,BorosHammer2002,KolmogorovZabih2004}, after sign switching
+whenever the signed interaction graph is balanced \cite{Harary1953,HammerHansenSimeone1984,
+Padberg1989}. Variables with nonpositive diagonal can be fixed to endpoints
+\cite{Rosenberg1972,DelPiaKhajavirad2026,Khajavirad2026PolyBox}, so continuous quadratics that
+are submodular and concave in each coordinate reduce to such cuts
+\cite{BurerNatarajanWillemsen2026v3}. Pairwise problems that are submodular with respect to label
+orders reduce to cuts on threshold encodings \cite{SchlesingerFlach2006,Ishikawa2003,Hochbaum2001}.
+For general continuous submodular quadratics the semidefinite relaxation of
+\cite{BurerNatarajanWillemsen2026v3} is exact only up to dimension three, while
+\cite{KimKojima2003} cover a sign-restricted case and discretization methods
+\cite{Bach2019,Bach2018Isotonic,AxelrodLiuSidford2020} are polynomial in the inverse accuracy.
+Partial minimization preserves submodularity \cite{Topkis1978,Topkis1998}; this underlies the
+mixed continuous--discrete methods of \cite{GomezHan2025,BuntonTabuada2022} and our mixed
+recourse oracle, whose certificates are convex combinations of greedy extreme bases
+\cite{Edmonds1970,Cunningham1985,IwataFleischerFujishige2001,Schrijver2000}. The perturbation
+model for the core is in the tradition of smoothed analysis
+\cite{SpielmanTeng2004,BeierVocking2006,RoglinVocking2007}; discrete uniform weights also appear in
+the isolation lemma \cite{MulmuleyVaziraniVazirani1987}, and low-dimensional nonconvexity with
+random perturbations is studied in \cite{KelnerNikolova2007}.
+
+\paragraph{Constraints.}
+Integrality of dilated totally unimodular fibres is the Hoffman--Kruskal theorem
+\cite{HoffmanKruskal1956,Schrijver1986}; box-integrality is analyzed in
+\cite{ChervetGrappeRobert2021}. Proximity between continuous and integer optima of convex
+problems \cite{CookGerardsSchrijverTardos1986,GranotSkorinKapov1990,HochbaumShanthikumar1990}
+addresses a different question: we round arbitrary feasible points of a nonconvex objective and
+pay a curvature term. Bounded-width constrained polynomial optimization admits polynomial-size
+linear programming approximations with scaled feasibility tolerance \cite{BienstockMunoz2018};
+our TU extension is narrower but exactly feasible.
+
+\paragraph{Optimal sets and certificates.}
+The faces of optimal points of multilinear box problems were characterized by Rosenberg
+\cite{Rosenberg1972}; tree reparameterizations describe all optimal labelings of discrete
+problems \cite{WainwrightJaakkolaWillsky2005,Werner2007}. Diagonal Lagrangian certificates for
+binary and box quadratics are given in \cite{BeckTeboulle2000,JeyakumarRubinovWu2006,Pinar2004,
+LiWuQuan2015}, and solution sets of convex programs are characterized by constant gradients
+\cite{Mangasarian1988,BurkeFerris1991,JeyakumarLeeDinh2004}. Quadratic growth toward the optimal
+set of a quadratic program on a polytope follows from the error bound of Luo and Sturm
+\cite{LuoSturm2000}, without a computable constant.
+
+\paragraph{Active faces.}
+Sign tests on gradient enclosures are the monotonicity test of interval global optimization
+\cite{Hansen1980,HansenWalster2004} and of interval constraint propagation
+\cite{ArayaTrombettoniNeveu2010}; Bernstein expansions give polynomial range bounds
+\cite{Garloff1986}. Identification of active constraints under strict complementarity or error
+bounds is classical in local optimization \cite{BurkeMore1988,Wright1993,FacchineiFischerKanzow1998}.
+Our contribution there is only the explicit precision term for reaching such a region from a
+certified global enclosure.
+
+\paragraph{Structural limits.}
+Del Pia and Khajavirad prove strong NP-hardness at treewidth two with bounded coefficients
+\cite{DelPiaKhajavirad2026}; sparse second-order cone and semidefinite formulations, the latter with RLT products, are exact
+under graph conditions \cite{DeyKhajavirad2026,Khajavirad2026SparseSDP}. Chordal sparsity guarantees
+positive semidefinite completions \cite{GroneEtAl1984,VandenbergheAndersen2015}, and sparse
+moment relaxations exploit chordal structure and converge under a running-intersection property
+\cite{Lasserre2001,WakiEtAl2006,Lasserre2006,Laurent2009}; locally consistent moments need not
+come from a joint measure, the continuous counterpart of the gap between local and global
+marginal polytopes \cite{SheraliAdams1990,WainwrightJordan2008}. Complete parametric descriptions
+can have exponentially many pieces \cite{Murty1980,MairalYu2012,GartnerJaggiMaria2012}.

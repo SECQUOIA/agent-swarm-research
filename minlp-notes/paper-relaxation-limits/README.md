@@ -65,27 +65,27 @@ Required TeX components are a standard pdfLaTeX installation with latexmk, Latin
 The narrow integration check uses SymPy and exact rational arithmetic. It independently enumerates the eliminated scaling polytope at three parameter sets, checks rational rotation and signed-slack identities, verifies every ledger label, and compares all 21 accepted mathematical/macro files with the Stage 5 snapshot:
 
 ```sh
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python paper-relaxation-limits/verification/check_stage06_integration.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python paper-relaxation-limits/verification/check_stage06_integration.py
 ```
 
 The following paper-local checks exercise distinct core arguments; run from the repository root. The finite cubic checker uses only the standard library. The remaining commands can all use the recorded conda environment (or another Python installation with their imports installed).
 
 ```sh
 python paper-relaxation-limits/verification/check_stage02_finite.py
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python paper-relaxation-limits/verification/check_stage02_symbolic.py
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python paper-relaxation-limits/verification/check_cardinality_refinement.py
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python paper-relaxation-limits/verification/check_radix_cutoffs.py
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python paper-relaxation-limits/verification/check_unequal_box_bipartite.py
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python paper-relaxation-limits/verification/check_stage04_author.py
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python paper-relaxation-limits/verification/check_univariate_lift_refinement.py
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python paper-relaxation-limits/verification/check_spatial_tolerance_and_tree.py
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python paper-relaxation-limits/verification/check_stage05_author.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python paper-relaxation-limits/verification/check_stage02_symbolic.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python paper-relaxation-limits/verification/check_cardinality_refinement.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python paper-relaxation-limits/verification/check_radix_cutoffs.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python paper-relaxation-limits/verification/check_unequal_box_bipartite.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python paper-relaxation-limits/verification/check_stage04_author.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python paper-relaxation-limits/verification/check_univariate_lift_refinement.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python paper-relaxation-limits/verification/check_spatial_tolerance_and_tree.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python paper-relaxation-limits/verification/check_stage05_author.py
 ```
 
 The earlier selected repository replay is available as:
 
 ```sh
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python paper-relaxation-limits/verification/run_repository_checks.py bilinear global structural spatial
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python paper-relaxation-limits/verification/run_repository_checks.py bilinear global structural spatial
 ```
 
 The runner saves commands, script hashes, exit status and output in `verification/repository-checks/`. Existing successful replay is historical evidence; the integration author did not rerun unchanged stages. Some broader repository experiments require solvers or licenses; those are not needed to compile the paper or run the integration checker. A solver installation alone does not imply a working license. The source-level proofs and exact finite certificates remain readable without those experiments.

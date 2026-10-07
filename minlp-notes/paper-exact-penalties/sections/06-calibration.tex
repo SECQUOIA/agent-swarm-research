@@ -1,181 +1,418 @@
-\section{Hardness of calibrating the smallest penalty}\label{sec:calibration}
-A short sufficient coefficient can be easy to obtain while a nearly smallest
-one is hard to find. We prove this for a binary box, a linear objective and
-one equality. The original problem has a supplied unique optimizer.
-Throughout this section, the least penalty means $\rho_*$ from Section~\ref{sec:geometry},
-with the multiplier optimized and exactness defined by dual values.
+\section{Hardness of calibrating the least penalty}\label{sec:calibration}
+This section shows that a sufficient coefficient can be trivial to write
+down while a nearly least one is hard to compute. On a binary box with one
+relaxed equality, a linear objective, a known unique optimizer and the
+known sufficient coefficient $\rho=1$, no polynomial-time algorithm
+approximates the least penalty within any polynomial factor unless
+$\mathrm P=\mathrm{NP}$; the same holds for the zero-multiplier threshold.
+The hardness needs a growing number of binary variables; fixed dimension is
+not covered.
 
-\subsection{A binary-box construction}
-Take a \textsc{Subset Sum} instance with positive integer items
-$a_1,\ldots,a_n$ and positive target $B$. Append $a_{n+1}=B+1$ and,
-for an integer $K\ge2$, set
+Throughout, $m=1$ and the norm is the absolute value. On $\R$ every norm is
+a positive multiple of $|\cdot|$, which only rescales the thresholds
+(Remark~\ref{rem:rescaling}).
+
+\subsection{The calibration problem}
+\begin{definition}[Calibration]\label{def:calibration}
+Fix a family of instances of \eqref{eq:model} with rational data, encoded
+in binary as in Section~\ref{sec:geometry}, and a function $\varphi$ from the
+positive integers to $[1,\infty)$. Given an instance of encoding length $N$
+whose least penalty $\rho_*$ is finite, \emph{sufficient calibration within
+factor $\varphi$} asks for a rational $\widehat\rho$ with
+\begin{equation}\label{eq:onesided}
+ \rho_*\le\widehat\rho\le \varphi(N)\,\rho_*,
+\end{equation}
+and \emph{two-sided calibration within factor $\varphi$} asks for a rational
+$\widehat\rho$ with
+\begin{equation}\label{eq:twosided}
+ \rho_*/\varphi(N)\le\widehat\rho\le \varphi(N)\,\rho_*.
+\end{equation}
+Calibration at multiplier zero is defined in the same way, with
+$\rho_*(0)$ in place of $\rho_*$. \emph{Polynomial-factor calibration}
+means that $\varphi=p$ is a fixed polynomial with $p(N)\ge1$ for all $N$.
+\end{definition}
+
+A one-sided estimate \eqref{eq:onesided} is itself a sufficient
+coefficient: the value-exact coefficients form the interval
+$[\rho_*,\infty)$, and the coefficients exact at multiplier zero form
+$[\rho_*(0),\infty)$ (Corollary~\ref{cor:ratio} and the discussion after
+it). A two-sided estimate need not be sufficient. On the families below a
+sufficient coefficient is known in advance, so the only question is how
+close to the least one an algorithm can get.
+
+\subsection{A binary-box family}\label{sec:calibration-family}
+Take a \textsc{Subset Sum} instance: positive integers $w_1,\ldots,w_t$ and
+a positive integer target $\beta$, with encoding length $N_0$. For
+$I\subseteq\{1,\ldots,t\}$ write $w(I)=\sum_{i\in I}w_i$. The instance is a
+YES instance if $w(I)=\beta$ for some $I$, and a NO instance otherwise.
+Deciding this is NP-complete. Append the item $w_{t+1}=\beta+1$, extend the
+notation $w(I)$ to $I\subseteq\{1,\ldots,t+1\}$, choose an integer
+$\kappa\ge2$, and set
 \begin{equation}\label{eq:subsetmodel}
- X=\{0,1\}^{n+2},\qquad f(x,q)=-q,\qquad
- r(x,q)=K\sum_{i=1}^{n+1}a_i x_i-(KB+1)q.
+ X=\{0,1\}^{t+2}\ni(x,q),\qquad f(x,q)=-q,\qquad
+ r(x,q)=\kappa\sum_{i=1}^{t+1}w_ix_i-(\kappa\beta+1)q.
 \end{equation}
-The equality $r=0$ has the unique solution $(x,q)=(0,0)$: at $q=1$
-it contradicts divisibility by $K$, and at $q=0$ positivity forces all
-items to be absent. Thus the primal value is zero without solving the
-subset-sum instance. Linear optimization over $X$ is also immediate;
-this does not make the augmented absolute-residual subproblem easy.
+The instance is given by the integer coefficient vector
+$(\kappa w_1,\ldots,\kappa w_{t+1},-(\kappa\beta+1))$ of $r$; the box and the
+objective are implicit.
 
-Let $S$ be the attainable subset sums after appending the item, and define
+\paragraph{How the gadget works.}
+Read $x$ as the indicator vector of a subset $I$ and $q$ as a switch
+whose slice $q=1$ is improving: it lowers the objective from $0$ to $-1$. The residual is
+$\kappa w(I)\ge0$ at $q=0$ and $\kappa(w(I)-\beta)-1$ at $q=1$. By
+Proposition~\ref{prop:scalar}, the least penalty is governed by how close
+the improving slice $q=1$ comes to $r=0$ from each side. Each part of the
+construction has one purpose.
+\begin{itemize}
+ \item The $+1$ in $\kappa\beta+1$ makes the whole slice $q=1$
+ equality-infeasible: $r=0$ at $q=1$ would require $\kappa$ to divide
+ $\kappa\beta+1$. At $q=0$, $r=0$ forces $x=0$ because all items are
+ positive. Hence $(x,q)=(0,0)$ is the unique feasible point and $v=0$,
+ known without solving \textsc{Subset Sum}.
+ \item The appended item $\beta+1$ fixes the nearest positive residual at
+ $q=1$ to $\kappa-1$ on every instance, so the positive side carries no
+ information about the instance.
+ \item The factor $\kappa$ separates the cases on the negative side: a
+ subset with $w(I)=\beta$ gives residual $-1$, while every subset with
+ $w(I)\le\beta-1$ gives residual at most $-(\kappa+1)$.
+\end{itemize}
+Linear optimization over $X$ is trivial; this does not make the penalized
+subproblem with the absolute residual easy.
+
+Formally, let $\beta_-=\max\{w(I):I\subseteq\{1,\ldots,t+1\},\
+w(I)\le\beta\}$ be the largest attainable sum not exceeding the target
+(the empty set shows that it exists), and define
 \begin{equation}\label{eq:nearestsums}
- S_- =\max\{s\in S:s\le B\},\qquad
- d_-=K(B-S_-)+1,\qquad d_+=K-1.
+ g_-=\kappa(\beta-\beta_-)+1,\qquad g_+=\kappa-1.
 \end{equation}
-The empty subset ensures that $S_-$ exists. The smallest attainable sum
-above $B$ is $B+1$, and appending that positive item does not change
-whether $B$ is attainable.
+At $q=1$ the residual $\kappa(w(I)-\beta)-1$ is negative exactly when
+$w(I)\le\beta$; its magnitude is then $\kappa(\beta-w(I))+1\ge g_-$, with
+equality when $w(I)=\beta_-$. The residual is positive exactly when
+$w(I)\ge\beta+1$; it is then at least $\kappa-1=g_+$, with equality for
+$I=\{t+1\}$. No subset with sum at most $\beta$ contains the item $t+1$, so
+$\beta_-$ is the best sum of the original instance. Consequently
+\begin{equation}\label{eq:gapcases}
+ g_-=1\ \text{in YES instances},\qquad g_-\ge\kappa+1\ \text{in NO instances}.
+\end{equation}
 
 \begin{proposition}\label{prop:calibrationdual}
-For \eqref{eq:subsetmodel} and every $\rho\ge0$,
+Let $w_1,\ldots,w_t,\beta$ be positive integers, $w_{t+1}=\beta+1$, and
+$\kappa\ge2$ an integer. The instance \eqref{eq:subsetmodel} has $v=0$,
+attained only at $(x,q)=(0,0)$. For every $\rho\ge0$,
 \begin{equation}\label{eq:calibrationdual}
- D_\rho=\min\left\{0,-1+\rho\frac{2d_-d_+}{d_-+d_+}\right\},\qquad
- \rho_*=\frac12\left(\frac1{d_-}+\frac1{d_+}\right).
+ D_\rho=\min\left\{0,-1+\rho\,\frac{2g_-g_+}{g_-+g_+}\right\},
 \end{equation}
-An attaining multiplier is
-$\lambda_\rho=\rho(d_--d_+)/(d_-+d_+)$.
+and the multiplier $\lambda_\rho=\rho(g_--g_+)/(g_-+g_+)$ attains this
+value. Consequently
+\begin{equation}\label{eq:calibrationthresholds}
+ \rho_*=\frac12\left(\frac1{g_-}+\frac1{g_+}\right),\qquad
+ \rho_*(0)=\max\left\{\frac1{g_-},\frac1{g_+}\right\}.
+\end{equation}
 \end{proposition}
 \begin{proof}
-The nearest negative and positive residuals at $q=1$ are $-d_-$ and
-$d_+$, both with cost $-1$. Their augmented values are
-$-1+(\rho-\lambda)d_-$ and $-1+(\rho+\lambda)d_+$.
-Weights $d_+/(d_-+d_+)$ and $d_-/(d_-+d_+)$ cancel the multiplier
-and give the nonzero branch in \eqref{eq:calibrationdual} as an upper
-bound. The feasible origin also bounds $D_\rho$ by zero.
-At $\lambda_\rho$ the two values agree, and
-$\rho\pm\lambda_\rho\ge0$. Every other $q=1$ residual has at least
-the corresponding magnitude, while every $q=0$ residual is nonnegative
-and has cost zero. Thus the upper bound is attained.
-\end{proof}
-At $\rho_*$ the two infeasible witnesses tie with the primal optimum.
-Every strictly larger coefficient, with the multiplier fixed at
-$\lambda_{\rho_*}$, is minimizer-set exact. A universally sufficient
-value coefficient is already available: $\rho=1$ at multiplier zero.
-All nonzero residuals are integers and the objective is $0$ or $-1$.
-Infeasible points can tie at coefficient one; every coefficient greater
-than one is minimizer-set exact at multiplier zero.
+The plan is to bound $D_\rho$ above by a two-point balanced mixture and to
+show that $\lambda_\rho$ attains this bound. The value $v=0$ and the
+uniqueness of the feasible point were shown above.
 
-If the subset-sum instance is a YES instance, then $d_-=1$; if it is
-NO, then $d_-\ge K+1$. Consequently
+Let $P_-$ be a point with $q=1$ and $w(I)=\beta_-$, and let $P_+$ be the
+point with $q=1$ and $I=\{t+1\}$. Then $(f,r)=(-1,-g_-)$ at $P_-$ and
+$(f,r)=(-1,g_+)$ at $P_+$. The weights $g_+/(g_-+g_+)$ on $P_-$ and
+$g_-/(g_-+g_+)$ on $P_+$ give a balanced mixture: its average residual is
+zero. Its average of $f+\rho|r|$ is $-1+2\rho g_-g_+/(g_-+g_+)$, so
+Proposition~\ref{prop:mixture} bounds $D_\rho$ by this number. Weak duality
+bounds $D_\rho$ by $v=0$. This proves ``$\le$'' in
+\eqref{eq:calibrationdual}.
+
+For the reverse inequality, note that
+$\rho-\lambda_\rho=2\rho g_+/(g_-+g_+)\ge0$ and
+$\rho+\lambda_\rho=2\rho g_-/(g_-+g_+)\ge0$. A native point with $q=1$ and
+$r<0$ has $|r|\ge g_-$, so its penalized value at $\lambda_\rho$ is
+\[
+ -1+(\rho-\lambda_\rho)|r|\ge-1+(\rho-\lambda_\rho)g_-
+ =-1+\rho\,\frac{2g_-g_+}{g_-+g_+}.
+\]
+A native point with $q=1$ and $r>0$ has $r\ge g_+$, and
+$-1+(\rho+\lambda_\rho)r\ge-1+(\rho+\lambda_\rho)g_+$ is the same number.
+A native point with $q=0$ has $f=0$ and $r\ge0$, so its value
+$(\rho+\lambda_\rho)r$ is nonnegative. Hence $L_\rho(\lambda_\rho)$ is at
+least the right-hand side of \eqref{eq:calibrationdual}, and the upper
+bound is attained.
+
+By \eqref{eq:calibrationdual}, $D_\rho=0$ exactly when
+$\rho\ge(g_-+g_+)/(2g_-g_+)$, which is the formula for $\rho_*$. For
+$\rho_*(0)$, apply \eqref{eq:fixed} with $\lambda=0$ and $v=0$: an
+infeasible point with $q=0$ contributes $0/|r|=0$, and an infeasible point
+with $q=1$ contributes $1/|r|$, which is largest at the smallest residual
+magnitudes $g_-$ and $g_+$.
+\end{proof}
+
+The formulas agree with Proposition~\ref{prop:scalar}, where
+$A_+=1/g_+$ (points with $q=0$ contribute $0$) and $A_-=1/g_-$. At
+$\rho=\rho_*$ the interval of exact multipliers in \eqref{eq:scalar}
+reduces to the single multiplier
+$\lambda_{\rho_*}=(1/g_+-1/g_-)/2$, and both witnesses $P_-$ and $P_+$ tie
+with the optimum. So $\rho_*$ is exact at $\lambda_{\rho_*}$ but not
+minimizer-exact. Every $\rho>\rho_*$ is minimizer-exact at
+$\lambda_{\rho_*}$: then $\rho-\lambda_{\rho_*}>1/g_-$ and
+$\rho+\lambda_{\rho_*}>1/g_+$, so every infeasible point has a positive
+penalized value. On this family $1/(2\kappa)<\rho_*\le1$, because
+$g_+=\kappa-1$ and $g_-,g_+\ge1$.
+
+\paragraph{A sufficient coefficient is known.}
+For every instance of the family, $\rho=1$ is exact at multiplier zero.
+Every nonzero residual is an integer and the objective is $0$ or $-1$, so
+$f+|r|\ge0$ at every native point. An infeasible point has $f+|r|=0$ only
+if $q=1$ and $|r|=1$. The residual $-1$ occurs exactly in YES instances,
+and the residual $+1$ occurs exactly when $\kappa=2$ (through
+$I=\{t+1\}$). These ties are the only obstruction: every $\rho>1$ is
+minimizer-exact at multiplier zero.
+
+\paragraph{The YES/NO gap.}
+By \eqref{eq:gapcases} and \eqref{eq:calibrationthresholds},
 \begin{equation}\label{eq:thresholdgap}
- \rho_* =\frac{K}{2(K-1)}>\frac12\quad\text{in YES instances},
- \qquad
- 0<\rho_*\le\frac{K}{K^2-1}\quad\text{in NO instances}.
+ \begin{aligned}
+ &\rho_*=\frac{\kappa}{2(\kappa-1)}>\frac12,\qquad
+ \rho_*(0)=1 &&\text{in YES instances},\\
+ &0<\rho_*\le\frac{\kappa}{\kappa^2-1},\qquad
+ \rho_*(0)=\frac1{\kappa-1} &&\text{in NO instances}.
+ \end{aligned}
 \end{equation}
+The ratio between the YES value and the NO bound is $(\kappa+1)/2$ for
+$\rho_*$ and $\kappa-1$ for $\rho_*(0)$. For $\kappa=2$ the zero-multiplier
+threshold equals $1$ in both cases, so part~(b) below uses $\kappa\ge3$.
+
+\subsection{Testing exactness and calibrating are hard}
+The first result shows that testing a single given coefficient is already
+hard. The membership argument uses that $v=0$ is known on this family; for
+a general instance, certifying $D_\rho<v$ would also require
+information about $v$.
 
 \begin{theorem}\label{thm:coNP}
-On the family \eqref{eq:subsetmodel} with $K=4$, deciding whether
-$D_{1/3}=0$ is coNP-complete. More precisely, $D_{1/3}=-1/2$ in YES
-subset-sum instances and $D_{1/3}=0$ in NO instances.
+Consider the instances \eqref{eq:subsetmodel} with $\kappa=4$, each given
+by the integer coefficient vector $(4w_1,\ldots,4w_{t+1},-(4\beta+1))$ of
+$r$. Deciding whether $\rho=1/3$ is value-exact, that is, whether
+$D_{1/3}=0$, is coNP-complete. More precisely, $D_{1/3}=-1/2$ for YES
+instances of \textup{\textsc{Subset Sum}} and $D_{1/3}=0$ for NO instances.
 \end{theorem}
 \begin{proof}
-In YES instances, $d_-=1$, $d_+=3$, and
-\eqref{eq:calibrationdual} gives $D_{1/3}=-1/2$.
-In NO instances, $\rho_*\le4/15<1/3$, so $D_{1/3}=0$.
-This is a polynomial reduction from the complement of \textsc{Subset Sum}.
-On this specified family, a subset summing to $B$ is a polynomial
-certificate of nonexactness, proving membership in coNP.
+For YES instances, $g_-=1$ and $g_+=3$, and \eqref{eq:calibrationdual} gives
+$D_{1/3}=\min\{0,-1+\tfrac13\cdot\tfrac64\}=-1/2$. For NO instances,
+$\rho_*\le4/15<1/3$ by \eqref{eq:thresholdgap}, so $D_{1/3}=0$.
+
+Hardness: the map from a \textsc{Subset Sum} instance to the coefficient
+vector is computable in polynomial time and sends NO instances to exact
+coefficients and YES instances to non-exact ones. It is therefore a
+polynomial reduction from the complement of \textsc{Subset Sum}, which is
+coNP-complete.
+
+Membership in coNP: whether an input vector belongs to the family can be
+checked in polynomial time, since $\beta$, the items $w_i$ and the
+condition $w_{t+1}=\beta+1$ are recovered by integer division by $4$. On a
+member of the family, $D_{1/3}<0$ holds exactly in YES instances, and a
+subset $I\subseteq\{1,\ldots,t\}$ with $w(I)=\beta$ is a polynomial
+certificate of this.
 \end{proof}
-Thus computing $\rho_*$ is NP-hard, and evaluating $D_{1/3}$ to
-absolute error strictly below $1/4$ would decide \textsc{Subset Sum}.
-By contrast, $D_0=-1$ for every instance of this family.
+Consequently, computing $\rho_*$ on this family is NP-hard, and evaluating
+$D_{1/3}$ within absolute error strictly below $1/4$ decides
+\textsc{Subset Sum}. In contrast, $D_0=-1$ on every instance: without the
+norm term the Lagrangian dual is trivial to evaluate and never closes the
+gap.
+
+The second result says that even approximating the threshold, from above,
+within a polynomial factor is hard.
 
 \begin{theorem}\label{thm:polyfactor}
-Fix any polynomial $p$ with $p(L)\ge1$. Unless $\mathrm P=\mathrm{NP}$,
-no polynomial-time algorithm returns, on every instance
-\eqref{eq:subsetmodel} of binary length $L$, a rational $\widehat\rho$
-satisfying
-\begin{equation}\label{eq:polyfactor}
- \rho_*\le\widehat\rho\le p(L)\rho_*.
-\end{equation}
+Let $p$ be a fixed polynomial with $p(N)\ge1$ for all $N$. Unless
+$\mathrm P=\mathrm{NP}$, no polynomial-time algorithm achieves sufficient
+calibration within factor $p$ on the family \eqref{eq:subsetmodel}, either
+\begin{enumerate}
+ \item[(a)] for the least penalty: on every instance of encoding length
+ $N$, return a rational $\widehat\rho$ with
+ \begin{equation}\label{eq:polyfactor}
+  \rho_*\le\widehat\rho\le p(N)\,\rho_*;
+ \end{equation}
+ \item[(b)] or at multiplier zero: on every instance of encoding length $N$,
+ return a rational $\widehat\rho$ with
+ $\rho_*(0)\le\widehat\rho\le p(N)\,\rho_*(0)$, where
+ $\rho_*(0)=\max\{1/g_-,1/g_+\}$; this equals $1$ in YES instances and
+ $1/(\kappa-1)$ in NO instances.
+\end{enumerate}
 \end{theorem}
 \begin{proof}
-Let $\ell$ be the input length of the original subset-sum instance and
-choose $K=2^\ell$. There are $O(\ell)$ coefficients, each of
-$O(\ell)$ bits, so the constructed length is $L=O(\ell^2)$ and the
-construction takes polynomial time. Every admissible YES output exceeds
-$1/2$. Every admissible NO output is at most
+The plan is to choose $\kappa$ exponentially large, so that the YES/NO
+ratio in \eqref{eq:thresholdgap} exceeds $p(N)$, and then to read off the
+\textsc{Subset Sum} answer by comparing $\widehat\rho$ with a fixed number.
+
+Given a \textsc{Subset Sum} instance of length $N_0$, take
+$\kappa=2^{N_0}$. The constructed instance has $t+2\le N_0+2$ coefficients,
+each with $O(N_0)$ bits, so its length is $N=O(N_0^2)$ and it is computed
+in polynomial time. In particular $p(N)$ is bounded by a polynomial in
+$N_0$.
+
+(a) In YES instances every admissible output satisfies
+$\widehat\rho\ge\rho_*>1/2$. In NO instances every admissible output
+satisfies
 \[
- p(L)\frac{2^\ell}{2^{2\ell}-1}<\frac12
+ \widehat\rho\le p(N)\,\frac{\kappa}{\kappa^2-1}
+ =p(N)\,\frac{2^{N_0}}{4^{N_0}-1}<\frac12
 \]
-for all sufficiently large $\ell$, since an exponential dominates the
-fixed polynomial $p(O(\ell^2))$. The finitely many smaller inputs can
-be handled by exhaustive enumeration. Comparing the output with $1/2$
-would therefore decide \textsc{Subset Sum} in polynomial time.
+for all sufficiently large $N_0$, since the exponential term dominates.
+(b) For $N_0\ge2$ we have $\kappa\ge3$. In YES instances every admissible
+output satisfies $\widehat\rho\ge1$; in NO instances
+$\widehat\rho\le p(N)/(2^{N_0}-1)<1$ for all sufficiently large $N_0$.
+
+In both cases there is a constant $n_1$, depending only on $p$, such that
+the comparison of $\widehat\rho$ with $1/2$ (respectively $1$) decides
+every \textsc{Subset Sum} instance with $N_0\ge n_1$. Instances with
+$N_0<n_1$ are finitely many and are decided by exhaustive enumeration. The
+output $\widehat\rho$ of a polynomial-time algorithm has polynomially many
+bits, so the comparison takes polynomial time. This would decide
+\textsc{Subset Sum} in polynomial time.
 \end{proof}
-The same construction rules out a symmetric estimate
-$\rho_*/p(L)\le\widehat\rho\le p(L)\rho_*$: YES outputs exceed
-$1/(2p(L))$ and NO outputs are smaller for sufficiently large $\ell$.
-For a fixed one-sided factor $C$, a constant $K$ with $K+1>2C$
-suffices, because the ratio between the YES threshold and the NO upper
-bound is $(K+1)/2$. Positive rational scaling of the equality rescales
-both penalty thresholds by the reciprocal factor and preserves this
-relative gap. It does not remove the small arithmetic spacing.
-The binary-box result is a bit-complexity obstruction, not strong
-hardness or an APX-completeness classification.
 
-The same calibration obstruction holds with the multiplier fixed at zero.
-The two nearest improving residuals give
-\[
- \rho_*(0)=\max\{1/d_-,1/d_+\}.
-\]
-Indeed, all other improving points have larger residual magnitude, and
-the cost-zero points impose no positive requirement. For $K\ge3$ this
-threshold is one in YES instances and $1/(K-1)$ in NO instances.
-Taking $K=2^\ell$ in the proof of Theorem~\ref{thm:polyfactor} therefore
-also excludes polynomial-factor sufficient calibration at multiplier
-zero; the finitely many small inputs can again be enumerated.
+\begin{remark}[Two-sided estimates and constant factors]\label{rem:twosided}
+Two-sided calibration is not easier. If $\widehat\rho$ satisfies
+\eqref{eq:twosided} with $\varphi=p$, replace $p$ by a pointwise larger polynomial
+$p'$ with positive integer coefficients (so that $p'(N)$ is an integer
+computable in polynomial time); then $p'(N)\widehat\rho$ satisfies
+\eqref{eq:onesided} with $\varphi=p'^2$, again a polynomial. Thus
+Theorem~\ref{thm:polyfactor} also rules out two-sided polynomial-factor
+calibration, in both parts. For a fixed constant factor $C\ge1$, an
+exponential $\kappa$ is not needed. In part~(a), a one-sided estimate within
+factor $C$ separates the YES value $\kappa/(2(\kappa-1))$ from the NO bound
+$C\kappa/(\kappa^2-1)$ exactly when $C<(\kappa+1)/2$, so any constant
+$\kappa$ with $\kappa+1>2C$ suffices. In part~(b), any constant $\kappa$ with
+$\kappa-1>C$ suffices.
+\end{remark}
 
-\subsection{Unit coefficients with a harder native set}
-For a nonempty simple graph $G=(V,E)$, take binary variables
-$x_v,p_+,p_-$ with native constraints
+\begin{remark}[Subexponential factors]\label{rem:subexpfactor}
+The proof gives more than polynomial factors. For every fixed
+$\epsilon\in(0,1)$, sufficient calibration within factor
+$\varphi(N)=2^{N^{1-\epsilon}}$ is also impossible in polynomial time unless
+$\mathrm P=\mathrm{NP}$, in both parts. Choose an integer
+$c>(1-\epsilon)/\epsilon$ and take $\kappa=2^{N_0^c}$. Each coefficient
+then has at most $N_0^c+O(N_0)$ bits, so $N=O(N_0^{c+1})$ and the
+construction is polynomial. Since $(c+1)(1-\epsilon)<c$, we have
+$N^{1-\epsilon}\le N_0^c-2$, that is $\varphi(N)\le\kappa/4$, for all
+sufficiently large $N_0$. Then in part~(a) every NO output satisfies
+$\widehat\rho\le \varphi(N)\kappa/(\kappa^2-1)\le\kappa^2/(4(\kappa^2-1))<1/2$,
+while every YES output exceeds $1/2$. In part~(b) every NO output satisfies
+$\widehat\rho\le \varphi(N)/(\kappa-1)\le\kappa/(4(\kappa-1))<1$, while every YES
+output is at least $1$.
+\end{remark}
+
+\begin{remark}[Rescaling does not help]\label{rem:rescaling}
+Replacing $r$ by $cr$ for a rational $c>0$ replaces $L_\rho(\lambda)$ by
+$L_{c\rho}(c\lambda)$ of the original instance; replacing the absolute value
+by the norm $c|\cdot|$ replaces it by $L_{c\rho}(\lambda)$. In both cases $\rho_*$ and $\rho_*(0)$ are divided by $c$, and the
+YES/NO ratios $(\kappa+1)/2$ and $\kappa-1$ are unchanged. A guarantee
+within a factor is invariant under such rescaling, so no choice of scaling
+makes calibration easier on this family.
+\end{remark}
+
+\begin{remark}[Weak NP-hardness]\label{rem:weak}
+The reduction is from \textsc{Subset Sum}, which is NP-hard only when its
+numbers are large, and the constructed coefficients are large as well. This
+is unavoidable on this family: a dynamic program over the attainable values
+of $\sum_iw_ix_i$ computes $g_-$, hence $\rho_*$ and $\rho_*(0)$ exactly, in
+time polynomial in $N$ and the largest coefficient magnitude. So the family
+gives weak NP-hardness only. Proposition~\ref{prop:stableset} below gives
+strong NP-hardness of exact computation with coefficients in
+$\{-1,0,1\}$, at the price of a native set over which linear optimization
+is itself hard.
+\end{remark}
+
+\begin{remark}[Where the hardness lies]\label{rem:hardnesslocation}
+The difficulty is testing whether a given coefficient is exact
+(Theorem~\ref{thm:coNP}), not locating the threshold once such a test is
+available. Suppose an oracle decides, for a given instance of the family and
+a rational $\rho$, whether $\rho$ is value-exact. Since
+$\rho_*\in(1/(2\kappa),1]$ and the value-exact coefficients form
+$[\rho_*,\infty)$, testing $\rho=2^{-j}$ for
+$j=0,1,\ldots,\lceil\log_2\kappa\rceil+1$ finds the largest $j$ with
+$2^{-j}$ exact; then $2^{-j}\ge\rho_*>2^{-j-1}$, so $\widehat\rho=2^{-j}$ is
+a sufficient calibration within factor two, after $O(\log\kappa)=O(N)$
+oracle calls. The same works at multiplier zero with an oracle for
+$L_\rho(0)=v$. In decomposition methods the penalized subproblem is solved
+anyway. The results above say that nearly least penalties are as hard to
+certify as those subproblems, even when the original problem is trivial.
+\end{remark}
+
+\subsection{Unit coefficients with a hard native set}
+The binary-box family has large numbers. The next family has all
+coefficients in $\{-1,0,1\}$, and its least penalty is the stability number
+of a graph. This gives strong NP-hardness of exact computation, because the
+native set now encodes a hard optimization problem.
+
+For a simple graph $G=(V,E)$ with $V\ne\varnothing$, let $\alpha(G)$ be the
+maximum size of a stable set. Take binary variables $x_i$ ($i\in V$),
+$y_+$ and $y_-$, with native constraints
 \begin{equation}\label{eq:stablemodel}
- p_++p_-\le1,\quad x_v\le p_++p_-\ (v\in V),\quad
- x_u+x_v\le1\ (uv\in E).
+ y_++y_-\le1,\qquad x_i\le y_++y_-\ (i\in V),\qquad
+ x_i+x_j\le1\ (ij\in E),
 \end{equation}
-Set $f=-\sum_vx_v$ and $r=p_+-p_-$. The equality again forces the
-unique primal point zero. If $\alpha(G)$ is the maximum stable-set
-size, the native branches have residual zero and cost zero, or residual
-$\pm1$ and minimum cost $-\alpha(G)$. Hence
+objective $f=-\sum_{i\in V}x_i$ and relaxed equality $r=y_+-y_-=0$.
+
+\begin{proposition}\label{prop:stableset}
+For the instance \eqref{eq:stablemodel}, $v=0$ is attained only at the
+zero vector, and for all $\rho\ge0$ and $\lambda\in\R$,
 \begin{equation}\label{eq:stabledual}
- L_\rho(\lambda)=\min\{0,\rho-\alpha(G)-|\lambda|\},\quad
- D_\rho=\min\{0,\rho-\alpha(G)\},\quad \rho_*=\alpha(G).
+ L_\rho(\lambda)=\min\{0,\rho-\alpha(G)-|\lambda|\},\qquad
+ D_\rho=\min\{0,\rho-\alpha(G)\},\qquad \rho_*=\rho_*(0)=\alpha(G).
 \end{equation}
-Computing $\rho_*$ is strongly NP-hard with all model coefficients and
-right-hand sides in $\{-1,0,1\}$. Exactness at an integer $k$ is the
-coNP-complete condition $\alpha(G)\le k$; a stable set of size $k+1$
-certifies failure. At equality, infeasible maximum stable sets tie.
-At multiplier zero, minimizer-set exactness requires
-$\rho>\alpha(G)$. Here the native optimization is already hard,
-unlike linear optimization over the box in \eqref{eq:subsetmodel}.
+At $\rho=\alpha(G)$, $\lambda=0$ is the only exact multiplier and the
+infeasible points given by maximum stable sets tie with the optimum. At
+multiplier zero, $\rho$ is minimizer-exact if and only if $\rho>\alpha(G)$.
+Consequently, computing $\rho_*$ is strongly NP-hard. Given $G$ and an
+integer $c$ as input, deciding whether $\rho=c$ is value-exact, that is,
+whether $\alpha(G)\le c$, is coNP-complete; a stable set of size $c+1$
+certifies failure. For each fixed $c$, enumerating the $(c+1)$-subsets of
+$V$ decides it in polynomial time.
+\end{proposition}
+\begin{proof}
+If $r=0$, then $y_+=y_-$, and $y_++y_-\le1$ forces $y_+=y_-=0$; then
+$x_i\le0$ for all $i\in V$. So the zero vector is the unique feasible point and
+$v=0$. The native points form three slices. If $y_+=y_-=0$, then $x=0$
+and $(f,r)=(0,0)$. If $(y_+,y_-)=(1,0)$, the constraints on $x$ say exactly
+that $x$ is the indicator vector of a stable set $S$, and
+$(f,r)=(-|S|,1)$. If $(y_+,y_-)=(0,1)$, likewise $(f,r)=(-|S|,-1)$.
+Minimizing $f+\lambda r+\rho|r|$ over the three slices gives
+$\min\{0,\rho-\alpha(G)+\lambda,\rho-\alpha(G)-\lambda\}$, which is the
+formula for $L_\rho(\lambda)$. Its supremum over $\lambda$ is attained at
+$\lambda=0$, which gives $D_\rho$, and $D_\rho=0$ exactly when
+$\rho\ge\alpha(G)$; the same holds for $L_\rho(0)$, so
+$\rho_*=\rho_*(0)=\alpha(G)$.
 
-\subsection{Relation to penalty-choice hardness}
-The growing-binary-dimension results answer the smallest-penalty question
-in the conclusion of \citet{LefebvreSchmidt2025}; they do not assert
-hardness in fixed total dimension. Conservative sufficient bounds are
-also established: for binary quadratic problems with integer linear
-constraints, \citet[Sections~5--6 of the inspected preprint]{GusmeroliWiegele2022} obtain exact
-squared penalties from objective bounds and residual separation.
-Our statement concerns approximation of the instance's least
-norm-penalty threshold, not the general idea of using a safe upper bound.
-Generic penalty-choice hardness, even with a known constrained optimum,
-is older.
-\citet[Section~IV.A, Lemma~1 of the inspected preprint]{Alessandroni2025}
-prove hardness for exact QUBO reformulations. Their reduction imposes
-$x=0$ and uses a squared vector residual and a quadratic objective.
-On binary variables, its penalty is $M\sum_i x_i$, which unrestricted
-linear multipliers reproduce with augmentation coefficient zero.
-Thus that reduction does not give a positive optimized-dual threshold.
-Our restrictions and polynomial-factor conclusion are the distinction.
+At $\rho=\alpha(G)$, $L_\rho(\lambda)=\min\{0,-|\lambda|\}$ equals $0$ only
+for $\lambda=0$, and a maximum stable set with $y_+=1$ then has penalized
+value $0$. At multiplier zero, every infeasible point has value
+$\rho-|S|$ for a stable set $S$, which is positive for all such points
+exactly when $\rho>\alpha(G)$.
 
-Other tuning results use different quantifiers.
-\citet[Section~2.2]{Mirkarimi2024} note that a universally successful,
-polynomially tuned linear Ising penalty for knapsack would imply
-$\mathrm P=\mathrm{NP}$, allowing the possibility that no suitable
-linear penalty exists on some instances.
-\citet[Definition~1 and Theorem~2]{Alessandroni2026} instead study
-probabilistic feasibility and objective guarantees when exact Gibbs
-sampling is used for approximate optimization. These conclusions differ from approximating an always-existing
-positive norm-penalty threshold after unrestricted multiplier optimization.
+All coefficients and right-hand sides lie in $\{-1,0,1\}$, and computing
+$\alpha(G)$ is NP-hard, so computing $\rho_*$ is strongly NP-hard.
+Deciding $\alpha(G)\le c$ for an input integer $c$ is the complement of the
+NP-complete stable-set decision problem, and a stable set of size $c+1$ is
+a polynomial certificate that $\rho=c$ is not value-exact. For fixed $c$
+there are $O(|V|^{c+1})$ subsets of size $c+1$ to check.
+\end{proof}
+Unlike the binary box, where linear optimization over $X$ is trivial, here
+linear optimization over the native set is already the maximum stable-set
+problem. We use this family only for strong NP-hardness of exact
+computation. It cannot exclude every polynomial factor as
+Theorem~\ref{thm:polyfactor} does: since $1\le\alpha(G)\le|V|\le N$, the output $\widehat\rho=|V|$ is
+always a sufficient calibration within factor $|V|\le N$. The numeric
+family \eqref{eq:subsetmodel} is what yields arbitrary polynomial factors.
+
+\subsection{Relation to prior work}
+In their conclusion, \citet{LefebvreSchmidt2025} ask whether the smallest
+penalty parameter that closes the duality gap can be computed in
+polynomial time, and conjecture a negative answer. Their gap is defined
+through the supremum over multipliers (their Definition~1), which is
+value-exactness here, and their question concerns MILPs and MIQPs. The
+binary-box family \eqref{eq:subsetmodel} is a pure binary integer linear
+program, so it lies within the scope of their question.
+Theorem~\ref{thm:polyfactor}(a) confirms their conjecture unless
+$\mathrm P=\mathrm{NP}$, even for approximation within any polynomial
+factor, in growing binary dimension. Section~\ref{sec:related} compares
+the results with earlier hardness results for choosing penalties.

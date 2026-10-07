@@ -9,7 +9,7 @@ unchanged and uses each finite index in `eq:FR-all-bound`.
 Validation:
 
 ```sh
-conda run -n qipm --live-stream make -C /home/sgusev/repo/qipm/notes/spectral-shift-paper
+conda run -n qipm --live-stream make -C /workspace/qipm/notes/spectral-shift-paper
 ```
 
 The build succeeded and produced the 20-page `main.pdf`; its output is

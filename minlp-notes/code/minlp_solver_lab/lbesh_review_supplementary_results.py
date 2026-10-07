@@ -10,6 +10,7 @@ import math
 from pathlib import Path
 import re
 
+from lbesh_results_independent_audit import artifact_directory, verify_source_archive
 from lbesh_research import benchmark
 from lbesh_research.validation import validate_witness
 
@@ -66,9 +67,17 @@ def audit(kind):
     wrapper_hash = digest(LAB / wrapper)
     assert schedule["metadata"]["supplementary_wrapper_sha256"] == wrapper_hash
     assert plan["metadata"]["supplementary_wrapper_sha256"] == wrapper_hash
-    frozen = json.loads((DATA / "source_v1_manifest.json").read_text())["files"]
+    source_manifest = json.loads((DATA / "source_v1_manifest.json").read_text())
+    verify_source_archive(DATA, source_manifest)
+    current_frozen = source_manifest["files"]
+    frozen = {**current_frozen, **source_manifest.get("original_file_sha256", {})}
     current_metadata = benchmark._metadata(legacy=kind == "initialization")
-    assert schedule["metadata"]["source_sha256"] == current_metadata["source_sha256"]
+    recorded_source = schedule["metadata"]["source_sha256"]
+    assert set(current_metadata["source_sha256"]) == set(recorded_source), "Missing or additional installed study sources"
+    assert recorded_source == {name: frozen["code/minlp_solver_lab/" + name] for name in recorded_source}
+    assert current_metadata["source_sha256"] == {
+        name: current_frozen["code/minlp_solver_lab/" + name] for name in recorded_source
+    }
     output = []
     for record in sorted(records, key=lambda row: (row["instance"], row["method"])):
         assert record["metadata"]["supplementary_wrapper_sha256"] == wrapper_hash
@@ -80,7 +89,7 @@ def audit(kind):
             assert sha == frozen["code/minlp_solver_lab/" + name], name
         assert record["metadata"]["uv_lock_sha256"] == frozen["code/minlp_solver_lab/uv.lock"]
         assert (record["solver_time_limit"], record["wall_limit"], record["threads"]) == (120, 150, 1)
-        artifact = Path(record["artifacts"])
+        artifact = artifact_directory(DATA, record["artifacts"])
         assert json.loads((artifact / "final.json").read_text()) == record
         checked = classify(record)
         if record.get("assessment"):

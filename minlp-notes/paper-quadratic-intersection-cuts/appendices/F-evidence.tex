@@ -1,0 +1,480 @@
+\section{Experimental definitions, corrected records, and reproducibility}
+\label{exp:protocols}
+
+\subsection{Populations and numerical conventions}
+\label{exp:populations}
+
+The numerical evidence uses several distinct populations. The one-cut
+McCormick experiment measures the gap to a problem enforcing one selected
+bilinear term. The external multiround loop measures the gap to all
+bilinear equations. The inside-SCIP root experiment uses recorded
+reference objective values. The MINLPLib fidelity sample is drawn from
+attempted cuts in an instrumented search. It is not a random sample of
+independent LP vertices, and its per-corner and equal-instance-weighted
+summaries answer different questions.
+
+In the fidelity campaign, 64 instances were sampled from 394 eligible
+MINLPLib entries using seed 20261001. Sixteen never called the handler;
+48 supplied dumps. Thirty solves finished and 34 reached a limit.
+A first attempt sample, seed 12345, takes at most 50 attempts per active
+instance. It has 2,101 ray-bearing and 59 rayless records. A disjoint
+second sample, seed 54321, takes at most 150 additional attempts on the
+26 instances selected by the positive numerical corner class. It has
+2,477 ray-bearing and 148 rayless records. Ratio frequencies consequently
+come from an adaptive, instance-stratified sample. The generator campaign
+uses seeds 11 and 12 and generates 150 and 200 models, with cut attempts
+on 47 and 73 models.
+
+\begin{table}[h]
+\centering
+\caption{Retained numerical conventions. Floors pertain to implemented
+criteria, not to the exact optimization statements.}
+\label{exp:thresholds}
+\begin{tabular}{@{}p{0.24\textwidth}p{0.69\textwidth}@{}}
+\toprule
+Population & Convention \\
+\midrule
+Fidelity & Zero-rate class $\omega_j\le 10^{-9}\max_i\omega_i$;
+ratio costs floored at this threshold. Matching ray steps have relative
+difference at most $10^{-6}$, or both are infinite. \\
+External multiround & Orbit weights
+$\max\{\omega_j, 10^{-9}\max(1,\max_i\omega_i)\}$.
+Tie proxy excludes normalized costs below $10^{-4}$ and uses relative
+tolerance $10^{-3}$. \\
+Inside-SCIP selection & Corner surrogate weights
+$\max\{\omega_j, 10^{-6}\max(\max_i\omega_i, 10^{-9})\}$;
+the floor is positive even if all raw weights vanish. \\
+Reference screen & Objective comparison tolerance
+$10^{-6}\max(1,|z_{\rm ref}|)$; this does not certify primal feasibility
+or exact optimality. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{The ten corner corrections}
+\label{exp:ten-corrections}
+
+For a pair of scaled rays, the old oracle parameterized their direction
+by $\nu(\theta)=(\theta/\omega_i,(1-\theta)/\omega_j)$ and used a
+quadratic root formula. If $P\nu(\theta)=0$, rounding residuals in the
+coefficients can return a spurious finite objective. In all ten affected
+corners, the selected pair is antiparallel and the returned point has
+$q>0$, hence is infeasible. The corrected oracle rechecks the boundary
+value at every candidate. Antiparallel pairs occur in 38 of the 47 small
+and 66 of the 73 larger corners; this is a realistic boundary case rather
+than an isolated input construction.
+
+\begin{table}[h]
+\centering
+\caption{Old infeasible corner values and conservative outward-rounded
+displays of the retained rational lower/upper checks.}
+\label{exp:correction-table}
+\begin{tabular}{@{}rrrrr@{}}
+\toprule
+Seed & Trial & Old value & Lower display & Upper display \\
+\midrule
+11 & 3   & $8.15\cdot 10^{-9}$ & 0.048801 & 0.048851 \\
+11 & 110 & 0.103516 & 0.133667 & 0.133802 \\
+11 & 122 & 0.015625 & 0.032941 & 0.032975 \\
+12 & 14  & 0.062500 & 0.198744 & 0.198944 \\
+12 & 28  & 0.125000 & 0.137107 & 0.137246 \\
+12 & 71  & 0.031250 & 0.049226 & 0.049276 \\
+12 & 115 & 0.003906 & 0.027682 & 0.027711 \\
+12 & 140 & 0.003906 & 0.040754 & 0.040796 \\
+12 & 142 & 0.125000 & 0.196624 & 0.196821 \\
+12 & 174 & 0.007812 & 0.071949 & 0.072022 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The original one-cut summaries remain available to identify the
+correction; the corrected table uses the affected-corner rechecks.
+The unchanged SCIP-cut LP means are 0.8952360 and 0.8700128. Corrected
+SCIP corner means are 0.7239198 and 0.6159066, orbit/corner means
+0.7826349 and 0.6745576, and orbit-cut LP means 0.9311004 and 0.9099002.
+These are numerical aggregate results, distinct from the ten rational
+checks.
+
+The original root-loop cohorts have 12 small and ten larger instances.
+Replacing only the original corner oracle yields larger-cohort round-10
+fractions 0.930669 for the SCIP model, about 0.901 for orbit, and 0.904
+for its completion. A separate fast runner on the same generated cohort
+gives 0.9036877 for orbit and 0.8920107 for its completion; its bug-affected
+orbit variant gives 0.8832702. These are different numerical trajectories,
+not duplicate estimates of a uniquely specified run. The corrected
+objective-parallel rule stalls near 0.854 on the small cohort and 0.613
+on the larger cohort.
+
+\subsection{Fidelity and corner-oracle detail}
+\label{exp:corner-oracles}
+
+The fidelity comparison has 7,533 generator rays in the first cohort,
+36,263 in the second, and 566,397 MINLPLib rays. There are respectively
+one, zero, and 1,210 discrepancies. Rays after an attempt's failing ray
+are excluded because the implementation supplied no step. Finite
+nonmonoidal coefficients equal $1/\alpha_j$ in all 7,619 records with
+coefficient data; monoidal coefficients were checked for presence rather
+than independently reconstructed.
+
+The 307 bisection-class discrepancies split into 200 exactly reproduced
+numerical bisections and 107 unreproduced interval-rounding/bisection
+diagnoses. The remaining rounding class splits into 21 huge-step and
+33 root-formula cases. The largest observed shortening, $5.9\cdot 10^{-4}$,
+belongs only to this sample. A separate recorded inside-SCIP example
+halves a step; the smaller sample maximum is not a universal safeguard.
+The old-model comparison additionally differs in cutoff ($10^7$ versus
+$10^{12}$), so it is not an unconditional formula-error frequency.
+
+\begin{table}[h]
+\centering
+\caption{Numerical methods used in the 1,067 positive reduced-space
+ratio records. No row certifies the whole cohort.}
+\label{exp:oracle-table}
+\begin{tabular}{@{}lrl@{}}
+\toprule
+Method/class & Records & Limitation \\
+\midrule
+Support at most two & 602 & Floating-point boundary calculations \\
+Generic three-ray KKT enumeration & 233 & Degenerate minimizers may be missed \\
+Solver-closed estimates & 176 & Solver status is not an exact certificate \\
+Solver brackets & 46 & Saved lower/upper numerical bounds \\
+Upper-only estimates & 10 & No retained global lower certificate \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The higher-dimensional solver records have 175 optimal, 47 limit, and
+ten infeasible reports. Some saved full-space solver objectives lie above
+known feasible values. An exact feasible-point check for one
+\texttt{waterund25} record supplies an upper bound near 0.156185,
+not global optimality. The ten upper-only records can increase the
+reported ratios; they can reduce the fractions below 0.5 or 0.9 by at
+most $10/1067$, or 0.94 percentage points. In the low-ratio class the
+determining rays split into 187 numerical zero-rate, 99 cheap positive,
+and 85 other rays.
+
+Of 38,105 dynamism aborts, 34,834 occur in the first restriction piece
+and 3,271 in the second Case-4 piece. The sampled counts are 1,799 and
+175. Tiny $A$ alone occurs in 1,270 sampled and 28,071 full first-piece
+cases; 1,209 of those 1,270 exceed the specified $64u$ rounding threshold,
+where $u=2^{-53}$. A separate rounding diagnostic finds 36 of 138 cases
+consistent with zero at its tolerance. None of these partitions proves
+that rounding noise explains most aborts.
+
+After generation, 1,265 cuts are rejected by cleanup and 2,889 by
+range/efficacy checks. Later LP observations contain 296 of 767 checkable
+first-generator cuts, 595 of 2,155 second-generator cuts, and 3,152 of
+21,886 MINLPLib cuts. The uncheckable counts are 130, 308, 2,982.
+The source audit also identifies two option descriptions whose Boolean
+effects are reversed, and a generated-cut limit per expression that
+resets at restarts. These implementation facts affect interpretation
+of the attempts; they are not evidence of solver gains.
+
+\subsection{Paired trajectories and policy sensitivity}
+\label{exp:policy-details}
+
+The four generated caches each contain 60 instances, with seeds
+1001--1004; the larger two experiments use their first 50 entries.
+Generation retains 240 accepted instances from 751 trials, with 511
+small-gap exclusions. The main and additional-rule records contain
+44 files/3,840 trajectories and 30 files/1,320 trajectories. Pairing uses
+size and cached instance index together. All 220 baseline denominators
+match the cached initial LP and global-bilinear reference values.
+These records have no duplicate conflicting trajectories or non-success
+statuses. Global references and trajectory values remain numerical.
+
+Root-gap fractions are clipped for numerical overshoots. Across 52,347
+stored round states, 3,728 exceed the cached reference; the largest excess
+is $6.93\cdot 10^{-7}$ relative to $\max(1,|z_{\rm bil}|)$, or
+$2.09\cdot 10^{-4}$ of the root gap. Clipping is not a feasibility proof.
+After 20 rounds, the SCIP-model rule closes more than 0.999 of the gap
+on 48/60, 42/60, 40/50, 29/50 instances. Later-round means include those
+already-closed instances.
+
+The pooled orbit-minus-SCIP paired differences are approximately
+$-0.0013401$ at round 1, $-0.0117545$ at round 10, and $-0.0115808$
+at round 20. Comparisons across explored complete-cohort rules use
+14 rule-versus-SCIP tests on the 220 paired instances, adjusted by Holm
+separately for each endpoint. AUC is the mean fraction at rounds 1--10.
+For the efficacy policy, adjusted $p$ is 0.0247
+for AUC over rounds 1--10 and 0.3343 at round 10; the second efficacy
+variant has 0.0645 and 0.7789. Failure to reject a difference is not
+equivalence.
+
+Let $h_T(r)$ be the fraction closed at round $r$ by a schedule that uses
+orbit for its first $T$ rounds and then the SCIP-model rule, and let
+$h_O(r)$ use orbit throughout. The recovery contrast over rounds
+$a$--20 is
+\[
+ [h_T(20)-h_O(20)]-[h_T(a)-h_O(a)].
+\]
+For $T=a=3$, pooled over the 60 $6\times 8$ and 50 $10\times 20$
+instances, its mean is approximately $+0.0060\ [0.0020, 0.0100]$.
+Its raw paired-$t$ $p$ is 0.00369; Holm adjustment gives 0.0443
+over 12 contrasts: four switching schedules, each evaluated on either
+size and on their 110-instance pool. The adjustment is 0.1328 over
+36 tests spanning starts $a=3, 5, 10$, and 0.1218 over 33 distinct tests after removing
+three duplicate contrasts. The 12-test Wilcoxon adjustment is about
+0.056 for the pooled contrast, while its $10\times 20$ contrast gives
+0.035. The policy family, time window, and test determine which
+comparisons cross a conventional threshold. These are exploratory
+recovery results, not a validated replacement.
+
+The majority-ray intervention chooses orbit on shares
+0.219, 0.273, 0.287, 0.321 across sizes; random one-third selection has
+shares 0.337, 0.333, 0.335, 0.329. The majority rule uses the orbit
+set for a term only when its step is at least the SCIP step on strictly
+more than half the rays where at least one step is finite; the control
+selects orbit with probability one third. The pooled contrast is inconclusive,
+$+0.003\ [-0.002,+0.007]$, and its signs are positive in two sizes,
+approximately zero in one, and negative in one. This intervention
+does not isolate step geometry at fixed exposure. Likewise,
+within-rule step/tie/degeneracy correlations do not establish causality.
+The efficacy pool contains the SCIP cut, orbit optimized for the current
+costs, orbit optimized for normalized costs plus 0.1 or 1, and orbit
+optimized for ray-norm weights. Efficacy is distance from the LP vertex
+to the cut hyperplane in the original LP coordinates. The two-candidate
+variant uses only SCIP and orbit; its tested gain is not established.
+The observed cone-pointedness proxy can be about 0.001; finitely many
+small values neither verify nor refute a uniform-depth hypothesis.
+
+The one-orbit-root-round switching policy is entirely external to SCIP.
+The inside-SCIP implementation did not include the full-orbit LMI
+candidate. Its survival through SCIP's numerical checks and cut selection
+is an untested integration question.
+
+\subsection{Minor and restricted-family diagnostics}
+\label{exp:minor-diagnostics}
+
+The random minor data fix signature $(2, 2)$. There are 605 stored
+four-ray records, of which 600 have finite corner value, and 300 finite
+eight-ray records. Support-one/two counts are 499/101 and 268/32.
+Numerical orbit attainment occurs on 593/600 and 295/300, point-rule
+attainment on 521/600 and 274/300, rotation-family attainment on 435/600
+and 240/300, and SCIP-set attainment on 5/600 and 6/300. Support-two
+tangency residuals have maximum absolute cosines $4.34\cdot 10^{-12}$
+and $3.01\cdot 10^{-14}$. These observations support a geometric
+diagnostic; they do not prove a generic statement.
+
+Both LP selection policies use coordinates $M\mapsto\bar M^{-1}M$,
+so the apex is $I$. At each tested bound $z$, the maximum-margin choice
+maximizes a common PSD margin $t\le1$ subject to $\sym(G)\succeq I$
+and $\sym(GV_j(z))\succeq tI$, where $G=F^T$ and
+$V_j(z)=I+(z/\omega_j)\bar M^{-1}P_j$.
+The nearest-SCIP choice minimizes Frobenius distance to the transformed
+SCIP parameter, scaled to have minimum apex eigenvalue one, among
+parameters with the same normalization that contain $T_z$.
+Its target $z$ is $(1-10^{-6})$ times the computed orbit bound.
+
+The targeted minor implementation comparison matches 258 applied cuts
+in 273 separation rounds; 21 generated models have no recorded
+separation. The maximum normalized coefficient difference is
+$4.4964\cdot 10^{-15}$ and the RHS difference $7.9936\cdot 10^{-15}$.
+The standalone build without Ipopt does not enter this separator;
+the PySCIPOpt~6.2.1 build uses SCIP~10.0.3 with Ipopt~3.14.19.
+The saved fidelity logs contain errors and minor IDs rather than full
+coefficient vectors. Random records retain seeds, indices, supports and
+ratios rather than full apex/ray arrays; LP records retain trials,
+metrics and statuses rather than complete bases.
+
+The following tight brackets are retained exact-check outputs.
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Instance & Family & Archived bracket \\
+\midrule
+A & Orbit & $[0.4495347, 0.4495363]$ \\
+B & Orbit & $[0.9219403, 0.9219593]$ \\
+S1 & Orbit & $[0.7780998, 0.7781193]$ \\
+A & Point rule & $[0.1975640, 0.1975643]$ \\
+B & Point rule & $[0.3634909, 0.3634912]$ \\
+S1 & Point rule & $[0.4542877, 0.4542880]$ \\
+A & Rotation & $[0.3172917, 0.3172929]$ \\
+B & Rotation & $[0.6528369, 0.6528387]$ \\
+S1 & Rotation & $[0.4855239, 0.4855241]$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+Complete endpoint witnesses for A and S1 were not saved; the explicit
+portable certificates in \Cref{mi:example-proof} use coarser caps.
+The fine B and embedded bilinear witnesses are retained.
+
+Twenty-four rounded corners have successful one-sided exact upper
+checks and numerical lower family values. Their logs do not retain
+all upper dual witnesses; the random subset also omits rounded
+coordinates and rational endpoints. They cannot supply 24 exact
+two-sided comparisons. Rational tangent searches retain 1,487
+constructed corners and 354 grid-obstruction candidates; a support-one
+search has 717 eligible corners and 89 misses. These are capped searches.
+The superseded generic-minor solver records are excluded from results.
+
+The related bilinear checks include 888 random finite corners with
+support counts 749/139/0, 24 finite two-variable orbit checks, and a
+40-trial point-rule test with four infinite corners excluded. On its
+36 finite corners the plain point rule misses the corner bound on 13,
+while the full orbit reaches it numerically; the enlarged point-rule
+search still has 13 misses. Small support-two and adversarial searches
+motivate exact examples rather than estimate universal failure rates.
+Earlier global-solver comparisons are numerical validations and did not
+detect every antiparallel-ray failure.
+
+The depth-family calibration also retains the following numerical
+progression. The A column uses normalized SDP bisection and a checked
+returned set; it does not give exact two-sided endpoint certificates.
+The B column records a heuristic value found, not a global optimum.
+\begin{center}
+\begin{tabular}{@{}rrrrr@{}}
+\toprule
+$\varepsilon$ & $D$ & A ratio & Best B found & SCIP point rule \\
+\midrule
+$10^{-1}$ & 4.9 & 1 & 1 & 0.579 \\
+$10^{-2}$ & 14.3 & 1 & 1 & 0.198 \\
+$10^{-3}$ & 44.8 & 1 & 1 & 0.063 \\
+$10^{-4}$ & 141 & 0.9805 & 0.9805 & 0.020 \\
+$10^{-5}$ & 447 & 0.4207 & 0.4323 & 0.0063 \\
+$10^{-6}$ & 1,414 & 0.0994 & 0.1367 & 0.0020 \\
+$10^{-7}$ & 4,472 & 0.0247 & 0.0432 & 0.00063 \\
+$10^{-8}$ & 14,142 & 0.0068 & 0.0137 & 0.00020 \\
+\bottomrule
+\end{tabular}
+\end{center}
+The extended search supplies the $\varepsilon=10^{-5}$ B entry;
+the shorter search had 0.4310. Numerical normalized-frame calibration
+suggests an A asymptotic coefficient near 56.7, whereas an explicit
+completion attains the certified coefficient 136.7 and the box bound
+is 137. Equality of the best-height A and B values is numerical.
+One severely scaled SDP result under-reports that calibration and is
+treated as a numerical failure. The fixed nonsingular three-ray family
+has numerical condition number about 12.0136; constancy and nonsingularity
+are mathematical properties rather than consequences of that decimal.
+
+Separate fixed-point-rule sampling retains 15,731 corners in four
+location regimes. Under $D\le 2$ alone the observed minimum ratio is
+about 0.0140, at ray condition number 434. With the additional
+$\kappa\le 10$ restriction, minima are 0.2397 for the completion and
+0.1823 for the uncompleted set. These are sample minima, not certified
+worst-case constants. A 150-corner support-one comparison agrees with
+the interval exactness criterion apart from two borderline SDP
+under-reports; 138 satisfy the reported cylinder condition and all are
+numerically exact. The proof of the criterion remains separate.
+
+\subsection{Inside-SCIP cohorts, validity diagnostics, and timing limits}
+\label{exp:debug}
+
+The root campaign has 2,429 runs on 347 instances at seed 0 with seven
+settings, and 1,220 runs on 305 instances at each of seeds 1 and 2 with
+four settings. Complete cross-setting cohorts have 305, 305, 304 instances;
+referenced complete cohorts have 302, 302, 301; defined comparable
+root-gap fractions have 251, 250, 248. All 4,869 retained root runs return
+zero. An efficacy root bound on \texttt{tricp} exceeds its zero reference
+by about $1.7\cdot 10^{-5}$ at a large objective scale. A separate debug
+rerun reproduces it without a row exclusion but has terminal node-cutoff
+diagnostics. It is not a clean validity certificate.
+
+The strengthened variants at seed 0 change mean root-gap fraction by
+about $+0.006$ for the point rule, $-0.008$ for corner minus strengthened
+point rule, and approximately zero for efficacy minus strengthened point
+rule. Root CPU cost increases in that within-batch comparison. Search
+changes directions in 76.2\% of corner searches and 78.9\% of efficacy
+searches in the all-root population. Median per-instance surrogate gains
+are 1.428 and 1.044 on the 267 instances with a change. These populations
+differ from the 251 seed-0 root-gap comparisons. Offline attainment
+counts based on the ten incorrect corner values are excluded; their
+LP re-solve values are independent of that denominator error.
+
+The full numerical-degeneracy scan retains 305 summaries totaling
+109,389 corners: 89,307 (81.6415\%) attain the floored criterion on a
+zero-rate ray, and 10,040 (9.1782\%) have all costs in the zero class.
+Individual dumps, solver output, and per-instance exit codes for that
+scan were not retained. This test concerns the criterion's minimizer,
+whereas the fidelity test concerns feasibility of a zero-rate face.
+
+The ordinary full grid has 480 runs, four settings on 60 instances and
+seeds 1 and 2, at a 300 CPU-second limit. It reports 302 optimal outcomes,
+177 limits, and one baseline numerical failure. Solved counts are 75
+with cuts disabled, 75 with patched point rule, 76 with corner selection,
+and 76 with efficacy selection. The common-solved cohort has 73
+instance--seed pairs. All cut-on settings capture rows and can change
+paths. The 120 stock reruns report 77 optimal outcomes and 43 limits,
+but were run in a different batch. An additional completion is sensitive
+to batch speed; matching paths do not remove that confound. The stock
+timing contrast is unusable for a conclusion about enabling cuts.
+
+The debug grid instead uses five cut-on settings on 60 instances, seed 0,
+30 CPU seconds, and disabled heuristics and symmetry. It reports 170
+optimal outcomes, 129 limits, and one failure. Among 299 available final
+and 286 root bounds, none excludes the recorded feasible reference at
+the stated tolerance. Nevertheless 45 runs contain ERROR diagnostics
+and 215 unknown-variable warnings.
+
+All 73 intersection-row messages concern \texttt{st\_glmp\_fp2}.
+The supplied coordinates require nonlinear objective helper value 7.6275,
+but the loaded helper is zero. Correcting it satisfies all 73 rows with
+minimum slack 0.0175438. Nine other-row messages are local secants whose
+domains exclude the supplied point. These particular false alarms are
+resolved; other bound, implication, and cutoff diagnostics remain
+unresolved. The 114,699 objective-bound warnings on 25 runs use incomplete
+loaded objectives and do not count invalid original-objective bounds.
+Three small downward discrepancies in reported \texttt{kall} debug
+optima were not individually primal-checked; a saved primal check on an
+ordinary full-solve run is a different case. The earlier symmetry-enabled
+attempt contains 43 logs and is an incomplete population.
+
+\subsection{Companion contents and replay limits}
+\label{exp:companion}
+
+The companion preserves original file bytes, relative paths, SHA-256
+digests, sizes, and record counts. Its checker validates that inventory
+without importing experiment modules or launching solvers. Repository-owned
+code, compact records, generated model caches, saved certificate data,
+and verification receipts are included. Third-party literature, benchmark
+models and solutions, solver binaries, environments, and bulky raw traces
+are excluded from the default companion. The companion does not supply a redistribution license.
+
+Full saved exact data include the ratio-bound box trees, five completed
+closure box certificates, three current A closure certificates, and 60
+rational cuts giving the support-one closure lower bound. Ratio box
+line counts include facet headers and completion markers and therefore
+exceed leaf counts. The strongest tangent certificates have 11,132,
+1,882, 10,705, 11,943 leaves. The standard upper-constant certificate
+has 28,699 leaves; its current-header version has identical certificate
+data to the historical version. False attempted upper bounds that reached
+maximum search depth remain failed searches, not certificates.
+
+The closure box leaf counts are 3,255, 38, 10,323, 426, 7,061; the A
+piece counts are 25, 92, 1. Current verifiers include ray-uniqueness,
+sign, coordinate-count, and free-coordinate pruning checks. Historical
+verifier flaws did not affect those saved certificates, but old verifier
+versions must not be used. Finite mutation tests do not prove general
+verifier soundness.
+
+The near-boundary ratio bracket $[0.03052, 0.03056]$ is a retained
+exact-check result for the binary-float data model. Its upper-check
+receipt does not save the rational dual matrices; its generation script
+solves an optimization problem. It must not be advertised as a complete
+saved-data replay. The same distinction applies to missing fine minor
+endpoint witnesses and several rounded-corner checks.
+
+The support-one B closure checkpoint remains incomplete, with 37,936
+leaves and 171,528 pending boxes. Its value near 0.9953622 is numerical.
+The stopped diagnostic for $\famBP$ at the four-ray corner of
+\cref{cl:unbounded} is also incomplete; the analytic argument settles
+its intended claim. The closure
+survey evaluates 11 distinct corners for the orbit and uncompleted
+point-rule families after excluding the unreliable near-boundary row;
+seven also have completion and completed point-rule results.
+Among 18 point-rule single/closure comparisons on
+11 distinct corners (11 uncompleted and seven completed), 17 match
+numerically. Re-basing reaches the original numerical bound in five of
+six examples. In the three-ray tangent example the objective reaches 1 after three
+cuts while the vertex still has $q\approx 12$; the recorded feasible
+vertex occurs only after four cuts. These are finite diagnostics,
+not convergence guarantees.
+
+Saved run headers identify SCIP~10.0.3, SoPlex~8.0.3, and the relevant
+build flags. The recorded Python environment uses Python~3.13,
+NumPy~2.5.1, SciPy~1.18.0, CVXPY~1.9.3, Clarabel~0.11.1,
+SCS~3.3.1, SymPy~1.14.0, highspy, and PySCIPOpt~6.2.1.
+Some solver-bound analyses require Gurobi. The companion records current
+file hashes; run-specific source digests were not retained. Reproducing a numerical experiment and checking a saved
+exact certificate remain separate operations.

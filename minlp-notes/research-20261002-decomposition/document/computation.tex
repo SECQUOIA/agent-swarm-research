@@ -1,0 +1,188 @@
+This section preserves the first-release measurements and their original
+source snapshots. The later implementation and its separately saved runs
+are described in Section~\ref{sec:completion}; the figures below are not
+reruns of the updated solver.
+
+The original pruned-grid diagnostic implemented two-pass tree messages,
+all coordinate min-marginals, geometric grids, interval filtering, and
+hull recentering. Its saved exact-rational record covers nine fixtures,
+70 stages, 26,589 bag-table states, and 526 pruned intervals. Separate
+finite enumeration checked min-marginals on 21,034 assignments. These
+figures describe that diagnostic, not the continuation's benchmark suite.
+It did not implement the unknown-growth caps, rational reconstruction,
+or an independent stored-history verifier. Its successes establish
+finite regression evidence, not competitive general solver performance.
+
+The continuation distinguishes three empirical questions: whether the
+produced certificate independently checks, whether filtering reduces
+state counts against comparable unfiltered methods, and whether its
+total time and memory are useful against other solvers. An ordinary
+floating-point solver result is useful as a timing baseline but is not
+automatically an exact global certificate. Controlled synthetic fixtures
+and public-library instances must be reported separately, with explicit
+limits and incomplete runs preserved.
+
+\subsection{The initial sparse solver and independent replay}
+The initial standard-library Python reference implementation handled supplied
+general tree decompositions, branching trees, empty separators, continuous
+and native-integer domains, fixed coordinates, and disconnected factor
+graphs. It implements corrected geometric grids, all coordinate
+min-marginals, domain filtering, and the capped unknown-growth
+approximation schedule. Coordinate-specific diagonal corrections sharpen
+the common-$L$ bound. Endpoint reduction, bounded exact coordinate
+descent, and an optional rational PSD/KKT presolve supplement the grid
+algorithm. A saved result contains original-model bounds and a complete
+history, including when a resource limit interrupts refinement.
+
+The separate verifier does not call grid generation, dynamic programming,
+filtering, coordinate descent, or the convex presolve. It shares rational
+model parsing and objective evaluation, independently reconstructs factor
+tables and Bellman equalities, checks all min-marginals and exclusions,
+and re-evaluates feasible incumbents. The certificate proves the embedded
+rational model; a caller must also match that model to the intended input.
+It is an independently implemented checker, not a formally verified one.
+Replay can cost as much as solving because it recomputes finite-table
+arithmetic. This first release returned certified approximations and certain
+exact presolve or finite-grid answers. General continuous rational
+reconstruction was a theorem at that stage; the completion described below
+adds its implementation.
+
+\subsection{Bounded comparison on original objectives}
+The main suite has ten small rational instances and two unmodified binary
+QPLIB instances. The small set includes random signed paths, bands and a
+branching tree, mixed and integer paths, flat and tied optima, and two
+positive-curvature scales. Random cases do not have planted optimizers;
+deliberate structural cases are labelled diagnostics. An independent exact
+integer-slice and active-face enumeration gives the small reference values.
+
+All twelve cases use absolute tolerance $1/50$; a random path and both
+curvature cases also use $1/1000$. The resulting 15 configurations are
+run with four methods. Each has a two-second solver limit, with an
+external 14-second worker limit including setup, serialization and replay.
+Exact methods additionally have a 20,000 aggregate bag-state cap and
+24-stage cap. SCIP is single-threaded with a 256 MB internal limit.
+The grid methods share a greedy minimum-degree decomposition; SCIP does
+not receive it. These timings come from one bounded run on a shared
+machine, not a statistical performance study.
+
+\begin{center}
+\begin{tabular}{lrrl}
+\toprule
+Method & Small targets reached & Public targets reached & Incomplete runs\\
+\midrule
+Geometric, pruned & $13/13$ & $0/2$ & 2 table limits\\
+Geometric, unpruned & $13/13$ & $0/2$ & 2 table limits\\
+Uniform, unpruned & $11/13$ & $0/2$ & 4 table limits\\
+SCIP (numerical bounds) & $13/13$ & $0/2$ & 2 time limits\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+``Target reached'' means the requested objective tolerance, not exact
+optimization. The SCIP small outcomes comprise six optimal statuses and
+seven gap-limit statuses. Its dual bounds remain numerical; its repaired
+box-feasible incumbents are separately evaluated exactly. All 45 rational
+grid certificates, including incomplete runs, pass replay. All 39
+small-instance grid enclosures contain their exact reference values.
+
+For the 13 matched small configurations, the pruned geometric method
+processes 6,167 cumulative bag-table states versus 27,386 without pruning.
+The strongest reduction in this small set is the high-positive-curvature
+case at tolerance $1/1000$: 771 versus 13,527 states. Tied-and-flat and
+pure-integer cases have equal counts for the two geometric variants.
+Thus pruning helps particular fixtures, while the suite does not show
+universal pruning benefit. Median solve times on these 13 configurations
+are approximately 0.0059 seconds with pruning and 0.0082 without it;
+median replay times are 0.0084 and 0.0078 seconds, respectively. Median
+whole-worker subprocess times are 0.174 and 0.193 seconds. Interpreter
+startup, setup, exact arithmetic and checking materially exceed some solve
+times. Peak worker memory, including replay, is about 25 MB on the small
+grid runs; it is not isolated DP memory.
+
+The public inputs are QPLIB\_3852 (231 binary variables, 440 quadratic
+terms) and QPLIB\_5881 (120 variables, 2,123 terms). Their supplied
+decomposition widths are 25 and 95, respectively, and are heuristic
+upper bounds on treewidth. Each exact variant refuses its oversized
+tables before allocation and retains a valid initial bound; SCIP reaches
+its time limit. No public instance reaches the target. These outcomes
+demonstrate a practical width barrier for the supplied representations;
+they do not prove that better decompositions or formulations cannot work.
+The benchmark validates QPLIB's triangular coefficient convention against
+the bundled library solutions and preserves the original objectives and
+domains, apart from sign reversal of a maximization objective.
+
+\subsection{Dimension and certified affine reduction}
+Fourteen additional runs test increasing path dimension, a width-two
+case, and the affine-recourse reduction. Across both first-release suites,
+all \textbf{56 rational certificates} pass independent replay; the four
+affine enclosures also contain their analytic zero optimum. The main
+and extension suites use 20.23 and 22.23 seconds of summed subprocess
+wall time, respectively. No worker crashes or reaches its external wall
+limit. The following timings keep solve and replay separate.
+
+\begin{center}
+\begin{tabular}{lrrrr}
+\toprule
+Pruned random path & Gap & Solve (s) & Replay (s) & Peak MiB\\
+\midrule
+$n=16$ & $0.01497$ & $0.0253$ & $0.0231$ & $24.3$\\
+$n=64$ & $0.01361$ & $0.2020$ & $0.1967$ & $24.8$\\
+$n=256$ & $0.05786$ & $2.0023$ & $1.2388$ & $46.5$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The target is $1/50$. The first two paths finish; the 256-variable
+pruned path hits its time limit. Its unpruned counterpart hits a table
+limit at the same gap and uses 1.790 seconds for replay. SCIP reaches
+a numerical gap of approximately $0.000612$ in 1.797 seconds on that
+path. A pruned width-two, 16-variable case also reaches its target, with
+gap $0.01953$, solve time $0.0318$ and replay time $0.0546$ seconds.
+Three paths and one wider example do not constitute an empirical
+complexity law, and width one does not ensure fast Python rational
+arithmetic at every dimension.
+
+The affine experiment has six original variables, four retained
+variables, and an exactly checked identity
+$F(u,v,y)=q(u,v)+M\sum_i(y_i-u_i)^2$ with feasible response $y=u$.
+It is the companion's designed two-block example. The same reduced
+rational core is solved once for all three stiffness values.
+
+\begin{center}
+\begin{tabular}{lrrrr}
+\toprule
+Representation & States & Solve (s) & Replay (s) & Gap\\
+\midrule
+Original, $M=1$ & $1{,}694$ & $0.0352$ & $0.0425$ & $0.000458$\\
+Original, $M=100$ & $64{,}564$ & $2.0044$ & $2.0668$ & $0.399817$\\
+Original, $M=1000$ & $76{,}986$ & $2.0033$ & $2.5630$ & $7.406978$\\
+Reduced, all $M$ & $394$ & $0.0121$ & $0.0151$ & $0.000519$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The target is $1/1000$. The stiff original cases time out; the reduced
+case finishes and its rational incumbent and lower bound lift exactly
+to each original instance. State counts are cumulative over completed
+stages. This demonstrates a useful certified
+preprocessing operation on the stated class. It does not show that
+these analytically simple models are difficult for other solvers, and
+the affine-selector recognizer itself is not benchmarked here.
+
+\subsection{Initial extension implementations}
+The first-release conditional-cut implementation included residual sign
+recognition, an exact rational max-flow oracle, primal/flow certificates,
+adaptive core cells, trace verification, and a rational-separation exact
+mode. Its broader concave/convex submodular extension had small exact
+diagnostics. The TU implementation was a bounded two-bag diagnostic;
+affine recourse and optimal-set/boundary extensions also had exact
+algebraic checks. General convex-QP factor evaluation, diagonal-class LP
+recovery, and reusable constrained-tree search were implementation gaps
+at that stage. Section~\ref{sec:completion} records which gaps the next
+release closes and states the remaining limits.
+
+The saved experiment files provide per-run times, peak process memory,
+decomposition metadata, source hashes, rational reference values and
+replay certificates. The report's coverage map points to them. The evidence
+supports a reusable certifying reference solver and concrete extensions;
+it does not establish competitive general-purpose MINLP performance.

@@ -1,0 +1,469 @@
+\section{Certified inexact oracles}
+\label{sec:inexact}
+
+The regridding argument survives certified errors in local optimization,
+separator slopes, and incumbent evaluation.  Local errors accumulate along
+the selected configuration, once per bag.  They do not accumulate over all
+the convex problems solved to construct the certificate.  Throughout this
+section, the models satisfy \eqref{eq:model-contract}, the bag gradients
+are $M$-Lipschitz, and quadratic growth holds with constant $g>0$ as in
+\eqref{eq:model-growth}.  We use $C_0,B_0,\eta,C$ from
+\eqref{eq:regridding-constants}, with the model error constant denoted by
+$A$.
+
+\subsection{Certified local problems and selected residuals}
+
+Fix one stage and one exactly represented slope $\widehat\lambda_t$ per
+nonroot separator.  The partitions are fixed during the bottom-up pass.
+Once the child intercepts $\widehat\beta_{u,D'}$ are available, put
+\[
+ b_{u,B}=\min\{\widehat\beta_{u,D'}:
+                 D'\in\mathcal P_u,\ D'\cap B_{S_u}\ne\varnothing\}
+\]
+for each parent leaf $B$, and store a minimizing child cell.  For a
+nonroot bag, each touching pair $(B,D)$ has the nonempty compact domain
+$C_{t,B,D}=\{v\in B:v_{S_t}\in D\}$.  Its local objective is
+\begin{equation}
+ q_{t,B,D}(v)=m_{t,B}(v)
+       +\sum_{u\in\operatorname{ch}(t)}
+                  [\widehat\lambda_u^T v_{S_u}+b_{u,B}]
+       -\widehat\lambda_t^T v_{S_t}.
+ \label{eq:inexact-local-objective}
+\end{equation}
+At the root the domain is $B$ and the final slope term is absent.  A
+certified local oracle returns lower and upper numbers $\ell_{t,B,D}$,
+$u_{t,B,D}$ and a point $v_{t,B,D}$ satisfying
+\begin{equation}
+ v_{t,B,D}\in C_{t,B,D},\qquad
+ \ell_{t,B,D}\le\min_{C_{t,B,D}}q_{t,B,D},\qquad
+ q_{t,B,D}(v_{t,B,D})\le u_{t,B,D}
+                 \le\ell_{t,B,D}+\delta_{t,j}.
+ \label{eq:inexact-oracle}
+\end{equation}
+Here $\delta_{t,j}\ge0$ is a budget shared by the tasks of bag $t$ at
+stage $j$.  Feasibility and the inequalities are exact statements, not
+numerical tolerances.  Rational bounds and points are allowed; other
+exact representations are also allowed when the required comparisons
+and arithmetic are available.
+
+Set
+\begin{equation}
+ \widehat\beta_{t,D}
+     =\min_{B:B_{S_t}\cap D\ne\varnothing}\ell_{t,B,D},
+ \qquad
+ \LB_j=\min_{B\in\mathcal L_r}\ell_{r,B},
+ \label{eq:inexact-dp}
+\end{equation}
+and store a minimizing leaf and its oracle point for each table entry.
+Backtracking starts at a minimizing root leaf.  In each selected leaf it
+uses the stored point and the child cells minimizing $b_{u,B}$, then
+continues with those child entries.  All intersections, including faces,
+are included in this construction.
+
+\begin{proposition}[Validity and exact selected residuals]
+ \label{prop:inexact-dp}
+The preceding construction gives a certificate in
+\cref{def:model-certificate}, with cell functions
+$\widehat l_{t,D}(s)=\widehat\lambda_t^Ts+\widehat\beta_{t,D}$ and
+child functions $\widehat\psi_{u,B}(s)=\widehat\lambda_u^Ts+b_{u,B}$.
+In particular, $\LB_j\le f^*$ for arbitrary slopes and nonnegative
+budgets.  Backtracking gives a configuration, whose value is
+\begin{equation}
+ \widehat\Phi=\sum_t m_{t,B_t}(z^t)
+       +\sum_{t\ne r}\widehat\lambda_t^T
+                        (z^{\pi(t)}_{S_t}-z^t_{S_t}).
+ \label{eq:inexact-configuration}
+\end{equation}
+If $\ell_t$ and $q_t$ denote its selected local bound and objective, then
+\begin{equation}
+ \widehat\Phi-\LB_j=\sum_t\rho_t,
+ \qquad \rho_t=q_t(z^t)-\ell_t\in[0,\delta_{t,j}].
+ \label{eq:inexact-residual}
+\end{equation}
+Consequently,
+\begin{equation}
+ 0\le\widehat\Phi-\LB_j\le\sum_t\delta_{t,j}.
+ \label{eq:inexact-backtrack}
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+For every child cell meeting $B_{S_u}$, the definition gives
+$b_{u,B}\le\widehat\beta_{u,D'}$.  Thus the child function lies below
+that cell function throughout their intersection, as required by the
+child-minorant inequality.  For an own-separator pair, every feasible
+$v$ satisfies
+$q_{t,B,D}(v)\ge\ell_{t,B,D}\ge\widehat\beta_{t,D}$.
+Adding the incoming affine term gives the local certificate inequality.
+The root inequality follows from $q_{r,B}(v)\ge\ell_{r,B}\ge\LB_j$.
+Certificate validity now follows from \cref{prop:model-validity}; no
+maximality of the intercepts is needed.
+
+Each backtracked point belongs to its selected leaf and own cell, and
+each selected child cell meets the selected parent projection.  These
+are precisely the configuration conditions in \eqref{eq:model-config}.
+For every selected nonroot task,
+$\ell_t=\widehat\beta_{t,D_t}$, while the selected root bound equals
+$\LB_j$.  Also $b_{t,B_{\pi(t)}}
+=\widehat\beta_{t,D_t}$ by the stored child choice.  Summing
+\eqref{eq:inexact-local-objective} over selected bags therefore gives
+\[
+ \sum_t q_t(z^t)=\widehat\Phi+\sum_{t\ne r}\widehat\beta_{t,D_t},
+ \qquad
+ \sum_t\ell_t=\LB_j+\sum_{t\ne r}\widehat\beta_{t,D_t}.
+\]
+Subtracting proves the identity.  Finally,
+$\ell_t\le q_t(z^t)\le u_t\le\ell_t+\delta_{t,j}$ by
+\eqref{eq:inexact-oracle}.  This proves the residual intervals and their
+sum bound.
+\end{proof}
+
+Thus errors already inherited through child intercepts are counted once
+by \eqref{eq:inexact-residual}.  No factor for the number of leaves,
+cells, touching pairs, or oracle calls enters this bound.  In an
+implementation, the inherited constants $b_{u,B}$ can be omitted from
+the numerical optimization objective and added back exactly to both
+returned bounds.
+
+\subsection{Approximate slopes and bag gradients}
+
+For a configuration at center $c$, use the regridding quantities
+\[
+ b_t=\width(B_t),\quad d_t=\width(D_t),\quad
+ Q=\sum_t b_t^2+\sum_{t\ne r}d_t^2,\quad R=\norm{x-c},
+\]
+where $x_i=z_i^{\topbag(i)}$.  Let $\Phi$ be its value with the exact
+current-center slopes $\lambda_t(c)$ of \eqref{eq:model-slope}, and set
+\[
+ C_1=2p\max\{k-1,1\},\qquad
+ \nu^2=\sum_{t\ne r}\norm{\widehat\lambda_t-\lambda_t(c)}^2.
+\]
+
+\begin{lemma}[Slope perturbation]
+ \label{lem:inexact-slopes}
+Every configuration satisfies
+\begin{equation}
+ H:=\sum_{t\ne r}\norm{z^{\pi(t)}_{S_t}-z^t_{S_t}}^2
+       \le C_1Q,\qquad
+ \abs{\widehat\Phi-\Phi}\le\nu\sqrt{C_1Q}.
+ \label{eq:inexact-edge-incidence}
+\end{equation}
+Suppose the partitions are graded at width $h_j$, the first condition
+of \eqref{eq:regridding-theta} holds, and
+$\nu\le\zeta\sqrt N h_j$.  Then
+\begin{equation}
+ \abs{\widehat\Phi-\Phi}
+       \le\frac\eta4R^2+K_sNh_j^2,
+ \qquad
+ K_s=\sqrt{12C_1}\,\zeta
+              +\frac{12kC_1\zeta^2\theta^2}{\eta}.
+ \label{eq:inexact-slope-perturbation}
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+For a separator coordinate, the child point lies in $D_t$ and the parent
+point lies in $B_{\pi(t)}$.  Since their projections
+meet, their coordinate difference is at most
+$b_{\pi(t)}+d_t$.  Hence
+\[
+ H\le2\sum_t\sum_{u\in\operatorname{ch}(t)}|S_u|b_t^2
+            +2\sum_{u\ne r}|S_u|d_u^2.
+\]
+Each coordinate of $V_t$ occurs in at most $k-1$ child bags, since the
+total number of its occurrence bags is at most $k$.  Therefore
+$\sum_{u\in\operatorname{ch}(t)}|S_u|\le(k-1)|V_t|$ and
+\[
+ H\le2p(k-1)\sum_t b_t^2+2p\sum_{t\ne r}d_t^2\le C_1Q.
+\]
+Cauchy--Schwarz applied to the slope-error terms proves the second
+inequality in \eqref{eq:inexact-edge-incidence}.  By
+\cref{lem:regridding-grading},
+$Q\le12Nh_j^2+12k\theta^2R^2$, so
+\[
+ \abs{\widehat\Phi-\Phi}
+ \le\sqrt{12C_1}\,\zeta Nh_j^2
+       +\sqrt{12kC_1}\,\zeta\theta\sqrt N h_jR.
+\]
+Young's inequality bounds the second term by
+$\eta R^2/4+12kC_1\zeta^2\theta^2Nh_j^2/\eta$, giving the claim.
+When $k=1$, every separator is empty, so $H=\nu=0$ directly.
+\end{proof}
+
+\begin{lemma}[From bag-gradient errors to slope errors]
+ \label{lem:inexact-gradients}
+Let $e_t=\widehat g_t-\nabla a_t(c_{V_t})$ and form
+$\widehat\lambda_t$ by the same subtree sums as in
+\eqref{eq:model-slope}, with $\widehat g_t$ replacing the exact bag
+gradient.  If the sums are exact, then
+\begin{equation}
+ \nu^2\le G\sum_t\norm{e_t}^2,
+ \qquad G=\frac{k(k-1)}2.
+ \label{eq:inexact-gradient-incidence}
+\end{equation}
+In particular, $\norm{e_t}\le\gamma h_j$ for each bag ensures the
+budget of \cref{lem:inexact-slopes} with $\zeta=\sqrt G\,\gamma$.
+Componentwise error at most $\gamma h_j/\sqrt p$ is sufficient.
+\end{lemma}
+
+\begin{proof}
+Fix a coordinate $i$.  Its occurrence bags form a rooted tree $T_i$ of
+size $m_i\le k$.  For every edge below its top bag, the corresponding
+slope error is the sum of the errors $e_{t,i}$ in the occurrence bags
+below that edge.  Write this linear map as $A_i$.  Its entries are zero
+or one, and a column corresponding to bag $t$ has one entry for each
+ancestor edge, namely $\operatorname{depth}_{T_i}(t)$ entries.
+Consequently,
+\[
+ \norm{A_i}_2^2\le\norm{A_i}_F^2
+       =\sum_{t\in T_i}\operatorname{depth}_{T_i}(t)
+       \le\frac{m_i(m_i-1)}2\le G.
+\]
+The depth sum bound follows by ordering parents before children: the
+vertex in position $j+1$ has depth at most $j$.  Applying this operator
+bound to the coordinate error vector and summing over coordinates gives
+\eqref{eq:inexact-gradient-incidence}.  The per-bag vector bound gives
+$\sum_t\norm{e_t}^2\le N\gamma^2h_j^2$.  The componentwise condition
+implies that vector bound because $|V_t|\le p$.
+\end{proof}
+
+There is no branching factor in either lemma.  Errors introduced while
+forming subtree sums must be included in $\nu$ if those sums are
+inexact.  Exact sums of rational gradient approximations avoid that
+additional error.  No gradient accuracy is needed for slope
+perturbations when $k=1$.
+
+\subsection{Contraction and certified termination}
+
+\begin{theorem}[Inexact regridding]
+ \label{thm:inexact-main}
+Use fresh partitions at $h_j=s_0 2^{-j}$ and center $x^{(j-1)}$, with
+$\theta$ satisfying \eqref{eq:regridding-theta}.  Suppose fixed
+constants $d,\zeta,\omega\ge0$ give, at every stage,
+\begin{equation}
+ \delta_{t,j}\le d h_j^2,\qquad
+ \nu_j\le\zeta\sqrt N h_j,\qquad
+ F(x^{(j)})\le U_j\le F(x^{(j)})+\omega Nh_j^2.
+ \label{eq:inexact-budgets}
+\end{equation}
+Here $x^{(j)}$ is the consistent point of the backtracked configuration.
+Maintain $\UB_j=\min_{0\le l\le j}U_l$, optionally also including a
+certified feasible initial upper value.  Set
+\begin{equation}
+ K=C+K_s+d+\omega,\qquad
+ B_{\mathrm{in}}=\max\left\{p,\frac{8K}{3g}\right\}.
+ \label{eq:inexact-constants}
+\end{equation}
+Then, starting from any $x^{(-1)}\in X$, every stage satisfies
+\begin{equation}
+ \norm{x^{(j)}-x^*}^2\le B_{\mathrm{in}}Nh_j^2,
+ \qquad
+ 0\le\UB_j-\LB_j\le gB_{\mathrm{in}}Nh_j^2.
+ \label{eq:inexact-stage-bounds}
+\end{equation}
+For $\eps>0$, the gap test stops by stage
+\[
+ J=\max\left\{0,\ceil{\log_2\left(
+               s_0\sqrt{gB_{\mathrm{in}}N/\eps}\right)}\right\}.
+\]
+The final number of leaves and cells is at most
+$2N(4/\theta)^p(J+1)$.  Through stage $J$, the number of created boxes
+is at most $N(4/\theta)^p(J+1)(J+2)$, and the number of local convex
+oracle calls is at most
+\[
+ N3^q(4/\theta)^p\frac{(J+1)(J+2)(2J+3)}6.
+\]
+\end{theorem}
+
+\begin{proof}
+Every stage supplies a valid lower certificate by
+\cref{prop:inexact-dp}, and every maintained upper value comes from a
+feasible point.  Thus $\LB_j\le f^*\le\UB_j$.
+Apply \eqref{eq:regridding-error} to the selected configuration with
+the exact current-center slopes, then use
+\eqref{eq:inexact-backtrack} and
+\eqref{eq:inexact-slope-perturbation}.  Since $\eta=g/20$, their
+combined squared-distance allowance is $\eta+\eta/4=g/16$, giving
+\[
+ F(x^{(j)})-\LB_j
+    \le\frac g{16}\norm{x^{(j)}-x^{(j-1)}}^2
+                      +(C+K_s+d)Nh_j^2.
+\]
+Put $e_j=\norm{x^{(j)}-x^*}^2$.  Quadratic growth, lower-bound
+validity, and the inequality
+$\norm{x^{(j)}-x^{(j-1)}}^2\le2(e_j+e_{j-1})$ imply
+$ge_j\le g(e_j+e_{j-1})/8+KNh_j^2$.  Rearranging gives
+\begin{equation}
+ e_j\le\frac17e_{j-1}+\frac{8K}{7g}Nh_j^2.
+ \label{eq:inexact-contraction}
+\end{equation}
+For $j\ge1$, an induction using $h_{j-1}=2h_j$ closes because
+\[
+ \frac47B_{\mathrm{in}}+\frac{8K}{7g}
+       \le B_{\mathrm{in}}.
+\]
+For stage zero, $e_{-1}\le n s_0^2\le pNh_0^2
+\le B_{\mathrm{in}}Nh_0^2$, and
+\eqref{eq:inexact-contraction} yields the stronger
+$e_0\le4B_{\mathrm{in}}Nh_0^2/7$.  This proves the distance bound.
+
+For $j\ge1$, the two distance bounds imply
+$\norm{x^{(j)}-x^{(j-1)}}^2\le10B_{\mathrm{in}}Nh_j^2$.
+At stage zero the bound with coefficient $4$ suffices.  Since
+$\UB_j\le U_j$, the evaluation allowance gives
+\[
+ \UB_j-\LB_j
+   \le\left(\frac{5g}{8}B_{\mathrm{in}}+K\right)Nh_j^2
+   \le gB_{\mathrm{in}}Nh_j^2,
+\]
+where the last step uses $K\le3gB_{\mathrm{in}}/8$.  The definition
+of $J$ makes this upper bound at most $\eps$ at stage $J$.
+At the stopping stage, $F(x_{\mathrm{inc}})-f^*\le\eps$ for the
+feasible point associated with the maintained upper value.
+
+The partitions and incidence lists are those of exact regridding.
+The stage box bound from \cref{thm:regridding-main} and the incidence
+bound of \cref{prop:regridding-incidence} therefore apply unchanged.
+Summing $j+1$ and $(j+1)^2$ for $0\le j\le J$ gives the stated
+created-box and local-call counts.  Local numerical iterations are not
+included in these oracle-call counts.
+\end{proof}
+
+The allocation $\eta/4$ in the slope estimate preserves the strict
+margin needed when widths halve: the coefficient $1/7$ in
+\eqref{eq:inexact-contraction} is smaller than $1/4$.  Certified
+lower and upper bounds make the stopping test sound even at grading
+ratios that fail the convergence conditions.
+
+\begin{corollary}[Unknown constants]
+ \label{cor:inexact-search}
+Fix positive local, gradient, and evaluation budgets $d,\gamma,\omega$,
+and assume every requested certified oracle call terminates.  The
+operation-budget search of \cref{prop:regridding-search} applies to
+inexact regridding without knowledge of $g,M,A$: in round $r$, run each
+$\theta=2^{-\mu}$, $1\le\mu\le r$, from the initial point, with a
+budget of $2^r$ counted operations per trial and no separate stage cap.
+Some trial terminates with a certified gap at most $\eps$.
+
+More precisely, let $\mu_*$ be a sufficient grading index and let
+$W_*\ge1$ bound the counted work of its completed run.  Put
+$W=\max\{W_*,2^{\mu_*},2\}$ and $R=\ceil{\log_2 W}$.
+The total counted work through termination is at most $2R2^R$, hence
+$O(W\log W)$.  If box emission is counted, the returned certificate
+contains at most $2^R$ boxes.
+\end{corollary}
+
+\begin{proof}
+Request bag-gradient error $\gamma h_j$; \cref{lem:inexact-gradients}
+supplies $\zeta=\sqrt G\,\gamma$ for the analysis.  None of these
+requests depends on $g,M,A$.  A sufficiently small dyadic $\theta$
+satisfies \eqref{eq:regridding-theta}, so the corresponding run stops
+by \cref{thm:inexact-main}.  Its counted work is finite.  For example,
+under the same unit-cost bag-oracle and arithmetic accounting as
+\cref{prop:regridding-search}, it is
+$O(pN3^q(4/\theta)^p(J+1)^3)$; oracle-internal work is excluded.
+Enforce each trial budget before its next counted operation.  Round
+$R$ includes $\mu_*$ and permits at least $W_*$ operations for that
+trial, so that trial completes unless an earlier valid gap test has
+already stopped the search.  The work bound follows from
+$\sum_{r=1}^R r2^r\le2R2^R$, and $2^R<2W$.
+
+The first successful trial may have a different grading ratio and
+stage from the sufficient run.  Its guarantee is the certified gap
+test.  Its actual stage has at most
+$2N(4/\theta)^p(j+1)$ boxes, and its box emissions also fit within
+its operation budget, which is at most $2^R$.  No final-box estimate
+using the sufficient run's $\theta$ is asserted for this returned
+trial.
+\end{proof}
+
+\subsection{Exact faces and rational reconstruction}
+
+The feasibility requirement in \eqref{eq:inexact-oracle} also applies
+when a leaf and a separator cell only touch.  A numerical displacement
+of any size can leave a fixed face.  The following construction isolates
+this issue from objective accuracy.
+
+\begin{proposition}[Rational feasible points]
+ \label{prop:inexact-reconstruction}
+Assume the original box, initial center, widths, and grading ratio have
+rational representations, and shell endpoints are formed by rational
+arithmetic.  A local domain $C_{t,B,D}$ is a rational box, possibly
+lower dimensional.  Its fixed coordinates can be removed exactly.
+Rational local oracle points give a rational consistent point in $X$,
+and therefore a rational center and rational partitions at the next
+stage.
+
+For quantitative reconstruction, suppose $q=q_{t,B,D}$ is
+$L_q$-Lipschitz on its relative box, and a feasible point $v_0$ has a
+certified upper value $u_0$ with
+$q(v_0)\le u_0$ and $u_0-\ell\le\delta/2$.
+Let $K_q\in\Q$ satisfy $K_q\ge L_q\sqrt p$.  If a rational feasible
+point $v$ has $\abs{v_i-v_{0,i}}\le\tau$ in every coordinate, then
+\begin{equation}
+ q(v)\le u_0+K_q\tau=:u_{\mathrm{new}}.
+ \label{eq:inexact-rounding}
+\end{equation}
+For $\delta>0$ and $K_q>0$, rational $\tau>0$ with
+$K_q\tau\le\delta/2$ ensures
+$u_{\mathrm{new}}-\ell\le\delta$.  If $K_q=0$, reconstruction has
+no objective penalty.
+\end{proposition}
+
+\begin{proof}
+For each coordinate the intersection interval is
+$[\max\{L_i^B,L_i^D\},\min\{U_i^B,U_i^D\}]$, with the own-cell
+endpoints omitted outside the separator.  Exact endpoint comparisons
+determine emptiness.  Equal endpoints fix that coordinate to the common
+rational value; eliminate it before solving for the remaining
+coordinates.  Restricting the objective preserves continuity and
+convexity.  If no coordinates remain, the task is certified evaluation
+at the single rational point.  The consistent point selects one of the
+feasible bag coordinates for each original variable, so it is rational
+and lies in its original interval.  Rational shell arithmetic then
+preserves the claim at the next stage.
+
+To construct $v$, obtain a rational approximate vector $w$ with
+certified coordinate errors at most $\tau$ from $v_0$ and clip each
+coordinate exactly to its intersection interval.  Fixed coordinates
+are set to their exact endpoint.  Since $v_0$ lies in the interval,
+clipping cannot increase its coordinate distance from $v_0$.
+Thus $v$ is rational and feasible, with
+$\norm{v-v_0}\le\sqrt p\,\tau$.  The Lipschitz estimate gives
+$q(v)\le q(v_0)+L_q\sqrt p\,\tau\le u_0+K_q\tau$.
+The remaining assertions follow by adding this allowance to the
+initial certified gap.
+\end{proof}
+
+Exact clipping certifies feasibility, not the objective gap.  Without
+a supplied quantitative modulus, the oracle must certify the final
+point and its gap directly.  A fresh evaluation after reconstruction
+must fit within the remaining gap budget.  Continuity ensures that
+rational feasible points approximate a minimum on a rational relative
+box at every positive tolerance, since such points are dense there.
+It does not supply a procedure or cost bound for finding and certifying
+them.  Rational gradient approximations and exact rational subtree sums
+also give rational slopes; rational lower bounds give rational message
+intercepts.
+
+Zero budgets require exact oracles and an admissible exact
+representation.  They need not admit rational points, even for rational
+convex polynomial data.  On $[1,2]$, the function
+$q(x)=(x^2-2)^2$ is strictly convex because $q''(x)=12x^2-8\ge4$.
+Its unique minimizer is $\sqrt2$.  With $\delta=0$,
+\eqref{eq:inexact-oracle} forces the returned point to equal that
+minimizer, so no rational point can satisfy the contract.  This is why
+oracle realizability and termination remain assumptions.  Irrational
+fixed domain coordinates likewise require an appropriate exact
+representation.
+
+For fixed positive budgets, the requested absolute objective accuracy
+is proportional to $h_j^2$ and the gradient accuracy to $h_j$, so their
+precision requests grow linearly with $j$, apart from scale terms.
+This observation does not bound the bit lengths of all certificate
+entries or the internal work of the oracles.  The certificate size
+counts leaves and cells; a serialized proof may include separate local
+lower-bound witnesses for every touching pair and may consequently
+contain more proof objects.  Bit-complexity conclusions require an
+explicit representation and certified routines with their own precision
+and runtime bounds.

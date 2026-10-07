@@ -1,10 +1,13 @@
+from pathlib import Path as _CleanupPath
+_NOTES_ROOT = _CleanupPath(__file__).resolve().parent.joinpath('../../../../..').resolve()
+
 import sys, math, numpy as np, pandas as pd, scipy.sparse as sp
-sys.path.insert(0,'/home/sgusev/repo/minlp-notes/research-20260922/iterated-obbt/code')
+sys.path.insert(0,(str(_NOTES_ROOT) + '/research-20260922/iterated-obbt/code'))
 from qcqp import QCQP
 import relax, gurobipy as gp
 from gurobipy import GRB
 from scipy.optimize import linprog
-RES='/home/sgusev/repo/minlp-notes/research-20260922/iterated-obbt/results'
+RES=(str(_NOTES_ROOT) + '/research-20260922/iterated-obbt/results')
 inst=pd.read_csv(RES+'/instances.csv').set_index('name')
 env=gp.Env(params={'OutputFlag':0})
 

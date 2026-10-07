@@ -75,17 +75,14 @@ extraction, not from the PDF layout.
   `(exp(k1 x), exp(k2 x), exp(k3 x))`; `(1/x, x^2, exp(x))`;
   `(-sqrt(x), sin(x), exp(x))` on `[3.5, 4.5]`. He stresses that, unlike the
   moment curve, the vector need not be "complete".
-- Library search (p.198): "Many of the instances in these libraries are
-  rather sparse, that is a lot of variables occur only once or twice so that
-  it is quite unlikely that the simultaneous convexification of several
-  nonlinearities has significant impact." The one instance studied is
+- Library search (p.198): Ballerstein argued that sparse variable occurrences in the
+  available libraries limited opportunities for simultaneous convexification. The one instance studied is
   GLOBALLib ex8_4_6 (eight `exp(-a_i z_j)` per variable). With original
   bounds no strategy improved the trivial lower bound 0; gains appeared only
   after shrinking the `y` domains (p.199).
 - SCIP integration (p.201-203): separators `2UniVarConv` and `3UniVarConv` in
-  SCIP 3.0.0, called at every node. "Currently, the separators do not
-  automatically detect these vectors. Instead, we need to reformulate the
-  problems such that each function ... is replaced by a new variable". Test
+  SCIP 3.0.0, called at every node. The separators required manual reformulation of each function
+  with a new auxiliary variable; they did not automatically detect the vectors.. Test
   set: 800 random instances, constraints `sum a x_j^p <= 0` with non-integer
   exponents `p in {i+0.2,...,i+1}`, 10-50 variables, 1-50 constraints, 15 min
   limit. Result (Table 5.7): solved 542 -> 643, mean dual gap 10.48% -> 0.49%,
@@ -154,24 +151,29 @@ univariate curves specifically.
 "A new framework to relax composite functions in nonlinear programs" (Math.
 Program. 190, 2021), "Tractable relaxations of composite functions" (MOR 47,
 2022), "MIP relaxations in factorable programming"
-[[he2024-mip-relaxations-in-factorable-programming]]. They relax one outer
-function `phi(f_1(x),...,f_d(x))` using several under/over-estimators of each
-inner function, encoded in a polytope/simplotope. The structure is one outer
-function over many inner functions. I found no statement that they exploit
-several *outer* univariate functions of the *same* inner function or
-variable; the abstracts of the 2021, 2022 papers and of arXiv:2205.01442 do
-not mention it. Zhu, He, Tawarmalani, "Axis-aligned relaxations for MINLP"
-(arXiv:2603.18458) prove a simultaneous-hull result for multilinear
-compositions over axis-aligned regions and treat products of univariate
-functions of *different* variables; text search of the PDF found no treatment
-of several functions of one variable. Full texts of the 2021 and 2022 papers
-were not read (abstracts only), so this is "not found", not "proved absent".
+[[he2024-mip-relaxations-in-factorable-programming]] develop relaxations
+using bounds and estimators of inner functions. This framework also treats
+vectors of outer functions. In particular,
+[Section 7.2 and Proposition 28 of the factorable-programming preprint](https://arxiv.org/html/2310.07168v2#S7.SS2)
+explicitly handle multiple composite functions and explain why intersecting
+their individual hypograph hulls can fail to give the simultaneous hull.
+Thus simultaneous treatment of several functions sharing inner variables
+cannot be claimed absent from this line of work.
+
+The October 2 convexification continuation corrected this paragraph after
+a fuller primary-source audit. The earlier statement that the abstracts
+did not mention multiple outer functions was inaccurate. The continuation's
+[composition audit](../research-20261002-convexification/literature/composition-audit.md)
+compares these sources and the later Zhu--He--Tawarmalani work with the
+implemented support-cut approach. Any distinction concerning automatic
+recognition, a particular supported graph class, numerical certification,
+or solver performance must be established separately from the general
+simultaneous-convexification principle.
 
 ### 2.5 RLT for polynomial programs
 
-Sherali and Tuncbilek (1997), univariate section: "we can generate additional
-valid (linear or convex) constraints that relate the new RLT variables with
-each other and with the original problem variables", and the "convex
+Sherali and Tuncbilek (1997), univariate section: the method adds valid linear or convex constraints linking the
+new RLT variables to one another and to the original variables, and the "convex
 variable-bounding" class `(X_q)^p <= X_{p q}` for primes `p`, e.g.
 `x^2 <= X_2`, `X_2^2 <= X_4`, `X_2^3 <= X_6`, `X_3^2 <= X_6`
 [[sherali1997-new-reformulation-linearization-convexification-relaxations]] p.3.
@@ -191,12 +193,12 @@ non-integer exponents.
 
 - ACOPF. Hijazi, Coffrin, Van Hentenryck relax `sin` and `cos` of the angle
   difference *separately* (quadratic envelope for cos, polyhedral for sin) and
-  write "To the best of our knowledge, there has not been any relaxations
-  directly handling the trigonometric functions"
+  report that they knew of no relaxations directly treating the
+  trigonometric functions
   [[hijazi2017-convex-quadratic-relaxations-for-mixed]] p.5-6. The identity
   enters through the lifted product variables: the SOC constraint
-  `w_R^2 + w_I^2 <= w_i w_j` is "easily verified using the trigonometric
-  identity cos(x)^2 + sin(x)^2 = 1"
+  `w_R^2 + w_I^2 <= w_i w_j` follows from the identity
+  `cos(x)^2 + sin(x)^2 = 1`
   [[hijazi2017-convex-quadratic-relaxations-for-mixed]] p.30. So
   `t_s^2 + t_c^2 <= 1`, scaled by magnitudes, is Jabr's SOC relaxation.
 - Chord of the arc. Coffrin, Hijazi, Van Hentenryck, "Strengthening the SDP
@@ -332,8 +334,8 @@ Caveats for any claim:
 Read from the instance pages on 2026-09-21 (site footer: last updated
 2026-07-29, git hash 168bf3d2). The pages name only the solver. They give no
 person, solver version, options, machine, or date. The MINLPLib FAQ says:
-"the reported dual bounds are just the best value as computed in some run
-with some option settings on some machine at some time in the past"
+the reported dual bounds reflect the best values achieved in previous solver
+runs under particular settings and computing environments
 [[vigerske2026-minlplib-a-library-of-mixed]] p.1. So "who computed it" is
 not recoverable from public data beyond the solver name; the maintainer
 (S. Vigerske, GAMS) runs the solvers.

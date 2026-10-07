@@ -77,23 +77,22 @@ symmetric matrix with X*₀₀ = 1". *Question:* is there `v ∈ ℤⁿ⁺¹` wi
 Attribution, checked against the source texts (in the scout folder and in
 `reviews/split-separation/sources/`):
 
-- Letchford (IPCO 2010) introduced the inequalities. B–T (p. 8) write: "As
-  mentioned by Letchford [11], it is unclear whether the separation of split
-  inequalities is an NP-hard problem or not." Letchford's paper itself was not
-  checked.
+- Letchford (IPCO 2010) introduced the inequalities. B–T (p. 8) attribute to
+  Letchford [11] the unresolved question of NP-hardness for split-inequality
+  separation. Letchford's paper itself was not checked.
 - Burer–Letchford, September 2011 preprint (Optimization Online 2011/09/3172),
-  §8: "Another important question is whether the separation problem for the
-  split inequalities can be solved in polynomial time." This is a question;
+  §8 asks whether split-inequality separation has a polynomial-time algorithm.
+  This is a question;
   the preprint states no conjecture. The published version (Math. Program. 143
   (2014) 231–256) was not checked.
-- B–T, Optimization Online 2013/07/3953, p. 3: "we agree with the conjecture of
-  Burer and Letchford [8] that this separation problem is NP-hard." So B–T
+- B–T, Optimization Online 2013/07/3953, p. 3, endorse the NP-hardness
+  conjecture they attribute to Burer and Letchford [8]. So B–T
   attribute an NP-hardness conjecture to Burer and Letchford and adopt it. Their
   Theorem 5 handles non-PSD `X*`. The published version (Discrete Optim. 15
   (2015) 1–14) was not checked.
 - de Meijer, Piccialli, Sotirov and Sudoso, arXiv:2603.28979v1 (March 2026),
-  §4, p. 11: "it is unclear whether the separation of split inequalities is an
-  NP-hard problem or not."
+  §4, p. 11, still lists NP-hardness of split-inequality separation as
+  unresolved.
 
 The accurate description is therefore: the question posed by Burer and
 Letchford, which Buchheim and Traversi state as Burer and Letchford's
@@ -611,11 +610,11 @@ the hypermetric inequalities, and the family also contains the gap-1
 inequalities. Their separation complexity is stated as unknown in the
 following sources:
 
-- Avis–Grishukhin 1993: "We are not able to prove that P1 is NP-hard".
-- Avis 2003: "Its complexity status is unknown".
-- GKL 2011 preprint: "the complexity of separation for the remaining
-  inequalities … is unknown". GKL also note that rounded psd separation
-  reduces to hypermetric separation.
+- Avis–Grishukhin 1993 report no NP-hardness proof for P1.
+- Avis 2003 lists the complexity classification as unresolved.
+- GKL 2011 preprint leaves separation complexity unresolved for the remaining
+  inequalities. GKL also note that rounded psd separation reduces to
+  hypermetric separation.
 
 In the lattice picture of Lemma 1, a violated split is a lattice point
 strictly inside the sphere with diameter `[0, −b₀]`. Binary structure, that is

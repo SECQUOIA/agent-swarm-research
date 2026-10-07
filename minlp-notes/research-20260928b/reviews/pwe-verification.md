@@ -64,7 +64,7 @@ gap (`8.66e-7` against `8.62e-7`).
   (arXiv 1902.06547) cite the theorem as valid. None of the follow-ups I could
   read notes the problem. My search was limited (Section 5).
 
-## 1. Source and exact statements
+## 1. Source statements and formulas
 
 I found no arXiv version of PWE (arXiv API author and title queries returned
 none). I read the published version from the author-hosted PDF
@@ -77,35 +77,33 @@ images, not only the text extraction.
 
 - **Problem (3), p. 65:**
   `P* := min_{w in R^d, ||w||_0 <= k} (1/2) sum_{i=1}^n (<x_i, w> - y_i)^2 + (1/2) rho ||w||_2^2`.
-- **Section 3, pp. 69–70:** "Note that by strong convexity, the original
-  cardinality-constrained problem (1) has a unique solution, say `w* in R^d`.
-  Let `S` denote the support set of `w*`". In Section 3.1, `w*` is instead the
-  true regression vector. The overloading does not matter below, because the
+- **Section 3, pp. 69–70:** The authors invoke strong convexity to assert
+  uniqueness for the cardinality-constrained problem (1), denote its solution
+  by `w* in R^d`, and use `S` for the support of `w*`. In Section 3.1, `w*` instead denotes
+  the true regression vector. The overloading does not matter below, because the
   optimal support equals the true support with probability tending to 1.
 - **Relaxation (19) and matrix (20), p. 71:**
   `P_IR = min_{u in [0,1]^d, sum u_j <= k} y'((1/rho) X D(u) X' + I_n)^{-1} y`
   and `M := (I_n + rho^{-1} X_S X_S')^{-1}`.
   - Equations (13) and (19) drop the factor 1/2 of (3). This does not affect
     exactness.
-- **Corollary 2, p. 71:** "The interval relaxation of cardinality-constrained
-  least-squares is exact (`P_IR = P*`) if and only there exists a scalar
-  `lambda in R_+` such that `|X_j' M y| > lambda` for all `j in S`, and
-  `|X_j' M y| <= lambda` for all `j notin S`".
-- **Model, Section 3.1, p. 72:** "first generating a design matrix
-  `X in R^{n x d}` with i.i.d. `N(0,1)` entries, and then forming the response
-  vector `y = Xw* + eps`, where the noise vector `eps in R^n` has i.i.d.
-  `N(0, gamma^2)` entries. The unknown regression vector `w*` was `k`-sparse,
-  with absolute entries of the order `1/sqrt k` on its support."
-- **Theorem 2, p. 72:** "Suppose that we are given a sample size
-  `n > c0 (gamma^2 + ||w*_S||_2^2)/w_min^2 log d`, and that we solve the
-  interval relaxation with `rho = sqrt n`. Then with probability at least
-  `1 - 2e^{-c1 n}`, the interval relaxation is integral, so that
-  `P_IR = P*`."
-  - The constants are not quantified in the statement. The proof calls `c0`
-    "a sufficiently large constant" (p. 82). Dong's restatement reads "There
-    are constants `c0` and `c1`, such that the following holds."
-- **Appendix 7.1, p. 81:** "define the rescaled random variable
-  `U_j := X_j'My/(rho n)`" and
+- **Corollary 2, p. 71:** The claimed exactness criterion is `P_IR = P*`
+  if and only if a scalar `lambda in R_+` separates the two sets of correlations:
+  `|X_j' M y| > lambda` for every `j in S`, and
+  `|X_j' M y| <= lambda` for every `j notin S`.
+- **Model, Section 3.1, p. 72:** The design is `X in R^{n x d}` with
+  independent `N(0,1)` entries. Responses follow `y = Xw* + eps`, with
+  `eps in R^n` having independent `N(0, gamma^2)` entries. The vector `w*`
+  is assumed `k`-sparse; its nonzero magnitudes scale as `1/sqrt k`.
+- **Theorem 2, p. 72:** The asserted implication uses the sample-size condition
+  `n > c0 (gamma^2 + ||w*_S||_2^2)/w_min^2 log d` and the choice
+  `rho = sqrt n`. It claims integrality of the interval relaxation with probability
+  at least `1 - 2e^{-c1 n}`, yielding `P_IR = P*`.
+  - Neither constant is specified in the theorem. On p. 82, the proof requires
+    `c0` to be large enough. Dong likewise states existence of constants `c0`
+    and `c1`, without giving their values.
+- **Appendix 7.1, p. 81:** The normalization is
+  `U_j := X_j'My/(rho n)`, with the decomposition
   `U_j = X_j'MX_S w*_S/(rho n) [=: A_j] + X_j'M eps/(rho n) [=: B_j]`.
   - The proof targets condition (32): `min_{j in S}|U_j| > lambda` and
     `max_{j in S^c}|U_j| < lambda`.
@@ -114,21 +112,20 @@ images, not only the text extraction.
 - **Lemma 2 (34a), (34b), p. 82:**
   - (34a): `P[min_{j in S}|A_j| < w_min/4] <= c1 exp(-c2 n w_min^2/||w*_S||^2 + log(2k))`.
   - (34b): `P[max_{j in S^c}|A_j| >= w_min/16] <= c3 exp(-c4 n w_min^2/||w*_S||^2 + log(d-k))`.
-- **Assembly, p. 82:** "setting `t = w_min/16` in Lemma 1 ensures that
-  `max_j |B_j| <= w_min/16` with high probability", then `lambda = 5 w_min/32`.
-- **Proof of Lemma 1, p. 82 (the disputed step):** "Recalling the Definition
-  (20) of the matrix `M`, note that `sigma_max(M) <= rho^{-1}`, whence
-  conditioned on `E`, we have `||MX_j||_2 <= ||X_j||_2 <= 2 sqrt n`.
-  Consequently, conditioned on `E`, the variable `X_j'M eps/rho` is a Gaussian
-  random vector with variance at most `4 gamma^2/rho^2`, and hence
-  `P[|B_j| > t | E] <= 2e^{-rho^2 t^2/(32 gamma^2)}`."
+- **Assembly, p. 82:** Lemma 1 is applied at `t = w_min/16` to obtain
+  the high-probability bound `max_j |B_j| <= w_min/16`; the proof then chooses
+  `lambda = 5 w_min/32`.
+- **Proof of Lemma 1, p. 82 (the disputed step):** Using definition (20) of `M`,
+  the authors assert `sigma_max(M) <= rho^{-1}`. Conditional on `E`, they use
+  `||MX_j||_2 <= ||X_j||_2 <= 2 sqrt n`, treat `X_j'M eps/rho` as Gaussian,
+  and bound its variance by `4 gamma^2/rho^2`. Their resulting tail bound, conditional on `E`, is
+  `P[|B_j| > t | E] <= 2e^{-rho^2 t^2/(32 gamma^2)}`.
 - **Proof of Lemma 2, pp. 83–85 (the normalization it uses):**
-  - p. 83: "Note that `(1/rho) X_S'MX_S = X_S'(rho I_n + X_S X_S')^{-1} X_S`".
-    The proof then shows `(1/rho) X_S'MX_S w*_S ≈ w*_S`, "and setting
-    `eps = 3/4` yields the claim".
-  - p. 84: "`A_j = (1/rho) X_{S^c}' M X_S w*_S = ...`, for each `j in S^c`".
-  - p. 85: "the variable `A_j` is conditionally Gaussian with variance at most
-    `(4/rho^2)||w*_S||_2^2`".
+  - p. 83: The proof uses `(1/rho) X_S'MX_S = X_S'(rho I_n + X_S X_S')^{-1} X_S`
+    to establish `(1/rho) X_S'MX_S w*_S ≈ w*_S`, then takes `eps = 3/4`.
+  - p. 84: For each `j in S^c`, it writes `A_j = (1/rho) X_{S^c}' M X_S w*_S = ...`.
+  - p. 85: It treats `A_j` as conditionally Gaussian and gives the variance bound
+    `(4/rho^2)||w*_S||_2^2`.
 
 ## 2. The proof of Theorem 2: what is wrong, exactly
 
@@ -346,25 +343,25 @@ Findings:
   updates the DOI. I found none.
 - **Later version: Pilanci's PhD thesis** (UCB/EECS-2016-147, 14 August 2016,
   Chapter 6). Theorem 12 (Sect. 6.2.1, printed p. 180) is the same statement.
-  The model line there reads "i.i.d. `N(0, gamma)` entries", apparently a
-  typo. The proof (Sect. 6.12.1, printed pp. 199–200, Lemmas 31–32) is
-  unchanged, including "`lambda_max(M) <= rho^{-1}`" and "variance at most
-  `4 gamma^2/rho^2`". So the thesis does not correct the error.
+  The model specifies independent `N(0, gamma)` entries, apparently a
+  typo. The proof (Sect. 6.12.1, printed pp. 199–200, Lemmas 31–32) retains
+  both the claim `lambda_max(M) <= rho^{-1}` and the variance bound
+  `4 gamma^2/rho^2`. So the thesis does not correct the error.
 - **Dong, arXiv 1603.04572** ("On the exact recovery of sparse signals via
   conic relaxations"). Theorem 3 restates PWE's result faithfully (same noise
   model, `rho = sqrt n`, probability `1 - 2e^{-c1 n}`). The abstract relies on
-  it: "any sufficient conditions of exact recovery derived by Pilanci can be
-  readily applied to the Dong's relaxation, including their results on high
-  probability recovery for Gaussian ensemble." There is no correction.
+  it by asserting that PWE's sufficient conditions transfer to Dong's
+  relaxation, including recovery guarantees for Gaussian designs.
+  There is no correction.
 - **Bertsimas–Pauphilet–Van Parys, arXiv 1902.06547.** They quote PWE's
-  Proposition 1 and state that the uniqueness condition "is satisfied with
-  high probability, for instance, when the covariates `X_j` are independent
-  [see 40, Theorem 2]". They take the theorem as valid.
+  Proposition 1 and cite reference 40, Theorem 2, for a high-probability
+  uniqueness guarantee when the covariates `X_j` are independent.
+  They take the theorem as valid.
 - **Xie–Deng, arXiv 1806.03756.** They cite PWE only for randomized rounding
   (PWE Theorem 3), not for Theorem 2.
 - **Atamtürk–Gómez, safe screening, arXiv 2004.08773.** They cite PWE's
-  Proposition 1 and note that PWE "study their strength and conditions for
-  delivering optimal solutions". There is no correction.
+  Proposition 1 and describe PWE's analysis of relaxation strength and
+  conditions for exactness. There is no correction.
 - **Other papers.** Atamtürk–Gómez–Han (1901.10334), Dong–Chen–Linderoth
   (1510.06083), the survey of Tillmann et al. (2106.09606) and 2203.02607 cite
   PWE only for the relaxation. Cifuentes–Li (2603.18215) does not cite PWE.

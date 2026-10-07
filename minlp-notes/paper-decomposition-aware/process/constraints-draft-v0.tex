@@ -1,0 +1,151 @@
+\section{Coupling constraints}\label{sec:constraints}
+
+The product structure of $X$ does real work in Lemma~\ref{lem:interp}:
+each coordinate is rounded independently, and every rounded point is
+feasible. With a coupling constraint, even a sparse one such as
+$x_1=x_2$, independent rounding leaves the feasible set, and a bound
+computed on feasible grid points need not be a lower bound. A constrained
+version of the certificate therefore needs a rounding law that stays
+feasible. This section gives one for totally unimodular coupling of the
+continuous variables.
+
+\subsection{Model}
+Let
+\begin{equation}\label{eq:tumodel}
+X=\{(x,z):\ \ell\le x\le u,\ z_i\in Z_i\ (i=1,\dots,n_z),\ Ax+Bz\le b\},
+\end{equation}
+where $A$ is totally unimodular (TU), $\ell,u,B,b$ are integral, and each
+$Z_i$ is an explicitly listed finite set of integers. Equalities are
+written as two inequalities. Only the matrix $A$ of continuous columns must
+be TU; $B$ is an arbitrary integer matrix. The objective $F(x,z)$ is a sum of
+factors, and every factor scope and every constraint row is contained in a
+bag of a given tree decomposition with maximum bag size $p$. Let $n_c$ be
+the number of continuous coordinates, $d=\max_i\abs{Z_i}$ and
+$W=\max_i(u_i-\ell_i)$. Instead of coordinate curvature we need a bound on
+the full continuous Hessian,
+\begin{equation}\label{eq:fullcurv}
+\nabla^2_{xx}F(x,z)\preceq L\,I\qquad\text{for all }x\in[\ell,u],\ z\in\textstyle\prod_iZ_i ,
+\end{equation}
+because the feasible rounding below is correlated across coordinates.
+
+\subsection{Feasible rounding on aligned cells}
+For a mesh $h=2^{-j}$ the grid of a continuous coordinate is $h\Z\cap[\ell_i',u_i']$,
+where the current interval has endpoints on that grid.
+
+\begin{lemma}[Feasible corner rounding]\label{lem:tu-round}
+Let $(x,z)\in X$ lie in a current box whose continuous endpoints are on the
+grid $h\Z$, $h=2^{-j}$. There is a random point $(Y,z)\in X$ whose continuous
+part is a corner of the grid cell containing $x$, with $\E Y=x$ and
+\[
+\E F(Y,z)\le F(x,z)+E_j,\qquad E_j=\frac{n_cLh^2}{8}.
+\]
+\end{lemma}
+
+\begin{proof}
+Write $x=h(k+t)$ with $k$ integral and $t\in[0,1]^{n_c}$ (choosing $t_i\in\{0\}$
+when $x_i$ is a grid point). The points of the cell that are feasible
+with the same $z$ are $h(k+t')$ with
+\[
+At'\le2^j(b-Bz)-Ak,\qquad0\le t'\le1 .
+\]
+The right-hand side is integral and $A$ stacked with $\pm I$ is TU, so this
+polytope is integral \cite{HoffmanKruskal1956} and $t$ is a convex
+combination of feasible $0/1$ vectors. Let $Y=h(k+T)$ with $T$ distributed
+according to these weights. Then $\E Y=x$, each $Y_i$ takes only the two
+endpoints of its cell interval, so $\E(Y_i-x_i)^2\le h^2/4$, and the cell
+lies in $[\ell,u]$. By~\eqref{eq:fullcurv} and Taylor's theorem,
+$F(Y,z)\le F(x,z)+\nabla_xF(x,z)^\T(Y-x)+\frac L2\norm{Y-x}^2$; take
+expectations.
+\end{proof}
+
+Unlike Lemma~\ref{lem:interp}, the rounded coordinates are dependent, so the
+cross terms of the Hessian do not average out and the full bound
+\eqref{eq:fullcurv} is needed. If the constraints include equalities
+$Cx+Ez=a$, every rounded point satisfies them with the same $z$, so $Y-x$
+lies in $\ker C$, and it suffices that $d^\T\nabla^2_{xx}F\,d\le L\norm d^2$ for
+$d\in\ker C$. For a quadratic this is checked once, with a rational basis of
+$\ker C$, without changing any factor scope. A penalty $\rho\norm{Cx+Ez-a}^2$
+then affects neither the grid values nor $L$.
+
+\subsection{Algorithm and guarantees}
+At level $j$, form the grids $h\Z$ in the current continuous intervals and
+keep the current label sets. Assign every factor and constraint row to a bag;
+a bag assignment that violates an assigned row is infeasible. Two passes
+of dynamic programming give the least feasible grid value $v_j$, an
+attaining point, and all min-marginals $M_i$ over feasible grid points.
+The lower bound is $\beta_j=v_j-E_j$, and the incumbent value is $U=v_j$ (the
+previous incumbent lies on the refined grid). Keep a continuous grid
+interval $[a,b]$ if $\min\{M_i(a),M_i(b)\}-E_j\le U$, replace the interval by
+the hull of kept intervals, and keep a label $t$ of $z_i$ if
+$M_i(t)-E_j\le U$. By Lemma~\ref{lem:tu-round} applied with conditioning on
+the coordinate interval, these rules never remove a point with value at
+most $U$, and the same history argument as in
+Theorem~\ref{thm:certificate} certifies $\beta_j\le\OPT$. If the first grid has
+no feasible point, Lemma~\ref{lem:tu-round} shows that $X$ is empty.
+
+\begin{theorem}[TU coupling]\label{thm:tu}
+Assume~\eqref{eq:tumodel}, \eqref{eq:fullcurv} and quadratic growth with
+constant $g$, and let $\kappa=\max\{1,L/g\}$. The algorithm returns an exactly
+feasible rational point and a certified interval of width at most $2^{-q}$
+around $\OPT$, without knowing $g$, using
+\[
+O\Bigl(p\,(N+\abs{\mathcal A}+\#\text{rows})\bigl[K_0^p+(J+1)K^p\bigr]\Bigr)
+\]
+table operations with polynomial arithmetic overhead, where
+$K_0=\max\{d,W+1\}$, $K=\max\{d,5+\lceil2\sqrt{n_c\kappa}\rceil\}$ and
+$J=O(I+q+1)$. For a rational quadratic, the exact minimizer and $\OPT$ are
+returned after $\poly(I)+O(\log\kappa)$ levels, with the same table sizes.
+\end{theorem}
+
+\begin{proof}
+A kept endpoint or label has a feasible grid witness $w$ with
+$F(w)\le U+E_j\le\OPT+2E_j$, so growth gives
+$\norm{w-(x^*,z^*)}\le r_j=\sqrt{n_cL/(4g)}\,h$. Every kept continuous interval
+lies within $r_j+h$ of $x_i^*$, so the next grid, of mesh $h/2$, has at
+most $(2r_j+2h)/(h/2)+1=5+2\sqrt{n_cL/g}$ nodes; label sets never grow. The
+first level has at most $K_0$ values per coordinate. The level count follows
+from $E_J\le2^{-q}$. For exact output, fix an optimal label vector and choose
+a minimizer on a face of least dimension of the continuous fiber. The
+Hessian is positive definite on the tangent space of that face (a null
+direction would give a line of minimizers reaching a smaller face), so the
+KKT system of that face is nonsingular. Write $F=\frac12v^\T Hv+b^\T v+c$
+with $v=(x,z)$ and use the scaled data of Section~\ref{sec:exact-data},
+$P=\Delta H$. With the active rows $C_T$ of $[A;\pm I]$ and multipliers
+scaled by $\Delta$, the system reads
+\[
+\begin{pmatrix}P_{xx}&C_T^\T\\C_T&0\end{pmatrix}
+\begin{pmatrix}x\\\lambda\end{pmatrix}=
+\begin{pmatrix}-P_{xz}z-\Delta b_x\\ r_T\end{pmatrix},
+\]
+where $r_T$ collects the integral right-hand sides of the active rows. Its
+order is at most $2n_c$, and its right-hand side is integral because $B$,
+the bounds and the labels are integral and $\Delta$ clears $b$. Its entries are at most $C_P=\max\{1,\max_{ij}\abs{P_{ij}}\}$ in
+absolute value, so Cramer's rule bounds the common denominator of $x^*$ by
+$R_c=(2n_cC_P)^{2n_c}$, and that of $\OPT$ by $\Delta R_c^2$. Once
+$E_j<1/(4\Delta^2R_c^4)$, every label set is a singleton and every continuous
+hull is shorter than $1/(4R_c^2)$, reconstruction by continued fractions and
+an exact check against the original constraints prove optimality, as in
+Theorem~\ref{thm:exact}; growth makes these conditions hold after
+$\poly(I)+O(\log\kappa)$ levels.
+\end{proof}
+
+The algorithm is polynomial for fixed $p$ when $\kappa$ is polynomially
+bounded, but it is not fixed-parameter tractable in $(p,\kappa)$: the factor
+$K^p$ contains $n_c^{p/2}$. The reason is that the grids must be uniform and
+aligned. A graded grid, as in Section~\ref{sec:growth}, gives cells with
+different side lengths in different coordinates; after scaling such a cell to
+the unit cube, the constraint matrix becomes $A\,\diag(w)$, which is no
+longer TU in general, and its fibers need not be integral. For example
+$x_1=x_2$ on the cell $[0,1]\times[0,\frac12]$ has the non-corner vertex
+$(\frac12,\frac12)$. Large integral capacities make the first level
+pseudopolynomial, $K_0=W+1$; a common rational unit $\delta$ for which
+$\ell/\delta$, $u/\delta$ and $(b-Bz)/\delta$ are integral for all labels
+can replace $1$ as the initial mesh and reduces this cost to $W/\delta+1$.
+The integrality of $(b-Bz)/\delta$ over all label vectors is checked from
+one reference vector and the column increments, without enumeration.
+
+A typical application is a network with continuous flows on arcs, node
+balances whose right-hand sides depend on integer switching decisions,
+and nonconvex quadratic costs on groups of arcs that share a node. The node
+balances are TU, and the decomposition must contain every balance row in a
+bag, so high-degree nodes increase $p$.

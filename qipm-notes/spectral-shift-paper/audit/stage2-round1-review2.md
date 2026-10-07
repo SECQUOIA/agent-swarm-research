@@ -150,7 +150,7 @@ I ran the script with the required interpreter and a separate output
 directory:
 
 ```text
-/home/sgusev/miniconda3/envs/qipm/bin/python \
+/workspace/local-home/miniconda3/envs/qipm/bin/python \
   spectral-shift-paper/scripts/joint_accuracy_diagnostics.py \
   --output /tmp/stage2-review2-diagnostics
 ```

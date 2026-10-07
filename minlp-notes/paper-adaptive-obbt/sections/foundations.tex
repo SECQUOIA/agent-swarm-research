@@ -1,0 +1,457 @@
+\section{The tightening operator and what limits it}\label{sec:foundations}
+
+This section fixes the operator studied in the rest of the paper, records
+the order properties on which all later results rest, and identifies three
+limits on further tightening. The order arguments are
+elementary and not new. Monotone iterations of optimality-based domain
+reduction, their limits, and their independence of the variable order are
+studied by Caprara and
+Locatelli~\cite{caprara2010-global-optimization-problems-and-domain}, and
+greatest fixed points of feasibility-based tightening by Belotti et
+al.~\cite{belotti2010-feasibility-based-bounds-tightening-via-fixed-points,belotti2012fbbt}. We state the facts in the form used later and
+make each hypothesis explicit, because several later conclusions fail when
+one of them is dropped.
+
+\subsection{Problem, relaxation family, and order hypotheses}
+
+Consider
+\begin{equation}\label{eq:problem}
+  f^*=\min\{f(x):x\in X\cap B_0\},
+\end{equation}
+where $B_0=[\ell^0,u^0]\subset\R^n$ is a bounded box and the closed set $X$
+collects all other constraints, including integrality. We assume that
+$f^*$ is attained and write $x^*$ for a global minimizer. A box is a set
+$B=[\ell,u]=\{x:\ell\le x\le u\}$ with $\ell\le u$; degenerate boxes are
+allowed, and the empty set is treated separately. We write
+\[
+  w(B)=\max_i(u_i-\ell_i),\qquad p(B)=(-\ell,u)\in\R^{2n}.
+\]
+For nonempty boxes, $B'\subseteq B$ holds exactly when $p(B')\le p(B)$
+componentwise, so shrinking a box decreases its endpoint vector. When
+tightening is applied at a node of a branch-and-bound tree, $B_0$ is the
+node box and~\eqref{eq:problem} is the node problem.
+
+A \emph{relaxation family} assigns to every box $B$ in a collection
+$\mathfrak B$ a relaxation with projected objective
+$\phi_B:B\to\R\cup\{+\infty\}$. The collection $\mathfrak B$ contains all
+subboxes of $B_0$; Section~\ref{sec:local-rates} also uses boxes around a
+minimizer that may extend beyond $B_0$, and then $\mathfrak B$ consists of
+all subboxes of a larger domain box (for McCormick relaxations of
+polynomials, all boxes in $\R^n$). A lifted relaxation has a lifted set
+$R(B)\subseteq\R^n\times\R^m$ and objective $v$, and
+\begin{equation}\label{eq:projected}
+  \phi_B(x)=\inf\{v(x,y):(x,y)\in R(B)\},\qquad\inf\emptyset=+\infty.
+\end{equation}
+Points that violate the relaxed constraints therefore have projected value
+$+\infty$. The two order hypotheses are
+\begin{align}
+  \phi_B(x)&\le f(x)&&(x\in X\cap B),\label{eq:validity}\\
+  \phi_{B'}(x)&\ge\phi_B(x)&&(B'\subseteq B,\ x\in B').
+  \label{eq:monotonicity}
+\end{align}
+We call~\eqref{eq:validity} validity and~\eqref{eq:monotonicity}
+monotonicity of the family. In addition, we assume throughout that each
+$\phi_B$ is lower semicontinuous, so that its sublevel sets in $B$ are
+compact. When $\phi_B$ is given by~\eqref{eq:projected}, we assume that
+$R(B)$ is compact and $v$ is continuous. Then the infimum
+in~\eqref{eq:projected} is attained whenever it is finite, $\phi_B$ is
+lower semicontinuous, and every projected sublevel set is the projection
+of the corresponding lifted sublevel set. Without attainment, an
+implementation that optimizes over the lifted cutoff set can compute a
+smaller set than the projected one, and the two must not be identified.
+
+Monotonicity is a hypothesis on the \emph{whole} relaxation construction:
+every row, auxiliary bound, retained cut, and the objective. It does not
+follow from the name of the relaxation. A sufficient condition is
+\emph{lifted monotonicity}: $B'\subseteq B$ implies $R(B')\subseteq R(B)$,
+with the same objective $v$. Lifted monotonicity is strictly stronger than
+\eqref{eq:monotonicity}; it is what allows the same lifted points to be
+reused on a larger box, and Section~\ref{sec:certificates} relies on it for
+that purpose. The following constructions are monotone.
+\begin{enumerate}[label=(\alph*)]
+\item Termwise relaxations of quadratic objectives that keep convex
+  separable terms exact and replace each bilinear term $x_ix_j$, $i\ne j$,
+  by its McCormick envelope. The four McCormick inequalities describe the
+  convex hull of the graph of $x_ix_j$ over the current rectangle. The graph
+  over a subrectangle is a subset of the graph over the rectangle, so the
+  convex hulls are nested.
+\item Lifted linear relaxations with fixed linear rows and McCormick
+  inequalities for lifted variables $y_k$ that stand for products $x_ix_j$,
+  including squares $i=j$, for which
+  the four inequalities reduce to the two endpoint tangents and the secant.
+  Section~\ref{sec:certificates} uses this family as its exact reference
+  family and proves its lifted monotonicity.
+\item Composite McCormick relaxations of factorable functions in which
+  every intermediate relaxation is clipped to its interval bounds; see
+  Section~\ref{sec:local-rates-factorable}.
+\end{enumerate}
+Monotonicity can fail even when the construction is determined by the box
+alone. Relax $x^2$ on $[\ell,u]$ by the tangents $y\ge2px-p^2$ at the five
+equally spaced points $p=\ell+k(u-\ell)/4$, $k=0,\dots,4$, and by the secant
+$y\le(\ell+u)x-\ell u$, with objective $v=y$; these are the square rows of the
+numerical policy of Section~\ref{sec:algorithms-policy} without its retained
+points. On the box the tangents lie below $x^2$ and hence below the secant,
+so $\phi_{[\ell,u]}(x)=\max_k(2p_kx-p_k^2)$. The five points for $[-1,1]$
+include $0$, whereas those for $[-1/2,1]$ are $-1/2,-1/8,1/4,5/8,1$. Hence
+$\phi_{[-1,1]}(0)=0>-1/64=\phi_{[-1/2,1]}(0)$,
+contrary to~\eqref{eq:monotonicity}. The operator~\eqref{eq:operator}
+defined below is affected as well: at $U=1/4$ it maps $[-1,1]$ to
+$[-1/2,1/2]$ but the smaller box $[-1/2,1]$ to $[-1/2,41/80]$, because the
+point $(x,y)=(41/80,1/4)$ satisfies every row on $[-1/2,1]$ but violates the
+tangent at $1/2$ of $[-1,1]$. Tangents at the two endpoints alone, as
+in~(b), do not have this defect. Constructions that depend on more than the
+box need not be monotone either. Cutting planes separated at earlier
+relaxation solutions and kept in a pool depend on the search history, and
+rows dropped to save time, or a relaxation that is solved only
+approximately, can produce a larger feasible set on a smaller box. For such
+constructions the statements below require a separate argument.
+
+The relaxation bound on a box is
+\[
+  L(B)=\inf_{x\in B}\phi_B(x).
+\]
+Monotonicity gives $L(B')\ge L(B)$ whenever $B'\subseteq B$: for $x\in B'$
+one has $\phi_{B'}(x)\ge\phi_B(x)\ge L(B)$.
+
+\subsection{The operator and update schemes}
+
+For a cutoff $U$, which in practice is the value of an incumbent, define
+\begin{equation}\label{eq:operator}
+  K_U(B)=\{x\in B:\phi_B(x)\le U\},\qquad
+  T_U(B)=\hull K_U(B),
+\end{equation}
+where $\hull S$ is the smallest closed box containing $S$, and
+$\hull\emptyset=\emptyset$. We also set $K_U(\emptyset)=T_U(\emptyset)=\emptyset$,
+so that repeated rounds remain defined after an empty cutoff set; the
+inclusions below then hold with $\emptyset$ as the smallest element. If
+$K_U(B)\ne\emptyset$, then
+$T_U(B)=[\ell',u']$ with
+\[
+  \ell'_i=\min\{x_i:x\in K_U(B)\},\qquad
+  u'_i=\max\{x_i:x\in K_U(B)\},\qquad i=1,\dots,n.
+\]
+These $2n$ support problems are convex programs when $\phi_B$ is convex,
+and linear programs for lifted polyhedral relaxations. The cutoff slack of
+$U$ is $\epsilon=U-f^*$. It is nonnegative when $U$ is the value of a point
+of $X\cap B_0$; at a node, a global incumbent outside the node box can have
+a value below the node optimum, and then the node can be pruned. Results
+that need a nonempty limit or a minimizer in every iterate assume
+$U\ge f^*$ explicitly.
+
+Solvers organize the support problems in different ways, and the
+difference matters for exact rate statements.
+\begin{itemize}
+\item A \emph{Jacobi round} solves all $2n$ support problems on the one
+  frozen relaxation built on $B$ and returns $T_U(B)$.
+\item A \emph{directional update} replaces one endpoint of the current box
+  by the corresponding support over the cutoff set of the relaxation built
+  on the current box. If that set is empty, the update returns $\emptyset$,
+  and every later update of $\emptyset$ returns $\emptyset$.
+\item A \emph{sequential round} applies $2n$ directional updates, one per
+  signed coordinate direction, rebuilding the relaxation after each update.
+  We write $S_U(B)$ for its result; it depends on the order of directions.
+\item A \emph{selective round} applies directional updates to a subset of
+  the directions.
+\end{itemize}
+
+\begin{lemma}[Containment and order]\label{lem:order}
+For all boxes $B',B$ and cutoffs $U'\le U$:
+\begin{enumerate}[label=(\alph*)]
+\item $\{x\in X\cap B:f(x)\le U\}\subseteq K_U(B)\subseteq T_U(B)\subseteq B$;
+\item if $B'\subseteq B$, then $K_U(B')\subseteq K_U(B)$ and
+  $T_U(B')\subseteq T_U(B)$;
+\item $T_{U'}(B)\subseteq T_U(B)$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+(a) For a feasible $x\in B$ with $f(x)\le U$, validity gives
+$\phi_B(x)\le f(x)\le U$. The remaining inclusions hold because
+$K_U(B)\subseteq B$ and $B$ is a closed box. (b) For $x\in K_U(B')$,
+monotonicity gives $\phi_B(x)\le\phi_{B'}(x)\le U$, so $x\in K_U(B)$; the
+box hull preserves inclusion. (c) $K_{U'}(B)\subseteq K_U(B)$.
+\end{proof}
+
+\begin{lemma}[Update schedules]\label{lem:sequential}
+Let $C_0=B$ and let $C_1,C_2,\dots$ be the boxes produced by a sequence of
+directional updates at cutoff $U$.
+\begin{enumerate}[label=(\alph*)]
+\item $T_U^m(B)\subseteq C_m$ for every $m$.
+\item If every one of the $2n$ directions is updated at least once among
+  the updates $j+1,\dots,m$, then $C_m\subseteq T_U(C_j)$. In particular,
+  every sequential round satisfies $T_U^{2n}(B)\subseteq S_U(B)\subseteq T_U(B)$.
+\item If every direction is updated infinitely often, then
+  $\bigcap_mC_m=\bigcap_kT_U^k(B)$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+(a) A directional update of a box $C$ changes one endpoint to the
+corresponding endpoint of $T_U(C)$ and keeps the others, so its result
+contains $T_U(C)$. Induction with Lemma~\ref{lem:order}(b) gives
+$C_{m}\supseteq T_U(C_{m-1})\supseteq T_U(T_U^{m-1}(B))=T_U^m(B)$.
+(b) Each update after step $j$ optimizes over a cutoff set contained in
+$K_U(C_j)$, by Lemma~\ref{lem:order}(b). An endpoint updated in this way
+is therefore at least as tight as the corresponding endpoint of
+$T_U(C_j)$, and later updates never move it outward. Every endpoint is
+updated at least once, which proves $C_m\subseteq T_U(C_j)$; part (a) with
+$m=2n$ gives the other inclusion for a sequential round. (c) Partition the
+schedule into consecutive finite blocks, each containing every direction
+at least once, and let $t_j$ be the end of block $j$, with $t_0=0$. By (b)
+and monotonicity of $T_U$, $C_{t_j}\subseteq T_U(C_{t_{j-1}})\subseteq
+T_U^j(B)$, and by (a), $T_U^{t_j}(B)\subseteq C_{t_j}$. Each block is
+nonempty, so $t_j\ge j$. The sequences $(T_U^{t_j}(B))_j$ and $(T_U^j(B))_j$
+are therefore subsequences of the nested sequence $(T_U^k(B))_k$ with
+indices tending to infinity, and both have the intersection
+$\bigcap_kT_U^k(B)$. The two inclusions give the same intersection for
+$(C_{t_j})_j$, and this equals $\bigcap_mC_m$ because the boxes $C_m$ are
+nested.
+\end{proof}
+
+Part (c) is the order independence of the limit studied by Caprara and
+Locatelli~\cite{caprara2010-global-optimization-problems-and-domain},
+stated here for every fair schedule of directional updates and for Jacobi
+rounds; it uses only monotonicity. The lemma also determines which bounds transfer between
+update schemes. Every upper bound on the box produced by a Jacobi round
+also bounds the box produced by a complete sequential round, so upper
+bounds on widths and rates transfer. A selective round that leaves some
+directions unprocessed need not be contained in $T_U(B)$ and inherits no
+upper bound, but after $m$ updates it still contains $T_U^m(B)$, so lower
+enclosures transfer with the number of updates. Lower bounds on the box
+after a complete round do not transfer from Jacobi to sequential rounds,
+because a sequential round can be strictly faster. For example, let $n=1$,
+$f(x)=x^2$, $U=0$, and $\phi_{[\ell,u]}(x)=x^2-(u-\ell)^2/16$, a valid,
+convex, and monotone family. A Jacobi round maps $[-h,h]$ to $[-h/2,h/2]$.
+A sequential round that updates the lower and then the upper endpoint maps
+$[-a,b]$ to $[-a',b']$ with $a'=(a+b)/4$ and $b'=(a'+b)/4=(a+5b)/16$,
+provided $b\le3a$ and $a\le11b$; the ratio $b/a$ stays in $[1/2,1]$ along
+the iteration from $a=b$, so these conditions hold throughout. The
+sequential widths therefore decrease like $\lambda_s^k$ with
+$\lambda_s=(9+\sqrt{17})/32\approx0.410$, the larger eigenvalue of
+$\left[\begin{smallmatrix}1/4&1/4\\1/16&5/16\end{smallmatrix}\right]$,
+whereas Jacobi widths decrease exactly like $2^{-k}$.
+
+\subsection{Iterates, fixed boxes, and the limit}
+
+Let $B_{k+1}=T_U(B_k)$, starting from $B_0$, and let
+$B_\infty=\bigcap_kB_k$. By Lemma~\ref{lem:order} the iterates are nested.
+If $U\ge f^*$, every iterate contains every global minimizer, so $B_\infty$
+is a nonempty compact box. The following lemma describes the part of the
+box that no valid tightening at cutoff $U$ can remove.
+
+\begin{lemma}[Hull of the original sublevel set]\label{lem:sublevel-hull}
+Let $H_U=\hull\{x\in X\cap B_0:f(x)\le U\}$. Every iterate contains $H_U$,
+and $T_U(H_U)=H_U$ if $H_U\ne\emptyset$. In particular, if $x^*$ and
+$x^{**}$ are two global minimizers, then
+$H=\hull\{x^*,x^{**}\}\subseteq B_\infty$ for every $U\ge f^*$ and
+\[
+  L(B_\infty)\le L(H).
+\]
+\end{lemma}
+
+\begin{proof}
+By Lemma~\ref{lem:order}(a) and induction, every iterate contains each
+feasible point with objective at most $U$, hence their hull, because the
+iterates are closed boxes. The same points lie in $K_U(H_U)$, so
+$H_U\subseteq\hull K_U(H_U)=T_U(H_U)\subseteq H_U$. Finally
+$H\subseteq H_{f^*}\subseteq H_U\subseteq B_\infty$, and monotonicity of $L$
+gives $L(B_\infty)\le L(H)$.
+\end{proof}
+
+Caprara, Locatelli, and Monaci call $H_U$ the lower limit of
+optimality-based domain
+reduction~\cite{caprara2016-theoretical-and-computational-results-about}.
+They identify a two-variable class for which iterated reduction reaches it
+and give examples in which reduction does not move any bound although
+$H_U$ is a single point. Lemma~\ref{lem:sublevel-hull} also limits iterated
+tightening at the root of a symmetric model: if the problem has several
+global minimizers related by a symmetry, the limit box contains their hull
+for every $U\ge f^*$, so the iterates cannot converge to a single point, and
+the relaxation bound after tightening is at most the relaxation bound on
+that hull. Tightening can still remove parts of the box outside the hull.
+
+The box $H_U$ depends only on the original problem and the cutoff. The
+relaxation can keep more than $H_U$.
+
+\begin{definition}[Fixed box]
+A nonempty box $P$ is a \emph{fixed box} of $T_U$ if $T_U(P)=P$.
+\end{definition}
+
+Since $T_U(P)\subseteq P$ always, $P$ is fixed exactly when
+$P\subseteq T_U(P)$, that is, when every face of $P$ is attained by a point
+of $K_U(P)$.
+
+\begin{lemma}[Persistence of fixed boxes]\label{lem:fixed-persist}
+Let $P$ be a fixed box of $T_U$ and $P\subseteq B$. Then $P\subseteq T_{U'}(B)$
+for every $U'\ge U$, and $P$ is contained in the result of every
+directional update of $B$ at a cutoff $U'\ge U$. Consequently every Jacobi,
+sequential, or selective iteration started at a box containing $P$, with
+cutoffs at least $U$, keeps $P$ in all its iterates.
+\end{lemma}
+
+\begin{proof}
+By Lemma~\ref{lem:order}, $K_U(P)\subseteq K_U(B)\subseteq K_{U'}(B)$. The
+point of $K_U(P)$ that attains the lower face $a_i$ of $P$ in coordinate $i$
+lies in $K_{U'}(B)$, so the minimum of $x_i$ over $K_{U'}(B)$ is at most
+$a_i$; the upper faces are analogous. Hence no directional update, and no
+Jacobi round, moves an endpoint of $B$ past the corresponding face of $P$.
+Induction over the updates proves the last claim.
+\end{proof}
+
+Lemma~\ref{lem:fixed-persist} is the order-theoretic core of the
+certificates in Section~\ref{sec:certificates}: finitely many points of
+$K_U(P)$ that attain all faces of $P$ prove that $P$ is fixed, and hence
+bound the total movement of every endpoint under all later rounds of the
+same relaxation family at cutoffs at least $U$.
+Section~\ref{sec:certificates} lowers this cutoff to the largest relaxation
+value of the points. Fixed boxes can also be combined.
+
+\begin{lemma}[Greatest fixed box]\label{lem:greatest-fixed}
+Let $\mathcal P$ be a nonempty family of fixed boxes of $T_U$ contained in
+$B_0$. Then $\hull\bigcup_{P\in\mathcal P}P$ is a fixed box. Consequently,
+the hull $P_U$ of all fixed boxes in $B_0$, with $P_U=\emptyset$ if there is
+none, contains every fixed box in $B_0$ and, when nonempty, is itself the
+greatest fixed box in $B_0$. Every Jacobi iterate contains $P_U$, and
+$H_U\subseteq P_U$.
+\end{lemma}
+
+\begin{proof}
+The hull $Q=\hull\bigcup_{P\in\mathcal P}P$ is a nonempty box in $B_0$. Each
+$P\in\mathcal P$ lies in $Q$, so Lemma~\ref{lem:order}(b) gives
+$P=T_U(P)\subseteq T_U(Q)$. The closed box $T_U(Q)$ therefore contains $Q$,
+and Lemma~\ref{lem:order}(a) gives $T_U(Q)=Q$. Applied to the family of all
+fixed boxes in $B_0$, when it is nonempty, this shows that $P_U$ is a fixed
+box; by construction it contains every fixed box in $B_0$.
+Lemma~\ref{lem:fixed-persist} places $P_U$ in every Jacobi iterate; for
+$P_U=\emptyset$ there is nothing to prove. If $H_U\ne\emptyset$, it is a
+fixed box in $B_0$ by Lemma~\ref{lem:sublevel-hull}, so $H_U\subseteq P_U$.
+\end{proof}
+
+Proposition~\ref{prop:join} in Section~\ref{sec:certificates} is the
+finite-certificate form of the first statement. In lattice terms, the
+subboxes of $B_0$ together with $\emptyset$ form a complete lattice under
+inclusion, $T_U$ is monotone on it, and $P_U$ is its greatest fixed point;
+the lemma is the elementary case of Tarski's
+fixed-point theorem~\cite{tarski1955fixpoint} that we need. It uses
+monotonicity alone. Identifying $P_U$ with the limit of the iteration needs
+a closedness condition.
+
+\begin{proposition}[The limit and the greatest fixed box]\label{prop:fixed-limit}
+Suppose every Jacobi iterate is nonempty, for example because $U\ge f^*$.
+The limit $B_\infty$ of the Jacobi iterates is a nonempty compact box. It
+contains $P_U$, and hence $H_U$ and every fixed box in $B_0$, and it is
+also the limit of every sequence of directional updates that updates each
+direction infinitely often. Suppose
+in addition that the family is closed along decreasing sequences in the
+following sense:
+\begin{equation}\label{eq:closed-family}
+  C_k\downarrow C,\quad x_k\in K_U(C_k),\quad x_k\to x
+  \quad\Longrightarrow\quad x\in K_U(C),
+\end{equation}
+where $C_k\downarrow C$ means that the boxes are nested with intersection
+$C$. Then $B_\infty$ is a fixed box, and hence $B_\infty=P_U$.
+\end{proposition}
+
+\begin{proof}
+The iterates are nested nonempty compact boxes, so their intersection is a
+nonempty compact box. The containments are
+Lemma~\ref{lem:greatest-fixed}, and the statement about schedules is
+Lemma~\ref{lem:sequential}(c).
+
+Assume~\eqref{eq:closed-family}. For each $k$ and each direction, say the
+upper endpoint of coordinate $i$, the endpoint of $B_{k+1}$ is
+$\max\{x_i:x\in K_U(B_k)\}$, attained at some $y^k\in K_U(B_k)$ by
+compactness. A subsequence of $(y^k)$ converges to some $\bar y$, and
+\eqref{eq:closed-family} gives $\bar y\in K_U(B_\infty)$. Its coordinate
+$\bar y_i$ is the limit of the upper endpoints of $B_{k+1}$, which is the
+upper endpoint of $B_\infty$ in coordinate $i$. Repeating the argument for
+every direction shows that every face of $B_\infty$ is attained in
+$K_U(B_\infty)$, so $B_\infty$ is a fixed box in $B_0$. Hence
+$B_\infty\subseteq P_U$, and the first part gives equality.
+\end{proof}
+
+The same argument shows that~\eqref{eq:closed-family} makes $T_U$
+continuous along decreasing sequences of boxes,
+$T_U(\bigcap_kC_k)=\bigcap_kT_U(C_k)$, which is the property that
+identifies the limit of the iterates with the greatest fixed box.
+Condition~\eqref{eq:closed-family} holds whenever the projected objective,
+as a function $(x,\ell,u)\mapsto\phi_{[\ell,u]}(x)$ on
+$\{\ell\le x\le u\}$, is lower semicontinuous: if $C_k\downarrow C$,
+$x_k\in K_U(C_k)$, and $x_k\to x$, then $x\in C$, the endpoints of $C_k$
+converge to those of $C$, and
+$\phi_C(x)\le\liminf_k\phi_{C_k}(x_k)\le U$. The termwise relaxations
+of~(a) are jointly continuous in this sense. For lifted families, suppose
+$R(B)=\{z\in Z:\ g_j(z;\ell,u)\le0,\ j=1,\dots,m\}$
+with the box rows included, a compact set $Z$, functions $g_j$ continuous
+in $(z,\ell,u)$, and a continuous objective $v$. If $x_k\in K_U(C_k)$,
+choose lifts $z_k\in R(C_k)$ with $v(z_k)\le U$. A subsequence converges
+to some $z$, the endpoints of $C_k$ converge monotonically to those of $C$,
+and continuity gives $z\in R(C)$ and $v(z)\le U$; its projection is the
+limit $x$. McCormick rows have coefficients that are polynomial in the box
+endpoints, so they satisfy this condition, as do tangent rows at points
+that depend continuously on the endpoints. Closedness and monotonicity are
+independent hypotheses: the five-point tangent family above satisfies
+\eqref{eq:closed-family} but is not monotone, and the next example is
+monotone but violates~\eqref{eq:closed-family}.
+
+Without~\eqref{eq:closed-family}, the limit of iterated tightening need not
+be a fixed box, and can be strictly larger than the greatest fixed box.
+
+\begin{example}[A limit that is not a fixed box]\label{ex:not-fixed}
+Let $n=1$, $X=\{0\}$, $f\equiv0$, $B_0=[0,1]$, and $U=0$. For a box
+$B=[r,s]\subseteq B_0$ let $\phi_B(x)=0$ if $x\le g(s)$ and $\phi_B(x)=+\infty$
+otherwise, where $g(s)=s/4$ for $s\le1/2$ and $g(s)=(2s+1)/4$ for $s>1/2$.
+The function $g$ is nondecreasing with $g(s)\le s$ on $[0,1]$. Hence the
+family is valid ($\phi_B(0)=0$ whenever $0\in B$), monotone, and has closed
+sublevel sets, and $T_0([0,s])=[0,g(s)]$. From $s_0=1$ the iterates satisfy
+$s_k-1/2=2^{-k-1}$, so $B_\infty=[0,1/2]$, whereas
+$T_0(B_\infty)=[0,1/8]$. A box $[r,s]\subseteq B_0$ is fixed only if
+$g(s)\ge s$, that is, $s=0$. Hence $P_U=H_U=\{0\}$. Continuing from
+$B_\infty$ gives $[0,1/8],[0,1/32],\dots$, which reach $P_U$ only as the
+limit of a second infinite sequence.
+\end{example}
+
+\subsection{Three limits on further tightening}\label{sec:three-limits}
+
+Lemmas~\ref{lem:sublevel-hull}, \ref{lem:fixed-persist},
+and~\ref{lem:greatest-fixed} and Proposition~\ref{prop:fixed-limit}
+identify three things that limit how much
+further rounds can remove from a current iterate $B_k$, for a fixed
+relaxation family and cutoff:
+\begin{enumerate}[label=(\roman*)]
+\item the hull $H_U$ of the original sublevel set, which no valid tightening
+  at cutoff $U$ removes and which only a better incumbent or branching
+  shrinks;
+\item the fixed boxes of $T_U$, which no number of further rounds of the
+  same relaxation family removes, and which only a smaller cutoff, a
+  stronger relaxation, or branching can shrink; their hull $P_U$, the
+  greatest fixed box when one exists and empty otherwise, contains $H_U$
+  and every fixed box in $B_0$, and equals the limit $B_\infty$
+  under~\eqref{eq:closed-family} (if some iterate is empty, both are
+  empty);
+\item the rate at which the iterates approach $B_\infty$, which determines
+  how many rounds are needed for a given part of the possible reduction.
+\end{enumerate}
+These objects satisfy $H_U\cup P\subseteq P_U\subseteq B_\infty\subseteq B_k$
+for every fixed box $P$ in $B_0$, although $H_U$ and $P$ need not contain
+each other. For example, with $f(x)=x^2$ on $[-1,1]$, $U=0$, and the valid
+family $\phi_B\equiv0$, one has $H_U=\{0\}$ and the fixed box $\{1\}$, and
+there $P_U=B_\infty=[-1,1]$. If $P=[a,b]$ is a fixed box inside
+the current box $B_k=[\ell^k,u^k]$, the total future movement of each
+endpoint satisfies
+\[
+  \ell_i^\infty-\ell_i^k\le a_i-\ell_i^k,\qquad
+  u_i^k-u_i^\infty\le u_i^k-b_i.
+\]
+The first item is a property of the problem, the second of the relaxation
+family, and the third of the iteration. Section~\ref{sec:local-rates}
+gives sufficient conditions near a minimizer under which fixed boxes exist
+at every sufficiently small scale, so that tightening stalls, and
+sufficient conditions under which the iterates contract geometrically, with
+a limit of width $O(\sqrt\epsilon)$; these conditions do not cover every
+relaxation family.
+Section~\ref{sec:certificates} turns the second item into finite
+certificates, and Section~\ref{sec:residual} bounds the remaining movement
+under a uniform sensitivity bound. Sections~\ref{sec:algorithms}
+to~\ref{sec:experiments} examine how far this information supports
+decisions about when to start, stop, and repeat tightening in a solver.

@@ -1,11 +1,23 @@
 \section{Large exact messages from fixed local data}\label{sec:message-limits}
-Hard optimization and large conditional messages are different obstructions.
-The example below has an easy unconditioned optimum, but every one of its
-support quadratics is needed in an exact scalar message.
-This section is deterministic: $\xi=0$. Its worst-case dictionary lower
-bound does not contradict the expected bound under independent penalty
-perturbations in Theorem~\ref{thm:main}.
-Fix rational $0<\theta\le1/10$ and define, for $t\in[0,1]$,
+Section~\ref{sec:hardness} shows that exact optimization can be hard.
+The size of a message is a different obstacle, and it appears even when
+optimization is easy. A message is the pointwise minimum of its
+branches, and an exact dictionary must keep every branch that is the
+unique minimum at some boundary value.
+
+Section~\ref{sec:limits-chain} builds the instances of
+Theorem~\ref{thm:fixed-data} from identical stages, and
+Section~\ref{sec:limits-all} proves that one of their messages needs
+$2^n$ branches in every exact dictionary, while $w$, $C$, $H$,
+$\mu^{-1}$, and $R$ stay bounded and the input length is polynomial in
+$n$. Hence, without perturbation, the dictionary size has no bound
+polynomial in the input length and these quantities.
+Section~\ref{sec:limits-pruning} treats approximation within a uniform
+error $\varepsilon$ (Theorem~\ref{thm:pruning}).
+
+\subsection{A chain that writes the support into its final state}
+\label{sec:limits-chain}
+Fix a rational $0<\theta\le1/10$ and define, for $t\in[0,1]$,
 \begin{equation}\label{eq:constant-message}
  V_n(t)=\min\left\{
  \sum_{i=1}^n(x_i^2-2x_i+z_i)
@@ -14,102 +26,183 @@ Fix rational $0<\theta\le1/10$ and define, for $t\in[0,1]$,
  x_i(1-z_i)=0,\quad z_i\in\{0,1\},\\ s_0=0,\quad s_n=t
  \end{array}\right\}.
 \end{equation}
-The same stage objective applies at every step. A terminal equality defines
-a conditional value function, rather than an extra constraint on the
-unconditioned optimization model.
+The controls $x_i$ have indicators $z_i$, and the states $s_i$ are free.
+Each stage penalizes deviation from the dynamics
+$s_i=\theta s_{i-1}+\theta x_i$, and every stage has the same
+coefficients. On indicator-feasible points,
+$x_i^2-2x_i+z_i=(x_i-z_i)^2$, so an inactive control is zero and an
+active control costs nothing exactly when it equals one. The terminal
+equality $s_n=t$ makes $V_n$ a conditional value function of the
+boundary value $t$; it is not a constraint of the global problem. We
+identify a support with its indicator vector $z\in\{0,1\}^n$. As in
+Section~\ref{sec:prelim-messages}, the branch of $z$ is the minimum over
+the continuous variables with the support fixed to $z$. Unlike the
+message branches \eqref{eq:branch}, these branches keep the terms that
+involve only $t$, which makes them convex rather than concave in $t$.
+Up to a shift of $t$, the message constructed in the proof of
+Theorem~\ref{thm:fixed-data} differs from $V_n$ by one fixed
+polynomial, which does not change the number of formulas needed.
+
+For a fixed support $z$, the choice $x=z$ with exact dynamics costs
+nothing and drives the state to the \emph{center}
+$p_z=\sum_{i=1}^n\theta^{n-i+1}z_i$. Each stage multiplies the state by
+$\theta$, so the control of stage $i$ reaches the end of the chain with
+weight $\theta^{n-i+1}$. The center is therefore the number with digits
+$z_n,z_{n-1},\ldots,z_1$ in base $1/\theta$. For $\theta=1/10$ these
+are ordinary decimal digits: with $n=3$, the support $z=(1,0,1)$ has
+center $0.101$, and $z=(0,1,1)$ has center $0.110$. Reaching another
+terminal value $t$ costs $(t-p_z)^2$ divided by a factor $D_z\in[1,2)$
+(Lemma~\ref{lem:residual-message}). Because $\theta$ is small, distinct
+digit strings give centers at least $\theta^n$ apart, so each support
+is the unique best one near its own center.
+
+This is how fixed local data produce exponentially many branches. No
+coefficient is large, and none changes from stage to stage. What grows
+with $n$ is the number of digits of $t$ that matter: to tell all $2^n$
+supports apart, one must know $t$ to within about $\theta^n$, and a
+single continuous boundary value can carry that many digits.
 
 \begin{lemma}\label{lem:residual-message}
-Let $W_n=\sum_{j=0}^{n-1}\theta^{2j}$. The exact support values in
-\eqref{eq:constant-message} are
+Let $W_n=\sum_{j=0}^{n-1}\theta^{2j}$. The branch of support $z$ in
+\eqref{eq:constant-message} is
 \begin{equation}\label{eq:constant-branches}
- q_z(t)=\frac{(t-c_z)^2}{D_z},\qquad
- c_z=\sum_{i=1}^n\theta^{n-i+1}z_i,\qquad
+ q_z(t)=\frac{(t-p_z)^2}{D_z},\qquad
+ p_z=\sum_{i=1}^n\theta^{n-i+1}z_i,\qquad
  D_z=W_n+\sum_{i=1}^n\theta^{2(n-i+1)}z_i.
 \end{equation}
 Thus $V_n=\min_z q_z$.
 \end{lemma}
 \begin{proof}
-For fixed $z$, set $e_i=x_i-z_i$ and
-$r_i=s_i-\theta s_{i-1}-\theta x_i$; inactive controls require $e_i=0$.
-The residual objective is $\sum_i(e_i^2+r_i^2)$ and its only remaining
-constraint is
+Fix $z$ and put $e_i=x_i-z_i$ and
+$r_i=s_i-\theta s_{i-1}-\theta x_i$. Inactive controls force $e_i=0$,
+and the objective is $\sum_i(e_i^2+r_i^2)$. Unrolling the dynamics from
+$s_0=0$ to $s_n=t$ leaves the single linear constraint
 \[
- t-c_z=\sum_i\theta^{n-i+1}e_i+\sum_i\theta^{n-i}r_i.
+ t-p_z=\sum_i\theta^{n-i+1}e_i+\sum_i\theta^{n-i}r_i.
 \]
-Conversely, any such residuals reconstruct feasible controls and states.
-Cauchy--Schwarz is attained at
-$e_i=(t-c_z)\theta^{n-i+1}z_i/D_z$ and
-$r_i=(t-c_z)\theta^{n-i}/D_z$, proving the formula.
+Conversely, any residuals that satisfy it, with $e_i=0$ for inactive
+$i$, determine feasible controls and states. The free residuals are
+$e_i$ for active $i$ and every $r_i$, and their coefficients in this
+constraint have squared norm $D_z$. Cauchy--Schwarz therefore gives the
+minimum $(t-p_z)^2/D_z$, attained at
+$e_i=(t-p_z)\theta^{n-i+1}z_i/D_z$ and
+$r_i=(t-p_z)\theta^{n-i}/D_z$.
 \end{proof}
 
+\subsection{All branches are needed}
+\label{sec:limits-all}
 \begin{theorem}\label{thm:fixed-data}
 Every finite exact representation of $V_n$ on $[0,1]$ as a minimum of
 polynomials, or as a piecewise polynomial function, uses at least $2^n$
-distinct polynomial formulas. This holds for conditional messages of
-pure indicator problems with unit penalties on every variable, a fixed
-finite alphabet of rational local coefficients, and the graph and spectral
-bounds of Theorem~\ref{thm:hardness} (width at most two for all $n$,
-and exactly two when $n\ge2$).
+distinct polynomial formulas. The same holds for a scalar conditional
+message, on any box $[-R,R]$ with $R\ge5$, of an unperturbed instance of
+\eqref{eq:problem} with unit penalties on every variable, coefficients
+from a fixed finite alphabet of rationals depending only on $\theta$,
+and the graph and spectral bounds of Theorem~\ref{thm:hardness} (width
+at most two for all $n$, and exactly two when $n\ge2$).
 \end{theorem}
 \begin{proof}
-Put $C_\theta=(1+\theta^2)/(1-\theta^2)<2$. Every $D_z$ lies in
-$[1,C_\theta]$, and all centers lie in $[0,\theta/(1-\theta)]$.
-Their minimum separation is $\theta^n$. Indeed, if two strings first
-differ at power $k<n$, their center difference has magnitude at least
-$\theta^k(1-2\theta)/(1-\theta)\ge\theta^n$;
-strings differing only at power $n$ attain $\theta^n$.
-On $|t-c_z|\le\theta^n/3$, intersected with $[0,1]$, we have
+Each $q_z$ is the unique minimum on an interval around $p_z$, so every
+finite representation must contain $q_z$ itself. For the second claim,
+we give the free states unit-penalty indicators that no minimizer
+switches off.
+
+Put $\kappa_\theta=(1+\theta^2)/(1-\theta^2)<2$. Every $D_z$ lies in
+$[1,\kappa_\theta]$, and all centers lie in $[0,\theta/(1-\theta)]$.
+Distinct centers are at least $\theta^n$ apart. Indeed, the bit $z_i$
+carries the power $\theta^{n-i+1}$. Let $k$ be the smallest exponent at
+which two supports differ, that is, the leading digit in which their
+centers differ. If $k<n$, their centers differ by at least
+$\theta^k(1-2\theta)/(1-\theta)\ge\theta^n$, using $\theta\le1/10$;
+if $k=n$, they differ by exactly $\theta^n$. On $|t-p_z|\le\theta^n/3$,
+intersected with $[0,1]$, we have
 \[
  q_z(t)\le\theta^{2n}/9,
- \qquad q_{z'}(t)\ge4\theta^{2n}/(9C_\theta)>q_z(t)
+ \qquad q_{z'}(t)\ge4\theta^{2n}/(9\kappa_\theta)>q_z(t)
  \quad(z'\ne z).
 \]
-Each $q_z$ therefore agrees with $V_n$ on an ordinary open interval.
-If finitely many representing polynomials cover that interval, one agrees
-identically with $q_z$: finitely many nonzero polynomial differences have
-only finitely many roots. This argument applies both to a minimum and to
-a piecewise representation, even when the permitted polynomial degrees
-exceed two. Distinct centers give distinct polynomials.
+So $q_z$ is the unique minimum, and equals $V_n$, on a nonempty open
+interval. If finitely many polynomials represent $V_n$ there, one of
+them agrees with $q_z$ at infinitely many points and hence identically,
+because a nonzero polynomial has only finitely many roots. This
+argument applies both to a minimum and to a piecewise representation,
+and to polynomials of any degree. Distinct centers give distinct
+polynomials.
 
-Before conditioning $s_n$, the quadratic matrix in
-\eqref{eq:constant-message} has the edges \eqref{eq:hard-edges}, control
-and nonterminal-state diagonals $1+\theta^2$, and final diagonal one.
-The same row bounds prove \eqref{eq:hard-spectrum}. To add unit indicators
-to all states, let $y_0=4$, attach $\zeta_i$ to $y_i$, and replace the
-dynamic terms by
+It remains to realize $V_n$ as a message of \eqref{eq:problem}. Before
+$s_n$ is fixed, the quadratic matrix in \eqref{eq:constant-message}, in
+the order $(x_1,s_1,\ldots,x_n,s_n)$, has the edges
+\eqref{eq:hard-edges}, diagonal entries $1+\theta^2$ for controls and
+nonterminal states, and final diagonal entry one. The graph is that of
+Theorem~\ref{thm:hardness}, and the same Gershgorin row bounds prove
+\eqref{eq:hard-spectrum}; the final row has off-diagonal sum $2\theta$.
+
+Problem \eqref{eq:problem} attaches an indicator to every variable,
+while the states in \eqref{eq:constant-message} are free. We therefore
+shift the states by four and give each one a unit-penalty indicator.
+The shift moves the reference trajectories away from zero, so switching
+a state indicator off, which forces that state to zero, leaves a large
+residual. Let $y_0=4$, attach an indicator $\zeta_i$ to $y_i$, and
+replace the dynamic terms by
 \begin{equation}\label{eq:message-lift}
  \sum_i[y_i-\theta y_{i-1}-\theta x_i-4(1-\theta)]^2
        +\sum_i\zeta_i,
  \qquad y_n=4+t.
 \end{equation}
-The separator is $S=\{y_n\}$; the lower bound already holds on
-$y_n\in[4,5]\subseteq[-R,R]$ for $R\ge5$, corresponding to $t\in[0,1]$.
-For a given $z$, its reference states satisfy
-$s_0^z=0$, $s_i^z=\theta s_{i-1}^z+\theta z_i\ge0$.
-With $e=x-z$ and $d=y-4\mathbf1-s^z$, the squares form the same
-quadratic matrix just bounded. If $k$ state indicators are off, the
-objective is at least $n-k+16(1-3\theta)k\ge n+10.2k$.
-An all-on state choice with $x=z=0$, $y_i=4$ for $i<n$, and
-$y_n=4+t$ costs $n+t^2\le n+1$. Hence every minimizing state indicator
-is on. Before removing boundary-only terms, the conditional value is
-$n+V_n(t)$; excluding the terminal indicator penalty gives
-$n-1+V_n(t)$. Our message convention also subtracts the remaining
-boundary-only polynomial. This common subtraction does not change the
-number of indispensable polynomial formulas. Expanded linear coefficients
-have magnitude at most eight; the quadratic and linear coefficients and
+With $y=4\mathbf1+s$ and every $\zeta_i=1$, the lifted objective is the
+objective of \eqref{eq:constant-message} plus $n$. The separator is
+$S=\{y_n\}$; the lower bound already holds on
+$y_n\in[4,5]\subseteq[-R,R]$, which corresponds to $t\in[0,1]$.
+
+No minimizer switches a state indicator off. To see this, fix a control
+support $z$ with reference states $s_0^z=0$ and
+$s_i^z=\theta s_{i-1}^z+\theta z_i\ge0$. With $e=x-z$ and
+$d=y-4\mathbf1-s^z$, the control and dynamic squares are the left side
+of \eqref{eq:activation-quadratic} with $b_i=\theta$, so their sum is
+at least $(1-3\theta)(\|e\|^2+\|d\|^2)$. An indicator $\zeta_i=0$ forces
+$y_i=0$, hence $d_i\le-4$. If $k$ state indicators are off, the
+objective is at least $n-k+16(1-3\theta)k\ge n+10.2k$. The choice with
+all state indicators on, $x=z=0$, $y_i=4$ for $i<n$, and $y_n=4+t$
+costs $n+t^2\le n+1$. Hence every minimizer has all state indicators
+on, and the conditional value is $n+V_n(t)$.
+
+The message convention \eqref{eq:message} omits the terminal penalty,
+which leaves $n-1+V_n(t)$. It also omits the terms involving only
+$y_n$, and writing the lifted objective in the form \eqref{eq:problem}
+drops an additive constant, which is at most $16n$. So the message
+differs from $n-1+V_n$ by a fixed polynomial. Subtracting one fixed
+polynomial from every formula does not change the number of
+indispensable formulas. The omitted terms include $y_n^2$ with
+coefficient one, while each $q_z$, as a function of $y_n$, has leading
+coefficient $1/D_z\le1$; this is why the convex functions $q_z$ become
+concave branches of the message. The expanded linear coefficients have
+magnitude at most eight. The quadratic and linear coefficients and the
 unit penalties belong to a finite alphabet depending only on $\theta$.
-The removable additive constant is at most $16n$.
 \end{proof}
 
-This is a lower bound on explicit formulas, not on every representation or
-optimization algorithm. Without conditioning the terminal state, every
-control support has a zero-residual trajectory $x=z$, so the original
-objective has value zero and the lifted objective has value $n$.
+The theorem counts explicit polynomial formulas. It is not a lower
+bound for implicit representations, such as the optimization problem
+\eqref{eq:constant-message} that defines $V_n$, nor for optimization,
+because the global problem is trivial. Without the terminal condition,
+every control support has the zero-residual trajectory $x=z$, so the
+optimal value of \eqref{eq:constant-message} without $s_n=t$ is zero,
+and that of the lifted problem is $n$. The example is thus an extreme
+case of near ties between supports. Margin conditions, such as that of
+\cite[Definition~5]{BhathenaStructured}, are designed to limit near ties
+of this kind. The perturbation in Theorem~\ref{thm:main} shifts the
+branch of each support $A$ by $\sum_{i\in A}\xi_i$, and these random
+shifts limit near ties in expectation (Lemma~\ref{lem:count}); the
+graph and the conditioning alone do not.
 
-\subsection{Matching bounds for pruning original quadratics}
-Let $N_n(\varepsilon)$ be the smallest number of the original quadratics
-$q_z$ whose minimum $R$ satisfies $0\le R-V_n\le\varepsilon$ on $[0,1]$.
-Set $N_\theta(\varepsilon)=\sup_{n\ge1}N_n(\varepsilon)$.
+\subsection{Matching bounds for pruning branches}
+\label{sec:limits-pruning}
+If a uniform error $\varepsilon$ is allowed, a natural approach keeps
+only some branches $q_z$ and discards the rest. Let $N_n(\varepsilon)$
+be the smallest number of branches $q_z$ whose minimum $\widehat V$
+satisfies $0\le\widehat V-V_n\le\varepsilon$ on $[0,1]$, and set
+$N_\theta(\varepsilon)=\sup_{n\ge1}N_n(\varepsilon)$. This supremum is
+finite, and Theorem~\ref{thm:pruning} gives its order of growth as
+$\varepsilon\downarrow0$.
 
 \begin{theorem}\label{thm:pruning}
 As $\varepsilon\downarrow0$,
@@ -117,88 +210,63 @@ As $\varepsilon\downarrow0$,
  N_\theta(\varepsilon)=\Theta_\theta(\varepsilon^{-\alpha_\theta}),
  \qquad \alpha_\theta=\frac{\log2}{2\log(1/\theta)}.
 \]
-The lower bound concerns pruning original support quadratics only.
+The lower bound concerns only minima of branches $q_z$.
 \end{theorem}
+
+\emph{Proof idea.} Keeping the $m$ most significant digits of the
+centers (the bits $z_{n-m+1},\ldots,z_n$) locates every center to within
+about $\theta^m$, which gives error of order $\theta^{2m}$ with about
+$2^m$ branches. Conversely, $V_n$ vanishes at $2^m$ centers spaced at
+least $\theta^m$ apart, and once $\varepsilon$ is small compared with
+$\theta^{2m}$, each of these zeros needs its own branch. Each additional
+digit thus doubles the number of branches and multiplies the error by
+about $\theta^2$, which gives the exponent $\alpha_\theta$; for
+$\theta=1/10$, $\alpha_\theta\approx0.15$.
+
 \begin{proof}
-Retain the last $m$ bits of a support, where $0\le m\le n$, and let
+For the upper bound, keep the last $m$ bits $z_{n-m+1},\ldots,z_n$ of a
+support, where $0\le m\le n$; they carry the powers
+$\theta,\ldots,\theta^m$. Let
 \[
  \delta=\sum_{j=m+1}^n\theta^j\le\frac{\theta^{m+1}}{1-\theta},
  \qquad
  \beta=\sum_{j=m+1}^n\theta^{2j}\le\frac{\theta^{2m+2}}{1-\theta^2}.
 \]
-For each suffix keep both the all-zero and all-one omitted prefixes.
-These give at most $2^{m+1}$ original quadratics, retaining the original
-$W_n$ in their denominators. For an optimal support, the two retained
-centers $c_0,c_1$ bracket its center and have distance $\delta$.
-The endpoint closest to $t$ has squared distance at most
-$(t-c_z)^2+\delta^2/4$: outside $[c_0,c_1]$ it is no farther than $c_z$,
-and inside the interval it is within $\delta/2$.
-Its denominator differs from $D_z$ by at most $\beta$; all denominators
-are at least one and $(t-c_z)^2\le1$. Consequently
+For each choice of the kept bits, retain the two supports whose omitted
+bits are all zero or all one. These are at most $2^{m+1}$ of the
+branches $q_z$, each with its own denominator. For an optimal support
+$z$ at $t$, the two retained centers $p_0,p_1$ with the same kept bits
+bracket $p_z$ and are $\delta$ apart. The one closer to $t$ has
+squared distance at most $(t-p_z)^2+\delta^2/4$ from $t$: outside
+$[p_0,p_1]$ it is no farther than $p_z$, and inside the interval it is
+within $\delta/2$. Its denominator differs from $D_z$ by at most
+$\beta$; all denominators are at least one and $(t-p_z)^2\le1$.
+Consequently
 \begin{equation}\label{eq:pruning-upper}
- 0\le R-V_n\le\delta^2/4+\beta
+ 0\le\widehat V-V_n\le\delta^2/4+\beta
  \le A_\theta\theta^{2m+2},\qquad
  A_\theta=\frac1{4(1-\theta)^2}+\frac1{1-\theta^2}.
 \end{equation}
-Keeping just the zero prefix also gives the simpler bound
-$R-V_n\le2\delta+\beta$ with $2^m$ terms, by bounding the numerator
-change by $2\delta$.
 Taking $m=\lceil\log(A_\theta\theta^2/\varepsilon)/
 (2\log(1/\theta))\rceil$, or retaining every support if $n\le m$,
 proves the upper bound $4(A_\theta\theta^2/\varepsilon)^{\alpha_\theta}$
 for sufficiently small $\varepsilon$.
 
-For the lower bound take $n\ge m\ge1$. The $2^m$ centers with zero
-omitted prefix are separated by at least $\theta^m$, and $V_n$ vanishes
-at each. A retained quadratic below $\varepsilon$ at one such center
-must have its own center within $\sqrt{C_\theta\varepsilon}$.
-If $\varepsilon<\theta^{2m}/(4C_\theta)$, it can serve at most one
-of the $2^m$ centers. Choose
-$m=\lfloor\log(1/(8C_\theta\varepsilon))/(2\log(1/\theta))\rfloor$.
+For the lower bound take $n\ge m\ge1$. The $2^m$ supports whose first
+$n-m$ bits are zero have centers separated by at least $\theta^m$, by
+the separation argument in the proof of Theorem~\ref{thm:fixed-data},
+and $V_n$ vanishes at each of these centers. Since
+$\widehat V\le V_n+\varepsilon$, some retained branch is at most
+$\varepsilon$ at each such center, so its own center lies within
+$\sqrt{\kappa_\theta\varepsilon}$. If
+$\varepsilon<\theta^{2m}/(4\kappa_\theta)$, a retained branch can serve
+at most one of the $2^m$ centers. Choose
+$m=\lfloor\log(1/(8\kappa_\theta\varepsilon))/(2\log(1/\theta))\rfloor$.
 Then $N_\theta(\varepsilon)\ge
-\tfrac12(8C_\theta\varepsilon)^{-\alpha_\theta}$.
+\tfrac12(8\kappa_\theta\varepsilon)^{-\alpha_\theta}$.
 \end{proof}
 
-A related example separates exact complexity from approximation even more
-strongly. In \eqref{eq:constant-message} replace the control coefficient
-$\theta$ in residual $i$ by
-$b_i=2^{i-1}\theta^i/(2^n-1)$.
-The same residual proof gives centers $c_z=h\sum_i2^{i-1}z_i$,
-where $h=\theta^n/(2^n-1)$, and denominators
-$D_z=W_n+\sum_i\theta^{2(n-i)}b_i^2z_i\ge1$.
-Every quadratic is again indispensable, but the piecewise function equal
-to zero on $[0,\theta^n]$ and to $q_{\mathbf1}$ on $[\theta^n,1]$
-underestimates the message by at most $h^2/4$.
-On the first interval use a nearest center; on the second the all-one
-support has both the nearest center and the largest denominator.
-This two-piece function is continuously differentiable at its breakpoint.
-It is a piecewise approximation, not the pointwise minimum of its two
-formulas over the entire interval.
-The single quadratic $q_{\mathbf1}$ also overestimates the message by at
-most $\theta^{2n}$: its value is at most that bound on $[0,\theta^n]$,
-and it is exact thereafter.
-
-Exponential growth of piecewise quadratic messages is known for broader
-nonconvex models \cite[Section~5]{KuricTree}. Power-law approximation
-rates for quadratic bases with a common Hessian are established
-\cite[Section~III, Theorem~3.3]{GaubertPruning}; pruning under uniform
-error also has a covering interpretation \cite[Section~VI]{GaubertPruning}.
-Our contribution is the fixed-alphabet,
-well-conditioned indicator realization and its matching pruning exponent,
-including its support-dependent denominators. We claim neither a new
-general phenomenon of message growth nor a lower bound for arbitrary
-approximating functions.
-
-Multi-period indicator models also admit polynomial algorithms when their
-projected quadratic matrices are factorizable \cite{LeeMultiperiod}.
-Eliminating the free internal states of \eqref{eq:constant-message}
-gives the control matrix
-\[
- \widetilde Q=I+\frac{uu^T}{W_n},\qquad u_i=\theta^{n-i+1},
- \qquad \widetilde Q^{-1}=I-\frac{uu^T}{W_n+u^Tu}.
-\]
-Every off-diagonal inverse entry is nonzero. For $n\ge3$, this natural
-scalar projection is therefore not factorizable, since a nonsingular
-factorizable matrix has a tridiagonal inverse
-\cite[Proposition~1]{LeeMultiperiod}. This comparison does not exclude
-every possible block reformulation.
+Section~\ref{sec:related} compares Theorems~\ref{thm:fixed-data}
+and~\ref{thm:pruning} with known value functions that have
+exponentially many pieces \cite{Murty,KuricTree} and with known pruning
+rates \cite{GaubertPruning}.

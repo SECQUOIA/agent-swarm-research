@@ -18,6 +18,6 @@ Verdict: no major proof error found. Three minor statement/definition issues sho
 - Recomputed the path determinant and cofactor formulas, the kappa^(-3/2) boundary prefactor, chi_n/c_n, the 3 ell + 2 transitions, the attainable coefficient spacing, and the resulting kappa^2 block count. The condition and source-depth bookkeeping are consistent.
 - Checked the concentration constants: n >= 200 keeps the outer weights interior; the displayed Hoeffding tail is below 0.004, the realization fluctuation is S/8, and S > 14 epsilon d leaves adequate estimation slack.
 - Checked the sparse Gram factors, rational rounding margins, stopped-Hamming transcript argument, high-confidence separation, cyclic dilution, and Schur-complement condition-budget inequality. These limitations are correctly restricted to their stated construction classes.
-- Ran `checks/check_lower_identities.py` with `/home/sgusev/miniconda3/envs/qipm/bin/python`: all 25 witness realizations and 25 constant paths passed. Numerical checks supplement, rather than replace, the algebraic review.
+- Ran `checks/check_lower_identities.py` with `/workspace/local-home/miniconda3/envs/qipm/bin/python`: all 25 witness realizations and 25 constant paths passed. Numerical checks supplement, rather than replace, the algebraic review.
 
 Read the Stage 2 author record and source map. No other review reports were read, and no manuscript or supporting-code files were edited.

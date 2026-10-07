@@ -1,6 +1,9 @@
+from pathlib import Path as _CleanupPath
+_NOTES_ROOT = _CleanupPath(__file__).resolve().parent.joinpath('../../..').resolve()
+
 from pathlib import Path
 import hashlib, importlib.util, json, os, shutil, subprocess, sys, tempfile
-PAPER=Path('/home/sgusev/repo/minlp-notes/paper-correlated-measurements')
+PAPER=Path((str(_NOTES_ROOT) + '/paper-correlated-measurements'))
 SRC=PAPER/'supplement'
 OUT=PAPER/'verification/stage05-review5'
 base=Path(tempfile.mkdtemp(prefix='correlated-review5-'))

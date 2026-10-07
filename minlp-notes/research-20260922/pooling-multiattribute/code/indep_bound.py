@@ -16,6 +16,9 @@ Safe bound: Neumaier-Shcherbina style: y = sign-corrected row duals, d = c - A^T
 (including 2^-52 relative uncertainty of every float coefficient vs. its decimal), then
 b^T y + sum_j min_{x_j in [l_j,u_j], d_j in [dlo,dhi]} d_j x_j, final sums in exact rational arithmetic.
 """
+from pathlib import Path as _CleanupPath
+_NOTES_ROOT = _CleanupPath(__file__).resolve().parent.joinpath('../../..').resolve()
+
 import sys, json, time, math
 from fractions import Fraction as Fr
 from collections import defaultdict
@@ -24,7 +27,7 @@ import scipy.sparse as sp
 import gurobipy as gp
 from gurobipy import GRB
 
-sys.path.insert(0, "/home/sgusev/repo/minlp-notes/research-20260922/benchmark-observations/code")
+sys.path.insert(0, (str(_NOTES_ROOT) + '/research-20260922/benchmark-observations/code'))
 import osil_eval as O
 
 INF = float("inf")

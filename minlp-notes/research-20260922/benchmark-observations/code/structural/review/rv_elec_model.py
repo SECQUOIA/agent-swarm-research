@@ -3,11 +3,13 @@
 Converts the whole OSiL model to sympy expressions with a generic tree
 converter and compares with an independently built expected model.
 """
+from pathlib import Path as _CleanupPath
+
 import sys
 import sympy as sp
 from rv_osil import read, strip
 
-path = "/home/sgusev/.cache/minlplib/minlplib/osil/{}.osil"
+path = (str(_CleanupPath.home()) + '/.cache/minlplib/minlplib/osil/{}.osil')
 
 
 def to_sympy(node, X):

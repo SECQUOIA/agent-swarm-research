@@ -1,0 +1,120 @@
+\section{Introduction}\label{sec:introduction}
+
+Global solvers for nonconvex mixed-integer nonlinear programs (MINLPs) bound
+the optimal value by relaxing every nonlinear expression. The standard
+construction decomposes each expression into elementary operations,
+introduces an auxiliary variable for each, and relaxes each operation on its
+own \citep{McCormick1976,SmithPantelides1999,TawarmalaniSahinidis2004}. This
+construction is general, but it relaxes expressions as if they were
+unrelated. In many models they are not: the same variables appear in several
+nonlinear constraints, and linear constraints restrict how these variables
+can move together. Pooling and blending models, heat and mass exchange
+networks and gas networks are typical examples. A relaxation that treats such
+expressions separately can be much weaker than one that treats them jointly.
+
+The strongest convex relaxation of several functions $f_1,\dots,f_p$ of the
+same variables $x$ on a common domain $D$ is the convex hull of their joint
+graph $\{(x,f_1(x),\dots,f_p(x)):x\in D\}$. Its valid linear inequalities are
+\emph{support cuts}: for a direction $(a,b)$, the inequality
+$a\T x+b\T w\ge\min_{x\in D}\{a\T x+b\T F(x)\}$ is valid, where
+$F=(f_1,\dots,f_p)$ and $w_j$ stands for $f_j(x)$, and all such inequalities together describe the hull. This
+simultaneous convexification has been studied for vectors of functions
+\citep{Tawarmalani2010}, \citep[Proposition~1]{LiersEtAl2021}, including
+vectors of univariate functions \citep{HeLiuTawarmalani2025}, for bilinear and
+composite functions
+\citep{DavarniaRichardTawarmalani2017,HeTawarmalani2021,ZhuHeTawarmalani2026},
+and in applications \citep{LiersEtAl2021}.
+Turning it into a solver component raises four questions.
+\begin{enumerate}[label=(\arabic*)]
+\item \emph{Which blocks are worth relaxing jointly?} In particular, is it
+enough to relax every pair of interacting variables exactly, or do larger
+blocks carry information that pairs miss?
+\item \emph{Exactness.} The support value is the minimum of a nonconvex
+function. For which blocks can it be computed exactly, so that the cuts are
+as strong as possible?
+\item \emph{Integration and validity.} Support cuts live in the space of
+$(x,w)$, and introducing the variables $w$ changes the model that the solver
+presolves, propagates and branches on. Can the cuts be stated in the original
+variables? And since directions are found numerically and the solver stores
+binary64 rows, which part of the computation must be exact for the stored row
+to be valid?
+\item \emph{Usefulness.} Modern solvers already detect quadratic, bilinear and
+convex structure and have their own cut families for it
+\citep{BestuzhevaEtAl2025}. Do joint support cuts improve them?
+\end{enumerate}
+
+We address these questions for quadratic blocks in depth and for shared
+nonlinear expressions more generally. The contributions are the following.
+
+\begin{itemize}
+\item \emph{Limits of composing pair hulls} (Section~\ref{sec:composition}). On
+a path of three variables, exact pair hulls identified on the first two
+moments of the shared variable miss a gap of $1/128$ that a single support
+cut in the existing coordinates closes. For a family of such paths the gap is
+positive exactly when two two-point sets interleave, and it then equals
+$\delta^2/2$, where $\delta$ is their distance. An interface that identifies
+$\kappa$ moments of the shared variable gives no positive bound exactly
+when the local zero sets alternate at least $\kappa+1$ times, a reading of the
+classical description of Radon partitions on the moment curve, and for every
+$\kappa$ there is a quadratic instance with a relative gap of $100\%$. On a
+three-variable path, a dense semidefinite relaxation with the McCormick
+inequalities of all products is exact, by a theorem of
+\citet{BurerNatarajanWillemsen2025}; there the advantage of the joint block
+over its pairs is one of representation, which support cuts obtain in the
+coordinates that the model already has. From four variables on, the dense
+relaxation is no longer exact for every objective: on a four-variable path and
+on our full-gap instances, joint support cuts are strictly stronger, on the
+latter with a relative gap of nearly $100\%$ for the dense relaxation.
+Through Lagrangian decomposition we also relate the gain from merging pairs
+into a star to the glued relaxation.
+\item \emph{Exact support for constrained stars} (Section~\ref{sec:quadratic}).
+For quadratic stars whose affine rows couple the center with one leaf at a
+time, we give an exact rational algorithm with $O(m_0+(m+k)\log(m+k))$
+operations for $k$ leaves, $m$ center--leaf rows and $m_0$ rows in the center
+alone; on instances with $m=\Theta(k)$ this is optimal for algebraic
+computation trees. The box-constrained case is a special case of the forest
+algorithm of \citet{DelPiaKhajavirad2026}; to our knowledge, no exact
+algorithm for the case with center--leaf rows has been published. For
+polytopes of fixed dimension we state face enumeration together with the
+degenerate cases that a certificate must cover.
+\item \emph{Certified cuts in the original variables}
+(Sections~\ref{sec:original} and~\ref{sec:certification}). Minimizing
+nonnegative combinations of nonlinear rows over their common block domain and
+eliminating the rows gives cuts in the original variables, with no auxiliary
+variables. Together these cuts describe the projection of the joint-graph
+relaxation, and we give conditions under which this projection is the convex
+hull of the set that the rows define, and examples where it is not. Validity
+of a stored cut rests on four checks: a certified lower bound over the whole
+block domain for the exact binary64 direction, exact elimination,
+bound-corrected rounding, and a comparison with the row that the solver
+stores; the direction itself may be found by any numerical method.
+\item \emph{Implementation and evaluation}
+(Sections~\ref{sec:implementation} and~\ref{sec:computations}). We implemented
+the cuts as a SCIP separator whose model import is checked to reproduce the
+exact binary64 source expressions and their domains, and whose every cut can
+be replayed. We evaluate it with prospective protocols on MINLPLib models and
+on constructed families with path and star structure, against SCIP's default,
+against SCIP's disabled-by-default nonconvex separators, and, on the
+constructed families, against Gurobi; an ablation measures what the
+certificate prevents.
+\end{itemize}
+
+The other ingredients, namely the support description, Bernstein and
+ball-arithmetic bounds, safe rounding, Lagrangian duality and oracle
+separation, are classical; we use them and state them precisely where a
+certificate depends on the details (Sections~\ref{sec:original}
+and~\ref{sec:certification}, Appendices~\ref{app:bounds}
+and~\ref{app:separation}).
+
+\input{sections/01b-results}
+
+We do not claim a new convexification principle, a general speedup, or a
+certificate for a complete solve; the certificates cover the cuts and the
+model they were derived from. Section~\ref{sec:setting} fixes notation and
+reviews related work, Sections~\ref{sec:composition}--\ref{sec:certification}
+develop the theory, Section~\ref{sec:implementation} describes the
+implementation, Section~\ref{sec:computations} reports the experiments, and
+Section~\ref{sec:conclusions} discusses consequences and open problems. The
+appendices contain proofs and examples, the relation of the cuts to the hull
+of the feasible set, whole-domain bounds for non-quadratic blocks, complete
+separation, the first two campaigns, and the test sets with detailed results.

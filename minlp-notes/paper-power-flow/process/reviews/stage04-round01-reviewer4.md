@@ -34,7 +34,7 @@ The historical solver paragraph agrees with the repository's recorded final run:
 
 ## Build and packaging evidence
 
-All reviewer artifacts are in the absolute directory `/home/sgusev/repo/minlp-notes/paper-power-flow/verification/reviewer4/stage04-round01/`.
+All reviewer artifacts are in the absolute directory `/workspace/minlp-notes/paper-power-flow/verification/reviewer4/stage04-round01/`.
 
 - `manifest-check.log`: all 22 frozen hashes verified.
 - `accepted-dependencies.log`: accepted math/code identity confirmed, allowing only the documented version-specific citation change.

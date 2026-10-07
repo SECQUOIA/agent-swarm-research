@@ -60,9 +60,9 @@ cone rises by `z_C(w) = min_{α_j<∞} w_j α_j`.
 
 | Result | Assumptions | Conclusion | Source (checked) |
 |---|---|---|---|
-| Muñoz–Serrano, "Maximal quadratic-free sets" | `S = {q ≤ 0}`, one quadratic; homogenize and diagonalize to `Q_h = {‖x‖ ≤ ‖y‖}` or `Q_g = Q_h ∩ {a^T x + d^T y = −1}` | First maximal sets: `C_λ = {‖y‖ ≤ λ^T x}` and `φ`-sets for `Q_g`. §6 shows the set obtained "heavily depends on the choice of T" and leaves that open. §7 lists open items: the role of transformations, a comparison with Bienstock et al., and new families. | arXiv:1911.12341 (full text: §6 Example 9, §7); Math. Program. 192 (2022) |
-| Muñoz–Paat–Serrano, homogeneous case | `Q_h`, full-dimensional sets | Every maximal set is `C_Γ = {Γ(β)^T x ≥ β^T y ∀β ∈ D^m}` (Thm 1.1). It is maximal iff `Γ` is non-expansive and `0 ∉ conv{(Γ(β), −β)}` (Thm 1.2). Polyhedrality is characterized by isometric covers (Thm 1.3). General-S criterion via exposing sequences (Thm 1.4). Maximal polyhedra can have arbitrarily many facets (Ex. 2.4). §8: characterizing which point sets define maximal Q-free polyhedra is "an important follow-up question". | arXiv:2211.05185 (intro, Thms 1.1–1.4, Examples 2.1–2.4, §8); Math. Program. 210 (2025) 641–668 |
-| Muñoz–Paat–Serrano, inhomogeneous case | `Q_g`, `max{‖a‖, ‖d‖} = 1` | Every maximal set is `C_Γ^G ∩ H`, with `G = {β : a^T Γ(β) + d^T β ≤ 0}` (Thm 2). If `‖a‖ ≤ ‖d‖`: maximal iff `a ≠ Γ(−d)` (Thm 4). If `‖d‖ < ‖a‖`: maximal iff `G = D^m` (Thm 5). This "completes a characterization of all maximal quadratic-free sets". The paper states that prior implementations used "only one family". There is no explicit open-problem section. | arXiv:2605.30602 v1 (full text read: §1–2, Thm statements, end matter) |
+| Muñoz–Serrano, "Maximal quadratic-free sets" | `S = {q ≤ 0}`, one quadratic; homogenize and diagonalize to `Q_h = {‖x‖ ≤ ‖y‖}` or `Q_g = Q_h ∩ {a^T x + d^T y = −1}` | First maximal sets: `C_λ = {‖y‖ ≤ λ^T x}` and `φ`-sets for `Q_g`. §6 shows that the resulting set depends strongly on the choice of T and leaves that open. §7 lists open items: the role of transformations, a comparison with Bienstock et al., and new families. | arXiv:1911.12341 (full text: §6 Example 9, §7); Math. Program. 192 (2022) |
+| Muñoz–Paat–Serrano, homogeneous case | `Q_h`, full-dimensional sets | Every maximal set is `C_Γ = {Γ(β)^T x ≥ β^T y ∀β ∈ D^m}` (Thm 1.1). It is maximal iff `Γ` is non-expansive and `0 ∉ conv{(Γ(β), −β)}` (Thm 1.2). Polyhedrality is characterized by isometric covers (Thm 1.3). General-S criterion via exposing sequences (Thm 1.4). Maximal polyhedra can have arbitrarily many facets (Ex. 2.4). §8: characterizing which point sets define maximal Q-free polyhedra is identified as a question for further research. | arXiv:2211.05185 (intro, Thms 1.1–1.4, Examples 2.1–2.4, §8); Math. Program. 210 (2025) 641–668 |
+| Muñoz–Paat–Serrano, inhomogeneous case | `Q_g`, `max{‖a‖, ‖d‖} = 1` | Every maximal set is `C_Γ^G ∩ H`, with `G = {β : a^T Γ(β) + d^T β ≤ 0}` (Thm 2). If `‖a‖ ≤ ‖d‖`: maximal iff `a ≠ Γ(−d)` (Thm 4). If `‖d‖ < ‖a‖`: maximal iff `G = D^m` (Thm 5). This gives a full characterization of maximal quadratic-free sets. The paper notes that previous implementations employed a single family. There is no explicit open-problem section. | arXiv:2605.30602 v1 (full text read: §1–2, Thm statements, end matter) |
 | Bienstock–Chen–Muñoz, outer-product-free (OPF) sets | `S` = symmetric rank-one PSD matrices (lifted polynomial optimization) | Full-dimensional maximal OPF sets are cones (Thm 4.3). The halfspace `⟨A, X⟩ ≥ 0` is maximal iff `A` is NSD (Thm 4.7). 2×2 PSD cones are maximal (Thm 4.10). Full classification only in `S^{2×2}` (Thm 4.15). Other families exist for `n ≥ 3` (Props 4.17–4.18, "open avenues"). Oracle ball cuts converge in Hausdorff distance for the *non-local* closure `P \ int B` (Thm 3.3/3.4); that separation is NP-hard. | local KB `bienstock2020-outer-product-free-sets-for` (fulltext §3, §4, §7) |
 
 ### 1.2 Implementation, strengthening and the solver state
@@ -73,13 +73,13 @@ cone rises by `z_C(w) = min_{α_j<∞} w_j α_j`.
   - They give explicit maximal sets for Cases 1–4. Case 4 covers linear terms
     in zero-eigenvalue directions, as in `w = xy`.
   - The set always uses `λ = x̂(s̄)/‖x̂(s̄)‖` in eigenvalue coordinates.
-    Remark 3 says other factorizations "can potentially lead to other maximal
-    quadratic-free sets", but only the eigenvalue decomposition is used.
+    Remark 3 suggests that different factorizations may produce additional maximal
+    quadratic-free sets, although the implementation uses only eigenvalue decomposition.
   - Cuts are closed-form, with Glover negative-edge strengthening.
   - On MINLPLib they close about 8% more gap on average (12% on affected
     instances). Strengthening is slightly negative because of density.
-  - Final remarks call for "careful handling of the density … special cut
-    selection rules".
+  - Final remarks identify cut density and specialized cut-selection policies
+    as practical concerns.
 - Chmiela–Muñoz–Serrano, "Monoidal strengthening and unique lifting in
   MIQCPs", Math. Program. B 210 (2025) 189–222.
   - Integer *nonbasic* variables are lifted by monoidal strengthening.
@@ -92,8 +92,8 @@ cone rises by `z_C(w) = min_{α_j<∞} w_j α_j`.
     `useboundsasrays = False`, `sparsifycuts = False`;
   - no option to choose the set.
 
-  The SCIP 8/9 rationale, "not clear yet how to decide when it will be
-  beneficial", and in-house probe D are in
+  The SCIP 8/9 rationale, that no clear policy determines when cut generation
+  will help, and in-house probe D are in
   `research-20260922/scouting/brainstorm2-solvercore.md`. Probe D: +7.6 pp mean
   root gap, total node ratio 0.974, per-instance swings of 10–600× both ways.
 - Related constructions:
@@ -128,10 +128,9 @@ cone rises by `z_C(w) = min_{α_j<∞} w_j α_j`.
 - Cornuéjols–Patil, hereditary property of closures, arXiv:2609.02038 (local
   KB summary). Hereditary faces for `L`-closures `R_L(K) = ∩ conv(K \ int L)`.
 - Concavity-cut convergence. Porembski, JOGO 2001 ("Finitely convergent
-  cutting planes for concave minimization") states that "it has not been
-  possible to either prove or disprove the finite convergence of a pure cutting
-  plane algorithm for concave minimization based solely on these cutting
-  planes". Zwart (Oper. Res. 1973) gave counterexamples for Tuy's conical
+  cutting planes for concave minimization") reports that finite convergence
+  remained unresolved for a pure concave-minimization cutting-plane method
+  using only the cuts discussed there. Zwart (Oper. Res. 1973) gave counterexamples for Tuy's conical
   algorithm. Porembski 2004 adds cone adaptation for forced depth. All three
   were seen as search snippets only.
 
@@ -201,16 +200,16 @@ Precise statement. Fix `S = {q ≤ 0} ⊂ R^k`, `s̄ ∉ S`, rays
 
 Evidence that it is open:
 
-- Muñoz–Serrano 2022 §6–7 leave "the role of different transformations"
+- Muñoz–Serrano 2022 §6–7 leave the effect of choosing different transformations
   explicitly open.
 - MPS 2025 §8 leaves the polyhedral case open.
-- MPS 2026 notes that implementations use "only one family".
+- MPS 2026 notes that implementations have used a single family.
 - Chmiela et al. use one fixed `λ` and the eigenvalue decomposition.
 - SCIP 10 has no selection option.
 - The arXiv API searches above found no selection or approximation paper for
   quadratic S-free sets. The web-search budget ran out before a Google-Scholar
-  citation sweep of MPS 2025/2026 was possible, and the MPS group calls this a
-  "new avenue", so concurrent work is a real risk.
+  citation sweep of MPS 2025/2026 was possible. The MPS group identifies this
+  direction for further research, so concurrent work is a real risk.
 
 ### OQ2. Maximal S-free sets for several quadratics or bounded quadratic sets
 
@@ -486,8 +485,8 @@ Supporting checks:
 
 **Risks.**
 
-1. The MPS/Chmiela group may already be working on selection. They call the
-   characterization a "new avenue".
+1. The MPS/Chmiela group may already be working on selection. They identify the
+   characterization as a direction for further research.
 2. Average per-cut gains over SCIP are about 10–25% of the best single-cut bound.
    The large losses are in the tail; typical losses are small.
 3. Density, SCIP's stated reason for disabling the cuts, is not solved by

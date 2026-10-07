@@ -963,11 +963,11 @@ Mechanical checks reported by the original coordinator (no Lean run):
 
 - Coordinator hand-check of M4 (`research-20260922/iterated-obbt/theory.md:40`)
   against `literature/papers/scott2011-generalized-mccormick-relaxations/fulltext.md`:
-  Remark 2 states verbatim that Step 6 (clipping each factor relaxation to
-  its interval bounds) "is necessary for Lemma 1 below, which is in turn
-  required for many results in later sections (Sect. I of Online Resource 1
-  contains examples where omitting this step results in violations of Lemma 1
-  and Theorem 4)"; the proof of Theorem 4 uses `mid(v^L, v^U, vbar) = max(v^L, vbar)`.
+  Remark 2 identifies Step 6, which clips each factor relaxation to its
+  interval bounds, as a prerequisite for Lemma 1 and for later results that
+  depend on it. Sect. I of Online Resource 1 gives examples in which skipping
+  the clipping invalidates Lemma 1 and Theorem 4. The proof of Theorem 4 uses
+  `mid(v^L, v^U, vbar) = max(v^L, vbar)`.
   The note's composite rule (`proofs-12-11.md` lines 62-86) is the unclipped
   MCB 2009 rule. The finding stands at the citation level.
 
@@ -1196,9 +1196,9 @@ steps; it is not a claim about steps not listed.
   and the merged-lax corollary: correct.
 - Coordinator source check of `notes/common-factor-p-split-correction.md`
   (claimed counterexample to a published theorem): the local full text of
-  Kronqvist–Misener–Tsay states Theorem 6 exactly as quoted ("fully
-  disjoint, with additive bounds and constraint functions that are strictly
-  convex, a P-split formulation cannot form the true convex hull"), with
+  Kronqvist–Misener–Tsay's Theorem 6 asserts that a P-split formulation cannot
+  give the exact convex hull when the disjuncts are fully disjoint, bounds
+  are additive, and constraint functions are strictly convex, with
   Definition 4 as pairwise-disjoint disjuncts; the two-disk example
   satisfies these hypotheses, every box vertex lies in a disjunct so the
   hull is the box and every convex relaxation inside the box is exact, and
@@ -1636,7 +1636,7 @@ UNUSUAL CONSTRUCTS: grep over Formal/MatroidSpectral finds no `sorry`, no `axiom
 DECLARATION EXISTENCE: extracted all 244 backticked names from the CM01-CM49 rows of paper-certified-minlp/formal/COVERAGE.md and matched them against CertifiedMinlp/*.lean — every one exists as theorem/lemma/def/structure/inductive. The only four "misses" (Coordinate.bounded/lowerBounded/upperBounded, unsplit) are inductive constructors, correctly referenced.
 
 UNUSUAL CONSTRUCTS: no sorry, axiom, native_decide, unsafe, implemented_by, partial def, opaque, or check-weakening set_option anywhere in CertifiedMinlp/, CertifiedMinlp.lean, Verify.lean, or verification/ExtensionAudit.lean. The five noncomputable defs (realMonomial, extendedOptimum, q
-- L4: Repository root: /home/sgusev/repo/minlp-notes. No mathematical error, false statement, or unproven theorem was found in cluster L4; the cubic development is unusually careful and the Lean statements are faithful to the informal claims. Checked and found correct:
+- L4: Repository root: /workspace/repo/minlp-notes. No mathematical error, false statement, or unproven theorem was found in cluster L4; the cubic development is unusually careful and the Lean statements are faithful to the informal claims. Checked and found correct:
 
 UPPER BOUND (31/12). Worked through every case of paper-cubic-gap/main.tex Sections 3-4 by hand and re-derived all deficiency formulas from the law definitions: D_O = (1/2)min(u,a)+(1/4)min(u,b) and D_B = (1/2)min(u,2a)+(1/4)min(u,2b) for one low coordinate; D_O = D_B = a/2+b/4 all-high; D_I = u(a+b-ab); the bilinear cases; the four-case split for 18D_O+7D_B >= 12min(u,a+b) (brute-forced over a rational grid in Python: no violation
 - R8: I worked through all nine assigned notes line by line, re-derived the main proofs, and ran independent exact-arithmetic checks. I found no major or moderate defect; only the three minor documentation/attribution items above.\n\nVERIFIED CORRECT (proof steps re-derived by hand):\n1. positive-multilinear-marginal-floor-gap.md. Confirmed the variational setup: cav of a positive multilinear polynomial on the cube is the sum of monomial cavs (comonotone threshold law), monomial gap T_e = min(u, S) equals cav-vex exactly (u - max(0,u-S)), and chgap = max over laws of the weighted anchor deficiency (sign and direction correct). Checked: density h integrates to 1; clipping/completion q'_p in [q_p,1]

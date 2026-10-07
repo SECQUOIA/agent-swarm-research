@@ -1,6 +1,6 @@
 # S3 author record: discrete and series-parallel boundaries
 
-Date: 2026-09-10. Status: authored and ready for five independent reviews; not accepted. Worktree: `/home/sgusev/repo/minlp-notes-potential-flow`, branch `paper-potential-flow`.
+Date: 2026-09-10. Status: authored and ready for five independent reviews; not accepted. Worktree: `/workspace/minlp-notes-potential-flow`, branch `paper-potential-flow`.
 
 ## Deliverable and scope
 
@@ -39,7 +39,7 @@ Hasler–Wang 1993 nonlinear tolerance analysis remains unavailable for theorem-
 
 ## Focused verification
 
-Read the supporting implementations for the pressure gadget, arc probe, envelope/endpoint and energy checks, K4 obstruction, flow realization, SRS probe, nomination probe, and finite secant identity. Ran the following existing checks in `/home/sgusev/miniconda3/envs/minlp-notes/bin/python`; every process exited zero:
+Read the supporting implementations for the pressure gadget, arc probe, envelope/endpoint and energy checks, K4 obstruction, flow realization, SRS probe, nomination probe, and finite secant identity. Ran the following existing checks in `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python`; every process exited zero:
 
 | Check | Distinct evidence |
 | --- | --- |

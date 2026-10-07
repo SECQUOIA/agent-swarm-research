@@ -173,7 +173,7 @@ not present those general observations as new results.
 
 ## Independent numerical checks
 
-Using `/home/sgusev/miniconda3/envs/qipm/bin/python`, I checked instances
+Using `/workspace/local-home/miniconda3/envs/qipm/bin/python`, I checked instances
 with `rho=1.01,2,10`, `delta=1e-2,1e-4,1e-6`, and endpoint and midpoint
 values of `t`. The checks included the bounded feasible interval and
 positive objective slope, `A A^T=H`, the normal equation, both remaining

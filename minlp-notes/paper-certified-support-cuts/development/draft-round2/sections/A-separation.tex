@@ -1,0 +1,240 @@
+\section{Complete separation to a positive tolerance}\label{app:separation}
+
+An exact support oracle evaluates one direction; a separation routine must
+also find a direction, and the bounded searches used inside a solver can miss
+one. Given an exact or approximate support oracle, the search can be completed
+in the following weak sense: for every query and every positive tolerance, a
+finite exact procedure either returns a valid cut that the query violates or
+certifies that the query is within the tolerance of the hull. The tools are
+classical; we state the procedure because its answer contract is what a
+certified implementation needs. The SCIP separator of
+Section~\ref{sec:implementation} does not run it; it uses a fixed budget and
+never interprets an unsuccessful search as membership.
+
+\paragraph{Setting.}
+In this appendix $F:\R^d\to\R^r$ lists \emph{all} lifted coordinates,
+including the block variables themselves, so that the joint graph is $F(P)$.
+Let $P\subset\R^d$ be a nonempty bounded rational polytope, let $F$ be
+continuous with $F(P\cap\Q^d)\subseteq\Q^r$ (for example, polynomial with
+rational coefficients), let $\bar z\in\Q^r$ be the query and let $\epsilon>0$ be
+rational. To cover the aggregated cuts of Section~\ref{sec:original}, a set
+$J\subseteq\{1,\dots,r\}$ of coordinates may be one-sided: we separate from
+\[
+U_J=\conv F(P)+\cone\{e_j:j\in J\}.
+\]
+For $F=(x,g(x))$, the query $(S\bar v,b-A\bar v)$ and $J$ equal to the coordinates
+of $g$, this is the set $K+Q$ of Theorem~\ref{thm:closure}. Directions are taken
+from $C_J=\{c\in[-1,1]^r:c_j\ge0\ (j\in J)\}$; we write
+$h(c)=\min_{x\in P}c\T F(x)$, $\psi(c)=h(c)-c\T\bar z$ and
+$\phi_J(w)=\sum_{j\notin J}\abs{w_j}+\sum_{j\in J}\max\{w_j,0\}$, and we let
+$\rho\ge\max_{x\in P}\norm{F(x)-\bar z}_1$ be a rational bound, obtained for
+example from interval enclosures of the $F_j$.
+
+\begin{lemma}[Distance duality]\label{lem:distance}
+$\dist_1(\bar z,U_J)=\min_{w\in\conv F(P)}\phi_J(w-\bar z)=\max_{c\in C_J}\psi(c)$,
+and both extrema are attained. Moreover
+$\abs{\psi(c)-\psi(c')}\le\rho\norm{c-c'}_\infty$ for all $c,c'\in C_J$.
+\end{lemma}
+
+\begin{proof}
+The set $\conv F(P)$ is compact, so $U_J$ is closed and convex. Adding a cone
+vector reduces the distance in a coordinate $j\in J$ to $\max\{w_j-\bar z_j,0\}$,
+which gives the first expression. For the second, $c\T(z-\bar z)\ge\psi(c)$ for
+every $z\in U_J$ and $c\in C_J$, while $c\T(z-\bar z)\le\norm{z-\bar z}_1$; hence
+$\psi(c)\le\dist_1(\bar z,U_J)$. If the distance $\varrho$ is positive, a linear
+functional separates $U_J$ from the open $\ell_1$ ball of radius $\varrho$ around
+$\bar z$; scaled to $\ell_\infty$ norm one, it lies in $C_J$ because its infimum
+on $U_J$ is finite, and it has $\psi(c)\ge\varrho$. The Lipschitz bound holds
+pointwise for every $x\in P$ and survives taking minima.
+\end{proof}
+
+An \emph{oracle of accuracy} $\theta\in[0,\epsilon)$ returns, for a rational
+$c\in C_J$, a rational lower bound $L_c\le h(c)$ and a point $p_c\in P$ with
+$c\T F(p_c)\le L_c+\theta$. For quadratic features, Theorem~\ref{thm:polytope} is
+such an oracle with $\theta=0$; for polynomials of higher degree,
+Lemma~\ref{lem:net} gives one with any prescribed $\theta>0$.
+
+\paragraph{Column generation.}
+Start with $W=\{F(p_0)-\bar z\}$ for a rational $p_0\in P$, for example a vertex;
+if $F(p_0)=\bar z$, stop with a one-point certificate. Then repeat: solve the
+\emph{master LP}
+\begin{equation}\label{eq:master}
+\mathrm{UB}=\max_{c\in C_J}\min_{w\in W}c\T w
+=\min\Bigl\{\phi_J\Bigl(\sum_{w\in W}\lambda_ww\Bigr):\lambda\ge0,\ \textstyle\sum_w\lambda_w=1\Bigr\}
+\end{equation}
+in exact rational arithmetic, obtaining an optimal direction $\bar c$ and
+weights $\lambda$; if $\mathrm{UB}\le\epsilon$, stop with the convex combination as
+a \emph{within-tolerance} certificate; otherwise call the oracle at $\bar c$; if
+$L_{\bar c}>\bar c\T\bar z$, return the cut $\bar c\T z\ge L_{\bar c}$; otherwise add
+$F(p_{\bar c})-\bar z$ to $W$. The two problems in~\eqref{eq:master} are an LP
+and its dual. This is the separation scheme of Fenchel cuts and local cuts
+\citep{Boyd1994,ChvatalCookEspinoza2013}, in our norm and with cone
+coordinates; in direction space it is Kelley's cutting-plane method
+\citep{CheneyGoldstein1959,Kelley1960} for maximizing the concave Lipschitz
+function $\psi$ over $C_J$, and the termination proof below is its standard
+convergence argument.
+
+\begin{theorem}[Complete weak separation]\label{thm:weak-separation}
+If $\rho=0$, then $F\equiv\bar z$ on $P$ and the procedure stops without an
+oracle call. Otherwise it terminates after at most
+$2r\lceil2\rho/(\epsilon-\theta)\rceil^{r-1}$ oracle calls. A returned cut is valid
+for $U_J$ and violated at $\bar z$; it is returned whenever
+$\dist_1(\bar z,U_J)>\epsilon$. A within-tolerance answer consists of at most
+$r+1$ rational points of $P$ and rational weights whose mixture $w$ satisfies
+$\phi_J(w-\bar z)\le\epsilon$, so $\dist_1(\bar z,U_J)\le\epsilon$; it is returned
+whenever $\bar z\in U_J$.
+\end{theorem}
+
+\begin{proof}
+Validity of a returned cut follows from $L_{\bar c}\le h(\bar c)$ and
+$\bar c_j\ge0$ on the cone coordinates. The master value $\mathrm{UB}$ is the
+value $\phi_J$ of a mixture of graph points, hence at least the distance; a
+basic optimal dual solution has at most $r+1$ positive weights. If the
+distance exceeds $\epsilon$, the procedure can therefore stop only with a cut.
+
+For termination, let $\bar c_1,\bar c_2,\dots$ be the directions at which the
+oracle is called and $w_s$ the point added after call $s$. Since no cut was
+returned at call $s$, $\bar c_s\T w_s\le L_{\bar c_s}+\theta-\bar c_s\T\bar z\le\theta$.
+At a later call $t$, $w_s\in W$ and $\mathrm{UB}>\epsilon$, so $\bar c_t\T w_s>\epsilon$.
+Hence $(\bar c_t-\bar c_s)\T w_s>\epsilon-\theta$, and since $\norm{w_s}_1\le\rho$,
+$\norm{\bar c_t-\bar c_s}_\infty>(\epsilon-\theta)/\rho$. Because $\mathrm{UB}>0$ and
+the master objective is positively homogeneous, every $\bar c_t$ has a
+coordinate equal to $\pm1$ (equal to $1$ on $J$), so it lies on one of at most
+$2r$ faces of $C_J$, each a product of $r-1$ intervals of length at most two.
+Covering each face by $\lceil2\rho/(\epsilon-\theta)\rceil^{r-1}$ boxes of side at
+most $(\epsilon-\theta)/\rho$ bounds the number of calls.
+\end{proof}
+
+A returned cut is only guaranteed to be violated. If a cut is returned only
+when $L_{\bar c}-\bar c\T\bar z>\eta$ for a fixed $\eta\in[0,\epsilon-\theta)$, the same
+proof, with $\bar c_s\T w_s\le\eta+\theta$, gives termination after at most
+$2r\lceil2\rho/(\epsilon-\theta-\eta)\rceil^{r-1}$ calls, and every returned cut is
+violated by more than $\eta$; this matters for binary64 export, where a very
+small violation can be lost. The bound is exponential in $r$, as is the known
+worst case of Kelley-type cutting-plane methods
+\citep[see the discussion in][]{DroriTeboulle2016}; it is not a property of
+the problem. The set of directions $C_J$ is a full-dimensional box even when
+$\conv F(P)$ is lower-dimensional, so the central-cut ellipsoid method can
+localize a good direction in it. Using the oracle answers $-w/\norm w_\infty$
+as cuts in direction space and finishing with the master
+LP~\eqref{eq:master} over all recorded points gives the same two outcomes
+after $O(r^2\log(r\rho/(\epsilon-\theta)))$ oracle calls (see below). For
+quadratic features on a polytope of fixed dimension, the oracle of
+Theorem~\ref{thm:polytope} is polynomial, so weak separation with an exactly
+valid cut is then polynomial in the input length and $\log(1/\epsilon)$. For the
+Euclidean distance, \citet{BrierleyNavascuesVertesi2016} state and solve the
+same contract for arbitrary convex sets by Gilbert's nearest-point method
+\citep{Gilbert1966}, with a number of oracle calls that is polynomial in
+$1/\epsilon$ and does not depend on $r$.
+
+A positive tolerance is needed even for certification. For $P=[-3,3]$,
+$F(t)=(t,(t^2-2)^2)$ and $\bar z=(0,0)$, the query
+$\bar z=\tfrac12F(\sqrt2)+\tfrac12F(-\sqrt2)$ lies in the hull, but the valid
+inequality $z_2\ge0$ is tight at $\bar z$ and holds with equality on the graph
+only at $t=\pm\sqrt2$, so every representing mixture uses only irrational
+points.
+
+\paragraph{Relation to the ellipsoid method.}
+In the oracle framework of \citet{GrotschelLovaszSchrijver1988}, weak
+separation is obtained from weak optimization for every convex body, without
+radius information. Convex bodies are full-dimensional by definition there,
+however, and the weak separation problem asks only for a hyperplane that is
+almost valid on the points deep inside the body. For a lower-dimensional hull
+this requirement is vacuous, and an almost valid hyperplane is not a cut. The
+contract above is different: the cut side is exact, only the membership side
+is approximate, and lower-dimensional hulls are allowed; the same contract
+appears in \citet{BrierleyNavascuesVertesi2016}.
+
+\paragraph{An oracle-polynomial variant.}
+Assume $\rho>0$, put $\tau=(\epsilon-\theta)/2$, $s=\min\{\tau/\rho,1\}$ and
+$\nu=s^r/2$, and run the central-cut ellipsoid method of
+\citet[Theorem~3.2.1]{GrotschelLovaszSchrijver1988} in $\R^r$ with outer radius
+$r$ and volume bound $\nu$, answering a query $y$ as follows. If $y\notin C_J$,
+return the coordinate vector of a violated bound. Otherwise call the oracle at
+$y$, record $w_y=F(p_y)-\bar z$, keep the largest violation
+$\mathrm{LB}=\max\{0,\max_y(L_y-y\T\bar z)\}$ found so far together with its cut,
+stop if $w_y=0$, and return $-w_y/\norm{w_y}_\infty$. After
+$O(r^2\log(r\rho/(\epsilon-\theta)))$ calls, solve the master LP~\eqref{eq:master}
+over all recorded points. Its value satisfies $\mathrm{UB}\le\mathrm{LB}+\epsilon$,
+so that either a cut is available ($\mathrm{LB}>0$) or the master LP gives a
+within-tolerance certificate. Indeed, let $\mathrm{LB}^\ast$ be the final value
+of LB and let
+$K^\ast=\{c\in C_J:\ w\T c\ge\mathrm{LB}^\ast+\theta+\tau\ \text{for all recorded }w\}$.
+Every answer given during the run is a valid separation answer for $K^\ast$:
+coordinate answers separate $y$ from $C_J\supseteq K^\ast$, and for a recorded
+$w_y$ and $c\in K^\ast$ we have
+$w_y\T c\ge\mathrm{LB}^\ast+\theta+\tau>(L_y-y\T\bar z)+\theta\ge w_y\T y$. Since the
+method never receives a membership answer, it ends with an ellipsoid of
+volume at most $\nu$ that contains $K^\ast$. If $\mathrm{UB}>\mathrm{LB}^\ast+\epsilon$
+at an optimal $\bar c$, then every $c\in C_J$ with $\norm{c-\bar c}_\infty\le\tau/\rho$
+satisfies $w\T c\ge\mathrm{UB}-\tau>\mathrm{LB}^\ast+\theta+\tau$ for all recorded $w$,
+so $K^\ast$ contains a box of side $s$ and has volume at least $s^r>\nu$, a
+contradiction. The queries have polynomial encoding length, and the final
+certificate is checked independently of the ellipsoid computation.
+
+\paragraph{Polynomials of higher degree.}
+For polynomial features, an exactly feasible sample net turns a support
+problem into a finite one.
+
+\begin{lemma}[Rational domain net]\label{lem:net}
+Let $v_1,\dots,v_s$ be the vertices of $P$, let
+$\Delta_\infty=\max_i(\max_Px_i-\min_Px_i)$, let $F$ be continuously
+differentiable on a box $B\supseteq P$, and let
+\[
+\Lambda\ \ge\ \sum_{j=1}^r\sum_{i=1}^d\max_{x\in B}\abs{\partial_iF_j(x)}.
+\]
+For an integer $M\ge1$ let
+$N_M=\{\sum_i(n_i/M)v_i:n_i\in\Z_{\ge0},\ \sum_in_i=M\}\subset P$. Then for every
+$c\in[-1,1]^r$,
+\[
+\min_{x\in N_M}c\T F(x)-\frac{\Lambda\,t\,\Delta_\infty}M\ \le\ \min_{x\in P}c\T F(x)\ \le\ \min_{x\in N_M}c\T F(x),
+\qquad t=\min\{s-1,\dim P\}.
+\]
+\end{lemma}
+
+\begin{proof}
+By Carath\'eodory's theorem in the affine hull of $P$, a point $x\in P$ is a
+convex combination $\sum_{i\le t+1}\alpha_iv_{a_i}$ of at most $t+1$ vertices.
+Put $n_{a_i}=\lfloor M\alpha_i\rfloor$ for $i\le t$ and give the remaining mass to
+$v_{a_{t+1}}$. The resulting $\hat x\in N_M$ satisfies
+$x-\hat x=\sum_{i\le t}(\alpha_i-n_{a_i}/M)(v_{a_i}-v_{a_{t+1}})$, so
+$\norm{x-\hat x}_\infty\le t\Delta_\infty/M$. By the mean value theorem, $c\T F$ is
+$\Lambda$-Lipschitz for the $\ell_\infty$ norm on $B$. Apply this at a minimizer
+over $P$; the upper bound holds because $N_M\subset P$.
+\end{proof}
+
+All points of $N_M$ are exactly feasible, including on lower-dimensional
+polytopes, where a rectangular floating-point grid would almost never meet an
+equality exactly. With $M\ge2\Lambda t\Delta_\infty/\epsilon$ the net is an oracle
+of accuracy $\epsilon/2$. The net has at most $\binom{M+s-1}{s-1}$ points, which is
+far too many for routine use; this is consistent with the strong NP-hardness
+of box-constrained quartic minimization on paths \citep{DelPiaKhajavirad2026}.
+
+\paragraph{Outcomes and a reference implementation.}
+The procedure returns \emph{cut} with an exact rational row, \emph{within
+tolerance} with a certificate, or \emph{empty domain} when exact vertex
+enumeration of $P$ finds no vertex. A bounded variant, which caps the number
+of oracle calls and net points, may in addition return \emph{unresolved},
+which carries no geometric information. A cut needs a lower bound over the
+whole domain, whereas a within-tolerance answer needs only feasible points
+and exact arithmetic. A rational cut can be exported in binary64 with the
+correction of Proposition~\ref{prop:export}, using enclosures of the
+features; rounding to nearest preserves the signs of the cone coefficients.
+Our reference implementation solves the master LP numerically, makes the
+returned weights nonnegative and renormalizes them in exact arithmetic,
+checks the resulting mixture exactly, and certifies every proposed direction
+with the exact oracle, so an inaccurate LP can waste work but cannot produce
+a wrong answer. Completeness is guaranteed by a grid fallback over $C_J$, with
+values $-1+2i/N$ in the free coordinates, $i/N$ in the cone coordinates,
+$i=0,\dots,N$, and $N=\lceil2\rho/(\epsilon-\theta)\rceil$; every direction is within
+$\ell_\infty$ distance $1/N$ of this grid, so if no grid direction yields a cut,
+Lemma~\ref{lem:distance} bounds $\max_{C_J}\psi$ by $\theta+\rho/N\le\epsilon$, and the
+within-tolerance answer is then one exactly feasible point per grid direction.
+An exact version with a rational simplex method for~\eqref{eq:master} is part
+of the verification scripts (Section~\ref{sec:availability}); on the test
+instances it needed at most six oracle calls, while the bound of
+Theorem~\ref{thm:weak-separation} ranged from $10^2$ to $10^{14}$. For
+aggregated cuts, a returned rational row maps to an original-variable cut
+through Proposition~\ref{prop:aggregate}; a within-tolerance answer bounds a
+distance in the lifted coordinates $(x,g)$, not a distance in the original
+variables to the set $\mathcal C$ of Theorem~\ref{thm:closure}.

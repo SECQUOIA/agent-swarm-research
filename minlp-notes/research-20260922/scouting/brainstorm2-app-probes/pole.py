@@ -1,10 +1,13 @@
+from pathlib import Path as _CleanupPath
+_NOTES_ROOT = _CleanupPath(__file__).resolve().parent.joinpath('../../..').resolve()
+
 import sys, re, mpmath
-sys.path.insert(0,"/home/sgusev/repo/minlp-notes/research-20260922/benchmark-observations/code")
+sys.path.insert(0,(str(_NOTES_ROOT) + '/research-20260922/benchmark-observations/code'))
 import pyscipopt as ps
 from osil_eval import Model, mp_backend
 mpmath.mp.dps = 60; B = mp_backend(60)
 name = sys.argv[1]
-path = f"/home/sgusev/.cache/minlplib/minlplib/osil/{name}.osil"
+path = f"{_CleanupPath.home()}/.cache/minlplib/minlplib/osil/{name}.osil"
 import os
 lst = f"run_{name}/{name}.lst"; fixb = {}
 if os.path.exists(lst):

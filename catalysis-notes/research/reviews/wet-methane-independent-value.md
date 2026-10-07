@@ -96,8 +96,8 @@ The access statements below record the original review. Auvinen2021 and Sadokhin
 
 The sole literature agent `/root/literature` received the two newly identified Sadokhina sources above and the authentic Ryu SI, source-data and public-review artifacts, with the requested **Add identified literature** path, absolute skill/project/KB paths, relevance and reading limits. No knowledge-base files were changed and no `lit.py check` was run by this reviewer.
 
-- Skill: `/home/sgusev/repo/skills/literature/SKILL.md`.
-- Project: `/home/sgusev/repo/catalisys-notes`; KB: `/home/sgusev/repo/catalisys-notes/literature`.
+- Skill: `/workspace/skills/literature/SKILL.md`.
+- Project: `/workspace/catalisys-notes`; KB: `/workspace/catalisys-notes/literature`.
 - Ryu SI: `/tmp/wet-methane-screen/robust2024-si.pdf` and extracted text; 16,810,701 bytes. Selected sections read and Figure 28 inspected visually; remaining SI not exhaustively reviewed.
 - Figure 6 data: `/tmp/wet-methane-screen/robust2024-fig6.xlsx`; 147,495 bytes. Sheet labels and column contents inspected; no independent remeasurement of conversions claimed.
 - Public review: `/tmp/wet-methane-screen/robust2024-peer-review.pdf` and text; 27,278,793 bytes. Selected sulfur and transport responses read; historical drafts remain distinct from the final paper.

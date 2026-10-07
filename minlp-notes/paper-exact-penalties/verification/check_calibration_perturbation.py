@@ -241,11 +241,61 @@ for rho in (F(0), F(1, 10), F(1), F(10), F(1000)):
     assert (-pa*cost)/(pa*residual+pb) == 1/(2*u)
     atom_cases += 1
 
+# Feasibility transfer (Section 7): if B uniform on Q=[-sigma,sigma] is
+# feasible with probability p0, the centered grid is feasible with probability
+# at least p0-2mK/q (here m=K=1, image an interval inside or overlapping Q),
+# and running the construction with eps*p0/2 bounds the conditional failure.
+feasibility_cases = 0
+sigma = F(1)
+for lo, hi in [(F(0), F(1, 1000)), (F(-1, 3), F(2, 7)), (F(1, 5), F(3)),
+               (F(-5, 2), F(-9, 10)), (F(-1, 7), F(1, 7))]:
+    p0 = (min(hi, sigma) - max(lo, -sigma)) / (2 * sigma)
+    if p0 <= 0:
+        continue
+    for q in (1, 2, 3, 9, 17, 73, 128, 1001):
+        grid = [-sigma + F(2 * j + 1, q) * sigma for j in range(q)]
+        pg = F(sum(lo <= b <= hi for b in grid), q)
+        assert pg >= p0 - F(2, q)
+        feasibility_cases += 1
+    for eps in (F(1, 2), F(1, 10), F(9, 10)):
+        q = -(-8 // (eps * p0))  # ceil(4mK/(eps*p0/2)) with m=K=1
+        grid = [-sigma + F(2 * j + 1, q) * sigma for j in range(q)]
+        pg = F(sum(lo <= b <= hi for b in grid), q)
+        assert pg >= p0 * (1 - eps / 4)
+        assert (eps * p0 / 2) / pg <= eps / (2 - eps / 2) < eps
+        feasibility_cases += 1
+
+# Finite-grid quantile (Example ex:tail): with K dividing q, q >= 4K/eps and
+# eps <= (K-1)/(2K), the centred grid on [0,1] has Pr{rho_*[G] > T} > eps for
+# T=(K-1)/(2 eps), using the mixture lower bound rho_* >= 1/(2 t).
+quantile_cases = 0
+for K in (2, 3, 4, 7):
+    for eps in (F(1, 20), F(1, 10), F(K - 1, 2 * K)):
+        if eps > F(K - 1, 2 * K):
+            continue
+        q0 = -(-(4 * K) // eps)  # ceil(4K/eps)
+        q = K * -(-q0 // K)  # least multiple of K that is >= q0
+        assert q % K == 0 and q >= 4 * K / eps
+        T = F(K - 1) / (2 * eps)
+        assert K <= T <= q
+        centres = [F(2 * i + 1, 2 * q) for i in range(q)]
+        hits = 0
+        for b in centres:
+            t = min(abs(b - F(j, K)) for j in range(1, K))
+            assert t > 0
+            if 1 / (2 * t) > T:
+                hits += 1
+        frac = F(hits, q)
+        assert frac >= (K - 1) * (1 / T - F(1, q))
+        assert frac > eps
+        quantile_cases += 1
+
 print(f'PASS: {box_cases} binary-box and {graph_cases} unit-data graph dual cases;')
 print(f'      {zero_multiplier_cases} fixed-zero-multiplier threshold cases;')
 print(f'      {fiber_cases} clipped-fiber, {grid_cases} centered/endpoint-grid,')
 print(f'      {fine_grid_cases} finer nonvacuous grid and {atomic_correction_cases} atomic-correction cases;')
 print(f'      {repair_cases} deterministic-margin, {sharp_cases} tail/two-slice/adjacent-mixture,')
 print(f'      {grid_tail_cases} finite-grid tail cases, and {atom_cases} infinite-threshold')
-print('      witnesses at the zero atom of a concrete grid, all exact rational.')
+print('      witnesses at the zero atom of a concrete grid, and')
+print(f'      {feasibility_cases} grid feasibility-transfer and {quantile_cases} grid-quantile cases, all exact rational.')
 print('Not checked: general complexity reductions, arbitrary convex sets or Gaussian tube bounds.')

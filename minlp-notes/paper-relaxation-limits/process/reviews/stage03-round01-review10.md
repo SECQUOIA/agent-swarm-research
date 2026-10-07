@@ -48,7 +48,7 @@ The following are analytic checks, with the finite calculations below used only 
 
 - **Complexity and powers.** At fixed fair marginals the first-order and diagonal second-order expectations are fixed, leaving `(epsilon²/2)Var(S)` and a nonnegative remainder at most `epsilon²/8`. A NO instance has integer distance at least one from the half-total. The thresholds, tilted oracle, midpoint upper comparison, sparse rational certificates and padding all have polynomial encoding length. The inverse-accuracy margin can be exponentially small, so the manuscript correctly avoids fixed-error and strong-hardness conclusions. The rational-power secant formulas have linear and quadratic leading orders respectively; logarithmic reparameterization makes both terms convex and makes the widths add.
 
-The independently authored checker is `verification/reviewer10/stage03-round01/check_independent.py`, with results in `check_independent.json`. Run with `/home/sgusev/miniconda3/envs/minlp-notes/bin/python`. All checks passed:
+The independently authored checker is `verification/reviewer10/stage03-round01/check_independent.py`, with results in `check_independent.json`. Run with `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python`. All checks passed:
 
 | Check | Exact scope |
 | --- | --- |

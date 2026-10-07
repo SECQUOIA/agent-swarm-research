@@ -1,0 +1,419 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern,amsmath,amssymb,amsthm,mathtools,booktabs,longtable,array}
+\usepackage[margin=1in]{geometry}
+\usepackage[hyphens]{url}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{microtype}
+\hypersetup{pdftitle={Certified support cuts for shared nonlinear expressions and quadratic blocks},pdfauthor={}}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+\newcommand{\R}{\mathbb R}
+\newcommand{\Q}{\mathbb Q}
+\newcommand{\E}{\mathbb E}
+\newcommand{\conv}{\operatorname{conv}}
+\newcommand{\supp}{\operatorname{supp}}
+\newcommand{\diag}{\operatorname{diag}}
+\newcommand{\argmin}{\operatorname{argmin}}
+\newcommand{\norm}[1]{\lVert#1\rVert}
+\newcommand{\pathref}[2]{\href{run:#1}{\texttt{\detokenize{#2}}}}
+\title{Certified support cuts for shared nonlinear expressions and quadratic blocks}
+\author{}
+\date{October 2026}
+\begin{document}
+\maketitle
+\begin{abstract}
+Several nonlinear expressions can share variables and affine constraints
+that separate scalar relaxations do not fully use. This report develops
+an implemented support-cut interface for these dependencies. Candidate
+directions may be chosen numerically; a separate calculation checks the
+final coefficients on their complete domain before a cut is submitted.
+Exact rational Bernstein bounds cover supported polynomial blocks, and
+outward interval evaluation covers a stated elementary-function grammar.
+We give exact rational support algorithms for quadratic vector graphs over
+bounded two-dimensional polyhedra and for quadratic stars with affine
+center--leaf constraints. We also characterize a limitation of intersecting
+overlapping pair hulls and give a quantitative separating example.
+Automatic discovery, bounded separation, cached work, and an optional native sampling
+kernel connect the construction to SCIP while retaining native nonlinear
+feasibility enforcement. A fixed short-run experiment and certificate
+replay evaluate supported mechanisms and their costs. The report separates
+cut validity from numerical solver bounds and feasible residual checks.
+Of 24 held-out models, 20 pass the common research importer. Native
+baseline and the reformulation control each solve 19 of those 20 within
+the short budget; both cut modes solve 18. Automatic selection reduces
+separation work, but these results do not support default activation.
+The hull, Bernstein, and sparse quadratic ingredients have substantial
+prior literature; this is an integrated research implementation with
+explicit mathematical and computational limits, not a claim of general
+solver acceleration or publication priority.
+\end{abstract}
+\tableofcontents
+
+\section{The capability and the evidence standard}\label{sec:scope}
+
+The task is to strengthen relaxations automatically when several nonlinear
+expressions move together. The existing repository already contains scalar
+composite envelopes, simultaneous univariate-curve cuts, and concave row
+hulls. Their recorded results motivate this continuation, but they do not
+establish a generally beneficial solver component. In particular, the
+historical composite-univariate campaign solved 51 of 107 instances within
+120 seconds with its Python handler, versus 54 with native SCIP. Its
+curvature classification was validated with ball arithmetic, while function
+values in final cuts used a floating-point safety shift. The historical
+curve separator also documented a numerical-library accuracy assumption.
+These are historical results, not reruns or certified outcomes of this
+continuation. The original records are
+\pathref{../../results/composite-univariate-envelopes.md}{results/composite-univariate-envelopes.md}
+and
+\pathref{../../research-20260922/curve-hulls/report.md}{research-20260922/curve-hulls/report.md}.
+
+This report closes a narrower and testable development program: a checked
+cut interface on explicit supported expression classes; automatic block
+discovery and bounded repeated work; exact support for coupled quadratic
+blocks and a larger structured extension; comparative solver evidence;
+and a traceable comparison with primary literature. A supported cut is
+checked against a supplied expression graph and domain. A completed SCIP
+solve is not thereby converted into a replayable global optimality proof.
+
+The distinction matters at three levels. First, a mathematical support
+theorem proves validity for every feasible graph point. Second, a replay
+record checks a concrete cut for a concrete model representation. Third,
+SCIP reports numerical primal and dual information after its own presolve,
+LP computations, transformations, and search. Only the first two levels
+are covered by the new cut-certificate claim. Numerical primal residuals
+and comparisons with known objectives are useful independent checks, but
+are not exact feasibility or dual-bound certificates.
+
+The companion \pathref{COVERAGE.md}{COVERAGE.md} maps claims to proofs,
+code, saved outputs, and limitations. The frozen experiment protocol is
+\pathref{../experiments/protocol.md}{experiments/protocol.md}. Internal
+research-agent reviews are recorded separately from the construction;
+they are not journal peer review or formal verification.
+
+\section{Joint support cuts}\label{sec:support}
+
+Let $D\subset\R^n$ be nonempty and compact, and let
+$F=(f_1,\ldots,f_k):D\to\R^k$ be continuous. Write
+\[
+G_D=\{(x,F(x)):x\in D\},\qquad H_D=\conv G_D.
+\]
+The lifted variables $w_j$ represent the \emph{same} functions $f_j$ of
+the \emph{same} variables $x$. For a direction $d=(a,b)\in\R^{n+k}$ define
+\begin{equation}\label{eq:support}
+h_D(a,b)=\min_{x\in D}\{a^\top x+b^\top F(x)\}.
+\end{equation}
+We use lower support values, so every cut is written with a lower bound.
+If integer variables occur in $D$, support over a continuous superset
+remains valid for the mixed-integer graph, but need not describe its hull.
+
+\begin{proposition}[Support and complete hull description]\label{prop:support}
+If $\underline h\le h_D(a,b)$, then
+\begin{equation}\label{eq:cut}
+a^\top x+b^\top w\ge\underline h
+\end{equation}
+is valid for $H_D$. Moreover,
+\[
+H_D=\bigcap_{(a,b)\in\R^{n+k}}
+\{(x,w):a^\top x+b^\top w\ge h_D(a,b)\}.
+\]
+\end{proposition}
+\begin{proof}
+The defining minimum makes the inequality valid at each point of $G_D$;
+linearity preserves it under convex combinations. The graph is compact
+by continuity, and its convex hull is compact in finite dimension. A point
+outside that hull is strictly separated by a linear functional. Orient
+that functional as a lower support inequality to obtain a member of the
+displayed intersection that excludes the point.
+\end{proof}
+
+This is classical convex hull duality; simultaneous graph separation
+from linear combinations is developed explicitly in
+\cite{LiersEtAl2021,Tawarmalani2010}. The computational problem is to
+evaluate or bound~\eqref{eq:support}, and to find a useful direction
+without spending more than its benefit. A numerical direction generator
+is permitted to be inaccurate: its output only chooses $(a,b)$.
+Soundness depends on a bound for that \emph{final} direction, not on the
+correctness or optimality of the direction search. The same observation
+allows random samples, LP direction search, and a native sampling kernel
+outside the cut-validity calculation.
+
+For $n=1$ and $k=1$, optimizing over the coefficient of $x$ recovers the
+biconjugate description of a scalar convex envelope. For $k>1$, joint
+directions retain dependencies between outputs that intersected scalar
+envelopes can omit. A finite collection of valid joint cuts generally
+gives an outer approximation; absence of a violated generated cut does
+not establish membership in $H_D$.
+
+\begin{proposition}[Final floating-point row]\label{prop:round}
+Suppose the exact values of the coefficients submitted to a numerical
+solver are $\widehat a\in\Q^n$ and $\widehat b\in\Q^k$ (in particular,
+finite binary floating-point numbers interpreted exactly). If a checker
+establishes
+\[
+L\le\min_{x\in D}
+\{\widehat a^\top x+\widehat b^\top F(x)\}
+\]
+and the submitted right-hand side $\widehat L$ satisfies
+$\widehat L\le L$ exactly, the submitted mathematical row is valid on
+$H_D$.
+\end{proposition}
+\begin{proof}
+Apply Proposition~\ref{prop:support} to the submitted coefficients and
+then weaken the right-hand side from $L$ to $\widehat L$.
+\end{proof}
+
+Rounding an already proved rational row without checking its resulting
+coefficients would not satisfy this contract. One alternative, when a
+trusted box $\ell\le z\le u$ is available for all lifted coordinates,
+is to replace the exact row $c^\top z\ge L$ by
+\[
+\widehat c^\top z\ge
+L+\sum_i\min\{(\widehat c_i-c_i)\ell_i,
+                 (\widehat c_i-c_i)u_i\},
+\]
+and round the right-hand side downward. The formula follows by bounding
+each coordinate of $(\widehat c-c)^\top z$. Our principal contract is
+the direct check for the final direction in
+Proposition~\ref{prop:round}; it avoids needing auxiliary-variable bounds
+for this correction.
+
+\section{Finite certificates on the whole domain}\label{sec:numerics}
+
+\subsection{Exact Bernstein bounds for rational polynomials}
+
+Consider a polynomial $p$ on a rational box
+$B=\prod_{i=1}^n[\ell_i,u_i]$. Substitute
+$x_i=\ell_i+(u_i-\ell_i)t_i$ and eliminate fixed coordinates. In the
+remaining coordinates, write
+\[
+p(x(t))=\sum_{\beta\le d}a_\beta t^\beta
+       =\sum_{\alpha\le d}b_\alpha B_\alpha^d(t),\qquad
+B_\alpha^d(t)=\prod_i
+\binom{d_i}{\alpha_i}t_i^{\alpha_i}(1-t_i)^{d_i-\alpha_i}.
+\]
+Here $d$ is a componentwise degree bound and all coefficients are exact
+rationals. The conversion is
+\begin{equation}\label{eq:bernstein-conversion}
+b_\alpha=\sum_{\beta\le\alpha}a_\beta
+\prod_i\frac{\binom{\alpha_i}{\beta_i}}{\binom{d_i}{\beta_i}}.
+\end{equation}
+
+\begin{lemma}[Bernstein enclosure]\label{lem:bernstein}
+On $B$, $\min_\alpha b_\alpha\le p\le\max_\alpha b_\alpha$.
+\end{lemma}
+\begin{proof}
+For $0\le t_i\le1$, every $B_\alpha^d(t)$ is nonnegative and
+$\sum_\alpha B_\alpha^d(t)=1$, by the binomial theorem in each
+coordinate. Thus $p(x(t))$ is a convex combination of the coefficients.
+Identity~\eqref{eq:bernstein-conversion} follows by expressing each
+monomial $t^\beta$ in the tensor-product Bernstein basis; the univariate
+identity has coefficients $\binom{\alpha}{\beta}/\binom d\beta$.
+\end{proof}
+
+The enclosure is classical
+\cite{GarloffSmith2008,GarloffJanssonSmith2003}. The implementation contribution is to bind
+the exact polynomial, its original box, and the checked final row to
+the recorded partition and lower bounds. Adaptive subdivision can
+improve a weak enclosure without changing the validity argument.
+
+\begin{proposition}[Partition certificate]\label{prop:partition}
+Let $B_1,\ldots,B_N$ be finitely many closed boxes whose union is $B$,
+and suppose $L_j\le\inf_{B_j}p$ is verified for each $j$. Then
+$L=\min_jL_j\le\inf_Bp$. The same conclusion holds for a finite interval
+partition and any expression with a verified interval enclosure on every
+cell.
+\end{proposition}
+\begin{proof}
+Every $x\in B$ belongs to a checked cell $B_j$, where
+$p(x)\ge L_j\ge\min_iL_i$.
+\end{proof}
+
+The coverage premise is essential. Checking all supplied cells while
+accepting an omitted end interval would not prove the claimed bound.
+The certificate checker must start from the trusted original domain and
+verify the entire subdivision, including endpoints. A cache key also
+needs the expression, direction, and domain: reusing a valid bound from a
+smaller domain on a larger domain is unsound.
+
+\subsection{Supported elementary expressions and explicit failure}
+
+For a supported elementary expression, outward ball or interval
+arithmetic supplies an enclosure for the support objective on each
+interval. Rational constants and final binary coefficients are embedded
+exactly. Expression evaluation must retain domain requirements: a
+logarithm needs a positive argument; division needs a denominator
+excluding zero; powers require their stated real domain. Algebraic
+simplification is not permission to remove the original expression's
+domain restrictions.
+
+If a pole, invalid domain, nonfinite enclosure, unsupported operation, or
+resource limit prevents a complete bound, the procedure returns that
+status. An exhausted direction search means only that no checked useful
+cut was obtained within its budget. It does not prove that a point lies
+in a hull, that the original constraints hold, or that the domain is
+empty. Even a successfully checked cut need not be violated enough to
+justify insertion into the LP.
+
+The elementary support calculation can also use a curvature correction.
+If the scalar direction $p$ is twice continuously differentiable on
+$[a,b]$ and a verified bound gives $p''\le M$, then
+\begin{equation}\label{eq:chord-correction}
+\min_{[a,b]}p\ge
+\min\{p(a),p(b)\}-\max\{0,M\}\,(b-a)^2/8.
+\end{equation}
+Indeed, $p(t)-Mt^2/2$ is concave, so its chord inequality rearranges to
+$p(t)\ge\operatorname{chord}_p(t)-M(t-a)(b-t)/2$.
+Use $(t-a)(b-t)\le(b-a)^2/4$ when $M\ge0$; for $M<0$, the
+chord itself is a lower bound. Verified lower endpoint values can
+replace $p(a)$ and $p(b)$. The implementation first checks all feature
+domains, including zero-weight features, then uses the maximum of this
+bound and available natural enclosures. An unavailable derivative bound
+or singular derivative disables this optional strengthening; it does
+not license removing a domain endpoint.
+
+The supported grammar, actual certificate schema, and solver binding
+are stated with their implementation in Section~\ref{sec:integration}.
+Neither Python's rational arithmetic nor the interval library is
+formally verified here. Replay reduces the trusted computational path
+and catches mismatched artifacts; it is not a proof of the underlying
+software stack.
+
+\input{screening}
+
+\section{Exact support for coupled quadratic pairs}\label{sec:polygon}
+
+Let $P\subset\R^2$ be a bounded polyhedron described by rational bounds
+and rational affine inequalities. The full quadratic feature graph uses
+\[
+v(x,y)=(1,x,y,x^2,xy,y^2).
+\]
+Any direction for a vector of quadratic expressions gives a quadratic
+objective
+\begin{equation}\label{eq:quadratic}
+q(x,y)=c_0+c_x\,x+c_y\,y+c_{xx}x^2+c_{xy}xy+c_{yy}y^2.
+\end{equation}
+All coefficients are rational, including exactly interpreted finite
+binary floating-point inputs.
+
+\begin{theorem}[Finite rational support candidates]\label{thm:polygon}
+If $P$ is nonempty, the minimum of $q$ is attained at one of the following
+rational points:
+\begin{enumerate}
+\item a vertex of $P$;
+\item a stationary point in the relative interior of a polygon edge,
+      or of $P$ itself when $P$ is a segment, on which the restriction
+      of $q$ has strictly positive quadratic coefficient;
+\item the stationary point of $q$ in $P$, if its Hessian is positive
+      definite and $P$ is two-dimensional.
+\end{enumerate}
+Enumerating this list and evaluating it exactly gives an attained exact
+support value. Empty, segment, and singleton domains are included.
+\end{theorem}
+\begin{proof}
+The compact nonempty domain has a minimizer. If it lies on the boundary
+of a two-dimensional polygon, or if the domain has dimension at most
+one, restrict $q$ to the relevant closed segment. Its minimum is at an
+endpoint unless its quadratic coefficient is positive and its stationary
+point is interior; those are the listed candidates.
+
+If a minimizer is interior in two dimensions, its gradient vanishes and
+its constant Hessian $H$ is positive semidefinite. If $H$ is positive
+definite, the unique stationary point is the solution of a nonsingular
+rational linear system. If $H$ is singular, choose a nonzero vector
+$d\in\ker H$. Along the line through the minimizer $z$, the quadratic
+identity and $\nabla q(z)=0$ give $q(z+td)=q(z)$. The line reaches the
+boundary of the bounded polygon, so a boundary minimizer also exists.
+The zero Hessian case is included. Thus no extra singular interior
+candidate is required. Every vertex is obtained from rational active
+rows, and edge stationary parameters are rational ratios. Exact
+evaluation therefore gives a rational minimum and rational minimizer.
+\end{proof}
+
+With $m$ affine rows including bounds, the implementation intersects all
+pairs of nonparallel boundary lines and checks each intersection against
+every row. A planar hull orders the retained vertices. This costs
+$O(m^3)$ exact rational operations for the straightforward enumeration;
+the edge and interior candidates add lower-order work. This is an
+arithmetic-operation bound, not a floating-point runtime guarantee.
+Rational arithmetic must account for numerator and denominator growth.
+
+The certificate stores the original box, every affine row, every
+coefficient, polygon vertices, all candidates, their exact values, and
+the minimizer. Replay reconstructs the list from trusted inputs. The
+producer and checker share geometric routines; this is reproducible
+exact arithmetic with independent direction search, not an
+independently implemented formal checker.
+
+Using the row domain before convexifying can strengthen even an exact
+box graph hull. On $x,y\ge0$, $x+y\le1$,
+\[
+x^2+2xy+y^2\le x+y,\qquad xy\le1/4.
+\]
+The first inequality is $s^2\le s$ for $s=x+y\in[0,1]$, and the
+second follows from $4xy\le(x+y)^2$. In contrast, half mass at each
+of $(0,0)$ and $(1,1)$ is a valid box graph-hull point whose means
+satisfy the row, but whose second-moment coordinates give
+$x^2+2xy+y^2=2>x+y=1$ and $xy=1/2$. Thus intersecting the box hull
+with the row is strictly weaker than convexifying the row domain.
+
+This oracle solves support minimization for every vector of quadratic
+expressions over the same pair domain. It does not promise to discover
+every violated direction in bounded time. More general bivariate
+polynomials use the Bernstein route when supported, with a potentially
+large subdivision cost.
+
+\input{star}
+\input{overlap}
+\input{integration}
+\input{evidence}
+\input{literature}
+
+\section{What is complete and what remains outside the result}\label{sec:limits}
+
+The supported program joins a complete domain-bound cut contract to
+automatic generation, exact coupled quadratic support, a larger
+structured support class, and saved comparative evidence. None of the
+proofs asserts tractable exact separation for arbitrary overlapping
+nonlinear blocks. Acyclic overlap alone does not make first-moment
+agreement sufficient. General-function domain certification can reject
+expressions near singularities, and bounded polynomial subdivision can
+return an inconclusive result. These behaviors preserve soundness at
+the cost of applicability or strength.
+
+The computational standard is correspondingly limited. Fewer nodes or
+a better root relaxation on a mechanism case is useful evidence for the
+mechanism. It does not establish a population-wide runtime improvement.
+The native sampling kernel speeds only candidate generation; validated
+support and model checking retain their costs. The experiments retain
+reformulation controls, unsuccessful activations, rejected domains,
+timeouts, and numerical feasibility failures so that these costs are
+visible.
+
+The held-out solved count decreases: both cut modes solve 18 of the 20
+admitted cases, versus 19 for baseline and control. The 24-case
+selection also exposes three strict domain refusals and one
+unsupported variable-exponent model, all common to the four modes.
+The synthetic solved-count gain is already obtained by the
+reformulation control. The recommended operational status is
+therefore an optional research component for supported structures,
+with default activation unsupported by this evidence. The exact
+support classes, model-bound certificates, and obstruction examples
+are completed results despite this adverse performance finding.
+
+The full solver remains a numerical optimizer with native model
+enforcement. Extending the cut records to certify all original-model
+transformations, presolve deductions, LP bounds, spatial branching, and
+primal feasibility is a different end-to-end certification task. The
+present result supplies checked rows that could enter such a system.
+
+\bibliographystyle{plain}
+\bibliography{../literature/references}
+\end{document}

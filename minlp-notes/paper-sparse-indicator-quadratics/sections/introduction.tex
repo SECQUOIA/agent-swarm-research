@@ -1,127 +1,214 @@
-\section{Introduction}
-An indicator quadratic problem chooses which continuous coordinates may be
-nonzero and then minimizes a convex quadratic objective on the selected
-coordinates. Once that choice is fixed, a linear system solves the continuous
-problem. The difficulty lies in selecting the indicators. Sparse interaction
-graphs suggest dynamic programming, but eliminating a subtree creates a
-function of its continuous boundary variables. A small separator controls the
-dimension of this function, not the number of supports that can define it.
+\section{Introduction}\label{sec:intro}
+Many estimation problems ask for a vector that fits the data well and has
+few nonzero entries. A common model gives each continuous variable $x_i$
+a binary indicator $z_i$: the variable may be nonzero only if $z_i=1$,
+and switching the indicator on costs a penalty $\lambda_i$. With a
+quadratic measure of fit, this gives the \emph{indicator quadratic
+problem}
+\[
+ \min\bigl\{x^TQx+c^Tx+\lambda^Tz:\ x_i(1-z_i)=0\ (i\in[n]),\
+ z\in\{0,1\}^n\bigr\},
+\]
+where $Q$ is a symmetric positive-definite matrix. We call a coordinate
+with $z_i=1$ \emph{active} and the set of active coordinates the
+\emph{support} of a solution; an active coordinate may still be zero.
+Once the support is fixed, the best $x$ solves a linear system, so the
+difficulty lies in choosing the support. Problems of this form arise in
+sparse regression, outlier detection in time series, inference in
+Gaussian hidden Markov models, and real-time monitoring of data streams
+\cite{BhathenaTrees,BhathenaStructured,GomezBanded}.
 
-We give conditions under which all these value functions can be constructed
-exactly in expected polynomial time. The matrix is positive definite and its
-support graph has fixed treewidth. We perturb only the indicator penalties,
-using independent uniform choices from a rational grid of linear size.
-For each prescribed bounded separator box, the algorithm returns a
-\emph{dictionary}: a list of full quadratic functions whose pointwise minimum
-is the exact value function. It retains every support that attains this
-minimum anywhere, even at a single tie point. It may also retain supports
-that are never optimal. The construction does not partition the box into
-optimality regions.
+Problems of this kind are NP-hard in general (see
+\cite{WeiHull,ChoiDiagrams} and the references there). Much work
+therefore develops strong convex formulations, often by describing the
+closed convex hull of the epigraph of the objective over the feasible
+set in an extended space
+\cite{AtamturkGomezM,WeiHull,LiuStieltjes,LeeMultiperiod,ChoiDiagrams}.
+The same line of work has identified structured cases that can be
+solved in polynomial time. These include Stieltjes matrices, whose
+off-diagonal entries are nonpositive, with linear coefficients of one
+sign \cite{AtamturkGomezM,LiuStieltjes}; matrices whose sparsity pattern
+forms a path \cite{LiuPath} or, more generally, a tree
+\cite{BhathenaTrees}; matrices with a tridiagonal inverse, which arise
+in multi-period models \cite{LeeMultiperiod}; and, through decision
+diagrams, quadratics of fixed rank and matrices whose sparsity pattern,
+or that of their inverse, is a tree with a fixed number of leaves
+\cite{ChoiDiagrams}. Decision diagrams also give an additive
+approximation scheme for banded matrices of fixed bandwidth and
+condition number \cite{GomezBanded}. For sparse or inverse-sparse
+matrices, under conditions on the growth of graph neighborhoods, Choi
+et al.\ obtain approximate diagrams whose size is linear in $n$ for each
+fixed accuracy \cite{ChoiDiagrams}.
 
-The main contribution is this complete message construction under a shared
-penalty perturbation. It separates two questions that are often conflated:
-whether a short representation exists and whether one can find it. First, a
-short shattering argument bounds the expected number of supports near the
-optimum at any fixed parameter. Second, a certified version of classical
-partition enumeration finds a controlled superset of those supports using
-only additive approximation. Finally, a deterministic parameter net captures
-every support that is optimal somewhere. Computing each message directly
-avoids a recursive product of child dictionaries. This is useful when
-reusable exact conditional value functions are required, as opposed to one
-optimal solution at one parameter.
+This paper concerns sparse matrices whose \emph{support graph}, with an
+edge $ij$ whenever $Q_{ij}\ne0$, has small treewidth. Informally, such a
+graph can be assembled from small, overlapping groups of vertices
+arranged along a tree, and removing the few vertices shared by two
+neighboring groups disconnects the vertices on one side of the tree of
+groups from those on the other. Such an arrangement is called a
+\emph{tree decomposition}. Trees have treewidth one, and a matrix of
+bandwidth $\beta$, with $Q_{ij}=0$ whenever $|i-j|>\beta$, has treewidth
+at most $\beta$; Section~\ref{sec:model} gives the precise definitions.
+For purely discrete problems on such graphs, the standard exact method
+is dynamic programming, which eliminates variables from the leaves of
+the tree of groups toward a chosen root. Because the eliminated part
+interacts with the rest only through a few shared variables, it suffices
+to record its best cost for each combination of their values. With few
+shared discrete variables, this table is small.
 
-Our complexity bound is polynomial in numerical bounds as well as input
-length. In particular, it depends on an upper spectral bound, the inverse
-lower spectral bound, a bound on the linear coefficients, the separator box
-radius, and the inverse perturbation scale. It is not a bound polynomial in
-the logarithms of all these quantities. The exact answer concerns the
-perturbed instance. We also obtain a certified additive interval for the
-unperturbed optimum.
+Indicator quadratics behave differently because the shared variables
+include continuous ones. The table then becomes a function: for each
+value $t$ of the shared continuous variables (the \emph{boundary
+values}), it gives the least cost of the eliminated part with these
+variables fixed at $t$. We call such a function a \emph{message}, and an
+exact dynamic program needs every message exactly. A message is also
+useful in its own right: it gives the least cost and an optimal
+completion of the eliminated part for every boundary value at once, so
+it can be stored and reused when the rest of the problem changes.
+Bhathena et al.\ use this to update solutions online as new observations
+arrive \cite{BhathenaTrees}.
 
-Three complementary results explain why additional conditions matter.
-Section~\ref{sec:hardness} proves exact NP-hardness at bandwidth two with
-positive penalties and matrices arbitrarily close to the identity. It
-separates large-coefficient constant-gap hardness from bounded-coefficient
-exact hardness, and shows why bounded penalty noise cannot erase arbitrary
-coefficient magnitudes. Section~\ref{sec:message-limits} constructs a scalar
-message with exponentially many necessary formulas from a fixed coefficient
-alphabet, and proves a matching power law for approximation by pruning its
-original quadratics. Appendix~\ref{sec:representation} gives two limits for
-universal representations on stars: a correlation-polytope face in the
-inverse-principal polytope and exponential width for exact projected-row
-decision diagrams, including row normalization. These results distinguish
-the complexity of optimization, conditional value functions, and particular
-universal representations.
+Fixing which eliminated coordinates are active leaves a strictly convex
+quadratic in the active eliminated variables, and minimizing over them
+gives a quadratic function of $t$. A message is therefore the pointwise
+minimum of $2^m$ quadratics, one for each support of the $m$ eliminated
+variables. Different supports can be optimal at different values of $t$:
+even a single eliminated variable with a positive penalty should be
+active only for those $t$ that push its best value far enough from zero
+to pay for the penalty. A few shared variables thus keep a message
+low-dimensional, but they do not limit the number of quadratics needed
+to describe it.
 
-The supporting appendices separate three output notions: all active support
-labels, distinct necessary polynomial formulas, and connected regions of a
-unique winning label. Appendix~\ref{sec:moments} proves every fixed moment
-of active-label counts, including atomic noise, and combines those moments
-with classical algebraic bounds. This gives polynomial expected connected
-region counts in every fixed dimension and an exact subdivision labeled
-with all minimizing supports on every cell, using a larger polynomial-size
-noise grid than the main dictionary theorem. Appendix~\ref{sec:geometry}
-gives sharper continuous scalar and planar estimates and a discrepancy
-transfer for necessary formulas. Appendix~\ref{sec:recursive} proves direct
-block and fixed-width recursions under diagonal dominance. These derived
-results retain their distinct assumptions and outputs; the general geometric,
-coarea, and CAD tools are established.
+On trees, a message depends on one variable, and Bhathena et al.\ showed
+that linearly many quadratics suffice \cite{BhathenaTrees}. Beyond
+trees, they gave an exact algorithm whose efficiency requires further
+conditions on the growth of graph neighborhoods and on how many supports
+of each local subproblem are nearly optimal, and they stated that
+whether these functions have a compact representation is an open
+question \cite[Section~2.2]{BhathenaStructured}. For representations as
+minima of quadratics, we show that the answer is negative already at
+treewidth two, but that a small random perturbation of the penalties
+makes the expected number of quadratics needed polynomial at each fixed
+treewidth.
 
-\subsection{Relation to prior work}
-Bhathena, Fattahi, G\'omez, and K\"u\c{c}\"ukyavuz
-\cite{BhathenaTrees} already solve the unperturbed problem on arbitrary trees
-in quadratic arithmetic time and memory. Their parametric value functions
-and conjugate calculations are direct antecedents. Our result does not
-improve that tree-specific guarantee. Their subsequent work on structured
-graphs \cite[Definition~5, Lemma~9, and Theorem~1]{BhathenaStructured}
-constructs exact parametric dynamic programs with complexity controlled by
-treewidth, volume growth, conditioning, and a deterministic bound on the
-multiplicity of nearly optimal local supports. We instead control that
-multiplicity in expectation under penalty perturbations. Fixed treewidth
-suffices without a volume-growth or degree restriction, but we solve a
-perturbed problem and give no comparable practical running-time claim.
+\subsection{Results}
+Fix $\sigma>0$ and replace each penalty $\lambda_i$ by
+$\lambda_i+\xi_i$, where the \emph{perturbations} $\xi_i$ are
+independent uniform draws from a grid of at least $2n$ equally spaced
+values in $[-\sigma,\sigma]$. Only the penalties are perturbed. This is
+the setting of smoothed analysis, as used for binary optimization
+\cite{BeierVocking,RoglinTeng}: an adversary chooses $Q$, $c$, and
+$\lambda$, and expectations are taken over the small random
+perturbation alone.
 
-Approximation on sparse graphs is also established. Bienstock and Mu\~noz
-\cite{BienstockMunoz} develop bounded-treewidth formulations for polynomial
-optimization. Bienstock and Chen \cite[Theorem~1.4]{BienstockChen} treat
-structured indicator quadratic models, with a general guarantee allowing
-controlled violation of certain constraints. G\'omez, Han, and Lozano
-\cite{GomezBanded} develop decision-diagram approximations for banded
-quadratics. Choi et al.\ \cite[Sections~7--8]{ChoiDiagrams} provide
-exact structured diagrams and approximation results using decay, volume
-growth, and boundary-size bounds for the support graph of a matrix or its
-inverse. Our proof uses an elementary feasible grid approximation on a tree
-decomposition; we do not claim a new approximation principle or a uniformly
-stronger result than these methods.
+Our main result, Theorem~\ref{thm:main}, gives an algorithm that, for
+every outcome of the perturbation, solves the perturbed problem exactly
+and computes every message of a given tree decomposition exactly on a
+box of boundary values with a given radius $R$. Each message is
+returned as a \emph{dictionary}: a list of quadratics whose pointwise
+minimum equals the message on the box. The dictionary contains the
+quadratic of every support that is \emph{optimal somewhere} on the box,
+that is, optimal for at least one value $t$ in the box. For each fixed
+treewidth, the expected number of bit operations is polynomial in the
+input length and in the values, not the bit lengths, of $C$, $H$,
+$\mu^{-1}$, $R$, and $\sigma^{-1}$, where $|c_i|\le C$ for all $i$ and
+the eigenvalues of $Q$ lie in $[\mu,H]$. The degree of this polynomial
+depends on the treewidth.
 
-The probabilistic and enumeration ingredients have close classical
-antecedents. The sandwich inequality for shattered sets is established; we
-use the form stated by Kozma and Moran \cite[Theorem~5]{KozmaMoran}.
-Lawler's partition method \cite{Lawler} lists ranked solutions from an exact
-optimization oracle. Our additive-oracle version gives a two-sided
-near-optimality inclusion instead of an exact ranking.
-R\"oglin and Teng \cite[Sections~6.1--6.2]{RoglinTeng} prove higher winner-gap
-bounds and expected polynomial smoothed optimization from
-pseudopolynomial algorithms. Dughmi and Roughgarden
-\cite[Proposition~2.4]{DughmiRoughgarden} explicitly state a conversion from
-an approximation scheme to exact smoothed optimization for binary linear
-objectives. Thus neither the general approximation-to-exact idea nor
-expected polynomial smoothed optimization is new here.
+At a fixed boundary value, the random penalties make near ties
+unlikely: the expected number of supports whose cost is within
+$\sigma/(2n)$ of the optimum is at most Euler's number $e\approx2.72$.
+At every point of a fine finite net of boundary values that covers the
+box, the algorithm lists every support within $\sigma/(6n)$ of the
+optimum, and only supports within $\sigma/(2n)$, so each list has
+expected length at most $e$. For this it needs only an approximate
+solver that accepts fixed indicators; for indicator quadratics, a
+dynamic program over rounded continuous values provides one. The
+quadratics are Lipschitz continuous on the box, so every support that is
+optimal somewhere on the box is nearly optimal at a nearby net point and
+is listed there; the union of the lists is therefore a dictionary. The
+algorithm computes each message directly in this way, from its own
+subproblem, instead of passing messages up the tree. The number of net
+points and the size of the tables of the rounded dynamic program are
+polynomial in $n$, $C$, $H$, $\mu^{-1}$, $R$, and $\sigma^{-1}$, with the
+treewidth in the exponent; this is where these values and the treewidth
+enter the running time (Section~\ref{sec:main-result}).
 
-Beier, R\"oglin, R\"osner, and V\"ocking \cite[Theorem~1]{BeierPareto} bound
-smoothed bicriteria Pareto counts with one arbitrary deterministic objective
-and one linear objective whose independent coefficients have bounded densities
-and finite first moments. Polynomial moments of smoothed Pareto counts are likewise known
-\cite{RoglinTeng,BrunschRoglin}, and smoothed parametric enumeration has
-precedent in shortest paths \cite[Section~6]{ApplegatePaths}. Those results
-use different perturbation models and outputs. Our general theorem allows
-arbitrary deterministic Lipschitz branches and adds one shared random
-linear penalty to their binary labels. To the best of our knowledge, the
-cited results do not provide the complete bounded-parameter dictionaries
-with the restricted additive-oracle guarantee proved here. This precise
-construction and its indicator-quadratic specialization are the principal
-novelty claims. The companion contributions are the simultaneous restrictions
-in the hardness and message examples and the two specific star obstructions.
-To the best of our knowledge, the inspected sources do not contain those
-restricted statements. Their proofs and comparisons appear with the results;
-the underlying reduction, pruning, and conic-transfer principles are established.
+Theorem~\ref{thm:dictionary} proves this enumeration step for any family
+of supports whose costs are Lipschitz in a parameter and are perturbed
+by random penalties. Its ingredients are classical
+(Section~\ref{sec:related}); to the best of our knowledge, what is new
+is the completeness guarantee for approximate solvers and its use to
+cover a whole parameter domain.
+
+The answers are exact for the perturbed instance, not for the original
+one. Any exact solution of the perturbed problem gives lower and upper
+bounds on the original optimal value that differ by at most $n\sigma$
+(Section~\ref{sec:spectral-certificate}). If only an approximate
+optimum of the original problem is wanted, the dynamic program over
+rounded values gives one directly; the point of Theorem~\ref{thm:main}
+is exact messages. A dictionary may contain supports that are never
+optimal, and the algorithm does not compute the part of the box on which
+each support is optimal.
+
+Two lower bounds explain why the running time depends on numerical
+values and why near ties must be controlled, whether by the perturbation
+or by conditions such as those of
+Bhathena et al.\ \cite{BhathenaStructured}.
+Theorem~\ref{thm:hardness} shows that the problem is NP-hard even when
+$Q$ has bandwidth two and is arbitrarily close to the identity matrix,
+so small treewidth and good conditioning alone do not give a polynomial
+exact algorithm unless $\mathrm{P}=\mathrm{NP}$. By scaling the linear
+coefficients and penalties of these instances,
+Corollary~\ref{cor:magnitude} carries this over to the perturbed problem
+with a fixed family of matrices, hence fixed $H$ and $\mu$, and a fixed
+$\sigma$. Unless $\mathrm{NP}\subseteq\mathrm{ZPP}$, the polynomial
+dependence of Theorem~\ref{thm:main} on $C$ therefore cannot be
+replaced by a dependence on the encoding length. Here ZPP is the class
+of problems solved by randomized algorithms that never err and run in
+expected polynomial time; it appears because the running time of
+Theorem~\ref{thm:main} is bounded only in expectation.
+
+Theorem~\ref{thm:fixed-data} shows that messages can be large even when
+optimization is easy. Its instances have $2n$ variables, treewidth two,
+unit penalties, a matrix close to the identity, and local coefficients
+from a fixed finite set. Their global optimum is trivial to find, and
+$2^n$ different supports attain it, but each of these supports is the
+unique best one for boundary values in a short interval of its own.
+Hence one message, a function of a single variable, needs at least
+$2^n$ distinct formulas in any exact representation as a minimum of
+polynomials or as a piecewise polynomial function. With perturbed
+penalties, Theorem~\ref{thm:main} applies to the same instances and
+makes the expected dictionary size polynomial. If this message is
+needed only within a uniform error $\varepsilon$, a number of its
+quadratics bounded independently of $n$ suffices, but this number grows
+as a power of $1/\varepsilon$, with matching upper and lower exponents
+(Theorem~\ref{thm:pruning}).
+
+Appendix~\ref{sec:representation} concerns representations that depend
+only on $Q$ and can therefore be built once and reused for all linear
+coefficients and penalties. It studies the inverse-principal polytope,
+which Wei et al.\ use to describe the closed convex hull of the
+epigraph of $x^TQx$ with indicators \cite{WeiHull}. On a
+well-conditioned star, where optimization is easy \cite{BhathenaTrees},
+every exact extended formulation (lift) of this polytope by linear,
+second-order-cone, or semidefinite constraints with blocks of bounded
+order has exponential size (Theorem~\ref{thm:star-face} and
+Corollary~\ref{cor:conic}).
+
+The main result is a complexity result, and its polynomial bound has
+high degree. We do not propose the algorithm as a practical solver and
+report no computational experiments; Section~\ref{sec:discussion}
+discusses which parts of the analysis may still be useful in practice.
+
+Section~\ref{sec:model} explains dynamic programming over tree
+decompositions for this problem, defines messages and dictionaries,
+describes the perturbation, and outlines the proof of the main result.
+Section~\ref{sec:related} compares our results with prior work.
+Section~\ref{sec:enumeration} proves the general counting and
+enumeration results, and Section~\ref{sec:spectral} applies them to
+prove Theorem~\ref{thm:main} and to bound the original optimum.
+Sections~\ref{sec:hardness} and~\ref{sec:message-limits} prove the two
+lower bounds, Section~\ref{sec:discussion} discusses practical relevance
+and open questions, and Appendix~\ref{sec:representation} contains the
+results on stars.

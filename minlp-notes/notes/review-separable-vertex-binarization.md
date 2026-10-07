@@ -342,7 +342,7 @@ to grid accuracy and with each other to `1e-5`.
 ## What I ran
 
 All from `code/vertex_binarization`, with
-`uv run --project /home/sgusev/repo/minlp-notes/code/minlp_solver_lab python ...`
+`uv run --project /workspace/minlp-notes/code/minlp_solver_lab python ...`
 unless noted. Scratch scripts were in `/tmp/sobreview` (outside the
 repository). Solver runs used at most 4 threads in total and limits of at
 most 100 s. BARON ran only through `solve_baron`, which works in a temporary

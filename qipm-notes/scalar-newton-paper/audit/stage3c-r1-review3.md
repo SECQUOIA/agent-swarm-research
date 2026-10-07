@@ -31,4 +31,4 @@ Verdict: no major mathematical issue found. Four minor hypothesis or exposition 
 
 The primary local source establishes the required field-operation theorem and supplied-decomposition conditions: [[furer2025-fast-gaussian-elimination-for-low]] p.3 (Theorem 1), p.13 (nice-decomposition preprocessing and total complexity), and p.14 (Corollary 3 and its right-hand-side/back-substitution argument). I also extracted page 14 directly from `original.pdf` with the qipm environment's `pdftotext`; the solve statement agrees with the local full text. The source's right-hand-side dimension typo is immaterial for the manuscript's square system.
 
-Ran `/home/sgusev/miniconda3/envs/qipm/bin/python notes/scalar-newton-paper/checks/check_structured_identities.py`: all 152 numerical identities and comparison checks passed. These supplement the analytic checks above and are not used as proof substitutes.
+Ran `/workspace/local-home/miniconda3/envs/qipm/bin/python notes/scalar-newton-paper/checks/check_structured_identities.py`: all 152 numerical identities and comparison checks passed. These supplement the analytic checks above and are not used as proof substitutes.

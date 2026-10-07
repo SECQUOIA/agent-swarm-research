@@ -10,8 +10,7 @@ Usage:
     uv run python gdp_catalog_solve.py --name NAME --method loa|baron   # one solve, JSON to stdout
     uv run python gdp_catalog_solve.py --all [--jobs 2]                 # all -> gdp_solve_results.json
 
-Requires ipopt on PATH (/home/sgusev/miniconda3/envs/solvers/bin) and gams on
-PATH (/home/sgusev/.local/opt/gams/gams54.3_linux_x64_64_sfx).  Each solve runs
+Requires ipopt and gams on PATH. Each solve runs
 in its own subprocess with a hard timeout so a stuck subsolver cannot block
 the campaign; with --jobs 4 and 2 threads per solve at most 8 threads are used.
 """

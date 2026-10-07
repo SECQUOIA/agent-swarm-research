@@ -29,8 +29,8 @@ are rejected before serialization. No exact infeasibility pipeline should be
 claimed merely because the discrete kernel supports infeasibility proofs.
 
 Stage 4 has available IPOPT at
-`/home/sgusev/miniconda3/envs/solvers/bin/ipopt` and the exact SCIP/VIPR tools at
-`/home/sgusev/.local/opt/scip-exact/bin`. Generator attempts have separate search
+`/workspace/local-home/miniconda3/envs/solvers/bin/ipopt` and the exact SCIP/VIPR tools at
+`/workspace/local-home/.local/opt/scip-exact/bin`. Generator attempts have separate search
 and completion budgets; a solver time limit is not a total pipeline deadline.
 The filesystem had approximately 158 GB available at inspection. Preserve the
 historical artifacts and avoid unnecessary uncompressed copies of large proofs.

@@ -68,7 +68,7 @@ The exact-comparison mechanism is explained before the technical proofs, the roa
 
 ## Independent checks and artifacts
 
-- Re-ran all four verification scripts with `/home/sgusev/miniconda3/envs/qipm/bin/python`. Every exact rational assertion and all diagnostic checks passed.
+- Re-ran all four verification scripts with `/workspace/local-home/miniconda3/envs/qipm/bin/python`. Every exact rational assertion and all diagnostic checks passed.
 - Added an independent diagnostic outside the manuscript files for 60 complex rectangular matrix points/directions, including repeated and zero singular spectra. Direct real-Hessian finite differences agreed with the matrix formula (maximum absolute discrepancy about `7.44e-6`), and the spectral-speed contraction held. This specifically checks the complex-real metric convention rather than only scalar profiles.
 - Regenerated both figures and all eight CSV rows in `/tmp/final-review4-figs-dv7a5h4v`; the checked-in CSV reproduced within `rtol=1e-11, atol=1e-10`. The largest reported relative quadrature estimate was about `3.59e-12`. These remain numerical illustrations, as the captions and README say.
 - Inspected both rendered vector figures. Axes, legends, and labels are readable; the first uses equal metric-coordinate aspect and the captions state the endpoint contracts accurately. I did not duplicate the root's all-page visual audit.

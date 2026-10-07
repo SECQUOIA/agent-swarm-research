@@ -6,7 +6,7 @@ Verdict: **no major issue found**. I found no mathematical correction or unsuppo
 
 I reread the complete integrated manuscript sources, including the introduction, abstract, conclusion, all theorem sections, and all three appendices. I checked the macros, bibliography, README, Makefile, all five Python scripts, figure captions, generated figure files and CSV, and the current 50-page PDF's text and metadata. I inspected both figures visually. The root is separately inspecting every PDF page, so I have not duplicated that complete visual pass. I read the source map and literature audit for provenance, but no other independent review report.
 
-All numerical work used `/home/sgusev/miniconda3/envs/qipm/bin/python`. I did not install anything, change manuscript files, or rebuild in the shared paper directory. Figure regeneration ran in an isolated temporary output directory.
+All numerical work used `/workspace/local-home/miniconda3/envs/qipm/bin/python`. I did not install anything, change manuscript files, or rebuild in the shared paper directory. Figure regeneration ran in an isolated temporary output directory.
 
 ## Minor issue
 

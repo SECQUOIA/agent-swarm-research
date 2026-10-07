@@ -105,20 +105,17 @@ citing Luedtke et al. (2020).
 - The Khajavirad and Dey–Kazachkov–Lodi–Muñoz lines work on multilinear, cutting-plane
   and V-polyhedral topics. No pooling-specific multi-attribute sets were found there.
 
-Stated open directions, verbatim:
+Stated open directions, summarized:
 
-- Luedtke et al. (2020), Section 6: "further improvements to the relaxation of the
-  pooling problem will need to consider more aspects of the problem. For example,
-  still with a fixed attribute k, output j, and pool ℓ, one may consider studying valid
-  inequalities for a set in which the variables x_ij, w_iℓj, and q_iℓ for i ∈ I are
-  included, rather than being summarized in the variables z_iℓ, t_kℓ and u_kℓj.
-  Alternatively, one may still use these summary variables, but study a set that
-  includes multiple pools."
-- Gupte et al. (2017), Section 3.2: "we may be able to improve the lower bound by PQ
-  using valid inequalities for [the set] for a given j ∈ J, k ∈ K. We leave this idea
-  open for future research."
-- Luedtke et al., Section 5.3: "Lower bounds on the concentration are not used in these
-  instances but could be sampled and handled in the separation in a similar way."
+- Luedtke et al. (2020), Section 6: stronger pooling relaxations may require richer
+  substructures. For a fixed attribute k, output j, and pool ℓ, they suggest retaining
+  the individual variables x_ij, w_iℓj, and q_iℓ for i ∈ I instead of aggregating them
+  into z_iℓ, t_kℓ and u_kℓj. They also suggest studying several pools together while
+  keeping the summary variables.
+- Gupte et al. (2017), Section 3.2: they leave open whether valid inequalities for
+  the set associated with a fixed j ∈ J and k ∈ K can strengthen the PQ lower bound.
+- Luedtke et al., Section 5.3: their instances omit lower concentration bounds, but
+  they suggest sampling such bounds and separating them by an analogous procedure.
   They treat each lower bound as a separate attribute.
 
 So the multi-attribute case is unstudied rather than explicitly posed.

@@ -95,15 +95,15 @@ Actual commands, all run from the extracted top-level directory unless stated ot
 
 ```
 tar -xzf <frozen archive> -C /tmp/s6b-r2-grzYyZ
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python \
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python \
   paper-potential-flow/reproducibility/build_paper.py
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python -S \
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python -S \
   paper-potential-flow/reproducibility/reproduce.py \
   --output /tmp/s6b-r2-grzYyZ/exact-replay.json
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python \
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python \
   paper-potential-flow/reproducibility/reproduce.py --numerical \
   --output /tmp/s6b-r2-grzYyZ/numerical-replay.json
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python \
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python \
   paper-potential-flow/reproducibility/package.py \
   --output /tmp/s6b-r2-grzYyZ/repacked
 ```

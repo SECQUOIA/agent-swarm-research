@@ -1,0 +1,110 @@
+The experiments address four questions: whether the stored cuts are valid in
+practice, and what certification prevents; whether the cuts change SCIP's
+results on benchmark models, including models that SCIP finds hard; what the
+separator does and what it costs; and how much of the root gap the cuts close
+on instances with the structure of Sections~\ref{sec:composition}
+and~\ref{sec:quadratic}, compared with SCIP's own alternatives and with Gurobi.
+We report five campaigns. Each was run with solver code, limits and protocol
+fixed before its first run; we call these results \emph{prospective}, and we
+label analyses designed after results were seen as \emph{post hoc}.
+Campaigns 1 and~2 used earlier implementations and are summarized in
+Appendix~\ref{app:campaigns12}. Campaign~3 tests the final implementation on
+MINLPLib models (Parts~3A and~3B) and on a constructed family (Part~3C); a
+post hoc diagnostic of its results is Part~3P. Campaign~4 was designed after
+campaign~3 to answer the questions that its results raised: it adds
+comparators, fresh instances, larger models, a variant of the family in which
+the block minima do not give the optimum, and an ablation of the certificate;
+the job builder and the reference computation of Part~4C4 were written during
+campaign~4, as its protocol specifies, before any run of that part.
+Campaign~5 was designed after campaign~4: it runs the star algorithm in the
+solver, adds the remaining comparators on the fresh instances, tests larger cut
+limits and compares the certificate with a numerical global solve.
+Table~\ref{tab:overview} lists the parts.
+
+\subsection{Setup}\label{sec:setup}
+
+All runs use SCIP~10.0.2 through PySCIPOpt~6.2.1 and Python~3.13, with one
+SCIP thread and one BLAS thread per process, on a Linux host (WSL2) with 18
+cores and 36 hardware threads that was shared with unrelated jobs. The
+one-minute load average was 14 to 21 during the prospective runs of
+campaign~3 (2 to 21 during Part~3P), 2 to 9 during campaign~4 (5th to 95th
+percentile; at most 15, in Part~4C4) and 1 to 20 during campaign~5, apart from
+a spike to 126 during Part~5S (Section~\ref{sec:star-bench}). Within a
+part, at most six runs were active at a time, and the modes of one instance
+ran back to back in rotated order; the Part~3P runs on the path family
+overlapped the last 28 minutes of Part~3A, when up to ten runs were active. We
+compare times only within these paired runs of one part. Part~4C2 has no
+baseline of its own and is compared with the campaign-3 runs of the same
+instances; root bounds of identical runs repeated exactly across campaigns
+(all 100 baseline root bounds rerun in Part~3P), whereas solved counts and
+times are not paired across campaigns, and we say so where it matters. Timings
+are descriptive. Times are in-process wall times charged to the time budget
+(model build, discovery, separation and solve), excluding interpreter start-up
+and the primal check; \emph{SCIP time excluding the callback} is SCIP's solving
+time minus the time spent in the separator callback. Full runs have a budget of
+300\,s; root runs have a node limit of one and a budget of 60\,s (Parts~3A, 3B,
+4B2) or 120\,s (path family, Parts~4D and~5S). In Parts~3A and~3B a seed is
+SCIP's random seed shift; constructed instances are identified by their
+generator seed and run with SCIP's seed~0.
+
+We write \emph{SCIP} for SCIP with default settings, \emph{SCIP-nolocks} for SCIP
+with its implicit-discreteness presolve step switched off
+(\code{constraints/nonlinear/checkvarlocks = d}), and \emph{SCIP-extra} for SCIP
+with its disabled-by-default nonconvex separators switched on
+(Section~\ref{sec:related}); all three use our model builder and add no
+certified cut. Gurobi~13.0.3 \citep{Gurobi13} solves the same model with one
+thread, its nonconvex mode (\code{NonConvex=2}) and the same gap limit. The
+separator modes are listed in Table~\ref{tab:modes}. Models come from MINLPLib
+\citep{BussieckDrudMeeraus2003,Vigerske2026MINLPLib} in OSiL format, the XML
+instance format of Optimization Services (Appendix~\ref{app:instances}),
+stratified by the library's metadata into convex models, nonconvex models
+without integer variables, and nonconvex models with integer variables.
+
+A model counts as \emph{solved} if SCIP (or Gurobi) reports optimality or the
+relative gap limit $10^{-4}$, and the returned incumbent passes an independent
+check of all original rows, bounds, domains, integrality restrictions and the
+objective at a scaled tolerance of $10^{-5}$; the checker evaluates the source
+expressions without the model builder. Times are compared by shifted geometric
+means (shift 1\,s) and by the median of per-run ratios, over runs solved in
+every compared mode. Dual bounds $z$ and $z'$ are compared with the tolerance
+$10^{-4}\max\{1,\abs z,\abs{z'}\}$, the gap limit. The \emph{root gap closed} by
+a mode is $(z_{\text{mode}}-z_{\text{base}})/(z^\ast-z_{\text{base}})$ for
+minimization, where $z$ denotes root dual bounds and $z^\ast$ the optimal or
+best known value; for a run that ends at the root without reporting a root
+bound, because the root node was pruned, $z$ is its final dual bound. Every
+recorded cut is replayed in a fresh process (Section~\ref{sec:replay}). A run
+whose worker failed has no complete cut log; its cut count is reported as
+unknown, not as zero. The protocols also prespecify statistics that we do not
+report here, such as means per seed, bound comparisons at the tolerance
+$10^{-6}$ and scan counts per stratum; they are in the supplementary archive and
+do not change the conclusions.
+
+\begin{table}[t]
+\centering\footnotesize
+\caption{Parts of campaigns 3 to 5. Full runs have a budget of 300\,s; root
+runs have a node limit of one. All parts except 3P are prospective. Modes are
+defined in Appendix~\ref{app:software} (Table~\ref{tab:modes}).}\label{tab:overview}
+\begin{tabular}{@{}l>{\raggedright\arraybackslash}p{0.32\textwidth}>{\raggedright\arraybackslash}p{0.43\textwidth}l@{}}
+\toprule
+Part & Instances & Modes & Runs\\
+\midrule
+3A & 30 MINLPLib models of campaign 2; full runs seeds 0--2, root runs seed 0 & SCIP, all, auto; root runs also all-diag & full, root\\
+3B & 30 structure-selected models; full runs seeds 0--1 & SCIP, all, auto; root runs also all-diag & full, root\\
+3C & 20 path-family instances & SCIP, all-diag-mech & full, root\\
+3P & 3A, 3B (root runs); 3C (post hoc) & whole-row variant of the cut modes; 3C also wide limits & root; full, root\\
+\midrule
+4C2 & the 20 instances of 3C & SCIP-nolocks, SCIP-extra, frozen-wide, Gurobi & full, root\\
+4C3 & 20 fresh path-family instances & SCIP, all-diag-mech, rowdir-wide, SCIP-extra, Gurobi & full, root\\
+4C4 & the instances of 4C3 with a binding row & SCIP, frozen-wide, rowdir-wide, SCIP-extra, Gurobi & full, root\\
+4B2 & the 30 models of 3B & no aggregation: SCIP, all, all-diag, all-diag-rowdir; SCIP-extra & root\\
+4D & 20 larger models that SCIP finds hard & full: SCIP, all, auto, SCIP-extra; root: SCIP, all, all-diag, all-diag-rowdir, SCIP-extra & full, root\\
+4U & recorded cuts of campaigns 3 and 4 & uncertified constants (samples, local solver) & offline\\
+4S & random stars with $10$ to $10^4$ leaves & two star algorithms & offline\\
+\midrule
+5S & 30 star-family instances & SCIP, SCIP-nolocks, SCIP-extra, rowdir-star4, agg-star4, agg-star, Gurobi & full, root\\
+5C-a & the instances of 4C3 and 4C4 & SCIP-nolocks & full, root\\
+5C-b & the instances of 4C4 & larger cut caps (32n, 64n), both direction rules & root\\
+5U & the cuts of 4U & numerical global solve (Gurobi) & offline\\
+\bottomrule
+\end{tabular}
+\end{table}

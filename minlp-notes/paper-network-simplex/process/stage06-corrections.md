@@ -93,7 +93,7 @@ were inspected, including the revised tables, interpretation, and command.
 All accepted mathematical sections 01–07 remain byte-identical to the frozen
 round-1 snapshot. The unrelated manuscript folders were not edited.
 
-Commands used the existing `/home/sgusev/miniconda3/envs/minlp-notes/bin/python`
+Commands used the existing `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python`
 interpreter; their complete logs, the source diff, source/data/build hashes,
 shell argument check, mutation records, and current validation manifest are
 under [`verification/stage06-corrections/`](../verification/stage06-corrections/).

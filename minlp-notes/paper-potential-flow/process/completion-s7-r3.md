@@ -71,10 +71,10 @@ Actual commands, with the extraction as working directory unless specified:
 
 ```text
 python -S paper-potential-flow/reproducibility/build_paper.py
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python -S -O paper-potential-flow/reproducibility/reproduce.py --output /tmp/s7-r3-exact.json
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python paper-potential-flow/reproducibility/reproduce.py --numerical --output /tmp/s7-r3-numerical.json
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python -S -O paper-potential-flow/reproducibility/reproduce.py --output /tmp/s7-r3-exact.json
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python paper-potential-flow/reproducibility/reproduce.py --numerical --output /tmp/s7-r3-numerical.json
 python paper-potential-flow/reproducibility/package.py --output /tmp/s7-r3-repackage
-python /home/sgusev/repo/minlp-notes-potential-flow/paper-potential-flow/verification/check_coverage.py
+python /workspace/minlp-notes-potential-flow/paper-potential-flow/verification/check_coverage.py
 ```
 
 All returned exit code zero. The exact replay recorded all 18 commands passing; the numerical replay recorded all 28 commands passing. The exact replay includes normal and `-S -O` verifier paths and malformed-certificate rejection checks. The extracted A-only build reports zero errors, undefined references, undefined citations, duplicate labels, and overfull boxes. It requires no parent-repository source dependency.

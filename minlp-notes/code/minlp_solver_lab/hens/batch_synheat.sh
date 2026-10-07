@@ -1,7 +1,7 @@
 #!/bin/bash
 # Task 2 comparison: 3 examples x {orig, lift} x {gurobi, baron}, 600 s each, sequential, 4 threads.
 export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
-cd /home/sgusev/repo/minlp-notes/code/minlp_solver_lab/hens
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")" || exit
 T=${1:-600}
 for ex in ex1_yg1990_2h2c ex2_5h1c ex3_10sp1_5h5c; do
   for form in orig lift; do

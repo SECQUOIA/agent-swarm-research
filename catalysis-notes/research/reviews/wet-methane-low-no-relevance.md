@@ -62,7 +62,7 @@ A useful negative result would narrow a broad material claim. A useful positive 
 
 **Current source update, 2026-09-16:** Auvinen2021, Sadokhina2017/2018, Tan2025, Hutter2018 and Kinnunen2013/2018 main texts are now retained. The rows below preserve original access/reading limits and are not current missing-source requests; see the [post-upload audit](post-upload-methane-audit.md) and [current literature status](../literature-status.md). Tan’s 0.3 g, 1500 ppm CH4, 5% O2, 10% water, atmospheric-pressure, 100,000 h−1 Pd/Na-IWV test is a defined wet sulfur-free comparator. Its approximately 85% conversion at 330 °C over 100 h does not establish sulfur tolerance. The additional full texts do not supply the missing joint low-NO/sulfur application envelope. NO effects observed on sulfated Pd/Pt/alumina remain distinct from proposed hydroxyl-removal or sulfur-partition mechanisms on Ryu’s zeolite.
 
-The following were routed to the sole `/root/literature` worker for sequential **Add identified literature** processing using `/home/sgusev/repo/skills/literature/SKILL.md`; project `/home/sgusev/repo/catalisys-notes`; KB `/home/sgusev/repo/catalisys-notes/literature`. No KB edits or checks were performed here. Metadata and relevance remain required if full text cannot be recovered.
+The following were routed to the sole `/root/literature` worker for sequential **Add identified literature** processing using `/workspace/skills/literature/SKILL.md`; project `/workspace/catalisys-notes`; KB `/workspace/catalisys-notes/literature`. No KB edits or checks were performed here. Metadata and relevance remain required if full text cannot be recovered.
 
 | Identifier | Relevance and artifact/reading status |
 |---|---|

@@ -2,6 +2,9 @@
 
 Writes results/instances.csv (one row per candidate, with the scope decision and the reason).
 """
+from pathlib import Path as _CleanupPath
+_NOTES_ROOT = _CleanupPath(__file__).resolve().parent.joinpath('../../..').resolve()
+
 import os, sys, json, math, re, time
 import numpy as np, pandas as pd
 from multiprocessing import Pool
@@ -10,7 +13,7 @@ from qcqp import QCQP, fetch_sol
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RES = os.path.join(HERE, '..', 'results')
-META = '/home/sgusev/repo/minlp-notes/code/minlp_solver_lab/instances/instancedata.csv'
+META = (str(_NOTES_ROOT) + '/code/minlp_solver_lab/instances/instancedata.csv')
 POOL = os.path.join(HERE, '..', '..', 'scouting', 'brainstorm2-solvercore-probe', 'pool.csv')
 BOUNDMAX = 1e7   # nonlinear variables need finite bounds of at most this magnitude
 

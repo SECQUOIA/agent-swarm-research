@@ -1,0 +1,296 @@
+\section{Changing the certificate representation}
+\label{sec:decomposition}
+
+A spatial tree describes its final certificate by boxes in all the original
+variables. A decomposition certificate can reuse local boxes across many
+combinations of those variables. The distinction matters even when both
+certificates use exactly the same factor relaxations. We show this on a
+nonconvex path problem with a unique, nondegenerate interior minimum: every
+spatial certificate is exponentially large in the dimension, whereas a
+decomposition certificate has size $O(n\log(n/\epsilon))$.
+The comparison concerns certificate size. It does not charge the work of
+finding the minimizer or identify a local convex program with a spatial
+branch-and-bound node.
+
+Decomposition and the reuse of independent subproblems are established
+ideas in AND/OR search and branch-and-bound
+\citep{marinescuDechter2009AndOrBranchAndBound}.
+Width also controls approximate formulations for polynomial optimization
+\citep{bienstockMunoz2018LpFormulations}.
+Our purpose here is to isolate what changes when the local relaxation is
+fixed and the representation of its certificate changes.
+
+\subsection{Local boxes and separator minorants}
+
+In this section there are no constraints beyond a compact, nondegenerate
+box $D=\prod_{i=1}^n[L_i,U_i]$. Write
+\begin{equation}\label{decomp:factorization}
+ f(x)=\sum_{c\in\mathcal C}f_c(x_c),\qquad
+ f_* =\min_D f,
+\end{equation}
+where $c\subseteq\{1,\ldots,n\}$ is a factor's coordinate set and
+$f_c$ is continuous on $D_c$. The
+factorization is fixed. For each factor and box $B_c$, the local oracle
+supplies a continuous convex function $f_{c,B_c}\le f_c$ on $B_c$.
+The spatial oracle is
+\begin{equation}\label{decomp:spatial-oracle}
+ L(B)=\min_{x\in B}\sum_{c\in\mathcal C}f_{c,B_c}(x_c).
+\end{equation}
+
+Let $T$ be a rooted tree with root $r$ and bags $V_t\subseteq\{1,\ldots,n\}$.
+Every factor is assigned to one bag containing its coordinates. The bags
+cover all variables, and the bags containing any one variable form a
+connected subtree. Put
+\[
+ a_t=\sum_{c\text{ assigned to }t}f_c,\qquad
+ S_t=V_t\cap V_{p(t)}\quad(t\ne r),\qquad S_r=\varnothing,
+\]
+where $p(t)$ is the parent. The separator $S_t$ contains the coordinates
+shared with the parent. We take $|V_t|\le w+1$ and $|S_t|\le w$.
+Let $M=|T|$, let $k$ be the maximum number of bags containing one variable,
+and let $\Delta$ be the maximum number of children of a bag. Width alone
+does not bound $k$.
+
+For the subtree rooted at $t$, let $\phi_t(s)$ be its exact minimum with
+$x_{S_t}=s$. Connectedness of the bags containing each variable gives the
+recursion
+\begin{equation}\label{decomp:exact-recursion}
+ \phi_t(s)=\min_{z\in D_{V_t}:z_{S_t}=s}
+ \left\{a_t(z)+\sum_{u\in\operatorname{ch}(t)}\phi_u(z_{S_u})\right\},
+ \qquad \phi_r=f_*.
+\end{equation}
+All these minima exist. The value functions are continuous, since each is
+the minimum of a continuous function over a fixed compact product box.
+
+\begin{definition}[Decomposition certificate]\label{decomp:certificate}
+For each nonroot bag, choose a rectangular partition $\mathcal P_t$ of
+$D_{S_t}$ and an affine function
+$\ell_{t,E}(s)=\lambda_{t,E}^{\mathsf T}s+\beta_{t,E}$ for each cell
+$E\in\mathcal P_t$. For each bag choose a rectangular partition
+$\mathcal L_t$ of $D_{V_t}$ into local leaves. Boxes are closed and their
+interiors are disjoint; their shared boundaries are retained in every
+applicable test.
+
+For every local leaf $B\in\mathcal L_t$ and child $u$, choose a continuous
+convex function $\psi_{u,B}$ on $B_{S_u}$ such that
+\begin{equation}\label{decomp:child-test}
+ \psi_{u,B}(s)\le\ell_{u,E}(s)
+ \quad(s\in B_{S_u}\cap E,\ E\in\mathcal P_u).
+\end{equation}
+Define
+\[
+ R_{t,B}(z)=\sum_{c\text{ assigned to }t}f_{c,B_c}(z_c)
+            +\sum_{u\in\operatorname{ch}(t)}\psi_{u,B}(z_{S_u}).
+\]
+Require
+\begin{equation}\label{decomp:leaf-test}
+ R_{t,B}(z)\ge\ell_{t,E}(z_{S_t})
+ \quad(z\in B,\ z_{S_t}\in E)
+\end{equation}
+for every nonempty leaf--cell intersection. At the root require
+$R_{r,B}\ge\ell_r$ on every leaf, for a scalar $\ell_r$.
+The size is
+\[
+ N_{\mathrm{dec}}=\sum_t|\mathcal L_t|+
+                         \sum_{t\ne r}|\mathcal P_t|.
+\]
+The certificate proves tolerance $\epsilon$ if $\ell_r\ge f_*-\epsilon$.
+With a feasible incumbent $U$, the operational test is
+$\ell_r\ge U-\epsilon$.
+\end{definition}
+
+\begin{lemma}[Validity and reuse]\label{decomp:validity}
+Every certificate satisfies $\ell_{t,E}\le\phi_t$ on $E$ and
+$\ell_r\le f_*$. Moreover, for each $x\in D$ there are local leaves
+$B_t\ni x_{V_t}$ such that
+\begin{equation}\label{decomp:chain}
+ \ell_r\le\sum_t\sum_{c\text{ assigned to }t}f_{c,(B_t)_c}(x_c).
+\end{equation}
+\end{lemma}
+\begin{proof}
+Induct upward from the terminal bags. For $s\in E$, choose a minimizing
+$z$ in \eqref{decomp:exact-recursion} and a local leaf containing it.
+The child tests and the induction hypothesis give
+$\psi_{u,B}(z_{S_u})\le\phi_u(z_{S_u})$. Since factor relaxations are
+underestimators, the leaf test gives
+$\ell_{t,E}(s)\le R_{t,B}(z)\le\phi_t(s)$. The root is identical.
+
+For \eqref{decomp:chain}, start at the root with a leaf containing
+$x_{V_r}$. Replace each child bound by the minorant of a cell containing
+$x_{S_u}$, using \eqref{decomp:child-test}, and then use the leaf test in a
+child leaf containing $x_{V_u}$. Continue down the tree. Every cell
+minorant cancels with the corresponding child term.
+\end{proof}
+
+There can be exponentially many compatible combinations of local leaves.
+The certificate stores their local members and the separator inequalities
+that justify their reuse, rather than listing every combination.
+
+\subsection{A small certificate under quadratic growth}
+
+The existence result uses one slope $\lambda_t$ on every cell of separator
+$S_t$. Given the intercepts of its children, set
+\begin{align}
+ \psi_{u,B}(s)&=\lambda_u^{\mathsf T}s+
+       \min_{E\in\mathcal P_u:E\cap B_{S_u}\ne\varnothing}\beta_{u,E},
+       \label{decomp:common-slope-child}\\
+ \beta_{t,E}&=\min_{B\in\mathcal L_t}\;
+       \min_{z\in B:z_{S_t}\in E}
+       \{R_{t,B}(z)-\lambda_t^{\mathsf T}z_{S_t}\},
+       \label{decomp:intercepts}
+\end{align}
+omitting empty intersections. At the root take
+$\ell_r=\min_{B\in\mathcal L_r}\min_B R_{r,B}$.
+These choices satisfy the certificate tests.
+
+\begin{theorem}[Certificate existence]\label{decomp:small-certificate}
+Assume $w\ge1$, $k\ge2$, and the following conditions:
+\begin{enumerate}
+\item $f(x)-f_*\ge c_g\|x-x^*\|_2^2$ on $D$, for $c_g>0$ and $x^*\in D$;
+\item each $a_t$ is $C^1$ on a neighborhood of $D_{V_t}$ and has an
+      $H_a$-Lipschitz gradient on that box, for a positive constant $H_a$;
+\item $0\le f_c(z)-f_{c,B_c}(z)\le\alpha' q_{B_c}(z)$, where
+      $q_{B_c}(z)=\sum_{i\in c}(z_i-l_i)(u_i-z_i)$.
+      Let $A$ bound the sum of the coordinate-set sizes of the relaxed
+      factors assigned to any one bag.
+\end{enumerate}
+Put
+\begin{align*}
+ D_k&=\sum_{j=1}^{k-1}\Delta^j,&
+ K_1&=\max\left\{1,(k-1)\sum_{j=0}^{k-2}\Delta^j\right\},\\
+ Q&=\frac{H_a^2wk}{c_g}+\frac{H_aw}{2}+\alpha'A,&
+ H_0&=768K_1Q+3\alpha'A.
+\end{align*}
+Choose $\theta=2^{-\mu}$ for an integer $\mu\ge1$ so that
+\begin{equation}\label{decomp:theta-conditions}
+ 4\theta\sqrt{(k-1)D_k}\le\frac12,
+ \qquad
+ \theta^2k\{48K_1(1+\Delta)Q+\alpha'A\}\le\frac{c_g}{2}.
+\end{equation}
+For any $h>0$ with $h^2\le\epsilon/(4MH_0)$, there is a certificate of size
+\begin{equation}\label{decomp:size-bound}
+ N_{\mathrm{dec}}\le
+ 2M(4/\theta)^{w+1}(J+1),\qquad
+ J=\max\{0,\lceil\log_2(s_0/h)\rceil\},
+ \quad s_0=\max_i(U_i-L_i).
+\end{equation}
+It uses partitions centered at $x^*$ and slopes
+\begin{equation}\label{decomp:gradient-slopes}
+ \lambda_{t,i}=
+ \sum_{u\in\operatorname{sub}(t):i\in V_u}
+              \partial_i a_u(x^*_{V_u})\qquad(i\in S_t).
+\end{equation}
+\end{theorem}
+
+The proof is in Appendix~\ref{app:decomp:existence}. The construction gives
+each local box $B$ width at most $h+\theta\dist_\infty(B,x^*)$.
+Separator copies can disagree, but bounded variable occurrence controls
+the accumulated disagreement. The slopes in
+\eqref{decomp:gradient-slopes} cancel its first-order cost. The remaining
+error is quadratic and can be paid by the growth margin. No smoothness of
+the exact value functions is required, and $x^*$ may lie on the boundary.
+
+For fixed $k,\Delta,c_g,H_a,\alpha'A$ and $w$, choosing
+$h^2=\epsilon/(4MH_0)$ gives $O(M\log(M/\epsilon))$ local members as
+$\epsilon\downarrow0$. Formula \eqref{decomp:size-bound} displays the
+exponential dependence on width and the conditioning constants. It is an
+existence result with a known center and slopes. Locating this center and
+constructing the certificate without it are separate algorithmic questions.
+
+\subsection{An exponential separation with the same oracle}
+
+\begin{theorem}[Fixed termwise path oracle]\label{decomp:path-separation}
+For $n\ge3$, let $D=[-1,1]^n$ and
+\begin{equation}\label{decomp:path-objective}
+ f_n(x)=\sum_{i=1}^n(x_i^2-\tfrac1{10}x_i^4)
+            +\tfrac45\sum_{i=1}^{n-1}x_ix_{i+1}.
+\end{equation}
+Keep each unary factor exact. Relax each bilinear factor $\tfrac45xy$ by
+the termwise alphaBB function
+\[
+ \tfrac45xy-\tfrac25\{(x-l_x)(u_x-x)+(y-l_y)(u_y-y)\}.
+\]
+This is a convex underestimator. The objective is nonconvex, but has the
+unique, nondegenerate interior minimizer $x^*=0$, with $f_*=0$.
+
+Every spatial cover whose boxes pass \eqref{decomp:spatial-oracle} has size
+at least
+\begin{equation}\label{decomp:path-lower}
+ \max\left\{
+ 0.068\sqrt n(2e/\pi)^{n/2}\log\frac{0.2}{n\epsilon},\quad
+ (5/3)^n\exp\left[-\frac59(1+\tfrac54\epsilon)\right]
+ \right\}.
+\end{equation}
+The first expression is useful when $\epsilon<0.2/n$.
+Consequently this bound applies to $N_{\mathrm{cover}}$, and hence to
+$N_{\mathrm{rect}}$ and $N_{\mathrm{tree}}$.
+
+With path bags $V_t=\{t,t+1\}$, the same factor relaxations admit a
+decomposition certificate of size at most
+\begin{equation}\label{decomp:path-upper}
+ U_n(\epsilon)=3.36\,10^7(n-1)
+ \left\{\frac12\log_2\frac{1.96\,10^6(n-1)}{\epsilon}+2\right\}
+ \qquad(0<\epsilon\le10^{-4}).
+\end{equation}
+There is an absolute $c>0$ such that, throughout this accuracy range,
+\begin{equation}\label{decomp:uniform-ratio}
+ \frac{N_{\mathrm{cover}}(\epsilon)}{U_n(\epsilon)}
+       \ge c\,\frac{(2e/\pi)^{n/2}}{\sqrt n}.
+\end{equation}
+\end{theorem}
+
+Appendix~\ref{app:decomp:path} proves the assertions and both spatial lower
+bounds. Each valid spatial box must absorb the summed gaps of all the
+separately relaxed bilinear terms. A local path certificate absorbs those
+gaps in two-dimensional leaves and reuses the separator information.
+Even an optimal choice of spatial cuts cannot remove the lower bound.
+For a binary spatial tree with no additional reductions, $N$ terminal
+boxes correspond to $2N-1$ nodes. With tightening, the appropriate bound
+is on the owned certification events described in the certificate
+framework, including the certified removed regions; it is not a bound on
+leaves alone.
+
+The same size distinction holds for termwise McCormick envelopes in both
+models. The second expression in \eqref{decomp:path-lower} and the upper
+bound \eqref{decomp:path-upper} still apply, as shown in the appendix.
+Thus at each fixed tolerance in the stated range the ratio is exponential
+in $n$.
+The alphaBB integral bound, and hence the uniform ratio
+\eqref{decomp:uniform-ratio}, are not claimed for McCormick envelopes.
+
+\subsection{Size, queries, and checking work}
+
+The number of stored local members differs from the work needed to check
+them. For one nonroot leaf--cell pair, \eqref{decomp:leaf-test} is a convex
+minimization problem of dimension at most $w+1$; a root leaf needs one such
+problem. For the common-slope construction, the child tests reduce to
+comparisons of intercepts. If $l_t=|\mathcal L_t|$ and
+$p_t=|\mathcal P_t|$, the number of local convex checks is at most
+\begin{equation}\label{decomp:checking-count}
+ l_r+\sum_{t\ne r}l_tp_t
+ \le M(4/\theta)^{2w+1}(J+1)^2.
+\end{equation}
+Only intersecting pairs need checking. If the leaves are aligned so that
+each separator projection meets at most a fixed number of cells, the
+number of checks is instead proportional to the number of leaves. The
+shell construction need not have that alignment: requiring it may refine
+the leaf partitions. Its unconditional checking bound therefore contains
+an additional logarithm.
+
+The oracle in \eqref{decomp:spatial-oracle} supplies a factor relaxation
+on a specified box. One such query for each assigned factor and local
+leaf suffices: its returned function is reused on all cell intersections.
+If at most $R$ factors are assigned to a bag, there are at most
+$R\sum_tl_t$ such queries. This is $O(M\log(M/\epsilon))$ for fixed
+parameters. If an oracle instead supplies only the result of a local
+minimization on each requested leaf--cell intersection, unaligned queries
+are counted by \eqref{decomp:checking-count}, giving the safe bound
+$O(M\log^2(M/\epsilon))$. Neither count specifies the arithmetic or bit
+cost of solving the convex programs.
+
+The factorization and oracle restrictions are substantive. Aggregating
+terms, adding stronger cuts, or choosing different functional factors can
+change the gap and the certificate size. The theorem is not a lower bound
+for every representation of \eqref{decomp:path-objective}, nor a prediction
+of a general solver's runtime. It compares two representations of a
+certificate under one fixed local relaxation.

@@ -18,7 +18,7 @@ I inspected rendered PDF pages 1, 4, 55–57, 61–64, 93, 96, 99, 102, 105, 108
 
 ### Primary-source reading
 
-I read repository `literature/AGENTS.md` before consulting originals. The following are actual passage checks, not claims to have read every page of every cited paper. Unless stated otherwise, page numbers below are PDF page numbers, and the material was extracted directly from the original PDF. Paths beginning `literature/` are relative to `/home/sgusev/repo/minlp-notes`.
+I read repository `literature/AGENTS.md` before consulting originals. The following are actual passage checks, not claims to have read every page of every cited paper. Unless stated otherwise, page numbers below are PDF page numbers, and the material was extracted directly from the original PDF. Paths beginning `literature/` are relative to `/workspace/minlp-notes`.
 
 | Source | Passages actually checked and purpose |
 | --- | --- |

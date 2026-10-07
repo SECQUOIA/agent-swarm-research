@@ -1,7 +1,10 @@
 """Archive the exact generated convex/screening data, outside timed solves."""
+from pathlib import Path as _CleanupPath
+_NOTES_ROOT = _CleanupPath(__file__).resolve().parent.joinpath('../../../..').resolve()
+
 from pathlib import Path
 import sys,json,hashlib
-P=Path(__file__).resolve().parents[1];R=Path('/home/sgusev/repo/minlp-notes')
+P=Path(__file__).resolve().parents[1];R=Path((str(_NOTES_ROOT)))
 sys.path.insert(0,str(R/'code/bilevel_reopened'))
 def main():
     (P/'data').mkdir(parents=True,exist_ok=True)

@@ -1,0 +1,364 @@
+\section{Constraints, active-set changes, and cutoff reuse}\label{sec:constraints}
+
+Constraints can remove the directions responsible for a stall, but they
+also create active-set changes that invalidate a local extrapolation.
+Parametric LP duality gives precise contracts for some of this behavior.
+These are uses of classical sensitivity analysis; the important point
+here is the different conclusions supported by primal witnesses, dual
+vectors, and complete basis regions.
+
+\subsection{A fixed matrix and a changing right-hand side}
+
+Consider the family
+\begin{equation}\label{eq:parametric-lp}
+ R(\theta)=\{z:Az\le b+E\theta\},\qquad
+ h_c(\theta)=\max\{c^Tz:z\in R(\theta)\}.
+\end{equation}
+All parameters considered have nonempty relaxations and finite attained
+support values. The original variables are selected coordinates of $z$;
+signed coordinate objectives $c=\pm e_i$ give OBBT endpoints. Exact
+certificates use rational data. Validity as an outer relaxation of the
+original nonlinear model is a separate premise.
+
+The matrix $A$ is fixed. Rebuilding McCormick rows generally changes their
+coefficients, so~\eqref{eq:parametric-lp} does not automatically describe
+box changes. It applies directly to cutoff changes with a frozen box.
+Varying boxes require a valid normalization or separate verification of
+the coefficient dependence. A numerical basis is only a proposal for
+the checks below.
+
+\begin{proposition}[Dual envelope]\label{prop:dual}
+If $y\ge0$ and $A^Ty=c$, then
+\begin{equation}\label{eq:dual-envelope}
+ h_c(\theta)\le y^Tb+y^TE\theta.
+\end{equation}
+The minimum of finitely many such affine expressions is also an upper
+bound, even when their original bases cease to be optimal or feasible.
+If only the cutoff row $a^Tz\le U$ changes, a primal-dual pair is
+exactly optimal at $U_0$, and $\eta\ge0$ is its cutoff multiplier, then
+\begin{equation}\label{eq:cutoff-dual}
+ h_c(U)\le h_c(U_0)-\eta(U_0-U)\qquad(U\le U_0).
+\end{equation}
+\end{proposition}
+\begin{proof}
+For feasible $z$, $c^Tz=y^TAz\le y^T(b+E\theta)$. Maximizing and
+then taking the minimum over stored vectors proves the first statement.
+For a single changing cutoff, the dual affine expression has slope
+$\eta$ and agrees with $h_c(U_0)$ at the certified optimum, giving the
+second statement.
+\end{proof}
+
+The quantity $\eta(U_0-U)$ is a guaranteed support reduction, not an
+upper bound on possible tightening. A zero multiplier provides no such
+guarantee; it does not prove that a larger cutoff change is ineffective.
+Without exact optimality at $U_0$, the dual upper envelope remains valid,
+but subtracting from an unverified numerical optimum does not establish
+the displayed reduction.
+
+\begin{proposition}[Exact basis region]\label{prop:basis}
+Let $d=\dim z$, and choose $d$ linearly independent rows $I$. Define
+\[
+ z_I(\theta)=A_I^{-1}(b_I+E_I\theta),\qquad
+ y_I=A_I^{-T}c,\qquad y_j=0\ (j\notin I).
+\]
+If $y_I\ge0$, then on the closed rational polyhedron
+\[
+ C_I=\{\theta:Az_I(\theta)\le b+E\theta\}
+\]
+the support is exactly
+\begin{equation}\label{eq:basis-value}
+ h_c(\theta)=c^TA_I^{-1}(b_I+E_I\theta).
+\end{equation}
+\end{proposition}
+\begin{proof}
+The point $z_I(\theta)$ is feasible on $C_I$. The vector $y$ is dual
+feasible and supported on rows tight at that point, so the primal and
+dual objective values agree. Proposition~\ref{prop:dual} supplies the
+matching upper bound.
+\end{proof}
+
+Zero multipliers and ties are allowed; singular proposed bases are
+rejected. Checking the affine residuals at every vertex of a proposed
+parameter polytope proves its containment in $C_I$. This does not prove
+that a collection of such polytopes covers all parameters of interest.
+For a scalar cutoff, substituting $z_I(U)=v+wU$ makes every residual an
+affine inequality in $U$; their exact intersection is a validity interval.
+Beyond it, the stored dual expression is still an upper bound but need
+not equal the support.
+
+For an exact example, minimize $y$ subject to $0\le x\le3$,
+$0\le y\le4$, and
+\[
+ x-y\le1,\qquad 4x-y\le7,\qquad x\le5/2.
+\]
+With cutoff $y\le U$, $0\le U\le4$, the upper support of $x$ is
+\begin{equation}\label{eq:cutoff-example}
+ h_x(U)=\min\{1+U,7/4+U/4,5/2\}
+ =\begin{cases}
+ 1+U,&0\le U\le1,\\
+ 7/4+U/4,&1\le U\le3,\\
+ 5/2,&3\le U\le4.
+ \end{cases}
+\end{equation}
+Choosing $y=U$ and the displayed $x$ gives a feasible point meeting each
+upper bound, proving the formula. At $U_0=4$ the cutoff multiplier is
+zero, yet moving to $U=2$ reduces the support from $5/2$ to $9/4$.
+The witness $(5/2,3)$ proves no reduction only down to cutoff $3$.
+At $U_0=2$, extrapolating the old dual to $U=1/2$ gives the safe upper
+bound $15/8$, while the actual support is $3/2$.
+
+\subsection{Combining retained primal and dual information}
+
+For a signed coordinate objective $c_i$, let $p_i$ be the corresponding
+current box endpoint. Keep all rows except the cutoff fixed. From stored
+feasible relaxed points $W_i$, retain those satisfying the new cutoff and
+define, when that subset is nonempty,
+\[
+ L_i(U)=\max\{c_i^Tz:z\in W_i,\ a^Tz\le U\}.
+\]
+If $F_i(U)$ is the exact support and $D_i(U)$ is a stored dual envelope,
+then
+\begin{equation}\label{eq:bracket}
+ L_i(U)\le F_i(U)\le\min\{p_i,D_i(U)\},\qquad
+ 0\le p_i-F_i(U)\le p_i-L_i(U).
+\end{equation}
+The left bound follows from primal feasibility, the right from duality
+and the current box. A near-endpoint witness certifies little possible
+one-round improvement; a sufficiently low dual envelope certifies a
+useful available improvement. The interval left between them is a natural
+place for a budgeted probe.
+
+An old support-attaining witness proves the endpoint unchanged until its
+objective value is excluded. Finding the lowest-objective witness among
+old optima can itself require another LP, whose cost must be charged.
+An excluded witness does not prove that the support moves: another
+witness may remain. Every changed local row requires rechecking, and
+screening a whole round requires information for every direction whose
+benefit is bounded.
+
+\subsection{A uniform bound across active-set changes}
+
+\begin{proposition}[Complete basis coverage implies a comparison matrix]\label{prop:cells}
+Fix the cutoff. Let $\mathcal D$ be a convex endpoint region for which,
+for each support coordinate $i$, finitely many verified closed basis
+regions cover $\mathcal D$. Suppose on each region
+$F_i(p)=\alpha_i+g_i^Tp$. If $M\ge0$ and $|g_{ij}|\le M_{ij}$
+for every covered region, then
+\[
+ |F(p)-F(q)|\le M|p-q|\qquad(p,q\in\mathcal D).
+\]
+\end{proposition}
+\begin{proof}
+The segment from $p$ to $q$ stays in $\mathcal D$. Its intersections
+with the finitely many polyhedral regions partition it into finitely
+many intervals. On each, the derivative of coordinate $i$ along the
+segment has magnitude at most $\sum_jM_{ij}|p_j-q_j|$. At boundaries,
+both basis formulas equal the same optimal support, so there is no jump.
+Integrating over the segment gives the claim.
+\end{proof}
+
+This provides the uniform premise in Theorem~\ref{thm:residual}. It
+does not prove invariance of $\mathcal D$ or existence of a finite
+majorant $e$. For the order interval between a protected fixed box and
+the current box, monotonicity supplies invariance. A derivative bound
+only on the present basis region is insufficient if later rounds leave
+that region.
+
+A deliberately simple example verifies all these steps. For $x^2\le0$,
+$0\le x\le r$, retain only tangents to $x^2$ at
+$t_1=r/2$ and $t_2=r/8+3/4$. For positive tangent location $t$, its
+necessary inequality $2tx-t^2\le0$ is $x\le t/2$. Together with the
+box, the upper-support map on $0\le r\le8$ is
+\begin{equation}\label{eq:switch-map}
+ F(r)=\min\{r/4,r/16+3/8\}.
+\end{equation}
+At $r=0$ the box fixes $x=0$, so no division by a zero tangent
+coefficient is needed. The two basis regions are $[0,2]$ and $[2,8]$,
+with slopes $1/4$ and $1/16$. They cover the invariant interval, giving
+the uniform bound $M=[1/4]$. The trajectory
+\[
+ 8\longmapsto7/8\longmapsto7/32\longmapsto7/128\longmapsto\cdots
+\]
+crosses a basis boundary. Its first width ratio $7/64$ is smaller than
+the subsequent ratio $1/4$. The example tests a sensitivity certificate;
+direct nonlinear propagation would solve the original problem at once.
+
+\subsection{An equality changes the exact contraction rate}
+
+Consider $f(x,y)=(x-y)^2$, expanded as $x^2+y^2-2xy$, on $[-r,r]^2$.
+Keep the convex square terms exact and use the McCormick overestimator
+for $xy$. The relaxed objective is
+\[
+ \phi_r(x,y)=x^2+y^2-2r^2+2r|x-y|.
+\]
+Without further constraints the minimizers $(r,r)$ and $(-r,-r)$
+preserve every endpoint at cutoff zero, so OBBT stalls. Impose instead
+the exact equality $y=-x$. On it,
+$\phi_r(t,-t)=2t^2+4r|t|-2r^2$.
+
+\begin{proposition}[Constrained exact rate and cutoff floor]\label{prop:equality}
+For cutoff $U\ge0$, a Jacobi round on the symmetric box returns radius
+\[
+ G_U(r)=\min\{r,\sqrt{2r^2+U/2}-r\}.
+\]
+At $U=0$, the exact linear rate is $\sqrt2-1$. At $U>0$, from any
+$r_0\ge\sqrt U/2$, the radii decrease to exactly $\sqrt U/2$.
+\end{proposition}
+\begin{proof}
+Solving $2|t|^2+4r|t|-2r^2\le U$ gives the stated root, restricted
+by the current radius. Set $a=\sqrt U/2$. The root is less than $r$
+precisely for $r>a$, and at least $a$ because
+$2r^2+2a^2-(r+a)^2=(r-a)^2\ge0$. Hence the radii decrease to a
+limit at least $a$; continuity and the fixed-point equation force that
+limit to be $a$. Factoring $r$ gives the zero-cutoff rate.
+\end{proof}
+
+Eliminating the equality before relaxing gives the objective $4x^2$.
+Its exact convex cutoff reaches $|x|\le\sqrt U/2$ in one round.
+Thus the rate depends on the formulation and relaxation, not only on
+the original constrained problem. Affine equalities can also restrict
+the earlier tangent support problems to a nullspace when the original
+expansion has no first-order objective term and is uniform on the
+admitted shapes. General nonlinear active constraints additionally need
+uniform residual and remainder control. A first-order tangent cone
+alone does not establish a finite contraction theorem.
+
+\subsection{Nonlinear constraints through a feasible repair}
+
+A uniform constraint error bound provides a route that does not require
+guessing the next active set. Let $S$ be the original feasible set and
+$x^*\in S$ a minimizer with value $f^*$. Consider boxes containing
+$x^*$ in a fixed neighborhood, and a nonnegative constraint residual
+$v(x)$ that vanishes on $S$. Suppose every point $x$ in each projected
+relaxation satisfies
+\begin{equation}\label{eq:repair-data}
+ \phi_B(x)\ge f(x)-a w(B)^2,\qquad v(x)\le b w(B)^2,
+\end{equation}
+with uniform $a,b\ge0$. Assume it has a feasible repair $y\in S$ such
+that, for uniform $\kappa,L\ge0$, $0<\theta\le1$, and $\mu>0$,
+\begin{align}
+ \norm{x-y}_\infty&\le\kappa v(x)^\theta,\label{eq:repair-distance}\\
+ f(y)&\le f(x)+L\norm{x-y}_\infty,\label{eq:repair-lipschitz}\\
+ f(y)&\ge f^*+\mu\norm{y-x^*}_\infty^2.\label{eq:repair-growth}
+\end{align}
+The repair need not stay in $B$, but must stay in the neighborhood where
+the last two estimates hold. These are uniform assumptions on all relaxed
+points, including infeasible ones, not consequences of a numerical KKT
+residual. The argument is a standard transfer of error and growth bounds;
+an antecedent in the repository is
+\href{run:../../notes/research-20260922-error-bound-transfer.md}{the error-bound transfer note}.
+
+\begin{theorem}[Constrained width bound from a feasible repair]\label{thm:repair}
+Under~\eqref{eq:repair-data}--\eqref{eq:repair-growth}, with
+$U=f^*+\epsilon$, $\epsilon\ge0$, set
+$r=\kappa(bw(B)^2)^\theta$. Then
+\begin{equation}\label{eq:repair-width}
+ w(T_U(B))\le2r+2\sqrt{\frac{\epsilon+aw(B)^2+Lr}{\mu}}.
+\end{equation}
+For $\theta=1$, let $K=\kappa b$ and
+$q=2\sqrt{(a+LK)/\mu}$. If $q<1$ and
+$\lambda=q+2K\overline w<1$ for some $\overline w>0$, every such
+box with $w(B)\le\overline w$ satisfies
+\begin{equation}\label{eq:repair-recurrence}
+ w(T_U(B))\le\lambda w(B)+2\sqrt{\epsilon/\mu}.
+\end{equation}
+For nested iterates in the stated neighborhood,
+\[
+ \limsup_k w(B_k)\le\frac{2\sqrt{\epsilon/\mu}}{1-\lambda}.
+\]
+At zero cutoff slack ($\epsilon=0$), the widths contract with upper
+ratio $\lambda$. If $K=0$, take $\lambda=q$ on any admitted width
+neighborhood.
+\end{theorem}
+\begin{proof}
+For a retained relaxed point, $f(x)\le f^*+\epsilon+aw(B)^2$.
+Its repair has distance at most $r$ and objective at most
+$f^*+\epsilon+aw(B)^2+Lr$. Feasible growth bounds its distance to
+$x^*$ by the square root in~\eqref{eq:repair-width}. The triangle
+inequality bounds the distance of $x$ by this radius plus $r$.
+Taking coordinate ranges doubles the bound. If $\theta=1$, split the
+square root using $\sqrt{s+t}\le\sqrt s+\sqrt t$ and bound
+$2Kw(B)^2\le2K\overline w\,w(B)$. Nesting keeps all later widths
+at most $\overline w$, and summing the scalar geometric recurrence
+gives the stated limit bound.
+\end{proof}
+
+The limit bound is an upper bound, not an exact floor. At zero cutoff
+slack, with
+$\theta<1$ and fixed positive $L\kappa b$, the square-root term
+in~\eqref{eq:repair-width} has order $w^\theta$, so this argument
+need not establish linear contraction. This is a limitation of the
+estimate, not proof of a stall. A local repair-pair constant $L_B$ of
+order $w^{2-2\theta}$ can recover an $O(w)$ square-root term, but
+the separate repair term $O(w^{2\theta})$ also needs control.
+
+An explicit nonlinear equality illustrates the uniform assumptions.
+Let
+\[
+ S=\{(x,y):y=x^2\}\cap([-1/4,1/4]\times[0,1/16]),
+ \qquad f(x,y)=x^2+y^2-xy/16.
+\]
+The minimizer is $(0,0)$ with value zero. For a subbox
+$B=[\ell,u]\times[0,v]$ containing the origin, use
+\[
+ x^2\le y\le(\ell+u)x-\ell u,\qquad
+ \phi_B(x,y)=x^2+y^2-\frac1{16}
+              \min\{uy,\ell y+vx-\ell v\}.
+\]
+The square epigraph and secant relax the graph, and the displayed
+bilinear overestimator gives a convex objective estimator. A relaxed
+point has feasible repair $(x,x^2)$ in the same box, with distance
+$y-x^2\le(u-\ell)^2/4\le w(B)^2/4$.
+The bilinear-envelope error is at most $(u-\ell)v/4$, so one may take
+\[
+ a=1/64,\quad b=1/4,\quad\kappa=1,\quad\theta=1.
+\]
+On the outer box,
+$|\partial_x f|+|\partial_y f|\le(2+1/16)(1/4+1/16)=165/256$,
+so take $L=165/256$. On the feasible graph,
+\[
+ f(x,x^2)=x^2(1-x/16+x^2)\ge(63/64)x^2
+        =(63/64)\norm{(x,x^2)}_\infty^2.
+\]
+Thus $\mu=63/64$, $K=1/4$, and
+$q^2=181/252<49/64$. For $w(B)\le1/8$, the rational upper rate
+$\lambda=15/16$ gives
+\[
+ w(T_U(B))\le\frac{15}{16}w(B)+2\sqrt{64\epsilon/63}.
+\]
+This covers every admitted nested box shape without choosing an active
+set. Its constants are conservative. The example uses exact convex
+square epigraphs, which the production finite-tangent LP does not supply;
+it proves a constrained theorem, not the rate of the measured plugin.
+
+\subsection{Finite observed histories do not certify an eventual stall}
+
+Fix $N\ge2$, and set $a=1/2$, $\delta=1/(2N)$, $b=a-\delta$,
+and $q=1/4$. On $[0,1]$ define
+\[
+ F_{\rm stall}(s)=\min\{s,\max\{b,s-\delta\}\},
+\]
+and
+\[
+ F_{\rm shrink}(s)=
+ \begin{cases}
+ qs,&s\le b,\\
+ qb+(b-qb)(s-b)/(a-b),&b\le s\le a,\\
+ s-\delta,&s\ge a.
+ \end{cases}
+\]
+Both maps are continuous and nondecreasing, with $0\le F(s)\le s$;
+these assertions follow from the nonnegative slopes and the endpoints
+of each affine piece. Thus $R_s=[0,F(s)]$ is a valid monotone outer
+relaxation family for the feasible set $\{0\}$.
+Starting at $s_0=1$, both trajectories subtract $\delta$ through
+$s_{N+1}=b$. One then stalls at $b$, and the other converges
+geometrically to zero. By increasing $N$, arbitrarily many common early
+ratios can be made close to one despite the different eventual outcomes.
+
+These are not asserted to be standard McCormick relaxations. They show
+that validity, monotonicity, and a finite observed history alone cannot
+certify the remaining benefit. A protected box, a uniform sensitivity
+bound, or further relaxation structure supplies information absent from
+that history. Exact checks of the examples and basis procedures appear
+in \pathref{../theory/check_constrained_obbt.py}{theory/check_constrained_obbt.py}.

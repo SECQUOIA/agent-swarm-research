@@ -1,0 +1,317 @@
+% Plan: development/outline.md, section 5, "§4". Proofs of the validity
+% results and of thm:lnts-opt (with lem:lnts-elim, prop:lnts-support):
+% Appendix G-proofs-split. Full proofs, computations and verification
+% records of the certificates: supplement files B1 (lnts, lukvle10),
+% B2 (dtoc5, optcdeg2), B4 (chain, catmix) and B8 (waterno2). The certificate
+% boxes live in those supplement sections (round-1 adjudication G2-09); here one
+% sentence per theorem names arithmetic, implementations and evidence level.
+% Replay tiers are only in Table 7 and the boxes (round-2 adjudication G2-02).
+% Part (c) of prop:split-affine and the last statement of prop:split-cellwise,
+% with their proofs, moved to the supplement (prop:split-forced,
+% prop:split-cellwise-best in B10-split-extras.tex; round-2 G2-01).
+\section{Split certificates along stage structure}\label{sec:split}
+
+Fifteen of the 31 closures form the staged class of \cref{tab:closures}: \inst{lnts50}--\inst{lnts400}, \inst{dtoc5}, \inst{optcdeg2}, \inst{lukvle10}, \inst{chain50}--\inst{chain400} and \inst{catmix100}--\inst{catmix800}; the \inst{waterno2} bounds use the same idea.
+We cut the model along its stages, add to each stage a function of the variables that it shares with the next stage, and subtract the same function from the next stage, so that these terms cancel at every feasible point; rigorous lower bounds on the stage minima then sum to a dual bound.
+The \inst{catmix} certificates use a variant: they bound the value functions of the stage recursion from below, and their validity rests on concavity of the true value functions (\cref{lem:split-minorant}).
+\Cref{app:splitproofs} proves the validity results of \cref{sec:split-framework}; \cref{tab:staged} summarizes the certificates, and \cref{app:splitproofs-lnts,app:families} give their full proofs, certificate boxes and verification records.
+
+\subsection{Path model and validity}\label{sec:split-framework}
+
+Let $N\ge1$.
+Bag $t\in\{1,\dots,N\}$ (a block of variables, as in a tree decomposition) holds a vector $z_t\in\R^{d_t}$, a set $K_t\subseteq\R^{d_t}$ (the bounds and the rows that involve only bag~$t$) and a cost $F_t\colon\R^{d_t}\to\R\cup\{+\infty\}$.
+Consecutive bags share a separator: $\pi^R_tz_t=\pi^L_{t+1}z_{t+1}\in\R^{k_t}$ for $1\le t<N$, where $\pi^R_t$ and $\pi^L_{t+1}$ select coordinates.
+The path model is
+\begin{equation}\label{eq:split-path}
+  \text{(P)}\qquad
+  \vstar=\inf\Bigl\{\sum_{t=1}^NF_t(z_t) : z_t\in K_t,\ F_t(z_t)<\infty\ (1\le t\le N),\ \pi^R_tz_t=\pi^L_{t+1}z_{t+1}\ (1\le t<N)\Bigr\},
+\end{equation}
+with $\vstar=+\infty$ if its feasible set $\feas[\mathrm P]$ is empty.
+The costs $F_t$ take the value $+\infty$ where an expression of the model is undefined; this encodes the domain rule of \cref{def:sem-model}(iv).
+For a transcribed control problem, bag~$t$ is the stage $(x_t,u_t,x_{t+1})$ with its dynamics rows, and its separator is $x_{t+1}$; a variable of every stage, such as the step $h$ of \inst{lnts}, lies in every separator.
+
+A \emph{split} is a tuple $\varphi=(\varphi_1,\dots,\varphi_{N-1})$ of real functions $\varphi_t\colon\R^{k_t}\to\R$; we put $\varphi_0=\varphi_N=0$.
+For sets $K'_t\subseteq\R^{d_t}$ define
+\begin{equation}\label{eq:split-bound}
+  F^\varphi_t(z)=F_t(z)+\varphi_t(\pi^R_tz)-\varphi_{t-1}(\pi^L_tz),
+  \qquad
+  B(\varphi;K')=\sum_{t=1}^N\inf_{z\in K'_t}F^\varphi_t(z),
+\end{equation}
+with $\inf\emptyset=+\infty$ and the convention that a sum with a term $+\infty$ equals $+\infty$; write $B(\varphi)=B(\varphi;K)$.
+We call $F^\varphi_t$ the \emph{stage residual} of bag~$t$.
+We also call bag~$t$ the $t$-th stage; its \emph{stage problem} is the minimization of $F^\varphi_t$ over $K'_t$, with value the \emph{stage infimum}.
+We call $K'_t$ an \emph{enclosure} if $K'_t\supseteq\proj_t\feas[\mathrm P]$, the set of bag-$t$ components of feasible points.
+The \emph{split form} is the set of functions allowed for the $\varphi_t$: affine, quadratic, cellwise affine, and so on.
+
+\begin{lemma}[split bound]\label{lem:split-bound}
+Let $\varphi$ be a split.
+\begin{enumerate}
+\item[(a)] If every $K'_t$ is an enclosure, then $B(\varphi;K')\le\vstar$.
+\item[(b)] \emph{Infeasibility.} Let every $K'_t$ be an enclosure.
+  If $B(\varphi;K')=+\infty$, or if every $F_t$ vanishes on $K_t\cap\operatorname{dom}F_t$ and $B(\varphi;K')>0$, then $\feas[\mathrm P]=\emptyset$.
+\item[(c)] \emph{Case split.} If $\feas[\mathrm P]\subseteq Z_1\cup\dots\cup Z_m$ and $\beta_c\le\inf\{\sum_tF_t(z_t):z\in\feas[\mathrm P]\cap Z_c\}$ for each $c$, then $\min_c\beta_c\le\vstar$.
+  For a box $Z_c$, $\beta_c$ may be a bound of form (a) for the model restricted to $Z_c$, with its own split and enclosures.
+\item[(d)] \emph{Row form.} Let $\psi_1,\dots,\psi_r$ be real functions of $z=(z_1,\dots,z_N)$ that vanish on $\feas[\mathrm P]$, such as linear combinations of rows, and let $\mu\in\R^r$ and $Y\supseteq\feas[\mathrm P]$.
+  Then $\inf_{z\in Y}\bigl[\sum_tF_t(z_t)+\sum_k\mu_k\psi_k(z)\bigr]\le\vstar$, and $\feas[\mathrm P]=\emptyset$ if this infimum is positive and every $F_t$ vanishes on $K_t\cap\operatorname{dom}F_t$.
+  With the copy rows $\pi^R_tz_t-\pi^L_{t+1}z_{t+1}$ as the $\psi_k$ and $Y=K'_1\times\dots\times K'_N$, this bound is $B(\varphi;K')$ for an affine split (\cref{prop:split-affine}).
+\end{enumerate}
+\end{lemma}
+
+Since $\sum_tF^\varphi_t(z_t)=\sum_tF_t(z_t)$ at every feasible point, a certificate of form (a) must establish a rigorous lower bound on every stage infimum and the validity of the enclosures.
+
+For nonempty control sets $U_i$ and maps $g_i\colon Y_{i-1}\times U_i\to Y_i$ ($1\le i\le n$), consider the dynamics $y_i=g_i(y_{i-1},u_i)$ with $y_i\in Y_i$ and $u_i\in U_i$.
+For a terminal cost $\Phi\colon Y_n\to\R$, let $V_n=\Phi$ and $V_{i-1}(y)=\inf_{u\in U_i}V_i(g_i(y,u))$, so that $\vstar=\inf_{Y_0}V_0$.
+
+\begin{lemma}[value-function minorants]\label{lem:split-minorant}
+\begin{enumerate}
+\item[(a)] If $W_0\le V_0$ on $Y_0$, then $\inf_{Y_0}W_0\le\vstar$.
+\item[(b)] \emph{Chord interpolation.} Let $Y_{i-1}=Y_i=\R^2_+$ and $g_i(y,u)=M_i(u)y$ with every $M_i(u)$ entrywise nonnegative, and let $V_{i-1}$ be real-valued, concave and positively homogeneous on $\R^2_+$.
+  Let $W_i\le V_i$ on $\R^2_+$, let $r_0=(1,0),r_1,\dots,r_J=(0,1)$ be vectors in $\R^2_+$ with strictly increasing angles, and let $w_j\le\inf_{u\in U_i}W_i(M_i(u)r_j)$ for every $j$.
+  Then the chord interpolant, $W_{i-1}(\sigma r_j+\sigma'r_{j+1})=\sigma w_j+\sigma'w_{j+1}$ for $\sigma,\sigma'\ge0$, satisfies $W_{i-1}\le V_{i-1}$ on $\R^2_+$.
+\end{enumerate}
+\end{lemma}
+
+Part~(b) uses concavity of the true $V_{i-1}$, which lies above its chords between rays, not of the computed $W_i$, so \cref{lem:split-minorant} is not an instance of \cref{lem:split-bound}.
+
+\begin{proposition}[affine splits]\label{prop:split-affine}
+Let $\varphi_t(s)=\lambda_t^\top s+c_t$ with $\lambda_t\in\R^{k_t}$ and $c_t\in\R$, and put $\lambda_0=\lambda_N=0$.
+\begin{enumerate}
+\item[(a)] $B(\varphi)$ does not depend on $c$.
+  It is the Lagrangian dual function, at $\lambda$, of the copy formulation, in which every bag has its own copy of each separator coordinate and the copy rows $\pi^R_tz_t-\pi^L_{t+1}z_{t+1}=0$ are dualized with multipliers $\lambda_t$.
+\item[(b)] \emph{Exactness.} If some $\bar z\in\feas[\mathrm P]$ has $\bar z_t\in\argmin_{K_t}F^\varphi_t$ for every $t$, then $B(\varphi)=\vstar=\sum_tF_t(\bar z_t)$, and $\bar z$ is a global minimizer.
+  Conversely, if $B(\varphi)=\vstar$ and $\vstar$ is attained at $z^*$, then $z^*_t\in\argmin_{K_t}F^\varphi_t$ for every $t$.
+\end{enumerate}
+\end{proposition}
+
+The slopes of an exact affine split are determined by the model: at a minimizer whose bag components are interior points of the $K_t$ at which the costs $F_t$ are differentiable, they are the copy-row multipliers, and after the dynamics rows are eliminated they are the discrete costates (\cref{prop:split-forced}, explanatory).
+The affine certificates below take their slopes from a local KKT point; validity never depends on this choice.
+Part~(b) is a stagewise exactness test; for convex stage problems at a stationary point it is a discrete form of the sufficiency condition of \citet{mangasarian1966-sufficient-conditions-for-the-optimal}.
+
+\begin{proposition}[windows]\label{prop:split-window}
+Let $K'_t$ be enclosures, $1\le a\le b\le N$, and
+\begin{multline*}
+  \beta_{[a,b]}(\varphi;K')=\inf\Bigl\{\sum_{t=a}^bF_t(z_t)+\varphi_b(\pi^R_bz_b)-\varphi_{a-1}(\pi^L_az_a) :\\
+  z_t\in K'_t\ (a\le t\le b),\ \pi^R_tz_t=\pi^L_{t+1}z_{t+1}\ (a\le t<b)\Bigr\}.
+\end{multline*}
+Then $B(\varphi;K')\le\sum_{t\notin[a,b]}\inf_{K'_t}F^\varphi_t+\beta_{[a,b]}(\varphi;K')\le\vstar$.
+Disjoint windows combine likewise.
+\end{proposition}
+
+A window loses nothing on its interior separators, at the price of one global problem in its free variables.
+
+\begin{proposition}[cellwise slopes]\label{prop:split-cellwise}
+For each separator $t\in\{1,\dots,N-1\}$ let $\mathcal P_t$ be a finite family of sets (cells) whose union contains $\pi^R_tz_t$ for every $z\in\feas[\mathrm P]$, and give each cell $D\in\mathcal P_t$ a slope $\lambda_{t,D}\in\R^{k_t}$.
+Put $\mathcal P_0=\mathcal P_N=\{\ast\}$ with zero slope, and read the conditions $\pi^L_1z\in\ast$ and $\pi^R_Nz\in\ast$ as void.
+Let $K'_t$ be enclosures, and for every $t$ and $(D,D')\in\mathcal P_{t-1}\times\mathcal P_t$ let $b_t(D,D')\in\R\cup\{+\infty\}$ satisfy
+\[
+  b_t(D,D')\le\inf\bigl\{F_t(z)+\lambda_{t,D'}^\top\pi^R_tz-\lambda_{t-1,D}^\top\pi^L_tz :
+  z\in K'_t,\ \pi^L_tz\in D,\ \pi^R_tz\in D'\bigr\}.
+\]
+Then
+\[
+  \vstar\ \ge\ \mathrm{SP}:=\min\Bigl\{\sum_{t=1}^Nb_t(D_{t-1},D_t) : D_t\in\mathcal P_t\ (1\le t<N),\ D_0=D_N=\ast\Bigr\},
+\]
+the shortest-path value in the layered graph with arc weights $b_t$.
+\end{proposition}
+
+The only coupling condition is that the two bags at a separator use the same slope for the same cell; constants per cell cancel along every path, so a certificate stores slopes only.
+With exact pair bounds on a partition and finite $\mathrm{SP}$, $\mathrm{SP}$ is also the largest bound that cellwise-affine splits with these slopes give (\cref{prop:split-cellwise-best}, explanatory).
+
+\begin{remark}[derived enclosures]\label{rem:split-enclosures}
+Several certificates use derived enclosures of unbounded states: the \inst{optcdeg2} velocities (\cref{lem:optcdeg2-enclosure}), the \inst{chain} end values (\cref{lem:chain-window}), the \inst{lukvle10} stage minimizers (\cref{lem:lukvle10-coercive}) and the \inst{waterno2} tank levels (\cref{lem:waterno2-levels}).
+\end{remark}
+
+\Cref{lem:split-bound}(a) is Krotov's sufficient condition for discrete control systems \citep{krotov1967-sufficient-conditions-for-the-optimality} as a Bellman inequality, related to relaxed dynamic programming \citep{lincoln2006-relaxing-dynamic-programming}: the split functions are Krotov's verification functions, and a split with $B(\varphi)=\vstar$ is a discrete calibration in the sense of the calculus of variations.
+\Cref{prop:split-affine} is Lagrangian decomposition of copy rows, as in generalized Benders decomposition \citep{geoffrion1972-generalized-benders-decomposition} and in Lagrangian bounds within spatial branch and bound \citep{karuppiah2008-a-lagrangean-based-branch-and,khajavirad2009-a-deterministic-lagrangian-based-global,cao2019-a-scalable-global-optimization-algorithm}; and \cref{prop:split-cellwise} is closest to multistage decomposition with state copies and Lagrangian cuts \citep{zhang2022-stochastic-dual-dynamic-programming-for,fullner2022-non-convex-nested-benders-decomposition}, in particular cuts that differ across a partition of the state range \citep{yang2025-globally-converging-algorithm-for-multistage}.
+
+\subsection{Exact affine splits: \inst{lnts} and \inst{dtoc5}}\label{sec:split-affine}
+
+For $N\in\{50,100,200,400\}$, \inst{lnts}$N$ is the trapezoidal transcription with $N$ steps of length $h$ of the particle-steering problem of COPS~2.0 \citep{dolan2001-benchmarking-optimization-software-with-cops}.
+A thrust of magnitude 100 in a steerable direction $\theta$ accelerates a particle from rest at the origin to height~5 and velocity $(45,0)$ in minimum time $Nh$.
+With angles $\theta_j$, positions $p_j=(p^x_j,p^y_j)$, velocities $v_j=(v^x_j,v^y_j)$ ($0\le j\le N$) and $e(\theta)=(\cos\theta,\sin\theta)$, the model minimizes $Nh$ subject to
+\[
+  v_{i+1}-v_i=50h\bigl(e(\theta_i)+e(\theta_{i+1})\bigr),\qquad p_{i+1}-p_i=\tfrac h2(v_i+v_{i+1})\qquad(0\le i<N),
+\]
+$h\ge0$, zero initial states, $p^y_N=5$, $v^x_N=45$, $v^y_N=0$ and $|\theta_j|\le\bar\theta:=1.5707963267949$, a decimal that exceeds $\pi/2$ by between \sci{3}{-15} and \sci{4}{-15}; all other states are free.
+Let $w_0=w_N=\frac12$ and $w_j=1$ otherwise; $c_0=(2N-1)/4$, $c_j=N-j$ for $0<j<N$ and $c_N=\frac14$; $r_j=c_j/w_j-N/2$; and $\alpha(h)=9/(20h)$, $\beta(h)=1/(20h^2)$.
+For $\nu\ge0$ define
+\begin{equation}\label{eq:lnts-g}
+  C(\nu)=\sum_{j=0}^N\frac{w_j}{\sqrt{1+\nu^2r_j^2}},\qquad
+  D(\nu)=\nu\sum_{j=0}^N\frac{w_jr_j^2}{\sqrt{1+\nu^2r_j^2}},\qquad
+  g(\nu)=D(\nu)-\frac{20}{81}C(\nu)^2.
+\end{equation}
+
+\begin{theorem}[\inst{lnts} exact optimum]\label{thm:lnts-opt}
+Let $N\in\{50,100,200,400\}$.
+The function $g$ has exactly one positive root $\nu^*$.
+The optimal value of \inst{lnts}$N$ is $\vstar=Nh^*$ with $h^*=9/(20\,C(\nu^*))$.
+It is attained by $\theta^*_j=\arctan(\nu^*r_j)$, $h=h^*$ and the states that the dynamics determine.
+The optimal values satisfy
+\[
+\begin{array}{ll}
+  N=50: & 0.5546687649386788\le\vstar\le0.5546687649386789,\\
+  N=100: & 0.5545954011669111\le\vstar\le0.5545954011669112,\\
+  N=200: & 0.5545770161030836\le\vstar\le0.5545770161030837,\\
+  N=400: & 0.5545724137006871\le\vstar\le0.5545724137006872.
+\end{array}
+\]
+\end{theorem}
+
+\Cref{app:splitproofs-lnts} gives the proof.
+Summing the dynamics rows reduces exact feasibility to $h>0$, the angle bounds and three identities in the controls (\cref{lem:lnts-elim}).
+At a fixed step $h$ the objective is the constant $Nh$; dropping it, combining these identities with multipliers $(\mu,\nu)$ and applying the Cauchy--Schwarz inequality to each control gives a support bound; this is \cref{lem:split-bound}(d) in its infeasibility form (\cref{prop:lnts-support}).
+At $\mu=-\nu^*N/2$ the controls $\theta^*_j$, which follow the discrete linear-tangent law $\tan\theta^*_j=\nu^*(N/2-j)$ for $0<j<N$, attain the support bound; this proves optimality, and rational brackets of $\nu^*$ of width below $10^{-90}$ give the enclosures.
+In the certificate (\cref{app:lnts-proof}), two separately written integer-only codes enclose the optima in arithmetic \arith{E}, one of them to the displayed digits; its evidence level is \evid{hand}+\evid{stored}.
+
+\inst{dtoc5} is a discrete-time control problem with $T=49{,}999$ steps and $h=1/50000$:
+\[
+  \min\ h\sum_{t=0}^{T-1}(u_t^2+y_t^2)\quad\text{s.t.}\quad y_{t+1}=y_t+4hy_t^2-hu_t\quad(0\le t<T),\qquad y_0=1,
+\]
+with all other variables free; the final state $y_T$ does not enter the objective.
+The CUTEst problem DTOC5 has $h$ in place of $4h$ \citep{luksan2026-cutest-source-forms-for-dtoc5,coleman1993-the-global-convergence-of-a}; our results concern the MINLPLib model only.
+
+\begin{proposition}[\inst{dtoc5} dual identity]\label{prop:dtoc5-identity}
+Write $c_t(x)=y_{t+1}-y_t-4hy_t^2+hu_t$, the negative of OSIL row~$t$.
+Let $\lambda\in\R^T$ satisfy $\lambda_{T-1}=0$ and $\lambda_t<\frac14$ for $1\le t\le T-1$, and put $A_t=h(1-4\lambda_t)$ and $\bar y_t(\lambda)=(\lambda_t-\lambda_{t-1})/(2A_t)$.
+Then every exactly feasible point $x$ satisfies
+\begin{equation}\label{eq:dtoc5-squares}
+  f(x)=q(\lambda)+h\sum_{t=0}^{T-1}\Bigl(u_t+\frac{\lambda_t}2\Bigr)^2+\sum_{t=1}^{T-1}A_t\bigl(y_t-\bar y_t(\lambda)\bigr)^2\ \ge\ q(\lambda),
+\end{equation}
+where $q(\lambda)=h(1-4\lambda_0)-\lambda_0-\frac h4\sum_{t=0}^{T-1}\lambda_t^2-\sum_{t=1}^{T-1}(\lambda_{t-1}-\lambda_t)^2/(4A_t)$.
+\end{proposition}
+
+\begin{proof}
+At a feasible point $f(x)=f(x)+\sum_t\lambda_tc_t(x)$; collect the terms by variable.
+The control $u_t$ contributes $hu_t^2+h\lambda_tu_t=h(u_t+\lambda_t/2)^2-h\lambda_t^2/4$.
+The state $y_t$ with $1\le t\le T-1$ contributes $A_ty_t^2+(\lambda_{t-1}-\lambda_t)y_t=A_t(y_t-\bar y_t)^2-(\lambda_{t-1}-\lambda_t)^2/(4A_t)$, where $A_t>0$.
+The fixed state $y_0=1$ contributes $h-\lambda_0-4h\lambda_0$, and $y_T$ contributes $\lambda_{T-1}y_T=0$.
+\end{proof}
+
+The identity needs no state enclosure or variable bound. It is an affine split with the dynamics rows kept in the bags and slopes $-\lambda_t$ on the separators $y_{t+1}$; $\lambda_{T-1}=0$ is necessary because the free $y_T$ would otherwise make the Lagrangian unbounded below.
+
+\begin{theorem}[\inst{dtoc5} bracket]\label{thm:dtoc5-bracket}
+Let $\hat x=(\hat u,\hat y)$ be the stored exactly feasible rational point (\cref{sec:points}), and set $\hat\lambda_t=-2\hat u_t$ for $t\le T-2$ and $\hat\lambda_{T-1}=0$.
+Then $\hat\lambda_t<0$ for $t\le T-2$, and
+\begin{align*}
+  \vstar&\ge q(\hat\lambda)\ge5.38967211918114046742396649913627186883131268,\\
+  \vstar&\le f(\hat x)\le5.38967211918114046742396649913627186883131341,
+\end{align*}
+with $f(\hat x)-q(\hat\lambda)\le\sci{7.21}{-43}$.
+\end{theorem}
+
+\begin{proof}
+All rows hold at $\hat x$ in rational arithmetic, and $\hat u_t>0$ for $t\le T-2$, so $\hat\lambda_t<0<\frac14$ and \cref{prop:dtoc5-identity} applies; the certificate evaluates $q(\hat\lambda)$ and $f(\hat x)$.
+\end{proof}
+
+In the certificate (\cref{app:dtoc5-proof}), two separately written exact codes \arith{E} both give the displays; its evidence level is \evid{hand}+\evid{stored}.
+The lower end in \cref{thm:dtoc5-bracket} is a rigorous rational evaluation below the dual function at $\hat\lambda$; we claim neither an exact dual value nor a zero duality gap.
+The optimal value is attained (\cref{cor:dtoc5-attained}), and the Lagrangian dual and the order-one semidefinite relaxation are tight to within \sci{7.21}{-43} (\cref{rem:dtoc5-sdp}).
+
+\subsection{Richer split forms}\label{sec:split-richer}
+
+\inst{optcdeg2} controls a forced oscillator with a quadratic velocity term over $N=50{,}000$ Euler steps of length $h=1/2500$.
+With $a=0.02h$ and $b=0.2h$ the model is
+\[
+  \min\ \frac h2\sum_{t=0}^Ny_t^2\quad\text{s.t.}\quad y_{t+1}=y_t+hv_t,\quad v_{t+1}=v_t+hu_t-ay_t-bv_t^2\quad(0\le t<N),
+\]
+with $|u_t|\le\frac15$, $v_t\ge-1$ for $0<t<N$, $y_0=10$, $v_0=v_N=0$ and $y_1,\dots,y_N$ free; the CUTEst problem OPTCDEG2 has $b/4$ in place of $b$ \citep{luksan2026-cutest-source-forms-for-dtoc5}.
+At our exactly feasible point the control is $+\frac15$ for $3092\le t<47290$, $-\frac15$ before and after, and fractional at the two switching stages.
+With the discrete costates $(p^y_t,p^v_t)$ as slopes, the stage residual of the affine split contains $-b\,p^v_{t+1}v_t^2$, which is concave in $v_t$ where $p^v>0$, that is, on both $u=-\frac15$ arcs.
+On these arcs our point does not minimize the stage residual, so this affine split is not exact; a floating-point evaluation with refined costates puts its bound about 0.6258 below the optimal value.
+The certificate therefore adds curvature in the velocity only: its split function on the state $(y_t,v_t)$ is $\varphi_{t-1}(y,v)=p^y_t\,y+p^v_t\,v+\frac{q_t}{2}(v-\bar v_t)^2$, where $\bar v$ is the velocity of a refined local solution.
+The curvature $q_t$ makes the stage residual slightly convex in $v$ at the refined trajectory $\bar v$ on the $u=-\frac15$ arcs (\cref{fig:optcdeg2-calibration}); validity does not depend on these choices.
+
+\begin{theorem}[\inst{optcdeg2} bound]\label{thm:optcdeg2-bound}
+Let the split functions $\varphi_t$ be given by the stored binary64 split data $p^y,p^v,q,\bar v$, read as exact rationals.
+Every exactly feasible point of \inst{optcdeg2} has objective at least $B$, the rigorous rational evaluation of the bound of \cref{lem:optcdeg2-krotov}, and $B\ge293.87607509587509237$.
+An exactly feasible point has objective at most $293.87607509587509328$, so $\gapabs\le\sci{8.98}{-16}$ and $\gaprel\le\sci{3.06}{-18}$.
+\end{theorem}
+
+\Cref{app:optcdeg2-proof} proves it with \cref{lem:split-bound}(a) and velocity enclosures $V_t\subseteq[-1,1.2135]$ from one forward and one backward pass through the dynamics with outward rounding.
+In each stage residual, $y$ enters as a quadratic with positive leading coefficient and is eliminated in closed form, and $u$ enters through one affine expression; the remaining polynomials in $v$, of degree at most four, are bounded below with exact Sturm sequences, and the stage bounds, rounded down to the grid $2^{-200}$, are summed as integers.
+In the certificate (\cref{app:optcdeg2-proof}), one exact code \arith{E} gives the displayed bound, and a separately written binary64 interval code certifies the weaker bound 293.8760750958728; its evidence level is \evid{stored}.
+
+\inst{chain}$N$ is the trapezoidal transcription, with $N$ intervals, of the hanging chain of COPS~2.0 \citep{dolan2001-benchmarking-optimization-software-with-cops}: a chain of length~4 hangs between $(0,1)$ and $(1,3)$ with minimal potential energy (\cref{app:chain-model}).
+The variables are the heights $x_i$ and slopes $u_i$ ($0\le i\le N$); the dynamics and the length row are equalities, and only the end heights are fixed.
+
+\begin{theorem}[\inst{chain} bounds]\label{thm:chain-bound}
+For $N\in\{50,100,200,400\}$, the optimal value of \inst{chain}$N$ is at least a binary64 number $L_N$, displayed rounded down in \cref{tab:closures}.
+Exactly feasible points with coordinates in a real quadratic field give $\gapabs\le\sci{9.58}{-15}$, \sci{1.01}{-14}, \sci{9.34}{-15} and \sci{9.78}{-15}, respectively.
+\end{theorem}
+
+\Cref{app:chain} gives the proof.
+The linear rows express the variables $x_i$ and $u_i$ through the vertex heights $z_1,\dots,z_N$ of a polyline over a fixed horizontal mesh; its two end pieces depend only on the end values $z_1$ and $z_N$ (\cref{lem:chain-polyline}).
+Summation by parts then writes the objective with the cumulative length $v$ of the polyline as a second state, started at a free value $V$.
+For a parameter $H>0$ let $G_H(v)=\frac12\bigl(v\sqrt{H^2+v^2}+H^2\operatorname{asinh}(v/H)\bigr)$ and $c_H=2G_H(1/(2N))$.
+For the split $\varphi_k(z,v)=G_H(v)-vz-k\,c_H$, a closed-form inequality makes every interior stage residual nonnegative, with equality exactly on discrete catenaries (\cref{lem:chain-calibration}).
+So the objective is at least an explicit function $B_N(z_1,z_N;V,H)$ of the end values, for all $V$ and all $H>0$ (\cref{prop:chain-endvalue}).
+In this split the multiplier of each height difference is the cumulative length, which varies with the configuration as the tension of a real chain does; a fixed multiplier on the length row, a reverse-convex equality, gives only about 4.77 against an optimum of about 5.07 (floating-point grid estimate).
+A two-dimensional interval branch and bound over the bounded region of \cref{lem:chain-window} then proves, on each leaf box, either $B_N\ge L_N$ for some $(V,H)$ chosen for that box, or that the box contains no feasible end values (\cref{lem:split-bound}(c), with (a) in each box).
+In the certificate (\cref{app:chain-bnb}), two separately written interval codes \arith{I} certify the same four values; its evidence level is \evid{rerun}, because the search trees are not stored.
+
+\inst{catmix}$N$ transcribes the catalyst mixing problem of COPS~2.0 \citep{dolan2001-benchmarking-optimization-software-with-cops}.
+Its rows are $P(u_{i+1})x_{i+1}=Q(u_i)x_i$ ($0\le i<N$), with controls $u_i\in[0,1]$, states $x_i\in\R^2$, $x_0=(1,0)$, and $2\times2$ matrices that are affine in the control and contain a coefficient $c$ (\cref{app:catmix-model}).
+The objective $x_{1,N}+x_{2,N}-1$ is minus the yield, about $-0.048$.
+The GAMS file has $c=9a$ with $a=1/(2N)$; the OSIL file stores $c$ as a binary64 product that exceeds $9a$ by at most $5\cdot10^{-18}$.
+
+\begin{theorem}[\inst{catmix} bounds]\label{thm:catmix-bound}
+For $N\in\{100,200,400,800\}$, the optimal value of \inst{catmix}$N$ is at least a binary64 number $L_N$, displayed rounded down in \cref{tab:closures}; this also holds for the model with $c=9a$.
+Exactly feasible points give $\gapabs\le\sci{1.85}{-13}$, \sci{1.90}{-11}, \sci{6.81}{-11} and \sci{1.49}{-10}, respectively.
+\end{theorem}
+
+\Cref{app:chain} also gives this proof: for fixed controls the rows determine the states, and the stage maps $M(u)=Q(u)P(u)^{-1}$ are entrywise nonnegative, so the objective plus one is $\mathbf 1^\top P(u_N)^{-1}M(u_{N-1})\cdots M(u_1)Q(u_0)x_0$, with each control in one factor.
+The value functions of this dynamic program are concave, positively homogeneous and nonnegative on $\R^2_+$, and the certificate computes chord minorants of them backward over the stages on grids of several thousand rays (\cref{lem:split-minorant}(b)).
+At fixed controls the objective does not increase when $c$ increases, which transports the bounds to $c=9a$.
+In the certificate (\cref{app:catmix-computation}), one code gives the displayed bounds in arithmetic \arith{F} with $+,-,\times,\div$ only, and a separately written code certifies bounds at most \sci{3.7}{-10} lower.
+The bounds have evidence level \evid{rerun}, since the per-stage chord values are not stored; the points have level \evid{stored} (exact rational state evaluation).
+
+\subsection{Affine split plus window: \inst{lukvle10}}\label{sec:split-window}
+
+\inst{lukvle10} is problem 5.10 of Luk\v{s}an and Vl\v{c}ek with $n=1000$, in the form distributed with CUTEst \citep{gould2015-cutest-a-constrained-and-unconstrained,luksan2026-cutest-source-forms-for-dtoc5}.
+Its 1000 variables are free, and with $F(a,b)=(a^2)^{b^2+1}+(b^2)^{a^2+1}$ it reads
+\[
+  \min\ \sum_{i=0}^{499}F(x_{2i},x_{2i+1})\quad\text{s.t.}\quad 1-x_j+3x_{j+1}-2x_{j+2}-2x_{j+1}^2=0\quad(0\le j\le997).
+\]
+Row $j$ defines $x_{j+2}$ from $(x_j,x_{j+1})$, so the feasible points are indexed by $(x_0,x_1)$.
+
+\begin{theorem}[\inst{lukvle10} bracket]\label{thm:lukvle10-bracket}
+The optimal value of \inst{lukvle10} satisfies
+\[
+  352.2380254050784\le\vstar\le352.2380254064957;
+\]
+hence $\gapabs\le\sci{1.42}{-9}$ and $\gaprel\le\sci{4.03}{-12}$.
+\end{theorem}
+
+\Cref{app:lukvle10-proof} gives the proof.
+Dualizing rows 0 to 993 and keeping rows 994 to 997 (\cref{lem:split-bound}(d), with $Y$ the set where the kept rows hold) separates the Lagrangian into 497 two-variable pair problems and a window over the last three pairs, the row-form analogue of \cref{prop:split-window}.
+The window covers the end of the chain, where the best known point leaves the saddle fixed point $-1/\sqrt2$ of the recurrence and the pair Lagrangians are nonconvex.
+The dualized rows give each squared variable a coefficient $q\in[-0.8156,0]$, so each pair Lagrangian grows at least like $(1+q)t^2$ in each variable~$t$, and each infimum over $\R^2$ is a minimum over an explicit box (\cref{lem:lukvle10-coercive}).
+Least-squares KKT multipliers at MINLPLib's point p5, with one common value on the middle of the chain, leave 35 distinct problems for interval branch and bound.
+The summed branch-and-bound tolerances dominate the certified gap; global optimality of the exactly feasible point is not proved.
+In the certificate (\cref{app:lukvle10-proof}), one code gives the displayed bound and a separately written one certifies 352.238025369202; both use interval arithmetic \arith{I} with \texttt{mpmath}'s interval $\exp$ and $\log$, and the evidence level is \evid{rerun}.
+
+\subsection{Large stages: \inst{waterno2}}\label{sec:split-waterno2}
+
+The \inst{waterno2} instances schedule nine pumps in four stations of a network with one reservoir and three tanks \citep{huang2019-optimal-operation-of-water-supply} over $T\in\{6,9,12,18,24\}$ hourly periods, at minimal pumping cost.
+Removing the $3(T-1)$ rows that copy the tank levels between periods and one horizon row leaves $T$ periods of 166 variables (9 binary) and 203 rows each; the separators are the three tank levels.
+The horizon row requires the total inflow to be at least $r_T$, the exact sum of the demands, so it is equivalent to a terminal-volume row on the last period (\cref{lem:waterno2-horizon}).
+
+For level slopes $\lambda_t\in\R^3$ and a horizon multiplier $\mu\ge0$, the period Lagrangian gives $\vstar\ge\mu r_T+\sum_tB_t$ for lower bounds $B_t$ on the Lagrangian of each period (\cref{prop:waterno2-lagrangian}).
+This is \cref{lem:split-bound}(a) for an affine split, with the horizon row dualized as well, which is valid because $\mu(r_T-\sum_th_t)\le0$ at every feasible point ($h_t$ is the inflow of period~$t$).
+It certifies \inst{waterno2_09}--\inst{waterno2_24}, with multipliers from a bundle method that was stopped early.
+Because pump costs depend nonconvexly on the tank levels, an affine split can leave the stage minimizers of consecutive periods at different level vectors, which weakens the bound.
+For \inst{waterno2_06} we therefore divide the range of the three tank levels at each separator into 148 to 240 cells, each with its own slope vector (\cref{prop:split-cellwise}); the bound rises from 263.735099 ($\gaprel\le7.27\%$) to 278.230573 ($\gaprel\le1.68\%$).
+The arc weights $b_t$ follow, through an exact linear correction (\cref{lem:waterno2-reuse}), from 49,315 rigorous bounds for single periods over pairs of level boxes, and the exact shortest-path value is $39157472136693483/2^{47}$.
+Each period or pair bound comes from a spatial branch and bound with polyhedral relaxations and safe LP bounds \citep{neumaier2004-safe-bounds-in-linear-and}, which discards every box whose bound reaches a preset target value.
+SCIP and HiGHS supply only multipliers, targets and dual vectors, which affect the strength of the bounds but not their validity; this matters because SCIP~10 returned wrong optimal values on some period subproblems of \inst{waterno2_06} (\cref{sec:solvers-invalid}).
+
+\begin{theorem}[\inst{waterno2} dual bounds]\label{thm:waterno2-bounds}
+For $T=6,9,12,18,24$, the optimal value of \inst{waterno2_T} is at least 278.230573, 824.834692, 2089.754565, 4790.820715 and 6576.151388, respectively, and exactly feasible points give $\gaprel\le1.68\%$, $10.82\%$, $6.90\%$, $4.87\%$ and $5.90\%$.
+\end{theorem}
+
+The bounds are 1.68 to 6.21 times the best listed dual bounds (\cref{tab:unclosed}); no instance is closed.
+Regenerating the SCIP-derived targets gives slightly lower, also valid bounds for \inst{waterno2_18} and \inst{waterno2_24} (\cref{app:repro-regen}).
+The point for \inst{waterno2_06} is MINLPLib's listed point p4 made exactly feasible (\cref{sec:points}); the other four are ours.
+All five points use identities of the decimal data such as $0.7^3=0.343$; this identity matters for the SCIP error of \cref{sec:solvers-invalid}.
+In the certificate (\cref{app:waterno2-verification}), either of two separately written branch-and-bound codes yields every value, one with node bounds in \arith{F} and one in \arith{E}; corrections, sums and the shortest path are exact \arith{E}.
+Its evidence level is \evid{rerun}, because the search trees are not stored.

@@ -1,4 +1,7 @@
 """Independent exact Stage 5 checks; finite degree cases are not universal proofs."""
+from pathlib import Path as _CleanupPath
+_NOTES_ROOT = _CleanupPath(__file__).resolve().parent.joinpath('../../../..').resolve()
+
 from fractions import Fraction
 from itertools import product
 from pathlib import Path
@@ -49,7 +52,7 @@ assert Fraction(7,16*64*3) == Fraction(7,3072)
 assert Fraction(7,3072*17) == Fraction(7,52224)
 sources = {
  'schoenebeck': '/tmp/minlp-relaxation-limits-sources/schoenebeck-full.pdf',
- 'disjunctive': '/home/sgusev/repo/minlp-notes/literature/papers/ahmadi2026-disjunctive-sum-of-squares/original.pdf',
+ 'disjunctive': (str(_NOTES_ROOT) + '/literature/papers/ahmadi2026-disjunctive-sum-of-squares/original.pdf'),
  'stabbing': '/tmp/stage05-author-sources/stabbing.pdf',
  'branchcut': '/tmp/stage05-author-sources/branch-cut.pdf',
 }

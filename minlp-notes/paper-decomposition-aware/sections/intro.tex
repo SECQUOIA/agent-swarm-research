@@ -1,0 +1,337 @@
+\section{Introduction}\label{sec:intro}
+
+Optimization models in process systems engineering, energy networks and
+optimal control are often built from local pieces. A flowsheet links unit
+models along streams, a multiperiod model links consecutive time stages, and a
+network model links quantities at adjacent nodes. The objective is then a sum
+of terms that each depend on a few variables, and the graph recording which
+variables share a term often has small treewidth. For variables with finitely
+many values, small treewidth is exactly what dynamic programming needs:
+nonserial dynamic programming, bucket elimination and junction-tree message
+passing find a global optimum in time exponential only in the width of a tree
+decomposition \cite{BerteleBrioschi1972,Dechter1999,KollerFriedman2009}.
+
+Mixed-integer nonlinear models have continuous variables and nonconvex
+terms, and there the situation is less clear. Spatial branch-and-bound
+solvers relax individual nonconvex terms by convex underestimators and branch
+on variable domains \cite{TawarmalaniSahinidis2005,BelottiEtAl2009,
+MisenerFloudas2014,BelottiEtAl2013}; they do not use a tree decomposition to
+organize the search. Discretizing the continuous variables and running a
+dynamic program gives neither a valid bound nor a running time that scales
+well with the accuracy: a uniform grid of mesh $h$ on a unit interval has
+$\Theta(1/h)$ points, so tables grow like $h^{-p}$ in the bag size $p$. Sparse
+polynomial optimization exploits the same structure through linear and
+semidefinite hierarchies \cite{WakiEtAl2006,Lasserre2006,BienstockMunoz2018};
+the known bounds on their size are polynomial in the inverse accuracy
+\cite{BienstockMunoz2018,KordaMagronRiosZertuche2025}.
+
+Small treewidth alone does not make continuous nonconvex problems
+tractable. Del Pia and Khajavirad
+\cite[Theorems~1--3]{DelPiaKhajavirad2026} recently showed that
+box-constrained nonconvex quadratic programming (box QP) is solvable in
+strongly polynomial time on forests, but strongly NP-hard at treewidth two
+even with small integer coefficients, and that quartic minimization is
+strongly NP-hard on paths. This paper asks which additional quantitative information makes
+tree decompositions useful for \emph{certified} global optimization of
+mixed-integer problems, and what fails when it is absent.
+
+\paragraph{Results.}\label{sec:intro-results}
+We consider $\min\{F(x):x\in X\}$, with optimal value $\OPT$, where
+$F=\sum_af_a(x_{S_a})$ is a sum of factors, $X$ is a box in which some
+coordinates are integer, and a tree decomposition of the scopes $S_a$ with
+maximum bag size $p$ is given. Two quantities govern the results: upper bounds
+$L_i$ on the curvature of $F$ along each coordinate (for a quadratic,
+$L_i=\max\{H_{ii},0\}$), and quadratic growth of $F$ away from a minimizer
+$x^*$. \emph{Point growth} $F(x)-\OPT\ge g\norm{x-x^*}^2$ on $X$ gives the
+condition number $\kappa=\max\{1,L/g\}$ with $L=\max_iL_i$. \emph{Weighted
+growth} $F(x)-\OPT\ge\gamma\sum_iL_i(x_i-x_i^*)^2$ on $X$ gives
+$\bar\kappa=\max\{1,1/\gamma\}$. Point growth implies weighted growth with
+$\bar\kappa\le\kappa$, and $\bar\kappa$ does not change when continuous
+coordinates are rescaled (Definition~\ref{def:growth}).
+
+Choose finite grids in the coordinates and subtract, at each node $v$ of
+coordinate $i$, the unary correction $L_iw^2/8$, where $w$ is the length of the
+longest grid interval ending at $v$. The minimum of the corrected objective
+over the grid equals the best vertex lower bound of Bajaj and Hasan
+\cite{BajajHasan2020}, taken with per-coordinate curvature bounds, over all
+cells of the product grid (Proposition~\ref{prop:cellwise}), so it is a lower
+bound on $\OPT$. Because the corrections are unary, dynamic programming on
+the given decomposition computes this minimum and all coordinate
+min-marginals without enumerating cells. Grid intervals whose
+endpoint min-marginals exceed the value of a known feasible point are
+removed, and the grids of the successive stages form a \emph{path
+certificate} (Theorem~\ref{thm:certificate}).
+
+Growth enters only the running time. Under weighted growth, grids whose
+spacing grows linearly away from the current corrected minimizer
+(\emph{graded grids}), combined with this filtering, keep
+$O(\theta^{-1}\log(n+2))$ nodes per coordinate at every stage, independently
+of the accuracy, when the grading $\theta$ satisfies $8\bar\kappa\theta^2\le1$
+(Lemma~\ref{lem:states}); filtered uniform grids can need order
+$\sqrt{n\kappa}$ nodes per coordinate (Corollary~\ref{cor:uniformgrid}).
+The algorithm CT (Algorithm~\ref{alg:ct}) tries
+$\theta=2^{-\mu}$ for $\mu=2,3,\dots$ with a cap on the grid size, so the
+growth constant need not be known. Below, $I$ denotes the input length and
+$q\ge0$ an integer.
+
+\begin{theorem}[Main results]\label{thm:intro-main}
+Let $F$ be an explicit rational quadratic on a mixed box $X$, given as a sum
+of factors with a tree decomposition of maximum bag size $p$, and let
+$L_i=\max\{0,\partial_{ii}F\}$.
+\begin{enumerate}[label=(\alph*)]
+\item On every instance, CT$(2^{-q})$ returns a feasible rational point $\hat
+x$ and a path certificate showing $\beta\le\OPT\le F(\hat x)\le\beta+2^{-q}$.
+The certificate is checked by recomputing one dynamic program per stage in
+exact arithmetic, and its validity uses no convexity, uniqueness or growth
+(Theorems~\ref{thm:certificate} and~\ref{thm:approx}).
+\item If $F$ has weighted growth with condition number $\bar\kappa$, every grid
+on which CT$(2^{-q})$ builds tables has $O(\sqrt{\bar\kappa}\log(n+2))$ nodes per
+coordinate, independently of $q$, and CT$(2^{-q})$ uses at most
+$f(p,\bar\kappa)(I+q+1)^5$ bit operations, where
+$f(p,t)=c_0(c_1p\sqrt t)^pt(1+\log_2t)^2$ for absolute
+constants $c_0,c_1$. The certificate has size, and is checked in time, within
+the same bound. Neither the growth constant nor $\bar\kappa$ is an input
+(Lemma~\ref{lem:states} and Theorem~\ref{thm:approx}).
+\item EX (Algorithm~\ref{alg:ex}), which runs CT$(2^{-q})$ for
+$q=1,2,4,\dots$ and snaps each incumbent to a rational stationary point of a
+nearby face of the box until an exact test accepts it, returns a global
+minimizer and $\OPT$ on every instance, with a certificate
+whose validity uses neither growth nor uniqueness. If $F$ has point growth
+with condition number $\kappa$, EX uses at most $f_1(p,\kappa)(I+1)^{C_1}$
+bit operations, for a computable function $f_1$ and an absolute constant
+$C_1$ (Theorem~\ref{thm:exact}).
+\end{enumerate}
+\end{theorem}
+
+In parameterized terms, part~(b) is a fixed-parameter bound in the
+parameters $p$ and $\lceil\bar\kappa\rceil$, which CT neither receives nor
+computes; here $\bar\kappa$ is the smallest weighted condition number of the
+instance, which exists (Section~\ref{sec:setting} and
+Remark~\ref{rem:fpt}). To the best of our knowledge, no earlier result gives
+a running time of the form $f(p,\kappa)\poly(I+q)$ for certified approximation, or
+$f(p,\kappa)\poly(I)$ for exact solution, of nonconvex or mixed-integer box
+quadratic programs (Section~\ref{sec:related}). Under point growth, the
+approximation result extends, with $\kappa$ in place of $\bar\kappa$, to
+factors that are polynomials of fixed degree (Corollary~\ref{cor:poly}), but
+continuous polynomial objectives can have irrational minimizers
+(Example~\ref{ex:polylimits}).
+Exactness itself needs no uniqueness. Every rational mixed box QP has
+\emph{set growth}: $F(x)-\OPT\ge g_S\dist(x,\mathcal S)^2$ on $X$ for some
+$g_S>0$, where $\mathcal S$ is the set of minimizers; we put
+$\kappa_S=\max\{1,L/g_S\}$. A certified gap of $2^{-k}$ with
+$k=\poly(I)+\max\{0,\log_2(1/g_S)\}$ lets the snapping step return an exact
+minimizer (Theorem~\ref{thm:transfer} and Remark~\ref{rem:setgrowth});
+point growth in part~(c) only bounds the time needed to reach this
+accuracy. Table~\ref{tab:results} lists these results together with the
+extensions described below.
+
+\begin{table}[tb]
+\centering
+\small
+\setlength{\tabcolsep}{2.5pt}
+\caption{Main results (lower bounds: Theorem~\ref{thm:intro-lower}), with a
+tree decomposition unless stated otherwise. Bounds are in bit operations,
+except where they count table entries or maximum flows; ``exact'' marks the
+bound for computing an exact minimizer. Certificates are valid without the
+growth hypotheses, which enter only the running times. With
+$\kappa(L',g')=\max\{1,L'/g'\}$, $\kappa_V=\kappa(L^V,g)$ in the row of
+Theorem~\ref{thm:valuefn} and $\kappa_V=\kappa(L^+,g)$, with the reduced
+curvatures $L^+$, in the row of Theorem~\ref{thm:cv}; in these two rows the
+exact bounds with $\kappa_V$ assume a quadratic $F$ with point growth. The
+function $f'$ is computable, $\kappa_{\mathcal K}$ is the condition number of
+the value function on the core (Proposition~\ref{prop:cr-growth}), and the
+degrees of the polynomials and $C_1$ are absolute constants, except in the
+row of Theorem~\ref{thm:valuefn}, where the degrees depend on the time bounds
+of the oracles. In the TU row,
+$K=\max\{K_Z,s/\eta+1,r(5+2\sqrt{n_c\kappa_c})\}$, $n_c$ is the number of
+continuous coordinates and $K_Z\le I$ bounds the number of values of a
+discrete coordinate.}\label{tab:results}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{2.0cm}
+>{\raggedright\arraybackslash}p{6.2cm}
+>{\raggedright\arraybackslash}p{1.8cm}
+>{\raggedright\arraybackslash}p{5.9cm}@{}}
+\toprule
+Result & Setting and hypothesis & Parameters & Bound\\
+\midrule
+Thm.~\ref{thm:approx} & mixed box QP; weighted growth &
+$p,\bar\kappa$ & $f(p,\bar\kappa)(I+q+1)^5$\\
+Thm.~\ref{thm:exact} & as above; point growth & $p,\kappa$ & exact
+$f_1(p,\kappa)(I+1)^{C_1}$\\
+Thm.~\ref{thm:valuefn} & value function, exact polynomial-time oracles;
+point growth of $V$ & $p,\kappa_V$ &
+$f(p,\kappa_V)\poly(\kappa_V,I+q)$; exact $f(p,\kappa_V)\poly(\kappa_V,I)$\\
+Thm.~\ref{thm:cv} & private convex QP blocks, certified responses; point
+growth of $V$ & $p,\kappa_V$ & as above; exact $2^{O(p)}\poly(I)$ if
+$L^+=0$\\
+Thms.~\ref{thm:cr-oracle}, \ref{thm:cr-search}, \ref{thm:cr-exact} &
+residual concave in each coordinate, balanced; core of $k$ continuous
+coordinates, no decomposition; core growth & $k,\kappa_{\mathcal K}$ & one maximum flow per
+query; exact $8^k(1+\sqrt{k\kappa_{\mathcal K}})^k\poly(I)$\\
+Thm.~\ref{thm:balanced} & balanced box QP, no decomposition; point growth &
+$n,\kappa$ & $(n\kappa(I+q+1))^{O(1)}$; exact $(n\kappa(I+1))^{O(1)}$\\
+Thm.~\ref{thm:tu-approx} & TU coupling, aligned data, exactly feasible
+output; set growth, at most $r$ optimal values per coordinate &
+$p,\kappa_c,s/\eta,r$ & $O(I+q)$ levels of $K^p$ table entries\\
+Thm.~\ref{thm:cells} & finite optimal set; set growth & $p,r,\kappa_S$ &
+$K_S^p\poly(I+q)$, $K_S=O(r\sqrt{n\kappa_S})$; exact
+$K_S^p\poly(I+\log\kappa_S)$\\
+Thm.~\ref{thm:endpointset}, Cor.~\ref{cor:facecsp} & $H_{ii}\le0$ for all
+$i$, mixed box; no growth; output: a description of the optimal set & $p$ &
+$2^{O(p)}\poly(I)$\\
+Thm.~\ref{thm:diagdiscovery} & continuous box QP, diagonal Lagrangian
+certificate; set growth; outputs also an exact description of the optimal
+set & $p,\kappa_S$ & exact
+$f'(p,\kappa_S)\poly(I)$\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Scope of the growth hypothesis.}
+For a box QP, minimality alone confines nonconvexity: at every minimizer, the
+Hessian block $H_{J_0J_0}$ of the set $J_0$ of continuous coordinates
+strictly inside their bounds is positive semidefinite, so every direction of
+negative curvature involves active bounds or integer coordinates. Growth adds
+quantitative conditions (Lemma~\ref{lem:growthcert}). Locally, point growth
+forces $H_{J_0J_0}\succeq2gI$, so $\kappa\ge2L/\lambda_{\min}(H_{J_0J_0})$ if
+$J_0\ne\emptyset$, and weighted growth forces
+$H_{J_0J_0}\succeq2\gamma\diag(L_i)_{i\in J_0}$. Globally, every other local
+minimizer $x'$ satisfies $F(x')-\OPT\ge g\norm{x'-x^*}^2$, so
+$\kappa\ge L\norm{x'-x^*}^2/(F(x')-\OPT)$. Within these conditions an
+instance can have an indefinite Hessian, $\kappa\le\frac{21}4$ and
+exponentially many strict local minima (Example~\ref{ex:family}). The
+condition number can be exponential in $I$, already for $n=2$
+(Section~\ref{sec:setting}). We do not claim that $\kappa$ or $\bar\kappa$
+is moderate for the application models mentioned above; they enter only the
+running-time bounds, never the validity of the output.
+
+\paragraph{Lower bounds.}
+Parts (a)--(c) of Theorem~\ref{thm:intro-lower} assume P${}\ne{}$NP, the
+exponential-time hypothesis (ETH) that, for some $c>0$, no algorithm decides
+3-SAT on $n'$ variables in time $2^{cn'}$ \cite{ImpagliazzoPaturiZane2001},
+or its randomized version (rETH), which makes the same claim for algorithms
+with error probability at most $1/3$ \cite{DellEtAl2014}; part (d) is
+unconditional.
+
+\begin{theorem}[Lower bounds]\label{thm:intro-lower}
+\leavevmode
+\begin{enumerate}[label=(\alph*)]
+\item Unless P${}={}$NP, no algorithm computes, for every rational continuous
+box QP with a supplied tree decomposition of maximum bag size three and a
+unique minimizer, $\OPT$ within $2^{-q}$ in time polynomial in
+$I+q+\log\kappa$. The hard instances have $\log\kappa=O(I)$
+(Proposition~\ref{lim:prop:unique} and Corollary~\ref{lim:cor:nopolylog}).
+\item Computing $\OPT$ within $\frac12$ is NP-hard for box QPs with
+$\bar\kappa\le\kappa\le2$, continuous or all-binary, by a reduction from
+maximum independent set; under ETH it cannot be done in time
+$2^{o(p)}I^{O(1)}$ (Proposition~\ref{prop:lbwidth}).
+\item Under rETH there are no computable $f$ and computable nondecreasing
+unbounded $\psi\ge1$ such that some algorithm outputs, for every integer box QP
+with a supplied tree decomposition of maximum bag size $p$ and a unique
+minimizer, a feasible point
+within $\frac12$ of $\OPT$ in time $f(p)(\kappa I)^{p/\psi(p)}$
+(Proposition~\ref{prop:lbproduct}).
+\item For $p\ge1$ and $\kappa\ge8p$, every deterministic algorithm that
+accesses $F$ only through its values and returns a point with gap below
+$Lp/\kappa$ for all functions on $[0,1]^p$ with upper coordinate curvature $L$, a
+unique minimizer and point growth $L/\kappa$ makes at least
+$(\kappa/(8p))^{p/2}-1$ evaluations on one of them
+(Proposition~\ref{lim:prop:oracle}).
+\end{enumerate}
+\end{theorem}
+
+Thus, unless P${}={}$NP, neither parameter can be dropped and the dependence
+on $\kappa$ cannot be polylogarithmic; under ETH the dependence on $p$ is
+exponential even for $\kappa\le2$; and under rETH the exponent of $\kappa$ in
+a bound $f(p)\kappa^{a(p)}\poly(I)$ cannot be $o(p)$, already for integer box
+quadratics, whereas Theorem~\ref{thm:intro-main}(b) has exponent $p/2+O(1)$.
+Because $\bar\kappa\le\kappa$, the same holds for $\bar\kappa$. In the
+value-oracle model of part~(d), CT attains the optimal exponent $p/2$ of
+$\kappa$ (Remark~\ref{lim:rem:oracle}).
+
+Section~\ref{sec:limits} proves further limits. The expanding-box chain of
+length $m$ (Example~\ref{ex:chain}) has bag size three and $\kappa\le80$, and
+CT certifies accuracy $2^{-q}$ on it in time polynomial in $m$ and $q$, but
+the exact Bellman message for its last state has at least $2^{m-1}$ quadratic
+pieces
+(Proposition~\ref{lim:prop:messages}). Growth towards a continuum of
+minimizers does not bound the grids produced by filtering, and under growth
+towards an unknown optimal set, a deterministic algorithm that queries values
+and derivatives needs at least of order $\varepsilon^{-n/2}$ queries for
+accuracy $\varepsilon$, already when $\kappa_S=1$. A path of local affine
+equalities makes the problem NP-hard at bag size three and $\kappa=1$, and
+matching separator moments of any finite order gives no local error bound in
+terms of negative curvature. As far as we know, the expanding-box chain, the
+unique-minimizer hardness with explicit growth (a refinement of
+\cite[Remark~2]{DelPiaKhajavirad2026}), the rETH bound (a quadratic encoding of multicolored clique
+with a unique minimizer) and the moment obstruction are new; the other statements adapt
+standard constructions, among them the running-sum encoding of Subset Sum of
+Bienstock and Mu\~noz \cite[Appendix~A]{BienstockMunoz2018} (see also
+\cite[Example~1.1]{CifuentesParrilo2016}).
+
+\paragraph{Conditional recourse.}
+A stiff convex term inflates the condition number even when the subproblem
+it defines is easy. Exact minimization over some variables for fixed values
+of the others (\emph{recourse}) preserves upper coordinate curvatures and
+growth, so the certificate and the growth analysis apply to the value
+function whenever it is a sum of factors that can be evaluated exactly in
+polynomial time (Theorem~\ref{thm:valuefn}). Piecewise-affine optimal
+responses of private convex quadratic blocks certify a reduction of the
+coordinate curvatures of the value function that is the largest possible for
+the block (Theorem~\ref{thm:cv} and Proposition~\ref{prop:vf-curv}), but
+recourse does not reduce the parameter to the ratio of negative curvature to
+growth in general (Proposition~\ref{prop:cv-limit}). For a quadratic whose recourse
+problem is concave in each coordinate and submodular after sign changes, each
+recourse value is one minimum cut with a flow certificate
+(Theorems~\ref{thm:cr-oracle} and~\ref{thm:cr-search}), and for balanced box
+quadratics the grid problem itself is a minimum cut, so no tree decomposition
+is needed (Theorem~\ref{thm:balanced}). Parametric quadratic programming, cut
+representations of submodular quadratic functions and threshold encodings of
+ordered labels are classical; what is new is the curvature and growth
+accounting that keeps them inside the certificate.
+
+\paragraph{Coupling constraints.}
+The certificate rests on rounding each coordinate independently, which breaks
+under coupling constraints. Totally unimodular (TU) coupling constraints with
+mesh-aligned data admit exactly feasible correlated rounding, which restores
+the certificate and, for quadratics, exact output. Under set growth with
+finitely many optimal values per coordinate, the algorithm is polynomial for
+fixed bag size $p$ when the condition number $\kappa_c$ (built from a
+curvature bound for the continuous variables and the set-growth constant),
+the box widths measured in mesh units ($s/\eta$) and the number $r$ of optimal values per coordinate are
+polynomially bounded (Theorem~\ref{thm:tu-approx}). Because its meshes are
+uniform, it is not fixed-parameter tractable in $(p,\kappa_c)$
+(Section~\ref{sec:tu-limits}), and its pseudopolynomial first grid cannot be
+removed unless P${}={}$NP (Proposition~\ref{lim:prop:constraints}).
+
+\paragraph{Several minimizers.}
+One graded grid can need exponential time already with two isolated
+minimizers (Proposition~\ref{prop:twocenters}). If the optimal set is finite,
+unions of uniform cells keep $O(r\sqrt{n\kappa_S})$ nodes per coordinate,
+where $r$ bounds the number of optimal values of a coordinate
+(Theorem~\ref{thm:cells}). For quadratics with nonpositive Hessian
+diagonal on a mixed box, a dynamic program over the box endpoints describes
+the whole optimal set as a constraint problem on the same tree decomposition.
+From it, uniqueness of the minimizer, the dimension of the optimal set and,
+if it is finite, the number of minimizers are computed in
+$2^{O(p)}\poly(I)$ bit operations
+(Theorem~\ref{thm:endpointset} and Corollary~\ref{cor:facecsp}). This
+extends Rosenberg's face description of the optimal set of a multilinear
+function \cite{Rosenberg1972} and zero-residual descriptions of all optimal
+labelings of discrete problems \cite{WainwrightJaakkolaWillsky2005,Werner2007}
+to strictly concave coordinates and mixed boxes, in factored form. For
+continuous box quadratics with a classical diagonal Lagrangian certificate of
+optimality \cite{JeyakumarRubinovWu2006,LiWuQuan2015}, which is the same at
+every minimizer, an exact minimizer and an exact description of the optimal
+set are found in $f'(p,\kappa_S)\poly(I)$ bit operations, for a computable function
+$f'$, without knowledge of $g_S$ (Theorem~\ref{thm:diagdiscovery}).
+
+\paragraph{Organization.}
+Section~\ref{sec:related} reviews related work, and Section~\ref{sec:setting}
+fixes the model, the curvature bounds and the growth conditions.
+Sections~\ref{sec:grids}--\ref{sec:exact} prove Theorem~\ref{thm:intro-main},
+Sections~\ref{sec:recourse}--\ref{sec:optsets} treat the extensions of
+Table~\ref{tab:results}, Section~\ref{sec:limits} proves
+Theorem~\ref{thm:intro-lower} and the further limits,
+Section~\ref{sec:computation} reports experiments, and
+Section~\ref{sec:conclusion} lists open problems. The appendices follow the
+order of the sections and contain the longer proofs and secondary results.

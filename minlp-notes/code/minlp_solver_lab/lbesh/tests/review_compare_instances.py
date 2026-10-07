@@ -2,7 +2,7 @@
 on small convex GDP instances from gdp_instances.INSTANCES.
 
 Run from code/minlp_solver_lab:
-  OMP_NUM_THREADS=1 PATH=/home/sgusev/miniconda3/envs/solvers/bin:$PATH \
+  OMP_NUM_THREADS=1 \
     uv run python lbesh/tests/review_compare_instances.py [names...]
 """
 import sys, time, json, logging, math, traceback

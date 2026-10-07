@@ -120,7 +120,7 @@ separation still require the predeclared experiment and external instances.
 The two original-model tests passed:
 
 ```sh
-cd /home/sgusev/repo/minlp-notes/code/minlp_solver_lab
+cd /workspace/minlp-notes/code/minlp_solver_lab
 .venv/bin/python -m unittest lbesh_research.test_instances_independent -v
 ```
 
@@ -133,7 +133,7 @@ The original installation and successful enumeration commands were:
 ```sh
 uv venv /tmp/lbesh-independent-instances-env --python 3.12
 uv pip install --python /tmp/lbesh-independent-instances-env/bin/python cvxpy pyomo
-cd /home/sgusev/repo/minlp-notes/code/minlp_solver_lab
+cd /workspace/minlp-notes/code/minlp_solver_lab
 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 /tmp/lbesh-independent-instances-env/bin/python -m lbesh_research.test_instances_independent --enumerate > /tmp/lbesh-independent-instances-enumeration.json
 ```
 

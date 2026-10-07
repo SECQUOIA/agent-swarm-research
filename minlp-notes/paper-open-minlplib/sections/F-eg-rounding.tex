@@ -1,0 +1,424 @@
+% Plan: development/outline.md, section 6, item F. Proof of the padding lemma
+% from development/eg-lemma-A1.md, whose underflow argument is replaced here;
+% audit code and results in development/eg-audit/ (out/compare.log,
+% out/run_audit.log, out/logs/); corrections and the trust-base wording from
+% the separate review development/reviews/sol-eg-audit.md (items 1-4) and
+% development/revision-notes.md.
+\section{Rounding-error analysis for the \inst{eg} certificates}\label{app:egrounding}
+
+The displayed dual bounds of \cref{thm:eg-bounds} rest on the second code, the leaf re-certifier (\cref{app:eg-computation}), which pads its binary64 enclosures explicitly.
+We prove that the paddings suffice if every exponential and integer power that the program obtains from NumPy is accurate to a relative $10^{-14}$ (\cref{lem:eg-padding}).
+On the machine used, NumPy~2.5.1 evaluates these functions with Intel SVML routines (through its AVX-512 loops), for which we know no proved error bound, so an accuracy auditor checked every such value used in a rerun on all leaves (\cref{app:egrounding-auditor,app:egrounding-run}); \cref{thm:eg-trust} states the resulting trust base.
+
+\subsection{Setting, hypotheses and statement}\label{app:egrounding-setting}
+
+The re-certifier reads the data of each instance from the MINLPLib GAMS file as exact rationals; an exact comparison found them identical to the OSIL data.
+In this section a star marks the exact data and the exact quantities of \cref{app:eg-lemmas}: $a^*_m$, $z^*_{mi}$, $\gamma^*_i<0$, $s^*_i\in\{1,\frac1{10}\}$, $\lambda^*_i$, and $t^*_{mi}$, $E^*_m$, $w^*_m$, $S_0^*$, $S_1^*$, $S_2^*$, $T^*$, $K_1^*$, $K_D^*$, $G^*$ (for $G_0$), $\nabla^*$, $H^*$, $\ell^*_m$, $q^*$, $P_2^*$, $P_3^*$, formed with the exact data at the float centre $c$.
+The exact row function is $g^*(x)=\sum_ma^*_m\exp\bigl(\sum_i\gamma^*_i(s^*_ix_i-z^*_{mi})^2\bigr)+\lambda^*\cdot x$.
+The program rounds the term data to doubles, $\hat a=\fl(a^*)$, $\hat z=\fl(z^*)$, $\hat\gamma=\fl(\gamma^*)$, $\hat s=\fl(s^*)$ and $\hat\lambda=\fl(\lambda^*)$; it keeps $c_k$, the side-row bounds, the variable bounds and the target $\theta^*_I$ exact for the final tests.
+Symbols without a star denote floats computed by the program.
+The tables below name some of them as in the archived code, to make each line easy to check against it.
+
+For these programs we use \cref{hyp:fp-ieee} in the following form.
+NumPy float64 arithmetic is IEEE~754 binary64 with round-to-nearest-even and gradual underflow; comparisons, \texttt{abs}, \texttt{max}, \texttt{min}, \texttt{where}, \texttt{clip}, \texttt{floor}, \texttt{rint} and int64 integer operations are exact; Python integer and \texttt{Fraction} arithmetic is exact, and the conversion of a rational to a double is correctly rounded.
+Sums and dot products may be evaluated in any order, with or without fused multiply-add.
+
+Let $\varepsilon=10^{-14}$.
+The two conditions below concern the results $y$ of the calls that the enclosure procedures make for a box $X=[lo,hi]$ (floats, $lo\le hi$, integer coordinates relaxed to intervals):
+\begin{align}
+  &\text{every call } y=\exp(x)\text{ satisfies } |y-e^x|\le\varepsilon e^x \text{ if } x\ge-708, \text{ and } 0\le y\le2^{-1020} \text{ if } x<-708; \tag{E}\label{eq:eg-E}\\
+  &\text{every call } y=x^k\ (k\in\{2,3,4\}) \text{ satisfies } x\ge0 \text{ and } |y-x^k|\le\varepsilon x^k. \tag{P}\label{eq:eg-P}
+\end{align}
+The root boxes of the search contain the box of the model, slightly enlarged outward where its ends are not floats; every leaf and every piece of a split leaf lies in a root box.
+
+\begin{lemma}[paddings of the leaf re-certifier]\label{lem:eg-padding}
+Assume \cref{hyp:fp-ieee} in the form above.
+Let $X=[lo,hi]$ be a box of floats contained in a root box of the search for an instance $I$, and assume \eqref{eq:eg-E} and \eqref{eq:eg-P} for the calls made for $X$.
+Let the natural enclosure return $n^{\mathrm{lo}}_k,n^{\mathrm{hi}}_k$ and the Taylor model return the centre $c$, the gradients $\beta_k$ and the constants $aL_k,aU_k$, with the program's assertion $\delta E<10^{-6}$ satisfied.
+Then for every row $k$ and every $x\in X$:
+\begin{enumerate}
+\item[(i)] $n^{\mathrm{lo}}_k\le g^*_k(x)\le n^{\mathrm{hi}}_k$;
+\item[(ii)] $aL_k+\beta_k\cdot(x-c)\le g^*_k(x)\le aU_k+\beta_k\cdot(x-c)$.
+\end{enumerate}
+That is, the computed floats satisfy \eqref{eq:eg-rowbounds} for the exact rows.
+\end{lemma}
+
+Infinite values satisfy (i) and (ii) trivially, and the re-certifier ignores them; a NaN would make the exact tests raise an error.
+
+\subsection{Rounding facts}\label{app:egrounding-facts}
+
+Let $\uround=2^{-53}$, $\gamma_n=n\uround/(1-n\uround)$ and $\eta_0=2^{-1075}$.
+We use the following consequences of \cref{hyp:fp-ieee}.
+\begin{enumerate}
+\item[(F0)] \emph{One operation.} If $z$ is the exact result of $+,-,\times,\div$ on floats and $\hat z$ the computed one, then $|\hat z-z|\le\uround|z|$ and $|\hat z-z|\le\uround|\hat z|$, unless the result is subnormal.
+A subnormal sum or difference is exact; a subnormal product or quotient has error at most $\eta_0$.
+Rounding is monotone: $z_1\le z_2$ implies $\hat z_1\le\hat z_2$.
+\item[(F1)] \emph{Data.} The double nearest to a rational differs from it by a relative $\uround$ at most.
+$\hat s=1$ is exact, and $\hat s=\fl(0.1)$ exceeds $0.1$ by a relative $\frac12\uround$; so $\hat s\ge s^*$ and $\hat s^2\ge s^{*2}$.
+\item[(F2)] \emph{Sums.} A float sum of $n$ terms, in any order, differs from the exact sum by at most $\gamma_{n-1}\sum|x_i|$: each term passes through at most $n-1$ roundings, and $|\prod_{j\le J}(1+\delta_j)-1|\le\gamma_J$ for $|\delta_j|\le\uround$.
+\item[(F3)] \emph{Sums of products.} A float sum of $n$ products of $k$ factors, in any order and with or without fused multiply-add, has error at most $\gamma_{n+k-2}\sum|\text{products}|$, by the same argument.
+\item[(F4)] \emph{Computed pads.} A nonnegative expression in nonnegative floats evaluated with $j$ operations $+$ and $\times$ is computed with a value of at least $(1-\uround)^j$ times its exact value.
+\item[(F5)] \emph{Directed steps.} If a pad $e\ge0$ is subtracted from a float $v$, then $\fl(v-e)\le v-e+\uround|\fl(v-e)|$; multiplying by a float factor $1+\delta$ is exact up to a relative $\uround$.
+A pad applied by a float operation must therefore exceed the error it covers by $\uround$ times the padded value; every line below includes this.
+\end{enumerate}
+The code's constants written $10^{-15}$, $10^{-14}$, $10^{-13}$, $10^{-12}$, $1.1\cdot10^{-14}$ and $1.02$ are doubles within a relative $8\cdot10^{-17}$ of these decimals.
+The factors written $1\mp10^{-14}$, $1+10^{-15}$, $1+10^{-13}$ and $1+10^{-12}$ are the doubles $1\mp\sci{9.992007}{-15}$, $1+\sci{1.110223}{-15}$, $1+\sci{9.992007}{-14}$ and $1+\sci{1.0000889}{-12}$.
+All headroom values below were computed with these exact values and are rounded down.
+We use $\uround\le\sci{1.111}{-16}$, $\varepsilon=90.07\,\uround$, $\gamma_6\le\sci{6.67}{-16}$, $\gamma_{96}\le\sci{1.066}{-14}$, $\gamma_{97}\le\sci{1.077}{-14}$, $\gamma_{98}\le\sci{1.089}{-14}$, $\gamma_{99}\le\sci{1.100}{-14}$ and $\gamma_{348}\le\sci{3.864}{-14}$.
+Every pad is itself evaluated in floats.
+By (F4) its computed value is at least $(1-j\uround)$ times its exact value, with $j\le10$ for per-element pads and $j\le100$ for 97-term pads; a headroom of 2 or more absorbs this, and where the headroom is smaller the stated tolerance includes it.
+
+\paragraph{Underflow.}
+The tables treat relative errors only; underflow is covered as follows.
+We computed bounds from the exact data and the root boxes in rational arithmetic.
+On the root boxes the exact exponents satisfy $-14.25\le E\le0$, so the branches of the code for exponents below $-699$ are never taken and no exponential result is subnormal.
+The data and root boxes also give $|\hat a|\le1712$, $\sum_m|\hat a_m|\le39{,}667$, $|t|\le3.01$, $|k_{1,i}|r_i\le13.91$, $\ell_m\le16.97$ and $q\le5.14$, so that $e^{\ell_m}<\sci{2.4}{7}$ and $\ell_m+2q\le27.3$.
+With these bounds, which hold with room to spare near the computed values, the first-order sensitivity of every output ($n^{\mathrm{lo}}$, $n^{\mathrm{hi}}$, $aL$, $aU$, and the pad $e_\beta$ against $|\beta-\nabla^*|$) to any intermediate result is below $10^{16}$.
+The largest factors occur in the fourth-order remainder: its sensitivity to $q$ is at most $\sum_m|\hat a_m|\,e^{16.97}\cdot7{,}401<\sci{7}{15}$, and those to $\ell_m$ and to the exponents $E_{0,m}$ are below $\sci{1.2}{15}$.
+An underflow changes one intermediate result by at most $\eta_0$, and fewer than $10^6$ operations feed one output.
+So all underflow errors of one output total less than $10^{22}\eta_0<10^{-301}$.
+Every output ends with a relative pad, at least $10^{-13}$ times a sum $\sigma$ that bounds the output in magnitude, followed by an absolute pad of $10^{-300}$.
+If $\sigma>\sci{4}{-285}$, the part of the relative pad that the rounding errors do not use exceeds $10^{-298}$.
+Otherwise the output is at most about $\sci{4}{-285}$ in magnitude, and adding or subtracting $10^{-300}$ moves it by at least $10^{-300}-\uround\cdot\sci{4.02}{-285}>\sci{5}{-301}$.
+Either way the underflow errors are absorbed.
+
+\subsection{Proof of \texorpdfstring{\cref{lem:eg-padding}}{the padding lemma}}\label{app:egrounding-proof}
+
+For each computed quantity, \cref{tab:eg-natural,tab:eg-taylor} give the property it must have, the worst-case error that the pad must cover (including the rounding of the padding operations, (F5)), the pad in the code, and the headroom: the exact value of the pad divided by the error it covers, or the largest relative error of the exponential or power that the line tolerates.
+
+% Table cells of the two long tables: small type, ragged right.
+\providecommand{\egcell}[1]{\scriptsize\raggedright\let\\\tabularnewline #1}
+
+\paragraph{Natural enclosure.}
+For $x_i\in[lo_i,hi_i]$, $t^*_{mi}(x)=s^*_ix_i-z^*_{mi}$ is increasing in $x_i$.
+The program computes $t^{\mathrm{l}}=\fl(\fl(\hat s\,lo)-\hat z)$, $t^{\mathrm{h}}=\fl(\fl(\hat s\,hi)-\hat z)$, widens them by $\delta t$, and proceeds as in \cref{lem:eg-natural}.
+
+\begingroup\setlength{\LTcapwidth}{\textwidth}\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.0}
+\begin{longtable}{@{}p{1.9cm}p{2.8cm}p{5.2cm}p{4.0cm}p{1.25cm}@{}}
+\caption{Natural enclosure: errors and pads.}\label{tab:eg-natural}\\
+\toprule
+\egcell{quantity} & \egcell{property} & \egcell{error to cover} & \egcell{pad} & \egcell{headroom}\\
+\midrule
+\endfirsthead
+\toprule
+\egcell{quantity} & \egcell{property} & \egcell{error to cover} & \egcell{pad} & \egcell{headroom}\\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\egcell{ends $t^{\mathrm{l}},t^{\mathrm{h}}$ (\texttt{tl}, \texttt{th})} &
+\egcell{after widening, $t^{\mathrm{l}}\le t^*_{mi}(lo_i)$ and $t^{\mathrm{h}}\ge t^*_{mi}(hi_i)$} &
+\egcell{data $\uround|\hat z|$; product and $\hat s$ vs $s^*$: $2.01\uround|\hat sx|$; sum $\uround|t|$; widening step $\uround(|t|+\delta t)$} &
+\egcell{$\delta t=10^{-15}(|\hat z|+\hat s\max(|lo|,|hi|)+\max(|t^{\mathrm{l}}|,|t^{\mathrm{h}}|))+10^{-300}$} &
+\egcell{4.48}\\
+\egcell{squares $\theta^{\min},\theta^{\max}$ (\texttt{sqmin}, \texttt{sqmax})} &
+\egcell{bounds on $t^{*2}$ over the widened interval} &
+\egcell{one rounding ($\uround$), carried to the next line} & \egcell{---} & \egcell{---}\\
+\egcell{exponent ends $E^{\mathrm{lo}},E^{\mathrm{hi}}$} &
+\egcell{$E^{\mathrm{lo}}\le E^*_m(x)\le E^{\mathrm{hi}}$ on $X$} &
+\egcell{data $\uround$, square $\uround$, product $\uround$, 7-term sum $\gamma_6$, widening $\uround$: at most $10\uround\sum|\hat\gamma|\theta^{\max}$} &
+\egcell{$10^{-14}\sum|\hat\gamma|\theta^{\max}+10^{-300}$} & \egcell{9.0}\\
+\egcell{exponentials $\xi^{\mathrm{lo}},\xi^{\mathrm{hi}}$ (\texttt{elo}, \texttt{ehi})} &
+\egcell{approximations of $e^{E^{\mathrm{lo}}}$ and $e^{E^{\mathrm{hi}}}$; they need not bound them, because their errors are covered in the next line} &
+\egcell{\eqref{eq:eg-E}; one product; $\xi^{\mathrm{lo}}=0$ if $E^{\mathrm{lo}}<-700$} &
+\egcell{factors $1\mp10^{-14}$; $+10^{-300}$ on $\xi^{\mathrm{hi}}$} & \egcell{chained to the next line}\\
+\egcell{term ends $b^{\mathrm{lo}}_m,b^{\mathrm{hi}}_m$ (\texttt{tlo}, \texttt{thi})} &
+\egcell{$b^{\mathrm{lo}}_m\le a^*_me^{E^*_m(x)}\le b^{\mathrm{hi}}_m$ on $X$} &
+\egcell{for $\hat a>0$, lower end: $(1+\varepsilon)(1-\sci{9.992}{-15})(1+\uround)^4(1-10^{-14}(1-\uround))\le1$ is needed; for $\hat a<0$ the mirror condition through $\xi^{\mathrm{hi}}$} &
+\egcell{$\mp10^{-14}|\cdot|\mp10^{-300}$} &
+\egcell{holds for $\varepsilon\le\sci{1.954}{-14}$}\\
+\egcell{97-term sums} &
+\egcell{lower and upper bounds on $\sum_m b_m$} &
+\egcell{$\gamma_{96}\sum|b_m|$ and two pad steps} &
+\egcell{$10^{-13}\sum|b_m|+10^{-300}$} & \egcell{9.1}\\
+\egcell{linear part, outputs $n^{\mathrm{lo}},n^{\mathrm{hi}}$} &
+\egcell{add $\min$ and $\max$ of $\lambda^*\cdot x$ over $X$} &
+\egcell{data $\uround$, product $\uround$, 7-term sum $\gamma_6$, final sum $\uround$, pad steps $2\uround$} &
+\egcell{$10^{-13}(\sum|\text{linear terms}|+|\text{sum of terms}|)+10^{-300}$} & \egcell{$>10$}\\
+\end{longtable}
+\endgroup
+
+In the line for the exponent ends, the error of $E^{\mathrm{hi}}$ is bounded by the same expression because $\theta^{\min}\le\theta^{\max}$.
+In the line for the term ends, the two conditions hold for $\varepsilon$ up to about $\sci{1.95479}{-14}$.
+When $E^{\mathrm{hi}}<-708$, condition \eqref{eq:eg-E} only gives $y\ge0$; then $\xi^{\mathrm{hi}}\ge10^{-300}(1-\uround)>e^{E^{\mathrm{hi}}}$ because of the absolute pad.
+When $E^{\mathrm{lo}}<-700$, the lower term end of a positive weight is $-10^{-300}$, below the positive exact term.
+Since the exponential is increasing and each term lies between its two ends, item~(i) of \cref{lem:eg-padding} follows.
+
+\paragraph{Taylor model.}
+The program forms the quantities of \cref{lem:eg-taylor} at the float centre $c$ from rounded data and pads each of them.
+Let $\mathcal D\subseteq\{1,\dots,7\}$ be the coordinates with $r_i>0$ for some box of the batch; for $i\notin\mathcal D$ every box has $r_i=0$, so $d_i=0$ and these coordinates drop out.
+If $\mathcal D$ is empty, $X$ is a point and the program sets $\beta=0$ and $P=Q_L=Q_U=0$, which is correct because $d=0$.
+
+\begingroup\setlength{\LTcapwidth}{\textwidth}\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.0}
+\begin{longtable}{@{}p{1.9cm}p{2.8cm}p{5.2cm}p{4.0cm}p{1.25cm}@{}}
+\caption{Taylor model: errors and pads.
+$\tau_m=\max_{i\in\mathcal D}\fl(|t_{mi}|+\delta t_{mi})$ and $\delta\tau_m=\max_{i\in\mathcal D}\delta t_{mi}$.}\label{tab:eg-taylor}\\
+\toprule
+\egcell{quantity} & \egcell{property} & \egcell{error to cover} & \egcell{pad} & \egcell{headroom}\\
+\midrule
+\endfirsthead
+\toprule
+\egcell{quantity} & \egcell{property} & \egcell{error to cover} & \egcell{pad} & \egcell{headroom}\\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\egcell{centre $c$, radii $r$} &
+\egcell{$c\in X$; $r_i\ge\max(hi_i-c_i,c_i-lo_i)$} &
+\egcell{$\fl(hi-c)\ge(hi-c)/(1+\uround)$; product $\uround$} &
+\egcell{factor $1+10^{-15}$; $c$ clipped to $X$} & \egcell{5.0}\\
+\egcell{$t$, $\delta t$} &
+\egcell{$|t-t^*|\le\delta t$} &
+\egcell{$\uround|\hat z|+2.01\uround|\hat sc|+\uround|t|$} &
+\egcell{$10^{-15}(|\hat z|+|\hat sc|+|t|)+10^{-300}$} & \egcell{4.48}\\
+\egcell{$E_0$, $\delta E$} &
+\egcell{$|E_0-E^*_0|\le\delta E$; the program asserts $\delta E<10^{-6}$} &
+\egcell{from $t$: $|\hat\gamma|(1+\uround)(2|t|+e_t)e_t$ with $e_t\le\delta t/4.48$; rounding: data, two products, 7-term sum, at most $9\uround\sum|\hat\gamma|t^2$} &
+\egcell{$\sum|\hat\gamma|\bigl[(2|t|+\delta t)\delta t+10^{-14}t^2\bigr]+10^{-300}$} &
+\egcell{4.48 (data); 10 (rounding)}\\
+\egcell{$w$, $\delta w$} &
+\egcell{$|w-w^*|\le\delta w$} &
+\egcell{with $w=\fl(\hat a\,y)$, $y=\exp(E_0)$: $|w|\,\bigl(e^{\delta E}/((1-\uround)^2(1-\varepsilon))-1\bigr)\le|w|(1.000001\,\delta E+\varepsilon+2.01\uround)$} &
+\egcell{$|w|(1.02\,\delta E+1.1\cdot10^{-14})+10^{-300}$ (and $|\hat a|10^{-300}$ if $E_0<-699$; $w=0$ if $E_0<-700$)} &
+\egcell{holds for $\varepsilon\le\sci{1.077}{-14}$}\\
+\egcell{$\bar w=|w|+\delta w$ (\texttt{AW})} &
+\egcell{$\bar w\ge|w^*|(1-\uround)$} &
+\egcell{one rounding} &
+\egcell{absorbed by the factors $1+10^{-12}$ on $P$} & \egcell{---}\\
+\egcell{$S_0$, $e_0$; $G$, $e_G$} &
+\egcell{$|S_0-S_0^*|\le e_0$; $|G-G^*|\le e_G$} &
+\egcell{$\sum\delta w+\gamma_{96}\sum|w|$; linear part at $c$ and final sum: at most $9\uround(|S_0|+\sum|\hat\lambda c|)$} &
+\egcell{$e_0=\sum\delta w+10^{-13}\sum|w|$; $e_G=e_0+10^{-13}(|S_0|+\sum|\hat\lambda c|)+10^{-300}$} & \egcell{9.1}\\
+\egcell{$\tau$, $\delta\tau$} &
+\egcell{$\tau_m\ge|t_{mi}|,|t^*_{mi}|$; $\delta\tau_m\ge|t_{mi}-t^*_{mi}|$} &
+\egcell{$|t^*|\le|t|+\delta t/4.48\le(|t|+\delta t)(1-\uround)$, as $\delta t\ge9\uround|t|$} & \egcell{none needed} & \egcell{---}\\
+\egcell{$\kappa=$ \texttt{ak1}, $k_D$} &
+\egcell{$\kappa_i\ge|K^*_{1,i}|$; $|k_{D,i}|(1+10^{-14})\ge|K^*_{D,i}|$} &
+\egcell{$k_1=\fl(2\hat\gamma\hat s)$: $3\uround$; $k_D=\fl(2\hat\gamma\fl(\hat s^2))$: $5\uround$; product $\uround$} &
+\egcell{factor $1+10^{-14}$} & \egcell{15}\\
+\egcell{$S_1$, $e_1$} &
+\egcell{$|S_{1,i}-S^*_{1,i}|\le e_1$} &
+\egcell{$|wt-w^*t^*|\le|w-w^*||t^*|+|w||t-t^*|$: $\sum(\delta w\,\tau+|w|\delta\tau)$; sum of products (F3): $\gamma_{97}\sum|w|\tau$} &
+\egcell{$\sum(\delta w\,\tau+|w|\delta\tau+10^{-13}|w|\tau)$} &
+\egcell{9.2 (rounding); data part by the slack of $\delta w$ and $\delta t$}\\
+\egcell{$S_2$, $e_2$} &
+\egcell{$|S_{2,ij}-S^*_{2,ij}|\le e_2$} &
+\egcell{$\sum(\delta w\,\tau^2+2|w|\tau\,\delta\tau)$; $\gamma_{98}\sum|w|\tau^2$; $\tau^2$ by \eqref{eq:eg-P}} &
+\egcell{$\sum(\delta w\,\tau^2+2|w|\tau\,\delta\tau+10^{-13}|w|\tau^2)$} & \egcell{9.1}\\
+\egcell{$e_3$; $s_3=|T|+e_3$} &
+\egcell{$s_{3,ijl}\ge|T^*_{ijl}|$} &
+\egcell{$\sum(\delta w\,\tau^3+3|w|\tau^2\delta\tau)$; four-factor products $\gamma_{99}\sum|w|\tau^3$; the sum $|T|+e_3$: $\uround$; $\tau^2,\tau^3$ by \eqref{eq:eg-P}} &
+\egcell{$\sum(\delta w\,\tau^3+3|w|\tau^2\delta\tau+10^{-13}|w|\tau^3)$} & \egcell{9.0}\\
+\egcell{gradient $\beta$, $e_\beta$ (\texttt{egrad})} &
+\egcell{$|\beta_i-\nabla^*_i|\le e_{\beta,i}$} &
+\egcell{$|K^*_{1,i}|e_1+4\uround|k_{1,i}S_{1,i}|+\uround|\hat\lambda_i|+\uround|\beta_i|$} &
+\egcell{$\kappa_ie_1+10^{-13}(|k_{1,i}S_{1,i}|+|\hat\lambda_i|+|\beta_i|)+10^{-300}$} & \egcell{$>20$}\\
+\egcell{Hessian $H$, $e_H$} &
+\egcell{$H-e_H\le H^*\le H+e_H$ elementwise} &
+\egcell{off-diagonal: $\kappa_i\kappa_je_2+8\uround|H_{ij}|$; diagonal adds $|k_{D,i}|(1+5\uround)e_0+6\uround|k_{D,i}S_0|$ and one sum} &
+\egcell{$\kappa_i\kappa_je_2+10^{-13}|H_{ij}|$, diagonal $+|k_{D,i}|(1+10^{-14})e_0+10^{-13}|k_{D,i}S_0|$; then $\times(1+10^{-12})+10^{-300}$} & \egcell{100}\\
+\egcell{$Q_L$, $Q_U$} &
+\egcell{$Q_L\le\frac12d^\top H^*d\le Q_U$ for $|d|\le r$} &
+\egcell{the steps $\fl(H\mp e_H)$: $\uround(|H|+e_H)$, covered by the unused part of $10^{-13}|H|$ and of the factor $1+10^{-12}$; squares, products and sums: $30\uround$ relative} &
+\egcell{$\times(1+10^{-12})\mp10^{-300}$} & \egcell{300}\\
+\egcell{$\ell$, $q$} &
+\egcell{$\ell_m\ge\ell^*_m$; $q\ge q^*$} &
+\egcell{$\ell$: $\kappa_i\fl(|t|+\delta t)\ge|K^*_{1,i}||t^*|$, then 10 roundings; $q$: data $\uround$, $\hat s^2\ge s^{*2}$ with $\hat s^2$ by \eqref{eq:eg-P}, 12 roundings} &
+\egcell{factor $1+10^{-13}$} & \egcell{90 ($\ell$); 8.8 ($q$)}\\
+\egcell{$p=\ell+2q$} &
+\egcell{$p_m\ge\ell^*_m+2q^*$} &
+\egcell{one rounding} & \egcell{slack of $\ell$ and $q$} & \egcell{---}\\
+\egcell{$\eta_m=\fl(\exp(\ell_m)(1+10^{-14}))$ (\texttt{el})} &
+\egcell{$\eta_m\ge e^{\ell^*_m}(1-3\uround)$} &
+\egcell{\eqref{eq:eg-E} and one product} &
+\egcell{factor $1+10^{-14}$; the deficit is absorbed by the factors on $P$} &
+\egcell{tolerates $\varepsilon\approx10^{-12}$}\\
+\egcell{$R_2$, $R_4$, $P_2$, $P_4$} &
+\egcell{$P_2\ge P_2^*$; $P_4\ge\sum_m|w^*_m|R_4(\ell^*_m,q^*)$} &
+\egcell{$p^2,p^3,p^4$ by \eqref{eq:eg-P}; at most 10 roundings; $\bar w$: $\uround$; 97-term sum $\gamma_{96}$; together $\le\sci{2.2}{-14}$ relative} &
+\egcell{$\times(1+10^{-12})$} & \egcell{45}\\
+\egcell{cubic $C_3$ (\texttt{cub}), $U_1$, $U_2$, $P_3$, $P$} &
+\egcell{$P\ge\min(P_2^*,P_3^*)$} &
+\egcell{$C_3$: accumulation of at most 343 seven-factor products, $\gamma_{348}$, and the division by 6; $U_1\ge\sum_i|K^*_{1,i}S^*_{1,i}|r_i$ since $|S_1|+e_1\ge|S_1^*|$; $U_2\ge q^*(1-\sci{1.4}{-15})$} &
+\egcell{$P_3=(C_3+U_1U_2)(1+10^{-12})+P_4$; $P=\min(P_2,P_3)(1+10^{-12})+10^{-300}$; $P=\infty$ if some $\ell_m>600$} & \egcell{25}\\
+\egcell{$L_E$} &
+\egcell{$L_E\ge\sum_ie_{\beta,i}r_i$} &
+\egcell{7 products and the sum: $8\uround$} &
+\egcell{$\times(1+10^{-12})$} & \egcell{$>1000$}\\
+\egcell{outputs $aL$, $aU$} &
+\egcell{$aL\le G-e_G-P+Q_L-L_E$; $aU\ge G+e_G+P+Q_U+L_E$ (exact arithmetic)} &
+\egcell{five-term chain and the pad steps: $7\uround\cdot\mathit{tot}$, $\mathit{tot}=|G|+e_G+P+|Q_L|+|Q_U|+L_E$} &
+\egcell{$10^{-12}\mathit{tot}+10^{-300}$} & \egcell{$>1000$}\\
+\end{longtable}
+\endgroup
+
+Some lines need a comment.
+In the line for $w$, the exact weight is $w^*=\hat a(1+\delta_a)^{-1}e^{E^*_0}$ and the computed one is $w=\hat a\,e^{E_0}(1+\delta_e)(1+\delta_\times)$ with $|\delta_a|,|\delta_\times|\le\uround$ and $|\delta_e|\le\varepsilon$, so $w^*=w\,e^{E^*_0-E_0}/((1+\delta_a)(1+\delta_e)(1+\delta_\times))$ and $|E^*_0-E_0|\le\delta E$.
+This gives the error bound of the table, whose affine form we now derive for $0\le d:=\delta E\le10^{-6}$.
+Since $1/k!\le\frac12$ for $k\ge2$, the positive Taylor series gives $(e^d-1)/d=\sum_{k\ge1}d^{k-1}/k!\le1+\frac d2\sum_{j\ge0}d^j=1+\frac d{2(1-d)}\le1+\sci{5.01}{-7}$.
+With $D=(1-\uround)^2(1-\varepsilon)\ge1-2\uround-\varepsilon$ we have $1/D-1\le\varepsilon+2.01\uround$ and $(1+\sci{5.01}{-7})/D\le1.000001$, so $e^d/D-1=(e^d-1)/D+(1/D-1)\le1.000001\,d+\varepsilon+2.01\uround$ (the three numerical inequalities were also checked in exact rational arithmetic).
+The computed pad is at least $|w|(1.02\,\delta E+1.1\cdot10^{-14})(1-4\uround)$.
+It covers the $\delta E$ part with almost 2\% to spare and the rest whenever $\varepsilon\le1.1\cdot10^{-14}(1-4\uround)-2.01\uround$, that is, for $\varepsilon$ up to about $\sci{1.07768}{-14}$; at $\varepsilon=10^{-14}$ the excess of the pad is more than 7\%.
+When $E_0<-700$ the program sets $w=0$, and $|w^*|\le|\hat a|(1+\uround)e^{-700+\delta E}<10^{-304}|\hat a|$ is covered by the term $|\hat a|10^{-300}$.
+In the lines for $S_1$, $S_2$ and $e_3$, the data part is covered because $\delta w$ exceeds $|w-w^*|$ by almost 2\% and $\delta\tau$ exceeds $|t-t^*|$ by a factor of at least 4.48, while the computed sums fall short of the exact ones by at most $\gamma_{96}$; the same slack absorbs the error $\varepsilon$ of the powers $\tau^2$ and $\tau^3$.
+In the cubic, $|L_m(d)^3|$ summed with the weights is bounded through $s_3\ge|T^*|$ and $\kappa\ge|K^*_1|$ over ordered triples, as in \cref{lem:eg-taylor}.
+The quantities $\bar w$, $\eta_m$ and $U_2$ may fall short of their exact counterparts by a few units of $\uround$; the factors $1+10^{-12}$ on $P_2$, $P_3$, $P_4$ and $P$ absorb these deficits.
+
+With these lines, for $x=c+d\in X$,
+\begin{equation*}
+  g^*(x)\ \ge\ G^*+\nabla^*\cdot d+\tfrac12d^\top H^*d-\min(P_2^*,P_3^*)
+  \ \ge\ (G-e_G)+\beta\cdot d-L_E+Q_L-P\ \ge\ aL+\beta\cdot d ,
+\end{equation*}
+because $|(\nabla^*-\beta)\cdot d|\le\sum_ie_{\beta,i}r_i\le L_E$.
+The first inequality is \cref{lem:eg-taylor} for the exact data and the second is \cref{lem:eg-affine}.
+The upper bound is symmetric.
+This proves item~(ii) and \cref{lem:eg-padding}. \qed
+
+The lines that use an exponential or a power tolerate relative errors of $\sci{1.077}{-14}$ (term weights), $\sci{1.954}{-14}$ (natural term ends), about $10^{-13}$ ($\hat s^2$) and $10^{-12}$ ($e^{\ell}$, $p^k$), and at least $\sci{5}{-8}$ ($\tau^2,\tau^3$); all exceed the tolerance $\varepsilon=10^{-14}$ that the audit enforces.
+In the auditor's tests NumPy's exponential and powers had relative errors of at most $1.13\,\uround$, about 80 times below $\varepsilon$.
+
+\subsection{The accuracy auditor}\label{app:egrounding-auditor}
+
+The accuracy auditor (the auditor, below) is new code written for this purpose: it checks each library exponential and power value that the enclosure code uses.
+It shares no code with the exponential or interval modules of the first code or with the interval certifier of \cref{app:eg-proof}.
+It uses only binary64 operations covered by \cref{hyp:fp-ieee} and exact integer and rational arithmetic; no library or mpmath result is trusted.
+All its constants are derived when the module is loaded, and every inequality used below is asserted there in exact rational arithmetic; loading fails if one of them does not hold.
+
+\begin{lemma}[exponential enclosure]\label{lem:eg-auditexp}
+Assume \cref{hyp:fp-ieee}.
+For every float $x\in[-708,709]$ the auditor either reports failure or computes floats $lo\le e^x\le hi$.
+\end{lemma}
+
+\begin{proof}
+The auditor uses a Cody--Waite argument reduction.
+Let $L=\ln2/64$.
+The partial sum $s_{400}=\sum_{k\le400}1/(k2^k)$ satisfies $s_{400}\le\ln2\le s_{400}+1/(400\cdot2^{400})$, so $L$ is known to within $10^{-120}$.
+Let $L_1$ be $L$ truncated to 36 significant bits and $L_2=\fl(L-L_1)$; then $|L-L_1-L_2|\le D_L=\sci{1.6}{-30}$, an exact bound.
+The auditor computes $m=\mathrm{rint}(\fl(x\cdot\tilde L^{-1}))$ with a float approximation $\tilde L^{-1}$ of $1/L$ (any integer $m$ would do), checks $|m|<2^{17}$, so that $p_1=mL_1$ is exact, and computes $s=\fl(x-p_1)$, $p_2=\fl(mL_2)$ and $r=\fl(s-p_2)$.
+It checks $|r|\le0.0055$.
+Let $r_{\mathrm{true}}=x-mL$.
+By (F0), $|r_{\mathrm{true}}-r|\le\uround(|r|+|s|+|p_2|)+|m|D_L+3\eta_0\le D_R=\sci{1.3}{-18}$.
+
+Let $H$ be the value of the degree-7 Taylor polynomial $\sum_{i\le7}c_ir^i$ computed by Horner's rule, with float coefficients $c_i=\fl(1/i!)$.
+Unrolling Horner's rule shows that the computed value equals $\sum_ic_ir^i(1+\theta_i)$ with $|\theta_i|\le\gamma_{14}$, since the contribution of each coefficient passes through at most 14 roundings.
+Adding the coefficient errors $\sum_i|c_i-1/i!||r|^i$, the Lagrange remainder $|r|^8e^{|r|}/8!$ and $16\eta_0$ for underflow gives $|e^r-H|\le E_H=\sci{1.57}{-15}$; and $H\ge1-0.0055-E_H$, so $|e^r-H|\le\rho_HH$ with $\rho_H=\sci{1.572}{-15}$.
+
+Write $m=64k+j$ with $0\le j<64$.
+Then $e^x=2^k\,2^{j/64}e^{r_{\mathrm{true}}}$.
+Floats $T^{\mathrm{lo}}_j\le2^{j/64}\le T^{\mathrm{hi}}_j$ are proved by $(T^{\mathrm{lo}}_j)^{64}\le2^j\le(T^{\mathrm{hi}}_j)^{64}$ in integer arithmetic.
+The auditor returns
+\begin{equation*}
+  lo=\fl\bigl(\fl(T^{\mathrm{lo}}_jH)\,C^{\mathrm{lo}}\bigr)\cdot2^k,\qquad hi=\fl\bigl(\fl(T^{\mathrm{hi}}_jH)\,C^{\mathrm{hi}}\bigr)\cdot2^k,
+\end{equation*}
+where the float constants satisfy $C^{\mathrm{lo}}(1+\uround)^2\le(1-\rho_H)(1-D_R)$ and $C^{\mathrm{hi}}(1-\uround)^2\ge(1+\rho_H)(1+2D_R)$ (checked exactly).
+Since $e^{r_{\mathrm{true}}}\ge e^r(1-D_R)\ge H(1-\rho_H)(1-D_R)$ and $e^{r_{\mathrm{true}}}\le H(1+\rho_H)e^{D_R}\le H(1+\rho_H)(1+2D_R)$, the two products bracket $2^{j/64}e^{r_{\mathrm{true}}}$.
+The factor $2^k$ is built from its bit pattern.
+For $x\ge-708$ every result is normal, because $e^{-708}(1-10^{-14})>2^{-1022}$ (checked exactly), and for $x\le709$ none overflows (checked exactly); so the scaling by $2^k$ is exact and $lo\le e^x\le hi$.
+\end{proof}
+
+\paragraph{The exponential check.}
+For $-708\le x\le709$ a call $y=\exp(x)$ passes if and only if the reduction checks succeed and
+$y\le\fl(lo\cdot F^{\mathrm{up}})$ and $y\ge\fl(hi\cdot F^{\mathrm{dn}})$, with float constants $F^{\mathrm{up}}(1+\uround)\le1+\varepsilon$ and $F^{\mathrm{dn}}(1-\uround)\ge1-\varepsilon$ (checked exactly).
+Then $(1-\varepsilon)e^x\le y\le(1+\varepsilon)e^x$ by \cref{lem:eg-auditexp}.
+For $x<-708$ the call passes if and only if $0\le y\le2^{-1020}$.
+Every other case fails, including NaN, $x>709$ and failed reduction checks.
+So a passed call proves \eqref{eq:eg-E} for that call.
+
+\begin{lemma}[power check]\label{lem:eg-auditpow}
+Assume \cref{hyp:fp-ieee}.
+Let a call $y=x^k$ with $k\in\{2,3,4\}$ pass the auditor's check, and let $x=0$, or $0<x<2^{-250}$, or $2^{-200}\le x\le2^{250}$.
+Then \eqref{eq:eg-P} holds for this call.
+\end{lemma}
+
+\begin{proof}
+For $x\in[2^{-200},2^{250}]$ the auditor computes $z=\fl(x\cdot x)$ for $k=2$, $z=\fl(\fl(x\cdot x)\cdot x)$ for $k=3$ and $z=\fl(\fl(x\cdot x)^2)$ for $k=4$.
+No product underflows or overflows, so $|z-x^k|\le G_zx^k$ with $G_z=(1+\uround)^3-1$.
+The call passes if and only if $|\fl(y-z)|\le\fl(C_pz)$, where the float $C_p>0$ satisfies $C_p(1+G_z)(1+\uround)+G_z\le\varepsilon$ (checked exactly).
+Since $z\ge2^{-801}$ and $C_p>\sci{9}{-15}$, the product $C_pz$ is normal, so $\fl(C_pz)\le C_pz(1+\uround)<z/2$.
+If $y<z/2$ or $y>2z$, then by monotone rounding $|\fl(y-z)|\ge z/2>\fl(C_pz)$, and the call fails.
+Otherwise $y-z$ is exact by Sterbenz's lemma, and $|y-x^k|\le|y-z|+|z-x^k|\le C_pz(1+\uround)+G_zx^k\le\bigl(C_p(1+G_z)(1+\uround)+G_z\bigr)x^k\le\varepsilon x^k$.
+For $x=0$ the call passes only if $y=0$; for $0<x<2^{-250}$ the condition is checked in exact rational arithmetic; negative and NaN arguments and arguments above $2^{250}$ fail.
+\end{proof}
+
+The lemma does not cover arguments in $[2^{-250},2^{-200})$, where for $k=4$ the product $C_pz$ can be subnormal and the floating-point comparison needs an extra absolute term.
+No power argument of the re-certifier lies there.
+The arguments are $\tau$, $p$ and $\hat s$, and on the root boxes $\tau>\sci{2.99}{-16}$, $p$ is $0$ or larger than $10^{-34}$, and $\hat s\in\{1,\fl(0.1)\}$.
+
+\paragraph{Bookkeeping.}
+The audit reduces the checks of one call to one flag per box.
+The flags are propagated through the recursive splitting of the re-certifier, and a leaf counts as audit-clean only if no call made for it or for any of its pieces failed.
+A failure in a piece that was later split also flags the leaf, which is conservative.
+The power $\hat s^2$ is computed once per batch of 64 boxes, so a failure there flags every box of the batch.
+The certification decisions themselves are not changed by the audit.
+
+\subsection{The audited rerun}\label{app:egrounding-run}
+
+The audited copy of the re-certifier differs from the original only by wrappers that pass every exponential and power result, unchanged, to the auditor; removing the wrappers mechanically recovers the original program line for line, and the copies of the driver and of the margin-recording layer differ from their originals only in marked lines.
+The rerun uses the same recorded trees and the same chunking as the original runs, so every 64-box Taylor batch, every LP and every exact test is the same.
+The deleted recordings of \inst{eg_int_s} and \inst{eg_disc_s} were regenerated by a deterministic replay of the search, which reproduced the original search logs line for line apart from timings.
+
+A comparison program checked the outputs of the rerun.
+For \inst{eg_disc2_s}, the per-leaf results of all 38 chunks (certified or not, the test used and the margin) are identical byte for byte to the saved results of the original run.
+For \inst{eg_int_s} and \inst{eg_disc_s}, whose original per-leaf results were not kept, every progress line, the full statistics and the smallest LP margin agree with the logs of the original runs, and the rerun is a complete certificate in its own right.
+Both coverage checks of \cref{app:eg-computation} and the domain check passed on the leaf sets of the rerun.
+Every call site was exercised; at each of the four per-term sites the number of audited exponentials equals the number of pieces times $28\times97$.
+
+Tests of the auditor are evidence about the implementation; the soundness of the check rests on \cref{lem:eg-auditexp,lem:eg-auditpow}.
+Two separately written test programs compared the enclosure of \cref{lem:eg-auditexp} with mpmath at 300 and 400 bits on 173{,}716 arguments in all, including reduction half-points, the ends $-708$ and $709$ and subnormal arguments, and checked that injected errors above $\varepsilon$ and NaN, infinite and negative results are rejected and errors of at most $\frac12\varepsilon$ accepted; end-to-end injections on 512 leaves flagged exactly the leaf that owns the affected piece.
+
+\begin{table}[ht]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\caption{Audited rerun of the leaf re-certification at the targets $\theta^*_I$ (complete run, 2026-10-04).
+Pieces: the leaves and the boxes obtained from them by bisection; each piece passed a test of \cref{lem:eg-boxtests} or was bisected (column split).
+The margin of a leaf is the smallest certified lower bound on $\Phi$ over its pieces minus $\theta^*_I$ ($+\infty$ for side and Farkas tests); the column shows the smallest margin, rounded down.
+No audited value violated its test, and no leaf was flagged.
+Times are summed wall times of single-threaded jobs, including the regeneration of the recordings for \inst{eg_int_s} and \inst{eg_disc_s}, on a shared machine.}
+\label{tab:eg-audit}
+\begin{tabular}{@{}lrrrrrrr@{}}
+\toprule
+instance & leaves & pieces & split & smallest margin & exponentials & powers & time (s)\\
+\midrule
+\inst{eg_int_s} & 33{,}385 & 38{,}173 & 2{,}394 & $\sci{7.68}{-11}$ & 414{,}711{,}472 & 829{,}428{,}916 & 465\\
+\inst{eg_disc_s} & 86{,}796 & 125{,}382 & 19{,}293 & $\sci{5.40}{-13}$ & 1{,}362{,}150{,}048 & 2{,}724{,}320{,}842 & 1{,}456\\
+\inst{eg_disc2_s} & 1{,}114{,}361 & 1{,}769{,}947 & 327{,}793 & $\sci{1.01}{-9}$ & 19{,}228{,}704{,}208 & 38{,}457{,}813{,}736 & 14{,}782\\
+\midrule
+total & 1{,}234{,}542 & 1{,}933{,}502 & 349{,}480 & & 21{,}005{,}565{,}728 & 42{,}011{,}563{,}494 & 16{,}703\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\Cref{tab:eg-audit} summarizes the result: 63{,}017{,}129{,}222 exponential and power results were audited, with no violation, and all 1{,}234{,}542 leaves were certified and audit-clean.
+
+\subsection{Trust base of the dual bounds}\label{app:egrounding-trust}
+
+\begin{theorem}[dual bounds of the \inst{eg} instances]\label{thm:eg-trust}
+Assume \cref{hyp:fp-ieee}.
+Assume that the following programs do what \cref{app:eg} and this section describe, and that the archived outputs of the audited run are their outputs on the stated inputs and targets: the GAMS reader of the re-certifier and the exact comparison of its data with the OSIL data; the enclosure procedures and exact tests of the re-certifier; the auditor; and the coverage, domain and comparison checks.
+Then, for each of the three instances $I$, every exactly feasible point of $\model_I$ has objective value at least $\theta^*_I$.
+In particular $\vstar(\model_I)$ is at least $6.4531031529331155$ for \inst{eg_int_s}, $5.760539610694993$ for \inst{eg_disc_s} and $5.642100574331458$ for \inst{eg_disc2_s}.
+\end{theorem}
+
+\begin{proof}
+By the audit (\cref{tab:eg-audit}) and \cref{lem:eg-auditexp,lem:eg-auditpow}, every exponential and power result that the re-certifier used for any piece of any leaf satisfies \eqref{eq:eg-E} or \eqref{eq:eg-P}; all power arguments lie in the range covered by \cref{lem:eg-auditpow}.
+Every piece lies in a root box, so by \cref{lem:eg-padding} the floats computed for it satisfy \eqref{eq:eg-rowbounds} for the exact rows.
+Each piece passed one of the tests of \cref{lem:eg-boxtests} at $\theta^*_I$, evaluated exactly.
+The coverage and domain checks establish the hypothesis of \cref{lem:eg-cover}, which gives $\vstar(\model_I)\ge\theta^*_I$.
+The displayed values are at most $\theta^*_I$.
+\end{proof}
+
+Every exponential and integer-power result used in the enclosures was checked against a proved enclosure or error test, so no accuracy guarantee for the exponential and power routines of NumPy, the C mathematical library or Intel SVML is assumed; the LP solver only proposes multipliers, whose validity is checked exactly.
+Correct implementation includes Python integer and \texttt{Fraction} arithmetic and conversions to binary64, NumPy's basic arithmetic and reductions, comparisons, array indexing, adjacent-float operations and the integer and bit operations of the auditor.
+The first code's search and its error analyses, solver optimality claims, sampled accuracy measurements and mpmath are not premises of the theorem.
+A separate agent session read the audit code and an earlier written form of the proofs in this section, re-derived the auditor's constants, repeated the comparison and coverage checks, and replayed the audited certification of \inst{eg_int_s} and of part~7 of \inst{eg_disc2_s}, reproducing every saved field except elapsed time; it found four minor issues, which this section corrects.
+Nothing is formally verified.
+
+\begin{certbox}[Certificate for \cref{thm:eg-bounds} (dual part: \cref{thm:eg-trust})]
+\certitem{Inputs}{OSIL files (SHA-256 prefixes \texttt{a462a01b}, \texttt{5f21b8d7}, \texttt{8849e06b}); GAMS files (\texttt{0fd00330}, \texttt{f38457d6}, \texttt{3ad4d4ea}), equal to the OSIL data as rationals; the recorded leaf boxes of the first code's search (1{,}234{,}542 leaves); the points of \cref{tab:eg-points}.}
+\certitem{Computation}{dual: per leaf, natural and Taylor-model enclosures in binary64 with the paddings of \cref{lem:eg-padding} \arith{F}; box tests at $\theta^*_I$ in exact rational arithmetic \arith{E}; bisection of failing boxes; every exponential and power result checked by the auditor (\cref{lem:eg-auditexp,lem:eg-auditpow}); coverage proved exactly from the leaf set alone. Primal: all 28 rows in library-free dyadic interval arithmetic \arith{E}; bounds and integrality exact.}
+\certitem{Data reading}{dual: term data as correctly rounded doubles, covered by (F1) in \cref{lem:eg-padding}; $c_k$, side-row bounds, variable bounds and $\theta^*_I$ exact. Primal: decimals enclosed outward in dyadic intervals by the check's own OSIL reader.}
+\certitem{Implementations}{dual: the second code, the leaf re-certifier, on all leaves carries the displayed bounds; the first code's search in interval mode certifies \inst{eg_int_s} and \inst{eg_disc_s} completely and part~1 of \inst{eg_disc2_s} under a side condition (\cref{tab:eg-matrix}). Primal: the dyadic check, rerun and read in full by a separate agent session and confirmed by decimal and mpmath interval evaluations with two further readers (\cref{app:eg-primal}).}
+\certitem{Evidence level}{dual: \evid{hand} for the lemmas and \evid{rerun} for the leaf certificates (the leaf partition is stored and its coverage is checked exactly; only the per-leaf certificates are recomputed); primal: \evid{stored}.}
+\certitem{Replay}{dual, audited re-certification including the regeneration of two recordings (summed single-threaded wall times, \cref{tab:eg-audit}): Tier~1 for \inst{eg_int_s} (465~s), Tier~2 for \inst{eg_disc_s} (1{,}456~s), Tier~3 for \inst{eg_disc2_s} (14{,}782~s); 37 minutes for all three with eight parallel jobs. Primal: Tier~1; about 17~s for \inst{eg_int_s}.}
+\end{certbox}

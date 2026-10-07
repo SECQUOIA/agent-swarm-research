@@ -1,0 +1,18 @@
+
+Root integration 2026-10-05 19:54 UTC: integrated Luna vetted 31-record bibliography checkpoint; inserted Dawson–Nielsen and König–Lohrey citations and removed resolved request comments; corrected the remaining Gram-dimension typo F π_i≤2^{NB}; qualified circuit-validation complexity prose. Fresh Sol R2 rereads requested. Bibliography remains incomplete and no final readiness is claimed.
+
+Final coverage scope correction: Q13–Q14 are arithmetic-output developments and will be included with full proofs in new Appendix L. Root supersedes the earlier peripheral classification to honor the request for all developments. Opus writing and two independent Sol source-proof audits are active.
+
+Draft layout inspection: root rendered PDF pages1–3 with pdftoppm and inspected local images. Title/anonymous abstract and the first two table-of-contents pages are legible and unclipped. This is an initial layout check, not final verification; larger appendix overfull boxes were sent to their Opus writers for line breaking. PDF title metadata is now set; author metadata is empty. Bibliography process notes are being kept in evidence rather than the submission bibliography.
+
+PCA repair task completed 2026-10-05 20:08 UTC; fresh Sol R2 reviews of actual changes active. Root applied four small R2 corrections at 20:13 UTC: additive1 in selector value-bit price; monic P1 derivative in residual-Jacobian explanation; flat-direction reduction in the no-real-infinity explanation; generic small separation bound gives no uniform precision guarantee. GLS LP terminology now follows its actual polynomial-in-matrix-encoding arithmetic contract, independent of objective/RHS length, rather than calling arbitrary-matrix LP strongly polynomial. Full boxed/flow algorithm statements are unchanged.
+
+Final local integration at20:17 UTC: root aligned the conditional cyclic-descent paragraph in08 with the formal minimum-zero/positive-definite-Hessian hypotheses; the former nondegenerate-zero phrase alone was too weak. Root also added nonempty-domain and finite-value qualifications to K’s prior value-approximation sentence. These are scope/prose corrections, not new theorem limitations. Fresh Sol R2 rereads requested.
+
+Recourse Sol R2 local-scope corrections applied: the classical rational PSD QP contract is invoked on nonempty bounded rational polytopes (as all calls are), and the residual-fiber proof handles m=0 vacuously with Gamma=1 before its positive-dimensional formulas. Cyclic descent wording now explicitly places the minimum zero at the cyclic point.
+
+Recourse R2 input-accounting refinement: lattice-test work now includes the supplied rational approximation’s encoding length; constructing/rounding its monomial vector is explicitly charged. Actual core calls already have polynomial-length approximations, so expected-work conclusions are unchanged.
+
+Independent Opus numerical review completed: all high-risk mathematics passed hand reconstruction; final attribution/source precision corrections commissioned to Opus. Tutte1948 original directed matrix-tree source verified by Luna (Theorem3.6 printedp470); root added its precise locator and the elementary cancellation explanation extending the loopless imported statement to the paper’s loop-allowed graph convention.
+
+GLS warm-start membership-output gate cleared directly by Luna: Theorem3.2.1 calls the oracle at the current center and returns that same center on acceptance; Remark3.2.33 retains that acceptance alternative and weakens only the retained set for cuts. No warm-start radius or algorithm changes are required. Recourse and contrast Sol R2 reviews now pass after all local corrections; field R2 also passes.

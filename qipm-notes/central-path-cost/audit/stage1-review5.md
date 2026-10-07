@@ -26,7 +26,7 @@ Reviewed 2026-09-07. I read `main.tex`, `macros.tex`, both current sections, the
 
 ## Independent numerical and build checks
 
-Executed with `/home/sgusev/miniconda3/envs/qipm/bin/python`, using the installed NumPy and SciPy; no packages were installed. These calculations are diagnostic corroboration, not substitutes for the proofs.
+Executed with `/workspace/local-home/miniconda3/envs/qipm/bin/python`, using the installed NumPy and SciPy; no packages were installed. These calculations are diagnostic corroboration, not substitutes for the proofs.
 
 - Real and complex matrix balls of sizes 1-by-1, 2-by-4, and 3-by-3, four random instances per size/field, RNG seed 9125, operator norms between 0.1 and 0.94, alpha 1.7. Formed the full real Hessian from the direct derivative of `2 alpha (I-XX*)^{-1}X`, solved for the gradient dual norm, and compared with the spectral formula. Maximum relative discrepancy: `6.383e-16`.
 - On the same instances, compared direct directional Hessian energy with the singular-value derivative lower bound. Smallest surplus: `-1.421e-14`, attributable to roundoff in a case of equality; no violated contraction was observed.

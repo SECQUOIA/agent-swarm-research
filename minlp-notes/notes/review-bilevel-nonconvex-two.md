@@ -39,7 +39,7 @@ Intersection cuts have degree at most two. Row intersections inside cells are ra
 Run:
 
 ```bash
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python code/bilevel_nonconvex/review_two.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python code/bilevel_nonconvex/review_two.py
 ```
 
 Result:

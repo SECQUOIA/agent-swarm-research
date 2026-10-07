@@ -16,7 +16,7 @@ I read the frozen review protocol, Stage 6 review and author assignments, comple
 
 The full-paper reading included the dependency chains underlying the new comparisons, rather than treating earlier acceptance as proof. I consulted frozen author verification records and existing primary-source locator notes to identify checks and originals. I did not read another current-round review. I did not edit the manuscript or snapshot or delegate work.
 
-I read `literature/AGENTS.md` before local originals. The following are direct primary-source checks. A PDF page is a one-based page in the file, unless a printed page is explicitly named. Local slugs below refer to `/home/sgusev/repo/minlp-notes/literature/papers/<slug>/original.pdf`; temporary filenames refer to `/tmp/minlp-relaxation-limits-sources/`. This is a record of selected passages, not a claim to have read every cited source in full.
+I read `literature/AGENTS.md` before local originals. The following are direct primary-source checks. A PDF page is a one-based page in the file, unless a printed page is explicitly named. Local slugs below refer to `/workspace/minlp-notes/literature/papers/<slug>/original.pdf`; temporary filenames refer to `/tmp/minlp-relaxation-limits-sources/`. This is a record of selected passages, not a claim to have read every cited source in full.
 
 | Source | Directly checked passage and purpose |
 | --- | --- |

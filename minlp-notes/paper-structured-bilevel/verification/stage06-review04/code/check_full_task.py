@@ -1,10 +1,13 @@
 """Compare independent full continuous-leader algorithms and boundary outcomes."""
+from pathlib import Path as _CleanupPath
+_NOTES_ROOT = _CleanupPath(__file__).resolve().parent.joinpath('../../../..').resolve()
+
 from pathlib import Path
 import sys, json, random
 import sympy as s
 import original_faces as faces
 import compressed_solver as compressed
-ROOT=Path('/home/sgusev/repo/minlp-notes')
+ROOT=Path((str(_NOTES_ROOT)))
 sys.path.insert(0,str(ROOT/'code/bilevel_nonconvex'))
 import scalar_solver as old
 

@@ -363,7 +363,7 @@ for hybrid runs that finish in one node (`ex4_1_1`, `ex4_1_2`, `ex4_1_7`,
 ## Commands run
 
 All from `code/univariate_envelopes`, with `PYTHONPATH=$PWD` and the prefix
-`uv run --project /home/sgusev/repo/minlp-notes/code/minlp_solver_lab python`
+`uv run --project /workspace/minlp-notes/code/minlp_solver_lab python`
 (abbreviated `PY`). Helper scripts were written to `/tmp/rev/` only. At most
 two processes ran at a time.
 

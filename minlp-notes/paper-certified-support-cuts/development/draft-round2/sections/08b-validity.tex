@@ -1,0 +1,71 @@
+\subsection{Validity, and what certification prevents}\label{sec:validity}
+
+Every recorded cut of campaigns 3 and~4 passed replay: 7{,}498 cuts in the
+prospective parts of campaign~3, 30{,}998 in the post hoc diagnostic and
+104{,}771 in campaign~4, 143{,}267 in total. In every part and cut mode, each of
+the fourteen corrupted records of Section~\ref{sec:replay} was rejected. Every
+incumbent returned in campaigns 3 and~4 passed the original-model check, with
+one exception in a run without certified cuts: in a Part~D root run of SCIP
+with its disabled separators switched on, the incumbent satisfied all
+constraints, but SCIP's reported objective value differed by 34\% from the value
+recomputed on the source model.
+
+Two observations show that the checks are not idle. First, the stored-row
+check (C4) rejected certified, violated rows in every part, because presolve
+had aggregated or fixed a block variable or because SCIP had dropped or
+rounded a coefficient (Section~\ref{sec:funnel}). Second, binary64 rounding
+changed at least one coefficient in 13.5\% of the exported rows on the MINLPLib
+models and in 92.5\% on the path family; the bound correction of
+Proposition~\ref{prop:export} was at most $8.5\cdot10^{-16}$ in absolute value
+and never destroyed a violation.
+
+\begin{table}[t]
+\centering\footnotesize
+\caption{What an uncertified constant would have done. For the recorded
+binary64 direction of each cut with an exact certificate, U1 is the minimum
+over the separator's sample set and U2 the better of U1 and SLSQP local
+minimizations. ``Wrong'' counts constants that exceed the exact support value
+by more than $10^{-6}\max\{1,\abs{\text{value}}\}$; ``removes'' counts the
+resulting rows that cut off an incumbent of the same model that passed the
+original-model check; ``optimum'' counts rows that cut off the known optimal
+solution. Path family: a random sample of 1{,}000 of the 138{,}000 recorded
+cuts.}\label{tab:ablation}
+\begin{tabular}{@{}llrrr@{}}
+\toprule
+Cuts & Constant & Wrong (models) & Removes (models) & Optimum\\
+\midrule
+MINLPLib, 5{,}116 cuts, 47 models & U1 & 1{,}969 (12) & 405 (7) & ---\\
+ & U2 & 230 (4) & 132 (2) & ---\\
+\midrule
+Path family, 1{,}000 cuts, 60 instances & U1 & 976 (60) & 506 (58) & 404\\
+ & U2 & 73 (37) & 27 (19) & 13\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+To measure what the certificate itself buys, we recomputed, for the recorded
+binary64 direction of each cut, the constant that an uncertified pipeline
+would use instead of the certified support value (protocol Part~U): (U1) the
+minimum over the separator's own sample set, which is what the direction LP
+sees, and (U2) the better of U1 and local minimizations by SLSQP from the
+three best samples, on the block box and the affine domain rows. Up to
+binary64 rounding, both are upper bounds on the true support value.
+Table~\ref{tab:ablation} compares them with the certified values. On the
+MINLPLib models the sample minimum was wrong for 38\% of the cuts, and 405 of
+the resulting rows would have cut off a feasible point that SCIP had returned
+for the same model. Local minimization removed most of these errors but not
+all. On \code{nvs02}, SLSQP stopped at its starting point after one iteration,
+because the directional derivative along its first step was below its default
+tolerance; on \code{kall\_ellipsoids\_tc02b} it started at stationary points
+that are not local minima. On the path family, where the blocks are nonconvex
+by construction, the sample minimum was wrong for almost every cut, 40\% of the
+uncertified rows would have cut off the known optimal solution, and local
+minimization still left rows that did so, because SLSQP converged to
+non-global local minima. Every wrong constant is refuted by an explicit point:
+the certified minimizer is exactly feasible and attains a smaller value. The
+counts change little if the removal tolerance is raised tenfold. The certified
+rows themselves were violated at recorded incumbents only within the
+feasibility tolerance of these incumbents: for example, incumbents of
+\code{st\_e22} with objective value $-85.0000017$, which satisfy the constraints
+only up to a scaled violation of $10^{-8}$, violate the certified objective
+bound $t\ge-85$, the true optimum, by $1.7\cdot10^{-6}$.

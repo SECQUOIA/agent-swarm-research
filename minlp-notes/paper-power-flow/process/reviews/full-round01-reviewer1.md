@@ -27,7 +27,7 @@ The abstract, introduction, theorem sequence, arithmetic appendix, and conclusio
 
 ## Independent verification
 
-All artifacts below are under the absolute directory `/home/sgusev/repo/minlp-notes/paper-power-flow/verification/reviewer1/full-round01/`.
+All artifacts below are under the absolute directory `/workspace/minlp-notes/paper-power-flow/verification/reviewer1/full-round01/`.
 
 - `manifest-check.json`: all 22 frozen inputs match their hashes.
 - Four `check_*.py.log` files: all four frozen exact suites pass.

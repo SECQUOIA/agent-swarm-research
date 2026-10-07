@@ -34,6 +34,6 @@ The README supplies the correct entry point, build command, four checker command
 
 An independent build from the frozen sources completed successfully with 28 pages and no final warnings, undefined references/citations, or overfull/underfull diagnostics. I inspected the extracted integrated text and rendered final bibliography page. The references fit legibly on one page; the new section and appendix references resolve correctly.
 
-Artifacts are under `/home/sgusev/repo/minlp-notes/paper-power-flow/verification/reviewer5/stage04-round01/`: all five checker logs, the independent build, extracted layout, rendered reference page, and primary-source PDFs/text used above. No manuscript file was edited.
+Artifacts are under `/workspace/minlp-notes/paper-power-flow/verification/reviewer5/stage04-round01/`: all five checker logs, the independent build, extracted layout, rendered reference page, and primary-source PDFs/text used above. No manuscript file was edited.
 
 There are no optional changes I consider necessary before advancing to the distinct full-manuscript review.

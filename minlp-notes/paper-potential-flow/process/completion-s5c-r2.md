@@ -106,7 +106,7 @@ I read `completion-s5c-build.json` and `completion-s5c-checks.json`. The build m
 I read the entire new diagnostic script and independently reran it with optimization enabled:
 
 ```text
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python -O paper-potential-flow/verification/check_s5c_scalar_approximation.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python -O paper-potential-flow/verification/check_s5c_scalar_approximation.py
 ```
 
 It exited successfully. Its four fixtures constructed and checked respectively 988, 896, 904, and 1038 panel geometries; interpolated 10, 10, 10, and 5 selected panels; and performed 170, 170, 170, and 85 certified sample comparisons. They cover an implicit quintic, a real branch switch, nearby nonreal branch points, and an external pole. The independently recomputed script hash is `ae633732ca9ea4f47986eb2d46ab0c35590f0bc8fdbfad5767a8d2d11ca4985e`, matching the checks manifest. The explicit `require` checks remain active under `-O`.

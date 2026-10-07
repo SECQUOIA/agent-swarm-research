@@ -1,7 +1,10 @@
 """Distinct existing diagnostics, redirected to the paper solver without source edits."""
+from pathlib import Path as _CleanupPath
+_NOTES_ROOT = _CleanupPath(__file__).resolve().parent.joinpath('../../../..').resolve()
+
 from pathlib import Path
 import sys,subprocess,time,json,hashlib,os
-P=Path(__file__).resolve().parents[1];R=Path('/home/sgusev/repo/minlp-notes');out=P/'verification/stage06-author'
+P=Path(__file__).resolve().parents[1];R=Path((str(_NOTES_ROOT)));out=P/'verification/stage06-author'
 out.mkdir(parents=True,exist_ok=True)
 env=os.environ.copy()
 for key in ('OPENBLAS_NUM_THREADS','OMP_NUM_THREADS','MKL_NUM_THREADS','NUMEXPR_NUM_THREADS'):env[key]='1'

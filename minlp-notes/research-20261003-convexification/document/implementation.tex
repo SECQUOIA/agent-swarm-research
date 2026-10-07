@@ -1,0 +1,224 @@
+\section{The implemented model, cut, and replay contract}\label{sec:implementation}
+
+The common model builder and the cut generator have different responsibilities.
+The builder preserves the admitted original model at the submitted expression
+boundary. A cut can then use only a conservative domain justified from that
+model. Declining a difficult block leaves the original native model available;
+it does not authorize changing the function, discarding part of a row, or
+declaring the point feasible for the nonlinear constraints.
+
+\subsection{Source arithmetic and native expression binding}
+
+Every loaded finite binary64 number is interpreted as its exact rational
+value. Ordinary polynomial assembly can nevertheless change intermediate
+values: the source coefficient in $(0.1x)^2$ is the exact square of the
+binary64 leaf, whereas multiplying its coefficient in binary64 rounds that
+square again. Likewise a native constraint constructor can move a constant
+into its sides with a rounded subtraction. Neither difference is accepted
+merely because it is small.
+
+The builder first assembles the ordinary native expression, then compares
+its exact interpreted value with the source expression by symbolic subtraction
+and expansion. If they differ, it constructs an explicit generic expression
+DAG with separate constant children and checks again. This retains the
+original coefficient operations instead of folding them into changed
+coefficients. A remaining difference gives an explicit model-admission
+refusal. Ranged constraint sides and objective sense and constants are part
+of the same check. The comparison has no numerical tolerance.
+
+This boundary is the submitted PySCIPOpt expression DAG interpreted over
+the reals with its exact binary coefficients. SCIP's later simplification,
+presolve, LP arithmetic, and feasibility tolerances are outside this symbolic
+binding claim. A successful model build is not a proof of the complete solve.
+
+\subsection{Original affine implications and exact domains}
+
+Original affine rows can prove finite or one-sided bounds that are absent
+from the declared box. For a row $\sum_i a_ix_i\le b$, the exact
+lower activity of all terms other than $j$ implies
+\begin{equation}\label{eq:bound-propagation}
+a_jx_j\le b-\sum_{i\ne j}\min\{a_i\ell_i,a_iu_i\}.
+\end{equation}
+Division by the nonzero $a_j$ gives the corresponding upper or lower
+bound; a lower row side is handled after negation. Integer and binary
+semantics permit exact integer rounding where justified. Every recorded
+deduction identifies the original row, side, target variable, and previous
+and new bounds. Replay rebuilds the premises and recomputes the sequence.
+A budget stop leaves a valid prefix; it does not claim propagation closure.
+When exported, lower bounds round outward downward and upper bounds upward.
+
+\begin{proposition}[Affine-bound provenance]\label{prop:affine-bounds}
+Starting from valid declared and variable-type bounds, every bound obtained
+by a finite sequence of~\eqref{eq:bound-propagation} and valid integer
+rounding contains all original feasible points.
+\end{proposition}
+\begin{proof}
+At a feasible point, every other term is at least its lower activity
+under valid prior bounds. Subtracting those bounds from the original row
+gives~\eqref{eq:bound-propagation}. Dividing with the correct sign
+preserves it; rounding to an integer endpoint preserves all integer
+solutions. Induction proves the statement for the complete recorded prefix.
+\end{proof}
+
+The model builder also checks affine rows proportional to a source domain
+argument. For example, the equality $x-y=1$ proves that $\log(x-y)$
+has a positive argument even when both coordinates are unbounded. This
+argument-level implication does not invent finite coordinate bounds.
+
+Domain traversal visits every original source node before simplification.
+A zero multiplier, cancelled quotient, or zero exponent cannot erase the
+domain required by its child expression. One-sided exact intervals preserve
+useful information: $x\ge0$ proves $1+x\ge1$ without an upper bound.
+When these bounds and original affine arguments do not prove a required
+domain, an exact existential constraint preserves it:
+\[
+\begin{array}{c|c}
+\text{required domain}&\text{additional constraint}\\\hline
+d\ne0&du=1,\quad u\in\R\\
+d>0&du=1,\quad u\ge0\\
+d\ge0&d\ge0.
+\end{array}
+\]
+In each of the first two rows, choosing $u=1/d$ proves the forward
+projection and the product equality proves the converse; with $u\ge0$
+it implies $u>0$ and $d>0$. These are exact strict-domain descriptions,
+with no arbitrary positive epsilon. Witness variables can be unbounded.
+The argument expression is itself compiled and checked against the source.
+Shared witnesses are permitted only for the same argument and requirement,
+and every nested original occurrence is still visited.
+
+All solver modes use the same guards. They preserve domains such as those
+hidden in $0\log x$, $x/x$, $(\sqrt{x})^2$, or $(\log x)^0$.
+They can also change numerical difficulty and construction time; those
+costs are measured. A strict source domain can give an unattained infimum.
+Numerical optimality status and finite feasibility tolerances do not prove
+attainment on that open domain.
+
+The admitted variable-power rule is
+$b(x)^{e(x)}=\exp(e(x)\log b(x))$ after positivity of $b(x)$ is
+proved from original bounds and affine rows. The transformation is local
+to that source node; a value such as $\log2$ remains a logarithm node,
+not an approximated coefficient. If positivity is unproved, the builder
+returns \texttt{unsupported\_variable\_power\_domain}. It does not
+add a positive-base guard indiscriminately: doing so could remove valid
+zero-base or negative-base points under broader exponent semantics.
+Fixed exponents must fit the native power-node representation exactly.
+
+The supported grammar and metadata are specified in
+\pathref{../numerics/model-contract.md}{numerics/model-contract.md}.
+Its separate admission artifact checks the seven previously refused
+application models before optimization. Admission demonstrates broadened
+applicability of this importer; performance and original-incumbent residuals
+are different evidence.
+
+\subsection{Block discovery and bounded practical separation}
+
+The current integration groups complete nonlinear remainders of original
+row sides. Exact additive affine terms are separated and retained in the
+elimination formula. Overlapping remainders can form a larger group up to
+the admitted block size; a nonlinear remainder involving unsupported
+variables is declined as a whole. Original affine sides supported on the
+chosen variables supply additional domain rows. Dropping a row from the
+support domain enlarges it and can weaken a bound; extraction must not
+change or drop terms from the nonlinear remainder multiplied by that
+row multiplier.
+
+Discovery is lazy, so a model solved in presolve does not pay block-search
+cost. A numerical sample LP proposes a normal for the linear coordinates
+and nonnegative multipliers for consistently signed nonlinear sides. Exact
+support is then computed for the actual direction. Where available, its
+rational minimizer becomes a new sample for a bounded exchange. Sampling
+and numerical LP output choose work; they establish no lower bound by
+themselves. Exact polytope vertices and their centroid seed proposals on
+thin affine domains. Their conversion to floating-point samples is still
+only a numerical proposal, not a proof that the converted points remain
+exactly feasible.
+
+The practical support wrapper admits general quadratic blocks up to
+dimension four under a complete-subset budget, then uses inherited supported
+polynomial, elementary, or constrained-star kernels where applicable.
+The default standalone wrapper allows 5,000 subsets. The solver callback
+sets a limit of 2,000 subsets per exact polytope calculation; an unmet
+limit yields no cut from that calculation.
+Supported higher-degree polynomial and elementary bounds remain sound
+without an exact support claim. Partial-domain features whose complete
+support domain cannot be safely covered are declined. If algebraic
+cancellation yields a polynomial extension, support on a larger box is
+valid for original feasible points, but a closeness certificate for that
+extension is not a membership certificate for the original partial graph.
+
+Three solver modes use the common original-model builder:
+\begin{itemize}
+\item \texttt{baseline} supplies no additional aggregation separator;
+\item \texttt{all} uses the bounded search on all admitted blocks;
+\item \texttt{auto} uses a fixed structural admission rule and requires a
+larger final normalized violation before inserting a cut.
+\end{itemize}
+The mode name \texttt{all} means all admitted blocks subject to its caps,
+not all mathematical support directions. The exact finite completion API
+of Section~\ref{sec:separation} is available separately; callback time
+limits are not relabeled as a complete separation result.
+
+The frozen \texttt{auto} rule admits quadratic blocks containing a signed
+quadratic not proved convex, and either a non-axis affine domain row or
+at least two distinct nonlinear source rows. Two support failures deactivate
+a block for the remaining callbacks. This is a heuristic spending decision,
+not a certificate that the block cannot help at a later point. Both cut
+modes permit at most 32 blocks, six nonlinear sides and 16 affine domain
+sides per block, three root callbacks, 12 total cuts, four cuts per
+callback, 24 support calls, and three LP exchange attempts per block
+and callback. Callback work receives the smaller of one second and five
+percent of the requested total budget, checked between operations.
+Nonpreemptive work can overrun that allowance; the campaign's hard process
+limit is a separate safeguard. The final violation divided by
+$\max\{1,\sum_j|\widehat c_j|\}$ must exceed $10^{-5}$ in
+\texttt{all} and $5\cdot10^{-4}$ in \texttt{auto}.
+The corrected discovery routine checks the existing deadline between
+source rows, additive terms, and group steps. An expired allowance
+discards unfinished discovery and records
+\texttt{discovery\_incomplete} and \texttt{budget\_exhausted}; it
+produces neither a coverage claim nor a hull-membership conclusion.
+Terms are converted to polynomials using only their own symbols.
+Nonrational coefficients and oversized terms that cannot be converted
+remain in the nonlinear remainder, so an unsupported remainder is
+declined without changing the native row. The prospective experiment
+and the separate correction validation are distinguished below.
+
+Each accepted cut follows the same sequence: prove support for the actual
+direction; reconstruct source-side elimination exactly; combine repeated
+original-variable coefficients; apply the bound correction of
+Proposition~\ref{prop:elimination-round}; inspect the actual stored row;
+and submit it as a global root cut. All domain rows and rounding bounds
+must be original global implications. No incumbent cutoff or local
+presolve bound is used as an unmarked global premise.
+The row-conversion implementation is conservative on unbounded coordinates:
+although Proposition~\ref{prop:elimination-round} needs only the bound
+in the error's direction, the frozen code requires both finite bounds
+whenever that coordinate has nonzero rounding error. Exact coefficients
+need no bounds. This narrower admission can reject a mathematically safe
+row; it cannot strengthen an unsafe one.
+
+There is no nonlinear feature-equality reformulation that differs across
+modes. The common objective epigraph and any original-domain witnesses
+are recorded in every mode. The new comparison therefore needs no
+separate duplicate reformulation control. The earlier four-mode experiment
+retains its control because its formulation did change.
+
+\subsection{Replay and the trust base}
+
+A cut record binds the original serialized instance, signed source row
+identities, variable identifiers, source nonlinear expressions, proved
+affine bounds, chosen support domain, final direction, exact support
+certificate, source-side elimination, rounding correction, and actual
+binary64 row. Fresh-process replay must derive these expected objects
+from the archived original model. A stored explanation or producer/checker
+agreement without that binding would be insufficient.
+
+Exact arithmetic and interval routines are shared between generation and
+replay. The checker is independent of the numerical direction LP and
+solver search, but is not a second formally verified arithmetic
+implementation. Separate analytic examples, alternative-oracle checks,
+domain adversaries, and deliberate certificate corruptions provide distinct
+implementation evidence. They complement the proofs rather than replace
+them. Numerical original-coordinate residual checks and reference-bound
+comparisons remain explicitly separate from cut validity.

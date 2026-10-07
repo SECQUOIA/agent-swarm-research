@@ -53,22 +53,23 @@ odonnell2017, blanco2025, beck2023, ...). No pooling package mentions any of the
 
 ### (a) Quadratic feasibility over a compact domain is ∃R-complete
 
-- Schaefer, *Realizability of graphs and linkages* (2013), Lemma 3.9, verbatim: "Deciding whether a
-  family of polynomials f_i : R^n → R, i ∈ [s] has a common root in B^n(0,1) (the unit ball) is
-  ∃R-complete. We can assume that all f_i have total degree at most 2."
+- Schaefer, *Realizability of graphs and linkages* (2013), Lemma 3.9: common-root feasibility
+  for polynomials f_i : R^n → R, i ∈ [s], restricted to B^n(0,1) (the unit ball), is
+  ∃R-complete even when every f_i has total degree at most 2.
   (https://ovid.cs.depaul.edu/documents/realizability.pdf, p.~22 of the preprint.) The domain in
   the lemma is the unit ball, not a box. The draft's Remark 4 says "quadratic feasibility over a
   box (Schaefer 2013, Lemma 3.9)"; correct this to "unit ball" or cite the compendium's phrasing.
 - Schaefer–Štefankovič, *Fixed points, Nash equilibria, and the existential theory of the reals*,
-  Theory Comput. Syst. 60 (2017), Corollary 4.4: "QUAD and 4-FEAS are ∃R-complete", followed by
-  "In [31, Lemma 3.9] it is shown (assuming Corollary 4.4) that QUAD remains ∃R-complete if we ask
-  for a common zero in the unit ball B^n(0,1)." (https://ovid.cs.depaul.edu/documents/Nash.pdf)
-- Compendium arXiv:2407.18006, entry (A1) Feasibility: "Also remains ∃R-complete if the domain is a
-  compact set like the unit ball or [−1,1]^n and each polynomial has total degree at most 2
-  [Sch13, Lemma 3.9]"; Theorem 2.4 (Schaefer): a single polynomial with a root in [−1,1]^n is
-  ∃R-complete. Hansen 2019 (Theory Comput. Syst. 63) uses a variant "where the solution of a
-  system of quadratic equations is promised to lie in a polyhedron contained in the standard
-  simplex" (compendium entry GT9/minmax; ref [Han19]).
+  Theory Comput. Syst. 60 (2017), Corollary 4.4 establishes ∃R-completeness of QUAD and 4-FEAS.
+  The subsequent discussion attributes the unit-ball restriction B^n(0,1) for common-zero
+  feasibility of QUAD to [31, Lemma 3.9], using Corollary 4.4.
+  (https://ovid.cs.depaul.edu/documents/Nash.pdf)
+- Compendium arXiv:2407.18006, entry (A1) Feasibility reports ∃R-completeness with degree at
+  most 2 on compact domains including the unit ball and [−1,1]^n, citing [Sch13, Lemma 3.9].
+  Theorem 2.4 (Schaefer) gives ∃R-completeness for a single polynomial having a root in [−1,1]^n.
+  Hansen 2019 (Theory Comput. Syst. 63) uses a quadratic-equation system whose solution is
+  promised to belong to a polyhedron inside the standard simplex
+  (compendium entry GT9/minmax; ref [Han19]).
 - Related structured results: NMF is ∃R-complete (Shitov 2016, compendium A21, from (A1));
   tensor rank (Schaefer–Štefankovič 2018, Shitov 2016; A26); Affine Rank Minimization
   (arXiv:2602.14037, 2026); Constrained Nonnegative Gram Feasibility (arXiv:2603.19976, 2026, via
@@ -78,20 +79,20 @@ odonnell2017, blanco2025, beck2023, ...). No pooling package mentions any of the
 ### (b) General QCQP / bilinear feasibility stated as ∃R-complete
 
 - Poss, Kurtz, Goerigk, Henke, *The complexity landscape of robust (integer) linear programming*,
-  arXiv:2608.21574 (21 Aug 2026), Section 2: defines QP as "∃z ∈ Z : zᵀQ_ℓ z ≤ 0, ∀ℓ ∈ [L]?" with Z a
-  rational polyhedron and Bounded-QP with the extra box [−R,R]^{n_z}, and states
-  "Theorem 4 ([35]). QP and Bounded-QP are ∃R-complete." Reference [35] is the compendium; no
-  proof is given. Also "Theorem 5 ([32]). Bounded-QMIP-Single and QMIP-Single are NP-complete"
+  arXiv:2608.21574 (21 Aug 2026), Section 2: QP asks "∃z ∈ Z : zᵀQ_ℓ z ≤ 0, ∀ℓ ∈ [L]?" with Z a
+  rational polyhedron; Bounded-QP additionally restricts z to the box [−R,R]^{n_z}.
+  Theorem 4 ([35]) gives ∃R-completeness for QP and Bounded-QP, citing the compendium [35]
+  without a proof. Theorem 5 ([32]) gives NP-completeness for Bounded-QMIP-Single and QMIP-Single
   (single quadratic constraint; the Vavasis/Del Pia–Dey–Molinaro line). This is the only OR-side
   source found that explicitly says QCQP feasibility is ∃R-complete; it is a citation of folklore,
   not a new proof, and says nothing about network structure or blending.
 - Vavasis 1990 (*Quadratic programming is in NP*) and Del Pia–Dey–Molinaro 2017 (MIQP in NP) give
   NP membership only for one quadratic objective/constraint over linear constraints. Köppe 2012,
   *On the complexity of nonlinear mixed-integer optimization*, notes for integer variables that
-  QCQP feasibility "is NP-hard (but it is unknown whether it is in NP)"
-  [[koppe2012-on-the-complexity-of-nonlinear]] p.8. Bienstock–Muñoz 2018 note "simple instances
-  of PO (in fact convex, quadratically constrained problems) where all feasible solutions have
-  irrational coordinates" [[bienstock2018-lp-formulations-for-polynomial-optimization]] p.9.
+  QCQP feasibility is NP-hard, with NP membership unresolved in that account
+  [[koppe2012-on-the-complexity-of-nonlinear]] p.8. Bienstock–Muñoz 2018 give simple convex,
+  quadratically constrained polynomial-optimization instances that have no feasible solution
+  with entirely rational coordinates [[bienstock2018-lp-formulations-for-polynomial-optimization]] p.9.
   Bienstock, Del Pia, Hildebrand, *Complexity, exactness, and rationality in polynomial
   optimization* (arXiv:2011.08347; Math. Program.) study rational vs. irrational certificates for
   QCQP; they do not treat pooling or ∃R.
@@ -101,9 +102,9 @@ odonnell2017, blanco2025, beck2023, ...). No pooling package mentions any of the
 - Alfaki–Haugland 2013, Section 3 "Computational complexity": proves strong NP-hardness only
   [[alfaki2013-strong-formulations-for-the-pooling]] p.4 (Sect. 3 header at fulltext line 95). No
   NP membership or certificate statement.
-- Haugland 2016 (J. Global Optim. 64): "all hardness proofs in this article are cast in terms of
-  polynomial reductions from an NP-complete decision problem, to the decision version of the
-  Pooling Problem. Such a reduction provides a proof of NP-hardness"
+- Haugland 2016 (J. Global Optim. 64) explains that each hardness argument uses a polynomial
+  reduction from an NP-complete decision problem to the pooling decision problem, establishing
+  NP-hardness
   [[haugland2016-the-computational-complexity-of-the]] p.7; conclusion states only NP-hardness
   (strong or weak) and leaves pseudo-polynomial solvability for |K|=1, |S|=|T|=2 open
   [[haugland2016-the-computational-complexity-of-the]] p.16. Section 2.1 confirms that lower
@@ -122,15 +123,13 @@ odonnell2017, blanco2025, beck2023, ...). No pooling package mentions any of the
 
 - Haugland–Hendrix 2015, *On a pooling problem with fixed network size* (ICCL 2015, user-supplied
   package, `status: unread`): for atomic instances (2 sources, 2 terminals, 1 quality) the optimal
-  y is of the form r_0 ± √r_1 with rational r_0, r_1, and the paper states "Because both numbers are
-  irrational, there is no upper bound on the number of bit operations required to compare them
-  directly" [[haugland2015-on-a-pooling-problem-with]] p.350. So irrational (degree-2) pooling
+  y is of the form r_0 ± √r_1 with rational r_0, r_1. The paper warns that comparing the two
+  irrational values directly has no bounded bit-operation cost [[haugland2015-on-a-pooling-problem-with]] p.350. So irrational (degree-2) pooling
   optima with rational data are implicit in the literature; arbitrary algebraic degree
   (Corollary 3) is not.
-- Bienstock–Verma 2019 (AC power flow), Section 1.3 "Membership in NP": "A straightforward proof
-  of such a fact, if true, is unlikely, for the reason that in a feasible solution very likely the
-  f_ij (and possibly even some of the θ_i) would be irrational values. We conjecture that an
-  approximate version ... belongs to NP." [[bienstock2019-strong-np-hardness-of-ac]] p.6. No
+- Bienstock–Verma 2019 (AC power flow), Section 1.3 "Membership in NP", treats possible
+  irrationality of feasible f_ij and possibly θ_i as an obstacle to a simple NP-membership
+  argument. The authors conjecture NP membership for an approximate formulation. [[bienstock2019-strong-np-hardness-of-ac]] p.6. No
   ∃R statement; no later ∃R result for AC-OPF was found (WebSearch 2020–2026, compendium).
 - Chistikov, Kiefer, Marušić, Shirmohammadi, Worrell, *Nonnegative matrix factorization requires
   irrationality*, SIAM J. Appl. Algebra Geom. 1(1) 2017, 285–307 (arXiv:1605.06848): rational
@@ -149,8 +148,8 @@ odonnell2017, blanco2025, beck2023, ...). No pooling package mentions any of the
   equations x=1, x+y=z, x·y=1, variables in [1/2,2]) and Theorem 7 (ETR-INV is ∃R-complete) —
   numbering verified against the PDF. J. ACM 69(1) 2022 version may renumber; cite the arXiv/STOC
   numbering explicitly.
-- Compendium citation (A1) is correct; the draft should also cite Theorem 2.4 and the sentence
-  "As far as we know, this was first shown by Schaefer [Sch13, Lemma 3.9]".
+- Compendium citation (A1) is correct; the draft should also cite Theorem 2.4 and its
+  qualified attribution of the first known proof to Schaefer [Sch13, Lemma 3.9].
 
 ## 3. Assessment
 

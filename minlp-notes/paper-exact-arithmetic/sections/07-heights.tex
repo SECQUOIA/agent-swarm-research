@@ -1,0 +1,880 @@
+\section{Expanded outputs, heights, and Gram and moment certificates}
+\label{sec:heights}
+
+The preceding sections compare exact decisions with approximation. This
+section asks a different question: once an exact object is known to exist,
+how long must its ordinary binary encoding be? The objects are a rational
+point of a strictly feasible convex body, a rational optimizer, and the
+rational matrices that certify optimality or positivity. These are optimal
+order-two moment matrices, optimal polynomial Gram matrices, matrices
+exposing the optimal Gram face, and positive definite Gram matrices.
+
+All instances below are rational quartics supplied with a positive definite
+rational Hessian Gram on the full basis $(v,X\otimes v)$. Convexity is
+therefore certified by short rational data, the Hessian is bounded below by
+a positive multiple of the identity on all of $\R^n$, and the lower bounds do
+not come from
+an unrecognized or nearly degenerate convexity hypothesis. The answers
+depend on the representation and on the shape of the certificate:
+\begin{enumerate}[label=(\roman*)]
+\item a compact convex body with nonempty interior can have only rational
+  points with $\Omega(n2^{n/2})$ bits (Theorem~\ref{thm:heights-witness});
+\item a unique rational optimizer in $[-1,1]^n$ can require
+  $2^{n/2-1}\log_25$ denominator bits, even when the Hessian at the optimizer
+  has polynomially bounded condition number
+  (Theorem~\ref{thm:rational-height});
+\item a strict Hessian Gram makes the order-two moment relaxation exact with
+  a unique rank-one optimum, and the optimizer field is then exactly the
+  least field for maximal-rank optimal Grams and for nonzero positive
+  semidefinite matrices exposing the optimal Gram face
+  (Theorem~\ref{thm:heights-moment});
+\item consequently, a long rational optimizer forces long entries in every
+  maximal-rank rational optimal Gram, in the optimal moment matrix, and in
+  every rational exposing matrix, while short optimal Grams of lower rank
+  remain (Corollary~\ref{cor:heights-gram});
+\item positive definite rational polynomial Grams always exist with
+  $\poly(L)2^{O(n)}$ bits for strictly positive certified quartics, and
+  $\Omega(n2^{n/2})$ bits are sometimes necessary although a short singular
+  Gram exists (Theorem~\ref{thm:interior-gram});
+\item for every certified quartic, a polynomial-size shared rational circuit,
+  constructed without a sign oracle, gives a strictly feasible point when the
+  minimum is negative and a positive definite Gram when the minimum is
+  positive; over general certified quartics, validating either output is as
+  hard as the exact decision itself
+  (Proposition~\ref{prop:upper-circuit-witness} and
+  Theorem~\ref{thm:circuit-gram}). The rational optimizers of (ii) are
+  computed by short squaring circuits, and short circuits built on these also
+  give the optimal moment matrix, the exposing matrices, and a maximal-rank
+  optimal Gram. A circuit with rational constants and rational operations has
+  rational values, so it cannot describe the irrational optimizers and
+  certificates covered by (iii).
+\end{enumerate}
+
+These results matter for exact certification in mixed-integer and
+polynomial optimization. A solver that must print an exact rational feasible
+point, an exact rational optimizer, or a strictly feasible rational Gram
+certificate can be forced to print exponentially many bits on small,
+perfectly certified convex instances. Approximation does not suffer from this
+effect. Shared rational circuits avoid it for strictly feasible points and
+positive definite Grams, whenever a certified quartic has them, and for the
+long rational optimizers constructed here. For the first two the price is
+validation: over general certified quartics, checking the circuit output is
+as hard as the exact decision. The certificate shape also matters. Methods
+that seek a maximal-rank or interior Gram, or that perform facial reduction while
+retaining every real feasible Gram, must reproduce the optimizer's
+arithmetic, whereas a lower-rank certificate can be short.
+
+Three limits apply throughout. First, every lower bound concerns
+\emph{expanded} rational encodings. None excludes short algebraic,
+circuit, or other implicit descriptions, and none is a lower bound on the
+complexity of a decision problem or of approximation. Second, the
+constructed families have total input length $L_k$ bounded by a polynomial
+in the family parameter $k$, and their dimension is $n=\Theta(k)$. The lower
+bounds are exponential in $n$ and hence superpolynomial in $L_k$, but they
+are not of the form $2^{\Omega(L_k)}$. Third, only the stated certificate
+shapes are covered. In particular, the lower bounds for Gram matrices concern
+maximal-rank, exposing, or positive definite Grams; the same instances have
+short rational Gram matrices of lower rank.
+
+\subsection{Encodings, heights, and Taylor Gram matrices}
+\label{sec:heights-conventions}
+
+A rational number $r$ is written in lowest terms as $a/b$ with $b\ge1$, and
+$\operatorname{den}(r)=b$. Its height is $\height(r)=\log_2\max\{|a|,b\}$;
+for $r=0$ put $\height(r)=0$. A rational vector or matrix has \emph{entry
+height at most $B$} if every entry has height at most $B$. Any ordinary
+binary encoding of a rational vector uses at least
+$\sum_i\log_2\operatorname{den}(r_i)$ bits, so lower bounds on denominators
+are lower bounds on expanded output length. A shared rational circuit is a
+directed acyclic graph of rational arithmetic gates, as in
+Section~\ref{sec:models}; its size counts gates and the binary length of its
+constants. A circuit of size $O(k)$ can compute a rational whose reduced
+fraction has more than $2^k$ bits, for instance $2^{-2^k}$ by repeated
+squaring.
+
+For $X\in\R^n$ let $z(X)$ be the vector of all monomials of degree at most two,
+with the constant monomial first; its length is $N=\binom{n+2}{2}$. A
+symmetric matrix $Q$ is a (polynomial) Gram matrix of $f$ if
+$f=z^{\mathsf T}Qz$. Put $w(X,v)=(v,X\otimes v)\in\R^{n+n^2}$. A symmetric
+matrix $A$ of order $n+n^2$ is a \emph{full Hessian Gram} of a polynomial $f$
+of degree at most four if
+\begin{equation}
+ v^{\mathsf T}\nabla^2f(X)v=w(X,v)^{\mathsf T}A\,w(X,v)
+ \qquad(X,v\in\R^n).
+ \label{eq:heights-hessian-gram}
+\end{equation}
+A \emph{certified quartic} is a pair $(f,A)$ with $f\in\Q[X]$ of degree at
+most four and $A$ a rational full Hessian Gram with $A\succ0$. Validity is
+checked in polynomial time by coefficient comparison and rational
+elimination. If $A\succ0$ has order $s=n+n^2$, then the number
+$\mu_A=\det A/(\tr A)^{s-1}$, denoted $\rho(A)$ in
+Lemma~\ref{lem:models-det-trace}, is a positive rational of polynomial bit
+length with $A\succeq\mu_AI$, and
+$\nabla^2f\succeq\mu_AI$ on $\R^n$
+(Lemma~\ref{lem:models-hessian-gram}(a)). Thus $f$ is coercive and has a unique
+minimizer, denoted $p$. Polynomial Gram matrices and Hessian Gram matrices
+are different objects: the former represent $f$ in the basis $z$, the latter
+represent its Hessian biform in the basis $w$.
+
+The following integration lemma is the common source of all exact Gram
+matrices used in this paper. For $a\in\R^n$ write $d=X-a$ and define matrices
+$C_U(a),C_V(a)$ with $n+n^2$ rows and $N$ columns by
+\[
+ (d,\,a\otimes d)=C_U(a)\,z(X),\qquad (0,\,d\otimes d)=C_V(a)\,z(X).
+\]
+Their entries are integer polynomials of degree at most two in the
+coordinates of $a$. For a symmetric matrix $B$ of order $n+n^2$ define the
+\emph{Taylor Gram}
+\begin{equation}
+ \mathcal T_a(B)=\tfrac12\bigl(C_U(a)+\tfrac13C_V(a)\bigr)^{\mathsf T}B
+          \bigl(C_U(a)+\tfrac13C_V(a)\bigr)
+   +\tfrac1{36}C_V(a)^{\mathsf T}B\,C_V(a).
+ \label{eq:heights-taylor-gram}
+\end{equation}
+
+\begin{lemma}[Taylor integration of a full Hessian Gram]
+\label{lem:taylor-sos}
+Let $f\in\R[X_1,\ldots,X_n]$ have degree at most four and a real full Hessian
+Gram $A$. Fix $a\in\R^n$, and put $d=X-a$ and $b=\nabla f(a)$.
+\begin{enumerate}[label=(\alph*)]
+\item \emph{Identity.}
+  $f(X)=f(a)+b^{\mathsf T}d+z(X)^{\mathsf T}\mathcal T_a(A)z(X)$ identically.
+  The identity rests on
+  \[
+   \int_0^1(1-t)\,(U+tV)^{\mathsf T}A\,(U+tV)\,dt
+   =\tfrac12(U+V/3)^{\mathsf T}A(U+V/3)+\tfrac1{36}V^{\mathsf T}AV
+  \]
+  for $U=(d,a\otimes d)$ and $V=(0,d\otimes d)$, whose scalar form is
+  $\int_0^1(1-t)(u+tv)^2dt=\frac12(u+v/3)^2+(v/6)^2$.
+\item \emph{Positivity and the strict kernel.} If $A\succeq0$ then
+  $\mathcal T_a(A)\succeq0$. If $A\succ0$ then
+  $\ker\mathcal T_a(A)=\R z(a)$; equivalently, after the invertible change to
+  the translated basis $(1,(d^\alpha)_{1\le|\alpha|\le2})$, the Taylor Gram is
+  $0\oplus J$ with $J$ positive definite on the nonconstant monomials.
+\item \emph{Gradient completion.} Suppose $A\succeq\mu I$ with $\mu>0$. Put
+  $\bar A=A-\mu\diag(I_n,0)$, $c_a=f(a)-\norm{b}^2/(2\mu)$, let
+  $C_{\rm aff}(a)$ be the coefficient matrix with
+  $d+b/\mu=C_{\rm aff}(a)z(X)$, and let $e_0$ select the constant monomial.
+  Then $f=z^{\mathsf T}\mathcal Q_a z$ for
+  \begin{equation}
+   \mathcal Q_a=\mathcal T_a(\bar A)
+     +\tfrac\mu2C_{\rm aff}(a)^{\mathsf T}C_{\rm aff}(a)
+     +c_a\,e_0e_0^{\mathsf T}.
+   \label{eq:heights-completed-gram}
+  \end{equation}
+  If $c_a\ge0$ then $\mathcal Q_a\succeq0$, and if $c_a>0$ then
+  $\mathcal Q_a\succ0$.
+\item \emph{Fields.} Let $E\subseteq\R$ be a field containing the
+  coefficients of $f$, the entries of $A$, and the coordinates of $a$ (and
+  $\mu$ in part (c)). Then $C_U(a)$, $C_V(a)$, $C_{\rm aff}(a)$,
+  $\mathcal T_a(A)$, and $\mathcal Q_a$ have entries in $E$. In particular,
+  at a critical point $a$ of $f$ with $A\succeq0$, the matrix
+  $\mathcal T_a(A)$ is a positive semidefinite Gram of $f-f(a)$ with entries
+  in $E$.
+\item \emph{Squares.} If $A=\sum_ks_k\ell_k\ell_k^{\mathsf T}$ with $s_k\ge0$,
+  then, with $U,V$ as in (a),
+  \[
+   f-f(a)-b^{\mathsf T}d=\sum_ks_k\Bigl[2\Bigl(\frac{\ell_k^{\mathsf T}(U+V/3)}2
+     \Bigr)^2+\Bigl(\frac{\ell_k^{\mathsf T}V}6\Bigr)^2\Bigr].
+  \]
+  If $A\succeq0$ is rational, the $s_k$ and $\ell_k$ can be chosen rational
+  with each $s_k$ a sum of rational squares, so $f-f(a)-b^{\mathsf T}d$ is a
+  sum of squares of quadratics whose coefficients are rational polynomials of
+  degree at most two in the coordinates of $a$. In
+  particular, at a critical point $a$, $f-f(a)$ is a sum of squares over every
+  subfield $E\subseteq\R$ that contains the coordinates of $a$.
+\end{enumerate}
+\end{lemma}
+
+The proof is in Appendix~\ref{app:heights-taylor}. The integral identity is
+the classical argument that an SOS-convex polynomial minus its first-order
+Taylor expansion is a sum of squares \cite{HeltonNie2010,Lasserre2009}. The
+lemma adds what the exact constructions need: an explicit Gram matrix, its
+exact kernel in the strict case, gradient completion with an explicit
+constant, and field bookkeeping.
+
+\begin{remark}[Gram fields and square factors]
+\label{rem:heights-gram-field}
+Part (d) concerns the field of \emph{Gram entries}, and part (e) the field of
+\emph{square factors}; the two need separate arguments. Over $\Q$ a positive
+semidefinite rational Gram yields a sum of squares of rational polynomials:
+rational $LDL^{\mathsf T}$ elimination gives nonnegative rational weights, and
+each positive rational weight is a sum of rational squares
+(Lemma~\ref{lem:models-rational-squares}). This is why part (e) needs a
+rational Hessian Gram but no rationality of $a$. Over a general real field
+$E$ the same elimination gives a sum of squares with nonnegative weights in
+$E$, but an unweighted sum of squares with coefficients in $E$ need not
+exist. For
+example, with $E=\Q(\sqrt2)\subset\R$, the polynomial $\sqrt2\,X_1^2$ has a
+positive semidefinite Gram over $E$, namely the matrix whose only nonzero
+entry is the diagonal entry $\sqrt2$ at the monomial $X_1$, but an identity
+$\sqrt2\,X_1^2=\sum_iq_i^2$ with $q_i\in E[X_1]$ is impossible: comparing the
+coefficients of $X_1^2$ and applying the conjugation $\sqrt2\mapsto-\sqrt2$
+would make $-\sqrt2$ a sum of squares of real numbers. Field statements in this
+section are therefore always about Gram entries; least fields of square
+factorizations are treated in Section~\ref{sec:fields}.
+\end{remark}
+
+\subsection{Strictly feasible bodies with only long rational points}
+\label{sec:heights-witness}
+
+A strictly feasible convex body always contains rational points, because it
+has an interior. The next theorem shows that it need not contain a short
+one, even when it is the zero sublevel set of a single strongly convex
+quartic with a short rational convexity certificate and lies in a fixed box.
+
+\paragraph{Construction.}
+Let $k\ge1$, $n=2k$, and $M_k=1000^{k+3}$. A doubly exponentially small
+positive number is generated by $k$ cube roots:
+\begin{equation}
+ \delta_0=M_k^{-1},\qquad
+ \delta_i=(1+3\delta_{i-1}^2)^{1/3}-1\quad(1\le i\le k).
+ \label{eq:heights-tiny-chain}
+\end{equation}
+Since $(1+t)^3\ge1+3t$ for $t\ge0$, induction gives
+$0<\delta_i\le\delta_{i-1}^2$, hence $0<\delta_k\le M_k^{-2^k}$. With
+$\xi_i=1+\delta_i$ the gate equations are
+\begin{equation}
+ \xi_1^3=1+3M_k^{-2},\qquad
+ \xi_i^3=3\xi_{i-1}^2-6\xi_{i-1}+4\quad(2\le i\le k).
+ \label{eq:heights-cube-gates}
+\end{equation}
+Write the coordinates as $X=(x_1,y_1,\ldots,x_k,y_k)$ and put
+$p=(\xi_1,\xi_1^2,\ldots,\xi_k,\xi_k^2)$. Lemma~\ref{lem:heights-cube-chain}
+in the appendix constructs, in time polynomial in $k$, a rational quartic
+$F_k$ given as a sum of $n+1$ squares of rational quadratics, with
+$\nabla^2F_k\succeq\frac32I$, unique zero $p$, and a rational positive
+definite full Hessian Gram $A_k$, all of polynomial bit length. The number
+$\delta_k$ is never printed; it is the value at $p$ of the rational affine
+function $u_k(X)=x_k-1$. Let $\iota_k\in\R^{n+n^2}$ be the coordinate vector
+of $v_{x_k}$ in the first block of $w(X,v)$, and put
+\begin{equation}
+ \lambda_k=\left\lceil\frac3{\mu_{A_k}}\right\rceil,\qquad
+ g_k=\lambda_kF_k-u_k^2,\qquad
+ B_k=\lambda_kA_k-2\iota_k\iota_k^{\mathsf T}.
+ \label{eq:heights-witness-family}
+\end{equation}
+The Hessian biform of $u_k^2$ is $2v_{x_k}^2$, so $B_k$ is a full Hessian Gram
+of $g_k$, and $B_k\succeq3I-2I=I$. The integer $\lambda_k$ can be
+exponentially large, but its binary length is polynomial in $k$.
+
+\begin{theorem}[Strict feasibility without short rational points]
+\label{thm:heights-witness}
+For every $k\ge1$ the certified quartic $(g_k,B_k)$ of
+\eqref{eq:heights-witness-family} in $n=2k$ variables is computable in time
+polynomial in $k$, and its total binary length $L_k$ is bounded by a
+polynomial in $k$. Let $S_k=\{X\in\R^n:g_k(X)\le0\}$.
+\begin{enumerate}[label=(\alph*)]
+\item $\nabla^2g_k\succeq I$ on $\R^n$. The set $S_k$ is compact and strictly
+  convex, has nonempty interior, and is contained in $(0.99,1.01)^n$.
+\item Every rational point $X\in S_k$, including boundary points, satisfies
+  the following. If $X_1=a/b$ with integers $a$ and $b\ge1$, then
+  \[
+   \log_2b>\tfrac13\bigl((2^k-2)(k+3)\log_21000-4\bigr).
+  \]
+  In particular $\log_2b>k2^k=\frac n2\,2^{n/2}$ for every $k\ge2$, so
+  every rational point of $S_k$ has ordinary binary length greater than
+  $\frac n2\,2^{n/2}$.
+\item A shared rational circuit of size polynomial in $k$ for a point
+  $\hat x\in\Q^n$ with $g_k(\hat x)<0$ is computable in time polynomial in
+  $k$, without sign tests (Proposition~\ref{prop:upper-circuit-witness}).
+\end{enumerate}
+\end{theorem}
+
+The proof is in Appendix~\ref{app:heights-witness}. Since $F_k(p)=0$ and
+$\nabla F_k(p)=0$, the point $p$ has $g_k(p)=-\delta_k^2$ and
+$\norm{\nabla g_k(p)}=2\delta_k$. Strong convexity then confines every point
+of $S_k$, including boundary points, to the ball of radius
+$(2+\sqrt6)\delta_k<5M_k^{-2^k}$ about $p$. The first coordinate of $p$ is the
+irrational number $\xi_1$, a root of the integer cubic
+$M_k^2T^3-(M_k^2+3)$. For a rational point with first coordinate $a/b$, the
+integer $M_k^2a^3-(M_k^2+3)b^3$ is nonzero, so its absolute value is at least
+one; the difference-of-cubes factorization bounds it by
+$16b^3M_k^{2-2^k}$, which forces the denominator bound.
+
+The argument needs no Diophantine approximation theorem: the irrational
+coordinate satisfies an explicit integer cubic with small coefficients, and a
+nonzero integer has absolute value at least one. The obstruction is precision
+near that coordinate, not a large coordinate magnitude, empty interior, or a
+degenerate convexity certificate. The body lies in a ball of radius below
+$5M_k^{-2^k}$ about $p$, so the theorem is also an explicit example in which
+strict feasibility supplies no quantitative Slater radius of polynomial bit
+length. The localization applies to every point of $S_k$, so the bound is not
+a statement about one particular rounded point.
+
+Large rational witnesses for convex systems are classical. Khachiyan's
+repeated-squaring system $x_i\ge x_{i+1}^2$, $x_m\ge2$, recalled by Pataki
+and Touzov \cite{PatakiTouzov2024}, is a strictly feasible convex quadratic
+system whose rational solutions have exponentially many bits, because its
+coordinates are huge. Theorem~\ref{thm:heights-witness} adds the
+restrictions of a single quartic inequality with a supplied strict rational
+full Hessian Gram, a compact full-dimensional feasible set, and bounded
+coordinates. In the other direction, a nonempty set defined by one strict
+integer polynomial inequality of degree $d$ with coefficients of bit length
+$\tau$ contains a rational point with coordinates of bit length
+$\tau d^{O(n)}$ \cite[Theorem~4.1.2]{BasuPollackRoy1996}; see also
+\cite[Proposition~2.5]{SafeyElDinZhi2010}. Applied to $\{g_k<0\}$ this gives
+rational points with $\poly(k)2^{O(k)}$ bits, so the exponential dependence
+on the dimension in Theorem~\ref{thm:heights-witness} is necessary and
+attained up to the constants in the exponent. The irrational singleton
+examples of Section~\ref{sec:algebraic} have no rational feasible point at
+all; here rational points exist but are long.
+
+\subsection{Rational optimizers with exponentially long denominators}
+\label{sec:heights-rational}
+
+A rational optimizer can also be long. The construction powers a rational
+point of the unit circle. Repeated squaring of $(3+4\mathrm i)/5$ never
+cancels a factor of five, so the denominators grow doubly exponentially
+while the coordinates stay in $[-1,1]$.
+
+\begin{lemma}[Denominators of the circle chain]
+\label{lem:heights-circle-denominators}
+For an integer $m\ge1$ write $(3+4\mathrm i)^m=A_m+\mathrm iB_m$ with
+$A_m,B_m\in\Z$. Then $A_m\equiv3$ and $B_m\equiv4\pmod5$. Consequently the
+real and imaginary parts of $((3+4\mathrm i)/5)^m$ have reduced denominators
+exactly $5^m$, and their absolute values are at most one.
+\end{lemma}
+
+\begin{proof}
+In $\Z[\mathrm i]$ we have $(3+4\mathrm i)^2=-7+24\mathrm i\equiv3+4\mathrm i$
+modulo $5\Z[\mathrm i]$. By induction $(3+4\mathrm i)^m\equiv3+4\mathrm i$
+for all $m\ge1$. Since $5$ divides neither $3$ nor $4$, the fractions
+$A_m/5^m$ and $B_m/5^m$ are in lowest terms. The modulus of
+$((3+4\mathrm i)/5)^m$ is one.
+\end{proof}
+
+Let $k\ge0$ and $n=2(k+1)$, and write the coordinates as
+$X=(x_0,y_0,\ldots,x_k,y_k)$. Put $z_j=((3+4\mathrm i)/5)^{2^j}=a_j+\mathrm ib_j$.
+The rational quadratic residuals
+\begin{equation}
+ r_0=x_0-\tfrac35,\quad s_0=y_0-\tfrac45,\quad
+ r_j=x_j-x_{j-1}^2+y_{j-1}^2,\quad s_j=y_j-2x_{j-1}y_{j-1}\quad(1\le j\le k)
+ \label{eq:heights-circle-residuals}
+\end{equation}
+have the unique common real zero $p=(a_j,b_j)_{j=0}^k$; they express complex
+squaring with coefficients of constant size. Every circle relation
+$x_j^2+y_j^2-1$ also vanishes at $p$, and the circle relations supply the
+positive curvature that the residuals lack. Lemma~\ref{lem:heights-circle-chain}
+in the appendix combines these quadratics, with coefficients approximated
+only where approximation preserves the exact zero, into a quartic $f_k$ via
+Lemma~\ref{lem:quartic-realization}. A rescaled version with circles of radius
+$2^{-j}$ controls the Hessian at the optimizer.
+
+\begin{theorem}[Bounded rational optimizers with long denominators]
+\label{thm:rational-height}
+For every integer $k\ge0$ put $n=2(k+1)$. In time polynomial in $k$ one can
+construct rational quartics $f_k$ and $\tilde f_k$ in $n$ variables, each
+given as a sum of $n+1$ squares of rational quadratics and each supplied with
+a rational positive definite full Hessian Gram, all of total binary length
+bounded by a polynomial in $k$, with the following properties.
+\begin{enumerate}[label=(\alph*)]
+\item $\nabla^2f_k\succeq\frac32I$ and $\nabla^2\tilde f_k\succeq\frac32I$ on
+  $\R^n$. Both minima are zero and are attained only at points $p$ and
+  $\tilde p$, respectively.
+\item $p\in\Q^n\cap[-1,1]^n$, and the last two coordinates of $p$ have reduced
+  denominator exactly $5^{2^k}$.
+\item $\tilde p\in\Q^n$, $\norm{\tilde p}^2<\frac43$, the last two coordinates
+  of $\tilde p$ have reduced denominators divisible by $5^{2^k}$, and
+  \[
+   2I\preceq\nabla^2\tilde f_k(\tilde p)\preceq\bigl(8(k+1)^2+1\bigr)I.
+  \]
+  Thus the condition number of the Hessian at the optimizer is at most
+  $4(k+1)^2+\frac12$.
+\end{enumerate}
+Consequently, writing either optimizer as ordinary reduced fractions requires
+at least $2^k\log_25=2^{n/2-1}\log_25$ bits in one coordinate. This is
+exponential in $n$ and superpolynomial in the input length, but it is not of
+the form $2^{\Omega(L_k)}$.
+\end{theorem}
+
+The proof is in Appendix~\ref{app:heights-circle}. Both optimizers have
+short exact descriptions: the shared circuit computing
+$((3+4\mathrm i)/5)^{2^k}$ by $k$ squarings, followed by a rescaling for
+$\tilde p$. They can also be approximated to any requested precision in
+polynomial time. The theorem therefore separates the size of an exact
+expanded rational output from both exact implicit output and approximation.
+It is also different from the rational-optimizer hardness of
+Theorem~\ref{thm:rational-optimizer}: that result concerns the cost of
+\emph{comparing} a rational optimizer coordinate with zero, under a
+rationality promise, whereas Theorem~\ref{thm:rational-height} is an
+unconditional bound on the \emph{length} of the optimizer itself.
+
+Part (c) shows that a long rational optimizer is compatible with good local
+conditioning: the Hessian at $\tilde p$ has condition number $O(n^2)$. This is
+a statement about the Hessian at the optimizer only. The coefficients of
+$\tilde f_k$ have magnitudes up to $2^{O(k)}$, and no uniform smoothness
+bound on a fixed neighborhood of $\tilde p$, no bound on higher derivatives,
+and no bound on the conditioning of rational reconstruction is asserted.
+Multiplying $f_k$ by a sufficiently large integer square normalizes its
+Hessian Gram to be at least the identity without changing $p$.
+
+The norm and approximation guarantees for convex polynomial optimization of
+Slot, Steurer, and Wiedmer \cite{SlotSteurerWiedmer2025} are compatible
+with Theorem~\ref{thm:rational-height}: they bound magnitudes and
+approximation cost, not denominators. Jiang's exact algorithm for convex
+functions with rational minimizers \cite{Jiang2021} is parameterized by a
+bound on the common denominator of the minimizer; for $f_k$ the least common
+denominator of the coordinates of $p$ is $5^{2^k}$, although the coordinates
+are bounded by one. Exponentially
+long rational local minimizers of nonconvex cubics, caused by large
+coordinate magnitudes, appear in Zhang's thesis \cite[Example~2.5.3]{Zhang2020}.
+We do not claim that powering a rational point of the circle is new; the
+contribution is its realization as the unique optimizer of a globally
+strongly convex quartic with short rational square factors and a short
+strict Hessian certificate.
+
+\subsection{Exact moment relaxations and the arithmetic of optimal Grams}
+\label{sec:heights-moment}
+
+For a certified quartic $f$ consider the unconstrained order-two moment
+relaxation and its sum-of-squares dual. For a sequence
+$y=(y_\alpha)_{|\alpha|\le4}$ let $\Lambda_y(f)=\sum_\alpha f_\alpha y_\alpha$
+and $M_2(y)=(y_{\alpha+\beta})_{|\alpha|,|\beta|\le2}$, indexed like $z$. The
+programs are
+\begin{equation}
+ \text{(P)}\ \ \min\{\Lambda_y(f):y_0=1,\ M_2(y)\succeq0\},
+ \qquad
+ \text{(S)}\ \ \max\{\gamma:f-\gamma=z^{\mathsf T}Qz,\ Q\succeq0\}.
+ \label{eq:heights-moment-programs}
+\end{equation}
+Their data are rational. Let $p$ be the minimizer of $f$, $f_*=f(p)$,
+$e=z(p)$, and let $K=\Q(p_1,\ldots,p_n)\subseteq\R$ be the field generated by
+the coordinates of $p$. An \emph{optimal Gram} is a positive semidefinite
+Gram of $f-f_*$; the set of all of them is denoted $\mathcal G_*$, and the
+\emph{optimal-level Gram system} is $f-f_*=z^{\mathsf T}Qz$, $Q\succeq0$. A
+nonzero positive semidefinite $Z$ \emph{exposes} $\mathcal G_*$ if
+$\ip ZQ=\tr(ZQ)=0$ for every $Q\in\mathcal G_*$. A facial-reduction step
+\cite{BorweinWolkowicz1981} restricts a semidefinite system to the face cut
+out by such a matrix of the form $\mathcal A^*(y)$, where $\mathcal A$ is the
+coefficient map of the system and $y$ annihilates its right-hand side; the
+\emph{singularity degree} is the least number of steps after which the
+restricted system has a feasible point in the relative interior of its
+face.
+
+\begin{theorem}[Moments, maximal-rank Grams, and exposing matrices]
+\label{thm:heights-moment}
+Let $(f,A)$ be a certified quartic in $n$ variables. Put
+$r=\dim_\Q\Span_\Q\{p^\alpha:|\alpha|\le2\}$.
+\begin{enumerate}[label=(\alph*)]
+\item \emph{Maximal rank.} The Taylor Gram $Q_*=\mathcal T_p(A)$ is an optimal
+  Gram with entries in $K$ and $\ker Q_*=\R e$. Every optimal Gram annihilates
+  $e$, so $N-1$ is the largest rank of an optimal Gram.
+\item \emph{Exactness and uniqueness.} Both programs in
+  \eqref{eq:heights-moment-programs} attain the value $f_*$. The only optimal
+  solution of (P) is $y_\alpha=p^\alpha$, that is, $M_2(y)=ee^{\mathsf T}$.
+  The optimal pair $(ee^{\mathsf T},Q_*)$ is strictly complementary, and both
+  programs have strictly feasible points.
+\item \emph{Least field of maximal-rank Grams.} For a field
+  $E\subseteq\R$, some optimal Gram of rank $N-1$ has all entries in $E$ if
+  and only if $K\subseteq E$.
+\item \emph{Rational optimal Grams.} Every rational optimal Gram has rank at
+  most $N-r$. If $p\notin\Q^n$ then $r\ge2$, so no rational optimal Gram is
+  strictly complementary to the optimal moment matrix.
+\item \emph{Faces and exposing matrices.} The smallest face of the positive
+  semidefinite cone containing $\mathcal G_*$ is
+  $\mathcal F_p=\{Q\succeq0:Qe=0\}$, and $Q_*$ lies in its relative interior.
+  A nonzero positive semidefinite $Z$ exposes $\mathcal G_*$ if and only if
+  $Z=c\,ee^{\mathsf T}$ with $c>0$. The entries of every such $Z$ generate a
+  field containing $K$, and $ee^{\mathsf T}$ has entries in $K$. The matrix
+  $ee^{\mathsf T}$ is a facial-reduction certificate for the optimal-level
+  Gram system, one reduction step reaches $\mathcal F_p$, and the real
+  singularity degree of that system is exactly one. If $p\notin\Q^n$, no
+  nonzero rational positive semidefinite matrix exposes $\mathcal G_*$.
+\end{enumerate}
+\end{theorem}
+
+The proof is in Appendix~\ref{app:heights-moment}. Its core is short. The
+Taylor Gram of Lemma~\ref{lem:taylor-sos} at the stationary point $p$ has
+kernel exactly $\R e$. If $y$ is optimal for (P), then
+$\tr(Q_*M_2(y))=\Lambda_y(f-f_*)=0$; two positive semidefinite matrices with
+zero trace product have orthogonal ranges, so $M_2(y)$ is a multiple of
+$ee^{\mathsf T}$, and $y_0=1$ fixes the multiple. Every moment of degree at
+most four is an entry of $M_2(y)$. A maximal-rank Gram over $E$ has a
+one-dimensional kernel over $E$, and normalizing its constant coordinate
+recovers $e$, hence $p$. The same kernel argument identifies every exposing
+matrix.
+
+Exactness of low-order moment relaxations for SOS-convex problems, with
+extraction of the optimizer from first-order moments, is due to Lasserre
+\cite[Theorems~2.6 and~3.3]{Lasserre2009}. Theorem~\ref{thm:heights-moment}
+uses the stronger strict Hessian certificate to determine \emph{all} moments
+and the complete kernel of the optimal Gram face. The use of real zeros as
+Gram kernel vectors, and of their conjugates to obtain rational kernel
+relations, is established in Laplagne's facial-reduction method for exact
+SOS decompositions \cite[Proposition~3.2, Section~3.2]{Laplagne2020}; part
+(d) is a dimension count for that mechanism. Algebraic, possibly irrational,
+exact solutions of degenerate semidefinite programs and their certification
+are also established \cite{KolmogorovNaldiZapata2024}. The point of
+Theorem~\ref{thm:heights-moment} is the precise identification of the field
+forced on each certificate shape, in a setting where the relaxation is exact,
+both programs are strictly feasible, strict complementarity holds over the
+reals, and the optimal Gram face is reached in one real facial-reduction
+step. Field statements concern Gram and moment entries
+(Remark~\ref{rem:heights-gram-field}).
+
+Part (e) concerns matrices orthogonal to \emph{all real} optimal Grams. It
+does not prevent a procedure that deliberately restricts attention to
+rational Gram candidates. Such a procedure may impose the rational kernel
+relations of part (d) and work in a smaller face that discards real optimal
+Grams; that is a different feasibility problem. The interpretation of
+$ee^{\mathsf T}$ as a facial-reduction certificate for a \emph{rational}
+optimal-level system needs $f_*\in\Q$. If $f_*\notin\Q$, rational optimal
+Grams do not exist at all, because the constant coefficient of $f-f_*$ is
+irrational.
+
+\begin{remark}[The strict Hessian hypothesis]
+\label{rem:heights-moment-hypothesis}
+Strong convexity together with SOS-convexity does not suffice for
+part (b). The polynomial $f=X_1^2+X_2^2+X_2^4$ has
+$\nabla^2f=\diag(2,2+12X_2^2)\succeq2I$ and a diagonal SOS Hessian, with
+minimizer $0$ and $f_*=0$. The sequence with $y_0=1$, $y_{(4,0)}=t\ge0$, and
+all other moments zero has $M_2(y)=\diag(1,0,0,t,0,0)$ in the basis
+$(1,X_1,X_2,X_1^2,X_1X_2,X_2^2)$ and objective value zero, so (P) has
+infinitely many optimal solutions. This $f$ has no positive definite full
+Hessian Gram: its Hessian biform has no $X_1^2v_1^2$ term, so the diagonal
+entry of a full Hessian Gram at the coordinate $X_1v_1$ must vanish. The
+hypothesis is sufficient but not necessary. The proof uses it only to obtain
+an optimal Gram with kernel exactly $\R e$; for instance
+$X_1^2+X_2^2+X_1^4+X_2^4$ has no positive definite full Hessian Gram, by the
+same coefficient argument, but has the optimal Gram
+$0\oplus I_2\oplus\left(\begin{smallmatrix}1&0&-1/2\\0&1&0\\-1/2&0&1
+\end{smallmatrix}\right)$, whose kernel is $\R e$.
+\end{remark}
+
+\begin{remark}[Large fields]
+\label{rem:heights-cyclic-fields}
+For the cyclic quartics of Theorem~\ref{thm:algebraic-cyclic}, which are
+certified quartics with minimum zero and optimizer field of degree
+$d_n=(2^{n+1}-(-1)^{n+1})/3$, parts (c) and (e) show that every maximal-rank
+optimal Gram and every exposing matrix of the optimal Gram face has entries
+generating a field of degree at least $d_n$ over $\Q$. This is a statement
+about fields; it does not exclude short circuit or other implicit
+descriptions of these matrices.
+\end{remark}
+
+\begin{remark}[Nullvectors of one feasible matrix]
+\label{rem:heights-nullvector}
+Facial reduction preserves every real feasible point when it uses a vector
+in the common kernel of the feasible set. A maximum-rank feasible matrix has
+exactly this common kernel: if $G_0,G\succeq0$ then
+$\ker(G_0+G)=\ker G_0\cap\ker G$, so a feasible $G$ that did not vanish on
+$\ker G_0$ would give the feasible midpoint $(G_0+G)/2$ a larger rank. This is
+why part (a) matters. A nullvector of an arbitrary feasible matrix does not
+suffice, even when it is rational. Proposition~\ref{prop:bnd-nullvector}
+constructs a rational affine semidefinite family with a rational positive
+definite member and a singular feasible member with a rational nullvector.
+Restricting the family to matrices that annihilate that vector leaves only a
+single irrational feasible matrix, removing every rational feasible point.
+The construction and full proof are given in Appendix~\ref{app:bnd-nullvector}.
+\end{remark}
+
+\subsection{Heights forced by a long rational optimizer}
+\label{sec:heights-gram-heights}
+
+When the optimizer is rational, Theorem~\ref{thm:heights-moment} gives
+rational maximal-rank Grams and rational exposing matrices, but their
+entries must encode the optimizer. For the circle family this makes them
+long, although a short rational optimal Gram of smaller rank is part of the
+input.
+
+\begin{corollary}[Long maximal-rank, moment, and exposing certificates]
+\label{cor:heights-gram}
+Let $f_k$ be the quartic of Theorem~\ref{thm:rational-height} in
+$n=2(k+1)$ variables, with optimizer $p$ and minimum zero, and let
+$N=\binom{n+2}{2}$ and $H_k=2^k\log_25$.
+\begin{enumerate}[label=(\alph*)]
+\item The unique optimal moment matrix $ee^{\mathsf T}$ has an entry with
+  reduced denominator $5^{2^k}$.
+\item Rational optimal Grams of rank $N-1$ exist. If such a Gram has entry
+  height at most $B$, then
+  \[
+   B\ge\frac{H_k-\log_2((N-1)!)}{N^2-1}=\Omega(2^k/n^4),
+  \]
+  and the sum of the binary lengths of all its entries is at least
+  $H_k-\log_2((N-1)!)$.
+\item If a nonzero rational positive semidefinite matrix exposing the optimal
+  Gram face has entry height at most $B$, then $B\ge H_k/2$.
+\item $f_k$ has a rational optimal Gram of rank at most $n+1<N-1$ and binary
+  length polynomial in $k$, namely the Gram of its supplied square factors.
+\end{enumerate}
+The same statements hold for $\tilde f_k$, with ``reduced denominator
+$5^{2^k}$'' replaced by ``reduced denominator divisible by $5^{2^k}$''.
+\end{corollary}
+
+The proof is in Appendix~\ref{app:heights-moment}. For (b), the principal
+submatrix of a maximal-rank optimal Gram on the nonconstant monomials is
+nonsingular and determines the remaining coordinates of $e=(1,w)$ by Cramer's
+rule; a terminal coordinate of $p$ appears in $w$, so its denominator divides
+a determinant bounded in terms of the entry heights. For (c), every exposing
+matrix is $c\,ee^{\mathsf T}$, and a terminal coordinate of $p$ is the ratio
+of two of its entries. These lower bounds are exponential in $n$ and
+superpolynomial in the input length; part (d) shows that they cannot be
+extended to all optimal Grams.
+
+The phenomenon of short low-rank feasible points coexisting with long
+maximal-rank feasible points is classical in semidefinite programming. In
+the homogenized Khachiyan system with blocks
+$\left(\begin{smallmatrix}x_1&2t\\2t&t\end{smallmatrix}\right)$ and
+$\left(\begin{smallmatrix}x_j&x_{j-1}\\x_{j-1}&t\end{smallmatrix}\right)$
+for $2\le j\le k$ (compare \cite{PatakiTouzov2024}), the point $t=x_1=\cdots=
+x_{k-1}=0$, $x_k=1$ is a short feasible point of rank one. Every feasible
+point of full rank has $t>0$, $x_1/t>4$, and $x_j/t>(x_{j-1}/t)^2$, hence
+$x_k/t>2^{2^k}$; if $x_k$ and $t$ have height at most $B$ then
+$2^{2B}\ge x_k/t$, so $B>2^{k-1}$. Corollary~\ref{cor:heights-gram} does not
+claim this general distinction as new. Its content is the realization of the
+distinction by the optimal Gram face of a short certified convex quartic with
+a bounded rational optimizer, where it concerns maximal-rank, moment, and
+exposing certificates simultaneously.
+
+\subsection{Interior Gram matrices}
+\label{sec:heights-interior}
+
+A polynomial has a positive definite Gram matrix only if it is strictly
+positive, because $z$ contains the constant monomial. For certified quartics
+the converse holds: if $\min f>0$, then by continuity some rational center
+$a$ satisfies $c_a>0$ in Lemma~\ref{lem:taylor-sos}(c), and $\mathcal Q_a$ is
+a rational positive definite Gram. Interior rational Grams are the
+certificates produced by methods that round an approximate interior solution
+and project it onto the rational coefficient equations
+\cite{PeyrlParrilo2008}. The question is how long they must be.
+
+Let $\norm{f}_1$ denote the sum of the absolute values of the coefficients of
+$f$. Continuing the construction of Section~\ref{sec:heights-witness}, put
+\begin{equation}
+ h_k=\lambda_kF_k+u_k^2,\qquad
+ \lambda_kA_k+2\iota_k\iota_k^{\mathsf T}\succeq3I,
+ \label{eq:heights-interior-family}
+\end{equation}
+which differs from $g_k$ only in the sign of the square.
+
+\begin{theorem}[Interior Gram matrices]
+\label{thm:interior-gram}
+\leavevmode
+\begin{enumerate}[label=(\alph*)]
+\item \emph{Upper bound.} Let $(f,A)$ be a certified quartic in $n$
+  variables with $\min f>0$, and let $L$ be the total binary length of $f$
+  and $A$. Then $f$ has a rational positive definite Gram matrix of total
+  binary length at most $\poly(L)\,2^{O(n)}$, and $f$ is a sum of squares of
+  rational quadratics of the same total length.
+\item \emph{A strictly positive family.} For every $k\ge1$ the certified
+  quartic $(h_k,\lambda_kA_k+2\iota_k\iota_k^{\mathsf T})$ of
+  \eqref{eq:heights-interior-family}, in $n=2k$ variables, is computable in
+  time polynomial in $k$ and has total binary length polynomial in $k$. It
+  satisfies $\nabla^2h_k\succeq3I$, $h_k>0$ on $\R^n$, and
+  \[
+   0<m_k:=\min_{\R^n}h_k<M_k^{-2^{k+1}},\qquad M_k=1000^{k+3}.
+  \]
+  It is given as $\lambda_k\sum_{j=1}^{n+1}F_{k,j}^2+u_k^2$ with rational
+  quadratics $F_{k,j}$, so it has a rational positive semidefinite Gram of
+  rank at most $n+2<N$ and a rational sum-of-squares expression, both of
+  binary length polynomial in $k$. It also has rational positive definite
+  Gram matrices.
+\item \emph{Lower bound.} Every rational positive definite Gram $Q$ of $h_k$,
+  with reduced upper-triangular entry denominators $b_{ij}$, satisfies
+  \[
+   \sum_{i\le j}\log_2b_{ij}>2^k\log_2M_k-\frac{N-1}2\log_2T_k,
+   \qquad T_k=\max\{1,15(n+1)\norm{h_k}_1\},
+  \]
+  where $\log_2T_k$ is bounded by a polynomial in $k$. Hence every rational
+  positive definite Gram of $h_k$ has total denominator length
+  $\Omega(k2^k)=\Omega(n2^{n/2})$, and some entry has
+  $\Omega(2^k/k^3)$ denominator bits.
+\end{enumerate}
+\end{theorem}
+
+The proofs are in Appendix~\ref{app:heights-interior}. The lower bound rests
+on two facts. Every positive semidefinite Gram of $h_k$ has trace at most
+$T_k$, because the second-moment matrix of $z$ under the uniform measure on
+$[-1,1]^n$ is at least $I/(15(n+1))$. Every positive definite Gram has
+smallest eigenvalue at most $m_k=\min h_k$: at a minimizer $a$, the Rayleigh
+quotient on $z(a)$ is $m_k/\norm{z(a)}^2\le m_k$, since $z(a)$ contains the
+constant one. Hence $0<\det Q<M_k^{-2^{k+1}}T_k^{N-1}$. On the other hand, the
+product of the squared upper-triangular denominators clears every
+denominator in the determinant expansion, so a positive rational determinant
+is at least the reciprocal of that product. A singular Gram has determinant
+zero, which is why the short Gram of rank $n+2$ escapes the bound. The upper
+bound uses the strict-set rational sampling theorem of Basu, Pollack, and
+Roy \cite[Theorem~4.1.2]{BasuPollackRoy1996} to find a rational center with
+$c_a>0$ and $\poly(L)6^{O(n)}$ coordinate bits, and then evaluates the
+explicit formula \eqref{eq:heights-completed-gram}. It is a size bound for
+some interior certificate; it does not give an algorithm polynomial in $L$,
+and it is not claimed for strictly positive quartics without a supplied
+strict Hessian Gram.
+
+Parts (a) and (c) show that exponential dependence on the dimension is
+necessary and sufficient for interior rational Grams in this certified
+class; the constants in the exponents do not match. The two kinds of Gram
+matrix in the theorem should not be confused: the supplied Hessian Gram of
+$h_k$ is short and has smallest eigenvalue at least three, while every
+interior polynomial Gram of $h_k$ is long and has smallest eigenvalue below
+$M_k^{-2^{k+1}}$. This also explains the relation to the exact rounding
+theorem of G\"artner, Magron, and Vallentin
+\cite[Corollary~1.3]{GaertnerMagronVallentin2026}, which recovers an exact
+rational Gram when a positive lower bound on the smallest eigenvalue of some
+Gram is supplied as part of the input. For $h_k$ every such bound is smaller
+than $M_k^{-2^{k+1}}$, so its encoding alone has more than
+$2^{k+1}\log_2M_k$ bits, and by part~(c) every rational positive definite
+Gram that any method prints has $\Omega(k2^k)$ bits. Compactness of Gram
+spectrahedra is
+known \cite[Lemma~1.5]{ChuaPlaumannSinnVinzant2017}; the trace bound above
+is an explicit version in the monomial basis that the encoding argument
+needs. Exponentially large coefficients are known to be necessary in some
+constrained sum-of-squares proofs \cite{ODonnell2017,RaghavendraWeitz2017};
+the theorem concerns ordinary Gram matrices of a single globally positive
+quartic. Whether some family in this certified class forces long
+encodings of \emph{every} rational positive semidefinite Gram remains open;
+part (b) shows that the family $h_k$ does not.
+
+\subsection{Shared-circuit witnesses and interior Grams}
+\label{sec:heights-circuit}
+
+For two of the objects above, the expanded lower bounds disappear when
+outputs may be shared rational circuits: strictly feasible points when the
+minimum is negative, and interior Gram matrices when it is positive. The
+Newton circuits of Section~\ref{sec:upper} approximate the
+optimizer to doubly exponential accuracy with polynomially many gates, and the
+separation bound tells how much accuracy suffices for a given polynomial
+observable. With the observable $f$ itself this gives a circuit point in
+$\{f<0\}$ whenever $\min f<0$
+(Proposition~\ref{prop:upper-circuit-witness}); for the families $g_k$ of
+Theorem~\ref{thm:heights-witness} such a point has polynomial circuit size,
+while its expanded coordinates need more than $k2^k$ bits. With a different
+observable the same circuit point yields interior Gram matrices, without
+deciding any sign.
+
+\begin{theorem}[Shared-circuit interior Grams]
+\label{thm:circuit-gram}
+There is a deterministic polynomial-time algorithm that receives a pair
+$(f,A)$, where $f\in\Q[X_1,\ldots,X_n]$ has degree at most four and $A$ is a
+rational symmetric matrix of order $n+n^2$, rejects the pair unless it is a
+certified quartic, and otherwise outputs, without any sign oracle, a
+symmetric $N\times N$ matrix $Q$ whose entries are computed by one shared
+rational circuit of polynomial size, such that $f=z^{\mathsf T}Qz$
+identically and
+\[
+ Q\succ0\quad\Longleftrightarrow\quad\min_{\R^n}f>0 .
+\]
+Every division in the circuit is by a nonzero rational, on every certified
+input and regardless of the sign of $\min f$.
+\end{theorem}
+
+The proof is in Appendix~\ref{app:heights-circuit}. Put $\mu=\mu_A$ and
+$h=f-\norm{\nabla f}^2/(2\mu)$, an explicit polynomial of degree at most six
+with $h(p)=f(p)$. The shared Newton point $\hat x$ of
+Lemma~\ref{lem:newton-circuit}, whose accuracy covers every observable up to
+a stated encoding length, satisfies $|h(\hat x)-h(p)|\le g/8$ for a gap $g>0$
+such that $h(p)\ne0$ implies $|h(p)|\ge g$. The matrix $Q$ is the completed
+Taylor Gram \eqref{eq:heights-completed-gram} at the exact rational center
+$\hat x$. Its constant is $c_{\hat x}=h(\hat x)$, which is positive whenever
+$\min f>0$; conversely, $Q\succ0$ forces $f\ge\lambda_{\min}(Q)>0$ because
+$z$ contains the constant monomial.
+
+Neither output is an expanded rational. For the family $h_k$ of
+Theorem~\ref{thm:interior-gram}, the value of $Q$ is a rational positive
+definite Gram of $h_k$, so its expanded encoding needs $\Omega(n2^{n/2})$
+denominator bits, while the circuit has size polynomial in $k$. For these two
+outputs the circuit model removes the expanded-size obstruction, but it moves
+the cost to validation over general certified quartic inputs, as follows.
+\begin{enumerate}[label=(\roman*)]
+\item By Theorem~\ref{thm:circuit-gram}, $Q\succ0$ holds exactly when
+  $\min f>0$, and deciding $\min f>0$ for certified quartics is
+  $\PosSLP$-hard (Theorem~\ref{thm:quartic-complete}). Hence deciding
+  positive definiteness of a matrix given by a shared rational circuit is
+  $\PosSLP$-hard already for these outputs, and it is not in polynomial time
+  unless $\PosSLP$ is.
+\item For the point $\hat x$ of Proposition~\ref{prop:upper-circuit-witness},
+  $f(\hat x)\ge\min f$, so $f(\hat x)<0$ holds exactly when $\min f<0$.
+  Checking the sign of $f(\hat x)$ is therefore as hard as deciding
+  $\min f<0$, which is $\PosSLP$-complete for certified quartics.
+\item The identity $f=z^{\mathsf T}Qz$ holds by construction. We claim no
+  deterministic polynomial-time procedure that verifies such an identity for
+  a circuit matrix received without its construction.
+\item When $\min f>0$, symmetric elimination applied to $Q$ produces
+  polynomial-size circuits for a weighted rational sum of squares with
+  positive weights. Writing those weights as sums of rational squares by the
+  binary method takes time polynomial in their \emph{expanded} length, which
+  can be exponential. We do not claim polynomial-size circuits for an
+  unweighted rational sum of squares.
+\end{enumerate}
+The construction requires the full strict Hessian Gram on $(v,X\otimes v)$:
+the positive definiteness step uses $\bar A\succeq\mu\diag(0,I_{n^2})$ to
+supply every translated quadratic monomial. It needs no lower bound on the
+positive minimum, which may be doubly exponentially small, as for $h_k$.
+
+The rational objects of the circle family also have short circuits. For
+$f_k$ and $\tilde f_k$ of Theorem~\ref{thm:rational-height}, $k$ complex
+squarings compute the optimizer, followed for $\tilde p$ by multiplications
+with powers of two. The entries of $ee^{\mathsf T}$, which is the optimal
+moment matrix and, up to a positive factor, every exposing matrix, are
+monomials of degree at most four in the optimizer. The maximal-rank optimal
+Gram $\mathcal T_p(A)$ of Theorem~\ref{thm:heights-moment}(a) is given by the
+fixed formula \eqref{eq:heights-taylor-gram} in the optimizer and the
+supplied Hessian Gram $A$. Hence the optimizer, $ee^{\mathsf T}$, and
+$\mathcal T_p(A)$ have circuits of size polynomial in $k$, although their
+expanded encodings are long (Theorem~\ref{thm:rational-height} and
+Corollary~\ref{cor:heights-gram}). None of this extends to irrational
+outputs. A circuit with rational constants and rational operations has a
+rational value. When the optimizer is irrational, such a circuit therefore
+cannot describe the optimizer, a maximal-rank optimal Gram, or a nonzero
+matrix exposing the optimal Gram face
+(Theorem~\ref{thm:heights-moment}(c),(e)). These objects need a different
+output model, for example circuits with root gates; this section makes no
+claim about such models.
+
+\subsection{Summary of representation costs}
+\label{sec:heights-summary}
+
+Table~\ref{tab:heights-summary} collects the results. In every row the input
+is a certified quartic of total length polynomial in $k$, with $n=\Theta(k)$
+variables and a rational positive definite Hessian Gram.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}X
+  >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X}
+\toprule
+Object & Expanded rational encoding & Short alternative\\
+\midrule
+Point of a strictly feasible body ($g_k$) &
+every rational point has more than $\frac n2 2^{n/2}$ bits for $n\ge4$
+(Thm.~\ref{thm:heights-witness}) &
+circuit witness of polynomial size (Prop.~\ref{prop:upper-circuit-witness})\\
+Unique rational optimizer ($f_k$, $\tilde f_k$) &
+$2^{n/2-1}\log_25$ denominator bits in one coordinate
+(Thm.~\ref{thm:rational-height}) &
+squaring circuit of size $O(k)$; polynomial-time approximation\\
+Optimal moment matrix ($f_k$) &
+an entry with denominator $5^{2^k}$ (Cor.~\ref{cor:heights-gram}) &
+same circuit\\
+Maximal-rank optimal Gram ($f_k$) &
+entry height $\Omega(2^k/n^4)$, total length $\Omega(2^k)$
+(Cor.~\ref{cor:heights-gram}) &
+circuit for $\mathcal T_p(A)$ from the circuit for $p$; an optimal Gram of
+rank at most $n+1$ and polynomial length\\
+Exposing matrix of the optimal Gram face ($f_k$) &
+entry height at least $2^{k-1}\log_25$ (Cor.~\ref{cor:heights-gram}) &
+$ee^{\mathsf T}$ from the circuit for $p$\\
+Positive definite Gram ($h_k$) &
+total denominator length $\Omega(n2^{n/2})$; at most $\poly(L)2^{O(n)}$ for
+every strictly positive certified quartic (Thm.~\ref{thm:interior-gram}) &
+circuit Gram of polynomial size (Thm.~\ref{thm:circuit-gram})\\
+Positive semidefinite Gram or rational SOS ($h_k$) &
+polynomial length (rank at most $n+2$) & ---\\
+\bottomrule
+\end{tabularx}
+\caption{Output size of exact objects for certified quartics.}
+\label{tab:heights-summary}
+\end{table}
+
+The lower bounds limit printed rational outputs only; the limits listed at
+the beginning of this section apply to every row. The circuit witness and the
+circuit Gram can be constructed in polynomial time. Their validation over
+general certified quartic inputs has the following complexity. Deciding whether the circuit witness
+$\hat x$ satisfies $f(\hat x)<0$ is $\PosSLP$-complete, and deciding whether
+the circuit Gram is positive definite is $\PosSLP$-hard
+(Section~\ref{sec:heights-circuit}, items (i) and (ii)). These statements
+concern the general input class, not the displayed families: since
+$\min g_k<0$ and $\min h_k>0$, both predicates are always true on those
+families.

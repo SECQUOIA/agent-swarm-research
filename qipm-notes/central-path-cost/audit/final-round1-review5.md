@@ -27,7 +27,7 @@ I consulted the local literature README before the primary source corpus. The cu
 
 ## Reproducibility and independent checks
 
-All four supplied verification scripts passed under `/home/sgusev/miniconda3/envs/qipm/bin/python`. The rational script uses `Fraction` arithmetic for its finite series, logarithm enclosures, radical squaring and displayed margins; the other scripts and their documentation correctly describe numerical diagnostics rather than proof certificates.
+All four supplied verification scripts passed under `/workspace/local-home/miniconda3/envs/qipm/bin/python`. The rational script uses `Fraction` arithmetic for its finite series, logarithm enclosures, radical squaring and displayed margins; the other scripts and their documentation correctly describe numerical diagnostics rather than proof certificates.
 
 I copied the manuscript inputs to `/tmp/review5-final-86s4wtk1`, regenerated both figures and the CSV there, and built there with `latexmk`. The regenerated CSV matches the delivered CSV **byte for byte**. The isolated build produced **50 pages**, with no warnings, undefined references/citations, overfull boxes or underfull boxes in the final log. No build reads other repository directories or local literature inputs. The reported largest relative quadrature error estimate is approximately `3.59e-12`; it is correctly labeled an estimate, not a rigorous enclosure.
 

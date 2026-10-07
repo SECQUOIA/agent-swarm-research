@@ -1,0 +1,221 @@
++Own exact checks and saved-source evidence: [check_r2.log](../../reviews/minor-fixes/check_r2.log). The full response is [response-r2.md](../../reviews/minor-fixes/response-r2.md); exact commands and results are in [commands.md](../../reviews/minor-fixes/commands.md). Integration edits remain pending in the main summary and audit report. No main computation or solver campaign was repeated.
+--- before/primal/lnts/report.md
++++ after/primal/lnts/report.md
+@@ -8,15 +8,15 @@
+ | instance | vars/rows | point file | objective enclosure of x* | gap to summary dual (rel.) | gap to verifier dual (rel.) |
+ |---|---|---|---|---|---|
+ | lnts50 | 256/200 | points/lnts50_point.json | [0.5546687649386788986220922, 0.5546687649386788986220923] | 5.79e-13 (1.05e-12) | 5.55e-13 (1.01e-12) |
+-| lnts100 | 506/400 | points/lnts100_point.json | [0.5545954011669111610017828, 0.5545954011669111610017829] | 6.12e-13 (1.11e-12) | 5.55e-13 (1.00e-12) |
+-| lnts200 | 1006/800 | points/lnts200_point.json | [0.5545770161030836720556252, 0.5545770161030836720556253] | 5.84e-13 (1.06e-12) | 5.55e-13 (1.00e-12) |
++| lnts100 | 506/400 | points/lnts100_point.json | [0.5545954011669111610017828, 0.5545954011669111610017829] | 6.12e-13 (1.11e-12) | 5.55e-13 (1.01e-12) |
++| lnts200 | 1006/800 | points/lnts200_point.json | [0.5545770161030836720556252, 0.5545770161030836720556253] | 5.84e-13 (1.06e-12) | 5.55e-13 (1.01e-12) |
+ | lnts400 | 2006/1600 | points/lnts400_point.json | [0.5545724137006871088173911, 0.5545724137006871088173912] | 5.88e-13 (1.06e-12) | 5.55e-13 (1.01e-12) |
+ 
+ The two dual bounds:
+ - **Summary dual:** the truncated value displayed in open-instances-summary.md (0.5546687649381, 0.5545954011663, 0.5545770161025, 0.5545724137001).
+-- **Verifier dual:** the full value from reviews/open-instances-verification/verification-report.md at margin 1e-12 (0.5546687649381242, 0.5545954011663566, 0.5545770161025291, 0.5545724137001325).
++- **Verifier dual:** certified N·h2 at margin 1e-12, shown here rounded down as 0.5546687649381242, 0.5545954011663565, 0.5545770161025290 and 0.5545724137001325. The older review displays for lnts100 and lnts200 were rounded to nearest and lie above N·h2; they are not lower bounds as displayed.
+ 
+-The summary's "gap after 5.5e-13" holds against the verifier dual. Against the truncated displayed dual, the gap is 5.8e-13 to 6.2e-13.
++Against the certified verifier dual, each gap is at most 5.55e-13. Against the summary dual displays, the per-instance upper bounds are 5.79e-13, 6.12e-13, 5.84e-13 and 5.88e-13. The summary's 5.5e-13 is rounded to nearest and must be corrected.
+ 
+ The remaining gap comes entirely from the dual certificate's relative margin of 1e-12 (h2 = h*(1-1e-12)). The primal side adds less than 3e-109. A dual certificate with a smaller margin would shrink the gap. I did not compute one, because the dual side is outside this track.
+ 
+@@ -54,7 +54,7 @@
+ 
+ **Numerical only:** the tangent-law solve, the Newton solve for the centre, and the choice of C.
+ 
+-**Not possible:** a fully rational point. With θ rational and nonzero, cos θ is transcendental (Lindemann–Weierstrass), so an interval existence proof is required.
++**No fully rational point exists.** If all θ_j and h were rational, vx_N = 45 would require Σ w_j cos θ_j = 45/(50h) to be rational, with h > 0 and positive weights w_j. Lindemann–Weierstrass makes e^{iα} for distinct algebraic α linearly independent over the algebraic numbers. After grouping equal |θ_j|, every nonzero angle gives a strictly positive coefficient of e^{i|θ_j|}, so rationality forces every θ_j = 0. Then py_N = 0, contradicting py_N = 5. This is the linear-independence argument in independent review r1, item 8. Our construction uses an interval existence proof.
+ 
+ ## 4. Checks (my own code; none of them is an independent review)
+ - **Generic row check** in lnts_primal.py. Every OSIL row is evaluated from the parsed XML trees over the full-variable box, and each enclosure contains 0. The widest is 7.7e-107. A generic check of all bounds also passes. This is a consistency check, not the proof.
+@@ -80,8 +80,8 @@
+ - description: how x* is defined from these data.
+ 
+ ## 6. Notes for integration
+-- lnts50–400 can leave the summary's list of instances closed only against points with row violations. Their primal values are now values of exactly feasible points, with the enclosures above. The displayed primal values (e.g. 0.5546687649387) remain valid upper bounds.
+-- The gap of about 5.5e-13 is set by the dual margin, not by the primal point.
++- lnts50–400 can leave the summary's list of instances closed only against points with row violations. Their primal values are now values of exactly feasible points, with the enclosures above. The summary primal displays for lnts50, lnts200 and lnts400 are valid upper bounds. For lnts100, replace 0.5545954011669 by 0.5545954011670: the old display lies below the exact point objective.
++- The gap to the certified verifier dual is at most 5.55e-13 and is set by the dual margin. Against the summary dual displays, use the four upper bounds in Section 1.
+ 
+ ## 7. Files (all in /workspace/minlp-notes/research-20260929/publication/primal/lnts/)
+ - lnts_primal.py: proof and point files
+@@ -89,9 +89,12 @@
+ - crosscheck.py
+ - jacobian_check.py
+ - mutation_test.py
++- minor_review_check.py and logs/minor_review_check.log: valid second-step and old-vector checks
+ - points/lnts{50,100,200,400}_point.json
+ - logs/: run_all.stdout, lnts_primal_50_100_200_400.json, crosscheck.stdout, crosscheck_50_100_200_400.json, jacobian_check.stdout, jacobian_check_50_100_200_400.json, mutation_test.stdout, compare_old_points.stdout
+ 
++The historical `logs/run_all.stdout` and `logs/lnts_primal_50_100_200_400.json` predate the second-step centre correction; their contraction widths are obsolete. Use `logs/minor_review_check.log` for current widths. The reviewer reran the corrected construction in `../../reviews/minor-fixes-review-r1/scratch-A/lnts_repro/`; a round-2 byte comparison confirms that all four resulting point files equal the stored files. No construction was rerun in round 2.
++
+ ## Commands run (from the agent's structured return)
+ 
+ - `python3 -c '<mpmath iv API tests: interval conversion of big ints/strings, endpoint access>' (in /tmp; exploration only)`
+@@ -102,7 +105,7 @@
+ - `cd OUTDIR && inline python mutation test (temporary mut/ folder, removed) -> 3 mutations rejected, unchanged copy accepted`
+ - `cd OUTDIR && OMP_NUM_THREADS=1 python3 mutation_test.py  -> all as expected; logs/mutation_test.stdout`
+ - `cd OUTDIR && OMP_NUM_THREADS=1 python3 jacobian_check.py 50 100 200 400  -> forward-mode vs closed form <= 7.6e-111 rel, vs finite differences <= 1.9e-65 rel; logs/jacobian_check.stdout`
+-- `cd OUTDIR && inline python comparison (now saved in minor_review_check.py) with open-instances/logs/lnts_lnts<N>_primal.txt (first float version was misleading at 5e-61 and was replaced by the exact version) -> max diff 3.25e-15..3.54e-15; logs/compare_old_points.stdout`
++- `cd OUTDIR && inline python comparison (now saved in minor_review_check.py) with open-instances/logs/lnts_lnts<N>_primal.txt (first float version was misleading at 5e-61 and was replaced by the exact version) -> max diff approximately 3.25e-15..3.54e-15; logs/compare_old_points.stdout`
+ - `cd OUTDIR && inline python computing rounded-up absolute/relative gaps from logs/lnts_primal_50_100_200_400.json`
+ - `rm -rf OUTDIR/__pycache__ ; git status --short (read-only)`
+ 
+@@ -110,8 +113,8 @@
+ 
+ - The checks are by my own code: lnts_primal.py and a second script, crosscheck.py, that uses the verifier's OSIL reader and a closed-form Jacobian. These are author checks; independent review r1 subsequently verified the results, including an integer-only enclosure of sin and cos.
+ - The proof assumes that mpmath 1.3.0 interval arithmetic encloses +,-,*,/,cos,sin correctly with outward rounding.
+-- The remaining gap of about 5.5e-13 (1e-12 relative) comes from the dual certificate's margin. A tighter dual at a smaller margin was not computed because it is outside this track.
+-- The summary's displayed (truncated) duals give gaps of 5.8e-13 to 6.2e-13, slightly above the summary's '5.5e-13'. The 5.5e-13 figure holds only against the verifier's full dual values.
++- The remaining gap of at most 5.55e-13 (about 1e-12 relative) comes from the dual certificate's margin. A tighter dual at a smaller margin was not computed because it is outside this track.
++- The summary dual displays give upper gaps 5.79e-13, 6.12e-13, 5.84e-13 and 5.88e-13. The 5.55e-13 upper bound applies to certified N·h2 and to the safe verifier displays above.
+ 
+ ## Response to review
+ 
+@@ -121,8 +124,21 @@
+ |---|---|
+ | 1. Invalid second Krawczyk step | Changed only the second-step centre to a point in Z. Rechecked the two steps on all four stored boxes: widths < 2.1e-106, objective width < 3e-109; 25-digit objective displays unchanged. No construction rerun. |
+ | 2. Missing report | The full report is on disk with its commands and interval assumptions. Independent r1 evidence is acknowledged. |
+-| 3. Missing old-vector comparison script | Saved the comparison in `minor_review_check.py`; exact binary64 inputs and stored coordinate enclosures give upper distances 3.25e-15–3.54e-15 and all but one matching rounding per instance. |
++| 3. Missing old-vector comparison script | Saved the comparison in `minor_review_check.py`; exact binary64 inputs and stored coordinate enclosures give distances approximately 3.25e-15–3.54e-15, all below 3.6e-15 and all but one matching rounding per instance. |
+ | 4. Conservative relative-gap rounding | Stated upward rounding to three significant digits in Section 1. |
+ | 5. Tiny middle control | Kept the stored exact rational to preserve the certified point; explained its numerical origin and checked |control| < 1e-110 for all four instances. |
+ 
+ Targeted check: `OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONDONTWRITEBYTECODE=1 python3 research-20260929/publication/primal/lnts/minor_review_check.py > research-20260929/publication/primal/lnts/logs/minor_review_check.log` (from the repository root). Results are in `logs/minor_review_check.log`. No main computation, solver campaign, project-wide verification or CI check was run for this revision.
++
++### Round 2: independent minor-fixes review (2026-10-03)
++
++Review: [minor-fixes-review-r1.md](../../reviews/minor-fixes-review-r1.md). Issue numbers below refer to that review.
++
++| issue | resolution |
++|---|---|
++| 1 | Corrected the invalid lnts100 summary-display claim; recorded primal 0.5545954011670. |
++| 8 | Rounded verifier dual displays downward; relative upper gaps to these safe displays are 1.01e-12 for all four instances. |
++| 9 | Made upper-gap rounding consistent and labelled the coordinate-distance range approximate. |
++| 10 | Supplied the linear-independence proof, labelled obsolete construction-width logs, checked reviewer rerun point bytes and completed the file list. |
++
++Own exact checks and saved-source evidence: [check_r2.log](../../reviews/minor-fixes/check_r2.log). The full response is [response-r2.md](../../reviews/minor-fixes/response-r2.md); exact commands and results are in [commands.md](../../reviews/minor-fixes/commands.md). Integration edits remain pending in the main summary and audit report. No main computation or solver campaign was repeated.
+--- before/primal/powerflow/report.md
++++ after/primal/powerflow/report.md
+@@ -41,7 +41,7 @@
+ 
+ **1. construct.py (floating point; not part of the proof).**
+ - Start from p1 (open-instances-wave3/sol/<name>.p1.sol; missing entries are 0).
+-- Find the active set with cutoff slack < 1e-9. The separation is clean: active slacks in absolute value are at most 1.7e-16 (0030p), zero at p1's stored decimals (0039p), and 6.8e-13 (0039r). In 0039r, e363 has slack 6.8e-13 and e386 has slack 2.1e-13, and the next smallest are 4.3e-4, 1.08e-3 and 2.3e-3.
++- Find the active set with cutoff slack < 1e-9. The separation is clean: active slacks in absolute value are at most 1.7e-16 (0030p), zero at p1's stored decimals (0039p), and 6.8e-13 (0039r). In 0039r, e363 has slack 6.8e-13 and e386 has slack 2.1e-13. The next-smallest inactive slack is 4.3e-4 at e215 in 0030p, 1.08e-3 at e346 in 0039p, and 2.3e-3 at e306 in 0039r.
+ - Fix variables as described in Section 1.
+ - Run a simplified Newton iteration at 70 digits with a float64 LU factorization. The residual fell to about 1e-68 in 4 steps.
+ - Condition numbers of the Jacobian: 1.0e4, 2.0e4 and 5.0e4.
+@@ -158,3 +158,13 @@
+ | 6. Uniqueness citation | Checked ||I − C J(X)||∞ < 1 on each stored box and gave the mean-value contraction argument. Moore 1977 is cited for existence; no inaccessible theorem number is asserted. |
+ 
+ Targeted check: `OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONDONTWRITEBYTECODE=1 python3 research-20260929/publication/primal/powerflow/minor_review_check.py > research-20260929/publication/primal/powerflow/logs/minor_review_check.log` (from the repository root). Results are in `logs/minor_review_check.log`. No main computation, solver campaign, project-wide verification or CI check was run for this revision.
++
++### Round 2: independent minor-fixes review (2026-10-03)
++
++Review: [minor-fixes-review-r1.md](../../reviews/minor-fixes-review-r1.md). Issue numbers below refer to that review.
++
++| issue | resolution |
++|---|---|
++| 12 | Assigned the next inactive slacks to the correct three instances/rows; checked them by exact rational OSIL evaluation. |
++
++Own exact checks and saved-source evidence: [check_r2.log](../../reviews/minor-fixes/check_r2.log). The full response is [response-r2.md](../../reviews/minor-fixes/response-r2.md); exact commands and results are in [commands.md](../../reviews/minor-fixes/commands.md). Integration edits remain pending in the main summary and audit report. No main computation or solver campaign was repeated.
+--- before/primal/water-ann-kan/code/minor_review_check.py
++++ after/primal/water-ann-kan/code/minor_review_check.py
+@@ -19,6 +19,11 @@
+  print(name,'relative primal change',float((exact-old)/old))
+ for name,lo,hi,d in gaps.rows():
+  print(name,'gap/abs(dual)',float((hi-d)/abs(d)),'gap/abs(primal)',float((hi-d)/min(abs(lo),abs(hi))))
++ # Check the actual percentage displays, not just the unrounded ratios.
++ percent={'waterno2_06':'1.674','waterno2_09':'10.82','waterno2_12':'6.90',
++          'waterno2_18':'4.87','waterno2_24':'5.90'}.get(name)
++ if percent is not None:
++  assert Q(percent)/100 >= (hi-d)/abs(d), (name,percent)
+ for f in sorted((p/'points').glob('*.point.json')):
+  v=json.loads(f.read_text());assert '{lo, hi}' in v['construction'] and '(mid, rad)' not in v['construction'];assert any(isinstance(x,dict) and 'lo' in x and 'hi' in x for x in v['x'].values())
+ print('PASS: old bound violations, conservative gap rounding and lo/hi metadata checked.')
+--- before/primal/water-ann-kan/code/nn_exact.py
++++ after/primal/water-ann-kan/code/nn_exact.py
+@@ -140,7 +140,7 @@
+         hid = set(hidden)
+         hb = [b for b in bad if idx[b[0]] in hid]
+         P(f"hidden-neuron variables {[N[j] for j in hidden]}: bound problems {hb}")
+-    # point file: inputs exactly, every variable as interval centre and radius
++    # Point file: inputs exactly; other variables as rationals or outward intervals {lo, hi}.
+     pts = {}
+     for j in range(len(N)):
+         if res["Q"][j] is not None:
+--- before/primal/water-ann-kan/report.md
++++ after/primal/water-ann-kan/report.md
+@@ -2,7 +2,7 @@
+ 
+ # Exactly feasible primal points: waterno2_06–24, ann_cumene_tanh, and KAN relaxation points
+ 
+-Date: 2026-10-01. Track: primal-water-ann-kan. Status: complete for all nine required instances. All checks were run by the code in `code/` of this folder (/workspace/minlp-notes/research-20260929/publication/primal/water-ann-kan), written for this track. Two exact checkers were written separately for waterno2, but by the same author, so none of this has been independently reviewed. Every run was a single process that took under 4 s.
++Date: 2026-10-01. Track: primal-water-ann-kan. Status: complete for all nine required instances. All checks were run by the code in `code/` of this folder (/workspace/minlp-notes/research-20260929/publication/primal/water-ann-kan), written for this track. Two exact checkers were written separately for waterno2, but by the same author, independent review r1 later verified the numerical claims with its own code. Every run was a single process that took under 4 s.
+ 
+ ## 1. Results
+ 
+@@ -24,8 +24,8 @@
+ 
+ How to read the results:
+ - **The gap statements now rest on exactly feasible points.** For each waterno2 instance and for ann_cumene_tanh, a point exists that satisfies every row, bound and integrality requirement of the cached OSIL model exactly. For the three r5 KAN instances, a point exists that satisfies every row of the OSIL model except the partition-of-unity rows, plus every variable bound. Such a point lies in R.
+-- **waterno2_06.** The listed MINLPLib point p4 is not exactly feasible. Its largest row violation is 1.08e-11, in row e94. A point within 3.1e-13 of p4 is exactly feasible. Its objective is the rational number 282888037386904807969455615812871 / 10^30. This is 1.1e-13 above the sum of p4's cost values (282.8880373869047) and 2.0e-13 below the objvar value in p4's file (282.888037386905012). The gap to our dual bound 278.230573774 is 1.674% of the dual. This is the 1.67% of the summary, now measured against an exactly feasible point.
+-- **waterno2_09–24.** The exact points cost 4.9e-6, 1.03e-5, 2.53e-5 and 2.57e-5 more than our earlier tolerance-feasible points. In relative terms this is 3.7e-9 to 5.3e-9 (nearest one-decimal figures; exact ratios range from 3.6899e-9 to 5.3469e-9). The displayed relative gaps to the dual are conservative upper bounds 10.82%, 6.89%, 4.87% and 5.90%. Rounding is upward and can occur twice; for example the exact ratios for 09 and 24 are about 10.8115% and 5.8947%. The table's 1.647e-2 and 6.450e-2 likewise round upward from about 1.6464e-2 and 6.4493e-2. `logs/minor_review_check.log` records ratios before display rounding.
++- **waterno2_06.** The listed MINLPLib point p4 is not exactly feasible. Its largest row violation is 1.08e-11, in row e94. A point within 3.1e-13 of p4 is exactly feasible. Its objective is the rational number 282888037386904807969455615812871 / 10^30. This is 1.1e-13 above the sum of p4's cost values (282.8880373869047) and 2.0e-13 below the objvar value in p4's file (282.888037386905012). The gap to our dual bound 278.230573774 is 1.674% of the dual. The old summary 1.67% is rounded to nearest. Use 1.68% for an upward two-decimal percentage display, now measured against an exactly feasible point.
++- **waterno2_09–24.** The exact points cost 4.9e-6, 1.03e-5, 2.53e-5 and 2.57e-5 more than our earlier tolerance-feasible points. In relative terms this is 3.7e-9 to 5.3e-9 (nearest one-decimal figures; exact ratios range from 3.6899e-9 to 5.3469e-9). The displayed relative gaps to the dual are conservative upper bounds 10.82%, 6.90%, 4.87% and 5.90%. Rounding is upward and can occur twice; for example the exact ratios for 09 and 24 are about 10.8115% and 5.8947%. The table's 1.647e-2 and 6.450e-2 likewise round upward from about 1.6464e-2 and 6.4493e-2. `logs/minor_review_check.log` records ratios before display rounding.
+ - **ann_cumene_tanh.** The wave-3 primal point is exactly feasible as it stands. More precisely, the point defined by its five input values (the 16-digit decimals in `sol/ann_cumene_tanh.wave3.sol`) is exactly feasible. The 30-digit rounding of all 794 coordinates in that file is not, because of rounding. The gap is 0.194%, as in the summary.
+ - **KAN.** The improved wave-3 values are attained by points of R, so they are valid upper bounds on the optimum of R. The gaps of about 1e-10 (2.4e-8 absolute for r5_n3) match the summary.
+ 
+@@ -191,3 +191,14 @@
+ | 5. Wrong interval-format description | Changed `nn_exact.py` and the seven stored point JSON descriptions from (mid, rad) to {lo, hi}. All numerical fields are unchanged. |
+ 
+ Targeted check: `OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONDONTWRITEBYTECODE=1 python3 research-20260929/publication/primal/water-ann-kan/code/minor_review_check.py > research-20260929/publication/primal/water-ann-kan/logs/minor_review_check.log` (from the repository root). Results are in `logs/minor_review_check.log`. No main computation, solver campaign, project-wide verification or CI check was run for this revision.
++
++### Round 2: independent minor-fixes review (2026-10-03)
++
++Review: [minor-fixes-review-r1.md](../../reviews/minor-fixes-review-r1.md). Issue numbers below refer to that review.
++
++| issue | resolution |
++|---|---|
++| 3 | Changed waterno2_12 to 6.90% and added assertions against the exact rational percentage gaps. |
++| 20 | Corrected independent-review status and the interval-format code comment. |
++
++Own exact checks and saved-source evidence: [check_r2.log](../../reviews/minor-fixes/check_r2.log). The full response is [response-r2.md](../../reviews/minor-fixes/response-r2.md); exact commands and results are in [commands.md](../../reviews/minor-fixes/commands.md). Integration edits remain pending in the main summary and audit report. No main computation or solver campaign was repeated.
+--- before/reviews/minor-fixes/summary.md
++++ after/reviews/minor-fixes/summary.md
+@@ -1,8 +1,8 @@
+ # Minor review fixes
+ 
+-Completed 2026-10-03: checked and resolved all 57 minor issues in the ten authorized tracks. Each report ends with a response table. No main computation or solver campaign was repeated. No commit, push, external message or SCIP submission was made. The main summary, audit report and other tracks were not edited.
++Completed 2026-10-03: checked the original 57 fixes and addressed all 22 findings in the independent minor-fixes review. Round-2 resolutions and the one evidence-based disagreement are in [response-r2.md](response-r2.md). Each report ends with a response table. No main computation or solver campaign was repeated. No commit, push, external message or SCIP submission was made. The main summary, audit report and other tracks were not edited.
+ 
+-Every final targeted check passed. [commands.md](commands.md) records the exact commands and results; [PROGRESS.json](PROGRESS.json) records completion and the absence of background jobs. The report changes are in [report_changes.patch](report_changes.patch). Numerical point data were preserved; the seven ANN/KAN point JSON changes correct only the interval-format description.
++Every final targeted check passed. [commands.md](commands.md) records the exact commands and results; [PROGRESS.json](PROGRESS.json) records completion and the absence of background jobs. The original report changes are in [report_changes.patch](report_changes.patch); round-2 changes are in [report_changes_r2.patch](report_changes_r2.patch). Numerical point data were preserved; the seven ANN/KAN point JSON changes correct only the interval-format description.
+ 
+ ## Integration changes
+ 
+@@ -10,30 +10,529 @@
+ 
+ - Remove the obsolete no-exactly-feasible-point statement for chain50–400, lnts50–400, dtoc5, lukvle10 and powerflow0030p/0039p/0039r. The reports give the exact point definitions and proof assumptions.
+ - Use upward primal displays 41869.0515113203 for powerflow0039p and 41869.0515113210 for powerflow0039r. Preserve the reported enclosures.
+-- The compact chain range in the main summary is valid. Correct the overly rounded chain50/chain200 displays in the three older documents named in the chain report. State whether gaps use exact binary64 duals or safe decimal displays. The safe-display absolute gaps are at most 9.62e-15, 1.01e-14, 9.41e-15 and 1.01e-14.
+-- For lnts, 5.5e-13 describes gaps against full verifier duals; displayed-summary duals give about 5.8e-13–6.2e-13. For lukvle10, put the remaining gap on the dual side only conditionally on the KKT point being the global minimizer.
+-- Audit Section 2: retain the 8-decimal display limit, remove the claimed 10-significant-digit limit, and define the count convention (35/38/46). Qualify spring's five (i-r) pairs as explainable by rounding; the underlying solver bounds are unknown. No audit class or flagged-pair count changes.
+-- For eg_all, state A1/A2 for the all-leaf result: 1,114,361 checked leaves. The rigorous interval sample has 10,404 leaves. The 98,234 exclusions mean no feasible point with objective below θ*, not all leaves are side-infeasible. Only 85,685 are directly side-infeasible; 373 use Farkas and 12,176 splits. Distinguish the earlier 1,152,830 processed-leaf count.
++- The compact chain dual range in the main summary is valid; change its gap cell from ≤ 1.0e-14 to ≤ 1.01e-14. Correct the overly rounded chain50/chain200 displays in the five older documents named in the chain report. State whether gaps use exact binary64 duals or safe decimal displays. The safe-display absolute gaps are at most 9.62e-15, 1.01e-14, 9.41e-15 and 1.01e-14.
++- For lnts100, change the primal 0.5545954011669 → 0.5545954011670. For dtoc5, change only the primal 5.38967211918114 → 5.389672119181141. For lnts, gaps to certified N·h2 and safe verifier displays are ≤ 5.55e-13; summary-dual gap upper bounds are 5.79e-13 / 6.12e-13 / 5.84e-13 / 5.88e-13. For lukvle10, put the remaining gap on the dual side only conditionally on the KKT point being the global minimizer.
++- Audit Section 2: retain the 8-decimal display limit, remove the claimed 10-significant-digit limit, and define the count convention (35/38/46). Qualify spring's five (i-r) pairs as explainable by rounding; the underlying solver bounds are unknown. The 10th-significant-digit slack floor no longer follows from a display limit. Keep it as an explicit conservative choice; it changes the slack of 0 of 158 screened pairs. Counts are displayed entries (35 entries = 18 distinct strings); the 46 count includes trailing integer zeros. Three instances contribute 17 affected tie pairs. No audit class or flagged-pair count changes.
++- For eg_disc2_s, state A1/A2 for the all-leaf result: 1,114,361 checked leaves. The rigorous interval sample has 10,404 leaves. The 98,234 exclusions mean no feasible point with objective below θ*, not all leaves are side-infeasible. Only 85,685 are directly side-infeasible; 373 use Farkas and 12,176 splits. Distinguish the earlier 1,152,830 processed-box count.
+ - Any SCIP diagnostic totals should read 0/122 versus 78/122 matched defaults. Keep the limits on the instrumented mechanism and examined binary64 solutions. The report and draft remain unsubmitted.
+ - Update literature wording: all-four camshape maximum bound difference 4.7e-10; Waki tested M = 600–1000; distinguish cumene source versions; cite prior certified OPF work by Oustry et al.; restrict novelty to the stored MINLPLib models. Rigorous 0030r bound transport to 0030p requires a perturbation argument. Label Huang extended-model values and the separate 5-period gap.
+ - Preserve existing round-1 integration notes, including the ANN finite-dual wording correction and the literature status labels. The remaining issues below do not change those labels.
+ 
++## Exact old → new integration edits (round 2)
++
++Apply these ordered edits; the target files were read only. The machine-readable list is [integration-r2.json](integration-r2.json). Each replacement was tested in memory against the current files. All new numeric primal displays are checked in [check_r2.log](check_r2.log).
++
++### `open-instances-summary.md`
++

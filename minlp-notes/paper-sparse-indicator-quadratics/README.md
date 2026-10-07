@@ -23,7 +23,6 @@ Run the exact finite checks with:
 ```sh
 python3 -B checks/check_enumeration.py
 python3 -B checks/check_limits.py
-python3 -B checks/check_extensions.py
 python3 -B checks/check_spectral.py
 ```
 
@@ -33,12 +32,9 @@ support optimal only at one parameter. The second independently assembles
 the hardness and message quadratics from residual rows, solves every support
 in small instances, and checks the pruning estimates, star inverses, exposed
 face, and normalized projected-row distinction for every order of small stars.
-The third checks atomic higher moments and both VC and affine-rank tails by
-complete finite-noise enumeration, and verifies open/closed endpoint and
-interval discrepancy bounds. All use exact rational arithmetic and the Python
-standard library.
+All use exact rational arithmetic and the Python standard library.
 
-The fourth checker tests `checks/spectral_reference.py`, a reference of the
+The third checker tests `checks/spectral_reference.py`, a reference of the
 main spectral algorithm. Its optimization oracle uses the supplied tree
 decomposition and projected bag tables. It then reoptimizes the selected
 support, enumerates near-optimal supports, and constructs each message directly
@@ -56,12 +52,9 @@ uses an exhaustive approximate oracle; the spectral reference uses bag DP.
 These exact finite checks supplement the proofs; they do not establish the
 asymptotic theorems, full-box completeness, novelty, or a practical speedup.
 
-The supporting appendices give all fixed moments, algebraic region and labeled
-subdivision consequences, sharper scalar and planar geometric bounds,
-finite-grid discrepancy transfer, and direct recursive algorithms under strict
-diagonal dominance. The manuscript distinguishes all active support labels,
-necessary formulas, connected winning regions, and CAD subdivision cells.
-The geometric and CAD theorems are proved or derived from cited primary results;
-the finite scripts do not implement CAD or complete recursive SDD algorithms,
-and do not computationally verify the analytic coarea argument. Actual commands,
-diagnostic counts, and limits of validation are in `evidence/validation.md`.
+The former supporting appendices (higher moments, region counts and
+subdivisions, scalar and planar geometric bounds, and recursions under strict
+diagonal dominance) were removed from the manuscript on 2026-09-30. Their
+sources and checker are kept in `companion/`; see `companion/README.md`.
+Actual commands, diagnostic counts, and limits of validation are in
+`evidence/validation.md`.

@@ -40,7 +40,7 @@ been established.
 
 One reusable agent, `/root/literature`, owns all knowledge-base maintenance,
 including checks. It uses the identified-literature path in
-`/home/sgusev/repo/skills/literature/SKILL.md`, with model `gpt-5.6-luna`, maximum
+`/workspace/skills/literature/SKILL.md`, with model `gpt-5.6-luna`, maximum
 reasoning effort, and no inherited context. Research agents send new identified
 sources to that queue. Its batch reports and complete unresolved-source lists
 are retained in `literature/runs/`. The

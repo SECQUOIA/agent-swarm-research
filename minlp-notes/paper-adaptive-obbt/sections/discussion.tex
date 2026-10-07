@@ -1,0 +1,146 @@
+\section{Discussion}\label{sec:discussion}
+
+The three limits of Section~\ref{sec:three-limits} translate into specific
+information for the decisions that a solver makes about OBBT. We summarize
+what the results of this paper support, and what they do not.
+
+\paragraph{Starting.} A round cannot move the endpoints of a box that is
+already fixed for the given relaxation and cutoff, although its dual
+solutions can still be useful, for example for Lagrangian variable
+bounds~\cite{gleixner2017-three-enhancements-for-optimization-based}. A
+finite certificate proves fixedness (Section~\ref{sec:certificates}) and
+remains valid at every larger cutoff. In a box that strictly contains the
+certified box, it no longer proves a stall, but it still bounds the total
+movement of all later rounds. Two structural situations explain when fixed
+boxes are present. If a model has several global minimizers, for example by
+symmetry, the iterates contain their hull and cannot converge to a point
+(Lemma~\ref{lem:sublevel-hull}), although they can still remove parts of
+the box outside the hull. If on every face of a box shape some point has
+negative tangent-model value, its second-order relaxation gap exceeds the
+objective's second-order growth there. Boxes of that shape around a minimizer
+are then fixed at every sufficiently small scale and every cutoff $U\ge f^*$
+(Theorem~\ref{thm:local-stall}); for quadratic objectives with McCormick
+relaxations, condition~(a) of Proposition~\ref{prop:quadratic-rows} gives
+this at every scale. That condition concerns the relaxation, not the
+problem: the strongly convex objectives of Example~\ref{ex:many-term} stall
+under termwise McCormick relaxations but not under a relaxation that keeps
+the convex quadratic whole. Other results guarantee that a round moves the
+box: the box threshold of Proposition~\ref{prop:box-threshold}, a stored
+dual bound below the current endpoint
+(Proposition~\ref{prop:dual-envelope-con} and
+Corollary~\ref{cor:cutoff-multiplier-con}), and the contraction conditions
+of Section~\ref{sec:local-rates}. None of them guarantees that the movement
+shortens the search, and Example~\ref{ex:history} shows that the history of
+earlier calls cannot identify a first action that is guaranteed to be best.
+The precursor study of Section~\ref{sec:experiments} illustrates the cost
+of starting blindly: more than nine tenths of its first-round time went to
+the 109 instances whose nonlinear variables are all integer, and on only 25
+of them did the first round change a bound.
+
+\paragraph{Stopping.} A protected box inside the current box bounds the total
+remaining movement of every endpoint under all later rounds of the
+specified operator at cutoffs not below its threshold. When it equals the
+current box, the remaining movement is zero and stopping that operator
+loses nothing it could have achieved. The local theory shows when such
+certificates can exist. In the stall regime they exist at every
+sufficiently small scale. In the strictly contracting regime with a
+positive cutoff slack and the closedness property~\eqref{eq:closed-family},
+the limit is a fixed box of width $O(\sqrt\epsilon)$, so a certificate
+exists at the limit, and the iterates reach its neighborhood after a number
+of rounds that grows only logarithmically in $1/\epsilon$
+(Section~\ref{sec:local-rates-consequences}). With zero slack, no box of
+positive width is fixed near the minimizer. An iterate that reaches the
+minimizer can be certified as a fixed singleton. When the optimal incumbent
+lies in the current box, its protected singleton
+(Corollary~\ref{cor:original-points}) bounds the remaining movement, and the
+bound is exact if the iterates converge to that point
+(Example~\ref{ex:sharp-halving}). Without such an inner box, a residual
+certificate (Section~\ref{sec:residual}) can justify a tolerance stop.
+These regimes need not cover every relaxation family
+(Example~\ref{ex:critical-scalar}). Small observed changes certify nothing
+beyond the bound that nesting already gives: the ratio of successive widths
+can tend to one during slow contraction, near a positive floor, or at a
+stall, and valid monotone families with identical histories can have
+different futures (Section~\ref{sec:local-rates-consequences} and
+Proposition~\ref{prop:history}). The exception is an exact complete round
+that changes nothing, which proves that the box is fixed. Stopping rules based
+on observed progress are therefore heuristics, which is how the measured
+policy uses them.
+
+\paragraph{Repeating after a change.} Under the contraction hypotheses, the
+width of the limit box is at most of order $\sqrt\epsilon$ and the
+remaining relaxation gap at most of order $\epsilon$
+(Corollaries~\ref{cor:tangent-rate} and~\ref{cor:local-gap}); both orders
+are attained in the two-variable quadratic model
+(Proposition~\ref{prop:two-variable-cutoff-floor}). An improved incumbent is
+therefore the main reason to reconsider OBBT at a box where it has already
+converged: it can shrink the first limit, the hull of the original sublevel
+set, and it can remove fixed boxes of the second. A certified stop remains
+valid while the cutoff stays at or above the face threshold of its pool.
+Below that threshold the stored proof expires, which is a precise event at
+which reconsidering becomes justified, though not a proof that it will pay.
+The certified box itself can remain fixed below the face threshold, down to
+the box threshold of Proposition~\ref{prop:box-threshold}, whose computation
+requires at most $2n$ face optimizations. For a single frozen round, retained relaxation
+points and stored dual vectors bracket the possible and the guaranteed
+change of each support after a cutoff decrease
+(Section~\ref{sec:constraints}). A branching step keeps a certificate valid
+in every child that contains the certified box and requires a new check in a
+child that does not. Prior work already reevaluates stored dual
+inequalities when the incumbent improves; the certificates add a statement
+about the operator's remaining movement, not a new trigger mechanism.
+
+\paragraph{Width, certificates, and search cost.} The guarantees of this
+paper bound the movement of a specified tightening operator, or the change
+of its relaxation bound. They do not bound search time, and the evidence
+shows that the difference matters. In the prospective comparison, a policy
+that solved $20.9\%$ fewer auxiliary LPs spent more time in its propagator.
+The adaptive arm recorded more calls, each with its own construction and
+checking cost; neither added policy produced an additional solve or a
+demonstrated speedup (Section~\ref{sec:experiments}). In the precursor study,
+tightened boxes reduced node counts, with the largest mean reductions in
+groups whose mean control time was a few seconds, while the savings in the
+final solve did not offset the OBBT cost. Both findings
+agree with Section~\ref{sec:effort}: a budget on optional work bounds that
+work, but no budget statement connects the enhanced search with an unchanged
+baseline. The value of a stopping certificate is therefore to avoid work that
+cannot change the box. Whether that saves time depends on how much the
+certificate costs. Some certificates cost little beyond an exact check, such
+as the singleton of an exactly feasible incumbent in the current box or the
+optima of a completed exact round when they pass the rebuilt-row check. If finding a certificate costs about as
+much as a round, reuse across rounds, cutoffs, or nodes may be needed to
+recover that cost. The measured policy used no certificates of either
+kind, and the experiments do not assess them. On the
+present evidence, native SCIP remains the appropriate default and the added
+policy is an experimental implementation.
+
+\paragraph{Scope.} Every rate and stall statement belongs to a relaxation and
+a formulation. At zero cutoff slack, the convex quadratic $\sum_ix_i^2$ with
+$n\ge2$ stalls when each square is relaxed by the McCormick inequalities of
+the product $x_i\cdot x_i$, contracts by the factor $1/2$ per round when the
+valid rows $y_i\ge0$ are added, and collapses in one round under its exact
+convex relaxation (Example~\ref{ex:finite-square}); eliminating a linear
+equation before relaxing changes the rate in the example of
+Section~\ref{sec:constraints}. The results on iterated tightening, rates,
+and future-round certificates assume monotonicity of the whole relaxation
+construction. A pool of cuts separated at earlier solutions does not
+guarantee it, and neither do tangent points that move with the box, as in
+the measured policy (Section~\ref{sec:foundations}). The current-round
+ceilings, the validated dual bounds, and the results for one fixed LP do
+not need it. The local theory involves the minimizer and tangent data
+and is not by itself an activation rule. The exact reference procedure
+certifies its own rational relaxation family; the numerical policy validates
+each applied bound with directed rounding, but its cutoff comes from a
+numerically accepted incumbent, and a complete SCIP solve is not an exact
+certificate. The prospective comparison uses a small, selected cohort with
+short time limits on a shared machine and supports only the conclusions
+stated in Section~\ref{sec:experiments}.
+
+Three extensions would change the practical picture. Certificates found
+cheaply from points that a native solver produces anyway could make the
+all-future guarantees usable at low cost. Tangent models for lifted
+relaxations with auxiliary variables in the constraints would extend the
+local theory to the relaxations that solvers build. A validated model of how
+reductions of width or of the relaxation gap change the later search would be
+needed before any certificate of remaining benefit can guide a choice among
+tightening, cutting, and branching.

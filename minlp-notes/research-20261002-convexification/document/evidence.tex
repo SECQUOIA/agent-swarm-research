@@ -1,0 +1,312 @@
+\section{Computational evidence and verification}\label{sec:evidence}
+
+\subsection{The frozen comparison}
+
+The experimental question is whether the checked block component is
+useful after accounting for discovery, reformulation, sampling,
+certification, and repeated work. The four modes are the original
+parsed model (\texttt{baseline}), the common auxiliary formulation
+without new cuts (\texttt{control}), every supported block within the
+same work caps (\texttt{all}), and the automatic policy
+(\texttt{auto}). Native SCIP separation remains enabled.
+
+The saved protocol includes 13 predefined mechanism and control
+models and a held-out slice of 24 MINLPLib models. The latter excludes
+the 123 names occurring in two specified earlier repository campaigns,
+filters by model metadata and parser support, and selects by a fixed
+SHA256 ordering from 279 eligible models. It does not filter by new
+handler applicability or observed outcomes. This is held out from the
+two named campaigns, not from every possible past use of public
+MINLPLib instances. The initial six-model proposal was expanded to
+24 before new optimization outcomes, keeping the same order.
+The archived metadata includes 11 held-out models with integer
+variables and seven classified as convex. Four previously studied
+instances---\texttt{btest14}, \texttt{waterno2\_06},
+\texttt{ghg\_2veh}, and \texttt{chp\_partload}---form a separate
+diagnostic suite and are excluded from the held-out summary.
+
+Each main run has a six-second soft in-process budget, one SCIP thread,
+BLAS/OpenMP thread environment variables set to one, seed zero,
+and relative gap tolerance
+$10^{-4}$. Each independent worker has a hard 20-second process
+timeout. A separate one-node comparison uses two-second budgets on
+the 24 held-out models and five predefined mechanism cases. Imports,
+process startup, and independent post-run checking are measured
+separately. No full run is warm-started from the one-node comparison.
+The host also runs unrelated research tasks, so subsecond timing
+differences are descriptive.
+
+Discovery, model construction, and individual support calls are
+nonpreemptive, so the soft budget can be exceeded; observed overshoots
+are retained. If the hard timeout kills a process before its result is
+written, its cut count is unknown. An absent record is not evidence of
+zero cuts or successful replay. Strict source/native import refusals
+are reported separately from optimization failures. These are refusals
+by this research importer, shared by all modes, rather than native
+SCIP failures. Selected-population totals retain their denominator,
+but admitted counts and refusal counts must be shown separately;
+only admitted models measure solver behavior.
+
+Caching, native sampling, and selected star merging have separate
+ablations when applicable. Repeats use a fixed second-seed subset.
+The \texttt{no\_cache} switch is a combined reuse-policy ablation:
+it disables exact-support sample exchange, previous-query skipping,
+and certified mixture screening as well as sampled-value reuse.
+Its comparison cannot isolate the causal effect of caching alone.
+The aggregate campaign budget is bounded. Results preserve errors,
+timeouts, domains rejected by the new component, and unfavorable
+outcomes. Any rerun after an identified defect retains the original
+record and explains the implementation change.
+
+An independent evaluator checks every returned original variable
+vector against original bounds, integrality, expression domains,
+rows, and objective using scaled tolerance $10^{-5}$. This is a
+numerical residual check. The checker also compares dual bounds to
+known synthetic optima or archived feasible objective values with
+explicit numerical tolerances. Neither check certifies a global dual
+bound. Fresh-process support replay instead checks each saved cut
+against the reconstructed model binding; a missing or failed replay
+is not counted as a certified row.
+
+\subsection{Primary outcome: fewer held-out solves with cuts}
+
+The completed campaign contains 316 runs and took 443.6 seconds of
+supervised wall time. Its retained
+\pathref{../experiments/campaign-v1/summary.json}{campaign-v1/summary.json},
+\pathref{../experiments/campaign-v1/records.jsonl}{campaign-v1/records.jsonl},
+source snapshot, model files, and per-worker logs preserve every
+outcome. The primary comparison is Table~\ref{tab:primary}.
+``Solved'' means SCIP reported \texttt{optimal} or \texttt{gaplimit},
+returned a finite primal objective, and passed the independent
+original-model numerical check without a reference-bound conflict.
+It is a numerical stopping outcome, not an exact optimality certificate.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{llrrrrr}
+\toprule
+Suite & Mode & Selected & Admitted & Solved & Cuts & Time (s)\\
+\midrule
+Synthetic & baseline & 13 & 13 & 12 & 0 & 6.57\\
+Synthetic & control  & 13 & 13 & 13 & 0 & 1.66\\
+Synthetic & all      & 13 & 13 & 13 & 89 & 2.51\\
+Synthetic & auto     & 13 & 13 & 13 & 72 & 2.45\\
+\midrule
+Held out & baseline & 24 & 20 & 19 & 0 & 17.40\\
+Held out & control  & 24 & 20 & 19 & 0 & 20.66\\
+Held out & all      & 24 & 20 & 18 & 230 & 25.41\\
+Held out & auto     & 24 & 20 & 18 & 106 & 23.01\\
+\bottomrule
+\end{tabular}
+\caption{Primary six-second runs. Counts retain the selected population
+and show actual admission separately. Cuts are recorded rows. Time is
+the sum of available in-process integration and source-reading times,
+excluding worker startup and post-run checking.}
+\label{tab:primary}
+\end{table}
+
+All four modes refused the same three held-out models because their
+logarithm domains were not proved on the declared boxes:
+\texttt{syn15m}, \texttt{cvxnonsep\_psig30r}, and
+\texttt{syn10hfsg}. The inherited builder also could not handle the
+genuine variable-exponent terms of \texttt{cvxnonsep\_pcon40r}.
+These four cases were never comparable solver attempts. They remain
+in the selected count of 24; the solver comparison concerns 20
+admitted cases. This reports the limitations of the research importer,
+not the capabilities of native SCIP on the refused models.
+
+The additional held-out timeout in both cut modes was
+\texttt{genpooling\_lee2}: baseline and control solved it in
+approximately 5.61 and 4.89 seconds, while both cut modes reached
+the six-second limit. \texttt{kall\_circles\_c6b} remained
+time-limited in every mode. Thus the observed primary outcome is
+adverse for enabling the new separator by default. Automatic selection
+reduces work relative to unconditional activation but does not recover
+the lost solve.
+
+The synthetic improvement in solved count also needs its control:
+\texttt{quartic\_balance\_8} is unsolved by baseline within six
+seconds, but control already solves it without new cuts. Both cut
+modes solve it too. The count change from 12 to 13 therefore cannot
+be attributed to the new rows. On the exact overlap instance, native
+baseline already reaches the optimum numerically in about 0.10
+seconds; the merged cut modes take about 0.50 and 0.48 seconds.
+The strict mathematical pair-hull gap remains useful, but this full
+solver already has other ways to address that instance.
+
+In the separate historical suite, only \texttt{waterno2\_06}
+passes the common importer, and every mode is time-limited. Its
+numerical lower bounds are approximately 26.59, 21.17, 7.05, and
+2.41 for baseline, control, all, and auto. The other three historical
+instances are refused before solving. This diagnostic does not extend
+the earlier historical gains to the new verified component.
+
+\subsection{Root strength, work selection, and ablations}
+
+Held-out one-node comparisons are mixed. Relative to baseline,
+\texttt{all} has three better bounds, 15 ties, and two worse bounds;
+\texttt{auto} has three better, 14 ties, and three worse. Four
+comparisons are unavailable because of the common import limitations.
+The comparison tolerance is $10^{-6}$ times the larger bound scale.
+These are the numerical bounds at the end of the separate two-second,
+one-node runs, including native separation, rather than exact values
+of the new block relaxations.
+
+On the primary held-out runs, automatic selection reduces candidate
+LP calls from 1073 to 323, recorded cuts from 230 to 106, and total
+callback time from 5.59 to 3.05 seconds relative to \texttt{all}.
+Support certification accounts for 0.70 and 0.34 seconds respectively.
+There are 95 and 14 unsuccessful support attempts; these include
+insufficient violation, unsupported structure, and exhausted budgets,
+not invalid accepted cuts. Across all phases, the automatic
+convex-combination screen is queried 506 times and permits two
+skips. Its mathematical guarantee is tested, but this campaign does
+not demonstrate large savings from the screen itself.
+
+The recorded full held-out in-process totals are 17.40, 20.66, 25.41,
+and 23.01 seconds. The corresponding sums of outer worker time,
+including startup and checking, are 36.66, 40.12, 45.44, and 42.49
+seconds. These totals retain available refusal costs; an unsupported
+worker without an in-process result has only its outer time.
+The shorter automatic callback total does not establish a broad
+complete-solve gain. One-seed, shared-host timing and short budgets
+also preclude precise estimates of small relative differences.
+
+Disabling star merging on the overlap instance changes the all/auto
+times to about 0.19/0.10 seconds, with numerical solution status
+unchanged. The larger exact support class therefore has a strict
+mathematical diagnostic but no demonstrated runtime advantage in
+this native-solver case. The combined reuse-policy ablation also
+keeps the selected mechanism cases numerically solved and shows
+small mixed time differences. Because it removes exchange,
+screening, and repeated-query checks along with caches, it cannot
+isolate a cache-only effect. The fixed second-seed runs are retained
+in the summary and do not constitute a population-level statistical
+study. No algorithm tuning was performed in response to these
+campaign outcomes.
+
+\subsection{Replay coverage and numerical residual checks}
+
+Fresh-process replay in
+\pathref{../experiments/campaign-v1/replay.json}{campaign-v1/replay.json}
+checks all 1082 recorded cuts against original-model feature bindings,
+complete proof domains, final coefficients, and saved actual native
+rows. All 1082 pass. The replay binds 308 saved original-model
+outputs, verifies 101 frozen source/input hashes, and rejects all
+12 coefficient, right-hand-side, domain, variable, scope, and native-row
+tampering controls.
+
+The eight remaining jobs are full and one-node attempts on
+\texttt{cvxnonsep\_pcon40r} in four modes. They fail on the unsupported
+variable exponent before optimization according to the worker trace,
+but lack original-model and cut logs. Their logged cut count stays
+unknown; they are not represented as successfully replayed runs with
+zero cuts. There are 36 structured importer refusals across all
+phases, retained with their model records. No hard process timeout or
+aggregate-budget exhaustion occurs. Soft-budget overshoots remain
+in the raw summary; they are not converted into extra allotted time.
+
+The independent evaluator checks 270 returned original-variable
+incumbents; all pass its scaled $10^{-5}$ test. No checked root or
+final dual bound conflicts with its analytic optimum or archived
+feasible reference under the stated tolerance. These results are
+numerical sanity checks and do not convert a SCIP bound, its
+incumbent, or its search into an exact proof. The independently
+derived metrics audit and full integration review are retained
+alongside the replay output.
+
+\subsection{The exact overlap mechanism}
+
+The standalone
+\pathref{../experiments/star-mechanism.json}{experiments/star-mechanism.json}
+stores the two rational pair measures, their shared moments, the
+three-piece exact center partition, and the attained star minimizer
+for Proposition~\ref{prop:overlap}. The pair-hull objective is exactly
+zero and the assembled support value is exactly $1/128$, attained
+at $(1,11/16,1)$. The replay accepted this proof and rejected a changed
+objective constant. This is an exact algebraic and implementation
+diagnostic, independent of SCIP and of its root-bound heuristics.
+Its source hashes are retained in the same record. It establishes the
+specific missing strength and the oracle's recovery of it; it does
+not establish a runtime advantage over native dense SDP/RLT treatment.
+
+\subsection{Native sampling measurements}
+
+The retained
+\pathref{../implementation/native-kernel-benchmark.json}{implementation/native-kernel-benchmark.json}
+contains 35 feature-count/grid-size combinations, source hashes,
+versions, preparation times, and the chosen backend. Table
+\ref{tab:native} gives selected 4096-point results. The timings are
+medians of 11 batches of 20 warmed evaluations. Build and load took
+0.268 seconds; expression preparation is measured separately.
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{lrrr}
+\toprule
+Features & NumPy ($\mu$s) & C ($\mu$s) & NumPy/C \\
+\midrule
+$x^2$ & 5.20 & 30.20 & 0.17\\
+$x,y,xy,x^2,y^2$ & 30.81 & 48.46 & 0.64\\
+$x^4$ & 236.94 & 27.76 & 8.54\\
+$x,\ldots,x^6$ & 972.95 & 43.51 & 22.36\\
+24 shifted quartics & 6176.34 & 390.89 & 15.80\\
+\bottomrule
+\end{tabular}
+\caption{Sampling kernels at 4096 points; these are not complete-solve
+speedups. The dispatch retains NumPy for the low-degree rows.}
+\label{tab:native}
+\end{table}
+
+The 24 quartics are $(x+iy/8)^4+ixy/13$, $i=1,\ldots,24$.
+At 32 points the single-quartic C call was slower than NumPy, and
+the low-degree cases remain slower in C even at 4096 points. The
+selected dispatch and explicit build requirement preserve these
+unfavorable findings. In a main separation grid of 65 or 169 points,
+the default native threshold is not reached. Thus these microbenchmarks
+alone cannot explain a solver improvement in that experiment.
+The main campaign does not explicitly build the C sampler and uses
+NumPy. Explicit compilation occurs before the integration function's
+soft budget; a wrapper must count it in outer process time when
+assessing a compiled-sampler run.
+
+\subsection{Targeted checks and actual-file review}
+
+The combined targeted command recorded in
+\pathref{../VERIFICATION.md}{VERIFICATION.md} passed 186 tests and
+53 subtests across the new solver, theory, independent-review, and
+experiment-harness files. A later pre-freeze nonfinite-objective
+regression was checked by a focused four-test harness rerun; three
+of those tests were already in the combined run. These numbers are
+separate executed checks, not a claim that one final command ran 187
+distinct tests. The archived command avoids the frozen source copies
+and collects no unrelated repository tests.
+
+The kernel tests exercise interior minima, exact final coefficient
+rounding, complete subdivision coverage, strict row exclusions,
+domain singularities, empty domains, and tampered model or proof
+records. Screening tests exercise exact mixture normalization,
+normalization-specific violation bounds, interval graph values,
+infeasible samples, and replay. The polygon and star tests compare
+independently formulated special cases, degeneracies, and the exact
+overlap example. An additional star audit enumerates stationary
+points on full-space faces rather than repeating the leaf algorithm.
+Native sampling tests cover reference values, alignment, empty arrays,
+unsupported data, and compiler or storage failure.
+
+The full-space star audit compared 155 cases (76 feasible and 79
+empty), checked 298 returned pieces, and rejected seven mutations.
+A second audit used independent projection and verified leaf rules
+over 786 complete center intervals in 88 cases, making 7063 exact
+alternative-rule comparisons and rejecting three mutations. The
+two checks exercise different contracts: attained global optima and
+validity of every reported conditional piece.
+
+The numerical and mathematical reviews read actual source and
+certificate files. Their independence means a different research
+agent checked the saved artifacts; it does not mean a separately
+implemented arithmetic library, a formal proof assistant, or journal
+peer review. The companion claim map records the precise test and
+review paths. Verification is restricted to this topic; no
+project-wide test run or CI inspection is claimed.

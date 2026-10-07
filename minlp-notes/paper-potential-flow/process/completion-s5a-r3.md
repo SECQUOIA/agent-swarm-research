@@ -121,7 +121,7 @@ Earlier manuscript dependencies read were the passive model, existence, block an
 
 ## Diagnostics and review limits
 
-I ran a short direct Python diagnostic with exact SymPy and Fraction arithmetic, using `/home/sgusev/miniconda3/envs/minlp-notes/bin/python`:
+I ran a short direct Python diagnostic with exact SymPy and Fraction arithmetic, using `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python`:
 
 - For the correlated cubic cycle equation `(1+t)q^3-(2+t)(1-q)^3`, `t in [0,7]`, the rational target `q=6/11` gives LP endpoint evaluations `-34/1331` and `603/1331`. The manuscript's interpolation returns the exact original parameter `t=34/91` and zero cycle residual.
 - For a two-dimensional arrangement with repeated opposite directions, a zero direction, and a zero-length nonzero direction, exact rational slope enumeration produced eight sign regions and eight candidate points. A convex quadratic's maximum over those candidates equaled its maximum over all sixteen distinct box-corner images, exactly `126`.

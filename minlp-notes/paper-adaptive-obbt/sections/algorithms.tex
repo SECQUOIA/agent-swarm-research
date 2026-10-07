@@ -1,0 +1,544 @@
+\section{Algorithms}\label{sec:algorithms}
+
+The certificates of the preceding sections concern an exact operator. Using
+them requires an algorithm that computes coordinate supports, decides when to
+stop, and turns floating-point output into valid bounds.
+This section describes two implementations with different contracts.
+
+The first is an exact reference procedure for a declared rational relaxation
+family. It commits an OBBT round only after every endpoint has been proved
+optimal, and it stops with a fixed box only when the finite protected-box
+certificate of Section~\ref{sec:certificates} holds. The second is a numerical
+policy that runs inside a branch-and-bound solver. Each bound it applies is
+justified by a dual bound evaluated with directed rounding, but its cutoff
+comes from a numerically accepted incumbent, and its decisions about where to
+spend auxiliary LPs are heuristic. Table~\ref{tab:contracts} summarizes the
+difference; the
+experiments of Section~\ref{sec:experiments} evaluate only the second
+implementation.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}p{0.16\linewidth}p{0.38\linewidth}p{0.38\linewidth}@{}}
+\toprule
+& \raggedright Exact reference procedure
+& \raggedright Numerical solver policy\tabularnewline
+\midrule
+\raggedright Relaxation
+& \raggedright Fixed rational rows and McCormick product rows, rebuilt on each box
+& \raggedright Outward-rounded local LP with a retained tangent pool, built at each callback\tabularnewline
+\raggedright Endpoint proof
+& \raggedright Exactly verified primal--dual pair
+& \raggedright Dual bound with a residual term, evaluated with directed rounding\tabularnewline
+\raggedright Cutoff
+& \raggedright A given rational number $U$
+& \raggedright A numerically accepted incumbent value, rounded upward\tabularnewline
+\raggedright Stopping
+& \raggedright Protected fixed box, round budget, or failed proof
+& \raggedright Work budgets, triggers, screening, and a two-LP pilot\tabularnewline
+\raggedright On failure
+& \raggedright Inconclusive; earlier rounds are kept
+& \raggedright No bound is proposed; native search continues\tabularnewline
+\raggedright Guarantee
+& \raggedright Every committed box and the stopping certificate
+& \raggedright Each applied bound, conditional on the cutoff\tabularnewline
+\bottomrule
+\end{tabular}
+\caption{The two implementations. Only the numerical policy was evaluated
+in the computational comparison.}
+\label{tab:contracts}
+\end{table}
+
+\subsection{The reference relaxation family}\label{sec:algorithms-family}
+
+The exact procedure works with the reference family of
+Section~\ref{sec:certificates} and rational data. A lifted point is
+$z=(x,y)$, where $y_k$ stands for a product $x_{i_k}x_{j_k}$ and $i_k=j_k$ is
+allowed. On a rational box $B=[\ell,u]$ the relaxation $R(B)$ consists of
+fixed rational rows $Gz\le g$, the bound rows $\ell\le x\le u$, and the four
+McCormick rows of every product; for a square these are the two endpoint
+tangents and the secant. The objective is a rational affine function
+$v(z)=c^\top z+c_0$, and $R_U(B)=\{z\in R(B):v(z)\le U\}$. By
+Lemma~\ref{lem:reference-family}, the family is lifted monotone with a common
+objective, and each $R(B)$ is a polytope. The infimum in the projected
+objective~\eqref{eq:projected} is therefore attained whenever the fiber over
+$x$ is nonempty, so that
+\begin{equation}\label{eq:ref-projection}
+ K_U(B)=\pi\bigl(R_U(B)\bigr),\qquad
+ T_U(B)=\hull\pi\bigl(R_U(B)\bigr),
+\end{equation}
+where $\pi(z)=x$. The endpoints of $T_U(B)$ are thus the optimal values of the
+$2n$ LPs that minimize and maximize each $x_i$ over $R_U(B)$.
+
+Validity for an original problem is a premise that the caller must
+establish. The McCormick rows supply valid lifts of the products, but the
+fixed rows and the objective must be valid on the original sublevel set and
+on the domain concerned. Equality of stored row data does not prove where a
+row is valid.
+
+\subsection{Exact endpoint certificates}\label{sec:algorithms-lp}
+
+Each directional LP of the reference family has the form
+$\min\{d^\top z:Az\le b\}$, where the rows $Az\le b$ list the fixed rows, the
+bound rows, the McCormick rows, and the cutoff row, and $d=\pm e_i$ is a signed
+unit vector. The following certificate is LP weak duality.
+
+\begin{lemma}[Exact LP optimality certificate]\label{lem:lp-certificate}
+Let $A\in\Q^{p\times N}$, $b\in\Q^p$, and $d\in\Q^N$. Suppose
+$\bar z\in\Q^N$ and $\lambda\in\Q^p$ satisfy
+\begin{equation}\label{eq:lp-certificate}
+ A\bar z\le b,\qquad \lambda\le0,\qquad A^\top\lambda=d,\qquad
+ d^\top\bar z=b^\top\lambda .
+\end{equation}
+Then $\bar z$ minimizes $d^\top z$ subject to $Az\le b$, and the optimal
+value is $d^\top\bar z$.
+\end{lemma}
+
+\begin{proof}
+Let $z$ satisfy $Az\le b$. Multiplying the $r$th inequality by
+$\lambda_r\le0$ reverses it, so $\lambda^\top Az\ge\lambda^\top b$. Hence
+$d^\top z=\lambda^\top Az\ge b^\top\lambda=d^\top\bar z$. Since $\bar z$ is
+itself feasible, it is optimal.
+\end{proof}
+
+Every condition in~\eqref{eq:lp-certificate} is a finite set of rational
+inequalities and identities. Checking them uses no tolerance and no solver
+status. Because the bound rows are explicit rows of $A$, the multiplier
+$\lambda$ also carries their dual information; the certificate therefore does
+not depend on how a numerical solver treats variable bounds. A floating-point
+LP solver supplies only a proposal $(\tilde z,\tilde\lambda)$. The reference
+implementation replaces each proposed floating-point number by the rational
+number with denominator at most $D=10^9$ that is closest to the number's
+shortest decimal representation, and then checks~\eqref{eq:lp-certificate}
+exactly. Checking floating-point proposals exactly after rational
+reconstruction is an established technique of exact linear programming~\cite{applegate2007-exact-solutions-to-linear-programming}. A
+failed check rejects the proposal. It says nothing about the LP itself.
+
+The lemma needs an optimal solution. If $R_U(B)$ is empty, no certificate of
+this form exists. The procedure below then stops without a conclusion. It
+does not construct a Farkas certificate, so it never declares a box infeasible.
+
+\subsection{Certified closure}\label{sec:algorithms-closure}
+
+The certified closure procedure takes the family data, a rational box $B_0$,
+a rational cutoff $U$, a round budget $K\ge0$, and a flag for an optional
+objective proposal. It keeps a list of committed rounds and a counter of
+proposal requests.
+
+\begin{enumerate}
+\item Set $B\leftarrow B_0$ and $k\leftarrow0$.
+\item While $k<K$:
+  \begin{enumerate}
+  \item Build the rows of $R_U(B)$.
+  \item For each $i=1,\ldots,n$, request proposals for
+  $\min\{x_i:z\in R_U(B)\}$ and for $\min\{-x_i:z\in R_U(B)\}$, reconstruct
+  rational values, and check~\eqref{eq:lp-certificate}. Call the verified
+  optima $z^{(i,-)}$ and $z^{(i,+)}$. If any request returns no proposal, or
+  any check fails, return \emph{inconclusive} with the current box $B$; the
+  partial round is discarded.
+  \item Commit the round: $B'=[\ell',u']$ with
+  $\ell'_i=z^{(i,-)}_i$ and $u'_i=z^{(i,+)}_i$. Set $B\leftarrow B'$ and
+  $k\leftarrow k+1$.
+  \item Check exactly whether all $2n$ lifted points $z^{(i,\pm)}$, with every
+  auxiliary coordinate, satisfy every row of $R_U(B')$, the relaxation
+  rebuilt on the new box. If they do, optionally request a proposal for
+  $\min\{v(z):z\in R_U(B')\}$; if its reconstruction satisfies every row of
+  $R_U(B')$ exactly, add it to the points. Return \emph{fixed} with box $B'$
+  and the lifted pool $\widehat W$ of checked points. Otherwise continue with
+  the next round.
+  \end{enumerate}
+\item Return \emph{unfinished} with the current box $B$.
+\end{enumerate}
+
+Step~2(d) is the test of Proposition~\ref{prop:round-check}(a), applied to
+the complete lifted optima of the round, which lie in $R_U(B)$ and whose
+projections attain all endpoints of $B'$. The reported cost includes every
+proposal request, including failed ones, and the elapsed time of all exact
+checks. The optional objective proposal is never needed for a stopping
+decision.
+
+\begin{theorem}[Outcomes of certified closure]\label{thm:closure}
+Run the procedure on the reference family with rational data. Write
+$B_k$ for the box after $k$ committed rounds.
+\begin{enumerate}
+\item[(a)] \emph{Exact rounds.} Every committed round is the exact Jacobi
+round: $B_{k+1}=T_U(B_k)\subseteq B_k$. Hence every returned box equals
+$T_U^{\,k}(B_0)$, where $k$ is the number of committed rounds.
+\item[(b)] \emph{Fixed status.} If the procedure returns \emph{fixed} with box
+$P$ and lifted pool $\widehat W$, then $\pi(\widehat W)$ is a witness pool for
+$P$ with threshold at most $U_{\widehat W}=\max_{z\in\widehat W}v(z)\le U$, and
+$P$ is the greatest fixed box of $T_U$ in $B_0$ and the limit of the exact
+Jacobi iterates. Every sequence of relaxation-sound steps that starts from a
+box $C\supseteq P$ and uses cutoffs at least $U_{\widehat W}$ retains $P$, and
+the relaxation bound of every box $C\supseteq P$ is at most
+$\min_{z\in\widehat W}v(z)$.
+\item[(c)] \emph{Prompt detection.} A committed round whose input box is a
+fixed box of $T_U$ returns \emph{fixed}. Consequently every committed round
+that does not return \emph{fixed} strictly shrinks the box, and if
+$T_U(B_m)=B_m$, the budget allows $m+1$ rounds, and all proposals in these
+rounds pass their checks, then the procedure returns \emph{fixed} after at
+most $m+1$ rounds.
+\item[(d)] \emph{Other statuses.} If the procedure returns \emph{unfinished}
+or \emph{inconclusive}, the returned box is the last committed iterate. No
+claim is made about the uncommitted round. In particular, a missing proposal
+does not certify infeasibility.
+\item[(e)] \emph{Validity.} If the family is valid for an original problem on
+$B_0$, every returned box contains every original feasible point in $B_0$
+with objective at most $U$.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+(a) By Lemma~\ref{lem:lp-certificate}, $z^{(i,-)}$ minimizes and $z^{(i,+)}$
+maximizes $x_i$ over $R_U(B_k)$. By~\eqref{eq:ref-projection}, these optimal
+values are the endpoints of $T_U(B_k)$, so the committed box is $T_U(B_k)$.
+The bound rows of $R(B_k)$ give $B_{k+1}\subseteq B_k$. Induction over
+committed rounds gives the second statement; failed rounds change nothing.
+
+(b) Let $P=B_{k+1}=T_U(B_k)$ be the box just committed. The verified optima
+$z^{(i,\pm)}$ lie in $R_U(B_k)$, and by part~(a) their projections attain all
+endpoints of $P$. The check in step~2(d) is the hypothesis of
+Proposition~\ref{prop:round-check}(a), which therefore makes these
+projections a witness pool for $P$. An accepted objective point satisfies
+every row of $R_U(P)$, including the bound rows, so its projection lies in
+$K_U(P)$, and adding it leaves the hull equal to $P$. Every point $z$ of
+$\widehat W$ lies in $R(P)$, so $\phi_P(\pi(z))\le v(z)$, which bounds the
+threshold by $U_{\widehat W}$. Theorem~\ref{thm:protected} gives $T_U(P)=P$
+and the persistence statement; since the reference family is defined on
+every box, the theorem applies with any box containing $C$ in the role of
+$B_0$. By Lemma~\ref{lem:greatest-fixed}, every Jacobi iterate contains the
+greatest fixed box $P_U$ in $B_0$, so $P_U\subseteq P$, and $P\subseteq P_U$
+because $P$ is a fixed box in $B_0$. All later Jacobi iterates equal $P$.
+The bound on the relaxation value is Corollary~\ref{cor:objective-ceiling},
+applied to the points of $\widehat W\subseteq R(P)$.
+
+(c) If $T_U(B_k)=B_k$, the round commits $B_{k+1}=B_k$. The rows of
+$R_U(B_{k+1})$ are then exactly those of $R_U(B_k)$, because the construction
+depends only on the box and the fixed data, and the verified optima belong to
+$R_U(B_k)$. The check therefore passes; this is
+Proposition~\ref{prop:round-check}(b). If a committed round does not return
+\emph{fixed}, its input box is therefore not fixed, and
+$B_{k+1}=T_U(B_k)\ne B_k$. For the last statement, either the check succeeds
+earlier, or round $m+1$ starts at the fixed box $B_m$.
+
+(d) This follows from (a): a round changes the box only when it is committed.
+
+(e) By Lemma~\ref{lem:order}(a), each original feasible point $x\in B_k$ with
+objective at most $U$ lies in $T_U(B_k)=B_{k+1}$. Induction from $B_0$ proves
+the claim.
+\end{proof}
+
+Part~(b) states what the stopping certificate guarantees: the returned box
+is the greatest fixed box and the limit of exact Jacobi iteration at cutoff
+$U$, and no order of exact or conservative coordinate updates in this family,
+at cutoffs at least $U_{\widehat W}$, can remove any part of it. Because
+$U_{\widehat W}$ can lie below $U$, the guarantee survives incumbent
+improvements down to that value. The relaxation-value ceiling bounds the
+possible improvement of this
+relaxation's lower bound; it does not bound the gain from cuts, integrality
+reasoning, or a different relaxation. Part~(c) shows that the check after a
+round is at most one round late. It can be late: the verified optima of a
+round can violate a row rebuilt on the new box although that box is fixed, as
+in Example~\ref{ex:round-check}, and only the next round, which starts at the
+fixed box, produces points that pass.
+
+Every run stops, because the budget $K$ is finite, but no finite budget
+guarantees the status \emph{fixed}. That status requires exact iterates that
+reach a fixed box, and the square examples below never do. Rational
+reconstruction from double-precision proposals can also fail on
+well-behaved LPs once the exact iterates need many digits. The procedure
+then reports \emph{inconclusive} and keeps the last committed box. An exact
+rational LP solver could replace
+the floating-point proposals without changing the checks. It would remove
+reconstruction failures, but not the growth of the iterates: in Heron's
+iteration below, the number of digits roughly doubles in every round.
+
+Table~\ref{tab:closure-runs} records the archived outcomes of the reference
+implementation on small fixtures. They illustrate the three statuses; they are
+correctness checks, not performance evidence. The first fixture is
+Example~\ref{ex:three-variable}: the cube is fixed at cutoff $0$, so the first
+round starts at a fixed box, and the objective proposal certifies the ceiling
+$-3$, the relaxation bound, while the original optimum is $0$. The linear
+fixture has the rows $x_1+x_2\ge1$ and $x_1=x_2$ on $[0,2]^2$. In the square
+fixtures, the cutoff $0$ halves the upper endpoint in every round, as in
+Example~\ref{ex:halving}, and never reaches the fixed box $\{0\}$. With cutoff
+$1$ the upper endpoint follows Heron's iteration of Example~\ref{ex:heron},
+$2$, $5/4$, $41/40$, $3281/3280$; the next iterate is $21523361/21523360$, and
+the denominators roughly square in every round. In the fourth round, the
+reconstructed proposal for the upper direction violated a row exactly, and the
+procedure returned \emph{inconclusive} with the third box.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}lrrll@{}}
+\toprule
+Fixture & Committed rounds & Proposals & Status & Returned box\\
+\midrule
+Three-variable stall, cutoff $0$ & 1 & 7 & fixed & $[-1,1]^3$, ceiling $-3$\\
+Linear coupling & 1 & 4 & fixed & $[1/2,2]^2$\\
+Interval with negative bounds & 1 & 2 & fixed & $[-3,-1]$\\
+Square, cutoff $0$, budget 5 & 5 & 10 & unfinished & $[0,1/32]$\\
+Square, cutoff $1$, budget 3 & 3 & 6 & unfinished & $[0,3281/3280]$\\
+Square, cutoff $1$, budget 12 & 3 & 8 & inconclusive & $[0,3281/3280]$\\
+\bottomrule
+\end{tabular}
+\caption{Archived runs of the certified closure procedure. The square fixtures
+start at $[0,1]$ (cutoff $0$) and $[0,2]$ (cutoff $1$). The stall count includes
+one objective proposal. Further archived cases inject an invalid dual vector,
+a missing proposal after one committed round, and an invalid objective
+proposal; they return \emph{inconclusive} with no committed round,
+\emph{inconclusive} with the first committed box, and \emph{fixed} with the
+certificate unchanged, respectively. A zero round budget returns
+\emph{unfinished} without a proposal.}
+\label{tab:closure-runs}
+\end{table}
+
+\subsection{A numerical policy inside branch and bound}\label{sec:algorithms-policy}
+
+The second implementation adds a propagator to SCIP for quadratically
+constrained problems with quadratic objectives. It leaves SCIP's own
+propagation, including its LP-based
+OBBT~\cite{gleixner2017-three-enhancements-for-optimization-based},
+unchanged. At selected nodes it
+builds a separate LP relaxation of the current node box, solves some
+directional LPs with a floating-point solver, and proposes valid local bounds.
+The time that the propagator records for this work is its \emph{propagator
+time}. The propagator never uses an LP status to prune a node.
+
+\subsubsection{Local relaxation}
+
+Let $B=[\ell,u]$ be the current local box of the original variables, read
+from SCIP and intersected with the original bounds; every bound must be
+finite, otherwise the callback records an unsupported box and returns. The
+product terms are the distinct pairs $(i,j)$, $i\le j$, that occur in the
+objective or a row. The lifted LP has one variable $y_{ij}$ per term and these
+rows:
+\begin{itemize}
+\item the four McCormick rows~\eqref{eq:mccormick-gap} for each $i\ne j$;
+\item for each square, tangent rows $y_{ii}\ge2px_i-p^2$ at five equally spaced
+points $p$ of $[\ell_i,u_i]$ and at retained points from earlier callbacks, and
+the secant $y_{ii}\le(\ell_i+u_i)x_i-\ell_iu_i$;
+\item every original row, with each product replaced by its lifted variable;
+\item if a cutoff $U_c$ is available, the objective in minimization form, with
+products replaced, bounded by $U_c$.
+\end{itemize}
+The variable bounds are $x\in B$ and, for each term, an interval containing
+every product value on $B$: the four endpoint products for $i\ne j$, and
+$[\min_{s\in[\ell_i,u_i]}s^2,\max\{\ell_i^2,u_i^2\}]$ for a square. These
+intervals are computed in floating point and widened by one unit in the last
+place in each direction. A tangent is valid for the square everywhere, so a
+retained point outside the current interval still yields a valid row. At
+every callback the five points of the current interval are offered to a
+pool shared by all nodes, which keeps the first $25$ distinct points of
+each square and accepts no more.
+
+The relaxation is frozen during a callback. Bounds applied in that callback
+change SCIP's domains but not the auxiliary LP, so a callback performs part
+of a frozen round; the next callback rebuilds. The relaxations of different
+callbacks need not form a monotone family, for two reasons. First, the five
+tangent points move with the box, and such box-relative points violate
+monotonicity on their own: for $f(x)=x^2$ these rows alone give
+$T_{1/4}([-1,1])=[-1/2,1/2]$ but $T_{1/4}([-1/2,1])=[-1/2,41/80]$
+(Section~\ref{sec:foundations}). The pool restores the tangents of earlier
+boxes only while it has room. Second, tangents that the pool gains later are
+rows that were absent when lifted points were checked on an earlier box, and
+they can cut those points. The future-round results therefore do not apply
+to this sequence of relaxations.
+
+\subsubsection{Valid bounds from floating-point data}
+
+The model data are stored in binary floating point. The implementation treats
+each stored number as the exact dyadic rational it represents, constructs every
+new row exactly, and then rounds its coefficients to floating point with a
+correction of the right-hand side.
+
+Each candidate uses the dual bound of Proposition~\ref{prop:dual-residual},
+evaluated with directed rounding as justified by Lemma~\ref{lem:enclosure},
+for an LP whose rows are rounded outward using
+Proposition~\ref{prop:row-correction}. Appendix~\ref{sec:numerical-validation}
+gives the formulas and proofs. The argument assumes IEEE binary64 arithmetic
+with gradual underflow and with flush-to-zero and denormals-are-zero modes
+disabled. It proves validity for the stored binary model on the local box,
+without asserting equivalence to a decimal or symbolic model before import.
+
+For a lower direction the solver minimizes $x_i$ and the candidate bound is
+$\tilde\mu$; for an upper direction it minimizes $-x_i$ and the candidate is
+$-\tilde\mu$. Each candidate is moved outward by a further margin
+$10^{-7}\max\{1,|\tilde\mu|\}$ and rounded outward. A candidate is proposed to
+SCIP only if it lies in the current local domain, improves the current bound by
+more than $\max\{10^{-9},10^{-4}(u_i-\ell_i)\}$, and, for an integer variable,
+remains inside the domain after rounding to the next integer. A candidate that
+would empty the domain is discarded rather than used to prune the node.
+Accepted bounds are local to the node; SCIP restores them on backtracking.
+LP errors, time limits, infeasibility reports, and unbounded statuses produce
+no candidate.
+
+\begin{proposition}[Conditional validity of applied bounds]\label{prop:sidecar-validity}
+Let $x^\star\in B$ satisfy the stored original rows, bounds, and integrality
+restrictions. If the callback uses a cutoff $U_c$, assume also that the stored
+objective, in minimization form, satisfies $f(x^\star)\le U_c$. Then $x^\star$
+satisfies every bound that the callback applies.
+\end{proposition}
+
+\begin{proof}
+The exact lift of $x^\star$ satisfies the McCormick, tangent, and secant rows,
+which are valid inequalities for the products on $B$, the product intervals,
+the lifted original rows, and the cutoff row. By
+Proposition~\ref{prop:row-correction} it satisfies every rounded row, so it is
+feasible for the stored LP. Hence $x^\star_i\ge\mu\ge\tilde\mu$ for a lower
+direction and $x^\star_i\le-\tilde\mu$ for an upper direction. The outward
+margin weakens each candidate further. SCIP rounds an integer bound to the
+next integer, which an integer $x^\star_i$ still satisfies.
+\end{proof}
+
+The cutoff is the weak point of this guarantee. It is computed from SCIP's best
+solution $\hat x$ only if $\hat x$ passes a numerical check of all original
+rows, bounds, and integrality with absolute tolerance $10^{-6}$. Its objective
+is then evaluated exactly in rational arithmetic, rounded upward, and increased
+by $10^{-6}\max\{1,|f(\hat x)|\}$. Exact evaluation prevents cancellation; for
+example, $10^{16}x^2+xy-10^{16}y^2$ at $x=y=1$ has value $1$, while sequential
+floating-point summation can return $0$. Thus $U_c\ge f(\hat x)$. If $\hat x$
+is exactly feasible, then every global minimizer of the stored model satisfies
+$f\le U_c$, and Proposition~\ref{prop:sidecar-validity} shows that no applied
+bound removes one. If $\hat x$ is only approximately feasible, its value may lie
+below the optimal value, and the conclusion can fail. Without an incumbent no
+cutoff row is used, and no feasible point of the node is removed. This is the
+ordinary numerical contract of the solver, made explicit; neither the
+propagator nor the solve as a whole is an exact certificate.
+
+\subsubsection{Scheduling policy}
+
+The fixed and adaptive variants share the relaxation, the bound validation,
+the budgets, and the triggers. They differ in direction order, witness
+screening, and a pilot rule. Table~\ref{tab:policy-parameters} lists the
+parameters, which were frozen before the comparison of
+Section~\ref{sec:experiments}. SCIP calls the propagator at every node before
+the node LP, and it may call it several times at a node.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}lr@{}}
+\toprule
+Parameter & Value\\
+\midrule
+Directional LPs per run & 64\\
+Directional LPs per callback at the root / elsewhere & 12 / 4\\
+Acting callbacks per run; per node & 24; 3\\
+Maximum depth & 64\\
+Propagator time allowance & 10\% of the time limit\\
+Time limit of one directional LP & 0.25 s\\
+Incumbent retrigger: decrease of the cutoff by at least & $10^{-2}\max\{1,|U_{\mathrm{old}}|\}$\\
+Domain retrigger: relative width decrease of some variable & $0.10$\\
+Minimum improvement of a proposed bound & $\max\{10^{-9},10^{-4}(u_i-\ell_i)\}$\\
+Outward margin of a proposed bound & $10^{-7}\max\{1,|\tilde\mu|\}$\\
+Screening tolerance (adaptive) & $10^{-7}\max\{1,u_i-\ell_i\}$\\
+Pilot (adaptive): LPs; minimum total normalized gain & 2; $10^{-3}$\\
+Cached LP points (adaptive); retained tangent points per square & 24; 25\\
+\bottomrule
+\end{tabular}
+\caption{Frozen parameters of the numerical policy.}
+\label{tab:policy-parameters}
+\end{table}
+
+\emph{Admission.} A call does nothing if the run has used all its directional
+LPs or reached its limit of acting callbacks, defined below, if the
+propagator time allowance or the solve deadline is exhausted, or if the
+node depth exceeds the limit. These checks are cheap and are not timed;
+Section~\ref{sec:effort} accounts for them separately.
+
+\emph{Triggers.} After admission the propagator's timer starts. The
+callback reads the local box and computes the cutoff, and it continues only
+if a trigger
+fires. A propagation call that passes admission and a trigger is an
+\emph{acting callback}. Only acting callbacks build a relaxation, and the
+callback limits
+of Table~\ref{tab:policy-parameters} count them. For each node number the
+policy records the box and the cutoff of the last acting visit and the
+number of acting callbacks at the node. A first visit triggers. A later
+visit triggers only if fewer than three acting callbacks have occurred at
+the node and either the cutoff decreased by
+at least $10^{-2}\max\{1,|U_{\mathrm{old}}|\}$ (or became finite), or some
+variable's width decreased by at least $10\%$ relative to the recorded box.
+A visit that triggers nothing returns, but its time is charged.
+For a monotone relaxation family, a smaller box or a smaller cutoff shrinks
+the cutoff sets (Lemma~\ref{lem:order}) and can move supports that were
+optimal before, and the cutoff-dependent floors of
+Section~\ref{sec:local-rates} motivate the incumbent trigger. The policy's
+own relaxation is not monotone, as explained above, so this reasoning
+motivates the two triggers without justifying them. The policy does not
+revisit directions left unprocessed at an unchanged node, and the
+thresholds are heuristic.
+
+\emph{Directions and limits.} Candidate variables are those occurring in a
+product term whose width exceeds $10^{-9}$; each contributes its lower
+direction followed by its upper direction. The fixed variant uses variable
+index order. The adaptive variant orders variables by the score
+\[
+ \mathrm{score}_i=\sum_{(i,j)}\omega_{ij}(u_i-\ell_i)(u_j-\ell_j),
+\]
+summed over the product terms containing $i$, where $\omega_{ij}$ is the sum
+of the absolute coefficients of the term in the objective and all rows. A
+product of factor widths measures the scale of the term's McCormick error on
+the box, so the score favors variables whose relaxation error is large. Each
+callback may solve up to 12 directional LPs at the root and 4 elsewhere,
+limited by the LPs remaining in the run. Each LP receives the time limit
+$\min\{0.25\,\mathrm{s},\ \text{remaining allowance and solve time}\}$, raised
+to at least one millisecond.
+
+\emph{Screening (adaptive).} The adaptive variant keeps the 24 most recent
+LP solutions from any node. At a callback it first checks each cached point
+for exact feasibility in the current frozen LP, in rational arithmetic after a
+fast interval test. A point that passes and lies within
+$10^{-7}\max\{1,u_i-\ell_i\}$ of an endpoint screens that direction. This is the
+current-round ceiling of Proposition~\ref{prop:current-round}, with a
+tolerance: the screened direction can gain at most that tolerance in this
+frozen LP. After every solved LP the new solution is checked and used in the
+same way. The check is repeated at every callback, because a point from another
+node, a larger box, or a weaker cutoff need not satisfy the current rows.
+
+\emph{Pilot (adaptive).} After the second LP of a callback, the adaptive
+variant stops if the gains of the bounds that SCIP accepted in this callback
+sum to less than $10^{-3}$. The gain of a bound is the improvement of the
+proposed value over the current bound, measured before SCIP rounds integer
+bounds, divided by the variable's width at the start of the callback. The
+accumulated sum never decreases, so this is a single test. Without screening,
+the first two LPs are the two directions of the highest-ranked variable, and
+the pilot asks whether that variable can be tightened noticeably. It is a
+heuristic: it does not bound the gain in unsampled directions or in later
+rounds.
+
+\emph{Timing.} A callback stops when its LP limit or its share of the
+remaining propagator allowance is used up. Construction checks the deadline every
+64 rows, and screening checks it between points. Individual construction steps,
+LP calls, and validations are not interrupted, and the one-millisecond floor
+of the LP limit can exceed the remaining allowance, so a callback can overrun
+its deadline; the overrun is charged.
+
+\subsubsection{What the policy uses from the theory}
+
+The policy uses three proved statements: the outward correction and the
+residual dual bound, which make each applied bound valid under the cutoff
+premise; and the current-round ceiling of
+Proposition~\ref{prop:current-round}, which makes screening sound for the
+frozen LP. It does not use protected boxes, cutoff thresholds of witness
+pools, or residual tail bounds to stop tightening permanently, and it neither
+searches for nor checks such certificates. Using them would require changes
+that the policy does not implement. Its relaxations are not monotone, so a
+box protected for the relaxation of one callback need not remain protected
+for the next. A protected box also covers only steps at cutoffs at least its
+threshold, whereas incumbent improvements lower the cutoff during the
+search. SCIP's own propagation, branching,
+and integer rounding shrink the node box by operations other than the
+supports of the auxiliary LP, so a box protected against the propagator's
+operator can still be cut,
+and its containment would have to be rechecked at every node. Finally,
+proposing a protected box from support LPs takes a complete round. Every
+model of the prospective comparison has at least ten variables in product
+terms, so a complete round over them takes at least 20 LPs, more than the 12
+allowed per root callback, unless earlier bounds have fixed some of these
+variables. The measured comparison is
+therefore a test of this policy and its costs, not of the all-future
+certificates.

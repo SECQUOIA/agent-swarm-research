@@ -1,0 +1,752 @@
+% Structural limits: statements and complete proofs.
+% Shared notation: X=\prod_i X_i, F(x)=\sum_a f_a(x_{S_a}), \OPT=\min_X F,
+% tree decomposition (T,(B_t)) with maximum bag size p, upper coordinate
+% curvature L, growth constant g, \kappa=\max\{1,L/g\}, \nu=\max\{0,-\lambda_{\min}(H)\},
+% corrections d_i(v)=Lw_i(v)^2/8, Q=F-D, \beta=\min_{\rm grid}Q, input length I.
+% Labels referring to the main text: thm:approx, thm:exact, lem:round,
+% prop:filter, lem:states.
+
+\section{Structural limits}\label{sec:limits}
+
+The algorithmic results use four hypotheses: a product domain, an upper
+bound $L$ on coordinate curvature, global quadratic growth at a unique
+optimizer, and a correction that accounts for rounding every coordinate.
+This section shows that each hypothesis does real work. The results are:
+\begin{itemize}
+\item a unique optimizer without a quantitative growth bound does not help:
+  box QP with bag size three and a unique optimizer is NP-hard, with
+  $\log\kappa=O(I)$ on the hard instances
+  (Proposition~\ref{lim:prop:unique}); hence $\kappa$ cannot be replaced
+  by $\log\kappa$ unless $\mathrm P=\mathrm{NP}$;
+\item in the value-oracle model the exponent $p/2$ of $\kappa$ is optimal
+  (Proposition~\ref{lim:prop:oracle});
+\item exact piecewise-quadratic messages can need exponentially many pieces
+  at bag size three and $\kappa\le80$ (Proposition~\ref{lim:prop:messages});
+\item growth toward a nonunique optimal set does not bound grid sizes
+  (Proposition~\ref{lim:prop:setgrowth});
+\item local affine constraints make the problem NP-hard at bag size three
+  and $\kappa=1$ (Proposition~\ref{lim:prop:constraints});
+\item bag-local corrections are not valid lower bounds
+  (Proposition~\ref{lim:prop:star});
+\item local moment consistency of any finite order does not give an error
+  bound in which large positive curvature is harmless
+  (Proposition~\ref{lim:prop:moments}).
+\end{itemize}
+Del Pia and Khajavirad prove that continuous box QP is strongly NP-hard at
+treewidth two, even with bounded integer coefficients, and that quartic
+box problems on paths are strongly NP-hard \cite{DelPiaKhajavirad2026}.
+Their instances need not have a unique optimizer, so their hardness does
+not by itself show that $\kappa$ must enter the running time.
+Remark~\ref{lim:rem:dk} shows that instances of their construction with a
+unique optimizer can have exponentially large $\kappa$, consistently with
+Theorem~\ref{thm:approx}.
+
+\subsection{Conditioning cannot be dropped}\label{sec:limits-conditioning}
+
+The following construction refines the simple weak NP-hardness reduction
+in \cite[Remark~2]{DelPiaKhajavirad2026}: a stronger concave penalty puts
+every minimizer at a vertex, a lexicographic linear term makes the minimizer
+unique, and the growth constant is computed explicitly.
+
+\begin{proposition}[Unique optimizers without conditioning]\label{lim:prop:unique}
+Let $a_1,\ldots,a_n$ be positive integers, $n\ge2$, and let $T$ be an
+integer with $0\le T\le U:=\sum_ia_i$. Put $M=\sum_ia_i^2$ and
+$\varepsilon=1/(n2^{n+1})$. On the box
+\[
+x\in[0,1]^n,\qquad s=(s_1,\ldots,s_{n-1})\in[-U,2U]^{n-1},
+\qquad s_0:=0,\quad s_n:=T,
+\]
+minimize
+\[
+F(x,s)=\sum_{i=1}^n(s_i-s_{i-1}-a_ix_i)^2
++M\sum_{i=1}^nx_i(1-x_i)+\varepsilon\sum_{i=1}^n2^{i-1}x_i .
+\]
+Then:
+\begin{enumerate}
+\item The bags $\{s_{i-1},s_i,x_i\}$, with the constants $s_0,s_n$ omitted
+  and arranged as a path in the order $i=1,\ldots,n$, form a tree
+  decomposition with $p\le3$. All data have binary length polynomial in
+  that of $(a,T)$.
+\item $F$ has a unique minimizer $z^*=(x^*,s^*)$, and $x^*\in\{0,1\}^n$.
+  If some $v\in\{0,1\}^n$ satisfies $a^{\mathsf T}v=T$, then
+  $a^{\mathsf T}x^*=T$ and $\OPT<1/(2n)$; otherwise $\OPT\ge1/n$.
+\item $L=4$ is a valid upper coordinate-curvature bound and
+  \[
+  g=\frac{\varepsilon}{n\,(1+2(n-1)M)}
+  \]
+  is a valid growth constant. Hence
+  $\kappa\le2^{n+3}n^2(1+2nM)$ and $\log_2\kappa=O(I)$.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+Part 1 is immediate: $s_i$ lies in the consecutive bags $i$ and $i+1$, each
+$x_i$ in one bag, and each square and unary term lies in a bag.
+
+\emph{Elimination of the states.} For $x\in[0,1]^n$ let
+$e(x)=a^{\mathsf T}x-T$, $\sigma_0(x)=0$, and
+\[
+\sigma_k(x)=\sum_{j\le k}a_jx_j-\frac kne(x)\qquad(k=1,\ldots,n),
+\]
+so that $\sigma_n(x)=T$. For a feasible $s$ put $\delta_k=s_k-\sigma_k(x)$,
+with $\delta_0=\delta_n=0$. Then
+$s_i-s_{i-1}-a_ix_i=-e(x)/n+\delta_i-\delta_{i-1}$, and
+$\sum_i(\delta_i-\delta_{i-1})=0$. Expanding the squares gives the identity
+\begin{equation}\label{lim:eq:split}
+F(x,s)=\Phi(x)+\sum_{i=1}^n(\delta_i-\delta_{i-1})^2,\qquad
+\Phi(x)=\frac{e(x)^2}n+M\sum_ix_i(1-x_i)+\varepsilon\sum_i2^{i-1}x_i .
+\end{equation}
+Because $0\le\sum_{j\le k}a_jx_j\le U$ and $|e(x)|\le U$, the vector
+$(\sigma_1(x),\ldots,\sigma_{n-1}(x))$ lies in $[-U,2U]^{n-1}$.
+Since $\delta_k=\sum_{i\le k}(\delta_i-\delta_{i-1})$, the Cauchy--Schwarz
+inequality gives $\delta_k^2\le k\sum_i(\delta_i-\delta_{i-1})^2$. Summing
+over $k\le n-1$ gives the path inequality
+\begin{equation}\label{lim:eq:path}
+\sum_{i=1}^n(\delta_i-\delta_{i-1})^2\ge\frac2{n(n-1)}\sum_{k=1}^{n-1}
+\delta_k^2\qquad(\delta_0=\delta_n=0).
+\end{equation}
+
+\emph{The reduced function.} Its Hessian is
+$\nabla^2\Phi=\tfrac2naa^{\mathsf T}-2MI\preceq0$, since
+$\norm a^2=M$. Thus $\Phi$ is concave. At a vertex $v$,
+$\Phi(v)=e(v)^2/n+\varepsilon b(v)$ with $b(v)=\sum_i2^{i-1}v_i$, a
+bijection of $\{0,1\}^n$ onto $\{0,\ldots,2^n-1\}$. If $\Phi(v)=\Phi(v')$,
+then $(e(v)^2-e(v')^2)/n=\varepsilon(b(v')-b(v))$; the left side lies in
+$n^{-1}\Z$ and the right side has absolute value less than
+$\varepsilon2^n=1/(2n)$, so both vanish and $v=v'$. Let $x^*$ be the unique
+minimizing vertex, $\Phi^*=\Phi(x^*)$, and
+$\gamma=\min_{v\ne x^*}(\Phi(v)-\Phi^*)$. We claim $\gamma\ge\varepsilon$.
+If $e(v)^2=e(x^*)^2$, the difference is a positive integer multiple of
+$\varepsilon$. Otherwise $e(v)^2-e(x^*)^2$ is a nonzero integer. It cannot be
+negative, since then $\Phi(v)-\Phi^*\le-1/n+\varepsilon(2^n-1)<0$. Hence it
+is at least one and $\Phi(v)-\Phi^*\ge1/n-\varepsilon(2^n-1)>1/(2n)\ge
+\varepsilon$.
+
+For $x\in[0,1]^n$ let $Y$ have independent coordinates with
+$\Pr(Y_i=1)=x_i$. By concavity and Jensen's inequality,
+$\Phi(x)=\Phi(\E Y)\ge\E\Phi(Y)\ge\Phi^*+\gamma\Pr(Y\ne x^*)$. Since $x^*$ is
+binary, $\Pr(Y_i\ne x_i^*)=|x_i-x_i^*|\le1$, so
+$\Pr(Y\ne x^*)\ge\max_i|x_i-x_i^*|\ge\frac1n\norm{x-x^*}^2$. Therefore
+\begin{equation}\label{lim:eq:phigrowth}
+\Phi(x)-\Phi^*\ge\frac\varepsilon n\norm{x-x^*}^2\qquad(x\in[0,1]^n).
+\end{equation}
+
+\emph{Uniqueness and growth.} By \eqref{lim:eq:split} and
+\eqref{lim:eq:phigrowth}, $z^*=(x^*,\sigma(x^*))$ is the unique minimizer
+and $\OPT=\Phi^*$. Let $z=(x,s)$ be feasible and $h=x-x^*$. Then
+$\sigma_k(x)-\sigma_k(x^*)=\sum_jc_{kj}a_jh_j$ with
+$c_{kj}=[j\le k]-k/n\in[-1,1]$, so
+$\norm{\sigma(x)-\sigma(x^*)}^2\le(n-1)M\norm h^2$ and
+\[
+\norm{z-z^*}^2\le\norm h^2+2\norm\delta^2+2\norm{\sigma(x)-\sigma(x^*)}^2
+\le(1+2(n-1)M)\norm h^2+2\norm\delta^2 .
+\]
+By \eqref{lim:eq:split}--\eqref{lim:eq:phigrowth},
+$F(z)-\OPT\ge(\varepsilon/n)\norm h^2+\frac2{n(n-1)}\norm\delta^2$. Since
+$g(1+2(n-1)M)=\varepsilon/n$ and $g\le\varepsilon/n<1/(n(n-1))$, this gives
+$F(z)-\OPT\ge g\norm{z-z^*}^2$. On coordinate lines,
+$\partial^2F/\partial s_k^2=4$ and $\partial^2F/\partial x_i^2=2a_i^2-2M\le0$,
+so $L=4$ is valid and $\kappa\le4/g\le2^{n+3}n^2(1+2nM)$. Both $n$ and
+$\log M$ are $O(I)$.
+
+\emph{Decision.} If $a^{\mathsf T}v=T$ for a vertex $v$, then
+$\OPT\le\Phi(v)\le\varepsilon(2^n-1)<1/(2n)$. As shown above,
+$e(x^*)^2\le e(v)^2=0$. If no vertex solves the instance, every vertex has
+$e(v)^2\ge1$, and $\OPT=\Phi(x^*)\ge1/n$.
+\end{proof}
+
+\begin{corollary}[The dependence on $\kappa$ is not polylogarithmic]
+\label{lim:cor:nopolylog}
+Unless $\mathrm P=\mathrm{NP}$, no algorithm computes, for every rational
+continuous box QP with a supplied tree decomposition of maximum bag size at
+most three and a unique minimizer, the optimal value within $2^{-q}$ in time
+polynomial in $I+q+\log\kappa$. In particular, no algorithm achieves the
+guarantee of Theorem~\ref{thm:approx} with $f(3,\kappa)$ bounded by a
+polynomial in $\log\kappa$.
+\end{corollary}
+
+\begin{proof}
+Apply such an algorithm to the instances of
+Proposition~\ref{lim:prop:unique} with $q=\lceil\log_2(4n)\rceil$. An
+approximation within $1/(4n)$ separates $\OPT<1/(2n)$ from $\OPT\ge1/n$,
+and $\log\kappa=O(I)$. This would decide Subset Sum, which is NP-complete
+\cite{GareyJohnson1979}, in polynomial time.
+\end{proof}
+
+Theorem~\ref{thm:approx} bounds $f(p,\kappa)$, for fixed $p$, by a
+polynomial in $\kappa$: the state cap is $O(\sqrt\kappa\log(n+2))$ per
+coordinate, and the arithmetic is polynomial in its numerator lengths.
+Hence for fixed $p$ the unique-optimum problem is polynomial on instances
+with $\kappa\le I^{O(1)}$ (Theorem~\ref{thm:exact}), while
+Proposition~\ref{lim:prop:unique} makes it NP-hard on instances with
+$\kappa\le2^{O(I)}$. The parameter $\kappa$ therefore locates the
+complexity boundary at fixed width.
+
+\begin{remark}[A fine-grained form]\label{lim:rem:eth}
+Assume the exponential time hypothesis (ETH) in its usual form: for some
+$s_3>0$, 3-SAT with $N$ variables has no $O(2^{s_3N})$ algorithm. The
+sparsification lemma and the textbook reduction from 3-SAT to Subset Sum
+\cite{ImpagliazzoPaturiZane2001,JansenLandLand2016} give constants
+$c,s>0$ and Subset Sum instances with $n\le cN$ items, each of bit length
+at most $cN$, which cannot all be solved in time $O(2^{sN})$. On their
+images under Proposition~\ref{lim:prop:unique}, $\log_2\kappa\le c'N$ and
+$I\le c'N^2$ for a constant $c'$. Consequently there is $\delta>0$ such
+that no algorithm solves unique-optimum box QPs with $p\le3$ to accuracy
+$1/(4n)$ in time $O(\kappa^\delta I^C)$, for any constant $C$. Under ETH,
+some polynomial dependence on $\kappa$ is therefore necessary; this
+argument does not determine its exponent.
+\end{remark}
+
+\begin{remark}[Conditioning of the bounded-coefficient reduction]
+\label{lim:rem:dk}
+The strongly NP-hard instances of \cite[Theorem~3]{DelPiaKhajavirad2026}
+have bags of size three and coefficients bounded by absolute constants,
+but their minimizers need not be unique. Consider their construction for
+the two-item instance $a=(B,B-1)$, $T=B$, $B\ge3$, with objective $\Psi$
+(their (20)--(24), all weights one) on the unit box. Here
+$\ell=\lceil\log_2(2B)\rceil$, $D=2^\ell\ge2B$, and there are $5\ell+2$
+variables. Every term of $\Psi$ is nonnegative. A zero of $\Psi$ encodes a
+binary solution, and $(1,0)$ is the only one; all copied and state variables
+are then determined by the recurrences. Hence $\Psi$ has a unique minimizer
+$v^*$ with value zero. By the qualitative growth lemma for quadratics with a
+unique minimizer, some $g>0$ is valid.
+
+Encode instead the choice $(0,1)$ with every copy, digit and running-sum
+recurrence exact. Only the final square
+$(s_2-w_\ell)^2=((B-1-B)/D)^2$ is nonzero, so $\Psi(y')=D^{-2}$. All
+$\ell$ copies of both choice bits change by one, so
+$\norm{y'-v^*}^2\ge2\ell$ and every valid growth constant satisfies
+$g\le1/(2\ell D^2)$. The largest diagonal entry of $\nabla^2\Psi$ is ten,
+attained by the digit-state variables. Therefore
+\[
+\kappa\ge20\ell D^2\ge80\ell B^2 .
+\]
+For $B=2^m$ there are $5m+7$ variables and coefficients bounded by five, so
+$\kappa$ is exponential in the input length, consistent with
+Corollary~\ref{lim:cor:nopolylog}.
+
+Negative curvature is also large relative to growth. Encode the fractional
+choice $(1/B,1)$; since $B\cdot B^{-1}+(B-1)\cdot1=B$, every square
+residual can be kept at zero with all variables in $[0,1]$, and
+$\Psi(y)=q/B$ with $q=1-1/B$. The displacement $d=y-v^*$ annihilates every
+affine residual, so $d^{\mathsf T}\nabla^2\Psi\,d=-2(q^2+1)$, coming from the
+two endpoint penalties. With $R=\norm d^2$, every valid growth constant has
+$g\le q/(BR)$, while $\nu\ge2(q^2+1)/R$. Hence
+\[
+\frac\nu g\ge2B\Bigl(q+\frac1q\Bigr)\ge4B .
+\]
+This bound on $\nu/g$ also holds for arbitrary positive weights on the
+squares and a common positive weight on the two endpoint penalties: both
+estimates scale with the penalty weight, and the square weights do not
+enter. The reduction therefore does not contradict an algorithm
+parameterized by $\nu/g$ either.
+\end{remark}
+
+\subsection{The exponent of $\kappa$ in the value-oracle model}
+\label{sec:limits-oracle}
+
+The corrected-grid lower bound needs only exact factor values. In a model
+where factors are available only through evaluations, the exponent $p/2$ of
+$\kappa$ cannot be improved. The construction is the classical hidden-well
+argument \cite{NemirovskiYudin1983}, adapted to the present hypotheses.
+
+\begin{proposition}[Value-oracle lower bound]\label{lim:prop:oracle}
+Let $p\ge1$, $L>0$, $\kappa\ge8p$, $g=L/\kappa$, and $X=[0,1]^p$. For
+$c\in X$ put
+\[
+F_c(x)=\min\Bigl\{gp,\ \frac L2\norm{x-c}^2\Bigr\}.
+\]
+Each $F_c$ has upper coordinate curvature $L$, the unique minimizer $c$
+with $F_c(c)=0$, and growth $F_c(x)\ge g\norm{x-c}^2$ on $X$; a single
+bag of size $p$ is a valid decomposition. Suppose a deterministic algorithm
+receives $p$, $L$, $\kappa$ and value access to $F_c$ for an unknown $c$,
+and always returns $y\in X$ with $F_c(y)<Lp/\kappa$. Then on some $F_c$ it
+makes at least $(\kappa/(8p))^{p/2}-1$ evaluations. A randomized algorithm
+that makes at most $Q$ evaluations succeeds, for some $c$, with probability
+at most $(Q+1)(8p/\kappa)^{p/2}$.
+\end{proposition}
+
+\begin{proof}
+On a coordinate line, $\frac L2\norm{x-c}^2-\frac L2x_i^2$ is affine in
+$x_i$ and $gp-\frac L2x_i^2$ is concave; their minimum is concave. Thus
+$t\mapsto F_c-Lt^2/2$ is concave on every coordinate line. For $x\in X$,
+$\norm{x-c}^2\le p$, so $gp\ge g\norm{x-c}^2$; and $L/2\ge g$ because
+$\kappa\ge2$. This proves growth, and $c$ is the unique zero.
+
+Moreover $F_c(x)=gp$ unless $\norm{x-c}<r$, where $r^2=2gp/L=2p/\kappa$.
+Since $\kappa\ge8p$, $2r\le1$. Let $\mathcal C$ consist of the points of
+$X$ whose coordinates lie in $\{0,2r,4r,\ldots\}$. Then
+$|\mathcal C|=(\lfloor1/(2r)\rfloor+1)^p\ge(2r)^{-p}=(\kappa/(8p))^{p/2}$,
+and the open balls $B(c,r)$, $c\in\mathcal C$, are pairwise disjoint.
+
+Run the deterministic algorithm with every answer equal to $gp$. Let
+$x^1,\ldots,x^Q$ be its evaluation points and $y$ its output. Each of these
+$Q+1$ points lies in at most one ball. If $Q+1<|\mathcal C|$, some
+$c\in\mathcal C$ has a ball containing none of them. For this $F_c$ all
+answers are $gp$, so the algorithm makes the same evaluations and returns
+$y$, with $F_c(y)=gp=Lp/\kappa$. This contradicts the guarantee, so
+$Q\ge|\mathcal C|-1$.
+
+For a randomized algorithm, choose $c$ uniformly in $\mathcal C$ and fix
+the random bits. The run on the constant answers has at most $Q$
+evaluations and one output. If $F_c$ differs from $gp$ at none of the
+evaluation points, the run on $F_c$ is the same and succeeds only if the
+output lies in $B(c,r)$. Hence at most $Q+1$ choices of $c$ succeed.
+Averaging over the random bits gives success probability at most
+$(Q+1)/|\mathcal C|$ for a uniform $c$, hence for some $c$.
+\end{proof}
+
+\begin{remark}[Comparison with the algorithm, and the dependence on $p$]
+\label{lim:rem:oracle}
+With one bag ($n=p$, $N=1$), each stage of the capped algorithm evaluates
+$F$ on at most $K^p$ grid points. By Lemma~\ref{lem:states} and the
+trial schedule, $K=O(\sqrt\kappa\log(p+2))$ in the successful trial, and
+the earlier trials cost no more. Thus the exponent $p/2$ of $\kappa$ is
+attained, and Proposition~\ref{lim:prop:oracle} shows that it cannot be
+improved in this model; the remaining gap is a factor
+$(C\sqrt p\log(p+2))^p$ times the number of stages. The lower bound is also
+exponential in $p$ once $\kappa\ge32p$.
+
+In the explicit model, dependence on $p$ must be superpolynomial even at
+$\kappa=1$, unless $\mathrm P=\mathrm{NP}$. For a graph $(V,E)$ with
+$V=\{1,\ldots,n\}$ let
+$F(x)=\sum_{ij\in E}(2x_ix_j-x_i-x_j)+2^{-n-1}\sum_i2^{i-1}x_i$ on
+$[0,1]^n$. It is multilinear, so every $L>0$ is a valid curvature bound.
+At vertices it equals minus the cut size plus a tie-breaking term below
+one half; the minimizing vertex $x^*$ is unique and encodes a maximum cut.
+For multilinear $F$ and the independent rounding $Y$ of $x$,
+$F(x)=\E F(Y)$, so the argument leading to \eqref{lim:eq:phigrowth} gives
+growth $g=2^{-n-1}/n$. Choosing $L=g$ gives $\kappa=1$ with one bag of size
+$n$, and Max-Cut is NP-hard \cite{GareyJohnson1979}. Whether a white-box
+lower bound of the form $\kappa^{\Omega(p)}$ holds is open.
+\end{remark}
+
+\subsection{Exact messages can be exponentially large}
+\label{sec:limits-messages}
+
+For forests, exact value functions of box QP are piecewise quadratic with
+linearly many pieces \cite{DelPiaKhajavirad2026}. At bag size three, exact
+messages can be exponentially large even when $\kappa$ is bounded and the
+optimizer is unique. This is why the algorithm uses grids rather than exact
+piecewise-quadratic messages.
+
+\begin{proposition}[Exponential messages at bounded conditioning]
+\label{lim:prop:messages}
+For $m\ge2$ let $S_t\in[0,2^t-1]$ and $z_t\in[0,1]$, $t=1,\ldots,m$, put
+$S_0:=0$, $r_t=S_t-2S_{t-1}-z_t$, and
+\[
+G_m(S,z)=S_m^2+\sum_{t=1}^mr_t^2+\frac18\sum_{t=1}^mz_t(1-z_t).
+\]
+Then:
+\begin{enumerate}
+\item the bags $\{S_{t-1},S_t,z_t\}$ ($S_0$ omitted) form a path
+  decomposition with $p=3$, and $I=O(m^2)$;
+\item $G_m(S,z)\ge\frac18(\norm S^2+\norm z^2)$ on the box, so zero is the
+  unique minimizer and $g=1/8$ is valid;
+\item $L=10$ is the exact maximum coordinate curvature, so $\kappa\le80$;
+  moreover $\nabla^2G_m\succeq-\frac14I$;
+\item let $\mu(v)=\min\{G_m(S,z):S_m=v\}$ for $v\in[0,2^m-1]$, the
+  min-marginal of $S_m$. Up to the term $v^2$, it is the message sent
+  across the separator $\{S_m\}$ to a leaf bag $\{S_m\}$ carrying $S_m^2$.
+  If $[0,2^m-1]$ is covered by
+  $K$ intervals on each of which $\mu$ coincides with a quadratic
+  polynomial, or if $\mu=\min_{k\le K}q_k$ for quadratic polynomials $q_k$,
+  then $K\ge2^{m-1}$.
+\end{enumerate}
+By Theorem~\ref{thm:approx}, the corrected-grid algorithm nevertheless
+solves this family to accuracy $2^{-q}$ in time polynomial in $m+q$.
+\end{proposition}
+
+\begin{proof}
+Part 1: $S_t$ lies in bags $t$ and $t+1$, and the endpoints $2^t-1$ have
+$t$ bits.
+
+Part 2. On the box $S_t\ge0$ and $z_t\ge0$, so
+$S_{t-1}=(S_t-z_t-r_t)/2\le(S_t+|r_t|)/2$. By induction,
+\[
+0\le S_t\le2^{t-m}S_m+\sum_{j=t+1}^m2^{t-j}|r_j| .
+\]
+The vector $(2^{t-m})_{t\le m}$ has squared norm at most $4/3$. The map
+$y\mapsto(\sum_{j>t}2^{t-j}y_j)_t$ equals $\sum_{l\ge1}2^{-l}J^l$, where $J$
+shifts a vector by one place, so its operator norm is at most one. Hence $\norm S\le(2/\sqrt3)S_m+\norm r$ and
+$\norm S^2\le\frac83S_m^2+2\norm r^2$. Also
+$0\le z_t=S_t-2S_{t-1}-r_t\le S_t+|r_t|$, so
+$\norm z^2\le2\norm S^2+2\norm r^2$. Thus
+$\norm S^2+\norm z^2\le3\norm S^2+2\norm r^2\le8S_m^2+8\norm r^2\le8G_m$.
+
+Part 3. The second derivatives are $2+8=10$ for $S_t$, $t<m$; $2+2=4$ for
+$S_m$; and $2-\frac14$ for $z_t$. Writing $G_m$ as a sum of squares plus
+$-\frac18\sum z_t^2$ plus linear terms gives $\nabla^2G_m+\frac14P_z\succeq0$,
+where $P_z$ projects onto the controls.
+
+Part 4. Let $W(v)=\mu(v)-v^2
+=\min\{\sum_tr_t^2+\frac18\sum_tz_t(1-z_t):S_m=v\}\ge0$. The minimum is
+attained by compactness. Hence $W(v)=0$ exactly when some feasible point has
+$S_m=v$, all $r_t=0$ and binary $z$. Then $S_t=2S_{t-1}+z_t$ and
+$v=\sum_t2^{m-t}z_t\in\{0,\ldots,2^m-1\}$. Conversely, for an integer $j$ in
+this range, its binary digits give $S_t=\lfloor j/2^{m-t}\rfloor\in
+[0,2^t-1]$. So $W$ vanishes exactly at the $2^m$ integers of
+$[0,2^m-1]$.
+
+In the first representation, on an interval with nonempty interior,
+$W$ coincides with a polynomial of degree at most two. It is not
+identically zero, since $W>0$ off the integers. So it has at most two zeros,
+and the interval contains at most two integers. A degenerate interval
+contains at most one. Hence $2K\ge2^m$. In the second representation, each
+integer $j$ has some $k$ with $q_k(j)=\mu(j)$. Then $q_k-v^2\ge W\ge0$ on the
+interval and vanishes at $j$. Since $q_k-v^2\not\equiv0$, it vanishes at at
+most two integers, and again $2K\ge2^m$.
+\end{proof}
+
+\subsection{Point growth cannot be replaced by set growth}
+\label{sec:limits-setgrowth}
+
+\begin{proposition}[Set growth does not bound grids]\label{lim:prop:setgrowth}
+For $n\ge2$ let $F(x)=\sum_{i=1}^{n-1}(x_i-x_{i+1})^2$ on $[0,1]^n$, with
+the path decomposition of bags $\{x_i,x_{i+1}\}$. The optimal set is the
+diagonal $S=\{t\mathbf1:t\in[0,1]\}$, and
+$F(x)\ge\frac2{n(n-1)}\dist(x,S)^2$; for $n=2$, $F=2\dist(x,S)^2$. Every
+valid $L$ is at least $2$. For any grids $G_i\ni0,1$ and the corrections
+$d_i(v)=Lw_i(v)^2/8$,
+\[
+\beta=\min_{y\in\prod_iG_i}(F-D)(y)\le-\frac L8W_j^2
+\qquad\hbox{for every }j,
+\]
+where $W_j$ is the largest gap of $G_j$. The filtering rule of
+Proposition~\ref{prop:filter} never removes an interval. Hence every
+corrected-grid certificate of accuracy $\varepsilon$, including its
+filtering history, has a last-stage grid with at least
+$1+1/(2\sqrt\varepsilon)$ nodes in every coordinate. Its size is not
+polynomial in $\log(1/\varepsilon)$, although $L$ divided by the set-growth
+constant is at most $2n(n-1)$.
+\end{proposition}
+
+\begin{proof}
+For $x\in[0,1]^n$, $\dist(x,S)^2\le\sum_i(x_i-x_1)^2$, and
+$(x_i-x_1)^2\le(i-1)F(x)$ by Cauchy--Schwarz, which gives the set-growth
+bound. For $n=2$, $\dist(x,S)^2=(x_1-x_2)^2/2$. The coordinate second
+derivatives are $2$ or $4$, so $L\ge2$.
+
+Fix $j$, and let $v_j\in G_j$ be an endpoint of a largest gap, so
+$w_j(v_j)=W_j$. Choose the remaining coordinates outward along the path. If
+$v_k$ has been chosen and $i=k\pm1$ is the next index, let $[\alpha,\alpha']$
+be a gap of $G_i$ containing $v_k$, of length $\gamma_i$, and let $v_i$ be
+its endpoint nearest to $v_k$. Then $(v_k-v_i)^2\le\gamma_i^2/4$ and
+$w_i(v_i)\ge\gamma_i$. Every edge of the path is used exactly once, so
+\[
+F(v)-D(v)\le\sum_{i\ne j}\frac{\gamma_i^2}4-\frac L8W_j^2
+-\sum_{i\ne j}\frac L8\gamma_i^2\le-\frac L8W_j^2,
+\]
+because $L\ge2$.
+
+Every $t\in[0,1]$ is a coordinate of the optimal point $t\mathbf1$. By
+Lemma~\ref{lem:round}, every interval $[a,b']$ of every grid satisfies
+$\min\{m_i(a),m_i(b')\}\le F(t\mathbf1)=0\le U$ for $t\in[a,b']$, so the
+filtering rule keeps it. Thus every stage covers $[0,1]^n$, and the final
+gap is at least $U-\beta\ge LW_j^2/8\ge W_j^2/4$ since $U\ge\OPT=0$. A gap
+at most $\varepsilon$ forces $W_j\le2\sqrt\varepsilon$, hence
+$|G_j|\ge1+1/(2\sqrt\varepsilon)$.
+\end{proof}
+
+For finitely many optimal values per coordinate, the union-of-cells variant
+of the TU section remains valid. The proposition concerns a continuum of
+optimal coordinate values. It is a limit of corrected-grid certificates, not
+of the problem: here $F$ is a sum of squares.
+
+\subsection{Product domains are essential}\label{sec:limits-constraints}
+
+\begin{proposition}[Local affine constraints]\label{lim:prop:constraints}
+Let $a_1,\ldots,a_n$ and $B$ be positive integers with $a_i\le B$, and put
+$a_0=B$. Consider binary $x_0,\ldots,x_n$, continuous
+$y_0,\ldots,y_{n+1}\in[0,1]$, and the constraints
+\[
+y_0=0,\qquad y_{n+1}=1,\qquad y_{i+1}=y_i+\frac{a_i}Bx_i\quad(i=0,\ldots,n),
+\]
+with objective $F=2^{n+1}x_0+\sum_{i=1}^n2^{i-1}x_i$. Each constraint lies in
+the bag $\{y_i,x_i,y_{i+1}\}$, and these bags form a path with $p=3$. The
+feasible set is nonempty, the minimizer $z^*$ is unique, and
+$F(z)-\OPT\ge\norm{z-z^*}^2/(2n+3)$ for every feasible $z$. Since $F$ is
+affine, every $L>0$ is valid; with $L=1/(2n+3)$, $\kappa=1$. Moreover
+$x_0^*=0$ if and only if some subset of $\{a_1,\ldots,a_n\}$ sums to $B$.
+Consequently, unless $\mathrm P=\mathrm{NP}$, no algorithm solves such
+problems in time $f(p,\kappa)\poly(I)$ for any function $f$, even when the
+optimal value is required only within $1/2$.
+\end{proposition}
+
+\begin{proof}
+Summing the recurrences gives $\sum_{i=0}^na_ix_i=B$. The choice $x_0=1$,
+$x_i=0$ ($i\ge1$) is feasible. Since all $a_i>0$, it is the only feasible
+choice with $x_0=1$. A choice with $x_0=0$ is feasible exactly when its
+items sum to $B$: its partial sums then lie in $[0,1]$. For each binary $x$
+the constraints determine $y$. Distinct feasible points therefore have
+distinct binary vectors and distinct integer objective values. The dummy
+value $2^{n+1}$ exceeds every value $\le2^n-1$ of a genuine subset. Hence
+the minimizer is unique, and $x_0^*=0$ exactly for yes-instances. All
+$2n+3$ coordinates lie in $[0,1]$, so $\norm{z-z^*}^2\le2n+3$, while
+$F(z)-\OPT\ge1$ for $z\ne z^*$. An approximation within $1/2$ separates
+$\OPT\le2^n-1$ from $\OPT=2^{n+1}$. The data have polynomial binary length,
+and Subset Sum is NP-complete \cite{GareyJohnson1979}.
+\end{proof}
+
+In the product setting an affine objective is solved exactly by endpoint
+dynamic programming. The difficulty here comes entirely from the
+constraints. Independent coordinate rounding, the basis of
+Lemma~\ref{lem:round}, does not preserve the running-sum equations.
+
+\subsection{The correction must be global}\label{sec:limits-star}
+
+The correction $D$ charges for rounding every coordinate, including
+coordinates outside a bag. A tempting alternative charges a bag cell only for
+its own coordinates. The next example shows that this alternative is not
+valid.
+
+\begin{proposition}[Bag-local corrections fail]\label{lim:prop:star}
+Let $0<\varepsilon\le1/16$ and let $m>16$ be an integer. On $[0,1]^{m+1}$
+put
+\[
+F(x,y)=x^2-\frac x2\sum_{i=1}^my_i+\sum_{i=1}^my_i^2
++\Bigl(\frac m{16}-1-\varepsilon\Bigr)x,
+\]
+with the star decomposition of bags $\{x,y_i\}$. Then $L=2$ is valid, the
+unique minimizer is $(1,\tfrac14,\ldots,\tfrac14)$, and $\OPT=-\varepsilon$.
+Use the grid $\{0,\tfrac12,1\}$ in every coordinate, with uncorrected grid
+min-marginals
+$M(\xi,\eta)=\min\{F(x,y):\hbox{grid},\ x=\xi,\ y_1=\eta\}$ and grid
+incumbent $U$. Consider any rule that discards the cell
+$[\tfrac12,1]\times[0,\tfrac12]$ of the bag $\{x,y_1\}$ when every corner
+satisfies $M(\xi,\eta)-e>U$. If $m>32e+8+16\varepsilon$, the rule discards
+this cell, although it contains the bag projection $(1,\tfrac14)$ of the
+optimizer. In particular no correction $e$ depending only on $|B|=2$,
+$L=2$ and $h=1/2$ is valid; $e=|B|Lh^2/8=1/8$ fails for every $m\ge17$.
+\end{proposition}
+
+\begin{proof}
+The coordinate second derivatives are $2$, so $L=2$ is valid. For fixed $x$,
+each $y_i^2-xy_i/2$ is strictly convex with minimizer $x/4\in[0,1]$.
+Eliminating the leaves gives $V(x)=(1-\frac m{16})x^2+(\frac m{16}-1-
+\varepsilon)x$. This is strictly concave for $m>16$, with $V(0)=0$ and
+$V(1)=-\varepsilon$, so the unique minimizer is $x=1$, $y_i=1/4$.
+
+On the grid, $\min_{y\in\{0,1/2,1\}}(y^2-\xi y/2)=0$ for $\xi\in\{0,\tfrac12,
+1\}$. Hence $M(\xi,\eta)=\xi^2+c\xi+\eta^2-\xi\eta/2$ with
+$c=\frac m{16}-1-\varepsilon$. The four corners have values
+$\frac m{32}-\frac14-\frac\varepsilon2$, this value plus $\frac18$, and twice
+$\frac m{16}-\varepsilon$. The smallest is
+$\frac m{32}-\frac14-\frac\varepsilon2$. The grid values at
+$x\in\{0,\tfrac12,1\}$ are $0$,
+$\frac m{32}-\frac14-\frac\varepsilon2>0$ and $\frac m{16}-\varepsilon>0$,
+so $U=0$. The rule discards the cell exactly when
+$\frac m{32}-\frac14-\frac\varepsilon2-e>0$. For $e=1/8$ and $m\ge17$ this
+holds.
+\end{proof}
+
+The missing error is $\min_{\rm grid}F(x,\cdot)-V(x)=m\dist(x/4,\{0,\tfrac12,
+1\})^2$. It comes from the outside coordinates, grows linearly in $m$, and
+depends on the separator value, so message normalization does not remove it.
+The global correction of Lemma~\ref{lem:round} includes these coordinates.
+Conditional recourse with certified outside bounds is the valid local
+alternative.
+
+\subsection{Local moment consistency}\label{sec:limits-moments}
+
+For a continuous-box quadratic $F(x)=\frac12x^{\mathsf T}Hx+b^{\mathsf T}x+c$
+with $H\succeq-\nu I$, a bound in which large positive curvature is harmless
+would replace $L$ by $\nu$. Exact positive energy suffices when all
+coordinates are conditioned on one global cell. Matching finitely many
+moments across separators does not.
+
+\begin{lemma}[Globally conditioned moments]\label{lim:lem:mixture}
+Let $(m,Y)$ satisfy $m\in C=\prod_i[l_i',u_i']\subseteq X$,
+$\Sigma=Y-mm^{\mathsf T}\succeq0$ and $Y_{ii}\le(l_i'+u_i')m_i-l_i'u_i'$.
+Then
+\[
+\tfrac12\langle H,Y\rangle+b^{\mathsf T}m+c\ge\OPT-\frac\nu8
+\sum_i(u_i'-l_i')^2 .
+\]
+The same bound, averaged with the corresponding weights, holds for any
+convex combination of such pairs indexed by global cells.
+\end{lemma}
+
+\begin{proof}
+The left side equals
+$F(m)+\frac12\langle H,\Sigma\rangle\ge F(m)-\frac\nu2\operatorname{tr}\Sigma$.
+Also $\Sigma_{ii}=Y_{ii}-m_i^2\le(u_i'-m_i)(m_i-l_i')\le(u_i'-l_i')^2/4$, and
+$F(m)\ge\OPT$. Averaging preserves the inequality.
+\end{proof}
+
+A global cell index can have $K^n$ values. Sparse relaxations instead keep
+exact local information and match separator moments.
+
+\begin{definition}[Local moment relaxation of order $k$]
+\label{lim:def:moments}
+Fix a tree decomposition and a finite partition of every $X_i$ into
+intervals (cells). A feasible point consists of probability measures
+$\mu_t$ on $X_{B_t}=\prod_{i\in B_t}X_i$, one per bag, such that for every
+tree edge $\{t,u\}$ with separator $S$, every product $C$ of separator cells,
+and every monomial $x_S^\alpha$ with $|\alpha|\le k$,
+\[
+\int_{\{x_S\in C\}}x_S^\alpha\,d\mu_t=\int_{\{x_S\in C\}}x_S^\alpha\,d\mu_u .
+\]
+Its value is $\sum_t\int q_t\,d\mu_t$, where $q_t$ is the sum of factors
+assigned to $t$. Point masses at any $x\in X$ are feasible, so the optimal
+value $R_k$ satisfies $R_k\le\OPT$. The occupied width $w_i$ is the largest
+length of a cell of coordinate $i$ that carries positive mass.
+\end{definition}
+
+\begin{proposition}[Every finite order fails]\label{lim:prop:moments}
+For each integer $r\ge1$ and rational $0<h\le1/(4r)$ there is a continuous
+box QP $F_{r,h}$ with a supplied tree decomposition of maximum bag size
+three, with the following properties. It has a unique minimizer and
+$\OPT=1/4$. The bound $\nu\le2$ holds, and
+$g_r=1/(8r(1+8(2r-1)^2))$ is a valid growth constant; both are independent
+of $h$. For every choice of cells in which $[0,rh]$ lies in one cell of
+width at most $2rh$ for each continuous coordinate, and $0$ and $1$ lie in
+cells of width at most $\omega$ for each control,
+\[
+R_{2r-1}\le\frac14-\frac{2r+1}{16r},\qquad
+\sum_iw_i^2\le(4r-2)\max\{2rh,\omega\}^2 .
+\]
+Consequently there is no function $C$ such that
+$\OPT-R_k\le C(p,\bar\nu/g,k)\,\bar\nu\sum_iw_i^2$ for all instances, all
+valid bounds $\bar\nu\ge\nu$ and growth constants $g$, all $k$, and all
+cells.
+\end{proposition}
+
+\begin{proof}
+\emph{Construction.} Use continuous variables $s$, $y_1,\ldots,y_{r-1}$,
+$z_1,\ldots,z_{r-1}$ in $[-1,1]$ and controls $u_1,\ldots,u_r$,
+$v_1,\ldots,v_{r-1}$ in $[0,1]$. Put $y_0=z_0=0$, $y_r=s$, and
+\[
+e_i=\frac{y_i-y_{i-1}}h-u_i\ (1\le i\le r),\quad
+f_j=\frac{z_j-z_{j-1}}h-v_j\ (1\le j<r),\quad
+f_r=\frac{s-z_{r-1}}h-\frac12,
+\]
+\[
+F_{r,h}=2r\Bigl(\sum_ie_i^2+\sum_jf_j^2\Bigr)+\sum_iu_i(1-u_i)
++\sum_jv_j(1-v_j)+\tau(U+V),
+\]
+where $U=\sum_iu_i$, $V=\sum_jv_j$ and $\tau=1/(8r)$. The bags
+$L_i=\{y_{i-1},y_i,u_i\}$ ($i\le r$), $R_j=\{z_{j-1},z_j,v_j\}$ ($j<r$) and
+$R_r=\{z_{r-1},s\}$, with constants omitted, are arranged in the path
+$L_1,\ldots,L_r,R_r,R_{r-1},\ldots,R_1$. The separator between $L_r$ and
+$R_r$ is $\{s\}$, and all bags have at most three elements.
+
+\emph{Reduction.} List the rescaled path nodes $N_0=0$, $N_k=y_k/h$
+($1\le k<r$), $N_r=s/h$, $N_{r+l}=z_{r-l}/h$ ($1\le l<r$), $N_{2r}=0$. Up to
+sign, the $2r$ residuals are $N_k-N_{k-1}-c_k$ with
+$c=(u_1,\ldots,u_r,-\frac12,-v_{r-1},\ldots,-v_1)$; note
+$\sum_kc_k=U-V-\frac12=:E$. Let $N^0(u,v)$ be the node values with every
+residual equal to $-E/(2r)$, and $\delta=N-N^0$, with $\delta_0=\delta_{2r}=0$.
+Since the residuals sum to $-E$, expanding the squares gives
+\begin{equation}\label{lim:eq:momsplit}
+F_{r,h}=\Psi(u,v)+2r\sum_{k=1}^{2r}(\delta_k-\delta_{k-1})^2,\quad
+\Psi=E^2+\sum_iu_i(1-u_i)+\sum_jv_j(1-v_j)+\tau(U+V).
+\end{equation}
+Since $|E|<r$ and $|\sum_{l\le k}c_l|\le r$, every node of $N^0$ lies in
+$[-2r,2r]$. Hence the corresponding variables $hN^0$ lie in
+$[-\tfrac12,\tfrac12]$ and are feasible.
+
+\emph{The reduced function.} With $e_2$ the second elementary symmetric
+polynomial,
+\begin{equation}\label{lim:eq:pi}
+\Psi-\frac14=2\Pi+\tau(U+V),\qquad\Pi=e_2(u)+e_2(v)-UV+V .
+\end{equation}
+This follows from $E^2=(U-V)^2-(U-V)+\frac14$, $\sum_iu_i(1-u_i)=U-\sum_iu_i^2$,
+and $U^2-\sum_iu_i^2=2e_2(u)$. The polynomial $\Pi$ is affine in each
+variable, so its minimum over the box is attained at a vertex. At a vertex
+with $U=a$ and $V=b$,
+$\Pi=\frac12[(a-b)^2-(a-b)]=\frac12(a-b)(a-b-1)\ge0$. Therefore $\Psi\ge
+\frac14+\tau(U+V)$, and \eqref{lim:eq:momsplit} shows that the unique
+minimizer is $u=v=0$, $N=N^0(0,0)$, with $\OPT=\frac14$.
+
+\emph{Growth and curvature.} By \eqref{lim:eq:momsplit}, \eqref{lim:eq:pi},
+$U+V\ge\norm{(u,v)}^2$, and the path inequality \eqref{lim:eq:path} for
+$2r$ edges,
+\[
+F_{r,h}-\tfrac14\ge\tau\norm{(u,v)}^2+\frac2{2r-1}\norm\delta^2 .
+\]
+Every node of $N^0$ is a partial sum of the $c_l$ plus a multiple $k/(2r)$
+of $-E$, so it moves by at most $2\norm{(u,v)}_1$ when the controls move.
+Hence $\norm{N^0(u,v)-N^0(0,0)}^2\le4(2r-1)^2\norm{(u,v)}^2$. The continuous
+variables are $h$ times the nodes and $h\le1$, so the squared distance to the
+minimizer is at most $2\norm\delta^2+(1+8(2r-1)^2)\norm{(u,v)}^2$. This gives
+the growth constant $g_r=\tau/(1+8(2r-1)^2)\le1/(2r-1)$. The Hessian is $4r$
+times a sum of rank-one Gram terms minus $2$ on the controls, so $\nu\le2$.
+
+\emph{The relaxation witness.} On the left subtree take the law under which
+$U=i$ with probability $\pi_i=\binom{2r}{2i}2^{1-2r}$ ($0\le i\le r$),
+$u=(1^i,0^{r-i})$, $y_k=h\sum_{l\le k}u_l$ and $s=hi$. On the right subtree
+take $V=j$ with probability $\rho_j=\binom{2r}{2j+1}2^{1-2r}$ ($0\le j<r$),
+$v=(1^j,0^{r-1-j})$, $z_k=h\sum_{l\le k}v_l$ and $s=h(j+\frac12)$. Both are
+probability laws, all residuals vanish on their supports, and all controls are
+binary. Let $\mu_t$ be the corresponding bag marginals. Inside each subtree
+the marginals come from one joint law, so they agree on every separator in
+all moments. At the separator $\{s\}$ the laws of $2s/h$ are those of a
+$\mathrm{Bin}(2r,\frac12)$ variable conditioned on being even, respectively
+odd. Their $j$-th moments differ by a multiple of
+$\sum_{k=0}^{2r}(-1)^k\binom{2r}kk^j$, which is zero for $j<2r$ as a finite
+difference of order $2r$ of a polynomial of degree $j$. Thus the separator
+moments of $s$ agree through order $2r-1$.
+
+All continuous atoms lie in $[0,rh]$, and all control atoms lie in
+$\{0,1\}$. With cells as in the statement, each separator variable carries
+all its mass in a single cell, so the cellwise conditions reduce to the
+moment equalities just proved. Hence the witness is feasible for $R_{2r-1}$.
+By the symmetry $k\mapsto2r-k$, $\E U=r/2$ and $\E V=(r-1)/2$. The witness
+value is therefore $\tau(r-\frac12)=\frac14-\frac{2r+1}{16r}$. There are
+$2r-1$ continuous coordinates and $2r-1$ controls, which gives the width
+bound.
+
+\emph{Consequence.} Given $k$, choose $r$ with $2r-1\ge k$, so that
+$R_k\le R_{2r-1}$, and fix $\bar\nu=2$ and $g=g_r$. The gap $\OPT-R_k$ is at
+least $1/8$, whereas $\sum_iw_i^2\to0$ as $h,\omega\to0$.
+\end{proof}
+
+\begin{remark}[What the proposition does and does not say]
+\label{lim:rem:moments}
+The coordinate curvature of $F_{r,h}$ is $L=8r/h^2$, attained at the continuous variables. The
+gap is far below $L\sum_iw_i^2/8$, so the example does not contradict an
+error bound in terms of $L$.
+
+The example does not survive exact matching of separator laws. If finitely
+supported bag measures have equal separator marginals on every tree edge,
+then sampling the root bag and then each child conditionally on its separator
+defines a probability measure on $X$ with these bag marginals. Running
+intersection makes the newly sampled coordinates distinct. The relaxation
+value is then $\E F\ge\OPT$. The obstruction is therefore specific to finite
+moment orders.
+
+The case $r=2$ admits a four-variable form. On $[0,1]^4$ with
+$0<h\le\frac12$, let
+\[
+F_h=8\Bigl(\frac sh-\frac{u_1+u_2}2\Bigr)^2+8\Bigl(\frac sh-\frac14-\frac v2
+\Bigr)^2+\sum_{w\in\{u_1,u_2,v\}}w(1-w)+\frac{u_1+u_2+v}{16},
+\]
+with bags $\{s,u_1,u_2\}$ and $\{s,v\}$. Direct expansion with
+$\delta=s/h-\frac18-\frac{u_1+u_2+v}4$ gives
+$F_h-\frac14=16\delta^2+2[(1-v)u_1u_2+v(1-u_1)(1-u_2)]+(u_1+u_2+v)/16$.
+Hence the minimizer $(h/8,0,0,0)$ is unique and $g=1/22$ is valid, using
+$\norm{x-x^*}^2\le2\delta^2+\frac{11}8\norm{(u_1,u_2,v)}^2$ and
+$\sum w\ge\norm w^2$. Moreover $\nabla^2F_h+2I=16r_1r_1^{\mathsf T}+
+16r_2r_2^{\mathsf T}+2e_se_s^{\mathsf T}$ with $r_1=(1/h,-\frac12,-\frac12,0)$
+and $r_2=(1/h,0,0,-\frac12)$. Since $(0,1,-1,0)$ is orthogonal to $r_1$, $r_2$
+and $e_s$, $\nu=2$ exactly, while $L=32/h^2$. The left measure with masses
+$\frac18,\frac38,\frac38,\frac18$ at $(s/h,u_1,u_2)=(0,0,0),(\frac12,1,0),
+(\frac12,0,1),(1,1,1)$ and the right measure with masses $\frac12,\frac12$
+at $(s/h,v)=(\frac14,0),(\frac34,1)$ have equal moments of $s/h$ through order
+three ($\frac12,\frac5{16},\frac7{32}$) but not four ($\frac{11}{64}$ versus
+$\frac{41}{256}$). Their value is $3/32$, a gap of $5/32$.
+
+These bag moments even admit a global positive semidefinite completion.
+With mean $(h/2,\frac12,\frac12,\frac12)$ and covariance
+$\frac1{16}aa^{\mathsf T}+\frac3{16}bb^{\mathsf T}$, $a=(h,1,1,2)$,
+$b=(0,1,-1,0)$, the completion satisfies every McCormick inequality for
+$s\in[0,2h]$ and the control boxes. It violates the valid inequality
+$u_1u_2+v-u_1v-u_2v=(1-v)u_1u_2+v(1-u_1)(1-u_2)\ge0$, a triangle inequality
+of the Boolean quadric polytope \cite{Padberg1989}, with pseudo-expectation
+$-1/8$. This inequality couples variables on both sides of the separator.
+\end{remark}
+
+% Bibliography entries needed beyond references.bib:
+% GareyJohnson1979, ImpagliazzoPaturiZane2001, JansenLandLand2016,
+% NemirovskiYudin1983, Padberg1989 (see the report for full data).

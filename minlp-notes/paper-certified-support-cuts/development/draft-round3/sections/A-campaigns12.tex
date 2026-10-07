@@ -1,0 +1,83 @@
+\section{The first two campaigns}\label{app:campaigns12}
+
+Both campaigns were run with code, limits and protocol fixed in advance. Their
+records were audited independently from the raw run records (418 checks of the
+original reports, all passed), and the statistics below were recomputed from
+the same records.
+
+\paragraph{Campaign 1: lifted cuts with auxiliary variables.}
+The first implementation added an auxiliary variable $w=f(x)$ for each
+selected expression of one or two variables and separated support cuts in
+$(x,w)$ (Section~\ref{sec:exported-row}). Its oracles were the polytope oracle
+of Theorem~\ref{thm:polytope} in dimension two, the star oracle of
+Section~\ref{sec:star}, Bernstein bounds and ball arithmetic. Because the
+auxiliary variables change the model, it was compared with a \emph{control}
+mode that adds them without cuts. The automatic mode also used an inexpensive
+screening certificate, a dual-norm bound on the violation of any cut computed
+from a certified convex combination of graph points \citep{Mangasarian1999};
+it allowed only 2 of 506 attempted skips and was dropped afterwards. The
+campaign used 24 MINLPLib models selected by a fixed hash ordering
+(Appendix~\ref{app:instances}), 13 constructed mechanism cases (small models
+with shared expressions and linking rows, built so that joint support cuts
+close a gap that separate envelopes leave), a historical suite of four models
+from earlier development, a six-second budget and a two-second root budget.
+
+Of the 24 models, 20 passed the model import in every mode; three were rejected
+because a domain restriction could not be proved on the declared box, and one
+failed with an unsupported variable power. Baseline and control solved 19 of
+the 20, both cut modes 18; the lost model, \code{genpooling\_lee2}, was solved by
+the baseline in 5.6\,s and by the control in 4.9\,s, and reached the 6\,s limit in
+both cut modes. On the 18 models solved in every mode, the shifted geometric
+mean time was 0.26\,s for the baseline, 0.41\,s for the control, 0.57\,s for
+\code{all} and 0.46\,s for \code{auto}. On the mechanism cases, the control and
+both cut modes solved all 13 and the baseline 12, so the additional solve is
+explained by the reformulation, not by the cuts. On the historical model
+\code{waterno2\_06} the final dual bound after 6\,s was 26.59 for the baseline and 21.17 for the
+control, against 7.05 (\code{all}) and 2.41 (\code{auto}) for this
+minimization model. The
+1{,}082 recorded cuts (450 from the two-dimensional polytope oracle, 125 from the
+star oracle, 460 from Bernstein bounds and 47 from ball arithmetic) all passed
+replay, with 12 of 12 corrupted records rejected, and all 270 returned
+incumbents passed the original-model check. The auxiliary variables thus cost
+time on their own, and the cuts did not recover it; this motivated the
+original-variable cuts of Section~\ref{sec:original}.
+
+\paragraph{Campaign 2: cuts in the original variables.}
+The second implementation is, up to the repairs described below, the one of
+Section~\ref{sec:implementation}. Its campaign used 30 new MINLPLib models, ten
+per stratum, selected by a fixed hash ordering from the 422 eligible models
+that had not been used before, with a 30-second budget, root runs with one
+node, 13 mechanism cases, ten diagnostic models from the first campaign, and
+seed-one repeats on six models (282 runs). All 30 models were admitted, and
+every mode solved the same 25. The five unsolved models received no cut in any
+mode. Cuts were added on 7 models in mode \code{all} (38 cuts) and on 3 in mode
+\code{auto} (10 cuts), all of which the baseline also solved; four of them were
+solved at the root in every mode. At the relative tolerance $10^{-4}$ no final or
+root dual bound was better in a cut mode than in the baseline; four
+time-limited models had worse final bounds in both cut modes, and
+\code{graphpart\_clique-40} had a worse root bound in both cut modes. At a
+tolerance of $10^{-6}$ two models appeared better and up to seven worse,
+differences of the same size as the variation between identical baseline
+reruns. On the 25 commonly solved models the shifted geometric mean time rose
+from 0.55\,s to 0.99\,s (\code{all}) and 0.96\,s (\code{auto}), and each cut mode
+was more than 10\% slower on 21 of the 25 (both on 19). On the 30 full runs of mode
+\code{all}, discovery accounted for 24.4 of the 27.6 callback seconds; direction
+LPs took 0.7\,s and certification 2.4\,s. On the diagnostic model \code{btest14}
+the final bound was $-72.30$ for the baseline and $-115.60$ in both cut modes.
+
+The campaign exposed two defects of the frozen code. On two diagnostic models,
+symbolic polynomial conversion over all model symbols crashed during discovery
+(four worker errors, with unknown cut logs), and discovery did not check the
+time allowance between rows, so it exceeded the allowance in 46 cut-mode runs,
+by up to 19\,s. Both were repaired; the repair also added two guards, rejecting
+rows whose side reaches SCIP's infinity value (all 123 recorded rows of
+campaign~2 were below it) and tolerating a failed evaluation of an exchange
+sample. A matched cohort of the 25 affected model and seed groups, 75 runs, was
+rerun with all three modes. It had no worker errors, every mode solved the
+same models, and the largest remaining overrun of the separator allowance was
+0.03\,s. The worse cut-mode root bound of \code{graphpart\_clique-40}
+disappeared, but the cut modes still had worse final bounds on two
+time-limited models, \code{waterno2\_06} (76.75 in the cut modes against 81.64 for the
+baseline, with no cut added) and \code{waterx}, which reflects the separator's time, not the cuts.
+All 123 cuts of the campaign and all 42 of the repair cohort passed replay, and
+all 338 returned incumbents passed the original-model check.

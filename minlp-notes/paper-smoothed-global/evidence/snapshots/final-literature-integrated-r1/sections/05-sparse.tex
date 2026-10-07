@@ -1,0 +1,1145 @@
+\section{Sparse polynomial optimization}\label{sec:sp}
+
+This section develops the sparse-bag route. The objective is a sum of
+explicit polynomial factors of fixed degree on a bounded mixed box, and every
+factor scope lies in a bag of a supplied tree decomposition with at most $p$
+coordinates per bag. Every coordinate receives an independent linear
+coefficient from one finite rational law chosen before sampling, that is,
+the ambient model of \cref{def:model:perturbation} with marginal law
+$U_{\sigma,M}$. No convexity, uniqueness, growth, nondegeneracy, or bound on
+the integer dimension or the negative inertia is assumed.
+
+The algorithm follows the common plan of the paper.
+\begin{enumerate}[label=(\roman*)]
+\item Curvature-corrected refinement of nested bag cells preserves every
+global optimizer. The correction is one global rounding allowance
+(\cref{sec:sp:cells}).
+\item Independent linear noise bounds the expected number of retained bag
+cells at every mesh by a quantity that does not depend on the mesh
+(\cref{sec:sp:count}).
+\item A certified local convexity test on a box that contains every global
+optimizer finishes the sampled problem exactly (\cref{sec:sp:closure}).
+\item A base-selected finite law makes failure of this test rare enough to
+pay for an exact fallback on the same draw (\cref{sec:sp:law}).
+\end{enumerate}
+\Cref{thm:sp:main} states the result for fixed-degree polynomials on mixed
+boxes. Quadratic and mixed-integer quadratic objectives are the case $d=2$;
+their output is rational on every draw (\cref{cor:sp:qp}).
+\Cref{sec:con} extends the method to feasible sets that are not boxes.
+
+\subsection{Setting and main result}\label{sec:sp:setting}
+
+\begin{definition}[Sparse mixed polynomial instance]\label{def:sp:instance}
+A sparse mixed polynomial instance consists of the following rational data.
+\begin{enumerate}[label=(\roman*)]
+\item A mixed box $X=\prod_{i=1}^nX_i$ after the preprocessing of
+\cref{sec:model:input}: $X_i=[\ell_i,u_i]$ for $i\in I_C$ and
+$X_i=[\ell_i,u_i]\cap\Z$ with integers $\ell_i<u_i$ for $i\in I_Z$, where
+$[n]=I_C\cup I_Z$, $n\ge1$, and every width $w_i=u_i-\ell_i$ is positive. Write
+$\widehat X=\prod_i[\ell_i,u_i]$ for the continuous hull,
+$W=\sum_iw_i$, $w_{\max}=\max_iw_i$, $n_c=\abs{I_C}$, $n_z=\abs{I_Z}$, and
+$N_Z=\prod_{i\in I_Z}(w_i+1)$ for the number of integer assignments.
+\item Factors $f_a$, $a\in\mathcal A$, each an explicit list of monomials
+with rational coefficients, of total degree at most $d$, with variable scope
+$S_a\subseteq[n]$. The objective is $F_0=\sum_af_a$.
+\item A tree decomposition: a tree $\mathcal T$ whose nodes are bags
+$\beta\subseteq[n]$, such that every coordinate and every scope $S_a$ lies
+in some bag and, for every $i$, the bags containing $i$ form a subtree.
+The bag size is $p=\max_\beta\abs\beta$.
+\item A noise half-width $\sigma>0$ and a curvature bound $L>0$ with
+\begin{equation}\label{eq:sp:curv}
+ \partial_{ii}F_0(x)\le L\qquad\text{for all }x\in\widehat X\text{ and }i\in[n].
+\end{equation}
+\end{enumerate}
+The base length $I$ is the binary length of these data. The degree $d\ge1$
+is fixed.
+\end{definition}
+
+The curvature bound is needed on the whole continuous hull, including the
+segments between adjacent integer labels, because the rounding and
+comparison arguments move one coordinate along such segments. Inputs with
+fixed coordinates reduce to this form by substitution, which does not
+increase degrees, scopes or~\eqref{eq:sp:curv}; the sampled coefficient of a
+substituted coordinate becomes an additive constant, which is carried
+separately and added to reported values. If no coordinate remains, the
+feasible set is one rational point. The algorithm then returns this point
+and its sampled value before computing any schedule (step~(0) of
+\cref{def:sp:algorithm}), so every maximum, width sum and division below
+concerns $n\ge1$ coordinates of positive width.
+
+\paragraph{Status of the premises.}
+The tree decomposition is verified in time polynomial in $I$. The bound
+\eqref{eq:sp:curv} is promised: correctness of the pruning and of the patch
+certificate relies on it. It can always be verified instead of promised.
+With $R_0=\max\{1,\max_i\abs{\ell_i},\max_i\abs{u_i}\}$ and $F_0=\sum_\alpha
+c_\alpha x^\alpha$,
+\begin{equation}\label{eq:sp:Lmon}
+ L_{\rm mon}=\max\Bigl\{1,\ \max_i\sum_\alpha\abs{c_\alpha}\,
+ \alpha_i(\alpha_i-1)\,R_0^{\abs\alpha-2}\Bigr\}
+\end{equation}
+satisfies \eqref{eq:sp:curv} and has encoding length $\poly_d(I)$, because
+$\abs{x^{\alpha-2e_i}}\le R_0^{\abs\alpha-2}$ on $\widehat X$ when
+$\alpha_i\ge2$. Its numerical value can be much larger than a sharper
+supplied bound, and it is the numerical value of $L$ that enters the work
+bound. A sharper bound used in an independently checkable proof record must
+be certified, with its verification cost added to the work. No general test
+of polynomial inequalities is assumed. The same monomial method gives
+rational numbers
+\begin{equation}\label{eq:sp:kappa}
+ \kappa_2\ge\max\Bigl\{1,\max_i\sum_k\sup_{\widehat X}\abs{\partial_{ik}F_0}\Bigr\},
+ \qquad
+ \kappa_3\ge\max\Bigl\{1,\max_i\sum_{k,l}\sup_{\widehat X}\abs{\partial_{ikl}F_0}\Bigr\}
+\end{equation}
+of encoding length $\poly_d(I)$, which the algorithm computes itself. Their
+magnitudes affect only the stopping depth, logarithmically.
+
+\paragraph{Noise and growth.}
+The coefficients $\gamma_1,\dots,\gamma_n$ are independent with law
+$U_{\sigma,M}$ of \cref{def:model:grid}, $F_\gamma=F_0+\gamma^{\mathsf T}x$,
+and $f^*=\min_XF_\gamma$; the minimum exists because $X$ is compact. The
+point-growth modulus $g_*(\gamma)$ of \cref{def:count:growth} is the largest
+$g\ge0$ such that some minimizer $a$ satisfies
+\begin{equation}\label{eq:sp:growth}
+ F_\gamma(x)-F_\gamma(a)\ge g\norm{x-a}_2^2\qquad(x\in X).
+\end{equation}
+The set of admissible $g$ is closed, so the largest one exists. If
+$g_*(\gamma)>0$ the minimizer is unique; if $F_\gamma$ has two distinct
+minimizers, $g_*(\gamma)=0$.
+
+\paragraph{Outputs.}
+On ordinary draws the algorithm returns a \emph{patch output}, which has the
+form of the implicit patch output of
+\cref{def:model:outputs}\ref{it:model:implicit}. On the remaining draws it returns the exact output of the fallback of
+\cref{thm:count:fallback}. A patch output is a quadruple
+$\Pi=(S,\bar x_S,P,g_0)$: a set $S\supseteq I_Z$; rational values
+$\bar x_i\in X_i$ for $i\in S$, each of which is an integer label, an
+original continuous bound, or a value shared by every global minimizer
+because the closure test found a one-point hull interval
+(\cref{prop:sp:closure-sound}); a rational box
+$P=\prod_{i\notin S}[a_i,b_i]$ with $\ell_i\le a_i<b_i\le u_i$, which plays
+the role of the box $Q$ of \cref{def:model:outputs}\ref{it:model:implicit};
+and a rational $g_0>0$ for which the run has verified
+\begin{equation}\label{eq:sp:patch}
+ \nabla^2_{\bar S\bar S}F_\gamma(\bar x_S,y)\succeq g_0I
+ \qquad(y\in P),\qquad\bar S=[n]\setminus S.
+\end{equation}
+It denotes the unique minimizer $\hat y$ of $F_\gamma(\bar x_S,\cdot)$ on $P$,
+and the run also proves that $\hat x=(\bar x_S,\hat y)$ is the unique global
+minimizer of $F_\gamma$ on $X$. If $S=[n]$, the box $P$ is empty and
+$\hat x=\bar x$. Fixing a continuous coordinate at a singleton hull value
+is justified by containment of every global
+minimizer in the hull, not by a derivative sign, and it changes neither the
+uniqueness argument nor the evaluation contract. The patch output has length
+$\poly_d(I)$. The \emph{global
+proof record} of the run consists of the candidate lists, incumbents and
+cell bounds of every level, and the data of the closure tests; it proves
+that every global minimizer lies in $\{\bar x_S\}\times P$.
+
+\begin{theorem}[Sparse polynomial optimization on mixed boxes]\label{thm:sp:main}
+Fix $d\ge1$. For sparse mixed polynomial instances
+(\cref{def:sp:instance}) there is an algorithm and a power of two $M$,
+computed from the base instance with $\log_2M\le\poly_d(I)$, such that for
+the ambient perturbation model with marginal law $U_{\sigma,M}$ the
+following hold.
+\begin{enumerate}[label=(\roman*)]
+\item\label{it:sp:exact} On every draw the algorithm returns an exact global
+optimizer of $F_\gamma$ on $X$. On ordinary draws the output is a patch
+output of length $\poly_d(I)$ together with its global proof record. On the
+remaining draws, which have probability at most $1/(2B)$, it is the exact
+output of the fallback of \cref{thm:count:fallback}, computed on the same
+draw, where $B$ is a base-only factor with $\log B\le\poly_d(I)$.
+\item\label{it:sp:work} The expected bit work, including the computation of
+$M$ and the sampling, and the expected length and verification work of the
+global proof record are at most
+\begin{equation}\label{eq:sp:bound}
+ C_0^p\Bigl[4+\frac{(1+n/2)Lw_{\max}}{2\sigma}\Bigr]^p\poly_d(I),
+\end{equation}
+where $C_0$ is an absolute constant.
+\item\label{it:sp:eval} For every integer $q\ge0$, a $q$-bit evaluation of
+the output returns a rational point $y\in X$ with
+$\norm{y-\hat x}_2\le2^{-q}$, where $\hat x$ is the returned optimizer, and
+rationals $a$ and $F_\gamma(y)$ with $a\le f^*\le F_\gamma(y)\le a+2^{-q}$.
+It costs $\poly_d(I+q)$ bit operations for a patch output and
+$B\poly_d(I+q)$ for a fallback output; its expected cost over the draw is
+$\poly_d(I+q)$.
+\end{enumerate}
+The validity of $L$ is the only promised premise, and it is verified when
+$L=L_{\rm mon}$. No growth, uniqueness or nondegeneracy premise is used; such
+conditions enter only the analysis of the stopping depth.
+\end{theorem}
+
+The bound \eqref{eq:sp:bound} is polynomial for each fixed $p$ when
+$Lw_{\max}/\sigma$ is polynomially bounded in $I$. It is a fixed-width
+polynomial bound in the sense of \cref{sec:model:parameters}, not a
+fixed-parameter bound in $p$: the bracket contains $n$, so the bound grows as
+$n^p$ for fixed numerical scales. \Cref{sec:sp:width} explains where this
+factor comes from, and \cref{thm:lim:width} shows that it is necessary for
+the retention rule used here. The integer widths $w_i$ enter through their
+magnitudes, so huge binary-encoded integer ranges are not covered at
+polynomial cost; they enter the stopping depth, the sampling precision and
+the fallback factor only logarithmically. The theorem concerns the sampled
+objective. Its consequence for the base objective is the regret bound of
+\cref{prop:model:regret} with $\omega_X(\gamma)\le\sigma W$. Choosing
+$\sigma$ for a target accuracy $\varepsilon$ multiplies the numerical ratio
+in \eqref{eq:sp:bound} by a factor of order $W/\varepsilon$
+(\cref{sec:model:original}); the resulting work is polynomial in
+$1/\varepsilon$ when the other numerical parameters are fixed. Finally, the
+finite law matters: \cref{ex:model:tie} is an instance in this class on
+which a tie occurs with probability $1/M$, so no patch certificate can
+succeed on every draw and the fallback is necessary.
+
+\subsection{Nested bag cells and sparse dynamic programming}\label{sec:sp:cells}
+
+\paragraph{Grids and cells.}
+Let $s$ be the least power of two with $s\ge\max\{1,w_{\max}\}$ and
+$h_j=s2^{-j}$ for $j\ge0$. For $i\in I_C$, and for $i\in I_Z$ while
+$h_j\ge1$, the level-$j$ nodes of coordinate $i$ are
+\[
+ G_{i,j}=\{\ell_i+kh_j:\ k\in\Z_{\ge0},\ \ell_i+kh_j<u_i\}\cup\{u_i\},
+\]
+and a \emph{coordinate cell} is $[a,a']\cap X_i$ for consecutive nodes
+$a<a'$. For $i\in I_Z$ and $h_j<1$, the nodes are $G_{i,j}=X_i$ and the
+coordinate cells are the singletons $\{a\}$, $a\in X_i$. While $h_j\ge1$,
+$h_j$ is an integer, so integer nodes are integers. The \emph{endpoints} of
+a cell are $a,a'$, or $a$ for a singleton. The level-$j$ grid is
+$\mathbb G_j=\prod_iG_{i,j}\subseteq X$.
+
+\begin{lemma}[Coordinate cells]\label{lem:sp:cells}
+For every coordinate $i$ and level $j$:
+\begin{enumerate}[label=(\alph*)]
+\item the coordinate cells cover $X_i$, and a node contained in a cell is an
+endpoint of it;
+\item every node is an endpoint of at most two cells, and of exactly one if
+the cells are singletons;
+\item every cell has width at most $h_j$;
+\item every level-$(j+1)$ cell lies in a level-$j$ cell, and every level-$j$
+cell is the union of at most two level-$(j+1)$ cells.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+Consecutive nodes differ by at most $h_j$, and the first and last nodes are
+$\ell_i$ and $u_i$; this gives (a) and (c) for interval cells, and (b) holds
+because a node is the right endpoint of at most one cell and the left
+endpoint of at most one cell. For (d), $h_{j+1}=h_j/2$ gives
+$G_{i,j}\subseteq G_{i,j+1}$, and between consecutive level-$j$ nodes
+$a<a'$ there is at most one level-$(j+1)$ node, namely $a+h_{j+1}$ if
+$a+h_{j+1}<a'$. When $h_j=1>h_{j+1}$ for $i\in I_Z$, the level-$j$ cells
+are $\{a,a+1\}$, the union of the singleton cells $\{a\}$ and $\{a+1\}$;
+singleton cells are never refined further.
+\end{proof}
+
+A \emph{bag cell} of a bag $\beta$ at level $j$ is a product
+$C=\prod_{i\in\beta}C_i$ of level-$j$ coordinate cells; its \emph{corners}
+are the tuples of endpoints, and its \emph{children} are the level-$(j+1)$
+bag cells contained in it. By \cref{lem:sp:cells}, a cell has at most
+$2^{\abs\beta}$ corners and at most $2^{\abs\beta}$ children, its children
+cover it, and a tuple of nodes is a corner of at most $2^{\abs\beta}$ cells.
+The algorithm keeps for every bag a \emph{candidate list} $\mathcal W_j(\beta)$
+of level-$j$ bag cells. It determines the \emph{physical domain}
+\[
+ \Omega_j=\{x\in X:\ \text{for every bag }\beta,\ x_\beta\in C
+ \text{ for some }C\in\mathcal W_j(\beta)\},
+\]
+the \emph{row list} $\mathcal R_j(\beta)$, the set of corners of the cells in
+$\mathcal W_j(\beta)$, and the \emph{allowed grid}
+$A_j=\{y\in\mathbb G_j:\ y_\beta\in\mathcal R_j(\beta)\text{ for every }\beta\}$.
+The physical domain is used only in the proofs; the algorithm stores cells
+and rows.
+
+\begin{lemma}[Allowed grid]\label{lem:sp:allowed}
+$A_j=\mathbb G_j\cap\Omega_j$.
+\end{lemma}
+
+\begin{proof}
+Corners of a cell lie in the cell, so $A_j\subseteq\Omega_j$. Conversely, if
+$y\in\mathbb G_j\cap\Omega_j$ and $y_\beta\in C\in\mathcal W_j(\beta)$, each
+$y_i$, $i\in\beta$, is a node contained in $C_i$, hence an endpoint of $C_i$
+by \cref{lem:sp:cells}(a), so $y_\beta$ is a corner of $C$.
+\end{proof}
+
+\paragraph{Sparse dynamic programming.}
+We may assume that every node of $\mathcal T$ has degree at most three:
+a bag with children $\beta_1,\dots,\beta_k$, $k\ge3$, is replaced by a path
+of $k-1$ copies of itself, the $l$th copy having child $\beta_l$ and the last
+copy also $\beta_k$. Copies preserve the subtree property and the bag size
+and at most double the number of nodes \citep{kloks1994-treewidth-computations-and-approximations}. Copies of one bag
+have identical candidate lists throughout, because their cell bounds below
+coincide. Assign every factor $f_a$ and every noise term $\gamma_ix_i$ to one
+bag containing its scope, and let $\phi_\beta$ be the sum of the terms
+assigned to $\beta$, so that $F_\gamma=\sum_\beta\phi_\beta(x_\beta)$. For a
+row $v\in\mathcal R_j(\beta)$ let
+\[
+ m_\beta(v)=\min\{F_\gamma(y):\ y\in A_j,\ y_\beta=v\}
+\]
+be its \emph{min-marginal}, with $\min\emptyset=+\infty$, and let
+$m_j=\min_{A_j}F_\gamma$.
+
+\begin{lemma}[Sparse two-pass dynamic programming]\label{lem:sp:dp}
+Let finite sets $G_i$, a tree decomposition of maximum degree three, finite
+row sets $\mathcal R(\beta)\subseteq\prod_{i\in\beta}G_i$ and costs
+$\phi_\beta:\mathcal R(\beta)\to\Q$ be given, and let
+$A=\{y\in\prod_iG_i:y_\beta\in\mathcal R(\beta)\ \forall\beta\}$. Two passes
+of messages compute every min-marginal
+$m_\beta(v)=\min\{\sum_{\beta'}\phi_{\beta'}(y_{\beta'}):y\in A,\ y_\beta=v\}$,
+the minimum over $A$, and a minimizer, using $O(\sum_\beta\abs{\mathcal R(\beta)})$
+evaluations of the costs, additions, comparisons and dictionary operations
+on separator tuples.
+\end{lemma}
+
+\begin{proof}
+For adjacent bags $\beta,\beta'$ let $\Sigma=\beta\cap\beta'$, and let
+$\mathcal T_{\beta\to\beta'}$ be the component of $\mathcal T$ minus the edge
+$\beta\beta'$ that contains $\beta$. Define the message
+$\mu_{\beta\to\beta'}$ on separator tuples $\varsigma$ by
+\[
+ \mu_{\beta\to\beta'}(\varsigma)=\min_{v\in\mathcal R(\beta),\,v_\Sigma=\varsigma}
+ \Bigl[\phi_\beta(v)+\sum_{\beta''}\mu_{\beta''\to\beta}(v_{\beta''\cap\beta})\Bigr],
+\]
+the sum over the neighbors $\beta''\ne\beta'$ of $\beta$, and store only its
+finite values in a dictionary keyed by $\varsigma$. By induction on the size
+of $\mathcal T_{\beta\to\beta'}$, $\mu_{\beta\to\beta'}(\varsigma)$ is the
+minimum of $\sum_{\beta''\in\mathcal T_{\beta\to\beta'}}\phi_{\beta''}$ over
+the assignments to the coordinates of the bags of
+$\mathcal T_{\beta\to\beta'}$ that equal $\varsigma$ on $\Sigma$ and whose
+restriction to every bag of $\mathcal T_{\beta\to\beta'}$ is a row of that
+bag. Indeed, the subtrees $\mathcal T_{\beta''\to\beta}$ partition
+$\mathcal T_{\beta\to\beta'}$ minus $\beta$, and by the subtree property a
+coordinate occurring in $\mathcal T_{\beta''\to\beta}$ and outside it lies in
+$\beta''\cap\beta$; so once $v$ is fixed on $\beta$ the minimizations over
+the different subtrees are independent and constrained only through their
+separators. The same argument with all neighbors gives
+$m_\beta(v)=\phi_\beta(v)+\sum_{\beta''}\mu_{\beta''\to\beta}(v_{\beta''\cap\beta})$,
+the sum over all neighbors; every coordinate lies in some bag, so the
+assignments are complete. Messages are computed toward a root and back,
+recomputing each outgoing sum from at most two incoming messages instead of
+subtracting, so that no difference of infinities occurs. Each row is
+processed a bounded number of times, and stored argmin pointers give a
+minimizer.
+\end{proof}
+
+This is nonserial dynamic programming on a tree decomposition
+\citep{bertele1972-nonserial-dynamic-programming}, applied to sparse row lists. Dense tables
+would enumerate products of coordinate grids; here each row is a corner of a
+retained cell, and adjacent row lists are never multiplied. Every message
+value is a sum of at most one assigned cost per bag, so its bit length is
+polynomial in the bit length of the costs and the number of bags,
+independently of the number of rows.
+
+\paragraph{Rounding and pruning.}
+The next lemma is the deterministic core of the method. It rounds all
+coordinates at once and keeps the result inside every candidate list.
+
+\begin{lemma}[Fixed-cell rounding]\label{lem:sp:round}
+Let $x\in\Omega_j$, and let $C_0\in\mathcal W_j(\beta_0)$ be a cell with
+$x_{\beta_0}\in C_0$. There is a random point $Y\in A_j$ such that
+$Y_{\beta_0}$ is a corner of $C_0$, $Y_i=x_i$ whenever $x_i\in G_{i,j}$, and
+\begin{equation}\label{eq:sp:round}
+ \E F_\gamma(Y)\le F_\gamma(x)+E_j,\qquad E_j=\frac{nLh_j^2}{8}.
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+For each $i$ with $x_i\in G_{i,j}$ put $Y_i=x_i$. Otherwise $x_i$ lies
+strictly between consecutive nodes $a_i<a_i'$; this happens only for
+$i\in I_C$ or for $i\in I_Z$ with $h_j\ge1$, so $a_i,a_i'\in X_i$. Let
+$Y_i=a_i'$ with probability $(x_i-a_i)/(a_i'-a_i)$ and $Y_i=a_i$ otherwise,
+independently over $i$. Then $\E Y_i=x_i$ and
+$\operatorname{Var}Y_i=(x_i-a_i)(a_i'-x_i)\le h_j^2/4$.
+
+Let $\beta$ be a bag and $C\in\mathcal W_j(\beta)$ a cell with $x_\beta\in
+C$. For $i\in\beta$, if $x_i$ is a node then $Y_i=x_i\in C_i$ is an endpoint
+of $C_i$ by \cref{lem:sp:cells}(a). Otherwise the only coordinate cell
+containing $x_i$ is the one with endpoints $a_i,a_i'$, so $C_i$ is that cell
+and $Y_i$ is an endpoint. Hence $Y_\beta$ is a corner of $C$. Since
+$x\in\Omega_j$, every bag has such a cell, so $Y\in A_j$; taking
+$\beta=\beta_0$, $C=C_0$ shows that $Y_{\beta_0}$ is a corner of $C_0$.
+
+For the objective, put $Y^{(k)}=(Y_1,\dots,Y_k,x_{k+1},\dots,x_n)$. Given
+$Y_1,\dots,Y_{k-1}$, the function
+$\varphi(\theta)=F_\gamma(Y_1,\dots,Y_{k-1},\theta,x_{k+1},\dots,x_n)$ on
+$[\ell_k,u_k]$ satisfies $\varphi''\le L$ by \eqref{eq:sp:curv}, because
+these points lie in $\widehat X$ and the linear noise does not change second
+derivatives. Taylor's theorem gives
+$\varphi(Y_k)\le\varphi(x_k)+\varphi'(x_k)(Y_k-x_k)+\frac L2(Y_k-x_k)^2$.
+As $Y_k$ is independent of $Y_1,\dots,Y_{k-1}$ with mean $x_k$,
+\[
+ \E[F_\gamma(Y^{(k)})\mid Y_1,\dots,Y_{k-1}]\le F_\gamma(Y^{(k-1)})
+ +\frac L2\operatorname{Var}Y_k .
+\]
+Taking expectations and summing over $k$ gives \eqref{eq:sp:round}.
+\end{proof}
+
+For a quadratic, \eqref{eq:sp:round} also follows from cancellation of the
+off-diagonal terms in expectation. The sequential argument is needed for
+higher degree, for instance for the monomial $x_1^2x_2^2$, whose expected
+rounding error is not a sum of diagonal terms.
+
+For a cell $C\in\mathcal W_j(\beta)$ define its \emph{cell bound}
+\[
+ q_C=\min\{m_\beta(v):\ v\text{ a corner of }C\}.
+\]
+The \emph{incumbent} $U_j$ is the least value of $F_\gamma$ at the allowed
+grid points produced by the dynamic programs of levels $0,\dots,j$; it is the
+value of a point of $X$, and $U_j\le m_j$. Initialize $U_{-1}=+\infty$ and
+store a feasible point attaining the smallest value so far, keeping an
+earlier point when its value remains smaller. Update this incumbent pair
+before pruning. The candidate list is updated by
+the \emph{retention rule}
+\begin{equation}\label{eq:sp:retain}
+ \mathcal W'_j(\beta)=\{C\in\mathcal W_j(\beta):\ q_C-E_j\le U_j\},\qquad
+ \mathcal W_{j+1}(\beta)=\{\text{children of cells in }\mathcal W'_j(\beta)\},
+\end{equation}
+starting from $\mathcal W_0(\beta)=\{X_\beta\}$. Ties are retained. Let
+$\Omega'_j$ be the physical domain of the retained lists; it equals
+$\Omega_{j+1}$, because children cover their parents.
+
+\begin{proposition}[Sound pruning and witnesses]\label{prop:sp:prune}
+On every draw and at every level $j\ge0$:
+\begin{enumerate}[label=(\alph*)]
+\item every global minimizer $x^*$ of $F_\gamma$ on $X$ lies in $\Omega_j$,
+and $x^*_\beta$ lies in a retained cell of every bag;
+\item $f^*\le U_j\le m_j\le f^*+E_j$;
+\item every $x\in\Omega_j\setminus\Omega'_j$ satisfies $F_\gamma(x)>U_j$;
+\item every retained cell $C\in\mathcal W'_j(\beta)$ has a corner $v$ and a
+point $y\in A_j$ with $y_\beta=v$ and $F_\gamma(y)=q_C\le f^*+2E_j$.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+We first note the cell lower bound. Let $C\in\mathcal W_j(\beta)$ and let
+$x\in\Omega_j$ have $x_\beta\in C$. \Cref{lem:sp:round} with $(\beta,C)$ gives
+$Y\in A_j$ with $Y_\beta$ a corner of $C$, so
+$F_\gamma(Y)\ge m_\beta(Y_\beta)\ge q_C$ on every outcome, and
+\begin{equation}\label{eq:sp:cellbound}
+ q_C-E_j\le F_\gamma(x).
+\end{equation}
+
+We prove (a) by induction; $\Omega_0=X$. Suppose every minimizer lies in
+$\Omega_j$, and let $x^*$ be one. For each bag $\beta$ choose
+$C\in\mathcal W_j(\beta)$ containing $x^*_\beta$. By \eqref{eq:sp:cellbound},
+$q_C-E_j\le f^*\le U_j$, so $C$ is retained, and its children cover it; hence
+$x^*\in\Omega_{j+1}$. For (b), $U_j\ge f^*$ because $U_j$ is a value at a
+point of $X$, and rounding a minimizer by \cref{lem:sp:round} gives an
+allowed point of expected value at most $f^*+E_j$, so $m_j\le f^*+E_j$.
+For (c), $x\in\Omega_j\setminus\Omega'_j$ lies in some cell
+$C\in\mathcal W_j(\beta)$ but in no retained cell of $\beta$, so $C$ was
+deleted, and \eqref{eq:sp:cellbound} gives $F_\gamma(x)\ge q_C-E_j>U_j$.
+For (d), $q_C\le U_j+E_j<\infty$, so $q_C=m_\beta(v)$ for some corner $v$,
+and the minimum defining $m_\beta(v)$ is attained at some $y\in A_j$. By (b),
+$q_C\le U_j+E_j\le f^*+2E_j$.
+\end{proof}
+
+Part~(a) holds for tied and positive-dimensional optimal sets and for every
+draw. Part~(d) gives one globally consistent feasible point for each retained
+cell; the counting argument below needs exactly this, and a collection of
+separate per-bag witnesses would not suffice. Part~(c) is the global
+certificate: a point removed at level $j$ has value above $U_j\ge f^*$.
+An incumbent found at an earlier level may lie outside the current physical
+domain; it is still feasible and remains a valid upper bound.
+
+\subsection{Expected size of the retained lists}\label{sec:sp:count}
+
+The count conditions on the noise outside one bag. For a bag $\beta$, write
+$O=[n]\setminus\beta$ and, for $v\in\widehat X_\beta=\prod_{i\in\beta}[\ell_i,u_i]$,
+\begin{equation}\label{eq:sp:V}
+ V_\beta(v)=\min_{z\in X_O}\bigl[F_0(v,z)+\gamma_O^{\mathsf T}z\bigr].
+\end{equation}
+The minimum is over the original outside domain $X_O=\prod_{i\in O}X_i$, not
+over a set that depends on the run. Hence $V_\beta$ depends on $\gamma_O$ and
+not on $\gamma_\beta$, and $f^*=\min_{v\in X_\beta}[V_\beta(v)+\gamma_\beta^{\mathsf T}v]$.
+
+\begin{lemma}[Comparison intervals]\label{lem:sp:compare}
+Fix $\gamma_O$, a bag tuple $v\in X_\beta$ and $\eta\ge0$, and suppose
+$V_\beta(v)+\gamma_\beta^{\mathsf T}v\le f^*+\eta$. If $i\in\beta$ and
+$a>0$ satisfy $v\pm ae_i\in X_\beta$, then $\gamma_i$ lies in a closed
+interval that depends only on $\gamma_O$, $v$, $i$, $a$ and $\eta$, and whose
+length is at most $La+2\eta/a$.
+\end{lemma}
+
+\begin{proof}
+Let $z^*$ attain the minimum in \eqref{eq:sp:V} at $v$. For
+$\theta\in[-a,a]$ put $\psi(\theta)=F_0(v+\theta e_i,z^*)$; the segment lies
+in $\widehat X$, so $\psi''\le L$ and $\psi(a)+\psi(-a)-2\psi(0)\le La^2$.
+Since $V_\beta(v\pm ae_i)\le\psi(\pm a)+\gamma_O^{\mathsf T}z^*$ and
+$V_\beta(v)=\psi(0)+\gamma_O^{\mathsf T}z^*$,
+\[
+ V_\beta(v+ae_i)+V_\beta(v-ae_i)-2V_\beta(v)\le La^2 .
+\]
+The tuples $v\pm ae_i$ are feasible, so
+$f^*\le V_\beta(v\pm ae_i)+\gamma_\beta^{\mathsf T}(v\pm ae_i)$. Subtracting
+the hypothesis gives
+\[
+ \frac{V_\beta(v)-V_\beta(v+ae_i)-\eta}{a}\le\gamma_i\le
+ \frac{V_\beta(v-ae_i)-V_\beta(v)+\eta}{a}.
+\]
+The endpoints do not involve $\gamma_\beta$, and the difference of the
+endpoints is at most $La+2\eta/a$ by the previous display.
+\end{proof}
+
+For a bag $\beta$ and level $j$ let
+\[
+ N_j(\beta)=\bigl\{v\in\mathbb G_{j,\beta}:\
+ V_\beta(v)+\gamma_\beta^{\mathsf T}v\le f^*+2E_j\bigr\},\qquad
+ \mathbb G_{j,\beta}=\prod_{i\in\beta}G_{i,j},
+\]
+a subset of the complete deterministic bag grid. The algorithm never
+enumerates it; it serves only as a dominating count.
+
+\begin{proposition}[Expected retained cells]\label{prop:sp:count}
+Let $J\ge0$, let $M\ge2^J$, and let $0\le j\le J$. On every draw,
+$\abs{\mathcal W'_j(\beta)}\le2^{\abs\beta}\abs{N_j(\beta)}$. Moreover
+\begin{equation}\label{eq:sp:Theta}
+ \E\abs{N_j(\beta)}\le\Theta_\beta:=\prod_{i\in\beta}
+ \Bigl[4+\frac{(1+n/2)Lw_i}{2\sigma}\Bigr].
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+Let $C\in\mathcal W'_j(\beta)$ and let $v$, $y$ be as in
+\cref{prop:sp:prune}(d). Since $y=(v,y_O)$ with $y_O\in X_O$,
+$V_\beta(v)+\gamma_\beta^{\mathsf T}v\le F_\gamma(y)\le f^*+2E_j$, so
+$v\in N_j(\beta)$. A node tuple is a corner of at most $2^{\abs\beta}$
+level-$j$ cells, which gives the first claim.
+
+For the expectation, let $a_i=h_j$ if $i\in I_C$ or $h_j\ge1$, and $a_i=1$
+otherwise; thus $a_i\ge h_j$, and consecutive nodes of coordinate $i$ are
+$a_i$ apart, except possibly the last two. Call a node $v_i\in G_{i,j}$
+\emph{regular} if $v_i\pm a_i\in X_i$. Regular nodes are $\ell_i+ka_i$ with
+$k\ge1$ and $\ell_i+(k+1)a_i\le u_i$, so there are at most $w_i/a_i$ of
+them, and at most three nodes are not regular: $\ell_i$, the last node
+below $u_i$, and $u_i$.
+
+Fix $v\in\mathbb G_{j,\beta}$ and condition on $\gamma_O$. If
+$v\in N_j(\beta)$, \cref{lem:sp:compare} with $\eta=2E_j$ confines every
+$\gamma_i$, $i\in\beta$ with $v_i$ regular, to an interval determined by
+$\gamma_O$ and $v$, of length at most $\lambda_i=La_i+4E_j/a_i$. The
+coefficients $\gamma_i$, $i\in\beta$, are independent of each other and of
+$\gamma_O$, so by \eqref{eq:model:interval}
+\[
+ \Prob\{v\in N_j(\beta)\mid\gamma_O\}\le\prod_{i\in\beta}c_i(v_i),
+ \qquad c_i(v_i)=\begin{cases}\lambda_i/(2\sigma)+1/M&v_i\text{ regular},\\
+ 1&\text{otherwise}.\end{cases}
+\]
+The right side is a product of functions of single coordinates, so summing
+over the grid factorizes:
+\[
+ \E\abs{N_j(\beta)}\le\prod_{i\in\beta}\sum_{v_i\in G_{i,j}}c_i(v_i)
+ \le\prod_{i\in\beta}\Bigl[3+\frac{w_i}{a_i}\Bigl(\frac{\lambda_i}{2\sigma}
+ +\frac1M\Bigr)\Bigr].
+\]
+Here $\frac{w_i\lambda_i}{2\sigma a_i}=\frac{Lw_i}{2\sigma}\bigl(1+\frac{nh_j^2}{2a_i^2}\bigr)
+\le\frac{(1+n/2)Lw_i}{2\sigma}$ because $a_i\ge h_j$, and
+$\frac{w_i}{a_iM}\le\frac{s}{h_jM}=\frac{2^j}M\le1$ because $j\le J$ and
+$M\ge2^J$. This proves \eqref{eq:sp:Theta}.
+\end{proof}
+
+The expectation is taken over the complete deterministic bag grid, and every
+retained cell is charged to a near-optimal node of that grid on every draw.
+The argument therefore does not assume that the adaptively retained cells
+are independent of the noise. It is the bag-conditional analogue of
+\cref{thm:count:local} and \cref{thm:count:cells}(iv). The proof above is
+self-contained because the grids here are clipped at the upper bounds and the
+count is conditioned on the noise outside the bag; the clipped nodes are
+treated as exceptional and are never used in comparisons. The requirement
+$M\ge2^J$ is what makes the count independent of the level: for a fixed
+coarse grid, the atomic term
+$w_i/(a_iM)$ would grow without bound as $h_j\to0$.
+
+\subsection{Why the bound is fixed-width but not fixed-parameter}\label{sec:sp:width}
+
+The tree decomposition controls the shape of the dynamic program: tables
+are indexed by bag rows, messages by separator tuples, and the number of
+rows of a bag is charged to $\Theta_\beta$, a product over the coordinates
+of that bag only. Treewidth therefore governs the exponent in
+\eqref{eq:sp:bound}. The base of the exponential, however, contains the
+total dimension $n$. It enters through the rounding allowance: the cell bound
+\eqref{eq:sp:cellbound} must hold for every feasible point of a cell, and
+its proof rounds all $n$ coordinates of a global point simultaneously, so
+the allowance $E_j=nLh_j^2/8$ is a sum of variances over all coordinates.
+The witnesses of \cref{prop:sp:prune}(d) are near-optimal only up to
+$2E_j$, and \cref{lem:sp:compare} turns this tolerance into noise intervals
+of length $(1+n/2)La_i$ for every coordinate of the bag. The resulting bound
+on the expected number of retained rows of a bag is of order
+$(nLw_{\max}/\sigma)^{\abs\beta}$ when this ratio is large, which is polynomial
+in $n$ only for fixed $p$.
+
+Two facts show that the factor belongs to the method as specified, not
+only to its analysis. First, replacing $E_j$ by an allowance for the bag
+alone, $\abs\beta Lh_j^2/8$, is unsound: \cref{prop:lim:local} gives a star
+quadratic with bags of size two on which the local allowance deletes the
+cell that contains every global optimizer, on every draw of small noise. The
+error that the global allowance absorbs comes from minimizing over the grid
+outside the bag; it varies with the bag's own coordinates and does not
+cancel when min-marginals are compared. Second, for the retention rule
+\eqref{eq:sp:retain} and closure on the whole hull, the factor
+$n^{\Omega(p)}$ actually occurs: \cref{thm:lim:width} gives connected
+instances of treewidth $p-1$, with $L=2$, unit widths and $\sigma=1/100$,
+on which a bag retains more than $(5n/(6p))^{p/2}$ cells on every draw
+before the stopping depth is reached. Both results concern the retention
+rule and the bag-local substitution analyzed here. They are not lower
+bounds for other algorithms.
+
+\paragraph{Certified conditional values.}
+The factor $n$ leaves the count when the true conditional value of a bag
+tuple is available with a certified error proportional to the bag size
+rather than to the dimension. For a bag $\beta$ and $v\in\widehat X_\beta$
+write
+\[
+ W_\beta(v)=V_\beta(v)+\gamma_\beta^{\mathsf T}v ,
+\]
+with $V_\beta$ from \eqref{eq:sp:V}, a minimum over the original outside
+domain. The next proposition gives the count of a modified search in which
+an oracle for $W_\beta$ replaces the grid min-marginals. It is a sufficient
+interface, not an algorithm: an oracle that meets it must account for the
+optimization over every coordinate outside the bag, and none is supplied
+here for general sparse instances.
+
+\begin{proposition}[Conditional-recourse count]\label{prop:sp:conditional}
+Consider a sparse mixed polynomial instance with the coordinate cells of
+\cref{sec:sp:cells}. Let $a\ge0$, $e_j=pLh_j^2/8$, and
+$0\le\eta_j\le a e_j$. Modify the refinement and retention steps
+of \cref{def:sp:algorithm} as follows. At level $j$ an oracle receives every
+corner $v$ of every candidate cell of every bag $\beta$ and returns rationals
+$\ell_\beta(v)\le W_\beta(v)\le u_\beta(v)$ with
+$u_\beta(v)-\ell_\beta(v)\le \eta_j$, together with a point $x^v\in X$ such
+that $x^v_\beta=v$ and $F_\gamma(x^v)\le u_\beta(v)$. The incumbent $U_j$ is
+the least value $u_\beta(v)$ returned at levels $0,\dots,j$, including every
+call of level $j$. Initialize $U_{-1}=+\infty$, store its associated
+feasible completion, and update the incumbent before pruning. A candidate
+cell $C$ of $\beta$ is retained if and
+only if $\min\{\ell_\beta(v):v\text{ a corner of }C\}-e_j\le U_j$. Then the
+following hold.
+\begin{enumerate}[label=(\alph*)]
+\item On every draw and at every level, for every global minimizer $x^*$ and
+every bag $\beta$, the projection $x^*_\beta$ lies in a retained cell of
+$\beta$.
+\item On every draw, $f^*\le U_j\le f^*+e_j+\eta_j$, and every retained cell of
+$\beta$ has a corner $v$ and its returned feasible completion $x^v$ with
+$W_\beta(v)\le F_\gamma(x^v)\le f^*+2(e_j+\eta_j)$.
+\item Let $J\ge0$, $M\ge2^J$ and $0\le j\le J$. On every draw the number of
+retained cells of $\beta$ at level $j$ is at most $2^{\abs\beta}$ times the
+number of tuples $v\in\mathbb G_{j,\beta}$ with
+$W_\beta(v)\le f^*+2(e_j+\eta_j)$, and under the law $U_{\sigma,M}$ the
+expected number of these tuples is at most
+\begin{equation}\label{eq:sp:conditional}
+ \prod_{i\in\beta}\Bigl[4+\Bigl(1+\frac{(1+a)p}2\Bigr)\frac{Lw_i}{2\sigma}\Bigr].
+\end{equation}
+\end{enumerate}
+The oracle's answers and errors may depend on the draw; the count uses
+the fixed envelope $a e_j$, not independence of the queried errors.
+\end{proposition}
+
+\begin{proof}
+Fix $\gamma_O$, a coordinate $i\in\beta$ and the other bag coordinates. The
+function $\theta\mapsto V_\beta(v+\theta e_i)$ is a minimum over $z\in X_O$
+of functions whose second derivative is at most $L$ on the continuous hull,
+so $\theta\mapsto W_\beta(v+\theta e_i)-L\theta^2/2$ is concave there, being a
+minimum of concave functions plus a linear term. Moreover
+$f^*=\min_{X_\beta}W_\beta$, with equality at $x^*_\beta$ for every global
+minimizer $x^*$.
+
+(a) We argue by induction over the levels; at level $0$ the only cell of
+$\beta$ is $X_\beta$. Let $C$ be a candidate cell of $\beta$ that contains
+$x^*_\beta$. Round every coordinate $i\in\beta$ of $x^*_\beta$ independently
+to the endpoints of the coordinate cell $C_i$ with mean $x^*_i$, as in the
+proof of \cref{lem:sp:round}, a coordinate that is a node staying fixed. The
+result $Y$ is a corner of $C$ and $\operatorname{Var}Y_i\le h_j^2/4$.
+Rounding one coordinate at a time, the concavity just shown and Jensen's
+inequality give
+$\E W_\beta(Y)\le W_\beta(x^*_\beta)+\abs\beta Lh_j^2/8\le f^*+e_j$. Some
+corner $v$ of $C$ therefore has $\ell_\beta(v)-e_j\le W_\beta(v)-e_j\le f^*$,
+and $f^*\le U_j$ because $U_j$ bounds the value of a feasible point. Hence
+$C$ is retained, and its child that contains $x^*_\beta$ is a candidate at
+level $j+1$.
+
+(b) The corner $v$ found in~(a) is queried at level $j$, so
+$U_j\le u_\beta(v)\le\ell_\beta(v)+\eta_j\le f^*+e_j+\eta_j$. A retained cell has
+a corner $v'$ with $\ell_\beta(v')\le U_j+e_j$, and then
+$W_\beta(v')\le F_\gamma(x^{v'})\le u_\beta(v')
+\le\ell_\beta(v')+\eta_j\le f^*+2(e_j+\eta_j)$.
+
+(c) The first claim follows from~(b), since a tuple of nodes is a corner of
+at most $2^{\abs\beta}$ cells. Dominate the qualifying tuples by the full
+grid count with the deterministic tolerance $\delta=2(1+a)e_j$, which
+bounds $2(e_j+\eta_j)$ on every draw. Repeat the proof of
+\cref{prop:sp:count} with this tolerance in place of $2E_j$.
+\Cref{lem:sp:compare} uses only $V_\beta$ and the
+curvature bound, so it confines the coefficient of every regular coordinate,
+given $\gamma_O$ and $v$, to an interval of length at most
+$La_i+2\delta/a_i\le La_i+(1+a)pLh_j^2/(2a_i)\le La_i(1+(1+a)p/2)$, because
+$a_i\ge h_j$. The rest of that proof is unchanged and gives
+\eqref{eq:sp:conditional}.
+\end{proof}
+
+Compared with $\Theta_\beta$ of \eqref{eq:sp:Theta}, the dimension $n$ in
+the bracket is replaced by $(1+a)p$, so the count depends only on the bag
+size, the error factor $a$ and the numerical ratios $Lw_i/\sigma$. Whether the whole search
+becomes fixed-parameter in the width depends on the cost of the oracle,
+which the proposition does not address. The grid min-marginals of
+\cref{sec:sp:cells} do not meet the interface (\cref{prop:lim:local}).
+Exact conditional values can require optimizing over almost the whole
+instance, and dividing a global allowance among the outside coordinates
+would force a finer outside grid and a dimension-dependent state count
+elsewhere. The recourse route of \cref{sec:rec} meets the interface for one
+search block, a small core whose conditional problem is assumed tractable;
+its counts are the case of a single bag. Certified conditional values are
+one sufficient way to remove the factor $n$. The barriers above do not show
+that they are necessary for every algorithm whose bound is fixed-parameter
+in the width. Parts~(a) and~(b) are a deterministic conditional-recourse
+filter that also appears in an unpublished companion manuscript
+\citep{companion-decomposition-aware}; part~(c), the expected count under
+the finite law, is what the noise adds.
+
+\paragraph{Deterministic bounds under a growth condition.}
+The companion manuscript \citep{companion-decomposition-aware} develops
+an alternative deterministic analysis under a quadratic-growth premise.
+Write $L_i=\max\{0,\max_x\partial_{ii}F(x)\}$ and $L=\max_iL_i$.
+Point growth $F(x)-F(x^*)\ge g\norm{x-x^*}^2$ defines
+$\kappa=\max\{1,L/g\}$. Weighted growth instead uses
+$F(x)-F(x^*)\ge\gamma\sum_iL_i(x_i-x_i^*)^2$ and defines
+$\bar\kappa=\max\{1,1/\gamma_*\}$ for the largest valid $\gamma_*$.
+Point growth implies $\bar\kappa\le\kappa$, but weighted growth places
+no requirement on coordinates with $L_i=0$.
+Its approximation theorem certifies accuracy $2^{-q}$ in
+$f(p,\bar\kappa)(I+q+1)^5$ bit operations, where
+\[
+ f(p,t)=c_0(c_1p\sqrt{t})^p t(1+\log_2t)^2.
+\]
+The condition parameter is not an algorithm input: trials stop when a
+valid certificate is obtained. Its exact-output theorem separately assumes
+point growth and a unique minimizer, and gives
+$f_1(p,\kappa)(I+1)^{C_1}$ bit operations. Graded grids use
+$O(\sqrt{\bar\kappa}\log(n+2))$ nodes per coordinate; the companion's
+uniform-grid family retains at least $\sqrt{(n-2)\kappa}+1$ nodes in its
+specified stages. This is a limitation of that filtering rule.
+Under the randomized exponential-time hypothesis, its product-time lower
+bound rules out $f(p)(\kappa I)^{p/\psi(p)}$ for unbounded $\psi$ in the
+stated integer-quadratic model. It does not establish a matching
+$p/2+O(1)$ lower exponent or rule out every smaller linear exponent in
+$\kappa$. These are bounds with a numerical condition parameter, not
+bounds in width alone. We do not analyze graded grids under noise.
+
+These deterministic bounds do not by themselves give an expected bound that
+is fixed-parameter in the width under the noise models of this paper.
+Their work has a high power of the inverse growth ratio. Under the noise,
+$Z=L/g_*$ (with $Z=+\infty$ when $g_*=0$) satisfies only the estimate
+$\Prob\{Z>t\}\le A_0/t+\epsilon_M$, where
+$A_0=LW/\sigma$ and $\epsilon_M=2nC_{\rm tail}/M$, by
+\cref{lem:sp:tails}. For $r>1$ and $K\ge1$, integration gives
+\[
+ \E\min\{K,Z^r\}\le
+ 1+\frac{rA_0}{r-1}(K^{1-1/r}-1)+\epsilon_M K.
+\]
+Thus the linear small-growth tail alone does not bound high inverse-growth
+moments without a cutoff-dependent factor. The cutoff-dependent power
+already arises in the flat noisy-coordinate example of
+\cref{rem:qp:moments}. When the cutoff is paid by an exact fallback, $K$ can be
+exponential in the input length. The count of \cref{prop:sp:count} avoids
+inverse-growth moments: it bounds the retained cells of every draw by
+near-optimal nodes of a fixed grid, whose expected number is controlled by
+the linear noise alone, and growth enters only the stopping depth,
+logarithmically, and the probability of the fallback. The price is the
+factor $n$ in the bracket. This comparison concerns the two arguments; it
+is not a lower bound for other algorithms, and whether some exact algorithm
+has expected work fixed-parameter in the width under independent linear
+noise remains open (\cref{sec:disc:open}).
+
+\subsection{Certified closure on a strongly convex patch}\label{sec:sp:closure}
+
+After the retention step of level $j$, the algorithm tries to finish. Let
+$g_0>0$ be a rational number chosen from the base data (\cref{def:sp:schedule})
+and let $\kappa_2,\kappa_3$ be as in \eqref{eq:sp:kappa}.
+
+\begin{definition}[Closure test]\label{def:sp:closure}
+At level $j$:
+\begin{enumerate}[label=(\arabic*)]
+\item For every coordinate $i$ let $Q_i$ be the intersection, over the bags
+$\beta\ni i$, of the smallest closed interval containing the $i$th
+projections of the cells of $\mathcal W'_j(\beta)$, and let
+$Q=\prod_iQ_i$.
+\item Record $\bar x_i$ equal to the point of $Q_i$ for every $i\in I_Z$ with
+$Q_i$ a single point.
+\item Let $c$ be the midpoint of $Q$ and $r$ the largest half-width of the
+intervals $Q_i$. For $i\in I_C$, record $\bar x_i=\ell_i$ if
+$\partial_iF_\gamma(c)-\kappa_2r>0$, and $\bar x_i=u_i$ if
+$\partial_iF_\gamma(c)+\kappa_2r<0$.
+\item If some integer coordinate is unrecorded, the test fails. Otherwise
+record $\bar x_i$ equal to the point of $Q_i$ for every unrecorded $i\in I_C$
+with $Q_i$ a single point. Let $S$ be the recorded set and $\bar S=[n]\setminus S$.
+If $\bar S=\emptyset$, return the point $\bar x$.
+\item Otherwise let $P=\prod_{i\in\bar S}Q_i$, with midpoint $c^P$ and
+largest half-width $r^P$. If the rational symmetric matrix
+\begin{equation}\label{eq:sp:matrix}
+ \nabla^2_{\bar S\bar S}F_\gamma(\bar x_S,c^P)-(\kappa_3r^P+g_0)I
+\end{equation}
+is positive definite, return the patch output $(S,\bar x_S,P,g_0)$;
+otherwise the test fails.
+\end{enumerate}
+\end{definition}
+
+Positive definiteness of a rational symmetric matrix is decided exactly by
+Gaussian elimination: all pivots must be positive. All quantities in the test
+have encoding length polynomial in $I$, $j$ and $\log M$.
+
+\begin{proposition}[Soundness of closure]\label{prop:sp:closure-sound}
+On every draw, every equality recorded by the closure test holds at every
+global minimizer of $F_\gamma$ on $X$. If the test returns a point $\bar x$,
+then $\bar x$ is the unique global minimizer. If it returns
+$\Pi=(S,\bar x_S,P,g_0)$, then \eqref{eq:sp:patch} holds on $P$, the function
+$F_\gamma(\bar x_S,\cdot)$ has a unique minimizer $\hat y$ on $P$, and
+$(\bar x_S,\hat y)$ is the unique global minimizer of $F_\gamma$ on $X$.
+\end{proposition}
+
+\begin{proof}
+By \cref{prop:sp:prune}(a), every minimizer $x^*$ has $x^*_\beta$ in a
+retained cell of every bag, so $x^*\in Q$. A singleton $Q_i$ therefore fixes
+$x_i^*$; for $i\in I_Z$ its point is an endpoint of an integer cell, hence an
+integer.
+
+For the gradient test, let $x\in Q\subseteq\widehat X$. The mean value
+theorem along the segment from $c$ to $x$, which lies in $Q$, gives
+$\abs{\partial_iF_\gamma(x)-\partial_iF_\gamma(c)}\le\sum_k\sup_{\widehat X}
+\abs{\partial_{ik}F_0}\abs{x_k-c_k}\le\kappa_2r$; the linear noise does not
+change second derivatives. If $\partial_iF_\gamma(c)-\kappa_2r>0$, then
+$\partial_iF_\gamma(x^*)>0$. Were $x^*_i>\ell_i$, the point
+$x^*-\theta e_i$ would be feasible for small $\theta>0$, because $i$ is
+continuous, and would have a smaller value. Hence $x^*_i=\ell_i$. The upper
+bound is symmetric.
+
+All recorded values lie in $X_i$, and $P\subseteq\prod_{i\in\bar S}[\ell_i,u_i]$
+with $\bar S\subseteq I_C$, so $T=\{\bar x_S\}\times P\subseteq X$, and every
+minimizer lies in $T$. If $\bar S=\emptyset$, a minimizer exists by
+compactness and equals $\bar x$. Otherwise, for $y\in P$ every entry of
+$\nabla^2_{\bar S\bar S}F_\gamma(\bar x_S,y)-\nabla^2_{\bar S\bar S}F_\gamma(\bar x_S,c^P)$
+in row $k$ is at most $r^P\sum_m\sup_{\widehat X}\abs{\partial_{klm}F_0}$ in
+absolute value, by the mean value theorem; the spectral norm of a symmetric
+matrix is at most its largest absolute row sum, so the difference has norm
+at most $\kappa_3r^P$. Positive definiteness of \eqref{eq:sp:matrix} gives
+\eqref{eq:sp:patch}. Then $F_\gamma(\bar x_S,\cdot)$ is strictly convex on
+$P$ and has a unique minimizer $\hat y$. Since $T\subseteq X$ contains every
+global minimizer and at least one, $\min_TF_\gamma=f^*$ and the global
+minimizers are exactly the minimizers on $T$, that is, $(\bar x_S,\hat y)$.
+\end{proof}
+
+The test fixes coordinates by two different arguments. The gradient rule
+of step~(3) fixes a continuous coordinate only at an original bound, where
+first-order optimality in the original box gives the sign condition; an
+endpoint of a hull interval that is not an original bound is never used by
+this rule. The singleton rule of steps~(2) and~(4) fixes a coordinate,
+integer or continuous, at the value that every global minimizer shares
+because its hull interval is a single point; this is justified by
+containment (\cref{prop:sp:prune}(a)), not by a derivative. The gradient
+rule is applied only to continuous coordinates: an interior integer optimum
+can have a nonzero derivative. A positive definite continuous block does not
+justify closure while integer choices remain, which is why step~(4) fails
+when an integer coordinate is unrecorded.
+
+The test succeeds early when the sampled instance is well conditioned. The
+conditions in the next proposition are not tested by the algorithm; they
+are used only to bound the stopping depth.
+
+\begin{proposition}[When closure succeeds]\label{prop:sp:closure-stop}
+Suppose $g_*(\gamma)\ge g_0>0$, let $a$ be the unique minimizer, and suppose
+that $\abs{\partial_iF_\gamma(a)}>\tau$ for every $i\in I_C$ with
+$a_i\in\{\ell_i,u_i\}$. Let $A=2+nL/g_0$. If
+\begin{equation}\label{eq:sp:cap}
+ h_j\le\min\Bigl\{\frac1{4A},\ \frac{\tau}{4\kappa_2A},\
+ \frac{g_0}{4\kappa_3A}\Bigr\},
+\end{equation}
+then the closure test of level $j$ returns a point or a patch output.
+\end{proposition}
+
+\begin{proof}
+Let $C\in\mathcal W'_j(\beta)$, and let $y$ be its witness from
+\cref{prop:sp:prune}(d). Growth gives $g_0\norm{y-a}^2\le F_\gamma(y)-f^*\le
+2E_j=nLh_j^2/4$, so $\norm{y-a}_2\le\frac{h_j}2\sqrt{nL/g_0}$. Every point of
+$C_i$ is within $h_j$ of $y_i$, so within
+$h_j(1+\frac12\sqrt{nL/g_0})\le Ah_j$ of $a_i$. Since $a_i\in Q_i$, every
+$Q_i$ lies in $[a_i-Ah_j,a_i+Ah_j]$, and $r\le Ah_j$ and
+$\norm{c-a}_\infty\le r$.
+
+By \eqref{eq:sp:cap}, $h_j\le1/(4A)<1$, so integer cells are singletons.
+For $i\in I_Z$, the integer cell of $C$ is $\{y_i\}$ and
+$\abs{y_i-a_i}\le Ah_j\le1/4$, so $y_i=a_i$. Every retained cell of every bag
+containing $i$ therefore has $i$th projection $\{a_i\}$, $Q_i=\{a_i\}$, and
+step~(2) records every integer coordinate.
+
+Let $i\in I_C$ with $a_i=\ell_i$; then $\partial_iF_\gamma(a)>\tau$ by
+hypothesis and first-order optimality. As in the proof of
+\cref{prop:sp:closure-sound},
+$\partial_iF_\gamma(c)-\kappa_2r\ge\partial_iF_\gamma(a)-2\kappa_2Ah_j>\tau-\tau/2>0$,
+so step~(3) records $\bar x_i=\ell_i$; the case $a_i=u_i$ is symmetric. By
+soundness no coordinate with $\ell_i<a_i<u_i$ is recorded at a bound. Hence
+$\bar S$ consists of continuous coordinates that are interior at $a$. If
+$\bar S=\emptyset$ the test returns a point. Otherwise, for every unit vector
+$e$ supported on $\bar S$, the points $a\pm\theta e$ are feasible for small
+$\theta>0$, and adding the two growth inequalities and letting
+$\theta\to0$ gives $e^{\mathsf T}\nabla^2F_\gamma(a)e\ge2g_0$; thus
+$\nabla^2_{\bar S\bar S}F_\gamma(a)\succeq2g_0I$. The point $(\bar x_S,c^P)$
+differs from $a$ only in $\bar S$, by at most $r^P\le Ah_j$, so the matrix
+\eqref{eq:sp:matrix} is at least
+$(2g_0-2\kappa_3Ah_j-g_0)I\succeq\frac{g_0}2I$.
+\end{proof}
+
+The two-sided Taylor argument uses only the coordinates that are interior
+at the optimizer. A boundary optimizer whose full Hessian is indefinite is
+therefore covered: the active coordinates are removed before the matrix
+test. No lower bound on the distance of the optimizer from inactive bounds
+is needed.
+
+\subsection{One finite law and the same-draw fallback}\label{sec:sp:law}
+
+Two events make the closure test late: small point growth, and an active
+continuous coordinate with a small derivative. Both have small probability
+under the grid law.
+
+\begin{lemma}[Finite-law tails on mixed boxes]\label{lem:sp:tails}
+There is a base-computable integer $C_{\rm tail}\ge1$ with
+$\log C_{\rm tail}\le\poly_d(I)$ such that, for every $M$ and every
+$\varepsilon>0$,
+\begin{equation}\label{eq:sp:growthtail}
+ \Prob\{g_*<\varepsilon\}\le\frac{\varepsilon W}{\sigma}+\frac{2nC_{\rm tail}}M .
+\end{equation}
+Let $D=\max\{1,d-1\}$ and $K=\max\{1,n_c3^{n_c}N_ZD^{n_c}\}$. For every
+$\tau>0$, the probability that $g_*>0$ and the unique minimizer $a$ has a
+coordinate $i\in I_C$ with $a_i\in\{\ell_i,u_i\}$ and
+$\abs{\partial_iF_\gamma(a)}\le\tau$ is at most $K(\tau/\sigma+1/M)$.
+\end{lemma}
+
+\begin{proof}
+This is \cref{lem:count:finite-tails}(b) and~(d) with $m=0$, $S=W$ and
+$R_Z=N_Z$; the first part combines \cref{thm:count:growth-tail} for the
+continuous uniform law with the transfer of
+\cref{lem:count:finite-tails}(a). The mixed box is described by $2n_c$
+linear inequalities and by disjunctions over the $N_Z$ integer labels, so
+the number $s$ of atoms satisfies $\log(s+1)\le\poly(I)$, and the constant
+$C_{\rm tail}$ of \cref{lem:count:finite-tails} has logarithm $\poly_d(I)$
+even though the number of labels can be exponential.
+\end{proof}
+
+The second bound counts nonsingular stationary points of faces and does not
+assume that stationary sets are finite. It is an unconditional estimate for
+the intersection with $\{g_*>0\}$, not a conditional probability given good
+growth.
+
+\begin{definition}[Base schedule]\label{def:sp:schedule}
+Before sampling, compute from the base instance:
+\begin{enumerate}[label=(\arabic*)]
+\item $\kappa_2,\kappa_3$ by \eqref{eq:sp:kappa}, $C_{\rm tail}$ and $K$ as
+in \cref{lem:sp:tails}, and the factor $B\ge2$ of \cref{thm:count:fallback}
+for the format of the instance (the mixed box $X$, the degree $d$, and the
+monomial support of $F_0$ with $n$ added linear terms);
+\item $\rho=1/(4B)$, $g_0=\rho\sigma/(2W)$, $\tau=\rho\sigma/(2K)$ and
+$A=2+nL/g_0$;
+\item the stopping depth $J$, the least $j\ge0$ satisfying \eqref{eq:sp:cap};
+\item the grid size $M$, the least power of two with
+$M\ge\max\{2,\,2^J,\,4nC_{\rm tail}/\rho,\,2K/\rho\}$.
+\end{enumerate}
+\end{definition}
+
+Every quantity in the schedule has encoding length $\poly_d(I)$: the
+logarithms of $B$, $C_{\rm tail}$, $K$, $\kappa_2$, $\kappa_3$, $1/\rho$,
+$1/g_0$, $1/\tau$ and $A$ are polynomial in $I$, so $J\le\poly_d(I)$ and
+$\log_2M\le\poly_d(I)$. The order matters. The factor $B$ is fixed first;
+the thresholds and $J$ depend on $B$ but not on $M$; and $M$ is chosen last.
+The sampled coefficients have bit length $b=\log_2M+O(\operatorname{size}\sigma)$,
+which enters only the polynomial factor of the fallback.
+
+\begin{lemma}[Rare late closure]\label{lem:sp:rare}
+Under the schedule of \cref{def:sp:schedule}, the closure test succeeds at
+some level $j\le J$ except on an event of probability at most $1/(2B)$.
+\end{lemma}
+
+\begin{proof}
+By \cref{lem:sp:tails},
+$\Prob\{g_*<g_0\}\le\rho/2+2nC_{\rm tail}/M\le\rho$, and the probability
+that $g_*\ge g_0$ while an active continuous derivative has magnitude at
+most $\tau$ is at most $K\tau/\sigma+K/M\le\rho/2+\rho/2$. Outside these two
+events \cref{prop:sp:closure-stop} applies at level $J$. The union has
+probability at most $2\rho=1/(2B)$.
+\end{proof}
+
+\begin{definition}[Sparse cell algorithm]\label{def:sp:algorithm}
+Given a rational input with fixed-degree polynomial factors on a mixed box
+and a tree decomposition:
+\begin{enumerate}[label=(\arabic*)]
+\setcounter{enumi}{-1}
+\item Preprocess as in \cref{sec:model:input}. If no unfixed coordinate
+remains, draw $\gamma$ once, return the unique feasible point, which is
+rational, and its sampled value, and stop. Otherwise the result is a sparse
+mixed polynomial instance with $n\ge1$.
+\item Compute the schedule of \cref{def:sp:schedule}, convert the tree
+decomposition to maximum degree three, assign factors and noise terms to
+bags, and draw $\gamma$ once from the grid law with this $M$.
+\item Set $\mathcal W_0(\beta)=\{X_\beta\}$ for every bag. For
+$j=0,1,\ldots,J$: form the row lists, run the dynamic program of
+\cref{lem:sp:dp} for all min-marginals and a minimizer of $F_\gamma$ on
+$A_j$, update the incumbent, apply the retention rule \eqref{eq:sp:retain},
+and run the closure test of \cref{def:sp:closure}. If the test returns, stop
+with its output. Otherwise form $\mathcal W_{j+1}$ by generating children and
+removing duplicates.
+\item If no closure test has returned by level $J$, run the exact fallback of
+\cref{thm:count:fallback} on $F_\gamma$ over $X$ and return its output.
+\end{enumerate}
+In step~(0) the law is $U_{\sigma,2}$; the draw only determines the
+reported value, which includes the sampled constants of the fixed
+coordinates.
+\end{definition}
+
+\begin{proof}[Proof of \cref{thm:sp:main}]
+\emph{Exactness.} A closure output is correct on every draw by
+\cref{prop:sp:closure-sound}, and the fallback is correct on every draw by
+\cref{thm:count:fallback}. The fallback runs only if no closure test returns,
+which by \cref{lem:sp:rare} has probability at most $1/(2B)$. No draw is
+discarded or repeated.
+
+\emph{Work of one level.} Let $j\ge1$. Generating $\mathcal W_j(\beta)$ costs
+$O(2^{\abs\beta}\abs{\mathcal W'_{j-1}(\beta)})$ cell operations and a sort,
+the row list has at most $2^{\abs\beta}\abs{\mathcal W_j(\beta)}$ entries, the
+dynamic program costs $O(\sum_\beta\abs{\mathcal R_j(\beta)})$ operations by
+\cref{lem:sp:dp}, and the retention rule and the hulls cost
+$O(2^{\abs\beta}\abs{\mathcal W_j(\beta)})$ further operations; level~$0$ has
+one cell per bag. Every grid coordinate at level $j\le J$ has bit length
+$O(I+j+\log s)$, every sampled coefficient $O(I+\log M)$, every factor value
+and message $\poly_d(I)$, and a sort or dictionary operation on a list of
+$R$ rows costs $O(\log R)$ comparisons with $\log R\le\log\abs{\mathbb G_j}
+\le\poly_d(I)$. The closure test costs $\poly_d(I)$ plus the hull
+computation. Hence the work of level $j$ is at most
+$8^p\sum_\beta(1+\abs{\mathcal W'_{j-1}(\beta)})\poly_d(I)$.
+
+\emph{Expectation.} By \cref{prop:sp:count}, with $M\ge2^J$,
+$\E\abs{\mathcal W'_{j-1}(\beta)}\le2^p\Theta_\beta$ for $1\le j\le J$, and
+$\Theta_\beta\le[4+(1+n/2)Lw_{\max}/(2\sigma)]^p$. The work is a sum of
+nonnegative terms, each bounded by a constant times a retained-list size,
+so its expectation is bounded by linearity; no product of random table
+sizes occurs. There are $J+1\le\poly_d(I)$ levels and polynomially many
+bags. The fallback costs $B\poly_d(I+b)$ and runs with probability at most
+$1/(2B)$, so it contributes $\poly_d(I)$ to the expectation
+(\cref{lem:count:rare-fallback}). Computing the schedule and drawing
+$n\log_2M$ random bits cost $\poly_d(I)$. This proves \eqref{eq:sp:bound}
+with $C_0=16$. The global proof record consists of quantities computed
+during the run, so its length is bounded by the work; it is verified by
+recomputing the dynamic programs of the levels, which costs the same.
+
+\emph{Evaluation.} Part~\ref{it:sp:eval} is \cref{prop:sp:eval} below.
+\end{proof}
+
+\subsection{Exact implicit output and arbitrary-precision evaluation}\label{sec:sp:eval}
+
+A patch output determines one point exactly, but the coordinates of that
+point are usually irrational algebraic numbers whose minimal polynomials can
+have large degree. The output contract does not include them. What it
+includes is evaluation to any requested precision in time polynomial in the
+precision.
+
+\begin{proposition}[Evaluation]\label{prop:sp:eval}
+Let $q\ge0$.
+\begin{enumerate}[label=(\alph*)]
+\item Given a patch output $\Pi=(S,\bar x_S,P,g_0)$ of \cref{thm:sp:main}
+with optimizer $\hat x$, a rational $y\in X$ with $y_S=\bar x_S$ and a
+rational $a$ with $a\le f^*\le F_\gamma(y)\le a+2^{-q}$ and
+$\norm{y-\hat x}_2\le2^{-q}$ are computed in $\poly_d(I+q)$ bit operations.
+If $S=[n]$, then $y=\hat x=\bar x$ and $a=F_\gamma(\bar x)$.
+\item Given a fallback output, a rational $y\in X$ with the same integer
+labels as the returned optimizer $x^\circ$, and a rational $a$ with
+$a\le f^*\le F_\gamma(y)\le a+2^{-q}$ and $\norm{y-x^\circ}_2\le2^{-q}$, are
+computed in $B\poly_d(I+q)$ bit operations.
+\end{enumerate}
+In particular the expected cost of a $q$-bit evaluation is $\poly_d(I+q)$.
+\end{proposition}
+
+The proof is in \cref{app:sp:eval}. A point output is rational and is
+evaluated exactly. For a positive-dimensional patch, part~(a) applies weak
+convex optimization in the bit model \citep[Definition~2.1.10 and
+Corollary~4.2.7]{grotschel1988-geometric-algorithms-and-combinatorial-optimization} to the capped epigraph of
+$F_\gamma(\bar x_S,\cdot)$ over $P$, with an explicit repair of the
+approximately feasible output; the modulus $g_0$ converts value accuracy
+into distance, including at boundary minimizers, and enters the cost only
+through its encoding length. The cost does not depend on the numerical ratio
+$L/g_0$, as a grid-based evaluation would. Evaluation does not decide exact
+comparisons of $f^*$ with a rational threshold, and it does not identify the
+active set of $\hat y$. Without a verified modulus, value accuracy alone
+would not localize the optimizer: a function that is flat along a direction
+has points of equal value far from each other.
+
+\subsection{Quadratic and mixed-integer quadratic objectives}\label{sec:sp:qp}
+
+For $d=2$ the patch and the fallback can both be solved in rational
+arithmetic, so the output is rational on every draw.
+
+\begin{corollary}[Sparse mixed-integer quadratic programs]\label{cor:sp:qp}
+Let $F_0(x)=\frac12x^{\mathsf T}Hx+b^{\mathsf T}x+c_0$ be rational on a mixed
+box $X$ as in \cref{def:sp:instance}, with a tree decomposition of bag size
+$p$ containing $\{i,k\}$ whenever $H_{ik}\ne0$, and let $L>0$ be rational
+with $L\ge\max_iH_{ii}$ (verified). There is a power of two $M$, computed
+from the base instance with $\log_2M\le\poly(I)$, such that for the ambient
+perturbation model with marginal law $U_{\sigma,M}$:
+\begin{enumerate}[label=(\roman*)]
+\item on every draw the algorithm returns a rational global minimizer of
+$F_\gamma$ on $X$ and the optimal value, of bit length $\poly(I)$;
+\item the expected bit work is at most
+$C_0^p[4+(1+n/2)Lw_{\max}/(2\sigma)]^p\poly(I)$.
+\end{enumerate}
+No growth, uniqueness, convexity, bound on negative inertia, bound on variable
+occurrences, or bound on the integer dimension is used.
+\end{corollary}
+
+The algorithm is that of \cref{def:sp:algorithm} with two changes. After a
+patch output, the strongly convex quadratic program
+$\min\{F_\gamma(\bar x_S,y):y\in P\}$ is solved exactly; its unique solution
+is rational of polynomial bit length and is computed in polynomial time by
+the ellipsoid method for convex quadratic programming
+\citep{kozlov1980-the-polynomial-solvability-of-convex}. The fallback is the elementary
+enumeration of integer assignments and continuous faces of
+\cref{lem:sp:faces}, with $B=3^{n_c}N_Z$; it needs no real algebraic
+geometry. The proof is in \cref{app:sp:qp}. For a quadratic $\kappa_3$ may be
+replaced by zero in \eqref{eq:sp:matrix}, because the Hessian is constant.
+
+The bound is fixed-width polynomial, as before. It does not contradict the
+strong NP-hardness of box-constrained quadratic programming at treewidth two
+\citep{pia2026-treewidth-and-the-complexity-of}. That result concerns the
+threshold question for the unperturbed objective, whereas the corollary
+solves the sampled instance, with a bound that is polynomial only when
+$Lw_{\max}/\sigma$ is polynomially bounded. For the treewidth-two reduction
+itself, \cref{rem:lim:dk} exhibits no-instances, with $r$ a size
+parameter, that have a point of value $2^{-2r-4}$ above the threshold with
+a coordinate equal to one. By \cref{prop:lim:threshold}, the sampled minimum
+of such an instance falls below the threshold with probability at least
+$\frac12-2^{-2r-5}/\sigma-1/(2M)$, so on these instances the exact sampled
+optimum does not answer the original threshold question. We make no claim
+about other hardness reductions.
+
+\subsection{Relation to earlier work}\label{sec:sp:prior}
+
+The ingredients are classical. Dynamic programming over tree decompositions
+is nonserial dynamic programming \citep{bertele1972-nonserial-dynamic-programming}. The allowance
+$Lw^2/8$ per coordinate is the maximal separation of the
+$\alpha$BB underestimator \citep{adjiman1998-a-global-optimization-method-bb}, used here with the
+opposite sign as a lower-bound correction. For linear tilts of a polynomial
+objective on a regular compact semialgebraic set, uniqueness of the
+minimizer and a growth inequality hold for generic tilts
+\citep{lee2017-generic-properties-for-semialgebraic-programs}; these
+statements are qualitative and give no probability bound for a finite law. Smoothed analyses of discrete optimization use isolation of winners
+\citep{beier2006-typical-properties-of-winners-and,roglin2007-smoothed-analysis-of-integer-programming}; a continuous box has no
+positive gap between distinct feasible values, which is why the count above
+uses near-optimal grid nodes instead. Treewidth-based linear programming
+approximations of sparse polynomial optimization \citep{bienstock2018-lp-formulations-for-polynomial-optimization}
+give accuracy-dependent formulations rather than exact optimizers. Exact
+quadratic optimization on a box is polynomial on forests and strongly
+NP-hard at treewidth two \citep{pia2026-treewidth-and-the-complexity-of}.
+An unpublished companion manuscript \citep{companion-decomposition-aware}
+develops a deterministic counterpart for factored objectives on mixed boxes:
+corrected coordinate grids, dynamic programming of min-marginals on a tree
+decomposition, filtering with certificates whose validity does not use
+growth, the conditional-recourse filter of \cref{prop:sp:conditional}(a),(b),
+and running-time bounds fixed-parameter in the width under a quadratic
+growth condition of the instance; the end of \cref{sec:sp:width} explains
+why those bounds do not average to an expected bound under noise. This
+section re-proves the parts of that pipeline it needs. The new element
+is the composition under noise: an expected count of retained bag cells,
+for every base instance and without a growth premise, under one finite
+independent-noise law that does not grow with the mesh, combined with sound
+closure on a certified strongly convex patch, an exact same-draw fallback,
+and an output whose evaluation costs polynomial time in the requested
+precision.

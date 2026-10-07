@@ -1,0 +1,739 @@
+\section{From values to points}\label{sec:points}
+
+Convex optimization algorithms are value algorithms at heart. The ellipsoid
+method and its relatives return a feasible point whose objective value is
+close to the optimum; they say little about where the optimizers are. Many
+uses in mixed-integer nonlinear optimization need more. Branching and
+variable fixing act on coordinates of an optimizer. A decomposition method
+that passes the optimizer of a subproblem to another stage needs the same
+optimizer at every requested accuracy; otherwise successive refinements may
+move between different optimal points. Exact certification needs labels,
+such as the set of active constraints, that no finite accuracy settles.
+This section asks when value accuracy can be converted into point accuracy
+in the ordinary bit model, and it identifies where the conversion fails.
+
+\paragraph{Output contracts.}
+We minimize $f$ over a rational polyhedron $P$, with optimal value $f_*$
+and optimal set $S$, and use the output contracts of
+Section~\ref{sec:models-outputs}. The requested precision is $q$ bits, and
+$\varepsilon=2^{-q}$; running times are polynomial in $q$, not in
+$1/\varepsilon$. A \emph{value enclosure} (Definition~\ref{def:models-value})
+is a feasible rational $x$ with a rational $\ell$ such that
+$\ell\le f_*\le f(x)\le\ell+\varepsilon$. A \emph{set approximation}
+(Definition~\ref{def:models-points}) is a feasible rational $x$ with
+$\dist(x,S)\le\varepsilon$; approximations returned for different $q$ may
+approach different optimizers. A \emph{fixed selector} approximates one
+optimizer $p$, determined by the instance alone, at every precision; our
+selector is the optimizer of minimum Euclidean norm in the original
+coordinates. Beyond these numerical outputs are exact predicates, such as
+whether a coordinate of the optimizer equals its bound
+(Definition~\ref{def:models-predicates}), exact representations, such as the
+minimal polynomial of an optimizer coordinate
+(Definition~\ref{def:models-representations}), and certificates, such as a
+rational box that encloses the optimizer
+(Proposition~\ref{prop:points-rectangle}).
+
+A fixed selector gives set approximations. A set approximation $x$ gives the
+value enclosure $[f(x)-\Lambda\varepsilon,f(x)]$ whenever $\Lambda$ bounds
+$\norm{\nabla f}$ on a convex region containing $x$ and its nearest
+optimizer. Exact predicates and representations are formats that no amount
+of numerical precision supplies by itself; exact comparisons are the
+subject of Section~\ref{sec:points-limits} and of
+Theorem~\ref{thm:exact-upper}. Polynomials are explicit: each nonzero
+coefficient is listed with its exponent vector. Convexity is a promise in
+the sense of Section~\ref{sec:models-promises}.
+
+\paragraph{Results.}
+Lemma~\ref{lem:selector} reduces the fixed selector to an \emph{effective
+error modulus}: a bound $\dist(x,S)\le\Gamma(f(x)-f_*)^{1/d}$ whose exponent
+and constant are known and whose constant $\Gamma$ has polynomially many
+bits. With such a modulus and a bound $R$ on the norm of the selected
+optimizer, a value algorithm becomes a fixed-selector algorithm at the price
+of $O(d(1+q+\log\Gamma+\log R))$ value bits. The section determines when an
+effective modulus exists.
+\begin{itemize}
+\item For an explicit sparse polynomial convex on all of $\R^n$ and an
+arbitrary rational polyhedron, Theorem~\ref{thm:global-point} decides
+emptiness and unboundedness, proves attainment, computes a radius for the
+minimum-norm optimizer and an effective modulus with exponent $1/D$, and
+approximates that optimizer to $2^{-q}$ in time polynomial in $L$, the
+numerical degree $D$, and $q$.
+\item A polynomial of degree three that is convex only on a bounded polytope
+also has an effective modulus, with exponent $1/4$
+(Theorem~\ref{thm:cubic-point}).
+\item For quartics convex only on a box the conversion fails.
+Unconditionally, for an explicit family, converting values into points
+through any error modulus needs a number of value bits exponential in the
+dimension, and isotropic regularization needs a parameter whose bit length is
+exponential in the dimension (Proposition~\ref{prop:points-regularization}).
+Conditionally, one constant-accuracy point decides Square Root Sum or
+$\PosSLP$ (Theorem~\ref{thm:points-quartic-lower}).
+\item Even where points are easy, exact labels
+(Proposition~\ref{prop:points-active}), the minimum-norm selector among
+several optimizers (Proposition~\ref{prop:points-selector}), expanded
+algebraic output (Proposition~\ref{prop:points-algebraic-output}), and
+rational box certificates (Proposition~\ref{prop:points-rectangle}) can be
+substantially harder than a point. Table~\ref{tab:points-summary} summarizes
+the picture.
+\end{itemize}
+
+\paragraph{Relation to prior work.}
+Weak convex optimization in the bit model is classical
+\citep{GroetschelLovaszSchrijver1988}, and Lemma~\ref{lem:convex-value}
+applies it with an exact feasibility repair. For polynomials convex on
+$\R^n$ and rational polyhedra, \citet[Theorem~1.1 and
+Corollary~1.2]{SlotSteurerWiedmer2025} proved that the infimum is either
+$-\infty$ or attained at a point whose norm has a polynomially bounded
+logarithm, and that unboundedness can be detected and the optimal value
+approximated in polynomial time. Their structure theory separates the directions in
+which $f$ is invariant from those in which it changes linearly, reading
+them from the coefficients of the gradient, and it bounds the remaining
+part of $f$ below by a strongly convex quadratic; the underlying tangent
+quadratic bound appears in the proof of Lemma~5 of
+\citet{AhmadiChaudhryZhang2024}. We use the same structural facts. We
+rederive attainment and the radius because the point theorem needs explicit
+rational constants for sparse inputs of variable degree, and because
+transformed polynomials must be evaluated rather than expanded
+(Remark~\ref{rem:points-expansion}). H\"older error bounds for convex
+polynomials are classical: \citet[Theorem~4.2 and Corollary~4.1]{Li2010}
+and \citet[Theorem~1]{Li2013} prove global bounds with exponent
+$1/((D-1)^n+1)$ and a constant whose existence is shown;
+\citet{Yang2009} also studies error bounds for convex polynomials, and we
+make no claim about the exponents or constants obtained there. We do not
+claim the exponent $1/D$ as new. The contribution of
+Theorem~\ref{thm:global-point} is a constant computed from the input with
+polynomially many bits, valid on the whole, possibly unbounded,
+polyhedron, together with its use to approximate one fixed optimizer at
+every precision. For degree two, \citet{KozlovTarasovKhachiyan1980} compute
+exact rational optimizers, a stronger output. The distinction between
+approximating the residual of a solution and approximating the solution
+itself, and the hardness of the latter for equilibria, is due to
+\citet{EY2010}; Theorem~\ref{thm:points-quartic-lower} exhibits the same
+phenomenon for minimizers of convex polynomials.
+
+\subsection{Three tools}\label{sec:points-tools}
+
+The first tool turns explicit convex objectives into value enclosures. It
+assumes only convexity on the feasible set and exact evaluation of values
+and subgradients.
+
+\begin{lemma}[Convex value interface]\label{lem:convex-value}
+Let $P=\{x\in\R^n:Ax\le b\}$ with rational $A,b$, and let $\varrho\ge1$ be a
+rational number with $P\subseteq[-\varrho,\varrho]^n$.
+\begin{enumerate}[label=(\alph*)]
+\item Let $\varphi:P\to\R$ be continuous and convex. Suppose that rationals
+$W\ge\max\{1,\sup_P|\varphi|\}$ and $G\ge1$ are given, together with an
+algorithm that, for every rational $x\in P$, returns the rational value
+$\varphi(x)$ and a rational vector $s(x)$ with $\norm{s(x)}\le G$ and
+$\varphi(x')\ge\varphi(x)+s(x)^{\mathsf T}(x'-x)$ for all $x'\in P$, in time
+bounded by a fixed polynomial in $\Delta+\langle x\rangle$; here $\Delta$ is
+the encoding length of $A,b,\varrho,W,G$ and of the description of
+$\varphi$. Then there is an algorithm that, given a rational $\eta>0$,
+either reports $P=\emptyset$ or returns a rational $\hat x\in P$ and a
+rational $\ell$ with
+\[
+ \ell\le\min_P\varphi\le\varphi(\hat x)\le\ell+\eta .
+\]
+Its running time is bounded by a polynomial in $\Delta+\langle\eta\rangle$
+that depends only on the polynomial bounding the evaluation time.
+\item In particular, let $\varphi(x)=f(Tx+t)+\tau\norm x^2$, where $f$ is an
+explicit sparse polynomial of numerical degree at most $D$, the matrix $T$
+and vector $t$ are rational, $\tau\ge0$ is rational, and $\varphi$ is convex
+on $P$. Then the conclusion of (a) holds in time polynomial in $D$ and the
+encoding lengths of $A,b,\varrho,f,T,t,\tau,\eta$. The composition
+$f(Tx+t)$ is evaluated at query points and never expanded.
+\end{enumerate}
+\end{lemma}
+
+The proof in Appendix~\ref{app:points-tools} reduces $P$ to its affine hull
+by linear programming, places a rational ball inside the reduced polytope,
+applies the weak optimization theorem of
+\citet[Corollary~(4.2.7)]{GroetschelLovaszSchrijver1988} to a capped
+epigraph, and repairs the approximately feasible output by an explicit
+homothety toward the center of the ball. The returned point is exactly
+feasible, also when $P$ is lower dimensional. For part (b),
+Lemma~\ref{lem:points-sparse} supplies exact values and gradients, and the
+bounds $W$ and $G$, by evaluating the sparse polynomial; this matters when
+the degree grows, because expanded compositions can have superpolynomially
+many monomials (Remark~\ref{rem:points-expansion}). For polynomials convex
+on $\R^n$ and unbounded polyhedra, value approximation is due to
+\citet{SlotSteurerWiedmer2025}; Theorem~\ref{thm:global-point}(c) recovers
+it through Lemma~\ref{lem:convex-value} after a radius computation.
+
+The second tool is a Hoffman bound with an explicit constant
+\citep{Hoffman1952}. Its right-hand sides may be irrational. This matters
+because the optimal set of a convex problem is a slice
+$\{x\in P:Nx=Np\}$ with a known rational matrix $N$ but an unknown, possibly
+irrational, right-hand side $Np$.
+
+\begin{lemma}[Hoffman bound with explicit constant]\label{lem:integer-hoffman}
+Let $A\in\R^{k\times s}$, $T\in\R^{l\times s}$, $b\in\R^k$, and $t\in\R^l$,
+and let $Q=\{x:Ax\le b\}$ and $Z=\{x\in Q:Tx=t\}$ with $Z\ne\emptyset$. Let
+$C\ge1$ bound the absolute values of the entries of $A$ and $T$, and let
+$\mu\in(0,1]$ be such that every linearly independent family of rows of $A$
+and $T$ has a maximal square submatrix with determinant of absolute value
+at least $\mu$. Then
+\[
+ \dist(x,Z)\le\frac{(sC)^{s-1}}{\mu}\,\norm{Tx-t}\qquad(x\in Q).
+\]
+For integer matrices $A$ and $T$ the determinant condition holds with
+$\mu=1$.
+\end{lemma}
+
+The third tool converts an effective error modulus into a fixed selector.
+It is a quantitative form of Tikhonov regularization, which is known to
+select the minimum-norm optimizer in the limit; the schedule below makes
+the rate explicit and charges only the bit length of the parameter.
+
+\begin{lemma}[Fixed minimum-norm selector]\label{lem:selector}
+Let $P\subseteq\R^n$ be nonempty, closed, and convex, and let
+$\varphi:P\to\R$ be convex and continuous with nonempty optimal set $S$ and
+optimal value $\varphi_*$. Let $p$ be the point of $S$ of minimum norm.
+Suppose that $d\ge2$, $\Gamma\ge1$, and $R\ge1$ satisfy $\norm p\le R$ and
+\[
+ \dist(x,S)\le\Gamma(\varphi(x)-\varphi_*)^{1/d}\qquad
+ (x\in P,\ \varphi(x)-\varphi_*\le1).
+\]
+For $\varepsilon\in(0,1]$ let
+$\tau=\varepsilon^{2d-2}/(4\cdot8^{d-1}R^d\Gamma^d)$. Then
+$\Phi_\tau=\varphi+\tau\norm{\cdot}^2$ has a unique minimizer $x_\tau$ on
+$P$, with $\norm{x_\tau}\le\norm p$ and $\norm{x_\tau-p}\le\varepsilon/2$,
+and every $x\in P$ with $\Phi_\tau(x)-\Phi_\tau(x_\tau)\le\tau\varepsilon^2/4$
+satisfies $\norm{x-p}\le\varepsilon$. If every point of $S$ has norm at most
+$R$, the factor $4$ in $\tau$ may be replaced by $2$.
+\end{lemma}
+
+The optimal set $S$ need not be bounded; the projection of $x_\tau$ onto
+$S$ may lie far outside the ball of radius $R$, and the factor $4$ accounts
+for it. Since $\log_2(1/\tau)=(2d-2)q+O(d)+d\log_2R+d\log_2\Gamma$, the
+selector costs polynomially many value bits exactly when $\log\Gamma$ and
+$\log R$ are polynomial. The remaining question in this section is when they
+are.
+
+\subsection{Globally convex sparse polynomials}\label{sec:points-global}
+
+\begin{theorem}[Global point oracle]\label{thm:global-point}
+Let $f\in\Q[x_1,\ldots,x_n]$ be an explicit sparse polynomial that is
+convex on $\R^n$, and let $P=\{x\in\R^n:Ax\le b\}$ with rational $A$ and $b$.
+Let $L$ be the encoding length of $(f,A,b)$ and $D=\max\{2,\deg f\}$. There
+is a deterministic algorithm with the following properties. All running
+times are bounded by polynomials, with absolute exponents, in the indicated
+quantities, uniformly in $D$.
+\begin{enumerate}[label=(\alph*)]
+\item In time polynomial in $L,D$ it decides whether $P$ is empty and, if
+not, whether $f$ is unbounded below on $P$. In the unbounded case it
+returns rational $a\in P$ and $d$ with $Ad\le0$ and $f(a+td)=f(a)-t$ for all
+$t\ge0$.
+\item Otherwise $f$ attains its minimum $f_*$ on $P$, and the optimal set
+$S$ has a unique point $p$ of minimum Euclidean norm. In time polynomial in
+$L,D$ the algorithm computes rationals $R\ge1$ and $\Gamma\ge1$, with
+$\log R+\log\Gamma$ bounded by a polynomial in $L,D$, such that
+$\norm p\le R$ and
+\[
+ \dist(x,S)\le\Gamma\bigl(f(x)-f_*\bigr)^{1/D}\qquad
+ (x\in P,\ f(x)-f_*\le1).
+\]
+\item For every integer $q\ge0$ it computes, in time polynomial in
+$L,D,q$, a rational $x_q\in P$ with $\norm{x_q-p}\le2^{-q}$. For every further
+integer $q_f\ge0$ it can return, in time polynomial in $L,D,q+q_f$, also a
+rational $\ell$ with $\ell\le f_*\le f(x_q)\le\ell+2^{-q_f}$.
+\end{enumerate}
+\end{theorem}
+
+The bounds are polynomial in the numerical degree $D$. They are polynomial
+in the input length when exponents are written in unary, or more generally
+when $D$ is polynomially bounded in $L$. The error bound holds on the whole
+polyhedron $P$, which may be unbounded, and not only on a bounded part of it.
+The selector $p$ depends only on the instance, so the outputs for
+different $q$ approximate the same point. The decision in (a), attainment,
+and a norm bound of polynomial bit length for some optimizer were proved by
+\citet{SlotSteurerWiedmer2025} for inputs with unary degrees; we rederive
+them with explicit constants. The effective modulus and the fixed selector
+are the new outputs.
+
+\paragraph{Proof outline.}
+The complete proof is in Appendix~\ref{app:points-global}. It has four
+steps.
+
+\emph{Step 1: a computable quadratic minorant.} For every $a,x$, univariate
+interpolation of $f$ along the line through $a$ and $x$ gives
+\[
+ f(x)\ge f(a)+\nabla f(a)^{\mathsf T}(x-a)+\frac{(x-a)^{\mathsf T}\nabla^2f(a)
+ (x-a)}{\kappa_D},\qquad\kappa_D=(D+1)D^{D+2}.
+\]
+Averaging over $a$ in the unit cube yields
+$f(x)\ge m_0+g^{\mathsf T}x+x^{\mathsf T}Mx/\kappa_D$, where
+$M=\int\nabla^2f(a)\,da$ and the other coefficients are rational and
+computed monomial by monomial. The kernel of $M$ is the common kernel of all
+Hessians. With $\Pi$ the projection onto the range of $M$ and
+$w=-(I-\Pi)\nabla f(0)$,
+\[
+ f(x)=f(\Pi x)-w^{\mathsf T}x\qquad(x\in\R^n),
+\]
+so $f$ is a function of $\Pi x$ plus a linear term in the remaining
+directions.
+
+\emph{Step 2: boundedness and a radius.} One linear system,
+$w=A^{\mathsf T}\lambda+Mz$ with $\lambda\ge0$, decides boundedness. If it is
+infeasible, Farkas' lemma gives a recession direction of $P$ along which $f$
+decreases linearly. If it is feasible,
+$f(x)\ge\beta_0-\nu\norm{\Pi x}+\mu_0\norm{\Pi x}^2$ on $P$ for explicit
+rationals $\beta_0$, $\nu\ge0$, and $\mu_0>0$. On a sublevel set this bounds $\norm{\Pi
+x}$, and together with convexity at the origin it bounds $w^{\mathsf T}x$ on
+both sides; the constraints $Ax\le b$ alone give only one side. Points with
+equal values of $Mx$ and $w^{\mathsf T}x$ have equal objective values, so
+Lemma~\ref{lem:integer-hoffman} replaces every point of the sublevel set by
+an equally good feasible point of norm less than an explicit $R$. This
+proves attainment and $\norm p<R$ without assuming either.
+
+\emph{Step 3: an effective modulus.} Let $x\in P$ have gap $E\le1$ and let
+$h(u)=f(p+u)-f(p)-\nabla f(p)^{\mathsf T}u$, which is convex and nonnegative
+on $\R^n$. On the segment from $p$ to $x$ we have $0\le h\le E$, and
+interpolation extrapolates this bound along the whole line. For a point $c$
+of the unit cube, convexity of $h$ at the midpoint of $2(c-p)$ and
+$2t(x-p)$ bounds $h(c-p+t(x-p))$ for $0\le t\le E^{-1/D}$; differentiating at
+$t=0$ gives
+\[
+ |\nabla f(c)^{\mathsf T}(x-p)|\le C_*E^{1/D}\qquad(c\in[0,1]^n),
+\]
+with an explicit $C_*$ that depends on $\norm p$ but not on $x$. The
+polynomial $z\mapsto\nabla f(z)^{\mathsf T}(x-p)$ has coefficient vector
+$N(x-p)$, where the rows of the rational matrix $N$ are read from the
+monomials of $\nabla f$. A tensor interpolation inequality bounds these
+coefficients by $\beta_{D-1}^nC_*E^{1/D}$, where $\beta_k=(k+1)2^kk^k$; the
+interpolation grid appears only in the proof. At zero gap this shows $S=\{x\in P:Nx=Np\}$, and
+Lemma~\ref{lem:integer-hoffman} gives $\Gamma$.
+
+\emph{Step 4: selection.} Lemma~\ref{lem:selector} with $d=D$ gives a
+parameter $\tau$ with polynomially many bits. The regularized minimizer has
+norm at most $\norm p<R$, so it is also the minimizer over the bounded
+polytope $P\cap[-R,R]^n$, to which Lemma~\ref{lem:convex-value} applies.
+
+\begin{corollary}[Bounded polytopes]\label{cor:points-bounded}
+Suppose in addition that $P$ is bounded and a rational $\varrho\ge1$ with
+$P\subseteq[-\varrho,\varrho]^n$ is given. Then parts (b) and (c) of
+Theorem~\ref{thm:global-point} hold with $R=\max\{1,n\varrho\}$ and the
+constant $\Gamma$ of Step~3, without Steps~1 and~2, and the selector may use
+$\tau=\varepsilon^{2D-2}/(2\cdot8^{D-1}R^D\Gamma^D)$. In particular, for
+every fixed degree bound, the minimum-norm optimizer of a globally convex
+polynomial on a bounded rational polytope can be approximated to $2^{-q}$ in
+time polynomial in $L+q$.
+\end{corollary}
+
+\begin{remark}[Representation and degree]\label{rem:points-expansion}
+The algorithms evaluate $f$ at rational points, also after affine changes
+of coordinates, and never expand $f(Tx+t)$. Expansion can be exponentially
+long in the dimension even when the degree is written in unary: for
+$n=2r\ge4$, the polynomial
+$f(y)=\sum_iy_i^{2r}$, convex on $\R^n$, has $n$ monomials, whereas
+$f(Uy)$ for the rational orthogonal matrix
+$U=I-\frac2n\mathbf1\mathbf1^{\mathsf T}$ has at least $2^r$ monomials
+(Appendix~\ref{app:points-global}). The theorem is polynomial in the
+numerical degree $D$. With exponents written in binary, $D$ can be
+exponential in $L$, and we claim no bound polynomial in $\log D$. The
+theorem also does not apply to polynomials given by arithmetic circuits: the
+matrix $N$ of Step~3 is read from the monomial list.
+\end{remark}
+
+The exponent $1/D$ cannot be improved in general. A polynomial of odd
+degree at least three is not convex on $\R^n$, because its restriction to a
+suitable line has a second derivative of odd degree, which takes negative
+values. For even $D$,
+$f(t)=t^D$ on $P=\R$ has $\dist(t,S)=(f(t)-f_*)^{1/D}$.
+
+\subsection{Cubics convex on a polytope}\label{sec:points-cubic}
+
+A polynomial of degree at most three that is convex on $\R^n$ is quadratic
+(Lemma~\ref{lem:models-low-degree}), and for such polynomials exact convex
+quadratic programming already returns rational optimizers
+\citep{KozlovTarasovKhachiyan1980}. Genuine cubics are convex only on part of
+space, and convexity on the feasible polytope is the natural promise; for
+cubics on boxes it is strongly NP-hard to recognize
+\citep[Theorem~2.3]{AhmadiHall2020}. The next theorem shows that this weaker
+promise still yields an effective modulus.
+
+\begin{theorem}[Cubics convex on a polytope]\label{thm:cubic-point}
+Let $P=\{x\in\R^n:Ax\le b\}$ be a nonempty bounded rational polytope and let
+$f\in\Q[x_1,\ldots,x_n]$ be an explicit polynomial of degree at most three
+that is convex on $P$. Let $L$ be the encoding length of $(f,A,b)$ and
+$S=\argmin_Pf$. In time polynomial in $L$ one can compute a rational
+$\Gamma_P\ge1$ with $\log\Gamma_P$ polynomial in $L$ such that
+\[
+ \dist(x,S)\le\Gamma_P\bigl(f(x)-f_*\bigr)^{1/4}\qquad
+ (x\in P,\ f(x)-f_*\le1).
+\]
+For every integer $q\ge0$, in time polynomial in $L+q$ one can compute a
+rational $x\in P$ with $\dist(x,S)\le2^{-q}$, and also a rational $x_q\in P$
+with $\norm{x_q-p}\le2^{-q}$, where $p$ is the point of $S$ of minimum
+Euclidean norm. No uniqueness of the optimizer, strong convexity, or
+interiority of the optimizer is assumed, and $P$ may be lower dimensional.
+\end{theorem}
+
+Two facts specific to degree three drive the proof. The Hessian
+$H(u)=\nabla^2\varphi(u)$ of a cubic $\varphi$ is affine in $u$, and the
+third derivative is a constant symmetric tensor. The first fact lets an
+interior reference point control every Hessian on the polytope. The second
+links the curvature at that point to the curvature at an optimizer and a
+feasible point. The recourse analysis reuses the following two lemmas with a
+box in place of the polytope.
+
+\begin{lemma}[Cubic transverse estimate]\label{lem:points-cubic-transverse}
+Let $\varphi$ be a real polynomial of degree at most three on $\R^m$, let
+$\Omega\subseteq\R^m$ be convex with $\nabla^2\varphi\succeq0$ on $\Omega$,
+let $v$ minimize $\varphi$ over $\Omega$, and let $u\in\Omega$. Put $d=u-v$
+and $E=\varphi(u)-\varphi(v)$. For every $c\in\R^m$ and all $\Lambda$,
+$\rho_1$, $\rho_2$ with
+$\Lambda\ge\max\{\norm{\nabla^2\varphi(u)},\norm{\nabla^2\varphi(v)}\}$,
+$\rho_1\ge\norm{c-v}$, and $\rho_2\ge\norm d$,
+\[
+ \bigl(d^{\mathsf T}\nabla^2\varphi(c)\,d\bigr)^2\le12\Lambda(\rho_1+\rho_2)^2E .
+\]
+\end{lemma}
+
+\begin{lemma}[Cubic optimal slice]\label{lem:points-cubic-slice}
+Let $\varphi$ and $\Omega$ be as in Lemma~\ref{lem:points-cubic-transverse},
+let $c\in\Omega$, and suppose that
+$K=\ker\nabla^2\varphi(c)\subseteq\ker\nabla^2\varphi(u)$ for every
+$u\in\Omega$. Let $g_c=\nabla\varphi(c)$ and let $\Pi_K$ be the orthogonal
+projection onto $K^\perp$. If $v$ minimizes $\varphi$ over $\Omega$, then
+\[
+ \argmin_\Omega\varphi=\{w\in\Omega:\nabla^2\varphi(c)(w-v)=0,\
+ g_c^{\mathsf T}(w-v)=0\}.
+\]
+If moreover $\Lambda\ge\sup_\Omega\norm{\nabla^2\varphi}$ and
+$R_\Omega\ge\sup_{u\in\Omega}\norm{u-c}$ are finite, then
+$|g_c^{\mathsf T}(u-v)|\le\varphi(u)-\varphi(v)+\Lambda
+R_\Omega\norm{\Pi_K(u-v)}$ for every $u\in\Omega$.
+\end{lemma}
+
+The gradient row in Lemma~\ref{lem:points-cubic-slice} is necessary: along
+the common Hessian kernel a cubic can still change linearly.
+
+\paragraph{Proof outline.}
+The proof is in Appendix~\ref{app:points-cubic}. Linear programming finds
+the affine hull of $P$, a rational parametrization $x=x_0+Vu$, and a ball of
+radius $r_0$ inside the reduced polytope $P'$, which lies in a ball of
+radius $R_0$ about the same center. This reduction must come first:
+convexity on a lower-dimensional polytope does not make the ambient Hessian
+positive semidefinite. Reflection through the center and affinity of the
+Hessian give $0\preceq H(u)\preceq(1+R_0/r_0)H_c$ on $P'$, where $H_c$ is the
+Hessian at the center. Hence $\ker H_c$ is the common kernel, it is rational,
+and individual boundary Hessians may only have larger kernels.
+Lemma~\ref{lem:points-cubic-transverse} gives
+$E\ge(d^{\mathsf T}H_cd)^2/(108\Lambda R_0^2)$, which bounds the displacement
+transverse to $\ker H_c$ by a multiple of $E^{1/4}$ once the least positive
+eigenvalue of $H_c$ is bounded below by its principal minors.
+Lemma~\ref{lem:points-cubic-slice} describes $S$ as a slice with the rational
+matrix $\binom{H_c}{g_c^{\mathsf T}}$, and Lemma~\ref{lem:integer-hoffman}
+gives $\Gamma_P$. Lemmas~\ref{lem:selector} and~\ref{lem:convex-value} then
+give both outputs. The regularizer is the original norm $\norm x^2$, not the
+norm of the reduced coordinates $u$, which would select a different optimizer
+in general.
+
+The exponent $1/4$ suffices for polynomial dependence on $q$. The cubic
+$t^3$ on $[0,1]$ has $\dist(t,S)=(f(t)-f_*)^{1/3}$, so no exponent larger than
+$1/3$ is possible; whether $1/3$ is attainable with polynomial-bit constants
+in all dimensions is open.
+
+\subsection{Where the conversion fails}\label{sec:points-limits}
+
+The positive results use global convexity or degree three. The constructions
+below show that neither hypothesis can be dropped for quartics, and that
+outputs beyond a set approximation can be hard even when set approximations are
+easy. They use two standard arithmetic decision problems. \emph{Square Root
+Sum} asks, for positive integers $a_1,\ldots,a_n$ and an integer $B$, whether
+$\sum_i\sqrt{a_i}\le B$.
+\emph{$\PosSLP$} asks whether the integer computed by a straight-line program
+with constants $0,1$ and operations $+,-,\times$ is positive.
+\citet{AllenderEtAl2009} show that Square Root Sum is decidable in polynomial
+time with a $\PosSLP$ oracle and that both problems lie in the counting
+hierarchy; by Theorem~\ref{thm:posslp-closure}(b), that oracle algorithm can be
+replaced by a polynomial-time many-one reduction to one $\PosSLP$ instance.
+Whether either problem lies in $\mathrm P$ is open. The statements below are
+reductions and conditional consequences, not NP-hardness results. Their
+structural bounds refer to the \emph{interaction graph} of a polynomial,
+whose vertices are the variables, two variables being adjacent when some
+monomial with a nonzero coefficient contains both.
+
+\begin{proposition}[Exact active bounds for strongly convex cubics]\label{prop:points-active}
+There is a polynomial-time algorithm that maps every Square Root Sum
+instance either to its answer or to an explicit rational cubic $F$ on a
+rational box $X$ with a distinguished coordinate $\theta\in[0,1]$ such that
+\begin{enumerate}[label=(\roman*)]
+\item $\nabla^2F\succeq\frac1{16}I$ on $X$, so $F$ has a unique minimizer
+$z^*$;
+\item $\theta^*=0$ if and only if $\sum_i\sqrt{a_i}\le B$, and otherwise
+$0<\theta^*<1$;
+\item the box widths and the absolute values of the coefficients of $F$ are
+bounded by an absolute constant, the diagonal entries of $\nabla^2F$ are at
+most $5$ on $X$, and the interaction graph of $F$ has treewidth at most two.
+\end{enumerate}
+A point within $2^{-q}$ of $z^*$ is computable in time polynomial in $L+q$.
+\end{proposition}
+
+Thus exact active-bound recognition for uniformly strongly convex cubics
+with bounded data and treewidth two is at least as hard as Square Root Sum,
+including
+the equality case, although Theorem~\ref{thm:cubic-point} and even plain
+strong convexity give points. The base of the construction is a complete
+binary averaging tree whose cubic leaves $u_i^3/3-c_iu_i$ select normalized
+square roots and whose squared residuals propagate their average to the
+root; a sign test on the root then activates or deactivates the
+distinguished coordinate.
+
+\begin{proposition}[Selection versus some optimizer]\label{prop:points-selector}
+There is a polynomial-time algorithm that maps every Square Root Sum
+instance either to its answer or to an explicit rational quartic $F'$ on a
+rational box, convex on that box, with the same treewidth and coefficient
+bounds, such that its optimal set is a segment $\{z^*\}\times[0,1]$ if
+$\sum_i\sqrt{a_i}\le B$ and the single point $(z^*,1)$ otherwise. The
+point $(z^*,1)$ is optimal in both cases and can be approximated to $2^{-q}$
+in time polynomial in $L+q$, whereas the last coordinate of the minimum-norm
+optimizer is $0$ in the first case and $1$ in the second.
+\end{proposition}
+
+A set approximation is therefore easy for this family, while the
+minimum-norm selector at accuracy $1/4$, or the dimension of the optimal set,
+decides Square Root Sum. Requiring minimum norm strengthens the output
+contract. The next
+theorem shows that for quartics convex only on a box even a set
+approximation at constant accuracy can carry the arithmetic difficulty.
+
+\begin{theorem}[Constant-accuracy points for box-convex quartics]\label{thm:points-quartic-lower}
+\leavevmode
+\begin{enumerate}[label=(\alph*)]
+\item There is a polynomial-time algorithm that maps every Square Root Sum
+instance either to its answer or to an explicit rational quartic $F$ on
+$[0,1]^N$, convex on $[0,1]^N$, with a unique minimizer $z^*$ whose
+designated coordinate is $1$ if $\sum_i\sqrt{a_i}>B$ and $0$ if
+$\sum_i\sqrt{a_i}<B$; equality does not occur in the produced instances. The
+interaction graph of $F$ has treewidth at most two, every coefficient other
+than the constant term has absolute value bounded by an absolute constant,
+and the diagonal Hessian entries are at most $20$ on $[0,1]^N$.
+\item There is a polynomial-time algorithm that maps every straight-line
+program, with output $A$, to an explicit rational quartic $F$ on $[0,1]^N$,
+convex on $[0,1]^N$, with a unique minimizer whose designated coordinate is
+$1$ if $A>0$ and $0$ if $A\le0$. All coefficients of $F$ have absolute value
+bounded by an absolute constant.
+\item Consequently, if some deterministic algorithm returns, for every
+explicit rational quartic convex on a rational box with a unique minimizer,
+a point within Euclidean distance $1/4$ of the minimizer in time polynomial
+in the input length, then Square Root Sum and $\PosSLP$ lie in $\mathrm P$; for Square
+Root Sum the instances of (a) suffice. If the algorithm is always correct and
+runs in expected polynomial time, both problems have Las Vegas algorithms
+with expected polynomial running time.
+\end{enumerate}
+\end{theorem}
+
+Both constructions place two independent strongly convex sign tests side by
+side, one activated when the arithmetic quantity is positive and the other
+when it is negative, and couple their activation amplitudes $\theta_\pm$ to a
+new coordinate $y\in[0,1]$ by
+$\frac1{192}[\theta_+^2(y-1)^2+\theta_-^2y^2]$. The coupling is not convex by
+itself, but the curvature of the sign tests absorbs its negative part, so the
+whole objective is convex on the box. The coupling vanishes at the right
+endpoint and forces every minimizer to it, however small the active
+amplitude is. For Square Root Sum, an equality
+$\sum_i\sqrt{a_i}=B$ forces every radicand to be a perfect square, by a trace
+argument in the multiquadratic field (Lemma~\ref{lem:points-trace}), so
+equality is decided by integer square roots. For $\PosSLP$, gate values are
+encoded as bounded pairs $(u,v)$ with $u/v$ equal to the integer value, the
+gate equations are squared with geometric weights that make the objective
+strongly convex on its box, and the output signal $(2u-v)/4$ has the sign of
+$2A-1\ne0$. The final instances are convex on their boxes but not on
+$\R^N$, and, before any rescaling, their curvature in the direction of $y$ at
+the minimizer is $\frac1{96}((\theta_+^*)^2+(\theta_-^*)^2)$, which can be
+extremely small. So
+the theorem is consistent with Theorem~\ref{thm:global-point}, with
+Theorem~\ref{thm:cubic-point}, with polynomial-time value enclosures from
+Lemma~\ref{lem:convex-value}, and with algorithms whose running time depends
+on a supplied growth constant. \citet{EY2010} proved $\PosSLP$-hardness of
+strong approximation of equilibrium coordinates, and \citet{TarasovVyalyi2008}
+reduced arithmetic circuit comparison to exact semidefinite feasibility;
+Theorem~\ref{thm:points-quartic-lower} transfers the first phenomenon to
+minimizers of polynomials convex on a box.
+
+The last result of this subsection is unconditional, but it concerns the
+value-to-point conversion rather than every algorithm.
+
+\begin{proposition}[Value tolerance and isotropic regularization]\label{prop:points-regularization}
+For $n\ge1$ let
+\[
+ F_n(x,y)=8\sum_{i=1}^nx_i^2-\frac{x_1}4-\sum_{i=2}^nx_{i-1}^2x_i+x_n^2(y-1)^2
+ \qquad\text{on }[0,1]^{n+1}.
+\]
+\begin{enumerate}[label=(\alph*)]
+\item $F_n$ is a quartic with $O(n)$ monomials and constant-size rational
+coefficients, convex on $[0,1]^{n+1}$, with the unique minimizer
+$z^*=(x^*,1)$, where $0<x_n^*\le2^{-2^{n+1}}$.
+\item The feasible point $(x^*,0)$ has objective gap at most
+$2^{-2^{n+2}}$ and distance one from $z^*$. Hence every error bound
+$\dist(z,S)\le\Gamma(F_n(z)-F_{n,*})^\vartheta$ valid for gaps at most one has
+$\log_2\Gamma\ge\vartheta\,2^{n+2}$.
+\item For $\lambda>0$ let $z_\lambda$ minimize $F_n+\lambda\norm z^2$ on
+$[0,1]^{n+1}$. If $\norm{z_\lambda-z^*}\le\frac12$, then
+$\lambda\le2^{-2^{n+2}}$, so the denominator of a rational $\lambda$ has more
+than $2^{n+2}$ bits.
+\item Nevertheless $F_n(z_\lambda)-F_{n,*}\le(n+1)\lambda$ for every
+$\lambda>0$, and a point within $2^{-q}$ of $z^*$ is computable in time
+polynomial in $n+q$.
+\end{enumerate}
+\end{proposition}
+
+With every exponent vector written in full
+(Definition~\ref{def:models-polynomial}), the input has length
+$L=\Theta(n^2)$. The quantities bounded below in (b) and (c),
+$(\log_2\Gamma)/\vartheta$ and the bit length of $\lambda$, are exponential in
+$n$, hence of the form $2^{\Omega(\sqrt L)}$: superpolynomial, but not
+exponential, in $L$. Part (b) says that a value tolerance with fewer than
+$2^{n+2}$ bits does not certify any point accuracy below one. Every error
+modulus of this family has $(\log_2\Gamma)/\vartheta\ge2^{n+2}$, so the value
+precision $\vartheta^{-1}(q+\log_2\Gamma)$ needed to convert values into points
+through it is exponential in $n$ whatever the exponent; for exponents bounded
+below by an inverse polynomial, the constant itself has a number of bits
+exponential in $n$. Theorem~\ref{thm:cubic-point} therefore does not extend to
+quartics convex on a box, and the obstruction is in the modulus itself, not in
+its proof. Part (c) shows that plain Tikhonov selection, which works in
+Lemma~\ref{lem:selector} because $\Gamma$ is short, needs a parameter whose
+bit length is exponential in $n$ here. Part (d) shows that this family is
+nonetheless easy for both values and points: setting $y=1$ leaves a
+uniformly strongly convex cubic. The difficulty is created by the method,
+not by the instance.
+
+\subsection{Representations and certificates}\label{sec:points-representation}
+
+A procedure that returns rational approximations at every precision
+describes an optimizer compactly, but it is not an exact representation. The
+next two results show that the usual exact formats can have length
+exponential in the dimension, hence superpolynomial in the input length,
+even for strongly convex, uniformly conditioned instances whose interaction
+graph is a path (or has treewidth two, for the multiplier rectangles), where
+points are cheap.
+
+\begin{proposition}[Expanded algebraic output on a conditioned path]\label{prop:points-algebraic-output}
+For $n\ge2$ let
+$\Psi_n(x)=\sum_{i=1}^{n-1}(x_i^2-x_{i+1}-2)^2+(x_n-1)^2$ on $[1,2]^n$.
+\begin{enumerate}[label=(\alph*)]
+\item $\Psi_n$ has the unique minimizer $a$ with $a_n=1$ and
+$a_i=\sqrt{a_{i+1}+2}$. On $[1,2]^n$ it satisfies
+$\Psi_n(x)\ge\frac14\norm{x-a}^2$ and $\partial_{ii}\Psi_n\le38$. Its
+interaction graph is a path, and it has $O(n)$ monomials with constant-size
+coefficients.
+\item The minimal polynomial of $a_1$ over $\Q$ has degree $2^{n-1}$ and
+exactly $2^{n-2}+1$ nonzero coefficients.
+\item In time $O(n)$ one can compute a box $B=\prod_i[\ell_i,u_i]\subseteq
+[1,2]^n$ with dyadic endpoints of $O(1)$ bits that contains $a$ and on which
+$\nabla^2\Psi_n\succeq\frac1{32}I$.
+\end{enumerate}
+\end{proposition}
+
+On the box $B$, $\Psi_n$ is a strongly convex quartic with a uniformly
+conditioned path structure, and Lemma~\ref{lem:convex-value} with strong
+convexity gives points within $2^{-q}$ of $a$ in time polynomial in $n+q$.
+The recurrence $a_i=\sqrt{a_{i+1}+2}$ describes the whole optimizer with
+$n-1$ additions and $n-1$ square-root gates. Yet a dense defining polynomial
+of $a_1$ has more than $2^{n-1}$ coefficients, and the minimal polynomial
+written as a sparse list has $2^{n-2}+1$ terms, while the input, with every
+exponent vector written in full, has length $\Theta(n^2)$. The support bound
+concerns the minimal polynomial; it does not exclude a sparser
+non-minimal multiple. Theorem~\ref{thm:singleton-field} and the related
+results on exact optimizers treat other formats.
+
+\begin{proposition}[Rectangular certificates]\label{prop:points-rectangle}
+For $n\ge1$ let $X=[0,\frac12]^{n+1}$, let
+\[
+ \Xi_n(x)=\Bigl(x_0-\frac14\Bigr)^2+\sum_{i=1}^n\Bigl(x_i-\frac{x_{i-1}^2}4\Bigr)^2,
+\]
+and let $m=4\cdot2^n-2$.
+\begin{enumerate}[label=(\alph*)]
+\item $\Xi_n$ has the unique minimizer $a$ with $a_i=2^{-(4\cdot2^i-2)}$,
+which lies in the interior of $X$. On $X$, $\nabla^2\Xi_n\succeq\frac58I$,
+$\Xi_n(x)\ge\frac9{16}\norm{x-a}^2$, all diagonal Hessian entries are at most
+$\frac{35}{16}$, and the interaction graph is a path. Every rectangle with
+rational endpoints that contains $a$ and lies in the open box
+$(0,\frac12)^{n+1}$ has an endpoint with denominator at least $2^m$.
+\item Let
+$\widetilde\Xi_n(x,y)=\Xi_n(x)+y^2+\frac y4\bigl(x_n-\frac18x_{n-1}^2\bigr)$
+on $X\times[0,\frac12]$. It has the unique minimizer $(a,0)$, satisfies
+$\nabla^2\widetilde\Xi_n\succeq\frac{11}{32}I$ and
+$\widetilde\Xi_n\ge\frac{135}{256}(\norm{x-a}^2+y^2)$, has diagonal Hessian
+entries at most $\frac{35}{16}$ and treewidth two, and its active lower bound
+$y=0$ has $\partial_y\widetilde\Xi_n(a,0)=a_n/8>0$. Every rectangle
+$B\subseteq X$ with rational endpoints that contains $a$ and satisfies
+$\partial_y\widetilde\Xi_n(x,0)\ge0$ for all $x\in B$ has an endpoint with
+denominator at least $2^m$.
+\item Both optimizers have exact descriptions of size $O(n)$: the
+recurrence $a_0=\frac14$, $a_i=\frac14a_{i-1}^2$ as an arithmetic circuit,
+with optimality certified by a contraction argument on the closed box $X$
+and, in (b), by the displayed lower bound.
+\end{enumerate}
+\end{proposition}
+
+The two rectangle formats are natural for interval methods: a box strictly
+inside the feasible region that encloses the optimizer, and a box on which
+the sign of an active multiplier is certified uniformly. Under uniform
+conditioning, fixed degree, and treewidth at most two, both can require
+endpoints whose bit length is exponential in $n$, while correlated implicit
+certificates, which keep the residual equations, stay short. These are lower
+bounds for specified formats, not for exact optimization in general; in
+particular, boxes that touch the boundary
+of $X$ and certificates of interval-Newton type that use the residual
+equations are not excluded.
+
+\subsection{Summary}\label{sec:points-summary}
+
+Table~\ref{tab:points-summary} collects the results by output contract.
+Values are available in all three settings under a convexity promise. The
+route from values to set approximations goes through an effective error
+modulus. It exists under global convexity and for cubics convex on a
+polytope, but not in general for quartics convex on a box, where even
+constant-accuracy points are as hard as Square Root Sum or $\PosSLP$. A
+fixed selector needs, in addition, a selection rule; the minimum-norm rule
+costs nothing extra when the modulus is effective
+(Lemma~\ref{lem:selector}), but it can be hard where a set approximation is
+easy (Proposition~\ref{prop:points-selector}). Exact labels and exact
+representations are different problems: they can be hard, or long, for
+strongly convex cubics and quartics whose points are easy. Exact comparisons
+under global strong convexity are treated in Theorem~\ref{thm:exact-upper}.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.2\linewidth}
+>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X
+>{\raggedright\arraybackslash}X@{}}
+\toprule
+Output & Convex on $\R^n$, sparse, degree $D$ & Cubic, convex on a polytope &
+Quartic, convex on a box\\
+\midrule
+Value enclosure & polynomial (Theorem~\ref{thm:global-point}) & polynomial
+(Lemma~\ref{lem:convex-value}) & polynomial (Lemma~\ref{lem:convex-value})\\
+Effective modulus & exponent $1/D$, polynomial bits
+(Theorem~\ref{thm:global-point}) & exponent $1/4$, polynomial bits
+(Theorem~\ref{thm:cubic-point}) & none for some families: every modulus has
+$(\log\Gamma)/\vartheta\ge2^{n+2}$
+(Proposition~\ref{prop:points-regularization})\\
+Set approximation & polynomial in $L,D,q$ & polynomial in $L+q$ & decides
+Square Root Sum or $\PosSLP$ at accuracy $1/4$
+(Theorem~\ref{thm:points-quartic-lower})\\
+Minimum-norm selector & polynomial in $L,D,q$ & polynomial in $L+q$ &
+decides Square Root Sum where some optimizer is easy
+(Proposition~\ref{prop:points-selector})\\
+Exact active label & an exact comparison, not decided by points
+(Theorem~\ref{thm:exact-upper} treats the strongly convex unconstrained
+case) & decides Square Root Sum, even with uniform strong convexity
+(Proposition~\ref{prop:points-active}) & as for cubics\\
+Expanded output & not implied by points & not implied by points &
+minimal polynomials and rectangle endpoints exponential in $n$ for strongly
+convex instances of treewidth at most two
+(Propositions~\ref{prop:points-algebraic-output}
+and~\ref{prop:points-rectangle})\\
+\bottomrule
+\end{tabularx}
+\caption{Output contracts for convex polynomial minimization in the bit
+model. ``Polynomial'' means time polynomial in $L,D,q$ in the global convex
+column and in $L,q$ in the fixed-degree columns, under the stated promises.
+Hardness entries are reductions, not unconditional lower bounds,
+except for the bit counts of moduli and formats.}
+\label{tab:points-summary}
+\end{table}

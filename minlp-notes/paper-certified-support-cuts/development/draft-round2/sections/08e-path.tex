@@ -1,0 +1,171 @@
+\subsection{A family with the path structure}\label{sec:mechanism}
+
+The benchmark models do not tell whether the cuts can supply strength that
+SCIP lacks where the theory predicts a gap. We therefore built a family with
+the structure of Section~\ref{sec:interleave}. An instance with $n$ copies has
+variables $x_i,y_i,z_i\in[0,1]$ and $t_i$, the rows
+$\Phi^{(i)}(x_i,y_i,z_i)-t_i\le0$, where $\Phi^{(i)}$ is the
+function~\eqref{eq:family} with $\omega_A=\omega_C=1$, one coupling row
+$\sum_iy_i\le0.8n$, and the objective $\min\sum_it_i$. For each copy, four
+distinct values are drawn from $\{k/64:k=0,\dots,48\}$ and split into two
+interleaving two-point sets $A_i$ and $C_i$ with random orientation. All
+coefficients are dyadic and exactly representable. Every optimal $y_i$ is a
+midpoint of two values of at most $3/4$, so the coupling row does not bind, and
+by Theorem~\ref{thm:interleave} the optimum is $\sum_i\delta_i^2/2$. Glued exact
+pair hulls give the bound $0$ for every copy, so the part of the gap that only
+the joint block closes is the whole optimum. Campaign~3 used five instances for
+each $n\in\{10,20,40,80\}$ (seeds 0--4); campaign~4 adds five fresh instances
+per $n$ (seeds 5--9), which no earlier run had used. The randomized family was
+adopted after a pilot with native SCIP alone had shown that the deterministic
+family, with every copy equal to the example of
+Proposition~\ref{prop:path-gap}, is easy for SCIP: it solved $160$ copies in
+19\,s.
+
+Because the objective is a sum of block functions and the coupling row does not
+bind, the $n$ cuts $t_i\ge\min\Phi^{(i)}$, which are the exact supports of the
+blocks in the directions of their own rows, make the root bound equal to the
+optimum. This is the most favorable case for block cuts. Part~C4 removes it: it
+replaces the coupling row of each fresh instance by $\sum_iy_i\le c$, where $c$
+is half the sum of the smallest unconstrained minimizers $y_i^\ast$, rounded down
+to a multiple of $1/64$. The row then binds, the block minima no longer give the
+optimum, and the cuts must be found in other directions. For C4 we know two
+reference values exactly: the optimum, from a convex mixed-integer quadratic
+reformulation solved by Gurobi and certified by an exact branch and bound; and
+the best root bound that cuts on the blocks $(x_i,y_i,z_i)$ can give, which by
+Theorem~\ref{thm:closure} and Corollary~\ref{cor:one-row} is
+$\min\{\sum_i\operatorname{vex}\varphi_i(y_i):\sum_iy_i\le c,\ 0\le y\le1\}$
+with $\varphi_i(y)=\dist(y,A_i)^2+\dist(y,C_i)^2$, computed with the exact convex
+envelopes of the piecewise quadratic functions $\varphi_i$.
+Table~\ref{tab:mechanism} summarizes the results; Tables~\ref{tab:path-detail}
+and~\ref{tab:path-fresh} in Appendix~\ref{app:instances} give them per
+instance.
+
+\begin{table}[t]
+\centering\footnotesize
+\caption{The path family: median fraction of SCIP's default root gap closed,
+$(z_{\text{mode}}-z_{\text{base}})/(z^\ast-z_{\text{base}})$, for each $n$ (five
+instances each), and instances solved within 300\,s (of 20). ``Remainder'' and
+``whole row'' are the first directions of the separator
+(Section~\ref{sec:blocks}); ``mech.'' and ``wide'' are the limits of
+Table~\ref{tab:modes}. The row ``glued pair hulls'' is the analytic bound~0 of
+Theorem~\ref{thm:interleave}, which no run computes.}\label{tab:mechanism}
+\begin{tabular}{@{}llrrrrr@{}}
+\toprule
+& & \multicolumn{4}{c}{Root gap closed (median)} & \\
+\cmidrule(lr){3-6}
+Instances & Mode & $n=10$ & $n=20$ & $n=40$ & $n=80$ & Solved\\
+\midrule
+seeds 0--4 & SCIP default & --- & --- & --- & --- & 9\\
+ & SCIP, \code{checkvarlocks} off & 0.95 & 0.89 & 0.93 & 0.91 & 10\\
+ & SCIP, disabled separators on & 0.64 & 0.58 & 0.66 & 0.59 & 10\\
+ & Gurobi & & & & & 7\\
+ & glued pair hulls & 0.95 & 0.89 & 0.94 & 0.92 & \\
+ & remainder, mech.\ (campaign 3) & 0.35 & 0.25 & 0.19 & 0.22 & 9\\
+ & remainder, wide & 0.86 & 0.87 & 0.89 & 0.90 & 13\\
+ & whole row, mech.\ (post hoc) & 0.44 & 0.44 & 0.43 & 0.46 & 10\\
+ & whole row, wide (post hoc) & 1.00 & 1.00 & 1.00 & 1.00 & 20\\
+\midrule
+seeds 5--9 & SCIP default & --- & --- & --- & --- & 9\\
+ & SCIP, disabled separators on & 0.57 & 0.64 & 0.61 & 0.66 & 9\\
+ & Gurobi & & & & & 5\\
+ & glued pair hulls & 0.93 & 0.92 & 0.93 & 0.92 & \\
+ & remainder, mech. & 0.32 & 0.31 & 0.24 & 0.21 & 10\\
+ & whole row, wide & 1.00 & 1.00 & 1.00 & 1.00 & 20\\
+\midrule
+binding row & SCIP default & --- & --- & --- & --- & 10\\
+(seeds 5--9) & SCIP, disabled separators on & 0.29 & 0.60 & 0.68 & 0.65 & 13\\
+ & Gurobi & & & & & 6\\
+ & remainder, wide & 0.98 & 0.96 & 0.95 & 0.93 & 20\\
+ & whole row, wide & 0.997 & 0.99 & 0.98 & 0.98 & 20\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{SCIP's root bound and the pair-hull level.} SCIP's default root
+bound is weak: on the instances of campaign~3 it lies between $-0.035$ and
+$-0.013$ per copy, while each copy contributes at least $1/8192$ to the optimum. The
+cause is a presolve step: $\Phi^{(i)}$ is concave in $x_i$ and in $z_i$, so
+SCIP's implicit-discreteness detection \citep[Section~4.2.7]{SCIP8report} makes
+these variables binary, and SCIP then closes the gap by branching. With this
+step disabled (\code{constraints/nonlinear/checkvarlocks = d}), SCIP's root bound
+rises to just below~0, the bound of glued exact pair hulls, on every instance
+of campaign~3 (Table~\ref{tab:mechanism}); SCIP's semidefinite minor cuts were
+productive in all of these runs and in none of the default runs of campaign~4. Native SCIP thus reaches the
+pair-hull level when presolve does not interfere, and no SCIP setting closed
+any part of the gap between this level and the optimum, which is the gap that
+Section~\ref{sec:composition} attributes to joint blocks. SCIP's disabled
+separators, of which only the intersection cuts were productive, closed about
+60\% of the default root gap. Gurobi~13 solved the instances with $n=10$ and
+two with $n=20$; on $n=40$ and $n=80$ its gap after 300\,s was 53 to 121\%.
+
+\paragraph{The prospective separator and the attribution.} The separator of
+campaign~3 improved the root bound on all 20 instances but closed only a median
+of 19--35\% of the root gap, less than the pair-hull level, and it solved the
+same 9 instances as SCIP; on these, it reduced the number of nodes and the
+shifted geometric mean time from 10.3\,s to 6.7\,s. After seeing these results
+we found two causes. The first directions of the separator bound only the
+nonlinear remainder of a row (Section~\ref{sec:blocks}), whereas the exact
+support of the whole row is the block minimum, and the $n$ cuts
+$t_i\ge\min\Phi^{(i)}$ give the optimum. In addition, the first blocks of a
+callback take up to four cuts each, so with $n$ cuts per callback the later
+blocks receive none. A post hoc diagnostic, designed after these results and
+reported separately, tried the whole-row direction first, with the same limits
+and with four times as many cuts per callback and in total and twice as many
+support calls. Before it, we had
+checked the wide limits by hand on two of the 20 instances. The whole-row
+direction alone raised the median closure to 43--46\% and solved one more
+instance; together with the wide
+limits it closed the root gap on all 20 instances, and all 20 were solved, 12
+of them at the root node. Campaign~4 added the missing cell of this $2\times2$
+design prospectively: with the remainder directions and the wide limits, the
+separator closed 86--90\% of the gap, close to the pair-hull level and above
+it on 7 of the 20 instances, and solved 13. The campaign-4 runs had a less loaded
+host than those of campaign~3, but this does not explain the difference: every
+run of the four cells stopped at its cut cap, so the root bounds do not depend
+on time, and the four additional instances were solved in 9 to 168\,s. The
+limits therefore account for most of the closure, and the whole-row
+directions for the part beyond the pair-hull level.
+
+\paragraph{Prospective test on fresh instances.} On the 20 instances with
+seeds 5--9, the whole-row variant with wide limits, fixed before these
+instances were generated, closed the root gap on every instance: its root
+bound was within $2\cdot10^{-7}$ of the optimum. It solved all 20 in 3 to 33\,s,
+with a median of one node and at most 38, against 9 for SCIP, 9
+for SCIP with its disabled separators, 10 for the separator with remainder directions and mechanism limits, and 5 for
+Gurobi. On the nine instances that SCIP solved, the total time was comparable
+(median ratio 0.86), while SCIP's own time fell to a median of 4\% of its time
+in the baseline; over all 20 runs, 96\% of the time was spent in the Python
+separator. The separator with remainder directions and mechanism limits
+closed 21--32\% of the root gap, as in campaign~3.
+
+\paragraph{A binding coupling row (Part C4).} When the coupling row binds,
+the block minima no longer give the optimum, and the cuts must have the right
+slopes in $y_i$. Both separator configurations with wide limits solved all 20
+instances, in 3 to 134\,s, against 10 for SCIP, 13 for SCIP with its disabled
+separators and 6 for Gurobi; only the cut modes solved any instance with
+$n=80$. On the ten instances that SCIP solved, all with $n\le20$, the cut
+modes were slower by median factors of 3.2 and 3.5, because of the
+separator's time. At the root they closed a median of 95\% (remainder directions) and 99\%
+(whole-row directions) of SCIP's root gap. Here the reference that matters is
+the best root bound that cuts on the blocks can give, which equals the optimum
+on 13 of the 20 instances and lies at most $6.5\cdot10^{-4}$ below it on the
+others; no root run reached it, and the remaining distance grew with $n$, to
+between 0.016 and 0.029 for $n=80$ with whole-row directions. Every cut-mode run
+stopped at its cap of $16n$ cuts, so a larger cap would probably close more. The
+cuts that did the work came from the LP direction search: 99.9\% (remainder directions) and
+94\% (whole row) of the cuts were LP directions, and almost all of them have a
+nonzero coefficient of $y_i$, mostly with the negative slope that the binding
+row requires; the whole-row cuts alone give only $\sum_i\min\varphi_i$, which is
+below SCIP's root bound on half of the instances. The direction search can
+therefore find useful non-row directions, but on these instances it needed
+about $16$ cuts per block to come close to the block closure, and none of the
+cuts is an envelope cut in $(y_i,t_i)$ alone.
+
+These families were constructed to have the structure of
+Section~\ref{sec:composition}, and their objectives are sums of block
+functions, which favors block cuts. They show that exact block support
+supplies strength that neither SCIP, with or without its disabled separators,
+nor Gurobi obtains at the root, that this strength reaches the solver only if
+the direction search tries the right directions and enough of them, and that
+on such instances it can turn time-outs into solves at or near the root. They
+are not evidence about other models.

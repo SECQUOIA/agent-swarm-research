@@ -87,7 +87,7 @@ The verifier rejected 24 deliberately corrupted certificates: violations of cons
 102885025499522195717 / 604462909807314587353088.
 ```
 
-Run the six-case numerical producer with `/home/sgusev/miniconda3/envs/minlp-notes/bin/python code/potential_flow_mpd/envelope_rational_certificates.py`. The numerical solver happened to report `optimal` in these six certificate examples; certificate validity itself does not use or inspect that status.
+Run the six-case numerical producer with `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python code/potential_flow_mpd/envelope_rational_certificates.py`. The numerical solver happened to report `optimal` in these six certificate examples; certificate validity itself does not use or inspect that status.
 
 ## Verifier boundary and optimized-mode correction
 

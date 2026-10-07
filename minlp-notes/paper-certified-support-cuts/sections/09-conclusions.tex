@@ -1,0 +1,65 @@
+\section{Discussion and conclusions}\label{sec:conclusions}
+
+Three points of the theory matter for solver design. First, pair hulls glued
+on finitely many moments of a shared variable accept distributions that no
+joint distribution reproduces, and they give no positive bound exactly when the
+local zero sets alternate often enough. On three-variable paths, dense moment
+relaxations with the missing product close these gaps, so there the advantage
+of joint blocks over their pairs is one of representation, which support cuts
+obtain in the model's own coordinates. For larger blocks this is no longer
+true: on a four-variable path, and with a relative gap of nearly $100\%$ on the
+full-gap instances of Proposition~\ref{prop:full-gap} with five and seven
+variables, an exact support cut of the block is strictly stronger than the
+dense first-level relaxation with all products. Second, for stars, the merged
+blocks of Section~\ref{sec:composition}, the support problem remains exactly
+solvable in nearly linear time when rows couple the center with one leaf at a
+time. Third, as in safe-cut practice, certification does not constrain how
+directions are found: only the final binary64 row, its bound over the whole
+block domain and the row that the solver stores need to be checked, and all of
+this can be replayed.
+
+The computations add two findings to the theory. First, certification matters
+in practice. The sample minimum would have given wrong constants for 38\% of
+the MINLPLib cuts and for almost all sampled path-family cuts, and local
+minimization still left wrong constants that cut off feasible solutions,
+including known optima. A numerical global solve was a much better substitute
+on these small blocks, but on one model it reported optimality for a constant
+$1.8\cdot10^{-4}$ above the true minimum, which a fixed safety shift of
+$10^{-6}$ does not cover. Second, the stored-row check exposed an obstacle that
+the theory does not see: presolve aggregates or fixes the variables to which a
+block refers, so a separator stated in the original variables loses cuts unless
+it prevents these reductions, which weakens SCIP's own relaxation, or
+certifies the floating-point presolve steps on which it relies.
+
+On MINLPLib models the cuts did not help SCIP: they improved its root bound on
+few models and changed no full solve, while SCIP's disabled-by-default
+separators achieved as much or more on all but one of them. On the constructed
+families, where the theory predicts a gap, the picture is different. With a
+non-binding coupling row, SCIP's root bound stayed below the level of glued
+pair relaxations in all three settings we ran, and only SCIP-nolocks came close
+to it; the certified cuts went beyond this level when the separator could add
+enough cuts per block and tried the exact support of each whole row first, and
+this configuration solved every instance, against at most half of them for
+each SCIP setting and for Gurobi. With a binding row, both direction rules
+solved every instance, and the cuts that mattered came from the LP direction
+search; but SCIP with its implicit-discreteness presolve step switched off
+solved every instance as well, and faster, because its own relaxation already
+captured most of the gap. On the star family, star blocks made the root bound
+optimal to within $10^{-6}$, whereas blocks of four variables added almost
+nothing to SCIP's bound; the solved count was then limited by SCIP's search for
+good solutions, where Gurobi did better. Joint blocks larger than the
+separator's default of four variables thus matter. In the solver the simpler
+star oracle certified them in milliseconds, and the near-linear sweep of
+Theorem~\ref{thm:star} handles stars with $10^4$ leaves in about two seconds.
+
+Several questions remain open. Exact support for trees deeper than stars with
+edge-local rows would extend the star algorithm to the structures of network
+models; Remark~\ref{rem:trees} shows that the rational partition argument
+does not extend directly. Proposition~\ref{prop:gain}(ii) reduces the gap of
+the glued relaxation in any direction to a concave maximization over
+re-splittings, but which directions to merge, and when merging pays off, is
+not answered by it. A direction search with the guarantees of
+Appendix~\ref{app:separation} and the speed of a solver callback is not
+available. Finally, an activation rule that predicts when joint cuts pay off
+would be needed before any default use; our structural rule did not achieve
+this.

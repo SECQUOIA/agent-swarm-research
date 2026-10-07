@@ -1,6 +1,6 @@
 **Independent S5b review — R1**
 
-Reviewed frozen `complexity/sections/09-correlations-energy.tex` in `/home/sgusev/repo/minlp-notes-potential-flow/paper-potential-flow` on 2026-09-10. Initial and final SHA-256 are both `51b97d72b27619fa890ec977d9c9166beb5ee0c933edb3f29fa5df348e950f13`.
+Reviewed frozen `complexity/sections/09-correlations-energy.tex` in `/workspace/minlp-notes-potential-flow/paper-potential-flow` on 2026-09-10. Initial and final SHA-256 are both `51b97d72b27619fa890ec977d9c9166beb5ee0c933edb3f29fa5df348e950f13`.
 
 **Verdict: accept this frozen section.** I found no valid major or minor issue requiring correction. This verdict follows a whole-section proof assessment, including the three required extensions, rather than the numerical diagnostics alone. No repair is requested.
 
@@ -68,7 +68,7 @@ The browser initially failed to fetch the Raber PDF and rejected the large Shann
 
 **Independent checks**
 
-Scratch script `/tmp/s5b-r1/check.py`, run with `/home/sgusev/miniconda3/envs/minlp-notes/bin/python`, independently verified the symbolic triangle derivatives, exact cut rewards, their stated lower bounds, and the irrational-witness identities/interval. It also checked both exact cut identities at all eight vertices for a three-vertex comparison triangle. All passed.
+Scratch script `/tmp/s5b-r1/check.py`, run with `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python`, independently verified the symbolic triangle derivatives, exact cut rewards, their stated lower bounds, and the irrational-witness identities/interval. It also checked both exact cut identities at all eight vertices for a three-vertex comparison triangle. All passed.
 
 For diagnostic coverage of the new directional bound, the script solved cycle-space stationarity equations on a five-edge Wheatstone graph. Four positive regularization levels (`1`, `1e-2`, `1e-5`, `1e-9`) exhibited a cross-edge sign reversal between coefficient endpoints and zero cross-edge flow at the symmetric midpoint; all satisfied the sharper bound. One hundred reproducible random directional-profile pairs also satisfied it, with maximum observed ratio to the stated sharper bound about 0.10014. Stationarity residuals were checked below `1e-9`. These approximate computations exercise boundary behavior but do not prove the universal bound; the proof audit in items 7–9 supplies the mathematical assessment.
 

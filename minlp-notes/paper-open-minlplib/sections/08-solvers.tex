@@ -1,0 +1,166 @@
+% Plan: development/outline.md, section 5, "§8". Run details, certificate
+% boxes, tab:claims, tab:solvers, fig:camshape-deficit and the statements of
+% prop:qplib-copies and prop:kan-scip are in the supplement (app:solvers);
+% development/moves/m-solvers.md records the moves.
+% Round-1 revision (adjudication G4-02 to G4-05, G4-09), checked 2026-10-04:
+% - QPLIB margins under |b-d(s)|<u(s) (thresholds -4.2773, -4.284301): exact
+%   Fraction subtraction from the copy optima >= -4.2741871514717434 and
+%   >= -4.2841462678046117 gives 3.1128485e-3 and 1.5473220e-4 (displayed 3.11e-3,
+%   1.54e-4, rounded down); the deficit bounds -4.2771731888 and -4.2842973949
+%   of prop:qplib-copies(b) exceed these thresholds by more than 1e-6, so the
+%   violation thresholds 8e-9 and 2.5e-8 hold unchanged.
+% - prop:scip-witnesses: exact maximum binary64 row residual over the eight
+%   witnesses (exact_check.py on copies of the CIP models and witnesses) is
+%   32122061/10995116277760000000000 = 2.9215e-15 <= 2.93e-15.
+% - Campaign counts from R/publication/solver-runs/results.csv: 109 finite final
+%   duals = 79 (no globality_warning, no scip_argument_bounds_tightened, not KAN;
+%   BARON 23, Gurobi 30, SCIP 26) + 6 BARON disclaimed + 6 SCIP tightened (three
+%   from memory-cap runs) + 18 KAN; only BARON camshape100/200 end with rel_gap
+%   <= 1e-6.
+% Round-2 revision (adjudication G4-01 to G4-05), checked 2026-10-05:
+% - prop:baron-camshape distances, exact Fraction arithmetic against the L
+%   entries of data/numbers.json (opt in [L, L+1e-30]): absolute 5.2581e-7 and
+%   2.0527e-6 (displayed 5.25e-7, 2.05e-6, rounded down), relative 1.2273e-7
+%   and 4.7977e-7 (displayed 1.23e-7, 4.80e-7, rounded up).
+% - SCIP witness checkers: eight code bases from six agent sessions. Track
+%   scip-bug (R/publication/scip-bug/report.md section 4): exact_check.py and
+%   spec_check.py (first author), indep_check.py (second), gams_check.py
+%   (third, reads .gms); R/publication/reviews/scip-bug-r1/: rv_cip_exact.py and
+%   rv_gms_exact.py (one review session, the second reads .gms);
+%   development/dossiers/solvers-checks/mycheck.py (earlier draft session) and
+%   r2/cipchk.py (dossier session); development/dossiers/solvers.md:526-533.
+% - prop:scip-reproducers and lem:scip-cube with their notes moved to S6.6
+%   (app:solvers-scip), labels unchanged (move M3).
+% - Upstream: nothing was posted (scip-bug/report.md, header); communication is
+%   pending (decision LD2-3).
+% Round-3 revision (development/reviews/round3/), checked 2026-10-05:
+% - lem:scip-cube restatement (opus-referee 1): exact Fraction residuals
+%   fl(l)^k - fl(l^k) against the binary64 spacing on the residual's side of
+%   fl(l^k): only 0.7^3 (-9.2371e-17 vs 2^-54) exceeds one spacing; 0.7^2,
+%   0.6^2, 0.6^3, 0.85^2, 0.85^3, 0.8^2, 0.8^3 stay below it (H-solvers proof).
+% - fct (opus-referee 6, opus-writing 14): R/bound-audit/pages/fct.html links
+%   ams, gms, gdx and sol files but no osil file (other pages link osil/), so
+%   MINLPLib provides no OSIL file for fct; the scan covers the other 1,632.
+% - GAMS/OSIL correspondence (sol-referee 1): tab:sem-gams, 17 exact identical,
+%   4 catmix exact with differing rows (prop:catmix-transport), 22 compared at
+%   sample points only (16 non-KAN, 6 KAN).
+\section{Solver and published claims under exact feasibility}\label{sec:solvers}
+
+We compare solver output and published claims, both floating-point output (\cref{sec:semantics-protocol}), with the certified bounds and exactly feasible points of \cref{sec:split,sec:other,sec:points} and sort each disagreement into category~A (tolerance artifact) or~B (invalid claim) of \cref{def:sem-categories} (details in \cref{app:solvers}).
+Many reported values are tolerance artifacts (\cref{sec:solvers-tolerance}).
+Three findings are invalid claims; we trace only one of them, the SCIP~10 error, to a defect (\cref{sec:solvers-invalid}).
+In one-hour runs, all 79 finite final dual bounds with a globality guarantee on the unmodified GAMS files of non-KAN instances were weaker than our certified bounds (\cref{sec:solvers-campaign} discusses the other 30), and only BARON's two optimality claims ended with a relative gap of at most $10^{-6}$.
+Our certificates concern the OSIL files; for the instances whose GAMS and OSIL forms we compared only at sample points, this comparison assumes that the two forms define the same model (\cref{tab:sem-gams}).
+
+\subsection{Tolerance artifacts}\label{sec:solvers-tolerance}
+
+\begin{proposition}[BARON on \inst{camshape100} and \inst{camshape200}]\label{prop:baron-camshape}
+BARON~26.5.27 (GAMS~54.3.1, one thread, requested absolute and relative gaps $10^{-9}$) reports normal completion with an optimal model status and equal primal and dual values: $-4.28414764756144$ on \inst{camshape100} after 0.45\,s and $-4.27850228570019$ on \inst{camshape200} after 23\,s.
+\textup{(a)}~Both reported dual bounds are valid.
+They lie below the exact optima by at least $\sci{5.25}{-7}$ and $\sci{2.05}{-6}$ in absolute terms, and by at most $\sci{1.23}{-7}$ and $\sci{4.80}{-7}$ relative to the optima.
+\textup{(b)}~The reported optimal values equal these bounds; no exactly feasible point attains them, and the two returned points are not exactly feasible.
+\end{proposition}
+
+\begin{proof}
+The reported values lie below the exact optima of \cref{thm:camshape-opt}, so the dual bounds, which equal them, are valid; subtraction gives the distances.
+Evaluated exactly at the binary64 values in BARON's savepoint files, each returned point has the reported value to the printed digits, so it is not exactly feasible (\cref{lem:sem-enclosure}(b)).
+\end{proof}
+
+At MINLPLib's gap tolerance of $10^{-6}$ relative, these runs close both instances in floating point; we credit them as tolerance-level closures by one solver (a solved mark needs three).
+The returned points violate rows and bounds by just under $10^{-10}$, and their deficits are about 87\% of the proved upper bound $D_n(\varepsilon)$ for such violations (\cref{prop:camshape-deficit}, \cref{fig:camshape-deficit}), so the tolerance can account for the whole deficit.
+BARON's incumbents lie below the exact optima, so its dual bounds had to reach only these incumbents, and its run times do not measure its relaxation alone.
+
+MINOTAUR~0.4.1 and ANTIGONE~1.1 report the optimal values $-4.2774$ and $-4.284302$ in Mittelmann's QPLIB benchmark \citep{mittelmann2026-continuous-non-convex-qplib-benchmark} for \inst{QPLIB_3177} and \inst{QPLIB_2738}.
+These are QPLIB's copies of \inst{camshape800} and \inst{camshape100}, with constants rounded to 8 to 10 significant digits \citep{furini2018-qplib-a-library-of-quadratic,cache2026-qplib-pages-and-rounded-camshape}, and so different models with their own exact optima (\cref{prop:camshape-copies}).
+No exactly feasible point of a copy attains a value within one unit of the last displayed digit of the reported one: the margins are at least $\sci{3.11}{-3}$ and $\sci{1.54}{-4}$, and reaching such values needs row or bound violations above $\sci{8}{-9}$ and $\sci{2.5}{-8}$ (\cref{prop:qplib-copies}; for MINOTAUR we assume that its \texttt{.nl} input encodes the GAMS copy).
+The implied dual bounds are valid, so both values are tolerance artifacts on the copies.
+
+If the published models equal MINLPLib's up to the printing of coefficients, the zero-gap SCIP~9.0.1 optima that \citet{karia2025-deterministic-global-optimization-over-trained} report for \inst{kan_r3_h1_n4} and \inst{kan_r3_h1_n5} \citep{karia2025-karia-et-al-zenodo-default} lie at least $\sci{1.70}{-3}$ and $\sci{2.03}{-3}$ below the certified lower bounds of \cref{thm:kan-enclosure}, so no point of the network relaxation $\Rnet$ or of $\RP$ attains them (\cref{prop:kan-scip}).
+The OSIL models have no exactly feasible point (\cref{prop:kan-infeasible}), so SCIP's values are trivially valid as their dual bounds, and both claims are of category~A.
+
+\Cref{tab:claims} lists every reported value that we checked and found unattainable under exact feasibility, with margins, violations and qualifiers; it does not come from a complete search.
+
+\subsection{Invalid recorded claims}\label{sec:solvers-invalid}
+
+Three findings are of category~B: wrong optimal values returned by SCIP on subproblems of \inst{waterno2_06}, the best bounds recorded for Gurobi in the public CAMINO data for the \inst{eg} instances, and MINOTAUR's infeasibility report on the QPLIB copy of \inst{optcdeg2}.
+
+\begin{infobox}[label={box:scip}]{The SCIP defect}
+SCIP~10.0.2, 10.0.3 and 10.1.0 and a development snapshot (commit \texttt{a01de2c}, 2026-10-02) report ``optimal solution found'' with wrong optimal values on single-period and cell-pair subproblems of \inst{waterno2_06}, for some random seeds, through PySCIPOpt, the command line and GAMS.
+A model with 15 variables and three pumps (archived as \inst{fm336}) reproduces the error with default settings in every version and interface tested.
+In each pump, setting the binary $b$ to~0 forces the speed $s$ and the power $p=s^3$ to their lower bounds $\ell$ and $\ell^3$.
+In the traced runs, a binary64 residual of the decimal identity $0.7^3=0.343$ (\cref{lem:scip-cube}) makes reverse propagation declare infeasible a node that contains an exactly feasible point (\cref{obs:scip-propagation}).
+\end{infobox}
+
+\begin{proposition}[Witnesses]\label{prop:scip-witnesses}
+Consider eight models: the single-period Lagrangian subproblems of \inst{waterno2_06} for periods 0, 4 and~5, its period-3 subproblem restricted to one pair of cells, and four small models derived from them (\cref{app:solvers-scip}).
+For each, a rational point, the witness, satisfies every row, bound and integrality requirement exactly, with the data read as rationals; its objective value is given in \cref{tab:scip-witnesses}.
+The optimal values that SCIP reports in the wrong runs of \cref{tab:scip-runs} exceed the witness value by $\sci{7.5}{-4}$ to $3.83$ on the periods and by $0.80$ to $9.43$ on the cell pair.
+SCIP~10.0.2's feasibility check accepts all eight witnesses; in the binary64-rounded data their rows are violated by at most $\sci{2.93}{-15}$.
+\end{proposition}
+
+\begin{proof}
+Exact rational evaluation of every row, bound and integrality condition, confirmed for each witness by six to eight exact checkers (eight code bases from six agent sessions; two of them read the GAMS files; \cref{app:solvers-scip}), then subtraction; the residual bound is an exact computation, and the acceptance by SCIP is solver output.
+\end{proof}
+
+The reproducer \inst{fm336} has optimal value $187/270$, and SCIP's values for it are wrong in three senses: they exceed the optimal value of the decimal model, they are inconsistent with SCIP's own tolerances, and in the binary64 model the returned points are infeasible (\cref{prop:scip-reproducers}).
+The trigger is a rounding fact: although $0.7^3=0.343$, the tightest interval with binary64 ends around $\fl(0.7)^3$ lies strictly below $\fl(0.343)$; for the other station values $\ell$ and powers $k$ of \inst{waterno2}, the residual $\fl(\ell)^k-\fl(\ell^k)$ is smaller in absolute value than one binary64 spacing, so the tightest such interval still contains $\fl(\ell^k)$ (\cref{lem:scip-cube}).
+
+\begin{observation}[Mechanism; evidence from instrumented runs]\label{obs:scip-propagation}
+We instrumented 15 wrong runs in debug builds of 10.0.2 and of the development snapshot, with the witness set as debugging solution.
+In each, the first step that removes the witness is the same.
+On a row $x^3-y=0$ with $x$ fixed at $\fl(0.7)$ and $y$ at $\fl(0.343)$, reverse propagation in the default nonlinear handler intersects the activity with $[0,0]$.
+It uses the exact routine \texttt{SCIPintervalIntersect}, not its $\varepsilon$-tolerant variant, and declares the node infeasible.
+Relaxing fixed bounds as well (setting \texttt{b} of \texttt{constraints/\allowbreak nonlinear/\allowbreak varboundrelax}) removed every wrong result in 122 runs, of which 78 were wrong under default settings.
+\end{observation}
+
+The error depends on the seed and the version (\cref{tab:scip-runs}).
+On the cell pair, the claims from $56.49$ to $65.12$ are refuted, while two low claims near $55.6898$ lie inside the enclosure $[55.0942,\,55.68991]$ of the optimal value and are neither refuted nor confirmed.
+One further run, which was not instrumented, loses the witness first at a $0.85$ station; we do not link it to the mechanism.
+Two runs with small excess were not traced.
+A syntactic scan of all 1,632 OSIL files of the MINLPLib snapshot (\inst{fct} has an instance page but no OSIL file) finds rows $y=x^2$ or $y=x^3$ whose bounds agree in decimal but not in binary64 only in nine \inst{waterno2} instances; by \cref{lem:scip-cube}, only the cube rows of the $0.7$ stations, one per period, can trigger the traced cutoff (\cref{app:solvers-scip}).
+Our certificates use no SCIP bound, and we claim no listed MINLPLib SCIP bound to be wrong: those for \inst{waterno2_06}--\inst{waterno2_24} lie far below our certificates, and in our one-hour runs SCIP made no optimality claim on a \inst{waterno2} instance.
+
+Wrong results of global solvers \citep{neumaier2005-a-comparison-of-complete-global,nowak2008-lago-a-heuristic-branch-and,montanher2018-a-computational-study-of-global,bestuzheva2025-global-optimization-of-mixed-integer} and rounding errors in the branch-and-bound decisions of MIP solvers \citep{hoen2025-analyzing-the-numerical-correctness-of} have been reported before, and propagation that accounts for rounding, so that it discards no feasible point, is classical \citep{domes2010-constraint-propagation-on-quadratic-constraints}.
+A search of SCIP's public issue tracker on 2026-10-02 found no report of this defect in the nonlinear propagation of SCIP's expression framework \citep{bestuzheva2025-global-optimization-of-mixed-integer,hojny2025-the-scip-optimization-suite-10}; the search does not show that no report exists.
+The archive contains the minimal reproducer \inst{fm336} with its exact witness and the other witnesses (\cref{app:solvers-scip}); as of 2026-10-05, we have not yet reported the defect to the SCIP developers.
+
+\begin{proposition}[Recorded Gurobi bounds for the \inst{eg} instances]\label{prop:camino-eg}
+Assume that CAMINO's model files equal the current MINLPLib files and that the recorded bound is AMPL's \texttt{bestbound}.
+For Gurobi~13.0.0 on \inst{eg_disc2_s}, \inst{eg_disc_s} and \inst{eg_int_s}, the public data of the CAMINO benchmark \citep{ghezzi2026-camino-benchmark-results-for-nonconvex} record an objective value equal to the best bound: $5.88669499573929$, $6.191829847658548$ and $11.65415903480683$.
+Each recorded bound exceeds the objective value of a point proved feasible for the same model by at least $0.2445944$, $0.4312902$ and $5.2010558$, that is, by at least 4.33\%, 7.48\% and 80.5\% of that value, and is therefore invalid.
+\end{proposition}
+
+\begin{proof}
+The primal points of \cref{thm:eg-bounds}, with objective values at most $5.6421005799711068$, $5.7605396164535107$ and $6.4531031593842275$, are exactly feasible for the OSIL models, and interval arithmetic proves that they satisfy every row, bound and integrality condition of the AMPL files that CAMINO used (\cref{app:solvers-published}); subtract.
+\end{proof}
+
+The data have no status column, but the pipeline kept only runs that AMPL labelled ``solved'' or ``limit'', and these three ended after 2.15\,s, 0.99\,s and 70.8\,s, well before their time limits.
+The bounds are invalid as recorded; the cause is unknown, and we attribute it neither to Gurobi nor to the interface.
+
+\begin{proposition}[MINOTAUR's infeasibility report on the copy of \inst{optcdeg2}]\label{prop:minotaur-optcdeg2}
+In Mittelmann's QPLIB benchmark, MINOTAUR~0.4.1 stops on \inst{QPLIB_8803} with ``status of presolve: Detected infeasibility'' \citep{mittelmann2026-continuous-non-convex-qplib-benchmark}.
+If the \texttt{.nl} file encodes the GAMS copy, the report is invalid as recorded (cause unknown).
+\end{proposition}
+
+\begin{proof}
+Apart from comments, the GAMS copy differs from MINLPLib's \inst{optcdeg2} file only by a redundant declaration of two variables that both files fix at~0, the formatting of one option line and the solve statement (\cref{app:solvers-published}), and \inst{optcdeg2} has an exactly feasible point (\cref{prop:optcdeg2-point}).
+The report comes from the first presolve, before MINOTAUR adds default bounds to unbounded variables, so such bounds play no part.
+\end{proof}
+
+\subsection{One-hour comparison}\label{sec:solvers-campaign}
+
+We ran BARON~26.5.27, Gurobi~13.0.2 and SCIP~10.0.3, as bundled with GAMS~54.3.1, on the unmodified MINLPLib GAMS files of all 43 instances; later patch releases of BARON and Gurobi were not tested.
+Each run used one thread, a limit of 3600\,s (CPU time for BARON, wall time for the others), requested absolute and relative gaps of $10^{-9}$, no option file and a memory cap of 8192\,MiB, on a shared machine (\cref{app:solvers-protocol}).
+This is a status check of current solvers on these instances under the exact standard, not a comparison of methods: our certificates were built individually for each instance, and the counts support no ranking and no statement about speed.
+Our certificates concern the OSIL files.
+The GAMS and OSIL forms are identical for 17 instances, and for the four \inst{catmix} instances, whose coefficients differ in the last digits, \cref{prop:catmix-transport} transfers the certified bounds to the GAMS form.
+For the other 22, among them \inst{lnts}, \inst{chain}, \inst{pricing050}, \inst{etamac} and the KAN instances, we compared the forms only at sample points, where they agree (\cref{tab:sem-gams}); the comparisons below assume that they define the same model.
+
+Of the 129 runs (\cref{tab:solvers}), only BARON's on \inst{camshape100} and \inst{camshape200} ended with a relative gap of at most $10^{-6}$; their dual bounds are valid, but the returned points are not exactly feasible (\cref{prop:baron-camshape}), so no run closes an instance under exact feasibility.
+Of the 109 finite final dual bounds (35 from BARON, 36 from Gurobi, 38 from SCIP), 79 are bounds with a globality guarantee on the unmodified GAMS files of non-KAN instances; all 79 are weaker than our certified bounds (\cref{tab:campaign-runs}).
+So are the other 30: six BARON values without a globality guarantee (variable bounds are missing); six SCIP bounds on models whose logarithm and power arguments SCIP bounded below by $10^{-9}$, three of them from runs stopped at the memory cap; and 18 values on the KAN instances, which we compare with the bound for $\Rnet$ only descriptively.
+Five final dual bounds improve the best listed dual bound: BARON's on \inst{camshape100}, \inst{camshape200} and \inst{camshape400}, Gurobi's on \inst{lnts200} and SCIP's on \inst{waterno2_18}.
+On the primal side, 35 returned objective values (30 against our dual bounds for the stored models, 5 against our lower bounds for $\Rnet$ on KAN instances) lie beyond a certified bound by more than their printing precision, so none of these points is exactly feasible (\cref{app:solvers-points}); the 15 that we evaluated at 50 digits have largest violations between about $10^{-10}$ and $10^{-6}$ (numerical evidence; \cref{tab:claims-campaign}).
+
+\Cref{app:solvers-protocol} details the caveats: ten runs started in an overloaded first batch (removing them changes no bound comparison), nine runs failed on $\sin$, $\cos$ or $\tanh$ (eight with BARON, one with SCIP), and Gurobi failed on \inst{lukvle10} because a power had no constant argument.
+The runs do not show that the instances stay open under other settings, longer limits or other solvers.

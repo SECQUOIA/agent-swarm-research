@@ -1,0 +1,161 @@
+--- reviews/minor-fixes/before/scip-bug.txt	2026-10-03 21:32:59.254934050 -0400
++++ scip-bug/report.md	2026-10-03 22:02:50.732848779 -0400
+@@ -26,13 +26,13 @@
+   - The proof uses exact rational arithmetic. Four checkers share no code and do not use SCIP (Section 4).
+   - One checker reads the GAMS `.gms` files, so the GAMS/SCIP claims are refuted on the GAMS models themselves.
+   - The wrong claims exceed the witness values by 7.5·10⁻⁴ to 9.43.
+-- **Root cause, traced.** SCIP's debug-solution mechanism was used in a 10.0.2 debug build and in a master debug build. In every traced wrong run, the first step that loses the witness is the same:
++- **Root cause, traced.** SCIP's debug-solution mechanism was used in a 10.0.2 debug build and in a master debug build. In every instrumented wrong run listed in Section 5.3, the first step that loses the witness is the same:
+   - The `default` nonlinear handler's reverse propagation declares a node infeasible.
+   - The constraint is s³ − p = 0. A binary has forced s to its lower bound L, and p has been fixed to its lower bound L³.
+   - The expression's activity is [−1.665·10⁻¹⁶, −5.55·10⁻¹⁷]; the required interval is [0, 0].
+   - The trigger is a binary64 rounding residual. 0.7³ = 0.343 holds in decimal, but in binary64 fl(0.7)³ − fl(0.343) = −9.237·10⁻¹⁷.
+   - With the default `constraints/nonlinear/varboundrelax = r`, fixed variables are not relaxed, and `SCIPintervalPropagateWeightedSum` intersects intervals exactly. Together these turn the residual into a cutoff.
+-  - With `varboundrelax = b`, 0 of 102 runs are wrong. Under default settings, 70 of those 102 runs were wrong.
++  - With `varboundrelax = b`, 0 of 122 runs are wrong. Under default settings, 78 of those 122 runs were wrong. The raw-log recount includes the two later small-excess p4 checks missing from the older scan CSV (`logs/minor_review_check.log`).
+ - **Seed-dependent case** (cell pair; claims 55.69 or 65.12): it is a **real error, not a tolerance effect**.
+   - The witness is exactly feasible with value 55.689908. That is 9.43 below 65.12, and 0.80 below master's wrong claim 56.492.
+   - It has the same cause: a strong-branching child on 10.0.2, a tree node on master.
+@@ -166,7 +166,7 @@
+ - SCIP accepts the witnesses as feasible:
+   - `checkSol` in PySCIPOpt 10.0.2 accepts the first six (`logs/checksol_witness.log`);
+   - master and 10.1.0 accept the fm336 witness when it is read as a solution file.
+-- SCIP's own "optimal" solutions are not exactly feasible for the binary64 data either. They also use pump-off configurations that a strict binary64, zero-tolerance reading would forbid:
++- The examined SCIP "optimal" solutions are not exactly feasible for the binary64 data either (pumps_default, p0 seed 0, tiny2, and pair2236 seeds 0 and 7). They also use pump-off configurations that a strict binary64, zero-tolerance reading would forbid:
+   - pair2236, seed shift 7, claim 65.12: b35 = 0 (station 0.85 off). Its rows are violated by up to 8.9·10⁻⁷ in exact binary64 arithmetic (`logs/pair_semantics.log`).
+   - fm336: SCIP's incumbent has b0 = 0, s0 = 0.7, p0 ≈ 0.343.
+ 
+@@ -201,9 +201,9 @@
+ 
+ In step 2 SCIP treats the 5.5·10⁻¹⁷ discrepancy as feasible; in step 3 it treats the same discrepancy as infeasible. Most intersections in `cons_nonlinear.c` and `nlhdlr_default.c` use the epsilon-tolerant `SCIPintervalIntersectEps`, but this one is exact.
+ 
+-### 5.3 Every traced wrong run loses the witness at the same step
++### 5.3 Every instrumented wrong run listed here loses the witness at the same step
+ 
+-In every traced run, the first "debugging solution was cut off" or invalid bound comes right after a "declared INFEASIBLE" from the `default` nlhdlr's reverse propagation:
++In every instrumented run in the table, the first "debugging solution was cut off" or invalid bound comes right after a "declared INFEASIBLE" from the `default` nlhdlr's reverse propagation:
+ - the expression is x³ − y, with x fixed at fl(L) and y fixed at fl(L³), at a station with L = 0.7;
+ - the activity is [−1.6653·10⁻¹⁶, −5.5511·10⁻¹⁷] and the propagation bounds are [0, 0].
+ 
+@@ -212,7 +212,7 @@
+ | dbgsol 10.0.2 | tiny2, heur+sepa off (−1.2311) | node 2 (b = 0) cut off; b ≥ 1 global | `logs/dbgsol_tiny2.log` |
+ | dbgsol 10.0.2 | pumps_default, 0 (1.198) | b1 = 0 fixed at the root (reduced-cost fixing; `propagating/redcost/freq = −1` avoids it), then the root is declared infeasible | `logs/dbgsol_pumps_default.log` |
+ | dbgsol 10.0.2 | **fm336, 0 (1.5052)** | the root (depth 0) is declared infeasible on s0³ − p0; the incumbent 1.5052 (b0 = 0, b1 = b2 = 1) is returned | `logs/dbgsol_fm336_v1010.log` |
+-| dbgsol 10.0.2 | pair2236, 8 and 11 (65.1235, 65.1244) | strong branching on b47 at node 2: the down child (contains the witness) is "infeasible" on x545³ − x993; relpscost sets b47 ≥ 1 | `logs/dbgsol_sb_pair2236_seed8.log`, `logs/dbgsol_expr_pair2236_seed8.log`, `logs/dbgsol_pair2236_seed11.log` |
++| dbgsol 10.0.2 | pair2236, 8 (65.1235) | strong branching on b47 at node 2: the down child (contains the witness) is "infeasible" on x545³ − x993; relpscost sets b47 ≥ 1 | `logs/dbgsol_sb_pair2236_seed8.log`, `logs/dbgsol_expr_pair2236_seed8.log` |
+ | dbgsol 10.0.2 | p4, 0 (−5.7235) | node 1282 (depth 9) cut off, x546³ − x995 | `logs/dbgsol_expr_p4_seed0.log` |
+ | dbgsol 10.0.2 | p5, 0 and 2 | nodes 536 and 660 cut off, x547³ − x997 | `logs/dbgsol_expr_p5_seed*.log` |
+ | dbgsol 10.0.2 | p0, 2 | node 328 (depth 7) cut off, x542³ − x987 | `logs/dbgsol_expr_p0_seed2.log` |
+@@ -224,6 +224,8 @@
+ | master dbgsol | p4, 0 (−5.7235) | strong branching at node #298: the down child of b48 (contains the witness) is "infeasible" on x546³ − x995 in probing; b48 ≥ 1 | `logs/mdbg_p4_s0.log` |
+ | master dbgsol | p5, 3 (−230.8802) | node #902 (depth 9) cut off on x547³ − x997 | `logs/mdbg_p5_s3.log` |
+ 
++Seed 11 is not instrumented: `logs/dbgsol_pair2236_seed11.log` first reports an invalid local implication b35 ≥ 1 at node 2 with no recorded constraint or propagator source, then b47 ≥ 1. b35 belongs to the 0.85 station. Its first witness loss is untraced and cannot be assigned to the 0.7-station mechanism.
++
+ The root cutoffs (fm336, fm318, pumps_default) start the same way:
+ 1. An incumbent is found.
+ 2. Valid propagation fixes a pump binary to 0 (objective propagation or reduced-cost fixing).
+@@ -308,15 +310,15 @@
+   - `witness/pair2236.json` is exactly feasible with value 55.689908409449. That is 9.43 below 65.12 and 0.80 below 56.49, far beyond any tolerance.
+   - SCIP's own checker accepts the witness.
+   - SCIP's 65.12 solution itself relies on tolerances: b35 = 0, and rows violated by up to 8.9·10⁻⁷ in exact binary64 arithmetic.
+-- **The low claims are a tolerance effect.** 55.689773 and 55.689858 lie 5·10⁻⁵ to 1.4·10⁻⁴ below the witness. SCIP's points violate rows by up to 1.5·10⁻⁸ and bounds by up to 8.9·10⁻⁸ (`logs/pair_semantics.log`). Those claims are harmless.
++- **The low claims are not refuted.** 55.689773 and 55.689858 lie 5·10⁻⁵ to 1.4·10⁻⁴ below the witness. SCIP's points violate rows by up to 1.5·10⁻⁸ and bounds by up to 8.9·10⁻⁸ (`logs/pair_semantics.log`). They are consistent with tolerance effects or with the witness not being optimal; the cause and validity of those lower claims are not established.
+ - **True optimum.** It lies in [55.0942, 55.689908]:
+   - the lower end is rbb's certified bound for the same subproblem (cert2 retry record 5539: same multipliers and cell boxes, status certified);
+   - the upper end is the witness.
+ - **Cause.** The same propagation defect:
+-  - 10.0.2: strong-branching child b47 = 0 declared infeasible (seeds 8, 11);
++  - 10.0.2: strong-branching child b47 = 0 declared infeasible (instrumented seed 8). Seed 11's first loss is untraced, as noted in Section 5.3;
+   - master: node #6 cut off (seed 14).
+ 
+-  Whether a seed fails depends on whether the search reaches a pump-off node of the 0.7 station along a path where p is fixed by propagation before s³ − p is propagated again. This happens in 4 to 8 of 30 seeds per version.
++  A hypothesis, supported by instrumented seeds 8 and 14, is that seed failure depends on whether the search reaches a pump-off node of the 0.7 station along a path where p is fixed by propagation before s³ − p is propagated again. This happens in 4 to 8 of 30 seeds per version.
+ - **Original reproducer.** `sepbranch/check_fail.py logs/cert2.pkl 2236` still gives 65.123993 with seed shift 7 (`logs/orig_check_fail_2236.log`).
+ 
+ ## 7. Consequences for the paper
+@@ -336,7 +338,7 @@
+ - All eight witnesses (p0, p4, p5, pair2236, tiny2, pumps_default, fm336, fm318) are exactly feasible for their CIP files. The five that GAMS/SCIP solved wrongly, and fm318, are also exactly feasible for their `.gms` files.
+ - Their objective values lie strictly below every wrong claim (Sections 3 and 4).
+ - In binary64, fl(L)³ ≠ fl(L³) for L = 0.6, 0.7, 0.85 and 0.8. The residuals are negative for 0.6, 0.7 and 0.85.
+-- SCIP's reported solutions are not exactly feasible for the binary64 data.
++- The examined SCIP solutions (pumps_default, p0 seed 0, tiny2, and pair2236 seeds 0 and 7) are not exactly feasible for the binary64 data. This was not checked for every solution in the scan tables.
+ 
+ **Numerical** (solver output, evidence only): all SCIP claims, node counts, version and seed tables, toggles, `varboundrelax = b` experiments, and the debug-build traces (they show what SCIP computed in those runs).
+ 
+@@ -348,7 +350,7 @@
+ - The true optima of p0, p4, p5, pumps_default and fm318 were not certified here; the witnesses are upper bounds. The first author states that the earlier rbb certificates bound p0, p4 and p5 from below within 10⁻³ of the witnesses; this author did not re-verify that.
+ - The earlier note that switching presolving off makes SCIP crash was not re-examined.
+ - Delta debugging of `models/p4.cip` was stopped after 59 tests (first author). The minimizer found little to remove from fm336 (13 → 12 rows) and fm318 (9 → 8 rows).
+-- Issue search on github.com/scipopt/scip (queries "varboundrelax", "wrong optimal nonlinear", "reverse propagation infeasible", "cutoff nonlinear propagation"; some queries hit the API rate limit) found nothing matching. Issue #22, "SCIP 8 incorrectly reports a second-order cone program as infeasible" (closed 2022), is a similar kind of error, but nothing shows that it has the same cause. Other channels were not searched.
++- Issue search on github.com/scipopt/scip (queries "varboundrelax", "wrong optimal nonlinear", "reverse propagation infeasible", "cutoff nonlinear propagation"; some queries hit the API rate limit) found nothing matching. Issue #22, "SCIP 8 incorrectly reports a second-order cone program as infeasible" (closed 2022), is a similar kind of error, but nothing shows that it has the same cause. Review r1 also found [#162, Suboptimal solution for multilinear relations](https://github.com/scipopt/scip/issues/162) (opened August 2025; developer discussion points toward orbitopal symmetry handling) and [#190, Presolving renders problem infeasible](https://github.com/scipopt/scip/issues/190) (February 2026, SCIP 10.0.1; discussion concerns coefficients near 1e-6). Both are related nonlinear wrong-result reports but apparently have different causes; neither establishes a match to this defect. Bodies and developer comments were checked through the GitHub API for this revision. Other channels were not searched.
+ 
+ ## 9. Files
+ 
+@@ -442,7 +444,7 @@
+ 
+ ```
+ STATISTICS
+-  Problem name     : fm336
++  Problem name     : fm336_reduced
+   Variables        : 15
+   Constraints      : 12
+ OBJECTIVE
+@@ -486,16 +488,18 @@
+ - master: 0.814125 (8 of seeds 0–9) or 1.50521312595154 (2 of them).
+ - GAMS/SCIP 10.0.3: 1.50521312595154 for seeds 0–4.
+ 
+-Expected: the optimum is at most 187/270 = 0.6925925…, attained at:
++Expected for the exact decimal model: the optimum is 187/270 = 0.6925925…, attained at:
+ - b0 = 0, s0 = 0.7, p0 = 0.343, q0 = 0, w0 = 0;
+ - b1 = 0, s1 = 0.85, p1 = 0.614125, q1 = 0, w1 = 0;
+ - b2 = 1, s2 = 2/3, p2 = w2 = 8/27, q2 = 0.5.
+ 
++The exact optimum follows by cases: all pumps off violates demand; b1 = 1 costs at least 0.814125 and b0 = 1 at least 1.715; otherwise b2 = 1, q2 ≥ 0.5 and s2 ≥ 2/3 force cost at least 187/270. The point above attains it.
++
+ This point satisfies every constraint exactly in rational arithmetic; for example, (2/3)³ = 8/27 and 0.7³ = 0.343. SCIP accepts it:
+ 
+ `scip -c "read fm336.cip" -c "read fm336_opt.sol" -c optimize`
+ 
+-prints "1/1 feasible solution given by solution candidate storage, new primal bound 6.925926e-01" and then reports 0.692592587925926 as optimal. This was checked on master and on 10.1.0.
++prints "1/1 feasible solution given by solution candidate storage, new primal bound 6.925926e-01" and then reports 0.692592587925926 as optimal. This was checked on master and on 10.1.0 by the author, and on 10.0.2 and 10.0.3 by review r1 (`../reviews/scip-bug-r1/rv_runs.log`).
+ 
+ **Reproducer 2 (3 variables, heuristics and separation off).** File `tiny2.cip`:
+ 
+@@ -520,7 +524,7 @@
+ 
+ Observed (all versions above, master included): optimal −1.23108446311479 with b = 1.
+ 
+-Expected: −1.337 at b = 0, s = 0.7, p = 0.343. With default settings SCIP returns −1.337.
++Expected for the exact decimal model: the optimum is exactly −1.337 at b = 0, s = 0.7, p = 0.343. For b = 1, minimizing 0.2 − 2.4s + s³ on [0.7, 1] gives 0.2 − 1.6√0.8 > −1.337. These exact case comparisons are recorded in `logs/minor_review_check.log`. With default settings SCIP returns −1.337.
+ 
+ **What happens.** We traced this with a `-DDEBUGSOL=on` build: the optimal point as debug solution, plus printf instrumentation in `cons_nonlinear.c`. In tiny2, at node 2 (b = 0):
+ 1. `speed` fixes s = fl(0.7) = 0.69999999999999996.
+@@ -548,8 +552,26 @@
+ - These avoid the wrong result: `constraints/nonlinear/varboundrelax = a`, `b` or `n`; `constraints/nonlinear/propfreq = -1`; `constraints/nonlinear/maxproprounds = 0`; `propagating/maxrounds = 0` together with `maxroundsroot = 0`; `numerics/feastol = 1e-9` (for fm336 only; tiny2 is still wrong).
+ - These do not: `varboundrelaxamount = 1e-6`, `conssiderelaxamount = 1e-6`, `propauxvars = FALSE`, `numerics/epsilon = 1e-12`, switching off obbt, redcost, rootredcost or probing, `conflict/enable = FALSE`, `misc/usesymmetry = 0`, and `presolving/maxrestarts = 0`.
+ 
+-We did not find out why `varboundrelax = n` avoids it.
++We did not find out why `varboundrelax = n` avoids it. Review r1 proposed an untested explanation: without bound relaxation in round 0, the activity already misses zero, so an epsilon-tolerant intersection may retain a singleton residual rather than [0,0]. Later reverse propagation then has a different right-hand side. This is a hypothesis, not a tested fix.
++
++Related reports checked: [SCIP #162](https://github.com/scipopt/scip/issues/162) (multilinear suboptimal result, discussion points toward orbitopal symmetry) and [SCIP #190](https://github.com/scipopt/scip/issues/190) (false presolve infeasibility with small coefficients). They appear to have different causes; no common cause was established.
+ 
+ **Possible direction** (only a suggestion; we have not tested a fix): most intersections in `cons_nonlinear.c` and `nlhdlr_default.c` use `SCIPintervalIntersectEps`, but the intersection in `SCIPintervalPropagateWeightedSum` is exact. Another option is to relax fixed variables and fixed auxiliary variables by epsilon in mode `r`.
+ 
+ **Impact.** We found this while computing bounds for decomposed subproblems of the MINLPLib instance waterno2_06. On those 166-variable subproblems SCIP's "optimal" values were too high by up to 9.4 (about 17 %), depending on the random seed. We can provide those models (CIP and GAMS) if useful.
++
++## Response to review
++
++Review: `../reviews/scip-bug-review-r1.md`. Checked and resolved on 2026-10-03.
++
++| issue | resolution and evidence |
++|---|---|
++| 1. Inconsistent totals | Raw-log recount confirms 0/122 with b, versus 78/122 for matched default cases. Corrected the headline; the old CSV omits two later p4 tests. |
++| 2. Uninstrumented seed 11 | Restricted the trace table to seed 8 and all common-mechanism claims to instrumented runs; recorded seed 11's first b35 implication and 0.85-station caveat. |
++| 3. Low pair claims | Reworded as not refuted and consistent with either tolerance effects or a nonoptimal witness; retained the certified optimum interval. |
++| 4. Seed-failure explanation | Labelled the search-path explanation as a hypothesis supported by instrumented seeds 8 and 14. |
++| 5. All-solution binary64 overclaim | Restricted the exact binary64 feasibility statement to the five examined solutions in the summary of proof claims. |
++| 6. Related upstream issues | Read #162/#190 and developer comments; added links and apparently different causes in Section 8 and the unsubmitted draft. |
++| 7. Draft consistency and exact optima | Matched the inline CIP name fm336_reduced to the attachment; gave exact case proofs for fm336 and tiny2; added r1 witness acceptance on 10.0.2/10.0.3. The optional n explanation in the draft is explicitly labelled an untested hypothesis. |
++
++Targeted check: `OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONDONTWRITEBYTECODE=1 python3 research-20260929/publication/scip-bug/minor_review_check.py > research-20260929/publication/scip-bug/logs/minor_review_check.log` (from the repository root). Results are in `logs/minor_review_check.log`. No main computation, solver campaign, project-wide verification or CI check was run for this revision.

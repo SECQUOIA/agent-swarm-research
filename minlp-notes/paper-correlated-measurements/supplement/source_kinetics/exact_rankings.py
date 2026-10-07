@@ -115,6 +115,8 @@ def describe(schedule):
 
 def run(data):
     started = perf_counter()
+    if not data.is_file():
+        raise FileNotFoundError("Prepare the pinned input with prepare_input.py, or pass --data; see README.md.")
     assert hashlib.sha256(data.read_bytes()).hexdigest() == DATA_SHA256
     with data.open(newline='') as stream:
         rows = list(csv.reader(stream))

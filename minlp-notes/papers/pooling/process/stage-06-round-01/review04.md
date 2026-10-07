@@ -33,7 +33,7 @@ No major or minor mathematical defect identified. No correction is requested. Th
 
 I read the relevant canonical geometry, relay, slab, cost-rank, parametric-rank, convex-leaf, conic, common-factor, network, and power-flow result/note material identified by `coverage.md`, without treating their status lines as evidence. I checked the original Gärtner et al. PDF, Section 4.3, Definition 11 and Lemma 12, printed pp.8–9: its direction is the stated cubic-power direction, and the parameter bound follows by summing the even-power geometric series at epsilon one quarter. I checked the original Lubin–Vielma–Zadik midpoint lemma as noted above. The description of the earlier local-optimum example agrees with [Grothey and McKinnon, Section 3, PDF pp.9–10](https://arxiv.org/pdf/2002.10899v1). The rank-two reduction structure and one-column comparison agree with [Boveroux et al., Sections 3.1 and 3.3](https://orbi.uliege.be/bitstream/2268/345162/1/OntheComplexityofLinearProgramswithparametricConstraintMatrices.pdf).
 
-The following fresh exact-arithmetic check was run with `/home/sgusev/miniconda3/envs/minlp-notes/bin/python`. It does not use the repository's geometry checker and tests physical coordinates directly. Its complete code is retained here for reproducibility:
+The following fresh exact-arithmetic check was run with `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python`. It does not use the repository's geometry checker and tests physical coordinates directly. Its complete code is retained here for reproducibility:
 
 ```python
 from fractions import Fraction as Q

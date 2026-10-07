@@ -1,0 +1,93 @@
+\section{Scheduling guarantees and limits of observation}\label{sec:scheduling}
+
+\subsection{Comparisons that keep the baseline unchanged}\label{sec:effort-baseline}
+
+A guarantee relative to the unchanged solver is available if the unchanged
+solver runs unchanged. The following statements use an ideal preemptible work
+model. Two solvers $A$ (the baseline) and $H$ (with the policy) run on the same
+input with separate states and fixed random tapes. Each solver's sequence of
+states depends only on the amount of work it has received, not on wall-clock
+time or on the other solver. Run alone, they finish after $T_A$ and $T_H$ units
+of work. A scheduler shares one processor; by aggregate time $t$, solver $S$
+has received $a_S(t)$ units of work.
+
+\begin{theorem}[Interleaving]\label{thm:interleaving}
+Let $0<\alpha<1$ and $h\ge0$. Suppose that, as long as neither solver has
+finished, $a_A(t)\ge(1-\alpha)t-h$ and $a_H(t)\ge\alpha t-h$. Then the first
+of the two solvers finishes no later than
+\begin{equation}\label{eq:interleaving}
+ \min\left\{\frac{T_A+h}{1-\alpha},\ \frac{T_H+h}{\alpha}\right\}.
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+Suppose neither solver has finished by $t_A=(T_A+h)/(1-\alpha)$. Then $A$ has
+received at least $T_A$ units of work. Because its sequence of states depends
+only on the work received, it has reached the state in which it finishes, a
+contradiction. The same argument applies at $t_H=(T_H+h)/\alpha$.
+\end{proof}
+
+\begin{corollary}[Equal shares]\label{cor:equal-shares}
+If the scheduler alternates quanta of length $q$ between the two solvers and
+switching costs nothing, one of the solvers finishes by
+$2\min\{T_A,T_H\}+q$.
+\end{corollary}
+
+\begin{proof}
+Let $A$ receive the first quantum. During the period $[2kq,2(k+1)q]$, solver
+$A$ holds at least $kq+\min\{t-2kq,q\}\ge t/2$ units of work and $H$ at least
+$kq+\max\{t-2kq-q,0\}\ge t/2-q/2$. Apply Theorem~\ref{thm:interleaving} with
+$\alpha=1/2$ and $h=q/2$: the bound is
+$\min\{2T_A+q,\,2T_H+q\}$. Since $a_A(t)\ge t/2$, the term for $A$ can be
+sharpened to $2T_A$.
+\end{proof}
+
+\begin{proposition}[Serial rescue]\label{prop:rescue}
+Run $H$ for at most $b$ units of charged work, including its startup. If it
+has not finished, discard it and run $A$ from its initial state with its
+original input and random tape. The total work is $T_H$ if $T_H\le b$, and
+$b+T_A$ otherwise. If the cap on $H$ can be overrun by at most $\delta$, the
+second case becomes at most $b+\delta+T_A$.
+\end{proposition}
+
+\begin{proof}
+If $H$ finishes within its allowance, the total is its own work. Otherwise its
+charged work is at most $b$, or $b+\delta$ with overrun, and $A$ then executes
+exactly its standalone trace, which costs $T_A$ including startup.
+\end{proof}
+
+Both guarantees depend on the baseline trace being unaffected. Shared memory or
+cache contention, uncharged process startup, decisions that depend on
+wall-clock time, and communication between the solvers can all violate the
+premises. In particular, passing an incumbent or a row from $H$ to $A$ changes
+$A$'s trajectory, and the bound $T_A$ no longer applies. The statements bound
+work, not elapsed time on a shared machine. The computational comparison of
+Section~\ref{sec:experiments} does not deploy either construction; it compares
+independent full runs.
+
+\subsection{History does not identify the best first action}\label{sec:effort-history}
+
+The triggers and the pilot rule of Section~\ref{sec:algorithms-policy} choose
+actions from what the policy has observed. The following example shows that
+such a choice cannot be guaranteed correct from the observations alone.
+
+\begin{example}[Indistinguishable histories]\label{ex:history}
+Two actions each cost one unit. In environment~1 only action~1 produces a
+proof; in environment~2 only action~2 does. Suppose the information available
+to a selector before its first action is identical in the two environments.
+A deterministic selector then makes the same first choice in both and chooses
+wrongly in one of them. If a randomized selector chooses action~1 with
+probability $p$, its first choice is correct with probability $p$ in
+environment~1 and $1-p$ in environment~2, and $\min\{p,1-p\}\le1/2$.
+\end{example}
+
+The example limits only the first choice under identical information. It does
+not rule out learning under statistical assumptions, structural tests that
+distinguish the environments, or good average behavior on a class of
+instances. Adaptive selection of solver components has been studied under such
+assumptions, for example with bandit algorithms and online learning in
+mixed-integer programming~\cite{hendel2018adaptive,chmiela2023scheduling}.
+The point for this
+paper is narrower. The triggers, ranking, and pilot of the measured policy are
+heuristics; their value can be judged only by complete runs on instances, not
+by their observed rewards.

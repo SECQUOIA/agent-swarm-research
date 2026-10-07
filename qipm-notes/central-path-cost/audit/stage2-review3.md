@@ -27,7 +27,7 @@
 - The KKT argument uses `eta=lambda/2`; it yields coordinatewise domination by the central point at that parameter and then bounds the first accurate center. No unsupported sharpness of `c_star Gamma` is claimed.
 - I independently checked the elasticity identity: `dE/dlog y=E-K`, with `K=y^2(1-x^2)/(2x^2(1+x^2))`. The comparison B and the polynomial positivity proof give `K<1`. The implication `E>2 => x>4/5` follows from the preceding monotonicity. The derivative bound for G and the resulting k=107/200 bound are valid.
 - The two integrated elasticity inequalities and their minimizations have the correct constants. The positive-series upper tail for Y, rational squaring directions for A, and the strict lower witness all prove the advertised rational enclosure. Attainment justifies converting pointwise strict upper inequalities into the strict maximum bound.
-- Ran `/home/sgusev/miniconda3/envs/qipm/bin/python central-path-cost/scripts/verify_scalar_certificate.py`: all exact rational, series-tail, and squared-radical checks passed. This script checks the displayed enclosures and margins with Fraction arithmetic, not floating-point approximations.
+- Ran `/workspace/local-home/miniconda3/envs/qipm/bin/python central-path-cost/scripts/verify_scalar_certificate.py`: all exact rational, series-tail, and squared-radical checks passed. This script checks the displayed enclosures and margins with Fraction arithmetic, not floating-point approximations.
 
 ### Distribution and arbitrary-path lower bounds
 

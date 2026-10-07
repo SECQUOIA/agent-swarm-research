@@ -12,7 +12,7 @@ Chord-LP bounds are computed two ways: exactly, with a rational greedy solver
 for "minimize a separable linear function subject to one equality and box
 bounds", and with HiGHS through scipy (as the reviewer did).
 
-Run: /home/sgusev/miniconda3/envs/minlp-notes/bin/python review_lower_bound_repro.py
+Run: python review_lower_bound_repro.py
 """
 from fractions import Fraction as Fr
 from itertools import product

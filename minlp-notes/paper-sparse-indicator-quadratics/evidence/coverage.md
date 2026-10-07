@@ -6,6 +6,14 @@ Historical review verdicts are evidence about their drafts, not validation of
 this manuscript. In particular, the two old complete-message reviews do not
 pin the exact reviewed text by digest.
 
+
+**Update 2026-09-30.** The appendices `sec:moments`, `sec:geometry`, and
+`sec:recursive` (and `checks/check_extensions.py`) were moved to `companion/`
+and are no longer part of the manuscript; rows below that cite them describe
+the companion sources. Theorem `thm:dd-star` became Remark `rem:dd-star`
+(without the dyadic Gram and root-last statements), credited to Choi et al.
+as an observation of theirs rather than a contribution.
+
 | Repository sources | Mathematical content | Relationship to this paper |
 | --- | --- | --- |
 | `results/smoothed-spectral-indicator-messages.md`; `notes/research-20260922-oracle-all-messages.md` (promotion pointer) | Sandwich-based first moment, certified approximate partition enumeration, parameter-net completeness, spectral restricted oracle, exact rational message dictionaries | Primary positive theorem; reconstructed in Sections 2–4. Includes tied and boundary-only supports, permits extra inactive branches, and uses one common noise vector. |

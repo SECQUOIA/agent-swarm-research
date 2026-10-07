@@ -1,6 +1,6 @@
 """Independent finite checks. Exact rational checks unless explicitly numerical.
 
-Run with /home/sgusev/miniconda3/envs/minlp-notes/bin/python.
+Run with python.
 No manuscript or existing verification code is imported.
 """
 from fractions import Fraction as F

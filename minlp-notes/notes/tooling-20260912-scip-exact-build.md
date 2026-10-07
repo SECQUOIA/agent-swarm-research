@@ -1,7 +1,7 @@
 # SCIP 10 exact mode + VIPR certificate toolchain (build record, 2026-09-12)
 
-Prefix: `/home/sgusev/.local/opt/scip-exact` (binaries in `bin/`: `scip`, `soplex`, `viprchk`, `viprchk_parallel`, `viprttn`, `viprcomp`, `viprincomp`, `vipr2html`).
-Build trees and test files: `/home/sgusev/build-scip/` (`scipoptsuite-10.0.3/`, `build-suite/`, `vipr/`, `build-vipr/`, `test/`).
+Prefix: `/workspace/local-home/.local/opt/scip-exact` (binaries in `bin/`: `scip`, `soplex`, `viprchk`, `viprchk_parallel`, `viprttn`, `viprcomp`, `viprincomp`, `vipr2html`).
+Build trees and test files: `/workspace/local-home/build-scip/` (`scipoptsuite-10.0.3/`, `build-suite/`, `vipr/`, `build-vipr/`, `test/`).
 
 ## Versions
 
@@ -19,14 +19,14 @@ mamba create -y -n scipbuild -c conda-forge cmake gmp mpfr boost-cpp zlib readli
 mamba install -y -n scipbuild -c conda-forge patchelf   # for the RPATH fix below
 ```
 
-The installed binaries depend on the conda env's shared libraries (`libgmp`, `libgmpxx`, `libmpfr`, `libreadline`, `libz`, `libstdc++`) via RPATH, so `/home/sgusev/miniconda3/envs/scipbuild` must not be deleted. System Python and the repo's uv environment were not touched.
+The installed binaries depend on the conda env's shared libraries (`libgmp`, `libgmpxx`, `libmpfr`, `libreadline`, `libz`, `libstdc++`) via RPATH, so `/workspace/local-home/miniconda3/envs/scipbuild` must not be deleted. System Python and the repo's uv environment were not touched.
 
 ## SCIP/SoPlex configure and build
 
 ```
-P=/home/sgusev/miniconda3/envs/scipbuild
-PREFIX=/home/sgusev/.local/opt/scip-exact
-cd /home/sgusev/build-scip && mkdir build-suite && cd build-suite
+P=/workspace/local-home/miniconda3/envs/scipbuild
+PREFIX=/workspace/local-home/.local/opt/scip-exact
+cd /workspace/local-home/build-scip && mkdir build-suite && cd build-suite
 CC=$P/bin/gcc CXX=$P/bin/g++ $P/bin/cmake ../scipoptsuite-10.0.3 \
   -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PREFIX \
   -DCMAKE_PREFIX_PATH=$P -DCMAKE_INSTALL_RPATH="$PREFIX/lib;$P/lib" -DCMAKE_BUILD_RPATH="$P/lib" \
@@ -46,7 +46,7 @@ Notes:
 VIPR's CMake has no install target; binaries were copied. `viprcomp` (completer) needs SoPlex + Boost + zlib and is found through the installed `soplex-config.cmake`; `viprchk_parallel` needs TBB (from conda; otherwise it downloads oneTBB).
 
 ```
-cd /home/sgusev/build-scip && git clone https://github.com/scipopt/vipr.git && mkdir build-vipr && cd build-vipr
+cd /workspace/local-home/build-scip && git clone https://github.com/scipopt/vipr.git && mkdir build-vipr && cd build-vipr
 CC=$P/bin/gcc CXX=$P/bin/g++ $P/bin/cmake ../vipr/code -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_PREFIX_PATH="$PREFIX;$P" -DCMAKE_BUILD_RPATH="$PREFIX/lib;$P/lib" -DVIPRCOMP=ON
 make -j8
@@ -57,7 +57,7 @@ cp viprchk viprchk_parallel viprttn vipr2html viprcomp viprincomp $PREFIX/bin/
 
 Parameters (from `scip/doc/xternal.c`, page EXACT, and `grep '"exact/' src/scip/*.c`): `exact/enable` (must be set before `read`), `certificate/filename`, `certificate/maxfilesize`; advanced ones under `exact/` (`safedbmethod`, `cutmaxdenom`, `lpinfo`, ...).
 
-Example that needs the LP and branching (`/home/sgusev/build-scip/test/knap.lp`):
+Example that needs the LP and branching (`/workspace/local-home/build-scip/test/knap.lp`):
 
 ```
 Maximize
@@ -70,7 +70,7 @@ End
 ```
 
 ```
-export PATH=/home/sgusev/.local/opt/scip-exact/bin:$PATH
+export PATH=/workspace/local-home/.local/opt/scip-exact/bin:$PATH
 scip -c "set exact enable TRUE" -c "set certificate filename knap.vipr" \
      -c "read knap.lp" -c "optimize" -c "display solution" -c "quit"
 #   SCIP Status : problem is solved [optimal solution found];  Solving Nodes : 11
@@ -89,7 +89,7 @@ Findings about the tools:
 - `viprchk` on the raw `knap.vipr` reports "Verification failed": with cutting-plane separation on (default), SCIP writes incomplete ("weak") derivations, exactly as the SCIP docs state; `viprcomp` must run first. This is the same order SCIP's own ctest uses (`scip/check/CMakeLists.txt`, tests `MIPEX-*-viprcomp` then `-vipr`; pass regex `Successfully verified|Infeasibility verified`).
 - `viprttn` exits with status 255 even on success; judge it by the presence of the `.opt` file and a subsequent `viprchk`. It also prints a benign "non-ascending indices" warning on the tightened file.
 - `viprchk` exit status is 0 on success and 255 on failure.
-- Helper used for the runs: `/home/sgusev/build-scip/test/run_chain.sh <file.lp> <tag> [extra -c settings]`.
+- Helper used for the runs: `/workspace/local-home/build-scip/test/run_chain.sh <file.lp> <tag> [extra -c settings]`.
 
 ## Failure: certificate for a root-node-only instance
 

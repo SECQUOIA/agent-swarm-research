@@ -44,7 +44,7 @@ I read all of `sections/00-introduction.tex`, including the abstract, comparison
 I reran the existing exact rank-one specialization check:
 
 ```text
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python code/verify-rank-one-costs.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python code/verify-rank-one-costs.py
 Passed 160 exact comparisons: 111 feasible, 49 infeasible.
 Passed irrational optimum, zero-only total, and singleton-total regressions.
 Exact rational/radical comparisons; no numerical tolerances.

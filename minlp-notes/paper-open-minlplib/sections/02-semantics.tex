@@ -1,0 +1,218 @@
+% Plan: development/outline.md, section 5, "§2"; conventions in section 4.
+% Round-1 revision: items G1-01, G1-02 and G1-10 to G1-15 of
+% development/reviews/round1/adjudication.md. Round-2 revision: items G1-01
+% to G1-08 of development/reviews/round2/adjudication.md. Round-3 revision:
+% opus-referee 2 and 3, opus-writing 2 and 9 (development/reviews/round3/).
+% The pointer to tab:trust-full in Section 2.6 refers to the Table S37 column on
+% whether the second session read the first code (opus-referee 2; families
+% from the G1 session-record check in development/revise4-result.json; column
+% TRUST_READ of data/make_tables.py). Final build: the pricing050 primal has two
+% implementations (sol-status 2; B5-small, C-points, register).
+\section{Exact semantics, certificates and verification}\label{sec:semantics}
+
+\subsection{Model semantics}\label{sec:semantics-model}
+
+Of the formats in which MINLPLib distributes each instance \citep{vigerske2026-minlplib-documentation-database-snapshot-2026}, we use OSIL, an XML format that writes every number as a decimal string.
+
+\begin{definition}[Stored model]\label{def:sem-model}
+For an instance $I$, the \emph{stored model} $\model_I$ is the OSIL file that MINLPLib distributes for $I$, identified by its SHA-256 hash (recorded in the archive; prefixes in \cref{tab:sem-hashes}).
+We read it as follows.
+\begin{enumerate}\setlength{\itemsep}{0pt}\setlength{\parsep}{0pt}
+\item[(i)] Every numeric string $\sigma$ in the file (bounds, coefficients, \texttt{number} nodes and \texttt{constant} attributes) denotes the rational number $\dval{\sigma}$ written by its decimal digits; \texttt{INF} and \texttt{-INF} denote $\pm\infty$.
+\item[(ii)] Omitted values take the defaults of the OSIL schema: variable bounds $[0,+\infty)$, continuous type, row bounds $(-\infty,+\infty)$, \texttt{coef} $1$ and \texttt{constant} $0$.
+\item[(iii)] Operators have their real meaning (\texttt{sqrt} is the nonnegative root, \texttt{ln} the natural logarithm, angles are in radians).
+A \texttt{power} node whose exponent is a constant nonnegative integer $k$ is the polynomial $a^k$; any other \texttt{power}$(a,b)$ equals $\exp(b\ln a)$ if $a>0$ and $0$ if $a=0<b$.
+\item[(iv)] \emph{Domain rule.} A point $x$ lies in the domain of $\model_I$ if every expression of the file is defined at $x$ in the sense of~(iii).
+That is, no denominator vanishes, every \texttt{ln} argument is positive, every \texttt{sqrt} argument is nonnegative, and every \texttt{power} node falls under a case of~(iii).
+\item[(v)] Integrality requirements and fixings hold exactly, with binary variables in $\{0,1\}$.
+\end{enumerate}
+\end{definition}
+
+\Cref{app:semantics-osil} shows where rules (ii)--(iv) matter.
+
+\begin{definition}[Exact and tolerance feasibility]\label{def:sem-feasible}
+Let $\model$ be a stored model with objective $f$, variable bounds $\underline{x}_j\le x_j\le\overline{x}_j$ and rows $\underline{g}_i\le g_i(x)\le\overline{g}_i$, where the $g_i$ are written as in the file.
+A point $x$ is \emph{exactly feasible} if it lies in the domain of $\model$ and satisfies every integrality requirement, every variable bound and every row bound without tolerance.
+We write $\feas$ for the set of exactly feasible points and $\vstar(\model)=\inf_{x\in\feas}f(x)$ for minimization, $\vstar(\model)=\sup_{x\in\feas}f(x)$ for maximization, with $\inf\emptyset=+\infty$ and $\sup\emptyset=-\infty$.
+For $\varepsilon\ge0$, a point $x$ in the domain that satisfies every integrality requirement is \emph{$\varepsilon$-feasible} if $\dist(x_j,[\underline{x}_j,\overline{x}_j])\le\varepsilon$ for every variable and $\dist(g_i(x),[\underline{g}_i,\overline{g}_i])\le\varepsilon$ for every row.
+We write $\mathcal{F}_\varepsilon(\model)$ for the set of these points; thus $\feas=\mathcal{F}_0(\model)\subseteq\mathcal{F}_\varepsilon(\model)$.
+\end{definition}
+
+The smallest $\varepsilon$ for which a point is $\varepsilon$-feasible, its largest violation, is the measure that MINLPLib records for listed points \citep{vigerske2026-minlplib-documentation-database-snapshot-2026}.
+All 43 instances minimize except \inst{pricing050}; we write $\sense=+1$ for minimization and $\sense=-1$ for maximization, and every direction below, such as rounding down or up, is reversed for maximization.
+
+Reading the decimals exactly is a choice: MINLPLib's primary format is the GAMS scalar format \citep{vigerske2026-minlplib-a-library-of-mixed}, the OSIL schema types every numeric attribute as \texttt{xs:double}\footnote{OSiL schema~2.0 (\texttt{OSiL.xsd}, \texttt{OSgL.xsd}, \texttt{OSnL.xsd}), \url{http://www.optimizationservices.org/schemas/2.0/}, read on 2026-10-04.}, and solvers work with binary64 data.
+So ``the MINLPLib model'' has three readings:
+\reading{a}, the GAMS text with its decimals read exactly;
+\reading{b}, the OSIL text with its decimals read exactly (\cref{def:sem-model});
+and \reading{c}, the data rounded to binary64, as solvers see them ($\fl$ denotes rounding to nearest binary64, and $\uround=2^{-53}$).
+\emph{Unless a statement names another reading, every claim in this paper concerns \reading{b}}, following exact MILP solvers, which treat input data as rational numbers and floating-point data as approximations of them \citep{cook2011-an-exact-rational-mixed-integer,eifler2023-a-computational-status-update-for,hoen2025-analyzing-the-numerical-correctness-of}.
+The exceptions, each named where it occurs, are the transfer of the \inst{catmix} bounds to \reading{a} (\cref{prop:catmix-transport}), the statements about \reading{c} in \cref{rem:sem-readings}(2) and \cref{app:semantics-binary64}, the statements about binary64 data of small derived models in \cref{sec:solvers-invalid}, and the audit's transfer of its refutations to the GAMS forms (\cref{sec:audit-hyp}).
+
+\begin{remark}[What transfers between the readings]\label{rem:sem-readings}
+\leavevmode
+\begin{enumerate}\setlength{\itemsep}{0pt}\setlength{\parsep}{0pt}
+\item[(1)] Of the 21 instances whose GAMS and OSIL forms we compared exactly, readings (a) and (b) define the same model for 17 and differ for the four \inst{catmix} instances, whose OSIL files print binary64 products such as \texttt{0.045000000000000005} in place of $9/200$; for the other 22, a comparison at sample points found no difference (numerical evidence; \cref{app:semantics-gams}).
+\item[(2)] Under \reading{c} each datum changes by a relative amount of at most $\uround$.
+For \reading{c} we claim only the following: \inst{lukvle10} (integer data) is the same model; our \inst{lnts} points stay exactly feasible (only inactive angle bounds change); and our points of \inst{dtoc5}, \inst{chain}, \inst{powerflow} and \inst{waterno2} are not feasible (\cref{app:semantics-binary64}).
+For the other points feasibility under \reading{c} is not established.
+The exact optima of \inst{camshape} and \inst{hvycrash} and every gap at or below $10^{-16}$ relative are statements about \reading{b}.
+\end{enumerate}
+\end{remark}
+
+\paragraph{Listed data.}
+The \emph{best listed dual bound} of an instance is the best single-solver dual bound on its MINLPLib page.
+An instance is \emph{listed as open} if its page has no solved mark (\cref{sec:intro-records}).
+All 43 instances are listed as open; \cref{sec:results-selection} describes how we selected them.
+MINLPLib's instance list also gives one dual bound per instance, formed from the per-solver bounds by trusting a bound only if other solvers confirm it \citep{vigerske2014-minlplib-2}; we call it the \emph{dual bound in the instance list}.
+It can be weaker than the best listed dual bound.
+We fetched the instance pages \citep{cache2026-minlplib-pages-for-43-target} on 2026-09-29 and the audit pages on 2026-09-30; on 2026-10-02 the relevant pages, marks, points, bounds and OSIL files were unchanged (\cref{app:semantics}).
+
+\subsection{Certificates}\label{sec:semantics-cert}
+
+\begin{definition}[Bounds, enclosures and closures]\label{def:sem-certificate}
+Let $\model$ be a stored model with objective $f$ and sense $\sense$.
+\begin{enumerate}\setlength{\itemsep}{0pt}\setlength{\parsep}{0pt}
+\item[(a)] A number $\Lcert$ is a \emph{valid dual bound} if $\sense\Lcert\le\sense\vstar(\model)$.
+\item[(b)] An \emph{optimum enclosure} is a pair $(\Lcert,\Uprim)$ such that $\Lcert$ is a valid dual bound and some point $x^*$ is proved to lie in $\feas$ with $\sense f(x^*)\le\sense\Uprim$.
+Its \emph{absolute gap} is $\gapabs=\sense(\Uprim-\Lcert)$, and its \emph{relative gap} is $\gaprel=\gapabs/\min(|\Lcert|,|\Uprim|)$ if $\Lcert,\Uprim\ne0$.
+\item[(c)] A \emph{closure} is an optimum enclosure with $\gaprel\le10^{-6}$.
+\item[(d)] $\model$ has an \emph{exact optimum} if we characterize $\vstar(\model)$ exactly and prove that some $x^*\in\feas$ attains it.
+\end{enumerate}
+\end{definition}
+
+In practice $\Uprim$ is the upper end of a rigorous enclosure of $f(x^*)$ (the lower end for maximization).
+A closure applies MINLPLib's gap tolerance under exact semantics; it earns no solved mark, which counts solver claims.
+A solver run reaches a \emph{floating-point closure} if it reports optimality, or a gap below its tolerance, under its own feasibility tolerances, and a \emph{floating-point near-closure} if its printed relative gap is at most $10^{-4}$.
+A floating-point closure is a \emph{tolerance-level closure} if, in addition, its dual bound is valid.
+None of these is a closure in the sense of \cref{def:sem-certificate}; we credit them by name (\cref{sec:results-prior}).
+In every closure $\Lcert$ and $\Uprim$ have the same sign (else $\gaprel\ge2$), so $\gaprel$ also bounds the errors of $\Lcert$ and $f(x^*)$ relative to $\vstar$.
+For the KAN enclosures of $\RP$, some of whose values are close to zero, we report $\gapabs$ only (\cref{sec:other-bb}).
+Where an exact optimum is attained, tables print the words ``exact optimum'' instead of a gap of $0$.
+
+Every comparison in \cref{sec:points,sec:audit,sec:solvers} rests on two elementary statements (stated for minimization).
+
+\begin{lemma}[Enclosure]\label{lem:sem-enclosure}
+Let $\Lcert$ be a valid dual bound for a stored model $\model$.
+\begin{enumerate}\setlength{\itemsep}{0pt}\setlength{\parsep}{0pt}
+\item[(a)] If $x^*\in\feas$ and $f(x^*)\le\Uprim$, then $\Lcert\le\vstar(\model)\le f(x^*)\le\Uprim$.
+In particular $\vstar$ is finite, $0\le\vstar-\Lcert\le\Uprim-\Lcert$ and $0\le f(x^*)-\vstar\le\Uprim-\Lcert$.
+\item[(b)] Every point $\hat x$ in the domain of $\model$ with $f(\hat x)<\Lcert$ lies outside $\feas$.
+\end{enumerate}
+\end{lemma}
+
+Part (a) follows from $\vstar\le f(x^*)$ and validity; for (b), $\hat x\in\feas$ would give $\vstar\le f(\hat x)<\Lcert$.
+By part~(b), a listed or published point whose objective lies below one of our dual bounds is not exactly feasible, whatever its listed violation.
+Our dual bounds hold over $\feas$ only, not over $\mathcal{F}_\varepsilon(\model)$ for $\varepsilon>0$.
+For a Lagrangian-type certificate, a point that satisfies the kept constraints and violates the dualized rows by at most $\tau$ can lie below $\Lcert$ only by an amount that the multipliers control.
+Let $\Lcert\le\inf_{x\in X}[f(x)+\lambda^{\top}h(x)+\mu^{\top}g(x)]$ with $\mu\ge0$, where $X$ is the set defined by the constraints that the certificate keeps and $h$, $g$ are the dualized rows in their written scaling.
+Then every $\tilde x\in X$ with $|h_i(\tilde x)|\le\tau$ and $g_j(\tilde x)\le\tau$ for all $i$ and $j$ satisfies $f(\tilde x)\ge\Lcert-\tau(\|\lambda\|_1+\|\mu\|_1)$, by Hölder's inequality and $\mu\ge0$.
+The sum $\|\lambda\|_1+\|\mu\|_1$ can grow with the length of a chain of coupled rows; \cref{prop:camshape-deficit} quantifies this for \inst{camshape}.
+
+\begin{proposition}[Refutation by an exactly feasible point]\label{prop:sem-refutation}
+Let $\model$ be a stored model, let $\mathcal{F}'\supseteq\feas$, and let $v'=\inf_{x\in\mathcal{F}'}f(x)$.
+Examples of $\mathcal{F}'$ are $\mathcal{F}_\varepsilon(\model)$ for any $\varepsilon\ge0$, and the set of points that a solver's feasibility test accepts, if that test accepts every exactly feasible point.
+\begin{enumerate}\setlength{\itemsep}{0pt}\setlength{\parsep}{0pt}
+\item[(a)] If $\hat x\in\feas$ and $f(\hat x)<b$, then $b>\vstar(\model)$ and $b>v'$.
+Hence $b$ is neither a valid dual bound nor the optimal value of $\model$ or of the relaxed problem $\min\{f(x):x\in\mathcal{F}'\}$, and any claim that either problem is infeasible is false.
+\item[(b)] If $\Lcert$ is a valid dual bound for $\model$ and $\tilde x\in\mathcal{F}'\setminus\feas$ satisfies $f(\tilde x)<\Lcert$, then $\tilde x$ contradicts no statement about $\model$: it shows $v'<\Lcert$, which is compatible with $\Lcert\le\vstar(\model)$.
+\item[(c)] Parts (a) and (b) say nothing about a model with other data, such as the binary64 model of \reading{c}.
+\end{enumerate}
+\end{proposition}
+
+Parts (a) and (b) need only $\feas\subseteq\mathcal{F}'$.
+A feasibility test on binary64 data can reject exactly feasible points at very tight tolerances, so that this inclusion fails; for the witnesses against SCIP we therefore record that SCIP's own check accepts them (\cref{prop:scip-witnesses}).
+Part~(b) covers, for example, the values that BARON returns for \inst{camshape100} and \inst{camshape200} (\cref{prop:baron-camshape}).
+
+\subsection{Categories A and B}\label{sec:semantics-categories}
+
+We sort each disagreement between our results and a listed or published value into one of two categories.
+
+\begin{definition}[Categories of disagreement]\label{def:sem-categories}
+\leavevmode
+\begin{enumerate}\setlength{\itemsep}{0pt}\setlength{\parsep}{0pt}
+\item[(A)] A \emph{tolerance artifact} is a reported value that no exactly feasible point attains, or a reported point that is not exactly feasible, while the reported dual bound, if any, is valid.
+We say that such a value is ``not attainable under exact feasibility'' and that such a point is ``feasible only within a tolerance''.
+\item[(B)] An \emph{invalid claim} is a reported dual bound or infeasibility claim that an exactly feasible point contradicts, as in \cref{prop:sem-refutation}(a).
+We say that such a bound is ``invalid as listed'' or ``invalid as recorded; cause unknown''.
+\end{enumerate}
+\end{definition}
+
+Category~A covers values on both sides of the optimum: the listed points p2 of \inst{camshape400} and \inst{camshape800} lie below it, and the listed value $-0.21413$ of \inst{hvycrash} lies above the value $-0.2185$ of every exactly feasible point.
+A category~A value need not be an error under the tolerance with which it was produced.
+For category~B we attribute no cause; we reserve ``wrong optimal value'' and ``defect'' for SCIP, the one case that we refute under the solver's own tolerance semantics and for which we trace a mechanism (\cref{sec:solvers-invalid}).
+Category~A statements rest on evaluated objectives, never on page displays, which can fall below our dual bounds by rounding alone (for example, for \inst{lnts100}, \inst{lnts400}, \inst{lukvle10} and \inst{chain50}--\inst{chain200}).
+
+\subsection{Display rules}\label{sec:semantics-display}
+
+Certified displays are rounded in a direction that preserves the bound, never to nearest.
+Dual bounds are rounded down and primal values up (reversed for maximization), so that each display is itself a valid bound.
+Gaps and other proved upper bounds are rounded up, and ``at least'' margins and improvement factors down.
+An exact optimum is shown by its floor and ceiling displays.
+Gap cells are computed from the exact certificate ends and can be smaller than the difference of the printed displays.
+Floating-point output strings, such as shortest round-trip decimals, can lie on the wrong side of the printed value and are never used as bounds (\cref{app:displays}).
+
+\subsection{Arithmetic and trust base}\label{sec:semantics-trust}
+
+Each dual and primal computation carries one of three arithmetic tags: \arith{E}, exact rational or algebraic arithmetic (Python integers and fractions, integer square roots, GMP); \arith{I}, mpmath~1.3.0 interval arithmetic at a stated precision, with the primitives used named; and \arith{F}, our own outward-rounded binary64 arithmetic, with one \texttt{nextafter} step per operation or a padding lemma that we prove.
+No proof in this paper assumes an accuracy bound for the elementary functions of NumPy, the C mathematical library or Intel SVML; mpmath's interval functions are trusted where \cref{tab:trust} shows \arith{I}, and the second audit checker also assumes an accurate 90-digit mpmath exponential (\cref{app:audit-existence}).
+The \arith{F} computations rest on one hypothesis.
+
+\begin{hypothesis}{H0}[IEEE binary64]\label{hyp:fp-ieee}
+The floating-point operations used by the \arith{F} codes are IEEE~754 binary64 operations with rounding to nearest (ties to even) and gradual underflow.
+In particular, $+$, $-$, $\times$, $\div$ and the square root are correctly rounded, \texttt{nextafter} returns the adjacent binary64 number, and multiplication by a power of two is exact when it neither overflows nor underflows.
+In addition, the conversion of a rational number (Python \texttt{Fraction}) or of a decimal string to binary64 is correctly rounded (true of CPython's \texttt{float}).
+\end{hypothesis}
+
+The \inst{eg} certificates also widen library values of exponentials and integer powers by explicit error margins; \cref{thm:eg-trust} states the hypotheses under which their dual bounds are rigorous.
+
+The trust base consists of integer and rational arithmetic, \cref{hyp:fp-ieee}, mpmath~1.3.0 interval arithmetic for the named primitives, the reading of \cref{def:sem-model} by the readers of each family, the correctness of the named checking programs (inspected and rerun, not formally verified) and the classical theorems used (\cref{app:repro} gives labels for these components).
+The evidence level of a result is \evid{hand}, a proof written out in full, without computation (the name refers to the form of the proof, not to who wrote or checked it); \evid{stored}, a computer-assisted proof whose stored finite certificate is checked by exact or outward-rounded replay; or \evid{rerun}, a computer-assisted proof whose check reruns a search or the numerical computation that produced its data, because these are not stored.
+For \inst{eg} the leaf partition is stored and checked for coverage; only the per-leaf certificates are recomputed.
+A result can combine levels, as in \evid{hand}+\evid{stored}.
+Numerical evidence, such as floating-point solves, high-precision evaluation or random sampling, is labelled where we report it and never establishes a bound, an enclosure or exact feasibility.
+
+Every certificate proves its statement for \reading{b}: inspection of the code by an agent session showed that each certifying code reads the data exactly, as outward enclosures, or as correctly rounded binary64 values whose rounding its error analysis covers (the data readings of \cref{app:semantics-codes}).
+\Cref{sec:points-trust} states where mpmath enters a primal claim.
+\Cref{tab:trust}, a reference for \cref{sec:split,sec:other,sec:points}, gives for each certificate family (a row of the table) the arithmetic and trusted primitives, the implementation that certifies the displayed dual bound and what the second one certifies, the status (\cref{sec:semantics-protocol}) and the evidence level; \cref{tab:trust-full} adds data readings and primal constructions.
+
+\input{tables/tab-trust}
+
+\subsection{Verification protocol and its limits}\label{sec:semantics-protocol}
+
+AI agents (Anthropic Claude and OpenAI GPT models), working under the authors' direction, selected the instances, devised the certificate constructions, wrote the proofs, implemented the computations and re-implemented them separately, checked code and proofs, ran the solver experiments and the audit, searched the literature and drafted the manuscript.
+In this paper, ``we'' refers to the authors together with the agent sessions they directed; where a statement concerns what a person did, it says so.
+The project records do not identify the model of every session.
+No person outside the authors has checked the code or the proofs.
+% The authors' confirmation of this paragraph is requested by the \TODO in the
+% declarations (11-conclusion.tex), so that only declaration placeholders print.
+
+The \emph{first implementation} of a certificate is the code that produced it.
+A \emph{second implementation} was written later, in a separate agent session that received the statement to be checked, the model files and the stored inputs, and wrote its own code; in most families it also read the first implementation (see below).
+We call it \emph{separately written} if its checking computation neither imports nor runs the first implementation and, as far as the records show, contains no code copied from it (some second sessions ran or imported first code for side comparisons, which the records name and no certificate uses).
+This is weaker than independent development.
+The sessions shared one file system, and in most families the session that wrote the second implementation had read the existing code in full before writing its own, as part of reviewing it (\cref{tab:trust-full} names these families).
+The session that wrote the second bounding code for \inst{ann_cumene_tanh} read the first in full and copied one of its idioms (\cref{rem:ann-saturation}); that code is therefore not separately written, and the \inst{ann_cumene_tanh} bound has the status proved, not verified.
+Three components are shared by both implementations: mpmath where \cref{tab:trust} lists it; one rigorous exponential and interval core used by both KAN bounding paths; and one OSIL reader for \inst{chain}, \inst{catmix}, \inst{powerflow}, \inst{waterno2}, \inst{ann_cumene_tanh}, the KAN instances, \inst{hvycrash}, \inst{ex6_2_5}, \inst{ex6_2_7}, \inst{etamac} and \inst{pricing050}.
+Separately written readers reproduced its output exactly for \inst{powerflow}, \inst{waterno2}, \inst{ann_cumene_tanh} and the KAN instances, and further readers check the model data of the other families (\cref{app:families}); for \inst{pricing050}, a third code with its own reader also reproduces the displayed bound.
+Apart from these shared components, every computer-assisted dual certificate except that of \inst{ann_cumene_tanh} has at least two separately written implementations, which need not certify the same value (\cref{tab:trust}).
+For \inst{optcdeg2}, \inst{lukvle10}, \inst{catmix}, \inst{etamac} and \inst{pindyck} the displayed dual bound comes from one of them and the other certifies only a slightly weaker bound; for \inst{eg_disc2_s} the other covers only part of the domain.
+Every primal claim has two implementations except that of \inst{etamac}, which comes from one implementation (\cref{sec:points-trust}).
+
+A \emph{replay} reruns the same code on stored inputs and must reproduce the stored result; a \emph{regeneration} reruns a multiplier computation or a search and may return another valid certificate.
+
+We use three words for the status of a statement.
+It is \emph{proved} if a proof at one of the evidence levels of \cref{sec:semantics-trust} establishes it.
+It is \emph{verified by a separately written implementation} if, in addition, a separately written second implementation reproduced its computer-assisted part.
+It is \emph{computed} if a single implementation produced it and we do not present it as proved; we label such statements with this word and do not use them as premises.
+Solver output and published values are \emph{floating-point output}: we compare them with our results but never use them as premises.
+Interpretation (\cref{sec:interpretation}) is labelled as such and is never used as a premise.
+
+Agent sessions directed by the same authors and given the same written statements can share a misreading of the model or of the statement, and a session that read the existing code can adopt its misreadings; separately written code reduces this common-mode risk less than code from independent teams would.
+The following reduce it without removing it.
+Every check uses exact or outward-rounded arithmetic, so it does not inherit rounding errors from the computation that proposed the certificate.
+Separately written readers reproduce the shared OSIL reader where stated, and for the 21 of the 43 instances whose GAMS and OSIL forms we compared exactly, the forms agree except for the \inst{catmix} coefficients (\cref{app:semantics-gams}; the audit comparisons and their exceptions are in \cref{app:audit-history}).
+MINLPLib's listed points have small residuals under our readers; a misread coefficient that matters at those points would make these residuals large.
+SCIP, with its own OSIL reader, accepts binary64 roundings of our points at tight tolerances, such as $10^{-12}$ for \inst{chain} (floating-point evidence only).
+The point checks and many dual checks include negative controls, perturbed inputs that the checker must reject.
+Finally, the archive stores certificates, inputs and logs, so that others can rerun every check (\cref{sec:repro}).

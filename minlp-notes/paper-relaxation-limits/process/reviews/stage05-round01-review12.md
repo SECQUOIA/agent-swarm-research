@@ -48,7 +48,7 @@ Primary-source access was successful. I read `literature/AGENTS.md` before consu
 
 7. **Affine obstructions and comparisons — Section 15, lines 120–218.** Uniform moments give `E[S]=0` and `E[S^2]=n`; nonnegative `S` cannot have these moments. Symmetry retains at least half the witnesses, including even-dimensional boundary mass. If `t<r-1` and `t<ceil(n/2)`, there are at least `t+1` free variables. For nonnegative fixed sum `a`, selecting `a+1` negative indicators gives degree at most `r-1` and exact localizer `-2^{-(a+1)}`; negative `a` is rejected by the constant localizer. The `r=1` conclusion is vacuous as stated. This establishes a failure of the particular substitution method, without asserting an affine upper bound. A satisfiability refutation yields only one violated clause, hence normalized `1/m`; multiaffinity transfers that bound to the cube but does not raise it to `1/16`.
 
-My reproducible checker is `verification/reviewer12/stage05-round01/check.py`; run it with `/home/sgusev/miniconda3/envs/minlp-notes/bin/python`. It exited successfully and wrote `results.json`, using only integer, rational, and symbolic arithmetic:
+My reproducible checker is `verification/reviewer12/stage05-round01/check.py`; run it with `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python`. It exited successfully and wrote `results.json`, using only integer, rational, and symbolic arithmetic:
 
 - 15,276 support families on five originals, with up to four distinct rows of support size at most three and repeated rows appended; exact basis-union and all consistent parity-fiber counts.
 - Formal polynomial verification of the quadratic cut, cubic graph transfer, and eight-corner Bernstein identities.

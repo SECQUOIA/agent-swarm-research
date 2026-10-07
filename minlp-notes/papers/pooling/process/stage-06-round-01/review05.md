@@ -47,7 +47,7 @@ Primary-source checks included:
 
 ## Reproducible finite checks
 
-I reran the following existing scripts with `/home/sgusev/miniconda3/envs/minlp-notes/bin/python`. All exited successfully:
+I reran the following existing scripts with `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python`. All exited successfully:
 
 ```text
 code/parametric_path_lp/exact_rank_one_slab_check.py

@@ -1,0 +1,94 @@
+\subsection{Stars}\label{sec:star-bench}
+
+The blocks of Sections~\ref{sec:minlplib}--\ref{sec:mechanism} have at most four
+variables, and the polytope enumeration certified all of them. We test the
+algorithm of Theorem~\ref{thm:star} offline at large scale, and star blocks,
+certified by the simpler star oracle of Section~\ref{sec:star}, inside the
+solver on a family whose merged blocks are stars with up to 16 leaves.
+
+\paragraph{The algorithm at scale (Part 4S).} On random constrained stars with
+$k\in\{10,100,1000,10000\}$ leaves (five instances each), $2k$ center--leaf
+rows, one to three rows in the center alone and small rational coefficients of
+both signs, we compared an implementation of the sweep of the proof with the
+simpler star oracle of our separator (Section~\ref{sec:star}). Where both ran
+($k\le1000$), the two minima were equal as rational numbers, and on all 20
+instances the sweep's minimizer was exactly feasible and attained the reported
+value. The sweep took a median of 1.3\,ms, 12\,ms, 0.17\,s and 2.1\,s of CPU time
+for the four values of $k$, close to linear growth, whereas the simpler oracle
+took 6\,ms, 0.43\,s and 29\,s for $k\le1000$, about 70 times more per tenfold
+increase in $k$; at $k=10^4$ it was not run, because its extrapolated time
+exceeded ten minutes per instance. The minima had numerators and denominators
+of at most 94 and 78 bits, with no steady growth in $k$, in line with the size
+bounds of Appendix~\ref{app:star}.
+
+\paragraph{Stars in the solver (Part 5S).} An instance has $n\in\{10,20\}$
+stars with $k\in\{4,8,16\}$ leaves each (five instances per pair, 30 in total).
+Star $i$ has a center $y_i\in[0,1]$ and leaves $x_{ij}\in[0,1]$ with rows
+$\Phi_{ij}(x_{ij},y_i)-t_{ij}\le0$, where $\Phi_{ij}$ is the function $\Phi_A$
+of~\eqref{eq:family} with $\omega_A=1$ for a random two-point set
+$A_{ij}\subset\{m/64:m=0,\dots,48\}$, and one center--leaf row
+$x_{ij}-y_i\le d_{ij}$ with $d_{ij}\in\{1/8,1/4,1/2,1\}$; a coupling row
+$\sum_iy_i\le0.8n$ does not bind, and the objective is $\min\sum_{ij}t_{ij}$.
+The optimum of each star is the minimum over $y$ of a sum of $k$ piecewise
+quadratic functions, which we computed exactly and checked against an
+independent implementation of the sweep. Pairs and blocks of four variables
+miss the joint minimum of a star whenever the leaves' preferred centers have no
+common point (Proposition~\ref{prop:gain}), so the family tests whether the
+whole star is worth relaxing jointly. We compared SCIP, SCIP-nolocks,
+SCIP-extra and Gurobi with three separator modes that differ only in their
+blocks and first directions (Table~\ref{tab:modes}): blocks of at most four
+variables with whole-row directions or with the block direction first, and
+star blocks with the block direction first.
+
+\begin{table}[t]
+\centering\footnotesize
+\caption{The star family (Part 5S): median root bound as a fraction of the
+optimum, and instances solved within 300\,s, for each number $k$ of leaves (ten
+instances each: $n=10$ and $n=20$ stars). Gurobi had no root runs. The eight full runs that were stopped at the hard
+process limit during a load spike count as unsolved (see the text).}\label{tab:stars}
+\begin{tabular}{@{}lrrrrrrr@{}}
+\toprule
+& \multicolumn{3}{c}{Root bound / optimum} & \multicolumn{4}{c}{Solved}\\
+\cmidrule(lr){2-4}\cmidrule(l){5-8}
+Mode & $k=4$ & $k=8$ & $k=16$ & $k=4$ & $k=8$ & $k=16$ & total\\
+\midrule
+SCIP & 0.954 & 0.815 & 0.655 & 7 & 3 & 0 & 10\\
+SCIP-nolocks & 0.526 & 0.580 & 0.547 & 10 & 5 & 0 & 15\\
+SCIP-extra & 0.943 & 0.858 & 0.738 & 10 & 3 & 0 & 13\\
+Gurobi & & & & 9 & 8 & 5 & 22\\
+whole row, $\le4$ variables & 0.956 & 0.821 & 0.651 & 10 & 2 & 0 & 12\\
+block direction, $\le4$ variables & 0.963 & 0.834 & 0.664 & 10 & 4 & 0 & 14\\
+block direction, stars & 1.000 & 1.000 & 1.000 & 9 & 9 & 1 & 19\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:stars} gives the results. With star blocks, the root bound was
+within $10^{-6}$ (relative) of the optimum on all 30 instances, whereas SCIP's
+root bound reached a median of 95\%, 82\% and 66\% of the optimum for $k=4$, 8
+and 16, and SCIP-extra 94\%, 86\% and 74\%. Here SCIP's implicit-discreteness
+presolve helps: SCIP-nolocks reached only 53 to 58\%. Blocks of four variables
+changed SCIP's median root bound by less than two percentage points with either
+direction rule (on single instances by $-2$ to $+7$ points): a block that contains three leaves of a star cannot see
+the joint minimum of all $k$. The star oracle certified all 4{,}650 of its
+support calls in the root runs, on blocks of 5, 9 and 17 variables, with a
+median of 7.8\,ms and a maximum of 0.2\,s per call, whereas the enumeration of
+Theorem~\ref{thm:polytope} took a median of 79 to 114\,ms on the blocks of four
+variables. The star mode solved 19 instances, more than any SCIP setting (at
+most 15) and than the separator with smaller blocks (at most 14), but fewer
+than Gurobi (22). Where it did not solve an instance, its bound was already
+optimal (in all ten such runs that recorded a bound), but SCIP had not found a near-optimal solution: on the largest
+instances its incumbent was 7 to 10\% above the optimum after 300\,s, while
+Gurobi's incumbent was within $2\cdot10^{-4}$ (relative) of the optimum and its
+bound up to 1.4\% below it. The separator also used its whole allowance of
+60\,s (more in one run during the load spike described below), mostly on the
+enumeration for the blocks of four variables that it tried after the star
+blocks. Eight full runs
+(three of SCIP, one of Gurobi and four of the separator modes) were stopped at
+the hard process limit during a 13-minute period in which an unrelated process
+raised the host load to 126; we count them as unsolved. Seven further runs that
+overlapped the spike reached the time limit and were not rerun. A rerun of these eight
+runs at normal load, outside the protocol, solved three of them, two of SCIP and
+one of the separator with whole-row directions and blocks of four variables;
+with them, SCIP would solve 12 instances and that mode 13, and the comparison
+above would not change.

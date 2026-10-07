@@ -1,6 +1,6 @@
 # Scout report, areas A and B: bound tightening and spatial branching
 
-Date: 2026-09-22. Scope: literature on domain reduction and spatial branching for nonconvex MINLP, with emphasis on explicitly stated open problems and missing theory. Sources: the local KB (`literature/papers/<slug>`, cited as [KB:slug]), in-house results and notes in `/home/sgusev/repo/minlp-notes`, and web search. Quotations come from full texts I read (Kannan–Barton 2017 and 2018, Gleixner et al. 2017, Caprara–Locatelli–Monaci 2016 abstract, Dey–Han–Wang 2025) or from KB summaries. "Unsolved" judgments reflect a bounded search. They are not proofs of novelty.
+Date: 2026-09-22. Scope: literature on domain reduction and spatial branching for nonconvex MINLP, with emphasis on explicitly stated open problems and missing theory. Sources: the local KB (`literature/papers/<slug>`, cited as [KB:slug]), in-house results and notes in `/workspace/repo/minlp-notes`, and web search. Quotations come from full texts I read (Kannan–Barton 2017 and 2018, Gleixner et al. 2017, Caprara–Locatelli–Monaci 2016 abstract, Dey–Han–Wang 2025) or from KB summaries. "Unsolved" judgments reflect a bounded search. They are not proofs of novelty.
 
 ## In-house baseline (what the repository already covers)
 
@@ -19,13 +19,13 @@ Date: 2026-09-22. Scope: literature on domain reduction and spatial branching fo
 **State of the art.**
 - Gleixner, Berthold, Müller, Weltge, "Three enhancements for optimization-based bound tightening", *J. Glob. Optim.* 67(4) (2017), https://doi.org/10.1007/s10898-016-0450-4 (preprint: https://optimization-online.org/DB_HTML/2016/03/5356.html).
   - Enhancements: filtering with LP solutions to skip bound LPs, greedy ordering for simplex warm starts, and Lagrangian variable bounds (LVBs). LVBs are one-row aggregations obtained from OBBT duals and propagated by FBBT throughout the tree.
-  - The conclusion is purely empirical: "OBBT alone does not give a significant speedup on average, because the average reduction in the number of branch-and-bound nodes is mostly compensated by the overhead…; LVB propagation, however, leverages the effect." There is no theory of OBBT strength.
+  - The conclusion is purely empirical: on average, the cost of OBBT largely offsets the benefit of its smaller B&B trees. Propagating LVBs improves this tradeoff. There is no theory of OBBT strength.
 - Caprara & Locatelli, "Global optimization problems and domain reduction strategies", *Math. Program.* 125 (2010) 123–137.
-- Caprara, Locatelli, Monaci, "Theoretical and computational results about optimality-based domain reductions", *Comput. Optim. Appl.* 64(2) (2016) 513–533, https://doi.org/10.1007/s10589-015-9818-5. This is the main theoretical OBBT paper. Abstract: "we can easily define a lower limit for the reduction which can be attained, but we can hardly guarantee that such limit is reached… for a nontrivial class of problems, appropriate strategies exist that are always able to reach this lower limit… the same strategies lose this property as soon as we slightly enlarge the class of problems."
+- Caprara, Locatelli, Monaci, "Theoretical and computational results about optimality-based domain reductions", *Comput. Optim. Appl.* 64(2) (2016) 513–533, https://doi.org/10.1007/s10589-015-9818-5. This is the main theoretical OBBT paper. Abstract: although a lower limit on reduction is readily definable, attaining it is not generally guaranteed. They give strategies that reach the limit on a nontrivial problem class, but lose that guarantee on a slightly broader class.
 - Puranik & Sahinidis, "Domain reduction techniques for global NLP and MINLP optimization", *Constraints* 22(3) (2017) 338–376, arXiv:1706.08601 [KB:puranik2017-domain-reduction-techniques-for-global].
   - Surveys feasibility-based reduction, which solves a global min/max per variable, or a convex- or LP-relaxation surrogate, and optimality-based reduction.
   - In a solver ablation on 1,740 instances, turning reduction off increases BARON nodes by 261–1,180%, SCIP nodes by 152–417%, and Couenne nodes by 21–186%.
-  - Open directions (p. 21): filtering based on **sets** of constraints, "reliable fixed-point acceleration", principled scheduling of probing and OBBT, and reduction "that avoids the cluster effect".
+  - Open directions (p. 21): filtering based on **sets** of constraints, fixed-point acceleration with reliability guarantees, principled scheduling of probing and OBBT, and reduction methods that prevent clustering.
 - Gómez-Casares, González-Rodríguez, González-Díaz, Rodríguez-Fernández, "Impact of domain reduction techniques in polynomial optimization: A computational study", arXiv:2403.02823 (2024; revised 2025). Covers OBBT with conic relaxations and FBBT with Lagrangian dual information inside RAPOSa's RLT scheme. Future work: machine-learning choice of the reduction technique.
 - González-Díaz, González-Rodríguez, Gómez-Casares, "Bound tightening in lifted formulations", arXiv:2509.18731 [KB:diaz2025-bound-tightening-in-lifted-formulations]. RLT bound-factor constraints already imply explicit lifted-variable bounds (Theorem 1), yet keeping the redundant rows changes solver time by −48% to +73% depending on the LP subsolver. Polyhedral equivalence does not imply algorithmic equivalence.
 
@@ -37,8 +37,8 @@ Date: 2026-09-22. Scope: literature on domain reduction and spatial branching fo
   - "Learning to accelerate globally optimal solutions to the AC OPF problem", *Electric Power Systems Research* (2022), https://www.sciencedirect.com/science/article/abs/pii/S0378779622004709.
   - "Learning to accelerate tightening of convex relaxations of the AC OPF problem", *Comput. Optim. Appl.* 92 (2025) 761–786, https://doi.org/10.1007/s10589-025-00715-7.
   - The later paper learns a dynamic policy that selects which voltage-magnitude and angle-difference variables to tighten at each OBBT iteration. It reports a 9.3× average and up to 20× speedup, on networks with up to 3,375 buses. The policy is purely empirical, with no guarantee about the fixed point.
-- Alpine.jl [KB:nagarajan2026-alpine-jl-v0-5-8] runs "iterative OBBT to a bound fixed point", then adaptive multivariate partitioning.
-  - Kannan, Nagarajan, Deka, "Strong partitioning and a ML approximation for accelerating global optimization of nonconvex QCQPs", *INFORMS J. Comput.* (2025), https://doi.org/10.1287/ijoc.2023.0424, arXiv:2301.00306. They learn the partition points and report a 2–4.5× average reduction in Alpine time. They note that "solving this max-min strong partitioning problem exactly can be very challenging".
+- Alpine.jl [KB:nagarajan2026-alpine-jl-v0-5-8] iterates OBBT until the bounds reach a fixed point, then adaptive multivariate partitioning.
+  - Kannan, Nagarajan, Deka, "Strong partitioning and a ML approximation for accelerating global optimization of nonconvex QCQPs", *INFORMS J. Comput.* (2025), https://doi.org/10.1287/ijoc.2023.0424, arXiv:2301.00306. They learn the partition points and report a 2–4.5× average reduction in Alpine time. They caution that exact solution of the max-min strong-partitioning problem can be difficult.
 - Neural-network verification is a MILP setting that reuses OBBT: Badilla, Goycoolea, Muñoz, Serra, "Computational tradeoffs of OBBT in ReLU networks", arXiv:2312.16699. Also rolling-horizon OBBT, arXiv:2401.05280.
 
 **Solvers.**
@@ -55,7 +55,7 @@ Date: 2026-09-22. Scope: literature on domain reduction and spatial branching fo
    - the complexity of computing the fixed point;
    - how far it lies from the box hull of the true feasible set.
 
-   Caprara–Locatelli–Monaci (2016) say explicitly that the limit "can hardly [be] guarantee[d]". Puranik–Sahinidis ask for "reliable fixed-point acceleration". Alpine and power-systems codes iterate to a fixed point without such theory. The in-house FBBT hardness and slow-convergence results **do not** transfer automatically: LP-OBBT combines constraints and may escape the monotone least-fixed-point construction. **Likely open (≈75%).**
+   Caprara–Locatelli–Monaci (2016) emphasize the difficulty of guaranteeing attainment of the limit. Puranik–Sahinidis ask for fixed-point acceleration with reliability guarantees. Alpine and power-systems codes iterate to a fixed point without such theory. The in-house FBBT hardness and slow-convergence results **do not** transfer automatically: LP-OBBT combines constraints and may escape the monotone least-fixed-point construction. **Likely open (≈75%).**
 2. **Constraint-set filtering** (Puranik–Sahinidis): tractability boundaries for exact bounds over a set of k constraints of a given structure. Belotti 2013 handles pairs of linear inequalities (*J. Glob. Optim.* 56(3) 787–819). For bilinear constraints: Müller, Serrano, Gleixner, "Using two-dimensional projections for stronger separation and propagation of bilinear terms", *SIAM J. Optim.* (2022), https://doi.org/10.1137/19m1249825. Open in general.
 3. **Value of OBBT in node count.** No theorem quantifies how much OBBT reduces the B&B tree, for example in convergence-order terms. See B2 and the cluster problem.
 
@@ -94,7 +94,7 @@ Date: 2026-09-22. Scope: literature on domain reduction and spatial branching fo
 **State of the art.**
 - Belotti, Lee, Liberti, Margot, Wächter, *Optim. Methods Softw.* 24 (2009) [KB:belotti2009-branching-and-bounds-tightening-techniques].
   - Couenne uses a scaled violation `|x̄_i − θ_i(x̄)|/(1 + ‖∇θ_i‖)`, violation transfer, reliability pseudocosts extended to continuous variables, and strong branching.
-  - "No branching rule dominates." Full strong branching spends 90–95% of time in its LPs on the `spar-*` instances.
+  - The comparison identifies no universally dominant branching rule. Full strong branching spends 90–95% of time in its LPs on the `spar-*` instances.
 - Tawarmalani & Sahinidis (2004) introduced violation transfer.
 - SCIP 8 combines violation scores with pseudocosts, and optionally domain width and fractionality. Its branching point is a convex combination of the LP value and the interval midpoint. Speakman–Lee tabulate the defaults: SCIP uses (α, β) = (1, 0.2) and Couenne (0.25, 0.2). SCIP branches on original variables only by default.
 - Speakman & Lee, "On branching-point selection for trilinear monomials in spatial B&B: the hull relaxation", *J. Glob. Optim.* 72 (2018), arXiv:1706.08438 [KB:speakman2018-on-branching-point-selection-for].
@@ -105,15 +105,15 @@ Date: 2026-09-22. Scope: literature on domain reduction and spatial branching fo
 - Dey, Han, Wang, "Extreme strong branching for QCQPs", arXiv:2510.20650 (Oct 2025).
   - Evaluates several points per variable and chooses the variable and point jointly, with bound tightening from infeasible probes.
   - Beats Gurobi 12, BARON, and Couenne on bipartite bilinear and model-updating QCQPs.
-  - There are **no theorems**. Stated future work: "a reliability-based variant", and "Understanding why the method works particularly well for BBP is also another stream of future research."
+  - There are **no theorems**. Stated future work: a variant that incorporates reliability and an explanation of the method's particularly good performance on BBP.
 - Chen, Atamtürk, Oren, *Math. Program.* 165 (2017) [KB:chen2016-a-spatial-branch-and-cut]: complex QCQP with rank-one-violation branching. Violation-based rules produced smaller trees than a reliability rule.
-- Hübner, Gupte, Rebennack, *INFORMS J. Comput.* 38(2) (2026) [KB:hubner2026-spatial-branch-and-bound-for]: separable piecewise-linear sBB. Breakpoint branching terminates finitely. Largest-error branching converges only in the limit, and there is "no general … convergence theorem" for the discontinuous case.
+- Hübner, Gupte, Rebennack, *INFORMS J. Comput.* 38(2) (2026) [KB:hubner2026-spatial-branch-and-bound-for]: separable piecewise-linear sBB. Breakpoint branching terminates finitely. Largest-error branching converges only in the limit, and no general convergence theorem is given for the discontinuous case.
 
 **Missing theory.**
 - **No tree-size guarantee is known for any spatial branching rule.** This includes violation, pseudocost, strong, extreme strong, and volume rules.
 - The MILP analogues exist:
   - Dey, Dubey, Molinaro, Shah, "A theoretical and computational analysis of full strong-branching", *Math. Program.* 205 (2024) 303–336, arXiv:2110.10754.
-  - Cheng & Basu, "Theoretical challenges in learning for branch-and-cut", arXiv:2601.23249 (2026): local-score rules can produce trees exponentially larger than optimal, and "arbitrarily small score discrepancies … can produce trees of exponentially different sizes."
+  - Cheng & Basu, "Theoretical challenges in learning for branch-and-cut", arXiv:2601.23249 (2026): local-score rules can produce trees exponentially larger than optimal, and even tiny differences in scores can lead to exponentially different tree sizes.
   - Abstract branching models: Le Bodic & Nemhauser, *Math. Program.* (2017); Anderson, Le Bodic, Morgan, *Math. Program.* 190 (2021); a stochastic lookahead model (2024); Jiang, arXiv:2607.06343 (2026).
 - None has a **spatial** version. In spatial branching, gains shrink with box width according to the relaxation's convergence order (gap ≈ τ·w^β), and the split point is continuous. I found no abstract model of that kind.
 
@@ -128,10 +128,10 @@ Date: 2026-09-22. Scope: literature on domain reduction and spatial branching fo
   - First-order schemes suffice if the objective or the constraint violation grows linearly and the prefactors are small.
   - Second order is required at non-isolated, equality-constrained minimizers.
   - The conclusion states no open problems.
-- Kannan & Barton, "Convergence-order analysis of branch-and-bound algorithms for constrained problems", *J. Glob. Optim.* 71 (2018) 753–813 (PDF: https://rohitkannan.github.io/PDFs/papers/KannanBarton_JOGO_ConvergenceOrder.pdf). The conclusion, verbatim: "Future work involves
-  - (i) determining whether full-space lower bounding schemes can achieve second-order convergence on a neighborhood of constrained minima that are KKT points…,
-  - (ii) analyzing the convergence orders of some other widely-applicable reduced-space lower bounding schemes in the literature (see, for example, [32]) [Stuber, Scott, Barton, implicit-function relaxations, *Optim. Methods Softw.* 30 (2015)], and
-  - (iii) determining sufficient conditions on the constraint propagation scheme to ensure second-order convergence of reduced-space lower bounding schemes at constrained minima that satisfy certain regularity conditions."
+- Kannan & Barton, "Convergence-order analysis of branch-and-bound algorithms for constrained problems", *J. Glob. Optim.* 71 (2018) 753–813 (PDF: https://rohitkannan.github.io/PDFs/papers/KannanBarton_JOGO_ConvergenceOrder.pdf). The conclusion identifies three directions for further work (summarized):
+  - (i) whether full-space bounds can converge at second order throughout a neighborhood of constrained minimizers that satisfy the KKT conditions;
+  - (ii) the orders attained by additional reduced-space schemes, including [32] [Stuber, Scott, Barton, implicit-function relaxations, *Optim. Methods Softw.* 30 (2015)];
+  - (iii) propagation conditions sufficient for second-order reduced-space bounds at constrained minimizers under suitable regularity assumptions.
 - Later extensions: a 2024 *J. Glob. Optim.* paper on the convergence order of value-function relaxations in decomposition for stochastic programs (https://doi.org/10.1007/s10898-024-01458-1); Song & Khan (*Math. Program.* 2021) on ODE relaxations with second-order pointwise convergence.
 
 **In-house coverage.**

@@ -28,6 +28,6 @@ The local Orsucci–Dunjko primary text, Proposition 6, states the claimed const
 
 I inspected [Monteiro–da Silva v1, Remark 11.1](https://arxiv.org/html/2606.04348v1). It explicitly notes the lack of a finite global barrier parameter for the inverse-power perturbation. The manuscript cites only that distinction and proves its own example; it does not rely on the preprint's other claims.
 
-Running `/home/sgusev/miniconda3/envs/qipm/bin/python conditioning-paper/development/stage4_verify.py` passes. The calculations reproduce the barrier derivative checks, sharp weak-mode and direction-error constants, polynomial bounds in all four test cases, and Lorentz/Schur identity. These are corroborating checks of the supplied analytic proofs.
+Running `/workspace/local-home/miniconda3/envs/qipm/bin/python conditioning-paper/development/stage4_verify.py` passes. The calculations reproduce the barrier derivative checks, sharp weak-mode and direction-error constants, polynomial bounds in all four test cases, and Lorentz/Schur identity. These are corroborating checks of the supplied analytic proofs.
 
 No manuscript edits were made.

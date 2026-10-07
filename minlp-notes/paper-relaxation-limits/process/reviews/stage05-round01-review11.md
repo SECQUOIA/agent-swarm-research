@@ -90,7 +90,7 @@ The literature comparison retains continuous covering versus integer-negation br
 Run:
 
 ```
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python verification/reviewer11/stage05-round01/check.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python verification/reviewer11/stage05-round01/check.py
 ```
 
 The checker passes. It verifies three identities symbolically (Bernstein interpolation with denominators cleared, the cubic graph transfer, and the order-one quadratic certificate), 6,540 permitted finite degree-budget cases including order one, 2,048 exact rational full-box vertex cut evaluations on unequal and degenerate intervals, and the displayed constant arithmetic. Output is `verification/reviewer11/stage05-round01/result.json`. The symbolic identities are exact algebraic checks. The finite evaluations test their stated cases only; they do not establish asymptotic source existence or replace the universal arguments reconstructed above.

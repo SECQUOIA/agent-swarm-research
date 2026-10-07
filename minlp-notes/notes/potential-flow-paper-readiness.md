@@ -63,7 +63,7 @@ No inspected source states the combined weighted cactus guarantees above. This s
 Run the consolidated checks from the repository root:
 
 ```sh
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python code/potential_flow_mpd/run_reopened_checks.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python code/potential_flow_mpd/run_reopened_checks.py
 ```
 
 The runner records commands, outputs, exit codes, timings, and test-source hashes in [reopened_validation.json](../code/potential_flow_mpd/reopened_validation.json). Proof-check scripts retain assertions; acceptance verifiers are also exercised with site packages and assertions disabled. Numerical comparisons, exact finite arithmetic, and universal proof reviews remain distinct evidence.

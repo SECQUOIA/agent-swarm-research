@@ -26,7 +26,7 @@ McCormick's historical attribution and all bibliography fields were read, but I 
 The independent checker is `verification/reviewer14/check_stage1.py`; its recorded output is `verification/reviewer14/result.json`. It imports no manuscript code or existing verification scripts. Reproduction command from the repository root:
 
 ```sh
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python paper-relaxation-limits/verification/reviewer14/check_stage1.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python paper-relaxation-limits/verification/reviewer14/check_stage1.py
 ```
 
 The run passed. Its exact and numerical parts are deliberately distinguished:

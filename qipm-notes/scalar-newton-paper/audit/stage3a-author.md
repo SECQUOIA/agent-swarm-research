@@ -82,7 +82,7 @@ estimation is claimed as new.
 
 ## Validation
 
-- `/home/sgusev/miniconda3/envs/qipm/bin/python scripts/verify_cyclic.py`
+- `/workspace/local-home/miniconda3/envs/qipm/bin/python scripts/verify_cyclic.py`
   passes: exact small cyclic spectrum, inverse series, public solution and
   tilt norms across different sign inputs, scalar and decrement identities,
   all row-norm metadata, tree center and Hessian blocks, completion distance.

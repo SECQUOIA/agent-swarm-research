@@ -1,0 +1,584 @@
+# Minor review fixes
+
+Completed 2026-10-03: checked the original 57 fixes and addressed all 22 findings in the independent minor-fixes review. Round-2 resolutions and the one evidence-based disagreement are in [response-r2.md](response-r2.md). Each report ends with a response table. No main computation or solver campaign was repeated. No commit, push, external message or SCIP submission was made. The main summary, audit report and other tracks were not edited.
+
+Every final targeted check passed. [commands.md](commands.md) records the exact commands and results; [PROGRESS.json](PROGRESS.json) records completion and the absence of background jobs. The original report changes are in [report_changes.patch](report_changes.patch); round-2 changes are in [report_changes_r2.patch](report_changes_r2.patch). Numerical point data were preserved; the seven ANN/KAN point JSON changes correct only the interval-format description.
+
+## Integration changes
+
+These changes are recorded for the integrating agent; they have not been applied outside the owned tracks.
+
+- Remove the obsolete no-exactly-feasible-point statement for chain50–400, lnts50–400, dtoc5, lukvle10 and powerflow0030p/0039p/0039r. The reports give the exact point definitions and proof assumptions.
+- Use upward primal displays 41869.0515113203 for powerflow0039p and 41869.0515113210 for powerflow0039r. Preserve the reported enclosures.
+- The compact chain dual range in the main summary is valid; change its gap cell from ≤ 1.0e-14 to ≤ 1.01e-14. Correct the overly rounded chain50/chain200 displays in the five older documents named in the chain report. State whether gaps use exact binary64 duals or safe decimal displays. The safe-display absolute gaps are at most 9.62e-15, 1.01e-14, 9.41e-15 and 1.01e-14.
+- For lnts100, change the primal 0.5545954011669 → 0.5545954011670. For dtoc5, change only the primal 5.38967211918114 → 5.389672119181141. For lnts, gaps to certified N·h2 and safe verifier displays are ≤ 5.55e-13; summary-dual gap upper bounds are 5.79e-13 / 6.12e-13 / 5.84e-13 / 5.88e-13. For lukvle10, put the remaining gap on the dual side only conditionally on the KKT point being the global minimizer.
+- Audit Section 2: retain the 8-decimal display limit, remove the claimed 10-significant-digit limit, and define the count convention (35/38/46). Qualify spring's five (i-r) pairs as explainable by rounding; the underlying solver bounds are unknown. The 10th-significant-digit slack floor no longer follows from a display limit. Keep it as an explicit conservative choice; it changes the slack of 0 of 158 screened pairs. Counts are displayed entries (35 entries = 18 distinct strings); the 46 count includes trailing integer zeros. Three instances contribute 17 affected tie pairs. No audit class or flagged-pair count changes.
+- For eg_disc2_s, state A1/A2 for the all-leaf result: 1,114,361 checked leaves. The rigorous interval sample has 10,404 leaves. The 98,234 exclusions mean no feasible point with objective below θ*, not all leaves are side-infeasible. Only 85,685 are directly side-infeasible; 373 use Farkas and 12,176 splits. Distinguish the earlier 1,152,830 processed-box count.
+- Any SCIP diagnostic totals should read 0/122 versus 78/122 matched defaults. Keep the limits on the instrumented mechanism and examined binary64 solutions. The report and draft remain unsubmitted.
+- Update literature wording: all-four camshape maximum bound difference 4.7e-10; Waki tested M = 600–1000; distinguish cumene source versions; cite prior certified OPF work by Oustry et al.; restrict novelty to the stored MINLPLib models. Rigorous 0030r bound transport to 0030p requires a perturbation argument. Label Huang extended-model values and the separate 5-period gap.
+- Preserve existing round-1 integration notes, including the ANN finite-dual wording correction and the literature status labels. The remaining issues below do not change those labels.
+
+## Exact old → new integration edits (round 2)
+
+Apply these ordered edits; the target files were read only. The machine-readable list is [integration-r2.json](integration-r2.json). Each replacement was tested in memory against the current files. All new numeric primal displays are checked in [check_r2.log](check_r2.log).
+
+### `open-instances-summary.md`
+
+lnts50: column 5, 5.5e-13 -> 5.79e-13
+
+Old:
+```text
+| lnts50 | 0.55464755 | 0.5546687649381 | 0.5546687649387 | 5.5e-13 | chain Lagrangian, linear-tangent law, monotone in h | [verified](reviews/open-instances-verification/verification-report.md) |
+```
+New:
+```text
+| lnts50 | 0.55464755 | 0.5546687649381 | 0.5546687649387 | 5.79e-13 | chain Lagrangian, linear-tangent law, monotone in h | [verified](reviews/open-instances-verification/verification-report.md) |
+```
+
+lnts100: column 4, 0.5545954011669 -> 0.5545954011670
+
+Old:
+```text
+| lnts100 | 0.55299042 | 0.5545954011663 | 0.5545954011669 | 5.5e-13 | same | verified |
+```
+New:
+```text
+| lnts100 | 0.55299042 | 0.5545954011663 | 0.5545954011670 | 5.5e-13 | same | verified |
+```
+
+lnts100: column 5, 5.5e-13 -> 6.12e-13
+
+Old:
+```text
+| lnts100 | 0.55299042 | 0.5545954011663 | 0.5545954011670 | 5.5e-13 | same | verified |
+```
+New:
+```text
+| lnts100 | 0.55299042 | 0.5545954011663 | 0.5545954011670 | 6.12e-13 | same | verified |
+```
+
+lnts200: column 5, 5.5e-13 -> 5.84e-13
+
+Old:
+```text
+| lnts200 | 0.55219867 | 0.5545770161025 | 0.5545770161031 | 5.5e-13 | same | verified |
+```
+New:
+```text
+| lnts200 | 0.55219867 | 0.5545770161025 | 0.5545770161031 | 5.84e-13 | same | verified |
+```
+
+lnts400: column 5, 5.5e-13 -> 5.88e-13
+
+Old:
+```text
+| lnts400 | 0.55204395 | 0.5545724137001 | 0.5545724137007 | 5.5e-13 | same | verified |
+```
+New:
+```text
+| lnts400 | 0.55204395 | 0.5545724137001 | 0.5545724137007 | 5.88e-13 | same | verified |
+```
+
+dtoc5: column 4, 5.38967211918114 -> 5.389672119181141
+
+Old:
+```text
+| dtoc5 | 0.00243096 | 5.38967211918114 | 5.38967211918114 | < 1e-14 | Lagrangian convex at the costate (Mangasarian/Arrow-type) | verified |
+```
+New:
+```text
+| dtoc5 | 0.00243096 | 5.38967211918114 | 5.389672119181141 | < 1e-14 | Lagrangian convex at the costate (Mangasarian/Arrow-type) | verified |
+```
+
+chain50–400: column 4, same to 1e-14 -> exact-point objectives within 1.01e-14 of the duals
+
+Old:
+```text
+| chain50–400 | 0.0826–0.1745 | 5.06862 … 5.07226 | same to 1e-14 | ≤ 1.0e-14 | discrete catenary calibration + 2-D end-window B&B | [verified](reviews/cops-verification/verification-report.md) |
+```
+New:
+```text
+| chain50–400 | 0.0826–0.1745 | 5.06862 … 5.07226 | exact-point objectives within 1.01e-14 of the duals | ≤ 1.0e-14 | discrete catenary calibration + 2-D end-window B&B | [verified](reviews/cops-verification/verification-report.md) |
+```
+
+chain50–400: column 5, ≤ 1.0e-14 -> ≤ 1.01e-14
+
+Old:
+```text
+| chain50–400 | 0.0826–0.1745 | 5.06862 … 5.07226 | exact-point objectives within 1.01e-14 of the duals | ≤ 1.0e-14 | discrete catenary calibration + 2-D end-window B&B | [verified](reviews/cops-verification/verification-report.md) |
+```
+New:
+```text
+| chain50–400 | 0.0826–0.1745 | 5.06862 … 5.07226 | exact-point objectives within 1.01e-14 of the duals | ≤ 1.01e-14 | discrete catenary calibration + 2-D end-window B&B | [verified](reviews/cops-verification/verification-report.md) |
+```
+
+ex6_2_5: column 4, −70.752077833447706 -> −70.752077833447705
+
+Old:
+```text
+| ex6_2_5 | −111.4201713 | −70.75207783344770759 | −70.752077833447706 | 2.0e-15 | same | verified |
+```
+New:
+```text
+| ex6_2_5 | −111.4201713 | −70.75207783344770759 | −70.752077833447705 | 2.0e-15 | same | verified |
+```
+
+powerflow0039p: column 4, 41869.0515113202 -> 41869.0515113203
+
+Old:
+```text
+| powerflow0039p | 41818.27916 | 41869.05148485014 | 41869.0515113202 | 6.3e-10 rel. | SDP dual + exact leaf-bus identity (bus 29) + exact vertex cuts, B&B on 3 leaf coordinates ([extension](open-instances-wave3/powerflow/extension-report.md)) | [verified](reviews/powerflow0039-review.md) |
+```
+New:
+```text
+| powerflow0039p | 41818.27916 | 41869.05148485014 | 41869.0515113203 | 6.3e-10 rel. | SDP dual + exact leaf-bus identity (bus 29) + exact vertex cuts, B&B on 3 leaf coordinates ([extension](open-instances-wave3/powerflow/extension-report.md)) | [verified](reviews/powerflow0039-review.md) |
+```
+
+powerflow0039r: column 4, 41869.0515113208 -> 41869.0515113210
+
+Old:
+```text
+| powerflow0039r | 41804.88153 | 41869.05148327243 | 41869.0515113208 | 6.7e-10 rel. | same | verified |
+```
+New:
+```text
+| powerflow0039r | 41804.88153 | 41869.05148327243 | 41869.0515113210 | 6.7e-10 rel. | same | verified |
+```
+
+eg_int_s: column 4, 6.4531031593842274 (exactly feasible) -> 6.4531031593842275 (exactly feasible)
+
+Old:
+```text
+| eg_int_s | 6.32629896 (SCIP) | 6.4531031529331155 | 6.4531031593842274 (exactly feasible) | 1.0e-9 rel. | second-order Taylor models keeping the signed cancellation of the Gaussian-kernel rows, per-box LP over the 24 minimax rows, domain reduction, exact integer splits ([note](open-instances-wave3/eg/retry.md)); SCIP 8.1 had solved it in floating point (Göß–Burlacu–Martin) | [verified](reviews/eg-retry-review.md) (all leaves re-certified independently) |
+```
+New:
+```text
+| eg_int_s | 6.32629896 (SCIP) | 6.4531031529331155 | 6.4531031593842275 (exactly feasible) | 1.0e-9 rel. | second-order Taylor models keeping the signed cancellation of the Gaussian-kernel rows, per-box LP over the 24 minimax rows, domain reduction, exact integer splits ([note](open-instances-wave3/eg/retry.md)); SCIP 8.1 had solved it in floating point (Göß–Burlacu–Martin) | [verified](reviews/eg-retry-review.md) (all leaves re-certified independently) |
+```
+
+eg_disc_s: column 4, 5.7605396164535106 (exactly feasible) -> 5.7605396164535107 (exactly feasible)
+
+Old:
+```text
+| eg_disc_s | 3.36596129 (SCIP) | 5.760539610694994 | 5.7605396164535106 (exactly feasible) | 1.0e-9 rel. | same | verified (all leaves) |
+```
+New:
+```text
+| eg_disc_s | 3.36596129 (SCIP) | 5.760539610694994 | 5.7605396164535107 (exactly feasible) | 1.0e-9 rel. | same | verified (all leaves) |
+```
+
+eg_disc2_s: column 7, verified (part with the optimum fully; other parts by a sample of 110,676 of 979,044 leaves) -> verified on all 1,114,361 leaves under A1/A2; separate outward-rounded interval sample: 10,404 leaves of parts 0 and 2–7
+
+Old:
+```text
+| eg_disc2_s | 0 (SHOT) | 5.642100574331458 | 5.6421005799711068 (exactly feasible) | 1.0e-9 rel. | same | verified (part with the optimum fully; other parts by a sample of 110,676 of 979,044 leaves) |
+```
+New:
+```text
+| eg_disc2_s | 0 (SHOT) | 5.642100574331458 | 5.6421005799711068 (exactly feasible) | 1.0e-9 rel. | same | verified on all 1,114,361 leaves under A1/A2; separate outward-rounded interval sample: 10,404 leaves of parts 0 and 2–7 |
+```
+
+waterno2_06: column 4, 282.888 (listed) -> 282.888038 (exactly feasible)
+
+Old:
+```text
+| waterno2_06 | 165.19 | **278.230573** (separator branching: 272.584700; wave 2: 263.735099) | 282.888 (listed) | 1.67% (3.78%; 7.26%) | wave 2 [verified](reviews/waterno2-verification/verification-report.md); separator branching [verified](reviews/waterno2-sepbranch-review.md); cell-dependent slopes [verified](reviews/waterno2-cellslopes-review.md) (all 49,315 pair bounds re-bounded independently) |
+```
+New:
+```text
+| waterno2_06 | 165.19 | **278.230573** (separator branching: 272.584700; wave 2: 263.735099) | 282.888038 (exactly feasible) | 1.67% (3.78%; 7.26%) | wave 2 [verified](reviews/waterno2-verification/verification-report.md); separator branching [verified](reviews/waterno2-sepbranch-review.md); cell-dependent slopes [verified](reviews/waterno2-cellslopes-review.md) (all 49,315 pair bounds re-bounded independently) |
+```
+
+waterno2_06: column 5, 1.67% (3.78%; 7.26%) -> 1.68% (3.78%; 7.26%)
+
+Old:
+```text
+| waterno2_06 | 165.19 | **278.230573** (separator branching: 272.584700; wave 2: 263.735099) | 282.888038 (exactly feasible) | 1.67% (3.78%; 7.26%) | wave 2 [verified](reviews/waterno2-verification/verification-report.md); separator branching [verified](reviews/waterno2-sepbranch-review.md); cell-dependent slopes [verified](reviews/waterno2-cellslopes-review.md) (all 49,315 pair bounds re-bounded independently) |
+```
+New:
+```text
+| waterno2_06 | 165.19 | **278.230573** (separator branching: 272.584700; wave 2: 263.735099) | 282.888038 (exactly feasible) | 1.68% (3.78%; 7.26%) | wave 2 [verified](reviews/waterno2-verification/verification-report.md); separator branching [verified](reviews/waterno2-sepbranch-review.md); cell-dependent slopes [verified](reviews/waterno2-cellslopes-review.md) (all 49,315 pair bounds re-bounded independently) |
+```
+
+waterno2_09: column 4, 914.012 (ours, viol. ≤ 4.4e-9) -> 914.012 (exactly feasible)
+
+Old:
+```text
+| waterno2_09 | 273.90 | 824.834692 | 914.012 (ours, viol. ≤ 4.4e-9) | 10.8% | [verified](reviews/waterno2-recheck.md) (all periods) |
+```
+New:
+```text
+| waterno2_09 | 273.90 | 824.834692 | 914.012 (exactly feasible) | 10.8% | [verified](reviews/waterno2-recheck.md) (all periods) |
+```
+
+waterno2_09: column 5, 10.8% -> 10.82%
+
+Old:
+```text
+| waterno2_09 | 273.90 | 824.834692 | 914.012 (exactly feasible) | 10.8% | [verified](reviews/waterno2-recheck.md) (all periods) |
+```
+New:
+```text
+| waterno2_09 | 273.90 | 824.834692 | 914.012 (exactly feasible) | 10.82% | [verified](reviews/waterno2-recheck.md) (all periods) |
+```
+
+waterno2_12: column 4, 2233.821 (ours) -> 2233.821346 (exactly feasible)
+
+Old:
+```text
+| waterno2_12 | 479.51 | 2089.754565 | 2233.821 (ours) | 6.9% | verified (all periods) |
+```
+New:
+```text
+| waterno2_12 | 479.51 | 2089.754565 | 2233.821346 (exactly feasible) | 6.9% | verified (all periods) |
+```
+
+waterno2_12: column 5, 6.9% -> 6.90%
+
+Old:
+```text
+| waterno2_12 | 479.51 | 2089.754565 | 2233.821346 (exactly feasible) | 6.9% | verified (all periods) |
+```
+New:
+```text
+| waterno2_12 | 479.51 | 2089.754565 | 2233.821346 (exactly feasible) | 6.90% | verified (all periods) |
+```
+
+waterno2_18: column 4, 5023.983 (ours) -> 5023.983 (exactly feasible)
+
+Old:
+```text
+| waterno2_18 | 770.74 | 4790.820715 | 5023.983 (ours) | 4.9% | verified (all periods) |
+```
+New:
+```text
+| waterno2_18 | 770.74 | 4790.820715 | 5023.983 (exactly feasible) | 4.9% | verified (all periods) |
+```
+
+waterno2_18: column 5, 4.9% -> 4.87%
+
+Old:
+```text
+| waterno2_18 | 770.74 | 4790.820715 | 5023.983 (exactly feasible) | 4.9% | verified (all periods) |
+```
+New:
+```text
+| waterno2_18 | 770.74 | 4790.820715 | 5023.983 (exactly feasible) | 4.87% | verified (all periods) |
+```
+
+waterno2_24: column 4, 6963.795 (ours) -> 6963.795181 (exactly feasible)
+
+Old:
+```text
+| waterno2_24 | 1095.13 | 6576.151388 | 6963.795 (ours) | 5.9% | verified (all periods) |
+```
+New:
+```text
+| waterno2_24 | 1095.13 | 6576.151388 | 6963.795181 (exactly feasible) | 5.9% | verified (all periods) |
+```
+
+waterno2_24: column 5, 5.9% -> 5.90%
+
+Old:
+```text
+| waterno2_24 | 1095.13 | 6576.151388 | 6963.795181 (exactly feasible) | 5.9% | verified (all periods) |
+```
+New:
+```text
+| waterno2_24 | 1095.13 | 6576.151388 | 6963.795181 (exactly feasible) | 5.90% | verified (all periods) |
+```
+
+ann_cumene_tanh: column 3, **−3386.5403** (wave 3: −4024.495, the first finite dual) -> **−3386.5403** (wave 3: −4024.495, first rigorous finite dual found for this MINLPLib model; the identical exp twin was closed in floating point)
+
+Old:
+```text
+| ann_cumene_tanh | none | **−3386.5403** (wave 3: −4024.495, the first finite dual) | −3379.9824 | 0.194% (wave 3: 19%) | wave 3 verified with caveats; extension [independently re-certified](reviews/ann-extension-review.md) |
+```
+New:
+```text
+| ann_cumene_tanh | none | **−3386.5403** (wave 3: −4024.495, first rigorous finite dual found for this MINLPLib model; the identical exp twin was closed in floating point) | −3379.9824 | 0.194% (wave 3: 19%) | wave 3 verified with caveats; extension [independently re-certified](reviews/ann-extension-review.md) |
+```
+
+ann_cumene_tanh: column 4, −3379.9824 -> −3379.9823940 (exactly feasible)
+
+Old:
+```text
+| ann_cumene_tanh | none | **−3386.5403** (wave 3: −4024.495, first rigorous finite dual found for this MINLPLib model; the identical exp twin was closed in floating point) | −3379.9824 | 0.194% (wave 3: 19%) | wave 3 verified with caveats; extension [independently re-certified](reviews/ann-extension-review.md) |
+```
+New:
+```text
+| ann_cumene_tanh | none | **−3386.5403** (wave 3: −4024.495, first rigorous finite dual found for this MINLPLib model; the identical exp twin was closed in floating point) | −3379.9823940 (exactly feasible) | 0.194% (wave 3: 19%) | wave 3 verified with caveats; extension [independently re-certified](reviews/ann-extension-review.md) |
+```
+
+Replace the obsolete tolerance-only claim and state gap conventions.
+
+Old:
+```text
+For lnts50–400, dtoc5, lukvle10, chain50–400 and
+powerflow0030p/0039p/0039r, the primal side is a point feasible to row
+violations of 1e-20 to 8e-12; closure is measured against its value, and no
+exactly feasible point was constructed.
+```
+New:
+```text
+For lnts50–400, dtoc5, lukvle10, chain50–400 and
+powerflow0030p/0039p/0039r, exactly feasible points have now been constructed
+and independently reviewed in publication/primal/. The gaps use the upper
+ends of their objective enclosures. The lnts gap cells use the displayed
+summary duals; against the certified verifier N·h2 bounds the gaps are at
+most 5.55e-13. The lukvle10 KKT agreement is numerical and does not prove
+global optimality; attributing its remaining gap to the dual requires that
+additional assumption.
+```
+
+State display directions and distinguish exact-point gaps from display subtraction.
+
+Old:
+```text
+Displayed dual bounds are truncated or rounded outward, so each displayed
+value is itself a valid bound.
+```
+New:
+```text
+Displayed dual bounds are truncated or rounded outward, so each displayed
+value is itself a valid bound. Numeric primal bounds are rounded upward for
+minimization and downward for maximization. A point objective enclosure
+can give a tighter gap than subtraction of the two displayed bounds.
+```
+
+Remove the obsolete eg coverage qualifier.
+
+Old:
+```text
+(all
+independently verified, eg_disc2_s partly by sampling;
+```
+New:
+```text
+(all
+independently verified, eg_disc2_s on every leaf under A1/A2 with a separate interval sample;
+```
+
+Remove the second stale tolerance-only claim.
+
+Old:
+```text
+for 13 of them the
+primal side is only tolerance feasible, see the note below the first
+table)
+```
+New:
+```text
+exactly feasible primal points now also cover the 13 formerly tolerance-only instances, see the note below the first
+table)
+```
+
+### `bound-audit/audit-report.md`
+
+Correct precision and define all three entry counts.
+
+Old:
+```text
+- **Display precision.** Values are shown with at most 10 significant digits
+  and at most 8 decimals, and trailing zeros are dropped.
+```
+New:
+```text
+- **Display precision.** Values are shown with at most 8 decimals; there is
+  no 10-significant-digit limit. Counts refer to displayed entries, not
+  distinct numbers: 35 entries (18 distinct strings) with a nonempty
+  fractional part have 11–17 digits from the first through last nonzero
+  digit; dropping the fractional-part filter gives 38 entries with 11–19
+  digits; counting trailing integer zeros as significant gives 46 entries
+  with 11–20 digits (for example −10000000000.). Trailing fractional zeros
+  are dropped.
+```
+
+Keep the floor with its actual justification and checked effect.
+
+Old:
+```text
+  - For each listed dual, the **slack** is half a unit in its last shown
+    digit, but never less than half a unit in the 10th significant digit.
+    For the value 0, the slack is 5e-9.
+```
+New:
+```text
+  - For each listed dual, the **slack** is half a unit in its last shown
+    digit, but never less than half a unit in the 10th significant digit.
+    This floor is an explicit conservative choice, not a consequence of a
+    display limit. It changes the slack of 0 of the 158 screened pairs and
+    therefore changes no screened-pair class. It changes 17 display-tie
+    pairs on three instances: fac1, fac2 and waternd_fosspoly0.
+    For the value 0, the slack is 5e-9.
+```
+
+Integrate qualified spring wording without changing classes or counts.
+
+Old:
+```text
+  dated 17 Sep 2013: eniplac (a 6-digit value) and spring (8 digits).
+```
+New:
+```text
+  dated 17 Sep 2013: eniplac (a 6-digit value) and spring (8 digits).
+  The five spring (i-r) solver-point pairs need not be solver errors:
+  display rounding explains their listed conflict, while the underlying
+  stored solver bounds are unknown. The spring SCIP objective difference
+  of about 1e-9 comes from bisection and feasibility tolerance; it is not
+  an independent objective disagreement.
+```
+
+### `open-instances-wave2/cops/report.md`
+
+Use a chain dual display below the exact binary64 certificate; apply to every occurrence.
+
+Old:
+```text
+5.072261493982863
+```
+New:
+```text
+5.0722614939828627
+```
+
+Use a chain dual display below the exact binary64 certificate; apply to every occurrence.
+
+Old:
+```text
+5.068917341793162
+```
+New:
+```text
+5.0689173417931616
+```
+
+### `reviews/cops-verification/verification-report.md`
+
+Use a chain dual display below the exact binary64 certificate; apply to every occurrence.
+
+Old:
+```text
+5.072261493982863
+```
+New:
+```text
+5.0722614939828627
+```
+
+Use a chain dual display below the exact binary64 certificate; apply to every occurrence.
+
+Old:
+```text
+5.068917341793162
+```
+New:
+```text
+5.0689173417931616
+```
+
+### `reviews/closing-audit-a.md`
+
+Use a chain dual display below the exact binary64 certificate; apply to every occurrence.
+
+Old:
+```text
+5.072261493982863
+```
+New:
+```text
+5.0722614939828627
+```
+
+### `publication/reviews/solver-campaign-review-r1.md`
+
+Use a chain dual display below the exact binary64 certificate; apply to every occurrence.
+
+Old:
+```text
+5.072261493982863
+```
+New:
+```text
+5.0722614939828627
+```
+
+### `publication/solver-runs/report.prev.md`
+
+Use a chain dual display below the exact binary64 certificate; apply to every occurrence.
+
+Old:
+```text
+5.072261493982863
+```
+New:
+```text
+5.0722614939828627
+```
+
+
+## Issue inventory
+
+| track / review | issue | resolution and evidence | integration change |
+|---|---|---|---|
+| [primal/chain](../../primal/chain/report.md) / [primal-chain-review-r1](../primal-chain-review-r1.md) | 1. Location of overly rounded displays | Corrected the integration note; the compact main-summary range is valid. Checked the five older documents and the exact binary64 bounds. | Use 5.0722614939828627 and 5.0689173417931616 in the wave-2 COPS report, COPS verification report, closing-audit-a, solver-campaign-review-r1, solver-runs/report.prev.md and paper; the dual range remains valid, but change the gap to ≤ 1.01e-14. |
+| [primal/chain](../../primal/chain/report.md) / [primal-chain-review-r1](../primal-chain-review-r1.md) | 2. Which dual the gaps use | Added all four gaps against safe decimal displays; the main result table explicitly uses exact binary64 bounds. Exact recomputation: `logs/minor_review_check.log`. | State which L the paper uses; safe-display gaps 9.62e-15 / 1.01e-14 / 9.41e-15 / 1.01e-14, relative 1.90e-15 / 1.99e-15 / 1.86e-15 / 1.98e-15. |
+| [primal/chain](../../primal/chain/report.md) / [primal-chain-review-r1](../primal-chain-review-r1.md) | 3. u-distance rounded down | Changed the conservative bound to 4.0e-15; stored chain200 build evidence has a distance about 3.943e-15. | Use 4.0e-15 if this distance is quoted. |
+| [primal/chain](../../primal/chain/report.md) / [primal-chain-review-r1](../primal-chain-review-r1.md) | 4. Missing report and relative-gap wording | The full report is on disk, including its commands. Reworded the relative gap as an upper bound using the project convention; independent r1 review is cited. | Use upper bound, not equality, for a gap computed with f_hi. |
+| [primal/dtoc5-lukvle10](../../primal/dtoc5-lukvle10/report.md) / [primal-dtoc5-lukvle10-review-r1](../primal-dtoc5-lukvle10-review-r1.md) | 1. Missing or truncated report | The full report is on disk, with complete construction, assumptions, proved/numerical labels and command list. | Remove dtoc5 and lukvle10 from that obsolete sentence; dtoc5 primal 5.38967211918114 → 5.389672119181141 (dual unchanged). |
+| [primal/dtoc5-lukvle10](../../primal/dtoc5-lukvle10/report.md) / [primal-dtoc5-lukvle10-review-r1](../primal-dtoc5-lukvle10-review-r1.md) | 2. KKT overclaim | Removed the unconditional dual-side claim everywhere. Recorded 205-digit agreement of x* with the KKT vector and distinguished its residual from the unrounded vector; inspected r1 KKT evidence. | Do not claim that a KKT residual proves global optimality or places the whole lukvle10 gap on the dual side. |
+| [primal/dtoc5-lukvle10](../../primal/dtoc5-lukvle10/report.md) / [primal-dtoc5-lukvle10-review-r1](../primal-dtoc5-lukvle10-review-r1.md) | 3. p5 comparison | Distinguished the displayed value, coordinate-evaluated objective and objvar entry; re-evaluated the stored p5 coordinate objective in `logs/minor_review_check.log` without recomputing the point. | If quoted, 4.8e-13 is against the display; 5.14e-13 is against the objective evaluated at p5 coordinates. |
+| [primal/dtoc5-lukvle10](../../primal/dtoc5-lukvle10/report.md) / [primal-dtoc5-lukvle10-review-r1](../primal-dtoc5-lukvle10-review-r1.md) | 4. sci_up carry | Fixed the mantissa carry with a minimal change in `gaps.py`; boundary cases in `minor_review_check.py` remain upper bounds. Current reported gaps were unaffected. | None. |
+| [primal/lnts](../../primal/lnts/report.md) / [primal-lnts-review-r1](../primal-lnts-review-r1.md) | 1. Invalid second Krawczyk step | Changed only the second-step centre to a point in Z. Rechecked the two steps on all four stored boxes: widths < 2.1e-106, objective width < 3e-109; 25-digit objective displays unchanged. No construction rerun. | None; gaps and displayed enclosures are unchanged. |
+| [primal/lnts](../../primal/lnts/report.md) / [primal-lnts-review-r1](../primal-lnts-review-r1.md) | 2. Missing report | The full report is on disk with its commands and interval assumptions. Independent r1 evidence is acknowledged. | Remove lnts50–400 from the no-exactly-feasible-point sentence. |
+| [primal/lnts](../../primal/lnts/report.md) / [primal-lnts-review-r1](../primal-lnts-review-r1.md) | 3. Missing old-vector comparison script | Saved the comparison in `minor_review_check.py`; exact binary64 inputs and stored coordinate enclosures give approximate distances 3.25e-15–3.54e-15, all below 3.6e-15 and all but one matching rounding per instance. | None. |
+| [primal/lnts](../../primal/lnts/report.md) / [primal-lnts-review-r1](../primal-lnts-review-r1.md) | 4. Conservative relative-gap rounding | Stated upward rounding to three significant digits in Section 1. | Against summary duals use upper gaps 5.79e-13 / 6.12e-13 / 5.84e-13 / 5.88e-13. Against certified N·h2 use ≤ 5.55e-13. Correct lnts100 primal to 0.5545954011670. |
+| [primal/lnts](../../primal/lnts/report.md) / [primal-lnts-review-r1](../primal-lnts-review-r1.md) | 5. Tiny middle control | Kept the stored exact rational to preserve the certified point; explained its numerical origin and checked \|control\| < 1e-110 for all four instances. | No change needed; replacing it by zero would require a new point certificate. |
+| [primal/powerflow](../../primal/powerflow/report.md) / [primal-powerflow-review-r1](../primal-powerflow-review-r1.md) | 1. Missing report and commands | The complete report is on disk, including the per-instance construction, radius checks, SCIP commands and mpmath assumptions. | None. |
+| [primal/powerflow](../../primal/powerflow/report.md) / [primal-powerflow-review-r1](../primal-powerflow-review-r1.md) | 2. Active-slack bound | Corrected the 0039r maximum to 6.8e-13, with e363/e386 examples; recomputed slacks at stored p1 values. | None. |
+| [primal/powerflow](../../primal/powerflow/report.md) / [primal-powerflow-review-r1](../primal-powerflow-review-r1.md) | 3. Incomplete p1 violations | Added x266/x267 violations and all seven violated voltage rows; `logs/minor_review_check.log` records them. | None. |
+| [primal/powerflow](../../primal/powerflow/report.md) / [primal-powerflow-review-r1](../primal-powerflow-review-r1.md) | 4. External reader dependency | Recorded the exact path and verified SHA-256 of osilx.py; no copy or interface change needed. | Keep the reader dependency with reproduction materials. |
+| [primal/powerflow](../../primal/powerflow/report.md) / [primal-powerflow-review-r1](../primal-powerflow-review-r1.md) | 5. Summary primal displays | Recorded upward displays 41869.0515113203 (0039p) and 41869.0515113210 (0039r); enclosures and relative gaps unchanged. | Apply those two primal displays and remove all three powerflow instances from the no-exactly-feasible-point sentence. |
+| [primal/powerflow](../../primal/powerflow/report.md) / [primal-powerflow-review-r1](../primal-powerflow-review-r1.md) | 6. Uniqueness citation | Checked \|\|I − C J(X)\|\|∞ < 1 on each stored box and gave the mean-value contraction argument. Moore 1977 is cited for existence; no inaccessible theorem number is asserted. | None. |
+| [primal/water-ann-kan](../../primal/water-ann-kan/report.md) / [primal-water-ann-kan-review-r1](../primal-water-ann-kan-review-r1.md) | 1. Missing and truncated report | The complete report is on disk; read its previously omitted construction, forward-definition argument, assumptions and commands against the saved scripts. Independent r1 numerical verification is now acknowledged. | None. |
+| [primal/water-ann-kan](../../primal/water-ann-kan/report.md) / [primal-water-ann-kan-review-r1](../primal-water-ann-kan-review-r1.md) | 2. Conservative and repeated gap rounding | Corrected waterno2_12 6.89% → 6.90% and now assert every percentage display against its exact rational gap; recorded pre-rounding ratios in the log. Corrected the relative primal-change range to 3.7e-9–5.3e-9. | If quoted, use that relative-change range; use upward gap displays 10.82% / 6.90% / 4.87% / 5.90%. Correct all invalid numeric primal displays in the exact list above. |
+| [primal/water-ann-kan](../../primal/water-ann-kan/report.md) / [primal-water-ann-kan-review-r1](../primal-water-ann-kan-review-r1.md) | 3. Old bound violations omitted | Checked source decimals against OSIL bounds; added the four maximum bound violations, including 9.0018923e-10 for waterno2_24. | Do not describe the earlier water vectors as satisfying all bounds. |
+| [primal/water-ann-kan](../../primal/water-ann-kan/report.md) / [primal-water-ann-kan-review-r1](../primal-water-ann-kan-review-r1.md) | 4. Zero interval margin at x650 | Explained the saturated tanh neuron and the validity of a nonnegative margin for x650 ≤ 1; checked its saved log and interval. | None. |
+| [primal/water-ann-kan](../../primal/water-ann-kan/report.md) / [primal-water-ann-kan-review-r1](../primal-water-ann-kan-review-r1.md) | 5. Wrong interval-format description | Changed `nn_exact.py` and the seven stored point JSON descriptions from (mid, rad) to {lo, hi}. All numerical fields are unchanged. | None. |
+| [audit-ir](../../audit-ir/report.md) / [audit-ir-review-r1](../audit-ir-review-r1.md) | 1. Missing and truncated report | The full report is on disk and its complete method and commands have been read. | None. |
+| [audit-ir](../../audit-ir/report.md) / [audit-ir-review-r1](../audit-ir-review-r1.md) | 2. Digit count definition | Recounted the saved pages: 35 with a nonempty fractional part (11–17 digits); 38 without that filter (11–19); 46 if trailing integer zeros count (11–20). Corrected Section 1. | Audit Section 2: keep the 8-decimal limit, drop the 10-significant-digit limit; state the definition of any >10-digit count. Keep the 10th-digit floor as an explicit conservative choice: 0 of 158 screened pairs affected; define displayed-entry counts and the 17 tie pairs on three instances. No class or flagged-pair count changes. |
+| [audit-ir](../../audit-ir/report.md) / [audit-ir-review-r1](../audit-ir-review-r1.md) | 3. spring solver-error wording | Reworded as "need not be solver errors; display rounding explains them". The underlying stored solver bound remains unknown. | Use this qualified wording for spring's five (i-r) pairs. |
+| [audit-ir](../../audit-ir/report.md) / [audit-ir-review-r1](../audit-ir-review-r1.md) | 4. spring SCIP objective tolerance | No further numerical change needed: the report already explains the bisection/tolerance origin of the 1.0e-9 difference; checked `logs/xcheck_scip.log`. | It is not an independent objective disagreement. |
+| [eg-recheck](../../eg-recheck/report.md) / [eg-recheck-review-r1](../eg-recheck-review-r1.md) | 1. A1/A2 absent from headline and integration | Added A1/A2 at the first result claim and in proposed summary wording; distinguished the assumption-free 10,404-leaf r1 sample. | Use the qualified all-leaf claim; preserve the interval sample as a separate statement. |
+| [eg-recheck](../../eg-recheck/report.md) / [eg-recheck-review-r1](../eg-recheck-review-r1.md) | 2. Infeasibility overclaim | Recounted saved results: 98,234 exclude F < θ*, of which 85,685 are directly side-infeasible, 373 Farkas and 12,176 split. Corrected text, margin definition and table heading. | Do not call all 98,234 leaves infeasible; use the objective-qualified statement. |
+| [eg-recheck](../../eg-recheck/report.md) / [eg-recheck-review-r1](../eg-recheck-review-r1.md) | 3. Leaf numbering | Stated chunk-concatenation numbering and the equivalent part-5 leaf-list index 56587; inspected the review's box comparison. | Use an explicit numbering convention if quoting leaf 69407. |
+| [eg-recheck](../../eg-recheck/report.md) / [eg-recheck-review-r1](../eg-recheck-review-r1.md) | 4. Stale Git bullet | Verified 514a788f contains second-pass files and updated the historical status. | None. |
+| [eg-recheck](../../eg-recheck/report.md) / [eg-recheck-review-r1](../eg-recheck-review-r1.md) | 5. Near-optimal regions outside part 1 | Qualified the statement to the selected tightest-margin leaves and added r1's numerical per-part minima. | Do not imply that every region outside part 1 is far from θ*. |
+| [eg-recheck](../../eg-recheck/report.md) / [eg-recheck-review-r1](../eg-recheck-review-r1.md) | 6. Tree-free coverage proof | Added the independent exact guillotine proof and its code/log locations. The original volume/random-point check remains labelled a cross-check. | Coverage can cite both the tree and exact tree-free proofs. |
+| [scip-bug](../../scip-bug/report.md) / [scip-bug-review-r1](../scip-bug-review-r1.md) | 1. Inconsistent totals | Raw-log recount confirms 0/122 with b, versus 78/122 for matched default cases. Corrected the headline; the old CSV omits two later p4 tests. | Any quoted totals must use 122 and 78. |
+| [scip-bug](../../scip-bug/report.md) / [scip-bug-review-r1](../scip-bug-review-r1.md) | 2. Uninstrumented seed 11 | Restricted the trace table to seed 8 and all common-mechanism claims to instrumented runs; recorded seed 11's first b35 implication and 0.85-station caveat. | Do not attribute seed 11's first witness loss to the traced 0.7-station cutoff. |
+| [scip-bug](../../scip-bug/report.md) / [scip-bug-review-r1](../scip-bug-review-r1.md) | 3. Low pair claims | Reworded as not refuted and consistent with either tolerance effects or a nonoptimal witness; retained the certified optimum interval. | Do not assert a demonstrated tolerance cause for 55.689773/55.689858. |
+| [scip-bug](../../scip-bug/report.md) / [scip-bug-review-r1](../scip-bug-review-r1.md) | 4. Seed-failure explanation | Labelled the search-path explanation as a hypothesis supported by instrumented seeds 8 and 14. | Keep the hypothesis qualifier. |
+| [scip-bug](../../scip-bug/report.md) / [scip-bug-review-r1](../scip-bug-review-r1.md) | 5. All-solution binary64 overclaim | Restricted the exact binary64 feasibility statement to the five examined solutions in the summary of proof claims. | Do not extrapolate the binary64 check to every scanned solution. |
+| [scip-bug](../../scip-bug/report.md) / [scip-bug-review-r1](../scip-bug-review-r1.md) | 6. Related upstream issues | Read #162/#190 and developer comments; added links and apparently different causes in Section 8 and the unsubmitted draft. | Cite these related reports if the draft is later filed; no report was sent. |
+| [scip-bug](../../scip-bug/report.md) / [scip-bug-review-r1](../scip-bug-review-r1.md) | 7. Draft consistency and exact optima | Matched the inline CIP name fm336_reduced to the attachment; gave exact case proofs for fm336 and tiny2; added r1 witness acceptance on 10.0.2/10.0.3. The optional n explanation in the draft is explicitly labelled an untested hypothesis. | No submission authorized or performed. |
+| [literature/control](../../literature/control/report.md) / [lit-control-review-r2](../lit-control-review-r2.md) | 2.1. Missed upper bounds | Dropped only the regex start anchor in `qplib_camshape_compare.py`. Rechecked every bound in all four pairs; corrected the largest reported difference to 4.7e-10. Added the two reference-point r1 upper-bound violations. | Use 4.7e-10 if quoting the maximum over all four camshape copies; QPLIB_3177 alone remains about 2.5e-10. |
+| [literature/control](../../literature/control/report.md) / [lit-control-review-r2](../lit-control-review-r2.md) | 2.2. Waki Table 12 range and tested sizes | Read Table 12 (printed p. 31, PDF p. 33): feasibility range −1.6e-10 to −8.1e-10 and tested M = 600,700,800,900,1000. Corrected every M ≤ 1000 statement. | Use M = 600–1000 and the corrected feasibility range. |
+| [literature/control](../../literature/control/report.md) / [lit-control-review-r2](../lit-control-review-r2.md) | 2.3. Müller camshape100 page | Checked PDF p. 40 and corrected both the body and bibliography page location; camshape200–800 remain on p. 41. | Use PDF p. 40 for camshape100. |
+| [literature/control](../../literature/control/report.md) / [lit-control-review-r2](../lit-control-review-r2.md) | 2.4. Evidence for spurious camshape800 closure | Read all four MINOTAUR logs. Added root-only closure/+∞ bound versus smaller-copy timeouts, defined false under exact feasibility, and retained the QPLIB-copy caveat. | Keep the exact-feasibility meaning and distinguish rigorous MINLPLib refutation from evidence for rounded QPLIB_3177. |
+| [literature/control](../../literature/control/report.md) / [lit-control-review-r2](../lit-control-review-r2.md) | 2.5. MINOTAUR dtoc5 default bounds | Read the saved master `QuadHandler.cpp` rule; corrected the separate min-lower/max-upper rules; only upper default 100 is inferable, the lower default is unknown and negative. Checked the saved reference point and revision caveat and plausible root-only convex closure (`checks/dtoc5_reference_check.log`). | Describe the separate rules. Only upper default 100 is inferable; 14 extra finite lower bounds leave the negative lower default unknown. Nonnegative reference-point coordinates are still contained. Keep the benchmark-revision caveat. |
+| [literature/control](../../literature/control/report.md) / [lit-control-review-r2](../lit-control-review-r2.md) | 2.6. MINLPLib optimizer wording | Changed to MINLPLib point p1 and stated its own 3.9e-10 MINLPLib row violation; p1 is not the exactly feasible optimizer. | Use point p1, not optimizer, for this comparison. |
+| [literature/control](../../literature/control/report.md) / [lit-control-review-r2](../lit-control-review-r2.md) | 2.7. CONOPT aggregate measure | Reworded every 8.7e-6 discussion as CONOPT's aggregate Infeasibility for its input; incumbent identity is an inference, not explicit log evidence. | Do not call 8.7e-6 a maximum row violation or an explicitly identified ANTIGONE incumbent violation. |
+| [literature/network](../../literature/network/report.md) / [lit-network-review-r2](../lit-network-review-r2.md) | 1. Cumene source versions | Attributed 1e11/8e10/1e5 and Fig. 6 to arXiv v2; added the dissertation's 2930/444/328 gaps and iteration counts from Table 2.8. The JOTA publisher table remains explicitly unchecked. | Keep both checked versions distinct; status remains partly known via the identical exp twin. |
+| [literature/network](../../literature/network/report.md) / [lit-network-review-r2](../lit-network-review-r2.md) | 2. Missing nonclosing benchmarks | Read the SCIP suite Appendix A, Müller–Serrano–Gleixner tables and Göß Table 4; added FP time-limit results in Sections 3,5,8 and qualified the JOGO SCIP 8 test-set statements. Preserved the inconsistent 0039p scale caveat. | Add these nonclosing FP precedents if literature coverage is summarized; no status change. |
+| [literature/network](../../literature/network/report.md) / [lit-network-review-r2](../lit-network-review-r2.md) | 3. Prior certified OPF bounds | Read Oustry et al. and the authors' PGLib result table; added the paper next to VSDP and restricted first-rigorous claims to these MINLPLib models. | Cite Oustry et al. 2022 in the paper; scope novelty to the stored MINLPLib models. |
+| [literature/network](../../literature/network/report.md) / [lit-network-review-r2](../lit-network-review-r2.md) | 4. 0030p/0030r rounding | Checked unequal exact decimal coefficients and r2's row-comparison evidence; corrected every exact bound-transport claim, including the r1 response history. FP closure via the twin remains tolerance-level evidence. | Do not transfer the rigorous 0030r bound 576.8934126255 to 0030p without a perturbation argument. |
+| [literature/network](../../literature/network/report.md) / [lit-network-review-r2](../lit-network-review-r2.md) | 5. Huang extended model and gap range | Read Table 5.2; labelled extended-model gaps, removed the 343.41 mismatch argument, retained the original 3-period mismatch, and distinguished the 5-period gap 0.000470589 from the 6–24 range 0.18–1.14. | Use the original 3-period comparison for model mismatch; label extended-model values and correct the period range. |
+| [literature/network](../../literature/network/report.md) / [lit-network-review-r2](../lit-network-review-r2.md) | 6. Incomplete bibliography | Added all missing titles and Li's six authors; added Josz, Carrasco–Muñoz, Mittelmann, SCIP 8, VSDP and new r2 sources. Checked paper headers and available DOI metadata; unavailable metadata requests are retained as such. | Use complete bibliography entries in the paper; no numerical change. |
+| [literature/network](../../literature/network/report.md) / [lit-network-review-r2](../lit-network-review-r2.md) | 7. KAN feasibility tolerance | Changed attribution: 1e-6 is inferred from the checked Default R3_H1_N4.log reading only limits/time = 7200, not stated on source p. 16. | Label the tolerance as inferred from logs. |
+| [literature/network](../../literature/network/report.md) / [lit-network-review-r2](../lit-network-review-r2.md) | 8. Stale report and duplicate commands | The complete report is on disk; replaced stale introduction/open-status text and removed the duplicate appended command list, retaining Section 12. | None. |
+| [literature/network](../../literature/network/report.md) / [lit-network-review-r2](../lit-network-review-r2.md) | 9. Unobtained sources list | Marked Schweidtmann 2021 obtained; listed the AIChE 2025 KAN abstract as unobtained, alongside Huang 2011 and the original Hijazi report. | Retain these source-access caveats when stating new as far as found. |
+
+## Remaining limits
+
+The JOTA publisher full text for cumene remains unchecked; the arXiv and dissertation results are kept separate. Huang's 2011 MSc thesis, the original Hijazi report and the AIChE 2025 KAN abstract remain unobtained. Some Crossref requests failed (429 or 404); saved primary paper headers supply titles where available, and the errors remain in the metadata JSON. The MINOTAUR default-bound inference uses saved master source, whose rule may differ from the benchmark revision. Rounded twin models do not justify exact certificate transport without a perturbation proof. These are documented limits, not unfinished minor fixes.

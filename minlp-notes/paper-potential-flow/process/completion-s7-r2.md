@@ -83,9 +83,9 @@ I extracted the source archive outside the checkout into `/tmp/s7-r2-8dzsdig8/po
 Executed commands from the extracted archive root:
 
 ```sh
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python -S -O paper-potential-flow/reproducibility/reproduce.py --output /tmp/s7-r2-exact.json
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python -S -O paper-potential-flow/reproducibility/reproduce.py --output /tmp/s7-r2-exact.json
 python paper-potential-flow/reproducibility/build_paper.py
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python paper-potential-flow/reproducibility/reproduce.py --numerical --output /tmp/s7-r2-numerical.json
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python paper-potential-flow/reproducibility/reproduce.py --numerical --output /tmp/s7-r2-numerical.json
 ```
 
 The exact replay passed **18 command groups**, including the documented standard-library certificate paths under `-S -O`, malformed-certificate rejection, exact weighted-cactus output, local asymmetric checks, and sensitivity checks. The numerical replay passed **28 command groups**. Its producers operate in a disposable copy; the frozen neighboring JSON records were not rewritten. The numerical environment was Python 3.12.14, NumPy 2.5.2, SciPy 1.18.1, SymPy 1.14.0, NetworkX 3.6.1, CVXPY 1.9.2, and Clarabel 0.11.1.

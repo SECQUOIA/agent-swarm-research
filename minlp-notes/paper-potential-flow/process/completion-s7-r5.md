@@ -85,7 +85,7 @@ The directly relevant Hasler–Wang 1993 tolerance paper remains unavailable in 
 
 ## Corpus reconciliation
 
-I independently counted 43 promoted potential-flow results, 83 investigation notes, 90 review-note inventory entries, 73 Python modules, and 8 JSON artifacts. `coverage.md` has exactly 308 distinct local inventory rows and every target exists. The same five direct corpus sets in `/home/sgusev/repo/minlp-notes` and the reviewed worktree are byte-identical, with no missing files. All 308 corpus SHA256 entries match the freeze.
+I independently counted 43 promoted potential-flow results, 83 investigation notes, 90 review-note inventory entries, 73 Python modules, and 8 JSON artifacts. `coverage.md` has exactly 308 distinct local inventory rows and every target exists. The same five direct corpus sets in `/workspace/minlp-notes` and the reviewed worktree are byte-identical, with no missing files. All 308 corpus SHA256 entries match the freeze.
 
 I compared the promoted result statements and their scope with the manuscript treatments, and inspected the supporting-note inventory and substantive extension statements relevant to the hull, nonlinear-power region, weighted face/path, scalar inverse, goal-certificate, and original-instance pipeline developments. Full manuscript proofs, not note/review status, are the basis for the mathematical assessment. The independent row census does not replace this semantic comparison; R5-M1 is an example of an error it cannot detect.
 
@@ -100,7 +100,7 @@ Executed from the extracted root:
 ```text
 python -S paper-potential-flow/reproducibility/reproduce.py --output /tmp/s7-r5-exact.json
 python paper-potential-flow/reproducibility/build_paper.py
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python paper-potential-flow/reproducibility/reproduce.py --numerical --output /tmp/s7-r5-numerical.json
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python paper-potential-flow/reproducibility/reproduce.py --numerical --output /tmp/s7-r5-numerical.json
 ```
 
 All 18 documented exact commands passed under Python 3.13.11, including the normal and `-S -O` checks, saved base/original-instance verifiers, goal and energy-design certificates, and exact weighted-cactus checks. The numerical replay ran 28 commands and passed under Python 3.12.14 with NumPy 2.5.2, SciPy 1.18.1, SymPy 1.14.0, NetworkX 3.6.1, CVXPY 1.9.2, and Clarabel 0.11.1. Producers were isolated by the reproduction script rather than run against checkout evidence. Two commands emitted the documented numerical-solver accuracy warning. Their rational certificate verification still passed; solver status is not the asserted guarantee.

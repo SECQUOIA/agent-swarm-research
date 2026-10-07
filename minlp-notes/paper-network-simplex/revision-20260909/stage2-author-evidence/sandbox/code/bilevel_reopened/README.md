@@ -28,16 +28,16 @@ checks are diagnostics, not a complete quantifier-elimination solver.
 ## Verification
 
 The existing environment used for the experiments is
-`/home/sgusev/miniconda3/envs/minlp-notes/bin/python`; the numerical programs use
+`/workspace/local-home/miniconda3/envs/minlp-notes/bin/python`; the numerical programs use
 NumPy/SciPy, and some independent symbolic checks use SymPy. Pure rational
 checkers use Python's standard library. From the repository root, examples are:
 
 ```sh
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python code/bilevel_reopened/quadratic_review_checks.py
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python code/bilevel_reopened/screening_review_checks.py
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python code/bilevel_reopened/nearoptimal_second_review.py
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python code/bilevel_reopened/nonlinear_aggregate_review.py
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python code/bilevel_reopened/response_constraints_review.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python code/bilevel_reopened/quadratic_review_checks.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python code/bilevel_reopened/screening_review_checks.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python code/bilevel_reopened/nearoptimal_second_review.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python code/bilevel_reopened/nonlinear_aggregate_review.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python code/bilevel_reopened/response_constraints_review.py
 ```
 
 The [closeout](../../notes/bilevel-reopened-closeout.md) links the independent

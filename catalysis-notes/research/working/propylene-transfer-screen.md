@@ -52,7 +52,7 @@ All identified primary sources, including unread sources and available main-text
 
 ### Exact literature handoff retained for the root registry
 
-These are the requests already sent to `/root/literature` in two messages, not a second ingestion queue. The requested workflow was `$lit` **Add identified literature**, sequentially, using skill `/home/sgusev/repo/skills/literature/SKILL.md`, project `/home/sgusev/repo/catalisys-notes`, and knowledge base `/home/sgusev/repo/catalisys-notes/literature`. Bibliographic metadata and relevance should be retained for inaccessible works, with unread status and unresolved-source reports. The first message requested items 1–9; the follow-up added items 10–13.
+These are the requests already sent to `/root/literature` in two messages, not a second ingestion queue. The requested workflow was `$lit` **Add identified literature**, sequentially, using skill `/workspace/skills/literature/SKILL.md`, project `/workspace/catalisys-notes`, and knowledge base `/workspace/catalisys-notes/literature`. Bibliographic metadata and relevance should be retained for inaccessible works, with unread status and unresolved-source reports. The first message requested items 1–9; the follow-up added items 10–13.
 
 | Request | Exact identifier / supplied retrieval location | Scope and reason |
 |---|---|---|

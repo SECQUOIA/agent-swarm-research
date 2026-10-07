@@ -23,7 +23,7 @@ Reviewed: all of `03-sharp-centrality.tex`, `03a-distribution.tex`, `03b-discret
 - Checked the identity `dE/dlog(y)=E-K` independently from `p=b' composed with rho^{-1}`. The comparison function for `K<1`, its squared-polynomial sign, the improved `K<107/200` region, and the integrated inequalities all have the correct direction.
 - The strict upper proof handles `1<=E<=2` and `E>2` separately, with valid strict logarithm bounds. Attainment supplies the strict bound on the maximum, rather than only a pointwise weak supremum bound.
 - The lower witness uses two different strict inequalities in the right order: `P(w_0)<Y(v_0)A(v_0)` forces `W(v_0)>w_0`, and the other inequality supplies the claimed ratio. The finite series tail is an upper bound and rational squaring is applied only to positive quantities.
-- Ran `scripts/verify_scalar_certificate.py` with `/home/sgusev/miniconda3/envs/qipm/bin/python`. Every exact assertion passed, including the three stated margins and both series/radical enclosures. The script uses only exact arithmetic; its assertions reproduce the manuscript's finite certificate rather than replacing an analytic premise.
+- Ran `scripts/verify_scalar_certificate.py` with `/workspace/local-home/miniconda3/envs/qipm/bin/python`. Every exact assertion passed, including the three stated margins and both series/radical enclosures. The script uses only exact arithmetic; its assertions reproduce the manuscript's finite certificate rather than replacing an analytic premise.
 
 ### Distribution, tails, and determinant bounds
 

@@ -1,0 +1,309 @@
+***************************
+* SET UP THE INITIAL DATA *
+***************************
+
+NAME          HVYCRASH
+
+*   Problem :
+*   *********
+
+*   A problem freely inspired by the heavy spacecraft landing problem by
+*   Ivashkevich, as reported by Tyatushkin, Zholudev and Erinchek.  The
+*   modifications of the original problem involves dropping the final state
+*   constraint on the second variable and the setting of EPS to zero
+*   in the second constraint. 
+*   (No feasible point was found for the original formulation by any of the
+*   packages at hand.)
+
+*   This is a badly scaled degenerate nonlinear nonconvex optimal control 
+*   problem, with lots of negative curvature.
+
+*   Source: inspired by
+*   A.I Tyatushkin, A.I. Zholudev and N. M. Erinchek,
+*   "The gradient method for solving optimal control problems with phase
+*   constraints", 
+*   in "System Modelling and Optimization", P. Kall, ed., pp. 456--464,
+*   Springer Verlag, Lecture Notes in Control and Information Sciences 180, 1992.
+*   This reference itself refers to:
+*   A.K. Ivashkevich,
+*   "Multistage US spacecraft Space Shuttle", 
+*   Survey of foreign papers (Part 11),  Orbital Craft, Moscow, 1976.
+
+*   SIF input: Ph. Toint, February 1994.
+
+*   classification LOR2-AN-V-V
+
+*   Number of discretized points in (0,TT].
+*   The number of variables is    4 * ( N + 1 )
+*   The number of constraints is  3 * N
+
+*IE N                   50             $-PARAMETER n=204, m=150  original value
+*IE N                   100            $-PARAMETER n=404, m=300
+*IE N                   500            $-PARAMETER n=2004, m=1500
+ IE N                   1000           $-PARAMETER n=4004, m=3000
+
+*   Problem parameters
+
+ RE TT                  0.2185
+ RE EPS                 0.1
+ RE ALPHA               1.62079
+
+*   Mesh
+
+ IA N-1       N         -1
+ RI RN        N
+ R/ H         TT                       RN
+ RM -H        H         -1.0
+
+ RM -EPS      EPS       -1.0
+
+*   Constants
+
+ IE 0                   0
+ IE 1                   1
+ IE 2                   2
+ IE 3                   3
+
+VARIABLES
+
+*   State variables
+
+ DO T         0                        N
+ X  X(1,T)
+ X  X(2,T)
+ X  X(3,T)
+ OD T
+
+*   Control variables
+
+ DO T         0                        N
+ X  U(T)
+ OD T
+
+GROUPS
+
+*   Objective function
+
+ XN OBJ       X(1,N)    1.0
+
+*   State constraints
+
+ DO T         1                        N
+ IA T-1       T         -1
+ XE C(1,T)    X(1,T-1)  1.0            X(1,T)    -1.0
+ ZE C(2,T)
+ ZE C(3,T)    X(3,T-1)                 EPS
+ ZE C(3,T)    X(3,T)                   -EPS
+ ND
+
+BOUNDS
+
+ FR HVYCRASH  'DEFAULT'
+
+ XX HVYCRASH  X(1,0)    0.0
+ XX HVYCRASH  X(2,0)    2.19905
+ XX HVYCRASH  X(3,0)    0.0
+
+ XX HVYCRASH  X(3,N)    0.0
+
+ DO T         0                        N
+ XL HVYCRASH  U(T)      0.08
+ XU HVYCRASH  U(T)      0.417
+ XL HVYCRASH  X(3,T)    0.0
+ XU HVYCRASH  X(3,T)    6.2831854
+ OD T
+
+START POINT
+
+ DO T         1                        N-1
+ XV HVYCRASH  X(2,T)    1.5
+ OD T
+
+ XV HVYCRASH  X(1,0)    0.0
+ XV HVYCRASH  X(2,0)    2.19905
+ XV HVYCRASH  X(3,0)    0.0
+
+ XV HVYCRASH  X(2,N)    1.09905
+ XV HVYCRASH  X(3,N)    0.0
+
+ELEMENT TYPE
+
+ EV C2        XX3                      XX2
+ EV C2        UU
+ EP C2        A
+
+ EV C3        XX3                      XX2
+ EV C3        UU
+ EP C3        A
+
+ EV C4        XX3                      XX2
+ EV C4        UU
+ EP C4        A
+
+ EV INV       V
+
+ EV UX2       UU                       XX2
+
+ELEMENT USES
+
+ DO T         1                        N
+
+*   State constraints elements
+
+ XT E1(T)     C2
+ ZV E1(T)     XX3                      X(3,T)
+ ZV E1(T)     XX2                      X(2,T)
+ ZV E1(T)     UU                       U(T)
+ ZP E1(T)     A                        ALPHA
+
+ XT E2(T)     INV
+ ZV E2(T)     V                        X(2,T)
+
+ XT E3(T)     C3
+ ZV E3(T)     XX3                      X(3,T)
+ ZV E3(T)     XX2                      X(2,T)
+ ZV E3(T)     UU                       U(T)
+ ZP E3(T)     A                        ALPHA
+
+ XT E4(T)     UX2
+ ZV E4(T)     XX2                      X(2,T)
+ ZV E4(T)     UU                       U(T)
+
+ XT E5(T)     C4
+ ZV E5(T)     XX3                      X(3,T)
+ ZV E5(T)     XX2                      X(2,T)
+ ZV E5(T)     UU                       U(T)
+ ZP E5(T)     A                        ALPHA
+
+ OD T
+
+GROUP USES
+
+*   State constraints
+
+ DO T         1                        N
+
+ ZE C(1,T)    E1(T)                    H
+
+* ZE C(2,T)    E2(T)                    -H
+* ZE C(2,T)    E3(T)                    -H
+ XE C(2,T)    E2(T)     -1.0           E3(T)     -1.0
+
+ ZE C(3,T)    E4(T)                    H
+ ZE C(3,T)    E5(T)                    -H
+
+ OD T
+
+OBJECT BOUND
+
+*   Solution
+
+*LO SOLTN             -0.21850
+*LO SOLTN(100)        3.26705331D-8
+*LO SOLTN(500)        2.36171208D-8
+*LO SOLTN(1000)       8.48265630D-8
+*LO SOLTN(3000)       
+
+ENDATA
+
+*********************
+* SET UP THE GROUPS *
+* ROUTINE           *
+*********************
+
+ELEMENTS      HVYCRASH
+
+TEMPORARIES
+
+ R  C
+ R  DC
+ R  D2C
+ R  X2SQ
+ R  CS
+ R  SS
+ R  D
+ M  COS
+ M  SIN
+
+INDIVIDUALS
+
+ T  INV
+ F                      1.0 / V
+ G  V                   - 1.0 / ( V * V )
+ H  V         V         2.0 / ( V ** 3 )
+
+ T  UX2
+ A  C                   0.01 + 0.3 * UU * UU
+ A  DC                  0.6 * UU
+ A  D2C                 0.6
+ A  X2SQ                XX2 * XX2
+ F                      UU / ( C * X2SQ ) 
+ G  UU                  ( 1.0 - UU * DC / C ) / ( C * X2SQ ) 
+ G  XX2                 - 2.0 * UU / ( C * X2SQ * XX2 )
+ H  UU        UU        ( 2.0 * UU * DC * DC / C - D2C * UU 
+ H+                     - 2.0 * DC ) / ( C * C * X2SQ )
+ H  UU        XX2       - 2.0 * ( 1.0 - UU * DC / C ) / 
+ H+                     ( C * X2SQ * XX2 ) 
+ H  XX2       XX2       6.0 * UU / ( C * X2SQ * X2SQ )
+
+ T  C2
+ A  C                   0.01 + 0.3 * UU * UU
+ A  DC                  0.6 * UU
+ A  D2C                 0.6
+ A  X2SQ                XX2 * XX2
+ A  CS                  COS( XX3 )
+ A  SS                  SIN( XX3 )
+ A  D                   A * C * X2SQ 
+ F                      CS / D
+ G  UU                  - CS * DC / ( D * C )
+ G  XX2                 - 2.0 * CS / ( D * XX2 )
+ G  XX3                 - SS / D  
+ H  UU        UU        CS * ( 2.0 * DC * DC / C - D2C ) /
+ H+                     ( D * C )
+ H  UU        XX2       2.0 * CS * DC / ( D * C * XX2 )
+ H  UU        XX3       SS * DC / ( D * C )
+ H  XX2       XX2       6.0 * CS / ( D * X2SQ )
+ H  XX2       XX3       2.0 * SS / ( D * XX2 )
+ H  XX3       XX3       - CS / D
+
+ T  C3
+ A  C                   0.01 + 0.3 * UU * UU
+ A  DC                  0.6 * UU
+ A  D2C                 0.6
+ A  X2SQ                XX2 * XX2
+ A  CS                  COS( XX3 )
+ A  SS                  SIN( XX3 )
+ A  D                   A * C * X2SQ * XX2
+ F                      CS / D
+ G  UU                  - CS * DC / ( D * C )
+ G  XX2                 - 3.0 * CS / ( D * XX2 )
+ G  XX3                 - SS / D  
+ H  UU        UU        CS * ( 2.0 * DC * DC / C - D2C ) /
+ H+                     ( D * C )
+ H  UU        XX2       3.0 * CS * DC / ( D * C * XX2 )
+ H  UU        XX3       SS * DC / ( D * C )
+ H  XX2       XX2       12.0 * CS / ( D * X2SQ )
+ H  XX2       XX3       3.0 * SS / ( D * XX2 )
+ H  XX3       XX3       - CS / D
+
+ T  C4
+ A  C                   0.01 + 0.3 * UU * UU
+ A  DC                  0.6 * UU
+ A  D2C                 0.6
+ A  X2SQ                XX2 * XX2
+ A  CS                  COS( XX3 )
+ A  SS                  SIN( XX3 )
+ A  D                   A * C * X2SQ * X2SQ
+ F                      CS / D
+ G  UU                  - CS * DC / ( D * C )
+ G  XX2                 - 4.0 * CS / ( D * XX2 )
+ G  XX3                 - SS / D  
+ H  UU        UU        CS * ( 2.0 * DC * DC / C - D2C ) /
+ H+                     ( D * C )
+ H  UU        XX2       4.0 * CS * DC / ( D * C * XX2 )
+ H  UU        XX3       SS * DC / ( D * C )
+ H  XX2       XX2       20.0 * CS / ( D * X2SQ )
+ H  XX2       XX3       4.0 * SS / ( D * XX2 )
+ H  XX3       XX3       - CS / D
+
+ENDATA

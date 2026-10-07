@@ -38,7 +38,7 @@ I also checked the local primary texts of Haugland's final 2016 complexity paper
 
 ## Independent computations and limits
 
-A fresh script, `/tmp/s03r01-review01-check.py`, ran with `/home/sgusev/miniconda3/envs/minlp-notes/bin/python`. It checked 1,026 distinct-clause formulas on three variables with clauses of size two or three and at most two occurrences per literal. Exact enumeration of assignments and orientations confirmed the triangle construction and its subdivision, including simplicity and maximum degree three.
+A fresh script, `/tmp/s03r01-review01-check.py`, ran with `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python`. It checked 1,026 distinct-clause formulas on three variables with clauses of size two or three and at most two occurrences per literal. Exact enumeration of assignments and orientations confirmed the triangle construction and its subdivision, including simplicity and maximum degree three.
 
 The same script generated 22 small bipartite weighted orientation instances and independently optimized the original pooling flows in all endpoint-disjunction branches. It covered both placements with and without pool capacities: 88 complete branch-LP optimizations. In every case the lower bound and threshold equivalence agreed with exact orientation enumeration. Those LP solves use floating-point HiGHS and are regression checks, not exact proof certificates.
 

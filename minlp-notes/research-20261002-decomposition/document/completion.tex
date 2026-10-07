@@ -1,0 +1,299 @@
+The second implementation stage addresses the first release's engineering
+gaps. Its source and benchmark records are separate from the historical
+snapshots in Section~\ref{sec:computation}. The mathematical distinction
+between validity, termination and practical cost remains essential:
+an accepted rational certificate is exact, whereas a resource-limited
+search can finish without finding one.
+
+\subsection{Shared finite tables and automatic decompositions}
+The reusable finite-tree engine computes both message directions, all
+coordinate min-marginals and attaining assignments for finite factor tables,
+including infeasible entries. It checks tree structure and running
+intersection; the model adapters check factor coverage. Its callers build
+different objective and feasibility
+tables but share this computational rule. Certificate checkers separately
+validate the model-specific mathematical bounds. The base and constrained
+checkers independently implement Bellman replay; the convex-value checker
+reuses the finite-tree engine after independently checking its local
+optimization witnesses.
+
+When a box-QP decomposition is omitted, a deterministic minimum-fill
+heuristic constructs one from the interaction graph. A supplied
+decomposition remains supported and is checked. The resolved bags and tree
+are serialized, so certificate replay does not depend on reproducing the
+heuristic. Returned width is an upper bound, not a minimum-treewidth claim.
+Table budgets are checked before oversized allocations. Sparse neighbor
+lists reduce zero-product work in coordinate polishing and gradients;
+dense model storage and exact rational arithmetic remain practical costs.
+
+\subsection{Exact rational output in the general grid solver}
+The \texttt{solve\_exact} wrapper repeatedly requests finer original-model
+grid bounds, generates rational candidates, and applies
+Proposition~\ref{prop:candidateheight}. The height bound is computed once
+from the original coefficients and bounds. The implementation sharpens
+\eqref{eq:height} using a product of integer Hessian row norms, which bounds
+every relevant principal determinant by Hadamard's inequality. Neither
+filtered hull endpoints nor candidate denominators alter that original
+optimum-height bound.
+
+Candidates include the current feasible incumbent, bounded-denominator
+coordinate reconstruction, and exact stationarity on a proposed active
+face. Singular stationary systems use rational linear feasibility.
+These are candidate-generation procedures: stationarity or proximity
+alone never establishes global optimality. The separate exact-output
+checker replays the underlying original-domain certificate, verifies the
+candidate against the original model, recomputes its objective and reduced
+denominator, and checks the strict rational-separation inequality.
+
+The wrapper exposes round, stage, table and time limits, with configurable
+initial precision.
+An interrupted run retains its certified enclosure and says that exact
+output was not reached. Theorem~\ref{thm:generalfinite} now proves eventual exact output for
+arbitrary nonunique rational box QPs with sufficiently expanded resource
+caps. The stronger point-growth running-time theorem retains the
+uniqueness hypothesis stated in Section~\ref{sec:exact}. General finite
+termination does not provide that stronger efficiency guarantee.
+
+\subsection{Reusable exact linear and convex quadratic optimization}
+The shared rational optimization module implements two-phase simplex with
+Bland's pivot rule. Successful LP results carry primal/dual witnesses,
+infeasibility carries a Farkas witness, and unboundedness carries a feasible
+point and improving ray. The result checker verifies the original rational
+constraints and algebraic witness without replaying simplex pivots.
+A pivot limit is inconclusive; it is not an infeasibility certificate.
+
+The convex box-QP oracle checks positive semidefiniteness exactly and
+searches active faces with exact linear algebra and LP feasibility for
+singular faces. A feasible point with checked KKT signs certifies the global
+minimum of the convex quadratic. Face and pivot limits bound this
+reference implementation. Neither simplex nor active-face enumeration is
+claimed here as a polynomial-time implementation of the theoretical
+convex-QP oracle. Their purpose is to make the restricted algorithms
+executable while retaining independently checkable answers.
+
+\subsection{Original-model recourse composition}
+The recourse pipeline recognizes globally affine convex responses,
+substitutes accepted responses, solves the reduced model, and lifts the
+result to the original coordinates. Each accepted response has a checked
+positive-semidefinite private Hessian, feasible whole-box affine range,
+and whole-box KKT identities and signs. Thus the original and reduced
+optimum values coincide. The final certificate stores every reduction,
+including fixed-coordinate substitutions, so a checker can reconstruct
+the chain and verify the final incumbent in the original model.
+
+Candidate private blocks can be supplied or proposed from continuous
+components, private leaf-bag variables and single coordinates. This
+selection is heuristic. A rejected block or exhausted recognition budget
+remains in the model, and a failure to discover a reduction does not prove
+that no useful partition exists. The reduced problem can use the sparse
+grid solver or signed-concave minimum-cut recourse. The latter adapter
+checks signs and separates a small core before applying the existing exact
+conditional-cut search. The full reduction and search cost belongs in the
+reported total; preprocessing is not a free input promise.
+
+Changing-active-set convex recourse is also executable. Supplied disjoint
+continuous PSD blocks, or heuristically discovered blocks, become local
+conditional value factors. The implementation caches rational convex-QP
+values and KKT witnesses at attachment grid points, uses corrected geometric
+grids on the retained coordinates, and supports exact original-QP height
+acceptance. Private feasible sets in this implementation are boxes; the
+general private-polytope theorem has a wider input class. The checker
+verifies local PSD/KKT data, recomputes finite-tree values using the shared
+engine, and checks the original-domain history. It invokes no LP or QP
+optimizer.
+
+For scalar attachments, the integrated optional constructor enumerates
+private active patterns within a stated budget, certifies a complete
+interval partition, and uses its maximal private reduced curvature to
+sharpen the retained diagonal. Contributions from multiple scalar blocks
+add without a global overlay. The current constructor requires a positive-
+definite private Hessian and nonfixed intervals; unsupported or over-budget
+blocks retain the safe direct bound. The default pattern cap is $81$.
+In tested changing-response examples this changes a retained bound from
+$2M+6$ to $6$ for stiffness $M=1$ and $M=100$. General multidimensional
+short-partition construction remains outside the implementation.
+
+The mixed convex/concave submodular backend goes beyond minimum cuts.
+After verified sign changes, endpoint reduction of separately concave
+coordinates leaves a submodular set function evaluated by conditional
+convex QPs. Rational LP cutting planes minimize its Lov\'asz extension;
+greedy chains supply separating affine functions. The final lower bound
+uses a finite convex mixture of checked greedy base vectors, and a feasible
+conditional minimizer attains it. Its independent checker verifies the
+conditional KKT witnesses and the mixture bound. This is an exact capped
+reference implementation, without a polynomial iteration guarantee for
+its cutting-plane search. It stores completed cached query witnesses, so
+its certificate storage follows the query budget; the implementation does
+not claim the theorem's polynomial certificate-size bound.
+
+
+\subsection{Coupled constraints and optimal sets}
+The reusable TU solver uses feasible common-mesh tables on general tree
+decompositions, all coordinate min-marginals, and complete filtering
+history. Constraint scopes join objective scopes in the decomposition.
+The input includes an exactly checked TU certificate: supported structural
+forms include signed incidence and consecutive-ones matrices; a bounded
+all-minors fallback handles small matrices. A refused TU verification is
+not a proof of non-TU structure. Original integral alignment, finite
+integer labels and verified continuous curvature remain assumptions.
+The optional union representation preserves separated surviving cells.
+Exact output combines original-face rational candidates, the generic
+stationary-face recovery LP and a height-separation check. With resource
+caps removed, the recovery construction also covers arbitrary nonunique
+quadratic minima; only the finite-projection subclass has the stronger
+state bound. The width-dependent exponent and initial capacity costs
+stated in Section~\ref{sec:extensions} are unchanged.
+
+The optimal-set module constructs a compact Bellman-residual descriptor
+for the entire optimal set of a coordinatewise concave mixed-box QP. A
+separate checker verifies the recurrence and the support conditions,
+including possible interior integer labels. For the diagonal-certifiable
+continuous class, the implementation actually runs finite proximal trials
+with guessed growth ratios, performs rational stationary recovery, and
+accepts only the original KKT and positive-semidefinite certificate. A
+false growth guess cannot justify acceptance. Exhausting the configured
+search limits yields an inconclusive result, not a negative membership
+decision for the class.
+
+\subsection{Explicit polynomials and exact implicit boundary output}
+The polynomial implementation accepts explicit rational monomial factors,
+constructs or verifies their sparse decomposition, and computes upper
+coordinate-curvature bounds by exact interval arithmetic. It uses the shared
+finite-tree engine, corrected grids and complete pruning histories. Native
+integer output has the coefficient-denominator lattice stopping rule from
+Section~\ref{sec:polynomial}, computed after substituting any fixed rational
+coordinates. Its checker independently recomputes that denominator and the
+strict pre-acceptance gap. Continuous approximation does not round an
+algebraic optimum to a rational exact answer.
+
+The boundary search feeds finer globally certified polynomial boxes to a
+separate exact acceptance test. It first fixes native labels, then
+repeatedly certifies derivative signs and clamps the corresponding original
+bounds. Such a clamp preserves at least one global optimizer; a weak sign
+need not preserve every optimizer. On the remaining face, let $H_0$ be the
+midpoint Hessian and let $\delta$ bound the maximum absolute row sum of
+$H(x)-H_0$ throughout the box. An exact positive-definiteness check on
+$H_0-\delta I$ proves uniform strong convexity. The polynomial together
+with this rational face box is then an exact finite descriptor of one
+global optimizer, possibly with irrational coordinates and value.
+
+The boundary verifier independently recomputes monomial derivative
+intervals, reductions and the matrix bound, after replaying the global
+grid proof. It does not optimize the patch. The tested polynomial
+$(x^2-1/2)^2+y+xy^2$ yields a certified patch for
+$(x,y)=(1/\sqrt2,0)$ after four accuracy rounds. A bounded restart search
+implements discovery; it does not implement the theoretical bit-step
+dovetail or claim its FPT runtime. Failure of these sufficient tests, or a resource limit, can leave the
+result inconclusive, and general growth-only polynomial boundary
+output remains unresolved.
+
+\subsection{New bounded comparisons and certificate checks}
+The second-stage main suite has 73 configurations. Every solve runs
+sequentially in a fresh process with one numerical-library thread, a
+two-second cooperative solver budget, a five-second hard worker deadline,
+and a 512 MiB address-space cap. Replay runs in a separate five-second
+worker. The table cap is 30,000 states per stage. Saved timings separate
+solving, replay, preprocessing and total subprocess time; the latter
+includes both workers. Source snapshots and final hashes identify the
+implementation actually measured. Earlier provisional runs are archived
+and excluded from the following totals.
+
+\begin{center}
+\begin{tabular}{lrrr}
+\toprule
+Lane & Configurations & Requests completed & Valid proof replays\\
+\midrule
+Archived grid baseline & 16 & 12 & 16\\
+Completed grid & 16 & 12 & 16\\
+Exact rational output & 9 & 9 & 9\\
+Integrated recourse & 11 & 10 & 11\\
+TU constraints & 16 & 13 & 15\\
+Optimal-set descriptions & 5 & 5 & 5\\
+\midrule
+Total & 73 & 61 & 72\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Completion means the request made in that lane: the stated approximate
+gap, an exact value, infeasibility, or a checked optimal-set description.
+Partial bounds can pass replay without completing the request. The one
+configuration without a proof is an intentionally invalid TU input,
+correctly rejected before solving. Across the main suite, 54 enclosures
+contain independent exact reference values and 29 configurations certify
+exact values. The nine exact-output runs cover eight distinct models;
+a separable case repeated without convex presolve already has an exact
+initial bound, so that repeat is not evidence of nontrivial reconstruction.
+The fresh random path, band and mixed cases provide such evidence.
+
+Both grid versions finish new random paths through 64 variables and a
+32-variable random tree. They finish the same 12 of 16 requests, with
+summed solve-plus-replay subprocess times 15.18 and 15.34 seconds. This
+comparison jointly changes minimum-degree to minimum-fill decomposition,
+the message engine and sparse polishing; it establishes neither a speedup
+nor an isolated cause for a timing difference. Minimum fill reduces the
+supplied widths of the two full binary QPLIB instances from 25 to 19 and
+95 to 93. Both still exceed the table budget, and neither public input
+reaches its target. The three continuous bound-only QPLIB entries screened
+from metadata have 14,400--39,204 variables; one has unbounded coordinates.
+They exceed the prototype's declared 512-variable screen. These metadata
+refusals are not solver runs or successful continuous public benchmarks.
+
+The integrated recourse tests operate on the original models. On a
+shuffled 17-variable affine star, automatic preprocessing removes 16
+coordinates and certifies value $-1$ in 0.065 seconds of solve time and
+0.047 seconds of replay. The 33-variable dense minimum-cut example reaches
+gap $1/1024$ in 0.089 seconds, with 0.099 seconds for replay. These are
+controlled structural examples. The two changing-response examples with
+stiffness $M=1$ and $M=100$ each use 17 table states, six levels and seven
+conditional QP queries, with certified gap $27/65536$. Their identical
+state counts illustrate this certified curvature reduction; two parameter
+values do not establish an empirical complexity law.
+
+Two same-model constrained comparisons expose the value of the added
+structure. For $x_0(1-x_0)+(x_1-1/3)^2+(x_2-1/3)^2$ with $x_1=x_2$,
+coordinate hulls hit the per-stage cap after 15 levels and 33,502 total
+processed states. Union filtering returns exact value zero after 43
+levels and 2,538 total states, using two stationary-recovery LPs and
+24 pivots; exhaustive face search is disabled. For
+$1000(x_0-x_1)^2+(x_0-1/3)^2$ with $x_0=x_1$, the ambient-curvature
+mode times out after 252,192 total states. The certified equality-tangent
+bound yields exact value zero with 1,938 states. These small examples
+exercise specific representation and curvature choices, rather than
+establishing general solver superiority.
+
+Eleven separately frozen extension configurations exercise polynomial,
+implicit-boundary and mixed-submodular functionality. Seven reach their
+requested outcome; three retain checked intervals after a table limit,
+a cut limit or an unsupported signed class. One bounded symmetric-quartic
+boundary search remains inconclusive and emits no exact-output certificate.
+All ten emitted certificates replay. Eight numeric intervals enclose
+independent exact references, and two implicit patches contain independently
+known analytic optimizers.
+
+The non-growth polynomial $(x-1/3)^4$ reaches its requested gap in
+36 stages and 545 states. A mixed polynomial needs eight stages and
+469 states. The native-integer example, with one fixed rational coordinate,
+certifies value $-53/6$ after two stages and 17 states: its raw gap $1/24$
+is strictly below its value-lattice spacing $1/18$. Independent enumeration
+checks all 100 native assignments. The unplanted six-variable signed mixed
+QP returns $-509/105$ using nine conditional QP queries, five greedy cuts
+and 88 pivots. A separate fixture requires a genuine mixture of two bases;
+a single-base lower bound $-13/16$ improves to exact value zero.
+
+Across both new suites there are therefore \textbf{84 configurations,
+82 valid proof replays and 68 completed requests}. Fourteen other runs
+retain checked incomplete or unsupported-class bounds. The invalid TU
+input and inconclusive boundary search are the two outcomes without
+certificates. Reference evidence comprises 62 numeric enclosures and two
+implicit-optimizer containment checks. The extension workers use the same
+hard time and memory limits and total 1.584 seconds of subprocess time;
+no process reaches a hard deadline or address-space cap. These figures
+exclude provisional archives and the unchanged 74 historical runs.
+
+The final combined topic-specific test command passes 158 tests in
+4.114 seconds. Its saved output and 35-source hash manifest accompany the
+completion package. These tests cover solver contracts, replay, invalid
+inputs, resource exits and certificate corruption. They are separate from
+the bounded benchmark configurations, and neither is a project-wide or
+CI verification claim.

@@ -76,7 +76,7 @@ delivered results valid.
 
 ## Diagnostics
 
-Ran `/home/sgusev/miniconda3/envs/qipm/bin/python
+Ran `/workspace/local-home/miniconda3/envs/qipm/bin/python
 scalar-newton-paper/scripts/verify_classical.py`: PASS. The diagnostics check
 distinct useful failure modes (complex conjugation, support zeros, sharp
 moment constants, full rejection probability, and arithmetic perturbation).

@@ -1,0 +1,637 @@
+\section{Core noise: values, selected cores, and full recourse points}
+\label{sec:recourse}
+
+Many structured problems have a few complicating \emph{core} variables
+$v$ and many \emph{residual} variables $z$, and the residual problem is
+convex once $v$ is fixed. Two-stage models, where $z$ is the recourse
+of a first-stage decision $v$, and decomposition methods that branch
+only on $v$ have this form. At a rational core point the residual
+problem is a convex program, so its value can be computed to any
+certified accuracy in polynomial time (Lemma~\ref{lem:convex-value}).
+The projected value $V(v)=\min_zf(v,z)$ is nevertheless nonconvex, and
+the earlier sections show that approximating values, approximating
+optimizer coordinates, and deciding exact relations are different
+problems.
+
+This section studies these outputs after one random linear
+perturbation of the core coefficients. The topic belongs to the output
+account of this paper for three reasons. First, the perturbation is
+drawn once from a finite rational law that is fixed before any accuracy
+is requested. The perturbed instance is therefore an ordinary rational
+instance, and the contracts of Section~\ref{sec:models} apply to it
+without change. Second, every draw is answered correctly. Probability
+only bounds the expected cost; rare draws are solved by exact
+real-algebraic computation on the same instance and with the same
+selector. Third, the outputs separate sharply. On product boxes, values
+and one selected core are available under residual convexity alone; on
+coupled polytopes they need a supplied convexifier. Full optimizer
+points need more structure: a supplied convexifier together with a
+cubic objective or a convexified objective that is convex on all of
+$\R^n$, or, for cubics on product boxes, exact certificates that we
+construct. For residual quartics, core noise alone
+does not help unless Square Root Sum and $\PosSLP$ have Las Vegas
+algorithms with expected polynomial running time
+(Remark~\ref{rem:recourse-quartic}).
+
+The main results are Theorem~\ref{thm:recourse-core} (values and
+selected cores), Corollaries~\ref{cor:recourse-joint}
+and~\ref{cor:recourse-qp} (joint convexity and exact quadratic output),
+Theorem~\ref{thm:recourse-convexified} (full points under a supplied
+convexifier), Proposition~\ref{prop:recourse-fiber} together with
+Proposition~\ref{prop:recourse-examples} (the structure of cubic
+residual fibers and two obstructions), and
+Theorem~\ref{thm:recourse-cubic} (full points for residual-convex cubics
+on product boxes, with no convexifier). All proofs are in
+Appendix~\ref{app:recourse}.
+
+\subsection{Model, noise law, and selector}
+\label{sec:recourse-model}
+
+\begin{definition}[Core-noise instances]
+\label{def:recourse-instance}
+Fix a degree bound $D\ge1$. A \emph{core-noise instance} consists of
+integers $k\ge1$ and $m\ge0$, a nonempty compact set
+$X\subseteq[0,1]^k\times\R^m$, an explicitly encoded polynomial
+$f\in\Q[v,z]$ of total degree at most $D$ in the core variables
+$v\in\R^k$ and residual variables $z\in\R^m$, a rational curvature
+parameter $\kappa\ge0$, and a rational noise width $\sigma>0$. The
+instance has one of two types.
+\begin{enumerate}[label=(\Alph*)]
+\item[(B)] \emph{Product box.} $X=[0,1]^k\times[0,1]^m$; the function
+$z\mapsto f(v,z)$ is convex on $[0,1]^m$ for every $v\in[0,1]^k$; and
+$\kappa=\Lambda$ satisfies $\partial^2f/\partial v_i^2\le\Lambda$ on
+$X$ for $i=1,\ldots,k$.
+\item[(P)] \emph{Coupled polytope.} $X=\{x:Ex\le e\}$ is a bounded
+rational polytope contained in $[0,1]^k\times\prod_{j=1}^m[l_j,u_j]$
+for a supplied rational box, and $\kappa=\alpha$ makes
+$f(v,z)+\frac\alpha2\norm v^2$ convex on $X$.
+\end{enumerate}
+We write $n=k+m$ and let $L$ be the total binary length of all these
+data, including any supplied certificate for the convexity and
+curvature promises.
+\end{definition}
+
+Core coordinates with other rational ranges can be mapped affinely onto
+$[0,1]^k$. This rescales $\Lambda$ or $\alpha$ and changes the physical
+noise directions, and the rescaled data are part of the input; no
+invariance under such rescaling is claimed. Fixed coordinates are
+substituted first, and empty or single-point feasible sets are detected
+by linear programming.
+
+Convexity and curvature are promises. The algorithms never test them;
+when a certificate is supplied, the stated bounds assume that it can be
+verified in time polynomial in $L$, and otherwise its verification cost
+must be added. In type~(B) a valid $\Lambda$ can always be computed from
+coefficient sums, but the numerical factor in our bounds depends on the
+supplied value, which may be much smaller. Type~(P) asks for more than
+convex residual fibers: it supplies a convex problem on every cell of
+the core. For example, $f(v,z)=vz^2$ on the unit square has convex
+fibers, but $f+\frac\alpha2v^2$ is convex for no $\alpha$
+(Proposition~\ref{prop:recourse-examples}).
+
+For a power of two $M\ge2$ put
+\[
+ G_M=\Bigl\{-\sigma+\frac{2\sigma j}{M-1}:\ j=0,1,\ldots,M-1\Bigr\},
+\]
+the endpoint-inclusive uniform grid in $[-\sigma,\sigma]$. A
+\emph{draw} is a vector $\gamma$ with independent coordinates, each
+uniform on $G_M$, and the perturbed objective is
+\[
+ f_\gamma(v,z)=f(v,z)+\gamma^{\mathsf T}v,\qquad
+ f_\gamma^*=\min_Xf_\gamma .
+\]
+Only core coefficients are perturbed. The \emph{selected core}
+$a=a(\gamma)$ is the lexicographically least core among the global
+minimizers of $f_\gamma$ on $X$. The \emph{optimal fiber}
+\[
+ S(\gamma)=\{z:(a,z)\in X,\ f_\gamma(a,z)=f_\gamma^*\}
+\]
+is nonempty, compact, and convex in both types
+(Lemma~\ref{lem:recourse-selected-point}). Let $p=p(\gamma)$ be its
+point of least Euclidean norm. The \emph{selected point} is
+$x^\sharp(\gamma)=(a,p)$. It is a global minimizer of $f_\gamma$, and
+it does not depend on any requested accuracy.
+
+An \emph{evaluator} is a deterministic algorithm that receives the
+instance, the draw $\gamma$, and an integer $q\ge0$, and returns
+rational numbers. We count its bit operations and the bit length of its
+output. A quantity is \emph{base-computable} if it is computed from the
+instance before sampling, in time polynomial in $L$; in particular the
+grid size $M$ below has $\log M$ polynomial in $L$, so each sampled
+coefficient has polynomial bit length. The notation $P_D$ stands for a
+polynomial whose degree depends only on $D$; it never depends on $k$,
+$m$, $\sigma$, the draw, or $q$.
+
+The guarantees below have the same form. Correctness holds on every
+draw and at every precision. The work bound is a single random factor
+$\Omega(\gamma)$ times a polynomial in $L+q$: one factor controls all
+precision queries at once, so there is no union bound over $q$ and no
+resampling when the accuracy grows. The outputs are Cauchy names for
+fixed numbers of the sampled instance: a value interval for
+$f_\gamma^*$, and approximations to $a(\gamma)$ or $x^\sharp(\gamma)$.
+They are not expanded algebraic representations, and they do not solve
+the unperturbed instance.
+
+\subsection{Values and selected cores}
+\label{sec:recourse-core}
+
+\begin{theorem}[Values and selected cores under one finite law]
+\label{thm:recourse-core}
+Fix $D$. For core-noise instances of type~(B) or~(P) there are a
+base-computable power of two $M$ and an evaluator with the following
+properties. For every draw $\gamma\in G_M^k$ and every integer $q\ge0$,
+the evaluator returns a rational point $x_q=(v_q,z_q)\in X$ and a
+rational number $\ell_q$, both of bit length at most $P_D(L+q)$, with
+\begin{equation}
+ \ell_q\le f_\gamma^*\le f_\gamma(x_q)\le\ell_q+2^{-q},
+ \qquad
+ \norm{v_q-a(\gamma)}\le2^{-q}.
+ \label{eq:recourse-core-output}
+\end{equation}
+There is a function $\Omega:G_M^k\to[1,\infty)$ such that, for every
+draw and every $q$, the bit work of the query is at most
+$\Omega(\gamma)P_D(L+q)$, and
+\[
+ \E\,\Omega\le k^{O(k)}\Bigl(1+\frac\kappa\sigma\Bigr)^kP_D(L),
+\]
+with an absolute constant in $O(k)$.
+\end{theorem}
+
+The value part of \eqref{eq:recourse-core-output} is an exact Cauchy
+name for $f_\gamma^*$ together with feasible points of certified
+objective gap; the core part is a Cauchy name for the single vector
+$a(\gamma)$. The residual coordinates $z_q$ need not approach any
+particular residual optimizer. Ties among optimal cores, flat residual
+fibers, and positive-dimensional optimal sets are allowed; no growth
+constant, residual strong convexity, or interiority is supplied.
+
+\paragraph{How the proof works.}
+The evaluator refines dyadic cells of the core cube. On each cell it
+computes a lower bound and a feasible witness by convex optimization:
+in type~(B) at the cell corners, using the coordinate bound $\Lambda$
+to control rounding, and in type~(P) by the secant underestimator
+$f_\gamma+\frac{\alpha+\sigma}2\sum_i(v_i-l_i)(v_i-u_i)$ on the cell.
+The latter is the classical $\alpha$BB construction
+\citep{AndroulakisMaranasFloudas1995}. Pruning against the best
+witness gives a certified value interval on every draw, and the
+coordinate hull of the surviving cells contains every optimal core and
+the incumbent. Small hull diameter therefore certifies the core output
+without deciding uniqueness.
+
+Three probabilistic estimates control the cost. (i) An
+\emph{all-scale count}: the number of cells at every level of every
+query is at most $4^kW(\gamma)$, where $W$ is defined from the
+largest simplices in padded near-optimal sets. A convex-conjugate
+pushforward measure and a covering argument give
+$\Pr\{W>s\}\le a_k/s+C/M$ with $a_k=k^{O(k)}(1+\kappa/\sigma)^k$, in
+every core dimension. (ii) A \emph{projected-growth tail}: the core
+quadratic growth constant $g$ of the sampled objective satisfies
+$\Pr\{g<t\}\le kt/\sigma+C/M$; when $g$ is not small the hull shrinks
+at the expected rate. (iii) A \emph{finite-law transfer}: each event in
+(i) and (ii) is defined by a formula with two quantified blocks, so a
+block quantifier-elimination theorem bounds the number of intervals in
+every one-dimensional section independently of coefficient heights.
+Replacing continuous marginals by grid marginals one at a time costs
+$C/M$, including atoms at ties and exact algebraic relations. Here $C$ is
+the base-computable format bound from Appendix~\ref{app:recourse}, of size
+$2^{\poly(L)}$; it is independent of the requested precision and sampled
+coefficient heights.
+
+When a cell count exceeds a base cap or the hull test fails, the
+evaluator solves the same sampled instance exactly. Two-block singleton
+formulas define the coordinates of the selected point; block
+quantifier elimination and univariate real-root isolation give their
+values. The exponential factor of this fallback depends only on the
+format of the instance, and the sampled coefficient length and $q$
+enter polynomially. This separation is what allows the grid to be
+chosen after the fallback budget, with $\log M$ polynomial in $L$.
+
+A simpler count based on growth alone gives at most
+$(c(1+\sqrt{k\kappa/g}))^k$ cells per level, for an absolute constant
+$c$. Its truncated moment under the growth
+tail is bounded only for $k\le2$; for $k\ge3$ it grows as a positive
+power of the cap, and that route fails. The all-scale weak first-moment
+bound in (i) removes the restriction on $k$. It is an instance of the
+weak-type estimate for a centered maximal function of a locally finite
+measure; the conjugate construction makes that measure available.
+
+\begin{corollary}[Joint convexity: no numerical smoothing factor]
+\label{cor:recourse-joint}
+Fix $D$. For instances of type~(P) with $\alpha=0$, that is, with $f$
+convex on $X$, there are a base-computable power of two $M$ and an
+evaluator with the outputs \eqref{eq:recourse-core-output} on every
+draw and at every precision, and a function $\Omega$ with
+$\E\,\Omega\le2$ such that every query costs at most
+$\Omega(\gamma)P_D(L+q)$ bit operations.
+\end{corollary}
+
+The bound has no factor $k^{O(k)}$ and no numerical dependence on
+$\sigma$; the noise width enters only through its bit length. The
+proof uses no cells. It encloses every optimal core and the incumbent's
+core by $2k$ binary searches whose probes are convex value queries on
+$X\cap\{v_i\ge\theta\}$ and $X\cap\{v_i\le\theta\}$
+(Appendix~\ref{app:recourse-joint}). Taking every variable as a core
+variable ($m=0$) yields the lexicographically least optimizer of a
+convex polynomial on a polytope inside the unit cube, in expected
+polynomial time, under independent noise on every coordinate. This is
+consistent with Theorem~\ref{thm:points-quartic-lower}: there the hard
+coordinate is not perturbed, and full-coordinate noise changes the
+instance.
+
+\begin{corollary}[Exact rational output for quadratic objectives]
+\label{cor:recourse-qp}
+Let $D=2$. For instances of type~(B) or~(P), there are a
+base-computable $M$ and an algorithm that, on every draw, returns an
+exact rational global minimizer of $f_\gamma$ on $X$ with core
+$a(\gamma)$, together with the exact value $f_\gamma^*$. The output has
+bit length polynomial in $L$ on every draw, and the expected bit work
+is $k^{O(k)}(1+\kappa/\sigma)^k\poly(L)$; for type~(P) with $\alpha=0$
+it is $\poly(L)$.
+\end{corollary}
+
+The proof shows that the core of the lexicographically first optimizer
+of a rational quadratic program has denominators bounded by a
+base-computable $U_Q$ with $\log U_Q=\poly(L)$, uniformly over all draws.
+One query of Theorem~\ref{thm:recourse-core} at accuracy
+$1/(4U_Q^2)$ followed by continued-fraction reconstruction recovers that
+core exactly, and one exact convex quadratic program
+\citep{KozlovTarasovKhachiyan1980} completes it. The height argument is
+specific to quadratics; it does not give exact output for cubic or
+quartic objectives.
+
+\subsection{Full points under a supplied convexifier}
+\label{sec:recourse-convexified}
+
+Theorem~\ref{thm:recourse-core} says nothing about residual coordinates.
+Substituting an approximate core into an exact residual solver does not
+repair this: the residual optimizer set can jump at the selected core
+(Proposition~\ref{prop:recourse-examples}). With a supplied convexifier
+the jump is avoided by optimizing a convex surrogate on the fixed
+domain instead.
+
+\begin{theorem}[Full points with a supplied convexifier]
+\label{thm:recourse-convexified}
+Consider instances of type~(P) in which either
+\begin{enumerate}[label=(\roman*)]
+\item $D=3$ and $f+\frac\alpha2\norm v^2$ is convex on $X$; or
+\item $D$ is fixed and $f+\frac\alpha2\norm v^2$ is convex on all of
+$\R^n$.
+\end{enumerate}
+There are a base-computable power of two $M$ and an evaluator that, for
+every draw $\gamma$ and every $q\ge0$, returns a rational
+$x_q\in X$ with $\norm{x_q-x^\sharp(\gamma)}\le2^{-q}$. Every query
+costs at most $\Omega(\gamma)P_D(L+q)$ bit operations, where
+$\E\,\Omega\le k^{O(k)}(1+\alpha/\sigma)^kP_D(L)$. If $\alpha=0$, then
+$\E\,\Omega\le2$.
+\end{theorem}
+
+With $\beta=\alpha+1$ the surrogate is
+$\psi_a(x)=f_\gamma(x)+\frac\beta2\norm{v-a}^2$. It is convex, its
+minimum value is $f_\gamma^*$, and its optimal set is exactly the
+selected fiber $\{a\}\times S(\gamma)$. Its linear coefficients involve
+the unknown, possibly irrational core $a$. The key estimate is an error
+bound $\dist(x,\{a\}\times S(\gamma))\le\Gamma(\psi_a(x)-f_\gamma^*)^{1/D_e}$
+whose constant $\Gamma$ has polynomial bit length and is uniform in
+$a$; here $D_e=4$ in case~(i) and $D_e=D$ in case~(ii). It is obtained
+by describing the optimal set through a known rational matrix whose
+right-hand side alone depends on $a$, and applying a Hoffman bound. In
+case~(i) the matrix comes from the affine Hessian of a cubic, as in
+Theorem~\ref{thm:cubic-point}; in case~(ii) from gradient coefficient
+rows, as in Theorem~\ref{thm:global-point}. The completion then minimizes
+the rational convex function $\psi_b+\tau\norm x^2$ for a short rational
+approximation $b$ of $a$. The search for $a$ uses $\alpha$; the larger
+$\beta$ appears only in the polynomial-time completion and does not
+change the numerical factor.
+
+\begin{corollary}[Affine-power certificates]
+\label{cor:recourse-affine-power}
+Condition~(ii) holds, and can be verified in time polynomial in $L$
+for fixed $D$, when
+$f+\frac\alpha2\norm v^2$ is supplied in the form
+$c_0+\ell^{\mathsf T}x+\frac12x^{\mathsf T}Ax
+ +\sum_jw_j(a_j^{\mathsf T}x-b_j)^{p_j}$
+with rational data, $A\succeq0$, $w_j>0$, and even $p_j\le D$.
+\end{corollary}
+
+This explicit class contains quartic and higher even-power terms with
+dense rational affine forms and arbitrary rational coupling
+constraints. It is a sufficient certificate, not a recognition
+algorithm for global convexity.
+
+\subsection{Residual-convex cubics without a convexifier}
+\label{sec:recourse-cubic}
+
+We now drop the convexifier and keep only type~(B) with total degree
+three. Write $H(v,z)=\nabla^2_{zz}f(v,z)$, which is affine in $(v,z)$
+and positive semidefinite on the product box. For a face $A$ of the
+core cube $[0,1]^k$ let $F\subseteq\{1,\ldots,k\}$ be its set of free
+coordinates, $c_A$ its relative center, and $c_z=(\frac12,\ldots,\frac12)$
+the residual center. Put
+\[
+ H_A=H(c_A,c_z),\qquad g_A(v)=\nabla_zf(v,c_z),\qquad
+ J_A(v)=\begin{bmatrix}H_A\\ g_A(v)^{\mathsf T}\\ I_m\end{bmatrix}.
+\]
+For $v\in[0,1]^k$ let $S_v=\argmin_{z\in[0,1]^m}f(v,z)$.
+
+\begin{proposition}[Fixed face kernels and a conditional error bound]
+\label{prop:recourse-fiber}
+Let $f$ be a cubic of type~(B) and let $A$ be a face of $[0,1]^k$.
+\begin{enumerate}[label=(\alph*)]
+\item $0\preceq H(v,z)\preceq2H_A$ on $A\times[0,1]^m$. If the free
+coordinates of $v\in A$ lie in $[\delta,1-\delta]$ with
+$0<\delta\le\frac12$, then $H(v,c_z)\succeq2\delta H_A$. In particular
+$\ker H(v,c_z)=\ker H_A$ for every $v$ in the relative interior of $A$.
+\item For $v$ in the relative interior of $A$ and any $y\in S_v$,
+\[
+ S_v=\{z\in[0,1]^m:\ H_A(z-y)=0,\ g_A(v)^{\mathsf T}(z-y)=0\}.
+\]
+Every square minor of $J_A(v)$, restricted to $A$, is a polynomial of
+degree at most two in the free coordinates.
+\item Let $\delta\in(0,\frac12]$ and $\mu\in(0,1]$ be supplied rational
+margins. Suppose the free coordinates of $v\in A$ lie in
+$[\delta,1-\delta]$ and every nonzero square minor of $J_A(v)$ has
+absolute value at least $\mu$. Then
+\[
+ \dist(z,S_v)\le\Gamma\bigl(f(v,z)-\min f(v,\cdot)\bigr)^{1/4}
+ \quad\text{for } z\in[0,1]^m \text{ with gap at most }1,
+\]
+for a rational $\Gamma\ge1$ that is computed from $f$, $A$, $\delta$,
+and $\mu$ in time polynomial in $L$ and the bit lengths of $\delta$
+and $\mu$.
+\end{enumerate}
+\end{proposition}
+
+The kernel is rational and constant on the relative interior of each
+face, although it can grow on the boundary. Only one row of the
+equality description of $S_v$ varies with the core. The family of
+square minors of $J_A$ is exponentially large, but each member is a
+quadratic in the free core coordinates. Part~(c) is conditional: the
+margins $\delta$ and $\mu$ at an unknown, possibly irrational core
+cannot be read from rational input heights, and computing a Hoffman
+constant at a nearby rational core is unsound, since a minor can vanish
+there while it is tiny but nonzero at the true core.
+
+\begin{proposition}[Two obstructions]
+\label{prop:recourse-examples}
+\begin{enumerate}[label=(\alph*)]
+\item The cubic $f(v,z)=vz^2$ on $[0,1]^2$ has convex residual fibers,
+but no constants $\Gamma,\theta>0$ satisfy
+$\dist(z,S_v)\le\Gamma(f(v,z)-\min f(v,\cdot))^\theta$ for all
+$v\in(0,1]$ and $z\in[0,1]$. For no $\alpha\ge0$ is
+$f+\frac\alpha2v^2$ convex on the square.
+\item For $\gamma>1$, the cubic $f_\gamma(v,z)=\gamma v-v^2z$ on
+$[0,1]^2$ has affine residual fibers, optimal set $\{0\}\times[0,1]$,
+and selected point $(0,0)$. For every $v>0$ the residual problem has
+the unique minimizer $z=1$, so exact residual solutions at approximate
+cores $b_j\downarrow0$ converge to $(0,1)$. For no $\alpha\ge0$ is
+$f_\gamma+\frac\alpha2v^2$ convex on the square. Under uniform core
+noise of width $\sigma>1$ added to $f(v,z)=-v^2z$, such draws have
+positive probability.
+\end{enumerate}
+\end{proposition}
+
+Example~(b) defeats minimum-norm completion by approximate-core
+substitution. The completion below avoids it by first certifying the
+exact face of the selected core, here the vertex $v=0$, and then
+regularizing the residual problem at that exact face.
+
+\begin{theorem}[Full selected optimizer for residual-convex cubic recourse]
+\label{thm:recourse-cubic}
+Let $(X,f,\Lambda,\sigma)$ be a core-noise instance of type~(B) with
+$D=3$ and $k,m\ge1$. There are a base-computable power of two $M$ and
+an evaluator such that, for every draw $\gamma\in G_M^k$ and every
+integer $q\ge0$, the evaluator returns a rational point
+$(v_q,z_q)\in[0,1]^{k+m}$ with
+\[
+ \norm{(v_q,z_q)-x^\sharp(\gamma)}\le2^{-q}.
+\]
+There is a function $\Omega$ such that every query costs at most
+$\Omega(\gamma)\poly(L+q)$ bit operations and output bits, and
+\[
+ \E\,\Omega\le k^{O(k)}\Bigl(1+\frac\Lambda\sigma\Bigr)^k\poly(L).
+\]
+The polynomials have absolute exponents. No joint convexifier, lower
+bound on residual curvature, or uniqueness of residual optimizers is
+assumed.
+\end{theorem}
+
+For $k=0$ the selected point is the minimum-norm minimizer of a cubic
+convex on a box, and Theorem~\ref{thm:cubic-point} gives it
+deterministically. For $m=0$ Theorem~\ref{thm:recourse-core} suffices.
+The examples of Proposition~\ref{prop:recourse-examples} are covered.
+The evaluator can also return a certified interval of width $2^{-q}$
+for $f_\gamma^*$ at the same order of cost
+(Remark~\ref{rem:recourse-value-certificate}).
+
+The proof composes three certificates with
+Theorem~\ref{thm:recourse-core}, applied on the same draw to $f$ and to
+the $2k$ baselines $f\pm tv_i$. Each certificate is sound on every draw;
+probability only bounds how often one of them fails.
+
+\begin{lemma}[Exact core endpoints from nearby tilts]
+\label{lem:recourse-face}
+Let $f$ be of type~(B), $\bar\Lambda=\max\{1,\Lambda\}$,
+$0<t\le\frac12$, $\gamma\in\R^k$, and $1\le i\le k$.
+\begin{enumerate}[label=(\alph*)]
+\item If some global minimizer of $f_{\gamma-te_i}$ has core $b$ with
+$b_i<t/\bar\Lambda$, then every global minimizer of $f_\gamma$ has
+$v_i=0$. If some global minimizer of $f_{\gamma+te_i}$ has core $b$ with
+$b_i>1-t/\bar\Lambda$, then every global minimizer of $f_\gamma$ has
+$v_i=1$.
+\item There are numbers $\theta_i^0,\theta_i^1$ depending only on
+$\gamma_{-i}$ such that the following holds. If some global minimizer
+of $f_\gamma$ has $v_i=0$ while some global minimizer of
+$f_{\gamma-te_i}$ has core $b$ with $b_i>0$, then
+$\gamma_i\in[\theta_i^0,\theta_i^0+t]$. If some global minimizer of
+$f_\gamma$ has $v_i=1$ while some global minimizer of $f_{\gamma+te_i}$
+has $b_i<1$, then $\gamma_i\in[\theta_i^1-t,\theta_i^1]$.
+\end{enumerate}
+\end{lemma}
+
+Part~(a) uses the one-dimensional projected value
+$V_i(s)=\min\{f_\gamma(v,z):v_i=s\}-\gamma_is$, which becomes concave
+after subtracting $\bar\Lambda s^2/2$. Optimal coordinates move
+monotonically with the tilt, and two interior contacts for tilts that
+differ by $t$ must be at distance at least $t/\bar\Lambda$. Applied with
+certified approximations of the selected cores of $f_{\gamma\pm te_i}$
+to accuracy $t/(8\bar\Lambda)$, the rules in~(a) fix a face $A$
+containing $a(\gamma)$. By part~(b), the probability under the grid law
+that the selected core has an endpoint coordinate that the rules miss
+is at most $kt/\sigma+2k/M$.
+
+\begin{lemma}[A lattice certificate for all bounded-height quadratic margins]
+\label{lem:recourse-lattice}
+Let $a\in[0,1]^r$, let $\chi(a)\in[0,1]^s$, $s=\binom{r+2}2$, list
+the monomials of degree at most two in $a$, including $1$, and let
+$B,T\ge1$ be integers. Given a rational $\hat a\in[0,1]^r$ with
+$\norm{\hat a-a}_\infty\le1/(4T)$, put
+$\omega_j=\operatorname{round}(T\chi_j(\hat a))$, and let
+$\mathbf b_1$ be the first vector of an LLL-reduced basis, with
+parameter $3/4$ \citep{LenstraLenstraLovasz1982}, of the lattice in
+$\Z^{s+1}$ generated by the rows of $[I_s\mid\omega]$.
+\begin{enumerate}[label=(\alph*)]
+\item If $\norm{\mathbf b_1}^2>2^{s-1}(4sB)^2$, then
+$\abs{h^{\mathsf T}\chi(a)}>sB/T$ for every $h\in\Z^s$ with
+$0<\norm h_\infty\le B$.
+\item Let $R_s=2^s4sB$. If $\abs{h^{\mathsf T}\chi(a)}\ge\eta_0$ for
+every $h\in\Z^s$ with $0<\norm h_\infty\le R_s$, and
+$T\eta_0>(s+1)R_s$, then the test in~(a) accepts.
+\end{enumerate}
+The test costs time polynomial in
+$s+\log T+\log B+\langle\hat a\rangle$.
+\end{lemma}
+
+Apply the lattice lemma to $a_F(\gamma)$, where $F$ is the set of core
+coordinates left provisionally free by the endpoint rules defining $A$,
+after substituting the certified endpoint values into the minors. The tested
+family contains $v_i$ and $1-v_i$ for $i\in F$, so acceptance proves that
+these coordinates are truly interior. After clearing a
+common denominator $\Delta$, every square minor of $J_A$ on every face
+becomes an integer quadratic of height at most a base-computable $B$.
+Acceptance therefore certifies $\delta=\min\{\frac12,sB/T\}$ and
+$\mu=\min\{1,sB/(\Delta T)\}$ in
+Proposition~\ref{prop:recourse-fiber}(c) for all exponentially many
+minors at once, with no enumeration. Part~(b) needs the larger height
+$R_s$, because a short lattice vector can have coefficients larger
+than $B$.
+
+\begin{proposition}[Small margins are rare]
+\label{prop:recourse-margin-probability}
+Let $f$ be a cubic of type~(B) and let $U\ge1$ be rational with
+$\nabla^2_{vv}f\preceq UI_k$ on $X$. Let $A$ be a face of $[0,1]^k$
+with $r\ge1$ free coordinates, let $\psi$ be a nonzero integer
+polynomial of degree at most two in those coordinates, and let
+$0<\eta<1$. Under continuous uniform noise on $[-\sigma,\sigma]^k$, the
+probability that some global minimizer of $f_\gamma$ has core $a$ in
+the relative interior of $A$ with $\abs{\psi(a_F)}\le\eta$ is at most
+$8(U/(2\sigma))^r\sqrt\eta$. Under the grid law it is at most this
+bound plus $C/M$, where $C=2^{\poly(L)}$ is base-computable and does not
+depend on $\psi$ or $\eta$.
+\end{proposition}
+
+The proof does not use any continuity of residual optimizers. On a
+face, the projected value is semiconcave; at a minimizer under a linear
+tilt it has an affine lower support, and the slope of that support is a
+locally $U$-Lipschitz function of the contact point. Hence the noise
+must fall in the image of a small set under a Lipschitz map. An
+elementary slicing argument bounds the volume of
+$\{\abs{\psi}\le\eta\}$ by $8\sqrt\eta$ for every nonzero integer
+quadratic. The constant $U$ can be much larger than $\Lambda$; it enters
+only through bit lengths.
+
+\begin{proposition}[Certified completion]
+\label{prop:recourse-completion}
+Let $f$ be a cubic of type~(B), and suppose that evaluators with the
+guarantees of Theorem~\ref{thm:recourse-core} are available for the
+selected cores of $f_\gamma$ and $f_{\gamma\pm te_i}$, $1\le i\le k$, on
+a fixed draw. For base-computable parameters $t$ and $T$, a base stage
+makes $2k+1$ core queries at accuracy $\poly(L)$ bits, applies the rules
+of Lemma~\ref{lem:recourse-face}, and runs the test of
+Lemma~\ref{lem:recourse-lattice} once; it either rejects or accepts.
+Acceptance certifies a face $A$ whose relative interior contains
+$a(\gamma)$ and a rational $\Gamma$ of polynomial bit length with
+$\dist(z,S(\gamma))\le\Gamma(f(a,z)-\min f(a,\cdot))^{1/4}$ for gaps at
+most one. After acceptance, a query $q$ makes one core query at
+accuracy $\poly(L)+O(q)$ bits and one convex minimization of the
+rational cubic $z\mapsto f(b,z)+\tau\norm z^2$, and returns a point
+within $2^{-q}$ of $x^\sharp(\gamma)$. Here $b$ is the rational core
+approximation lying in $A$, with the certified endpoint coordinates imposed
+exactly, and $\tau>0$ is the regularization parameter specified below.
+Every acceptance is correct, whatever the draw.
+\end{proposition}
+
+\paragraph{Proof of Theorem~\ref{thm:recourse-cubic} in outline.}
+Choose the fallback budget $\Xi=2^{\poly(L)}$ first, then
+$t=\min\{\frac12,\sigma/(16k\Xi)\}$, a margin threshold $\eta$ with
+$A_*\sqrt\eta\le1/(16\Xi)$ for the union-bound constant $A_*$ over all
+faces and all quadratics of height at most $R_{s_*}$,
+$s_*=\binom{k+2}2$, and a lattice scale $T$ with
+$T\eta>(s_*+1)R_{s_*}$. Finally choose one grid size $M$ that meets the
+requirements of Theorem~\ref{thm:recourse-core} for all $2k+1$
+baselines and makes the finite-law error terms at most $1/(8\Xi)$. All
+choices precede sampling and have polynomial bit length. If no endpoint
+is missed and no tested quadratic has margin at most $\eta$, the lattice
+test accepts by Lemma~\ref{lem:recourse-lattice}(b), so rejection has
+probability at most $1/(4\Xi)$ by Lemma~\ref{lem:recourse-face}(b) and
+Proposition~\ref{prop:recourse-margin-probability}. On rejection the
+evaluator computes $x^\sharp(\gamma)$ exactly from two-block singleton
+formulas that encode the same selector: global optimality,
+lexicographically least core, and least residual norm within that core.
+The random factor is the sum of the $2k+1$ factors of
+Theorem~\ref{thm:recourse-core} plus $\Xi$ times the indicator of
+rejection. The completion step is proved in
+Appendix~\ref{app:recourse-cubic-proof}: regularization with
+$\tau=e^6/(1024R_z^4\Gamma^4)$, where $e=2^{-q-1}$ and
+$R_z\ge\max\{1,\sqrt m\}$, controls the distance to the least-norm point of $S(\gamma)$, and a
+uniform objective perturbation bound controls the error from the
+approximate core.
+
+\subsection{Scope and relation to other work}
+\label{sec:recourse-scope}
+
+\begin{remark}[Degree four]
+\label{rem:recourse-quartic}
+Let $F$ be a quartic from Theorem~\ref{thm:points-quartic-lower}, convex
+on a unit box, with a unique minimizer whose designated coordinate is
+$0$ or $1$ according to an instance of Square Root Sum or $\PosSLP$.
+Put $f(v,y)=v^2/2+F(y)$ with one core coordinate $v\in[0,1]$. Its
+residual fibers are convex and $\Lambda=1$. For every draw the residual
+part of the selected point is the minimizer of $F$. If the conclusion
+of Theorem~\ref{thm:recourse-cubic} held for this degree-four family,
+its evaluator would decide the source problem by a Las Vegas algorithm
+in expected polynomial time. Core noise cannot by itself make full points
+of residual-convex quartics tractable; the cubic structure of
+Proposition~\ref{prop:recourse-fiber} is essential. This is a
+conditional statement, not a hardness theorem.
+\end{remark}
+
+\begin{remark}[Certified values for the sampled objective]
+\label{rem:recourse-value-certificate}
+To add a value interval to Theorem~\ref{thm:recourse-cubic} or
+Theorem~\ref{thm:recourse-convexified}, query the point at accuracy
+$2^{-q-1}/G$, where $G\ge1$ bounds $\norm{\nabla f_\gamma}$ on $X$
+uniformly over the noise support, and pair its objective value with the
+lower bound $\ell_{q+1}$ of Theorem~\ref{thm:recourse-core}. This
+certifies the sampled objective only; the unperturbed objective is not
+solved at the same cost.
+\end{remark}
+
+The results have clear limits. All guarantees concern one sampled
+rational instance. Theorem~\ref{thm:recourse-cubic} uses the product box
+in the nearby-tilt argument, in the fixed face kernels, and in the
+conditional error bound; it does not extend to arbitrary coupled
+domains without a convexifier, and Remark~\ref{rem:recourse-quartic}
+explains why degree four needs more than core noise. On accepted draws the
+algorithm internally certifies the exact core face and the margins needed
+for completion. Its output contract gives point and value approximations;
+it does not include all active-constraint labels or expanded algebraic
+coordinates, in line with Proposition~\ref{prop:points-active}.
+The factor $k^{O(k)}$ is not
+optimized, and the dependence on $\kappa/\sigma$ is numerical, not
+through its bit length, except in Corollary~\ref{cor:recourse-joint}.
+
+The individual tools are classical: branch-and-bound on core cells with
+secant underestimators \citep{AndroulakisMaranasFloudas1995}; weak
+convex optimization \citep{GroetschelLovaszSchrijver1988}; the
+almost-everywhere differentiability of convex conjugates, which
+underlies the growth tail \citep{Rockafellar1970}; covering arguments
+for maximal functions \citep{EvansGariepy2015}; block quantifier
+elimination \citep{Renegar1992QE,BasuPollackRoy2006}; Hoffman error
+bounds \citep{Hoffman1952}; and lattice reduction for small integer
+relations \citep{LenstraLenstraLovasz1982}. Smoothed analysis
+\citep{SpielmanTeng2004} also perturbs instances randomly to bound
+expected cost. What is shown here is a set of output guarantees for one
+fixed finite rational law: certified values and one selected core for
+nonconvex cores in every core dimension, with convex residuals on
+product boxes or a supplied convexifier on coupled polytopes;
+ordinary polynomial expected work under joint convexity; exact rational
+output for quadratics; full selected points under a supplied
+convexifier, for cubic objectives or when the convexified objective is
+convex on all of $\R^n$; and, for residual-convex cubics on product
+boxes, full selected points with no convexifier, obtained from exact
+face and lattice-margin certificates. Kannan and Rademacher optimize a convex
+objective plus a low-dimensional polynomial perturbation
+\citep{KannanRademacher2009} to a
+prescribed objective accuracy; that guarantee is an objective
+approximation, whereas the guarantees here are Cauchy names for the value
+and for a fixed selected point of one sampled instance.

@@ -146,7 +146,7 @@ The check uses exact integer enumeration of state domains and their sums:
 Command actually run:
 
 ```sh
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python paper-network-simplex/verification/reviewer2/stage03-round01/check_oracles.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python paper-network-simplex/verification/reviewer2/stage03-round01/check_oracles.py
 ```
 
 All checks passed. These finite integer checks supplement the independent

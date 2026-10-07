@@ -35,4 +35,4 @@ These checks support the current section's cautious attribution; they do not cer
 
 ## Diagnostic
 
-Ran `/home/sgusev/miniconda3/envs/qipm/bin/python scalar-newton-paper/scripts/verify_classical.py` successfully. Output: `PASS: residual, complex/support moments, sharp variance witness, rejection law, and arithmetic transfer`. These numerical examples supplement the algebraic checks above.
+Ran `/workspace/local-home/miniconda3/envs/qipm/bin/python scalar-newton-paper/scripts/verify_classical.py` successfully. Output: `PASS: residual, complex/support moments, sharp variance witness, rejection law, and arithmetic transfer`. These numerical examples supplement the algebraic checks above.

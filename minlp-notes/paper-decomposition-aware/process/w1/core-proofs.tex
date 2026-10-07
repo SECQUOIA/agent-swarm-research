@@ -1,0 +1,841 @@
+% Core cluster: corrected grids, filtering, growth-based state bounds,
+% unknown-growth schedule, bit complexity, and lower bounds.
+% Self-contained fragment; no preamble.  Uses \R \Z \E \norm \poly \OPT.
+
+\subsection{Setting and the conditioning parameter}\label{core:sec:setting}
+
+Let $X=\prod_{i=1}^nX_i$, where $X_i=[l_i,u_i]$ for $i\in I_C$ (continuous
+coordinates) and $X_i=[l_i,u_i]\cap\Z$ for $i\in I_Z$ (integer coordinates).
+Integer endpoints are rounded inward, empty domains are rejected, and fixed
+coordinates are substituted, so that $n\ge1$ and $l_i<u_i$ for all $i$, with
+$l_i,u_i\in\Z$ for $i\in I_Z$. Write $s_i=u_i-l_i$, $s=\max_is_i$, and
+$\bar X=\prod_i[l_i,u_i]$ for the continuous hull. The objective is
+\[
+F(x)=\sum_{a\in\mathcal A}f_a(x_{S_a}),\qquad \OPT=\min_{x\in X}F(x),
+\]
+with each $f_a$ defined on the continuous hull of its scope. A tree
+decomposition $(T,(B_t)_{t\in T})$ is supplied: every scope $S_a$ lies in
+some bag, and for every $i$ the bags containing $i$ form a nonempty subtree.
+Let $N=|T|$ and $p=\max_t|B_t|$. Each factor is assigned to one bag containing
+its scope, and each coordinate $i$ to one \emph{home bag} containing it.
+
+\begin{definition}[Coordinate curvature]\label{core:def:curv}
+Numbers $L_1,\dots,L_n\ge0$ are \emph{coordinate curvature bounds} if, for
+every $i$ and every $x\in\bar X$, the function
+$t\mapsto F(x_1,\dots,x_{i-1},t,x_{i+1},\dots,x_n)-L_it^2/2$ is concave on
+$[l_i,u_i]$. Put $P=\{i:L_i>0\}$, $n_P=|P|$, $L=\max_iL_i$, and
+\[
+\norm{d}_{\mathbf L}^2=\sum_{i\in P}L_id_i^2\qquad(d\in\R^n).
+\]
+\end{definition}
+
+The condition concerns the sum $F$ and the whole continuous hull, including
+fractional values of integer coordinates. For a quadratic with Hessian $H$ the
+smallest valid bounds are $L_i=\max\{0,H_{ii}\}$. Larger numbers are also
+valid; in particular the common bound $L_i=L$ is valid.
+
+\begin{definition}[Growth and conditioning]\label{core:def:growth}
+The instance has \emph{weighted growth} with constant $\gamma>0$ if there is
+a global minimizer $x^*$ with
+\begin{equation}\label{core:eq:growth}
+F(x)-\OPT\ge\gamma\norm{x-x^*}_{\mathbf L}^2\qquad(x\in X).
+\end{equation}
+Let $\gamma^*$ be the largest such constant (the set of valid constants is
+closed) and put $\bar\kappa=\max\{1,1/\gamma^*\}$; put $\bar\kappa=\infty$ if
+no $\gamma>0$ exists. The usual Euclidean growth is
+$F(x)-\OPT\ge g\norm{x-x^*}^2$, with $\kappa=\max\{1,L/g\}$.
+\end{definition}
+
+\begin{remark}\label{core:rem:kappa}
+(i) Since $\norm{d}_{\mathbf L}^2\le L\norm d^2$, Euclidean growth with
+constant $g$ implies weighted growth with $\gamma\ge g/L$; hence
+$\bar\kappa\le\kappa$. All results below that are stated with $\bar\kappa$
+therefore hold with $\kappa$.
+(ii) Replacing a continuous coordinate $x_i$ by $x_i=\alpha y_i$ multiplies
+$L_i$ by $\alpha^2$ and leaves $L_i(x_i-x_i^*)^2$ unchanged; $\bar\kappa$ is
+invariant under such rescalings, whereas $\kappa$ is not. For a separable
+quadratic $\sum_i\frac{L_i}2(x_i-c_i)^2$ with interior minimizer,
+$\bar\kappa=2$ while $\kappa=2\max_iL_i/\min_iL_i$.
+(iii) Coordinates with $L_i=0$ are concave in their own direction; they need
+neither growth nor localization. Weighted growth makes $x^*_P$ unique but
+allows global minimizers that differ outside $P$. For example, binary
+variables whose squares are written with nonpositive coefficients are free.
+(iv) Growth (and hence uniqueness of $x^*_P$) is used only to bound running
+time. No validity statement below uses it.
+\end{remark}
+
+\subsection{Corrected grids give continuous lower bounds}\label{core:sec:grid}
+
+A \emph{subbox} is $B=\prod_iB_i\subseteq X$ with $B_i=[l_i',u_i']$ or
+$[l_i',u_i']\cap\Z$ of the same type as $X_i$, with $l_i'\le u_i'$ and
+integer endpoints for $i\in I_Z$. A \emph{grid} for $B$ is $G=\prod_iG_i$ with
+finite $G_i\subseteq B_i$ containing $l_i'$ and $u_i'$. Consecutive nodes of
+$G_i$ form the \emph{grid intervals} of coordinate $i$.
+
+\begin{definition}[Corrections]\label{core:def:corr}
+For $v\in G_i$ let $w_i(v)$ be the largest length of a grid interval with
+endpoint $v$, where for $i\in I_Z$ intervals of length one are ignored;
+$w_i(v)=0$ if no interval remains. Put
+\[
+d_i(v)=\tfrac{L_i}{8}w_i(v)^2,\quad D(y)=\sum_id_i(y_i),\quad Q=F-D,\quad
+\beta=\min_{y\in G}Q(y),\quad
+m_i(v)=\min\{Q(y):y\in G,\ y_i=v\}.
+\]
+\end{definition}
+
+\begin{lemma}[Interpolation]\label{core:lem:interp}
+For every $x\in B$ there is a random $Y\in G$ with independent coordinates,
+$\E Y=x$, and $\E Q(Y)\le F(x)$, such that $Y_i=x_i$ if $x_i\in G_i$, and
+otherwise $Y_i$ takes the two endpoints of the grid interval containing
+$x_i$. Consequently:
+\begin{enumerate}
+\item[(a)] $\beta\le\min_BF$;
+\item[(b)] if $a<a'$ are consecutive in $G_i$, then
+$\min\{m_i(a),m_i(a')\}\le F(x)$ for every $x\in B$ with $x_i\in[a,a']$;
+\item[(c)] if $y$ minimizes $Q$ over $G$, then $F(y)-\beta=D(y)\ge0$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+If $x_i\notin G_i$, let $a<x_i<a'$ be consecutive nodes and let $Y_i=a'$ with
+probability $(x_i-a)/(a'-a)$ and $Y_i=a$ otherwise; then $\E Y_i=x_i$ and
+$\operatorname{Var}Y_i=(x_i-a)(a'-x_i)\le(a'-a)^2/4$. If $x_i\in G_i$, let
+$Y_i=x_i$. Take the $Y_i$ independent and put
+$Y^{(k)}=(Y_1,\dots,Y_k,x_{k+1},\dots,x_n)\in\bar X$.
+Fix $Y_1,\dots,Y_{k-1}$. The function
+$\varphi(t)=F(Y_1,\dots,Y_{k-1},t,x_{k+1},\dots,x_n)-L_kt^2/2$ is concave on
+$[l_k,u_k]$, so Jensen's inequality gives $\E\varphi(Y_k)\le\varphi(x_k)$,
+that is,
+\[
+\E\bigl[F(Y^{(k)})\,\big|\,Y_1,\dots,Y_{k-1}\bigr]
+\le F(Y^{(k-1)})+\tfrac{L_k}2\operatorname{Var}Y_k .
+\]
+Taking expectations and summing over $k$ gives
+$\E F(Y)\le F(x)+\sum_k\frac{L_k}2\operatorname{Var}Y_k$.
+
+If $\operatorname{Var}Y_k>0$ then $a<x_k<a'$. For $k\in I_Z$ the numbers
+$x_k,a,a'$ are integers, so $a'-a\ge2$ and the interval is not ignored. In all
+cases $w_k(a),w_k(a')\ge a'-a$, hence
+$\E d_k(Y_k)\ge L_k(a'-a)^2/8\ge\frac{L_k}2\operatorname{Var}Y_k$. If
+$\operatorname{Var}Y_k=0$ then $\E d_k(Y_k)\ge0$. Therefore
+$\E D(Y)\ge\sum_k\frac{L_k}2\operatorname{Var}Y_k$ and $\E Q(Y)\le F(x)$.
+
+(a) $\beta\le\E Q(Y)\le F(x)$. (b) If $x_i\in[a,a']$ then $Y_i\in\{a,a'\}$
+surely, so $Q(Y)\ge m_i(Y_i)\ge\min\{m_i(a),m_i(a')\}$ and the claim follows by
+taking expectations. (c) holds by definition and $D\ge0$.
+\end{proof}
+
+For $i\notin P$ we always use $G_i=\{l_i',u_i'\}$; then $d_i\equiv0$.
+
+\subsection{One tree computation gives all coordinate bounds}\label{core:sec:dp}
+
+Let $q_t$ be the sum of the factors assigned to bag $t$ minus the corrections
+$d_i$ of the coordinates whose home bag is $t$; thus $Q=\sum_tq_t$ on $G$. For
+adjacent $t,u$ put $S_{tu}=B_t\cap B_u$ and define messages
+\[
+M_{t\to u}(x_{S_{tu}})=\min_{x_{B_t\setminus S_{tu}}}
+\Bigl[q_t(x_{B_t})+\sum_{v\in\mathcal N(t)\setminus\{u\}}M_{v\to t}(x_{S_{vt}})\Bigr],
+\]
+all variables ranging over their grids (an empty separator has one state).
+Let $A_t=q_t+\sum_{v\in\mathcal N(t)}M_{v\to t}$.
+
+\begin{proposition}[Tree dynamic programming]\label{core:prop:dp}
+For every bag $t$, $A_t(x_{B_t})=\min\{Q(y):y\in G,\ y_{B_t}=x_{B_t}\}$. Hence
+$\min A_t=\beta$, and $m_i(v)$ is the minimum of $A_t$ over $x_i=v$ for any bag
+$t\ni i$. With $K=\max_i|G_i|$, all messages, $\beta$, a minimizer, and all
+$m_i$ are obtained with $O\bigl((|\mathcal A|+n+N)K^p\bigr)$ additions and
+comparisons on table entries, plus the evaluation of each factor at its at
+most $K^{|S_a|}$ grid points, plus $O(p)$ index work per table entry.
+\end{proposition}
+
+\begin{proof}
+For an oriented edge $t\to u$, let $T_{t\to u}$ be the component of
+$T\setminus\{tu\}$ containing $t$, and let $V_{t\to u}$ be the set of
+coordinates occurring in bags of $T_{t\to u}$ but not in $S_{tu}$. We show by
+induction on $|T_{t\to u}|$ that $M_{t\to u}(x_{S_{tu}})$ is the minimum of
+$\sum_{r\in T_{t\to u}}q_r$ over $x_{V_{t\to u}}$. The trees $T_{v\to t}$,
+$v\in\mathcal N(t)\setminus\{u\}$, partition $T_{t\to u}\setminus\{t\}$. If a
+coordinate occurs in a bag of $T_{v\to t}$ and in a bag outside it, running
+intersection puts it in $B_v$ and $B_t$, i.e., in $S_{vt}$. Hence the sets
+$V_{v\to t}$ are pairwise disjoint, disjoint from $B_t$, and
+$V_{t\to u}=(B_t\setminus S_{tu})\cup\bigcup_vV_{v\to t}$ is a disjoint union.
+The sum $\sum_{r\in T_{v\to t}}q_r$ depends only on $x_{V_{v\to t}}$ and
+$x_{S_{vt}}$, so the minimization splits, and by induction each inner minimum
+is $M_{v\to t}$. This proves the claim; the same argument with all neighbours
+of $t$ gives the formula for $A_t$, since $B_t$ and the sets $V_{v\to t}$,
+$v\in\mathcal N(t)$, partition all coordinates.
+
+Compute messages towards a root and then away from it. At bag $t$ form the
+table $q_t$ (one addition per assigned factor or correction per entry), add
+all incoming messages once to obtain $A_t$, and obtain each outgoing message
+from $A_t-M_{u\to t}$ by one pass with a comparison per entry; exact
+arithmetic makes the subtraction legitimate. Each bag table has at most $K^p$
+entries and $\sum_t|\mathcal N(t)|=2(N-1)$, which gives the bound. A minimizer
+is recovered by choosing, from the root outwards, a minimizing entry of $A_t$
+consistent with the labels already fixed; consistency of all $A_t$ at the value
+$\beta$ follows from the first claim.
+\end{proof}
+
+This is the classical nonserial dynamic programming or junction-tree
+computation \cite{BerteleBrioschi1972,Dechter1999}; the only new element is
+the unary correction that turns it into a lower bound for the continuous
+problem.
+
+\subsection{Filtering and path certificates}\label{core:sec:filter}
+
+\begin{definition}[Filtering step]\label{core:def:filter}
+Let $G$ be a grid for $B$ and $U\in\R$. For $i\in P$, \emph{retain} a grid
+interval $[a,a']$ of coordinate $i$ if $\min\{m_i(a),m_i(a')\}\le U$, and let
+$B_i'$ be the hull of the retained intervals (intersected with $\Z$ for
+$i\in I_Z$). For $i\notin P$ let $B_i'=B_i$.
+\end{definition}
+
+\begin{proposition}[Safe filtering]\label{core:prop:filter}
+Every $x\in B\setminus B'$ satisfies $F(x)>U$. Consequently, if
+$U\ge\min_BF$, then $B'$ contains every $x\in B$ with $F(x)\le U$, in
+particular every minimizer of $F$ over $B$. If moreover $y$ minimizes $Q$ and
+$\beta\le U$, then $y\in B'$.
+\end{proposition}
+
+\begin{proof}
+Let $x\in B\setminus B'$ and choose $i\in P$ with $x_i\notin B_i'$. Every grid
+interval containing $x_i$ is unretained, since retained intervals lie in
+$B_i'$. Choose one, $[a,a']$; then $\min\{m_i(a),m_i(a')\}>U$, and
+Lemma~\ref{core:lem:interp}(b) gives $F(x)>U$. For the last claim,
+$m_i(y_i)\le Q(y)=\beta\le U$, and $y_i$ is an endpoint of at least one grid
+interval of coordinate $i$ (each $B_i$ with $i\in P$ has at least two points),
+which is therefore retained.
+\end{proof}
+
+\begin{definition}[Path certificate]\label{core:def:cert}
+A \emph{path certificate} consists of grids $G^{(0)},\dots,G^{(k)}$, a number
+$\beta$, and a point $\hat x$. Let $B^{(j)}$ be the subbox spanned by
+$G^{(j)}$ (its endpoints are the extreme nodes). It is \emph{valid} if
+$\hat x\in X$; $B^{(0)}=X$; $B^{(j+1)}\subseteq B^{(j)}$; and, with $Q^{(j)}$
+and $m^{(j)}$ computed from $G^{(j)}$ and the curvature bounds $L_i$:
+\begin{enumerate}
+\item[(C1)] for $j<k$, every grid interval $[a,a']$ of $G_i^{(j)}$ not
+contained in $B_i^{(j+1)}$ has $\min\{m_i^{(j)}(a),m_i^{(j)}(a')\}\ge\beta$;
+\item[(C2)] $\min_{G^{(k)}}Q^{(k)}\ge\beta$.
+\end{enumerate}
+\end{definition}
+
+\begin{theorem}[Path certificates]\label{core:thm:cert}
+If a path certificate is valid, then $\beta\le\OPT\le F(\hat x)$. It is
+checked by $k+1$ applications of Proposition~\ref{core:prop:dp} and
+$O(\sum_{j,i}|G_i^{(j)}|)$ further comparisons, in exact arithmetic, given
+the curvature bounds (for a quadratic, the checker computes
+$L_i=\max\{0,H_{ii}\}$ itself). No growth or uniqueness assumption is
+involved.
+\end{theorem}
+
+\begin{proof}
+Let $x\in X$ and let $j$ be the largest index with $x\in B^{(j)}$. If $j=k$,
+Lemma~\ref{core:lem:interp}(a) and (C2) give $F(x)\ge\beta$. Otherwise some
+$x_i\notin B_i^{(j+1)}$. Since $x_i\in B_i^{(j)}$, there are consecutive nodes
+$a\le x_i\le a'$ of $G_i^{(j)}$; the interval $[a,a']$ contains $x_i$ and is
+therefore not contained in $B_i^{(j+1)}$. By (C1) and
+Lemma~\ref{core:lem:interp}(b), $F(x)\ge\beta$.
+\end{proof}
+
+\begin{remark}[Minimal content]\label{core:rem:mincert}
+Consider any sequence of stages in which $B^{(j+1)}$ is obtained from $G^{(j)}$
+by Definition~\ref{core:def:filter} with thresholds $U_j$ that are values of
+feasible points, and let $\beta=\beta^{(k)}=\min Q^{(k)}$. Then
+$(G^{(0)},\dots,G^{(k)},\beta,\hat x)$ is a valid path certificate for any
+feasible $\hat x$. Indeed, every optimizer lies in every $B^{(j)}$
+(Proposition~\ref{core:prop:filter}), so $\beta\le\OPT\le U_j$; an interval
+not contained in $B_i^{(j+1)}$ is unretained, so its endpoint bound exceeds
+$U_j\ge\beta$. Thus a certificate needs only the stage grids (or the boxes
+together with the centers, meshes and grading that generate them), one bound
+and one feasible point. Messages, min-marginal tables, intermediate incumbents
+and unsuccessful trials need not be stored, and stages with
+$B^{(j+1)}=B^{(j)}$ may be deleted. The stages at which points are removed
+cannot be dropped in general: the last grid bounds $F$ only on $B^{(k)}$.
+\end{remark}
+
+\subsection{Graded grids}\label{core:sec:graded}
+
+\begin{definition}[Graded grid]\label{core:def:graded}
+Let $B_i=[l_i',u_i']$ (or its integer points), a center $c_i\in B_i$ (an
+integer if $i\in I_Z$), a mesh $h>0$, and a grading $0<\theta\le1/4$ be given.
+Put $\sigma(t)=h+\theta t$ if $i\in I_C$ and
+$\sigma(t)=\max\{1,\lfloor h+\theta t\rfloor\}$ if $i\in I_Z$. Starting from
+$t_0=0$, set $t_{k+1}=\min\{t_k+\sigma(t_k),\,u_i'-c_i\}$ until
+$t_{k+1}=u_i'-c_i$, and add the nodes $c_i+t_k$; proceed in the same way
+towards $l_i'$. The graded grid $G_i$ consists of these nodes.
+\end{definition}
+
+\begin{lemma}[Mesh and node count]\label{core:lem:graded}
+(a) $w_i(v)\le h+\theta|v-c_i|$ for every $v\in G_i$.
+(b) If the distance from $c_i$ to an endpoint is $R>0$, the number of nodes
+strictly on that side is at most
+$\bigl\lceil\ln(1+\theta R/H)/\ln(1+\theta/3)\bigr\rceil
+\le\bigl\lceil(4/\theta)\ln(1+\theta R/H)\bigr\rceil$, where $H=h$ for
+$i\in I_C$ and $H=\max\{h,1\}$ for $i\in I_Z$.
+(c) If $h\ge u_i'-l_i'$ then $|G_i|\le3$.
+\end{lemma}
+
+\begin{proof}
+(a) Consider the side towards $u_i'$; the other is symmetric. The interval
+between the nodes at distances $t_k<t_{k+1}$ has length at most
+$\sigma(t_k)$. For $i\in I_C$ this is $h+\theta t_k$. For $i\in I_Z$ and a
+length of at least two, $\sigma(t_k)\ge2$, so
+$\sigma(t_k)=\lfloor h+\theta t_k\rfloor\le h+\theta t_k$; intervals of length
+one are ignored in $w_i$. The node at distance $t_k$ has adjacent intervals
+starting at distances $t_{k-1}$ and $t_k$, both at most $t_k=|v-c_i|$; the
+center's adjacent intervals have length at most $h$.
+
+(b) Let $t_1<\dots<t_m=R$ be the nodes on that side. Every step except the
+last is unclipped. An unclipped step from $t$ has length
+$\sigma(t)\ge(H+\theta t)/3$: for $i\in I_C$ trivially; for $i\in I_Z$ with
+$h\ge1$, $\lfloor h+\theta t\rfloor\ge(h+\theta t)/2$ because
+$h+\theta t\ge1$; for $i\in I_Z$ with $h<1$, either $\theta t<2$ and
+$\sigma\ge1\ge(1+\theta t)/3$, or $\theta t\ge2$ and
+$\lfloor h+\theta t\rfloor\ge\theta t/2\ge(1+\theta t)/3$. Hence
+$t_{k+1}+H/\theta\ge(1+\theta/3)(t_k+H/\theta)$ for $k\le m-2$, and
+$(1+\theta/3)^{m-1}\le(t_{m-1}+H/\theta)\theta/H<1+\theta R/H$. So $m-1$ is
+strictly less than $\ln(1+\theta R/H)/\ln(1+\theta/3)$, which gives the first
+bound. The second follows from
+$\ln(1+x)\ge x-x^2/2\ge\tfrac{23}{24}x$ for $0\le x=\theta/3\le1/12$.
+
+(c) Each side has distance $R\le h$, and $\sigma(0)\ge R$ (for $i\in I_Z$,
+$R$ is an integer and $\lfloor h\rfloor\ge R$). The first step reaches the
+endpoint.
+\end{proof}
+
+\subsection{One trial and its invariants}\label{core:sec:trial}
+
+\begin{definition}[Dyadic meshes and a trial]\label{core:def:trial}
+For $i\in P$ let $e_i\in\Z$ satisfy $4^{e_i-1}<L_i\le4^{e_i}$ and put
+$r_i=2^{-e_i}$, so that $\frac14<L_ir_i^2\le1$. Let $E$ be the least integer
+with $2^Er_i\ge s_i$ for all $i\in P$, and put $\eta_j=2^{E-j}$ and
+$h_{ij}=\eta_jr_i$. A \emph{trial} with grading $\theta=2^{-\mu}$, cap $K$,
+accuracy $\varepsilon>0$ and stage limit $J$ is the following procedure.
+\begin{enumerate}
+\item $B^{(0)}=X$, $c^{(0)}=l$ (the lower endpoint vector), and $U$ is the
+smallest objective value of a feasible point known so far (at least $F(l)$
+is known).
+\item For $j=0,\dots,J$: for $i\in P$ let $G_i^{(j)}$ be the graded grid of
+$B_i^{(j)}$ with center $c_i^{(j)}$, mesh $h_{ij}$ and grading $\theta$; for
+$i\notin P$ let $G_i^{(j)}=\{l_i,u_i\}$. If some $|G_i^{(j)}|$ would exceed
+$K$, stop generating and \emph{abort} the trial before forming any table.
+Otherwise compute $\beta_j$, a minimizer $y^{(j)}$ and all $m_i$
+(Proposition~\ref{core:prop:dp}); set $U\leftarrow\min\{U,F(y^{(j)})\}$. If
+$U-\beta_j\le\varepsilon$, stop with \emph{success}. Otherwise filter with
+threshold $U$ to obtain $B^{(j+1)}$ and set $c^{(j+1)}=y^{(j)}$.
+\end{enumerate}
+\end{definition}
+
+The centers are feasible: $c^{(0)}=l$, and $y^{(j)}\in B^{(j+1)}$ by
+Proposition~\ref{core:prop:filter}, because $\beta_j\le\min_{B^{(j)}}F\le U$
+(the incumbent lies in $B^{(j)}$ by the same proposition).
+
+\begin{lemma}[Stage invariants]\label{core:lem:inv}
+Assume weighted growth with constant $\gamma$ and minimizer $x^*$, let
+$\bar\kappa\ge\max\{1,1/\gamma\}$ and $8\bar\kappa\theta^2\le1$, and write
+$a_j=n_P\eta_j^2$. At every stage $j$ reached by the trial:
+\begin{enumerate}
+\item[(i)] $x^*\in B^{(j)}$ and $\beta_j\le\OPT$;
+\item[(ii)] $\norm{c^{(j)}-x^*}_{\mathbf L}^2\le4\bar\kappa a_j$;
+\item[(iii)] $\norm{y^{(j)}-x^*}_{\mathbf L}^2\le\bar\kappa a_j$;
+\item[(iv)] $U-\beta_j\le F(y^{(j)})-\beta_j=D(y^{(j)})\le\frac9{16}a_j$;
+\item[(v)] every $z\in G^{(j)}$ with $Q^{(j)}(z)\le U$ (after the update at
+stage $j$) satisfies $\norm{z-x^*}_{\mathbf L}^2\le\frac{17}{15}\bar\kappa a_j$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+(i) follows from Proposition~\ref{core:prop:filter}, since $U\ge\OPT$ at every
+stage, and from Lemma~\ref{core:lem:interp}(a).
+
+We first show that every $z\in G^{(j)}$ satisfies, with $c=c^{(j)}$,
+\begin{equation}\label{core:eq:energy}
+D(z)\le\frac{a_j}4+\frac{\theta^2}2\Bigl(\norm{z-x^*}_{\mathbf L}^2
++\norm{c-x^*}_{\mathbf L}^2\Bigr).
+\end{equation}
+For $i\in P$, Lemma~\ref{core:lem:graded}(a) and $L_ih_{ij}^2\le\eta_j^2$ give
+$d_i(z_i)\le\frac{L_i}8(h_{ij}+\theta|z_i-c_i|)^2
+\le\frac{\eta_j^2}4+\frac{\theta^2}4L_i(z_i-c_i)^2$, and
+$(z_i-c_i)^2\le2(z_i-x_i^*)^2+2(c_i-x_i^*)^2$. For $i\notin P$, $d_i=0$.
+
+(ii) For $j=0$, $\norm{l-x^*}_{\mathbf L}^2\le\sum_{i\in P}L_is_i^2\le
+\sum_{i\in P}L_ir_i^2\eta_0^2\le a_0$. For $j\ge1$ it follows from (iii) at
+stage $j-1$, because $a_{j-1}=4a_j$.
+
+(iii) Write $y=y^{(j)}$, $Y=\norm{y-x^*}_{\mathbf L}^2$ and $a=a_j$. Since
+$\theta^2/2\le1/(16\bar\kappa)\le\gamma/16$, growth, (i),
+Lemma~\ref{core:lem:interp}(c), \eqref{core:eq:energy} and (ii) give
+\[
+\gamma Y\le F(y)-\OPT\le F(y)-\beta_j=D(y)\le\frac a4+\frac\gamma{16}(Y+4\bar\kappa a),
+\]
+so $Y\le\frac4{15}(\gamma^{-1}+\bar\kappa)a\le\frac8{15}\bar\kappa a$.
+
+(iv) By \eqref{core:eq:energy}, (ii), (iii) and $\theta^2\bar\kappa\le1/8$,
+$D(y)\le\frac a4+\frac{\theta^2}2\cdot5\bar\kappa a\le\frac9{16}a$; also
+$U\le F(y)$.
+
+(v) Let $Z=\norm{z-x^*}_{\mathbf L}^2$. Using $Q(z)\le U\le F(y)$,
+$\beta_j\le\OPT$, (iv) and \eqref{core:eq:energy},
+\[
+\gamma Z\le F(z)-\OPT=Q(z)+D(z)-\OPT\le D(y)+D(z)
+\le\frac{13}{16}a+\frac\gamma{16}(Z+4\bar\kappa a),
+\]
+so $Z\le(\frac{13}{15}\gamma^{-1}+\frac4{15}\bar\kappa)a\le\frac{17}{15}\bar\kappa a$.
+\end{proof}
+
+\begin{lemma}[Localization and uniform state bound]\label{core:lem:states}
+Under the hypotheses of Lemma~\ref{core:lem:inv}, for every stage $j$ that is
+followed by filtering and every $i\in P$,
+\[
+B_i^{(j+1)}\subseteq\bigl[y_i^{(j)}-R_{ij},\,y_i^{(j)}+R_{ij}\bigr],\qquad
+R_{ij}=8\sqrt{\bar\kappa n_P}\,h_{ij}+[i\in I_Z].
+\]
+Consequently every grid of the trial has at most
+\begin{equation}\label{core:eq:cap}
+K(\theta,n_P)=10\,\theta^{-1}\lceil\log_2(n_P+2)\rceil
+\end{equation}
+nodes per coordinate, a number independent of the stage index and of
+$\varepsilon$.
+\end{lemma}
+
+\begin{proof}
+Write $y=y^{(j)}$, $c=c^{(j)}$, $h=h_{ij}$, $\rho=\sqrt{\bar\kappa n_P}$. Let
+$[v,v']$ be a retained interval of coordinate $i$ whose endpoint $v$ satisfies
+$m_i(v)\le U$, and let $z\in G^{(j)}$ attain $m_i(v)$, so $z_i=v$. Because
+$\sqrt{L_i}>1/(2r_i)$, a bound $\sqrt{L_i}|\delta|\le\lambda\rho\eta_j$
+implies $|\delta|<2\lambda\rho h$. Lemma~\ref{core:lem:inv}(ii), (iii), (v)
+therefore give
+\[
+|v-y_i|<2\bigl(1+\sqrt{17/15}\bigr)\rho h,\qquad
+|v-c_i|<2\bigl(2+\sqrt{17/15}\bigr)\rho h.
+\]
+If $[v,v']$ is an integer interval of length one, every point of it is within
+$|v-y_i|+1\le1+8\rho h$ of $y_i$. Otherwise its length is at most
+$w_i(v)\le h+\theta|v-c_i|$ (Lemma~\ref{core:lem:graded}(a)), and
+$\theta\sqrt{\bar\kappa}\le1/\sqrt8$ gives
+$\theta|v-c_i|<(2+\sqrt{17/15})\sqrt{n_P/2}\,h$. Since $h\le\rho h$ and
+$\sqrt{n_P}\le\rho$, every point of the interval is within
+\[
+\Bigl(2+2\sqrt{17/15}+1+\bigl(2+\sqrt{17/15}\bigr)/\sqrt2\Bigr)\rho h
+<7.3\,\rho h
+\]
+of $y_i$. The hull of the retained intervals lies in the same interval.
+
+At stage $j+1$ the grid of coordinate $i\in P$ is centered at $y_i$ with mesh
+$h/2$, and each side has length at most $R_{ij}$. With $H$ as in
+Lemma~\ref{core:lem:graded}(b) for the mesh $h/2$, we have $H\ge h/2$, and
+$H\ge1$ for $i\in I_Z$, so
+$\theta R_{ij}/H\le\theta+16\theta\rho\le\frac14+4\sqrt{2n_P}$. By
+Lemma~\ref{core:lem:graded}(b),
+\[
+|G_i^{(j+1)}|\le1+2\Bigl\lceil\frac4\theta\ln\bigl(\tfrac54+4\sqrt{2n_P}\bigr)\Bigr\rceil
+\le\frac1\theta\Bigl(\frac34+8\ln\bigl(\tfrac54+4\sqrt{2n_P}\bigr)\Bigr),
+\]
+using $3\le3/(4\theta)$. Call the bracket $\varphi(n_P)$. Then
+$\varphi(1)<16.3\le10\lceil\log_23\rceil$, $\varphi(2)<18.6\le10\log_24$, and
+for $m\ge2$, $\varphi'(m)\le4/m$ while
+$\frac{d}{dm}10\log_2(m+2)=\frac{10}{(m+2)\ln2}\ge\frac{7.2}m$; hence
+$\varphi(m)\le10\log_2(m+2)$ for all $m\ge2$. Stage $0$ has at most three nodes
+per coordinate by Lemma~\ref{core:lem:graded}(c), since $h_{i0}=2^Er_i\ge s_i$;
+coordinates outside $P$ have at most two.
+\end{proof}
+
+With a common bound $L_i=L$ and the undyadic meshes $h_j=s2^{-j}$ the same
+proof gives the radius $4.2\sqrt{\kappa n}\,h_j$ and the cap
+$8\theta^{-1}\lceil\log_2(n+2)\rceil$.
+
+\begin{remark}\label{core:rem:cluster}
+The mechanism of Lemmas~\ref{core:lem:inv} and~\ref{core:lem:states} is the
+one behind the analysis of the cluster problem in branch and bound
+\cite{DuKearfott1994,WechsungSchaberBarton2014}: a lower bound whose error is
+quadratic in the cell width, combined with quadratic growth, leaves a number of
+cells near the minimizer that does not depend on the accuracy, provided the
+error prefactor is small relative to the growth. Here the prefactor condition
+is $8\bar\kappa\theta^2\le1$. The differences are that growth is global,
+the cells form product grids handled exactly by tree dynamic programming, and
+the resulting bound is turned into a bit-complexity statement.
+\end{remark}
+
+\subsection{The capped schedule without a growth constant}\label{core:sec:schedule}
+
+\begin{definition}[Schedule]\label{core:def:schedule}
+If $P=\emptyset$, run one stage with $G_i=\{l_i,u_i\}$ for all $i$. Otherwise
+let $J$ be the least integer $J\ge0$ with
+$\frac9{16}n_P\eta_0^24^{-J}\le\varepsilon$, and for $\mu=2,3,\dots$ run a
+trial with $\theta=2^{-\mu}$, cap $K_\mu=10\cdot2^\mu\lceil\log_2(n_P+2)\rceil$
+and stage limit $J$, until a trial succeeds. Return the final incumbent
+$\hat x$, the bound $\beta$ of the successful stage, and the grids of the
+successful trial.
+\end{definition}
+
+\begin{theorem}[Validity, termination, and work]\label{core:thm:schedule}
+For every instance and every $\varepsilon>0$:
+\begin{enumerate}
+\item[(a)] The schedule halts and returns a feasible $\hat x$ and a valid path
+certificate with $\beta\le\OPT\le F(\hat x)\le\beta+\varepsilon$.
+\item[(b)] If weighted growth holds, then with
+$\mu^*=\max\{2,\lceil\log_4(8\bar\kappa)\rceil\}$ the schedule succeeds at
+some trial $\mu\le\mu^*$, $2^{\mu^*}\le6\sqrt{\bar\kappa}$, and the total
+number of table operations is at most
+\[
+c\,(J+1)\,p\,(|\mathcal A|+n+N)\,K_{\mu^*}^p,
+\]
+for an absolute constant $c$, plus the factor evaluations at grid points.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+If $P=\emptyset$, then $D\equiv0$ and $F(y)=\beta\le\OPT$, so the single stage
+is exact. Assume $P\ne\emptyset$.
+
+(a) Validity of every stage bound and of the certificate is
+Lemma~\ref{core:lem:interp}, Proposition~\ref{core:prop:filter} and
+Remark~\ref{core:rem:mincert}. For termination, choose $\mu\ge2$ with
+$\theta=2^{-\mu}\le\min_{i\in P}h_{iJ}/s_i$. In this trial, at every stage
+$j\le J$ and for $i\in P$ we have $\theta s_i\le h_{ij}$. Continuous steps are
+at least $h_{ij}$, so $|G_i^{(j)}|\le3+s_i/h_{ij}\le3+1/\theta$. Integer steps
+are at least $\lfloor h_{ij}\rfloor\ge h_{ij}/2$ if $h_{ij}\ge1$, giving
+$|G_i^{(j)}|\le3+2/\theta$; if $h_{ij}<1$ then
+$|G_i^{(j)}|\le s_i+1<1/\theta+1$. All these are below $K_\mu\ge20/\theta$, so
+the trial is not aborted. At stage $J$, $w_i\le h_{iJ}+\theta s_i\le2h_{iJ}$,
+so $U-\beta_J\le D(y^{(J)})\le\sum_{i\in P}L_ih_{iJ}^2/2\le n_P\eta_J^2/2
+\le\frac89\varepsilon$, and the trial succeeds unless an earlier one did.
+
+(b) The choice of $\mu^*$ gives $8\bar\kappa\theta^2\le1$. By
+Lemma~\ref{core:lem:states} that trial is never aborted, and by
+Lemma~\ref{core:lem:inv}(iv) it reaches $U-\beta_J\le\frac9{16}a_J\le\varepsilon$.
+If $\mu^*=2$ then $2^{\mu^*}=4\le6\sqrt{\bar\kappa}$; otherwise
+$4^{\mu^*-1}<8\bar\kappa$ and $2^{\mu^*}<2\sqrt8\sqrt{\bar\kappa}$. Each trial
+$\mu\le\mu^*$ runs at most $J+1$ stages with grids of at most $K_\mu$ nodes
+(the aborted stage only generates nodes), so by
+Proposition~\ref{core:prop:dp} it costs $O((J+1)p(|\mathcal A|+n+N)K_\mu^p)$
+table operations; $\sum_{\mu\le\mu^*}K_\mu^p\le2K_{\mu^*}^p$.
+\end{proof}
+
+The caps are essential to (b): without them an unsuitable early trial could
+retain a large part of the box at every stage and pay a power of the accuracy
+before an admissible trial is reached.
+
+\subsection{Bit complexity}\label{core:sec:bits}
+
+\begin{theorem}[Fixed-parameter bit complexity]\label{core:thm:bits}
+Let the factors be explicit rational quadratics given as monomial lists, let
+$I$ be the binary input length (including the decomposition), let
+$L_i=\max\{0,\partial_{ii}^2F\}$, and let $\varepsilon=2^{-q}$. The schedule
+always halts with a valid certificate. If weighted growth holds, it uses at
+most
+\[
+f(p,\bar\kappa)\,(I+q+1)^5,\qquad
+f(p,\kappa)=c_0\,(c_1p\sqrt\kappa)^p\,\kappa\,(1+\log_2\kappa)^2,
+\]
+bit operations, for absolute constants $c_0,c_1$; the certificate has size,
+and can be checked in time, within the same bound. In particular the bound
+holds with $\kappa\ge\bar\kappa$ in place of $\bar\kappa$.
+\end{theorem}
+
+\begin{proof}
+Let $\Gamma_X$ be the product of the denominators of the endpoints and
+$\Gamma_F$ the product of the denominators of the coefficients, after
+substituting fixed coordinates; both have $O(I)$ bits, and
+$|e_i|,|E|=O(I)$. Fix a trial $\mu$ and let $\alpha=J+\max_i|e_i|+|E|+\mu K_\mu$.
+
+\emph{Denominators.} We claim that every node of every grid of the trial has
+a denominator dividing $\Gamma_X2^\alpha$. The initial center and the original
+endpoints have denominators dividing $\Gamma_X$. A new node is a center
+coordinate plus or minus
+$h_{ij}\frac{(1+\theta)^k-1}\theta
+=2^{E-j-e_i}\frac{(2^\mu+1)^k-2^{\mu k}}{2^{\mu(k-1)}}$ with
+$k\le K_\mu+1$ (one extra node detects an abort), or an integer step for
+$i\in I_Z$, or a clipped endpoint of the current box. Centers and box
+endpoints are nodes of earlier stages of the trial or original data. The
+claim follows by induction, and denominators do not grow with the number of
+stages.
+
+\emph{Bit lengths.} Nodes lie in $\bar X$, so their numerators have $O(I+\alpha)$
+bits. Every factor value, correction $L_iw^2/8$, table entry and message has
+a denominator dividing $8\Gamma_F\Gamma_X^24^\alpha$ and is a sum of at most
+$|\mathcal A|+n$ values of the form $\pm$coefficient $\times$ product of at
+most two nodes (a message is the value of such a sum at a minimizing
+assignment). Writing all of them over this common denominator, every number
+is an integer of $b=O(I+\alpha)$ bits, the dynamic program uses only integer
+additions and comparisons, and a factor evaluation costs $O(b^2)$ bit
+operations per monomial.
+
+\emph{Counting.} We have $J+1\le c(I+q+1)$, and
+$\ell:=\lceil\log_2(n_P+2)\rceil\le I+1$, so $\mu K_\mu\le20\mu2^\mu(I+1)$ and
+$b\le c(1+\mu2^\mu)(I+q+1)$. Since $\sup_{t\ge0}t^pe^{-t}=(p/e)^p$ and
+$\ell\le\ln(2(n+2))/\ln2$,
+\[
+\ell^p\le\Bigl(\frac{p}{e\ln2}\Bigr)^p2(n+2)\le2p^p(n+2)\le6p^pI,
+\]
+so $K_\mu^p\le6I(10\cdot2^\mu p)^p$. By Theorem~\ref{core:thm:schedule} and
+Proposition~\ref{core:prop:dp}, trial $\mu$ costs at most
+$c(J+1)\,pI\,K_\mu^p\,b^2\le c'\,p(10\cdot2^\mu p)^p(1+\mu2^\mu)^2(I+q+1)^5$ bit
+operations, including grid generation and factor evaluation; preprocessing
+(computing $L_i$, $e_i$, $E$, $J$ by rational comparisons) is polynomial and of
+lower order. Summing over $\mu\le\mu^*$ at most doubles the last term, and
+$2^{\mu^*}\le6\sqrt{\bar\kappa}$, $\mu^*\le3(1+\log_2\bar\kappa)$ give the
+stated $f$. The certificate stores the grids of one trial and is checked by
+the same dynamic programs. Without growth, the schedule still halts by
+Theorem~\ref{core:thm:schedule}(a), and every number it forms is a rational
+whose size is bounded as above for its trial.
+\end{proof}
+
+\begin{remark}[In what sense the result is fixed-parameter tractable]
+\label{core:rem:fpt}
+(i) The parameter is $(p,\bar\kappa)$. The running time is at most
+$f(p,\bar\kappa)(I+q+1)^5$ for every instance with weighted growth, where
+$\bar\kappa$ is a property of the instance that the algorithm neither
+receives nor computes; $f$ is computable and the exponent $5$ does not depend
+on $p$ or $\bar\kappa$. The accuracy enters through $q=\log_2(1/\varepsilon)$
+only polynomially. No bound on variable occurrences, on Hessian norms (other
+than through $\bar\kappa$), or on the number of local minima is used.
+(ii) Validity of the output never depends on growth, uniqueness, or the trial
+at which the schedule stops; these affect only the running-time bound.
+Instances without growth (for example with several minimizers that differ in
+$P$) are solved to accuracy $\varepsilon$ in finite time, without the bound.
+(iii) The bag size $p$ refers to the supplied decomposition. Since every
+factor scope is a clique of the primal graph, a tree decomposition of width
+at most $2\,\mathrm{tw}+1$, computable in time $2^{O(\mathrm{tw})}n$
+\cite{Korhonen2021}, can be used instead; the bound then holds with
+$p=2\,\mathrm{tw}+2$.
+(iv) The exponent $5$ reflects schoolbook multiplication and is not
+optimized.
+\end{remark}
+
+\subsection{Both parameters are necessary}\label{core:sec:lower}
+
+The following statements concern any algorithm, not only the one above. ETH
+denotes the exponential-time hypothesis \cite{ImpagliazzoPaturiZane2001};
+rETH denotes its randomized version (no randomized algorithm with bounded
+error solves 3-SAT in time $2^{o(n)}$).
+
+\begin{proposition}[Exponential dependence on the width at bounded conditioning]
+\label{core:prop:lbwidth}
+For a graph $(V,E)$ with $V=\{1,\dots,n\}$ let
+\[
+\Psi(x)=2^n\Bigl(-\sum_ix_i+2\sum_{ij\in E}x_ix_j\Bigr)+\sum_i2^{i-1}x_i
++\frac1{2n}\sum_i(x_i^2-x_i),\qquad x\in[0,1]^n .
+\]
+Then $\Psi$ has a unique minimizer $x^*$, which is binary,
+$\lfloor\Psi^*/2^n\rfloor=-\alpha(V,E)$ (the independence number), and
+$\Psi(x)-\Psi^*\ge\frac1{2n}\norm{x-x^*}^2$ on $[0,1]^n$. With
+$L_i=L=1/n$ this gives $\kappa\le2$ (and $\bar\kappa\le2$). The same holds on
+$\{0,1\}^n$. Every tree decomposition of the graph is a decomposition of
+$\Psi$. Consequently, assuming ETH, no algorithm computes $\OPT$ within $1/2$
+for all box quadratics with $\kappa\le2$ (continuous, or all-binary) in time
+$2^{o(p)}I^{O(1)}$.
+\end{proposition}
+
+\begin{proof}
+On binary points $\Psi=2^n\Phi+\tau$ with $\Phi=-\sum x_i+2\sum_Ex_ix_j$
+integral and $\tau=\sum2^{i-1}x_i\in\{0,\dots,2^n-1\}$ injective. A binary
+minimizer therefore minimizes $\Phi$ and is unique. If the support $S$ of a
+binary $x$ spans an edge, deleting an endpoint $u\in S$ of such an edge changes
+$\Phi$ by $1-2\deg_S(u)\le-1$; hence $\min\Phi=-\alpha$ and
+$\lfloor\Psi^*/2^n\rfloor=-\alpha$.
+
+For $x\in[0,1]^n$ write $\Psi=M+\frac1{2n}\sum(x_i^2-x_i)$, where $M$ is
+multilinear. Let $V$ have independent coordinates with $\Pr[V_i=1]=x_i$. Then
+$M(x)=\E M(V)=\E\Psi(V)$, and since $\Psi(v)\ge\Psi^*+1$ for binary
+$v\ne x^*$, $M(x)-\Psi^*\ge\Pr[V\ne x^*]$. With
+$\delta_i=|x_i-x_i^*|\in[0,1]$,
+$\Pr[V=x^*]=\prod_i(1-\delta_i)\le1-\max_i\delta_i$, so
+$M(x)-\Psi^*\ge\max_i\delta_i\ge\frac1n\sum_i\delta_i$. Also
+$x_i(1-x_i)\le\delta_i$ because $x_i^*\in\{0,1\}$. Hence
+$\Psi(x)-\Psi^*\ge(\frac1n-\frac1{2n})\sum_i\delta_i\ge\frac1{2n}\norm{x-x^*}^2$.
+The only squared terms are $\frac1{2n}x_i^2$, so $L=1/n$ and $L/g\le2$.
+
+The instance has $O(n^2)$ coefficients of $O(n)$ bits, so $I=n^{O(1)}$, and
+the single bag $V$ gives $p=n$. An algorithm as excluded would compute
+$\alpha$ in time $2^{o(n)}$, contradicting ETH
+\cite{ImpagliazzoPaturiZane2001}.
+\end{proof}
+
+Under the strong exponential-time hypothesis the same reduction, applied with
+a supplied tree decomposition of the graph, excludes $(2-\epsilon)^pI^{O(1)}$
+by the lower bound of \cite{LokshtanovMarxSaurabh2018} for independent set.
+
+\begin{proposition}[Polynomial dependence on conditioning at width three]
+\label{core:prop:lbkappa}
+Given positive integers $a_1,\dots,a_m$ and $t\ge0$, let $A=\sum_ka_k$,
+$M=(A+t)^2+1$, and on $\sigma\in\{0,1\}^m$, $s\in(\{0,\dots,A\}\cap\Z)^m$, with
+$s_0=0$,
+\[
+\Psi=2^{m+1}\Bigl(M\sum_{k=1}^m(s_k-s_{k-1}-a_k\sigma_k)^2+(s_m-t)^2\Bigr)
++\sum_k2^{k-1}\sigma_k .
+\]
+The bags $\{s_{k-1},\sigma_k,s_k\}$ form a path decomposition with $p=3$.
+$\Psi$ has a unique minimizer, $\Psi(z)\ge\Psi^*+1$ for every other $z$,
+$\Psi^*<2^{m+1}$ if and only if some subset of the $a_k$ sums to $t$, and
+\[
+\log_2\kappa\le m+O(\log(m+A+t)).
+\]
+Consequently: unless $\mathrm{P}=\mathrm{NP}$, no algorithm computes $\OPT$
+within $1/2$ for all integer box quadratics with $p\le3$ and finite $\kappa$
+in time polynomial in $I$ and $\log\kappa$; and assuming ETH there is a
+constant $c>0$ such that none does so in time $\kappa^cI^{O(1)}$.
+\end{proposition}
+
+\begin{proof}
+Let $\Phi$ be the bracket. For fixed $\sigma$, the partial sums
+$s^\sigma_k=\sum_{l\le k}a_l\sigma_l\in[0,A]$ give
+$\Phi(\sigma,s^\sigma)=(s^\sigma_m-t)^2\le(A+t)^2<M$, while every other $s$
+violates a recursion and has $\Phi\ge M$; so $s^\sigma$ is the unique minimizer
+of $\Phi(\sigma,\cdot)$. Since $\Phi$ is an integer and the tie-break term lies
+in $[0,2^m-1]$ and is injective in $\sigma$, $\Psi$ has a unique minimizer and
+integral values, which gives the gap. $\Phi=0$ exactly at $(\sigma,s^\sigma)$
+with $s^\sigma_m=t$, and $\Phi\ge1$ implies $\Psi\ge2^{m+1}$.
+
+Every coordinate ranges over an interval of length at most $A$, so
+$\norm{z-z^*}^2\le m(1+A^2)$ and $g\ge1/(m(1+A^2))$. The diagonal Hessian
+entries are $2^{m+2}Ma_k^2$, $2^{m+3}M$ and $2^{m+2}(M+1)$, so
+$L\le2^{m+3}M(\max_ka_k^2+1)$ and the bound on $\kappa\le L/g$ follows. The
+input length is polynomial in $m$ and $\log(A+t)$.
+
+An algorithm polynomial in $I$ and $\log\kappa$ would therefore decide Subset
+Sum in polynomial time. Under ETH, Subset Sum with $m$ numbers of $O(m)$ bits
+has no $2^{o(m)}$ algorithm (from the sparsification lemma
+\cite{ImpagliazzoPaturiZane2001} and the textbook reduction from 3-SAT, which
+produces $O(n)$ numbers of $O(n)$ bits after sparsification). For such inputs
+$\log_2\kappa\le C_1m$ and $I=O(m^2)$, so a running time $\kappa^cI^{O(1)}$
+with $c$ below the ETH constant divided by $C_1$ is excluded.
+\end{proof}
+
+\begin{lemma}[Isolation \cite{MulmuleyVaziraniVazirani1987}]\label{core:lem:isolation}
+Let $\mathcal F$ be a nonempty family of subsets of a finite set $W$, and let
+$w:W\to\{1,\dots,R\}$ be uniformly random. Then the minimum of
+$w(S)=\sum_{e\in S}w(e)$ over $S\in\mathcal F$ is attained by a unique set with
+probability at least $1-|W|/R$.
+\end{lemma}
+
+\begin{proof}
+For $e\in W$ let $\alpha_e=\min\{w(S):S\in\mathcal F,e\notin S\}
+-\min\{w(S\setminus\{e\}):S\in\mathcal F,e\in S\}$ (with
+$\min\emptyset=+\infty$); $\alpha_e$ does not depend on $w(e)$. If two
+distinct minimizing sets exist, some $e$ lies in one and not in the other,
+and then $w(e)=\alpha_e$, an event of probability at most $1/R$.
+\end{proof}
+
+\begin{proposition}[The exponent of the conditioning must grow with the width]
+\label{core:prop:lbproduct}
+Assume rETH. There are no computable $f$ and computable nondecreasing
+unbounded $\psi$ such that some algorithm, on every integer box quadratic with
+supplied decomposition and a unique minimizer, outputs a feasible point within
+$1/2$ of $\OPT$ in time $f(p)\,(\kappa I)^{p/\psi(p)}$. In particular a bound
+$f(p)\kappa^{a(p)}I^{C}$ requires $a(p)\ne o(p)$; the bound of
+Theorem~\ref{core:thm:bits} has $a(p)=p/2+O(1)$.
+\end{proposition}
+
+\begin{proof}
+Take an instance of multicolored clique: $k$ color classes identified with
+$\{1,\dots,N\}$ and, for $c<d$, edge lists
+$R_{cd}=((a_1,b_1),\dots,(a_m,b_m))$ of distinct pairs. Choose independent
+uniform weights $w(e)\in\{1,\dots,2|R|\}$ on the edges $e$ of
+$R=\bigsqcup R_{cd}$, and let $W_0=1+\binom k2\,2|R|$. Use integer variables
+$x_c\in[1,N]$ and, for each pair $c<d$ and $l=1,\dots,m=|R_{cd}|$,
+$\zeta_l,S_l\in\{0,1\}$ and $A_l,B_l\in[0,N]$, with $S_0=A_0=B_0=0$. Let
+\begin{align*}
+\Phi&=\sum_{c<d}\Bigl[\sum_{l}\bigl((S_l-S_{l-1}-\zeta_l)^2
++(A_l-A_{l-1}-a_l\zeta_l)^2+(B_l-B_{l-1}-b_l\zeta_l)^2\bigr)\\
+&\qquad\qquad+(S_m-1)^2+(A_m-x_c)^2+(B_m-x_d)^2\Bigr],\qquad
+\Psi_w=W_0\Phi+\sum_{c<d}\sum_lw(a_l,b_l)\zeta_l .
+\end{align*}
+\emph{Decomposition.} Take a central bag $\{x_1,\dots,x_k\}$; for each pair a
+bag $\{x_c,x_d,S_m,A_m,B_m\}$ adjacent to it, followed by the path of bags
+$\{S_{l-1},A_{l-1},B_{l-1},\zeta_l,S_l,A_l,B_l\}$, $l=m,\dots,1$. Every term
+lies in a bag, running intersection holds, and $p=\max\{k,7\}$.
+
+\emph{Encoding.} $\Phi\ge0$ is an integer. $\Phi=0$ forces $S$ to increase
+from $0$ to $1$ in steps $\zeta_l\in\{0,1\}$, so exactly one $\zeta_{l^*}=1$,
+and then $(x_c,x_d)=(A_m,B_m)=(a_{l^*},b_{l^*})\in R_{cd}$. Thus $\Phi=0$
+exactly at encodings of multicolored cliques, and each clique has exactly one
+encoding because the pairs in $R_{cd}$ are distinct. At an encoding the
+tie-break equals the weight of the clique's edge set. If a clique exists and
+the minimum-weight clique is unique, $\Psi_w$ has a unique minimizer, value at
+most $W_0-1$, and integral values; every point with $\Phi\ge1$ has
+$\Psi_w\ge W_0$.
+
+\emph{Conditioning.} All domains have length at most $N$, and there are
+$n_v\le k+2k^2N^2$ variables, so $g\ge1/(n_vN^2)$; the diagonal Hessian entries
+are at most $W_0(2+4N^2+2k)$. Hence $\kappa\le W_0(2+4N^2+2k)n_vN^2$, and both
+$\kappa$ and $I$ are at most $(kN)^{c_2}$ for an absolute $c_2$.
+
+\emph{Reduction.} Run the assumed algorithm for
+$f(p)((kN)^{2c_2})^{p/\psi(p)}$ steps. If it outputs a feasible $\hat z$ with
+$\Psi_w(\hat z)<W_0$, then $\Phi(\hat z)=0$ and $\hat z$ encodes a clique; answer
+yes. Otherwise answer no. There are no false positives. If a clique exists,
+Lemma~\ref{core:lem:isolation} (with $W=R$ and $\mathcal F$ the edge sets of
+cliques) makes the minimum-weight clique unique with probability at least
+$1/2$, and then the algorithm halts in time with $\Psi_w(\hat z)\le W_0-1/2$.
+This is a one-sided-error algorithm for multicolored clique with running time
+$f'(k)N^{o(k)}$, which rETH excludes \cite{ChenEtAl2006} (the reductions
+behind that bound are deterministic, so they also exclude randomized
+algorithms under rETH).
+\end{proof}
+
+\begin{remark}
+Propositions~\ref{core:prop:lbwidth}--\ref{core:prop:lbproduct} show that
+neither parameter can be dropped and that the shape $f(p)\kappa^{\Theta(p)}$
+cannot be improved to $f(p)\kappa^{o(p)}$ in general. They leave open the
+constant in the exponent, whether the factor $p^p$ (coming from
+$\lceil\log_2(n+2)\rceil^p$) is necessary, and whether
+Proposition~\ref{core:prop:lbproduct} holds for purely continuous instances
+or with a deterministic reduction.
+\end{remark}
+
+\subsection{A nonconvex family covered by the theorem}\label{core:sec:example}
+
+\begin{example}\label{core:ex:family}
+For a block $b$ with variables $(u_b,v_b,\rho_b)\in[0,1]^3$ let
+\[
+\phi(u,v,\rho)=u^2+v^2-4uv+\tfrac14(u+v)+(\rho-\tfrac u2)^2 .
+\]
+For a graph $\Gamma$ on the blocks with maximum degree $\Delta$ let
+\[
+F=\sum_b\phi(u_b,v_b,\rho_b)+\frac1{16\Delta}\sum_{bb'\in\Gamma}(u_b-u_{b'})^2 .
+\]
+Then: (a) $x^*=(1,1,\frac12)$ in every block is the unique minimizer and
+$F(x)-\OPT\ge\frac12\norm{x-x^*}^2$; (b) $L\le\frac{21}8$, so
+$\kappa\le\frac{21}4$; (c) each of the $2^m$ points with
+$(u_b,v_b,\rho_b)\in\{(0,0,0),(1,1,\frac12)\}$ for all $m$ blocks is a strict
+local minimizer; (d) a tree decomposition of $\Gamma$ of width $w$ yields one
+of $F$ with $p=\max\{w+1,3\}$. Each block Hessian is indefinite (along
+$(1,1,\frac12)$ the second-order term of $\phi$ equals $-2$), and the
+minimizer is not a vertex. For $\Gamma$ a $k\times m'$ grid with $m'\ge k$,
+Theorem~\ref{core:thm:bits} solves this family in time
+$f(\max\{k+1,3\},\frac{21}4)(I+q+1)^5$, although it has $2^{km'}$ strict
+local minima.
+\end{example}
+
+\begin{proof}
+(a) Let $d=(1-u,1-v)\in[0,1]^2$. Since $\nabla_{u,v}(u^2+v^2-4uv+\frac{u+v}4)
+=(-\frac74,-\frac74)$ at $(1,1)$ and the quadratic part is $d_1^2+d_2^2-4d_1d_2
+\ge-(d_1^2+d_2^2)$,
+\[
+u^2+v^2-4uv+\tfrac{u+v}4+\tfrac32\ge\tfrac74(d_1+d_2)-(d_1^2+d_2^2)
+\ge\tfrac34(d_1^2+d_2^2),
+\]
+using $d_i\ge d_i^2$. With $(\rho-\frac12)^2\le2(\rho-\frac u2)^2+\frac12d_1^2$,
+\[
+\phi-\phi^*\ge\tfrac34(d_1^2+d_2^2)+(\rho-\tfrac u2)^2
+\ge\tfrac12\bigl(d_1^2+d_2^2+(\rho-\tfrac12)^2\bigr).
+\]
+The coupling is nonnegative and vanishes at $x^*$. Summing over blocks gives
+(a). (b) The diagonal entries are $\frac52+\frac{2\deg(b)}{16\Delta}$ for
+$u_b$ and $2$ for $v_b,\rho_b$.
+
+(c) At such a point $\bar x$, the coupling gradient in $u_b$ has absolute
+value at most $\frac{2\Delta}{16\Delta}=\frac18$. Hence $\partial_{u_b}F\ge\frac18$
+and $\partial_{v_b}F=\frac14$ at $u_b=v_b=0$, $\partial_{u_b}F\le-\frac74+\frac18$
+and $\partial_{v_b}F=-\frac74$ at $u_b=v_b=1$, and $\partial_{\rho_b}F=0$. For a
+feasible $x$ let $d=x-\bar x$ and $\delta=\sum_b(|d_{u_b}|+|d_{v_b}|)$. The
+first-order term is at least $\delta/8$. The second-order term equals
+$\sum_b[(d_{\rho_b}-\frac12d_{u_b})^2+d_{u_b}^2+d_{v_b}^2-4d_{u_b}d_{v_b}]$ plus a
+nonnegative coupling, which is at least
+$\sum_b(d_{\rho_b}-\frac12d_{u_b})^2-\delta^2$. Thus
+$F(x)-F(\bar x)\ge\delta/8-\delta^2+\sum_b(d_{\rho_b}-\frac12d_{u_b})^2>0$ when
+$0<\delta<\frac18$, and $=\sum_bd_{\rho_b}^2>0$ when $\delta=0\ne d$.
+(d) Attach to a bag containing $u_b$ a new bag $\{u_b,v_b,\rho_b\}$.
+\end{proof}

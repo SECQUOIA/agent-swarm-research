@@ -144,7 +144,7 @@ industrial validation.
 2. Reran the complete combined unit command:
 
    ```sh
-   PYTHONPATH=code /home/sgusev/miniconda3/envs/minlp-notes/bin/python -m unittest network_simplex.test_separator network_simplex.test_flat_chain network_simplex_benchmarks.test_strong_baselines -v
+   PYTHONPATH=code /workspace/local-home/miniconda3/envs/minlp-notes/bin/python -m unittest network_simplex.test_separator network_simplex.test_flat_chain network_simplex_benchmarks.test_strong_baselines -v
    ```
 
    All 21 tests passed. This includes exact cut/decomposition checks, the new

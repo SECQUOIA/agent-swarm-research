@@ -1,0 +1,463 @@
+\section{Constructing certificates by regridding}
+\label{sec:regridding}
+
+We construct a certificate without knowing the minimizer. At each stage we
+build new partitions around the point obtained at the preceding stage and
+use subtree slopes evaluated at that same point. The partitions need not
+refine one another. The proof controls the sum of squared copy errors;
+it does not require every reconstructed coordinate to lie within the
+current mesh width of the minimizer.
+
+Throughout this section, the models satisfy \eqref{eq:model-contract},
+the bag gradients are $M$-Lipschitz in the Euclidean norm, and
+\eqref{eq:model-growth} holds with $g>0$. Models are continuous and convex
+on their closed boxes. An exact local optimization oracle returns both
+the minimum value and an attaining point on each nonempty box
+intersection. Bag values and gradients are also available exactly.
+These assumptions specify an oracle model; the number of oracle calls
+does not bound their internal cost. Fixed coordinates of the original
+domain have been removed, as in the model section.
+
+\subsection{Graded shell partitions}
+
+For a point $c\in\R^d$ and radius $h>0$, put
+$Q_\infty(c,h)=\{v:\norm{v-c}_\infty\le h\}$. Distances from a set are
+infimum distances, and widths are the largest coordinate side length.
+
+\begin{lemma}[Shell construction]\label{lem:regridding-shell}
+Let $X'$ be a nondegenerate box in $\R^d$ whose sides are at most $s_0$,
+let $c\in X'$, $h>0$, and let $\theta=2^{-\mu}$ with an integer
+$\mu\ge1$. Set $H=\max\{0,\ceil{\log_2(s_0/h)}\}$. There is a finite
+closed-box partition $\Pi(c;h,\theta)$ of $X'$ with disjoint interiors,
+at most $(H+1)(4/\theta)^d$ members, and
+\begin{equation}\label{eq:regridding-shell}
+ \width(Y)\le\max\{h,\theta\dist_\infty(Y,c)\}
+ \le h+\theta\dist_\infty(Y,c)
+ \qquad (Y\in\Pi(c;h,\theta)).
+\end{equation}
+Each member retains a shell-level index between $0$ and $H$ and is a
+clipped grid cube. The level-$0$ grid has at most two intervals in each
+coordinate. Each other level has at most $4/\theta$ intervals in each
+coordinate. In dimension zero use the single cell, of width zero.
+\end{lemma}
+
+\begin{proof}
+Cut $Q_\infty(c,h)$ at the coordinate hyperplanes through $c$ into its
+$2^d$ cubes of side $h$; these form level $0$. For
+$\ell=1,\ldots,H$, divide $Q_\infty(c,2^\ell h)$ into a grid of side
+$g_\ell=\theta2^{\ell-1}h$, anchored at its lower corner. There are
+$4/\theta$ positions per coordinate. Because $1/\theta$ is an integer,
+the boundary of $Q_\infty(c,2^{\ell-1}h)$ lies on grid hyperplanes.
+Retain the cubes that are not contained in that inner cube. Their
+interiors are outside the inner cube, so their distance from $c$ is at
+least $2^{\ell-1}h$, and their width is
+$g_\ell\le\theta\dist_\infty(Y,c)$.
+
+The levels tile the outer cube with disjoint interiors. It contains
+$X'$ because $c\in X'$ and $2^Hh\ge s_0$. Intersect all cubes with
+$X'$ and discard intersections having empty interior in $\R^d$.
+Clipping decreases widths and increases distances. It preserves
+coverage: every point of $X'$ is a limit of interior points of $X'$
+off the finitely many grid hyperplanes, and one retained closed
+intersection contains a subsequence and hence its limit. Thus the
+discarded pieces do not remove a boundary point from the union.
+Each level contributes at most $(4/\theta)^d$ members, including the
+central level, proving the claim.
+\end{proof}
+
+The fixed-coordinate reduction is necessary here. If $X'$ had a fixed
+coordinate, every clipped cube would have empty ambient interior. One
+can instead work in its affine hull; removing fixed coordinates gives
+the same construction with a simpler dimension convention.
+
+\subsection{The algorithm and its constants}
+
+Write
+\begin{equation}\label{eq:regridding-constants}
+\begin{aligned}
+ C_0&=k(k-1)p, & B_0&=\frac{MC_0}{2}+\frac A4,
+ &\eta&=\frac g{20},\\
+ C&=12B_0+\frac{6kC_0M^2}{\eta},
+ & B&=\max\left\{p,\frac{2C}{g}\right\}.
+\end{aligned}
+\end{equation}
+Choose a dyadic $\theta=2^{-\mu}\le1/2$ satisfying
+\begin{equation}\label{eq:regridding-theta}
+ 12C_0\theta^2\le1,\qquad
+ \sqrt{12}\,k\sqrt{C_0}M\theta\le\frac\eta4,\qquad
+ 12kB_0\theta^2\le\frac\eta4.
+\end{equation}
+A restriction with a zero coefficient imposes no condition. In
+particular, these formulas allow $k=1$, $M=0$, and $A=0$.
+
+Start from any $x^{(-1)}\in X$, with incumbent value
+$\UB=F(x^{(-1)})$. At stage $j=0,1,\ldots$, set
+$h_j=s_02^{-j}$ and $c=x^{(j-1)}$, and perform the following steps.
+\begin{enumerate}
+\item Build the fresh partitions
+$\mathcal L_t=\Pi(c_{V_t};h_j,\theta)$ and, for $t\ne r$,
+$\mathcal P_t=\Pi(c_{S_t};h_j,\theta)$.
+\item Use the common slopes $\lambda_t(c)$ from
+\eqref{eq:model-slope}. Compute the maximal intercepts and root bound
+$\LB_j$ by the dynamic program of \cref{prop:model-dp}. Store the
+minimizing local points and child-cell choices.
+\item Backtrack a minimizing configuration and set
+$x_i^{(j)}=z_i^{\topbag(i)}$. Update the incumbent if
+$F(x^{(j)})<\UB$, retaining this feasible point and its value.
+\item Stop if $\UB-\LB_j\le\eps$, returning the current certificate
+and the retained incumbent.
+\end{enumerate}
+The next center is always the newly reconstructed point, even when an
+earlier point remains the incumbent. All local subproblems have a
+nonempty compact domain and continuous convex objective, so their
+minimum is attained. Finite minima and backtracking therefore exist.
+Ties can be resolved arbitrarily.
+
+Certificate validity holds for every dyadic $\theta$, whether or not
+\eqref{eq:regridding-theta} holds. Those conditions prove the
+construction and size bounds, whereas the stopping test uses only
+valid lower and feasible upper bounds.
+
+\subsection{Aggregate copy drift}
+
+Fix a stage and an arbitrary configuration. Let $x$ be its consistent
+point, and define
+\begin{equation}\label{eq:regridding-aggregate}
+\begin{split}
+ b_t&=\width(B_t),\qquad d_t=\width(D_t)\quad(t\ne r),\\
+ Q&=\sum_t b_t^2+\sum_{t\ne r}d_t^2,\qquad
+ E=\sum_t\norm{z^t-x_{V_t}}_2^2,\qquad R=\norm{x-c}_2.
+\end{split}
+\end{equation}
+Here $d_t$ is a width, not a dimension.
+
+\begin{lemma}[Occurrence-based drift]\label{lem:regridding-drift}
+Every configuration satisfies $E\le C_0Q$.
+\end{lemma}
+
+\begin{proof}
+For each variable $i$, its occurrence bags form a rooted subtree $T_i$
+of size $m_i\le k$. Its root is $\topbag(i)$. On an edge of this
+subtree, the child copy belongs to $D_t$ and the parent copy belongs
+to $(B_{\pi(t)})_{S_t}$. These boxes meet. Joining the two copies
+through an intersection point gives
+\[
+ \abs{z_i^t-z_i^{\pi(t)}}\le b_{\pi(t)}+d_t.
+\]
+The parent copy need not itself belong to $D_t$.
+
+Make a matrix whose rows are the occurrences in $T_i$ and whose
+columns are the bag and separator widths on $T_i$. The row for $t$
+has a $1$ at the parent-bag width and child-cell width for every edge
+on the path from $\topbag(i)$ to $t$, and zero elsewhere. It maps
+these nonnegative widths to upper bounds on $\abs{z_i^t-x_i}$.
+Each row has $2\operatorname{depth}_i(t)$ ones. Its squared operator
+norm is at most its squared Frobenius norm, which is
+\[
+ 2\sum_{t\in T_i}\operatorname{depth}_i(t)
+ \le m_i(m_i-1)\le k(k-1).
+\]
+To see the depth bound, order the vertices with parents preceding
+children; the depth of the vertex in position $a$ is at most $a-1$.
+Sum the resulting coordinate inequalities. A bag-width square is
+counted at most $\abs{V_t}$ times, and a separator-width square at
+most $\abs{S_t}$ times. Both dimensions are at most $p$, so
+\[
+ E\le k(k-1)\left(\sum_t\abs{V_t}b_t^2+
+                   \sum_{t\ne r}\abs{S_t}d_t^2\right)
+ \le k(k-1)pQ.
+\]
+No tree depth or degree is used.
+\end{proof}
+
+\begin{lemma}[Grading absorption]\label{lem:regridding-grading}
+If the first condition in \eqref{eq:regridding-theta} holds, then
+\begin{equation}\label{eq:regridding-grading}
+ Q\le12Nh_j^2+12k\theta^2R^2.
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+Apply \eqref{eq:regridding-shell} to a bag leaf containing $z^t$:
+\[
+ b_t\le h_j+\theta\norm{x_{V_t}-c_{V_t}}_2
+                    +\theta\norm{z^t-x_{V_t}}_2.
+\]
+The same inequality holds for $d_t$ with the vectors restricted to
+$S_t$. A variable with $m_i$ occurrences belongs to exactly $m_i-1$
+separators. Thus the sum of the bag and separator squared center
+differences is at most $(2k-1)R^2$.
+
+The copy error vanishes on $V_t\setminus S_t$: every such coordinate
+has its top occurrence at $t$. Consequently its bag-plus-separator
+sum of squares is exactly $2E$. There are at most $2N-1$ boxes.
+Using $(u+v+w)^2\le3(u^2+v^2+w^2)$ gives
+\[
+ Q\le6Nh_j^2+3(2k-1)\theta^2R^2+6\theta^2E.
+\]
+By \cref{lem:regridding-drift}, the last term is at most
+$6\theta^2C_0Q\le Q/2$. Absorb it and use $2k-1\le2k$.
+When $C_0=0$, the last term is zero and the same bound holds directly.
+\end{proof}
+
+\subsection{The error relative to the current center}
+
+\begin{lemma}[Uniform configuration error]\label{lem:regridding-error}
+Under \eqref{eq:regridding-theta}, every configuration, with slopes
+$\lambda_t(c)$, satisfies
+\begin{equation}\label{eq:regridding-error}
+ \abs{F(x)-\Phi}\le\eta\norm{x-c}_2^2+CNh_j^2.
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+Let $\operatorname{err}_t=a_t(z^t)-m_{t,B_t}(z^t)$, so
+$0\le\operatorname{err}_t\le Ab_t^2/4$. The telescoping identity
+of \cref{lem:model-telescope}, applied at $c$, gives
+\[
+ \Phi=F(x)+\sum_tT_t-\sum_t\operatorname{err}_t,
+ \qquad
+ T_t=a_t(z^t)-a_t(x_{V_t})-
+         \inner{\nabla a_t(c_{V_t})}{z^t-x_{V_t}}.
+\]
+The Lipschitz-gradient Taylor bound and Cauchy--Schwarz imply
+\[
+ \abs{T_t}\le
+ M\norm{x_{V_t}-c_{V_t}}_2\norm{z^t-x_{V_t}}_2
+ +\frac M2\norm{z^t-x_{V_t}}_2^2.
+\]
+Since each variable occurs in at most $k$ bags,
+\[
+\begin{split}
+ \abs{F(x)-\Phi}
+ &\le M\sqrt{k}\,R\sqrt E+\frac M2E+\frac A4Q\\
+ &\le M\sqrt{kC_0}\,R\sqrt Q+B_0Q.
+\end{split}
+\]
+Substitute \eqref{eq:regridding-grading} and use
+$\sqrt{u+v}\le\sqrt u+\sqrt v$ to obtain
+\[
+\begin{split}
+ \abs{F(x)-\Phi}
+ &\le\sqrt{12kC_0}M\sqrt N h_jR+12B_0Nh_j^2\\
+ &\quad+
+ \left(\sqrt{12}\,k\sqrt{C_0}M\theta
+               +12kB_0\theta^2\right)R^2.
+\end{split}
+\]
+Young's inequality bounds the first term by
+$\eta R^2/2+6kC_0M^2Nh_j^2/\eta$. The last two conditions in
+\eqref{eq:regridding-theta} bound the coefficient in parentheses
+by $\eta/2$. This proves the claim.
+\end{proof}
+
+The gradient at $c$ need not vanish. Its linear copy terms cancel
+algebraically. This is why the estimate applies to boundary minimizers
+without a stationarity hypothesis or differentiability of subtree
+value functions.
+
+\subsection{Contraction, termination, and box counts}
+
+\begin{theorem}[Constructive regridding]\label{thm:regridding-main}
+For every $\eps>0$, the algorithm with a grading ratio satisfying
+\eqref{eq:regridding-theta} returns a valid certificate and feasible
+incumbent with $\UB-\LB\le\eps$. With the constants in
+\eqref{eq:regridding-constants}, put
+\begin{equation}\label{eq:regridding-horizon}
+ J=\max\left\{0,\ceil{\log_2\left(s_0\sqrt{gBN/\eps}\right)}\right\}.
+\end{equation}
+The algorithm stops by stage $J$, and each completed stage satisfies
+\begin{equation}\label{eq:regridding-distance}
+ \norm{x^{(j)}-x^*}_2^2\le BNh_j^2,
+ \qquad 0\le\UB-\LB_j\le gBNh_j^2.
+\end{equation}
+Writing $m=4/\theta$, its final number of leaves plus cells is at
+most $2Nm^p(J+1)$, and the total number created through stopping is
+at most $Nm^p(J+1)(J+2)$.
+\end{theorem}
+
+\begin{proof}
+A consistent configuration at $x^*$ exists: choose leaves and cells
+containing its restrictions. It has value at most $f^*$ because
+the models are lower bounds and all copy differences vanish.
+By \cref{prop:model-dp}, a minimizing configuration has
+$\Phi=\LB_j\le f^*$. Put $e_j=\norm{x^{(j)}-x^*}_2^2$.
+Quadratic growth and \eqref{eq:regridding-error} give
+\[
+ ge_j\le F(x^{(j)})-f^*
+ \le F(x^{(j)})-\LB_j
+ \le\frac g{20}\norm{x^{(j)}-x^{(j-1)}}_2^2+CNh_j^2.
+\]
+The squared triangle inequality implies
+\begin{equation}\label{eq:regridding-contraction}
+ e_j\le\frac{e_{j-1}}9+\frac{10C}{9g}Nh_j^2.
+\end{equation}
+For $j\ge1$, the inductive bound $e_{j-1}\le BNh_{j-1}^2$
+and $h_{j-1}=2h_j$ give
+$e_j\le(4B/9+10C/(9g))Nh_j^2\le BNh_j^2$, since $B\ge2C/g$.
+At stage zero, coverage of the variables gives $n\le pN$, and
+$e_{-1}\le ns_0^2\le BNh_0^2$. Thus the base coefficient is at
+most $B/9+10C/(9g)\le2B/3$, which also proves the claim.
+
+For $j\ge1$, the squared center difference is at most
+$2(e_j+e_{j-1})\le10BNh_j^2$. At stage zero it is at most
+$4BNh_0^2$. The incumbent includes the current point, so
+\[
+ 0\le\UB-\LB_j\le F(x^{(j)})-\LB_j
+ \le(gB/2+C)Nh_j^2\le gBNh_j^2.
+\]
+No monotonicity of the lower bounds was used. The definition of $J$
+ensures $gBNh_J^2\le\eps$, proving termination and the gap guarantee.
+
+At stage $j$, the shell level count is $j+1$, because
+$h_j=s_02^{-j}$. \Cref{lem:regridding-shell} gives at most
+$2Nm^p(j+1)$ leaves and cells, including zero-dimensional cells.
+Summing this bound over $j=0,\ldots,J$ proves the cumulative count.
+Earlier partitions can be discarded after retaining the new center
+and the incumbent.
+\end{proof}
+
+For the largest admissible dyadic ratio, with
+$\kappa=M/g$ and $a=A/g$, direct solution of
+\eqref{eq:regridding-theta} gives
+\begin{equation}\label{eq:regridding-conditioning}
+ \frac1\theta=O\left(1+\sqrt{C_0}
+       +k\sqrt{C_0}\,\kappa
+       +\sqrt{k(C_0\kappa+a)}\right).
+\end{equation}
+Also $C/g=6C_0\kappa+3a+120kC_0\kappa^2$.
+These are numerical conditioning factors. Bounded width does not
+imply bounded occurrence: in an edge-bag decomposition of a star, the
+central variable occurs in all bags. The theorem removes a separate
+degree parameter while retaining its stated dependence on $k$.
+
+\subsection{Touching incidences and local work}
+
+\begin{proposition}[Shell-incidence count]\label{prop:regridding-incidence}
+Let $q=\max_{t\ne r}\abs{S_t}$, with $q=0$ when there are no
+nonroot bags. At stage $j$, both the own-separator incidences and
+the parent-leaf/child-cell incidences can be processed with at most
+$N3^qm^p(j+1)^2$ incidences of each type. The exact local
+optimization-call count through stage $J$ is at most
+\begin{equation}\label{eq:regridding-calls}
+ N3^qm^p\frac{(J+1)(J+2)(2J+3)}6.
+\end{equation}
+With bag evaluations and local optimizations counted as oracle
+calls, coordinate processing and affine arithmetic require
+$O(pN3^qm^p(J+1)^3)$ counted operations through stage $J$.
+\end{proposition}
+
+\begin{proof}
+Consider a bag partition in dimension $d\le p$ and a separator
+partition in dimension $q'\le q$, projected into that bag. For
+one pair of levels, each partition is a subset of an unclipped
+grid with at most $m$ positions per coordinate. Compare the
+unclipped side lengths. If the bag grid is finer, an interval of
+its side length meets at most three intervals of the separator
+grid, including endpoint contacts. Each of at most $m^d$ bag
+cubes therefore meets at most $3^{q'}$ separator cubes.
+
+If the separator grid is finer, each separator cube meets at
+most $3^{q'}$ projected bag-grid positions. Each such position
+has at most $m^{d-q'}$ private-coordinate fibers, and there are
+at most $m^{q'}$ separator cubes. This again gives at most
+$3^{q'}m^d$ incidences. Clipping cannot create an intersection
+between previously disjoint cubes. The central grid satisfies
+the same position bound. Dimension-zero separators have one
+cell and satisfy the count directly.
+
+There are $(j+1)^2$ level pairs. Summing the own-separator
+incidences over nonroot bags and including one minimum per root
+leaf gives at most $N3^qm^p(j+1)^2$ local programs. Summing the
+parent-leaf/child-cell incidences over the $N-1$ tree edges
+gives at most $(N-1)3^qm^p(j+1)^2$ child incidences. These
+determine the minimum compatible child intercept for each
+parent leaf. Child choices are separate finite minima, so
+there is no product over the children.
+
+For completeness, incidence enumeration need not use a dense
+all-pairs table. In the first case, enumerate the finer bag
+grid and compute, in each separator coordinate, the at most
+three coarse intervals that meet it. In the second case,
+enumerate separator cubes, their at most three coarse
+positions per coordinate, and the private bag fibers.
+Filter the resulting pairs by the exact shell membership and
+clipped-box tests. The enumeration costs $O(p)$ per candidate;
+its candidate count has the same bound just proved. It can be
+streamed while updating minima.
+
+Slopes are obtained in $O(Np)$ arithmetic per stage by a
+bottom-up accumulation of bag gradients. For each leaf,
+the sum of child slopes is an affine coefficient vector;
+the corresponding child-intercept sum can be accumulated
+from the incidence minima. The total number of parent-leaf/
+child combinations is at most $(N-1)m^p(j+1)$, using the
+uniform leaf bound. Thus this additional work is covered by
+the stated count. Finally,
+$\sum_{j=0}^J(j+1)^2=(J+1)(J+2)(2J+3)/6$, proving
+\eqref{eq:regridding-calls} and the cumulative work bound.
+\end{proof}
+
+The actual separator dimension $q$ can equal $p$ when adjacent
+bags coincide. If no bag is contained in its parent, then $q\le p-1$.
+We retain the supplied decomposition and assignment; merging bags
+could change the bag-gradient and model-error constants.
+
+Counting bag evaluations as oracle calls is material. The number
+of factors or terms assigned to a bag is not bounded by $N$ and $p$.
+Their representation, model-generation, evaluation, and numerical
+certification costs must enter an implementation bound. Moreover,
+the leaf-plus-cell measure does not include separate proof objects
+for every local incidence or the bit lengths of numerical entries.
+The following arithmetic section supplies such bounds for one
+explicit representation.
+
+\subsection{Searching without growth or error constants}
+
+\begin{proposition}[Budgeted parameter search]\label{prop:regridding-search}
+Suppose all requested oracle calls terminate. An algorithm that does
+not use $g$, $M$, or $A$ to select its grading ratio can still return a
+valid certificate and incumbent of gap at most $\eps$.
+Fix any sufficient index $\mu_*$ and a bound $W\ge\max\{2,2^{\mu_*}\}$
+on the counted work of its run through stopping. Then a simple
+search uses $O(W\log(2+W))$ counted operations before returning.
+Oracle-internal costs remain excluded.
+\end{proposition}
+
+\begin{proof}
+For rounds $r=1,2,\ldots$, start a fresh run for each
+$\mu=1,\ldots,r$ from the same initial point. Give each run
+a budget of $2^r$ counted operations, covering box construction,
+incidence enumeration, scalar comparisons and arithmetic,
+bag-value and gradient evaluations, and local optimization
+calls. Enforce the budget before each counted operation.
+There is no separate stage cap. Stop at the first completed
+stage that passes its own gap test.
+
+For every trial, validity supplies $\LB\le f^*$ and the retained
+feasible incumbent supplies $f^*\le\UB$. A successful test
+therefore proves the required guarantee independently of
+the trial's grading ratio. A sufficiently large $\mu_*$
+satisfies \eqref{eq:regridding-theta}; by
+\cref{thm:regridding-main} its run terminates in finite counted
+work. At round $R=\ceil{\log_2 W}$, one has $R\ge\mu_*$ and
+$2^R\ge W$, so that round permits the entire sufficient run.
+The total trial budgets through round $R$ are
+\[
+ \sum_{r=1}^Rr2^r=(R-1)2^{R+1}+2\le2R2^R=O(W\log(2+W)).
+\]
+Every round makes finite progress because it contains finitely
+many budgeted operations and each requested call terminates.
+\end{proof}
+
+One can take $W$ to be a constant multiple of the work bound in
+\cref{prop:regridding-incidence} for the sufficient run; its factor
+$m^p$ ensures $W\ge2^{\mu_*}$. The returned trial may have a different
+grading ratio and stopping stage. Its gap guarantee is unchanged,
+and its actual partitions satisfy the shell count for those returned
+parameters. The sharper final-box bound in
+\cref{thm:regridding-main} refers to a run with a fixed sufficient
+ratio; parameter search does not identify its returned trial with
+that run. The returned certificate has at most $O(W)$ boxes under
+the work-budget convention, since their emission is charged in its
+last trial budget. Total work and final output are distinct measures.

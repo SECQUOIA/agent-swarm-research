@@ -1,9 +1,12 @@
 """Independent extra atlas-stratum tests and provenance/table checks."""
+from pathlib import Path as _CleanupPath
+_NOTES_ROOT = _CleanupPath(__file__).resolve().parent.joinpath('../../..').resolve()
+
 from pathlib import Path
 import sys,json,hashlib,random,subprocess
 import sympy as s
 HERE=Path(__file__).resolve().parent
-REPO=Path('/home/sgusev/repo/minlp-notes')
+REPO=Path((str(_NOTES_ROOT)))
 SNAP=REPO/'paper-structured-bilevel/process/snapshots/stage06-round01'
 sys.path.insert(0,str(HERE/'code'))
 import original_faces as f

@@ -45,4 +45,4 @@ For fixed absolute gamma, C1 and C2, the chosen `M=Theta(D/epsilon^2)`, `t=Theta
 
 ## Diagnostics
 
-`/home/sgusev/miniconda3/envs/qipm/bin/python scalar-newton-paper/checks/check_lower_identities.py` passes all 25 witness Jacobi realizations and 25 constant paths. This supplements the algebraic checks and is not used as their proof.
+`/workspace/local-home/miniconda3/envs/qipm/bin/python scalar-newton-paper/checks/check_lower_identities.py` passes all 25 witness Jacobi realizations and 25 constant paths. This supplements the algebraic checks and is not used as their proof.

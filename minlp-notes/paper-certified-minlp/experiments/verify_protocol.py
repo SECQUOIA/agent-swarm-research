@@ -5,11 +5,22 @@ import hashlib,json
 from pathlib import Path
 import sys
 
+def recorded_path(value, root):
+    """Bind a public repository path to the checkout used for this check."""
+    path=Path(value)
+    try:
+        relative=path.relative_to('/workspace/minlp-notes')
+    except ValueError:
+        return path
+    return root/relative
+
+
+root=Path(__file__).resolve().parent.parent.parent
 p=Path(sys.argv[1]);protocol=json.loads((p/'protocol.json').read_text())
 items=[protocol['wrapper'],protocol['settings'],protocol['historical_records']]+protocol['sources']+protocol['model_sources']+protocol['tools']
 results=[]
 for item in items:
-    path=Path(item['path']);h=hashlib.sha256()
+    path=recorded_path(item['path'],root);h=hashlib.sha256()
     with path.open('rb') as stream:
         for b in iter(lambda:stream.read(1048576),b''):h.update(b)
     results.append({'path':item['path'],'sha256':h.hexdigest(),'matches':h.hexdigest()==item['sha256'] and path.stat().st_size==item['bytes']})

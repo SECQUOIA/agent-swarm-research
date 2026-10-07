@@ -182,9 +182,9 @@ None of these affects correctness.
 
 ## Checker
 
-Script: `/home/sgusev/repo/minlp-notes/code/pooling_degree_two/independent_check.py`
+Script: `/workspace/minlp-notes/code/pooling_degree_two/independent_check.py`
 (written from scratch; `verify_reduction.py` was not consulted). Log:
-`/home/sgusev/repo/minlp-notes/code/pooling_degree_two/independent_check_output.txt`.
+`/workspace/minlp-notes/code/pooling_degree_two/independent_check_output.txt`.
 
 Method. Enumerate every bipartite CO instance with `|U|, |W| <= 2`, edge
 multisets of size 1-3 (size 1-2 when `|U| = |W| = 2`), weights in `{1,2}`,

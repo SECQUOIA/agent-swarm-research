@@ -1,0 +1,189 @@
+% Mathematical foundations adapted from the 2026-10-02 report.
+\section{Joint support cuts}\label{sec:support}
+
+Let $D\subset\R^n$ be nonempty and compact, and let
+$F=(f_1,\ldots,f_k):D\to\R^k$ be continuous. Write
+\[
+G_D=\{(x,F(x)):x\in D\},\qquad H_D=\conv G_D.
+\]
+The lifted variables $w_j$ represent the \emph{same} functions $f_j$ of
+the \emph{same} variables $x$. For a direction $d=(a,b)\in\R^{n+k}$ define
+\begin{equation}\label{eq:support}
+h_D(a,b)=\min_{x\in D}\{a^\top x+b^\top F(x)\}.
+\end{equation}
+We use lower support values, so every cut is written with a lower bound.
+If integer variables occur in $D$, support over a continuous superset
+remains valid for the mixed-integer graph, but need not describe its hull.
+
+\begin{proposition}[Support and complete hull description]\label{prop:support}
+If $\underline h\le h_D(a,b)$, then
+\begin{equation}\label{eq:cut}
+a^\top x+b^\top w\ge\underline h
+\end{equation}
+is valid for $H_D$. Moreover,
+\[
+H_D=\bigcap_{(a,b)\in\R^{n+k}}
+\{(x,w):a^\top x+b^\top w\ge h_D(a,b)\}.
+\]
+\end{proposition}
+\begin{proof}
+The defining minimum makes the inequality valid at each point of $G_D$;
+linearity preserves it under convex combinations. The graph is compact
+by continuity, and its convex hull is compact in finite dimension. A point
+outside that hull is strictly separated by a linear functional. Orient
+that functional as a lower support inequality to obtain a member of the
+displayed intersection that excludes the point.
+\end{proof}
+
+This is classical convex hull duality; simultaneous graph separation
+from linear combinations is developed explicitly in
+\cite{LiersEtAl2021,Tawarmalani2010}. The computational problem is to
+evaluate or bound~\eqref{eq:support}, and to find a useful direction
+without spending more than its benefit. A numerical direction generator
+is permitted to be inaccurate: its output only chooses $(a,b)$.
+Soundness depends on a bound for that \emph{final} direction, not on the
+correctness or optimality of the direction search. The same observation
+allows random samples, LP direction search, and a native sampling kernel
+outside the cut-validity calculation.
+
+For $n=1$ and $k=1$, optimizing over the coefficient of $x$ recovers the
+biconjugate description of a scalar convex envelope. For $k>1$, joint
+directions retain dependencies between outputs that intersected scalar
+envelopes can omit. A finite collection of valid joint cuts generally
+gives an outer approximation; absence of a violated generated cut does
+not establish membership in $H_D$.
+
+\begin{proposition}[Final floating-point row]\label{prop:round}
+Suppose the exact values of the coefficients submitted to a numerical
+solver are $\widehat a\in\Q^n$ and $\widehat b\in\Q^k$ (in particular,
+finite binary floating-point numbers interpreted exactly). If a checker
+establishes
+\[
+L\le\min_{x\in D}
+\{\widehat a^\top x+\widehat b^\top F(x)\}
+\]
+and the submitted right-hand side $\widehat L$ satisfies
+$\widehat L\le L$ exactly, the submitted mathematical row is valid on
+$H_D$.
+\end{proposition}
+\begin{proof}
+Apply Proposition~\ref{prop:support} to the submitted coefficients and
+then weaken the right-hand side from $L$ to $\widehat L$.
+\end{proof}
+
+Rounding an already proved rational row without checking its resulting
+coefficients would not satisfy this contract. One alternative, when a
+trusted box $\ell\le z\le u$ is available for all lifted coordinates,
+is to replace the exact row $c^\top z\ge L$ by
+\[
+\widehat c^\top z\ge
+L+\sum_i\min\{(\widehat c_i-c_i)\ell_i,
+                 (\widehat c_i-c_i)u_i\},
+\]
+and round the right-hand side downward. The formula follows by bounding
+each coordinate of $(\widehat c-c)^\top z$. Our principal contract is
+the direct check for the final direction in
+Proposition~\ref{prop:round}; it avoids needing auxiliary-variable bounds
+for this correction.
+
+\section{Finite certificates on the whole domain}\label{sec:numerics}
+
+\subsection{Exact Bernstein bounds for rational polynomials}
+
+Consider a polynomial $p$ on a rational box
+$B=\prod_{i=1}^n[\ell_i,u_i]$. Substitute
+$x_i=\ell_i+(u_i-\ell_i)t_i$ and eliminate fixed coordinates. In the
+remaining coordinates, write
+\[
+p(x(t))=\sum_{\beta\le d}a_\beta t^\beta
+       =\sum_{\alpha\le d}b_\alpha B_\alpha^d(t),\qquad
+B_\alpha^d(t)=\prod_i
+\binom{d_i}{\alpha_i}t_i^{\alpha_i}(1-t_i)^{d_i-\alpha_i}.
+\]
+Here $d$ is a componentwise degree bound and all coefficients are exact
+rationals. The conversion is
+\begin{equation}\label{eq:bernstein-conversion}
+b_\alpha=\sum_{\beta\le\alpha}a_\beta
+\prod_i\frac{\binom{\alpha_i}{\beta_i}}{\binom{d_i}{\beta_i}}.
+\end{equation}
+
+\begin{lemma}[Bernstein enclosure]\label{lem:bernstein}
+On $B$, $\min_\alpha b_\alpha\le p\le\max_\alpha b_\alpha$.
+\end{lemma}
+\begin{proof}
+For $0\le t_i\le1$, every $B_\alpha^d(t)$ is nonnegative and
+$\sum_\alpha B_\alpha^d(t)=1$, by the binomial theorem in each
+coordinate. Thus $p(x(t))$ is a convex combination of the coefficients.
+Identity~\eqref{eq:bernstein-conversion} follows by expressing each
+monomial $t^\beta$ in the tensor-product Bernstein basis; the univariate
+identity has coefficients $\binom{\alpha}{\beta}/\binom d\beta$.
+\end{proof}
+
+The enclosure is classical
+\cite{GarloffSmith2008,GarloffJanssonSmith2003}. The implementation contribution is to bind
+the exact polynomial, its original box, and the checked final row to
+the recorded partition and lower bounds. Adaptive subdivision can
+improve a weak enclosure without changing the validity argument.
+
+\begin{proposition}[Partition certificate]\label{prop:partition}
+Let $B_1,\ldots,B_N$ be finitely many closed boxes whose union is $B$,
+and suppose $L_j\le\inf_{B_j}p$ is verified for each $j$. Then
+$L=\min_jL_j\le\inf_Bp$. The same conclusion holds for a finite interval
+partition and any expression with a verified interval enclosure on every
+cell.
+\end{proposition}
+\begin{proof}
+Every $x\in B$ belongs to a checked cell $B_j$, where
+$p(x)\ge L_j\ge\min_iL_i$.
+\end{proof}
+
+The coverage premise is essential. Checking all supplied cells while
+accepting an omitted end interval would not prove the claimed bound.
+The certificate checker must start from the trusted original domain and
+verify the entire subdivision, including endpoints. A cache key also
+needs the expression, direction, and domain: reusing a valid bound from a
+smaller domain on a larger domain is unsound.
+
+\subsection{Supported elementary expressions and explicit failure}
+
+For a supported elementary expression, outward ball or interval
+arithmetic supplies an enclosure for the support objective on each
+interval. Rational constants and final binary coefficients are embedded
+exactly. Expression evaluation must retain domain requirements: a
+logarithm needs a positive argument; division needs a denominator
+excluding zero; powers require their stated real domain. Algebraic
+simplification is not permission to remove the original expression's
+domain restrictions.
+
+If a pole, invalid domain, nonfinite enclosure, unsupported operation, or
+resource limit prevents a complete bound, the procedure returns that
+status. An exhausted direction search means only that no checked useful
+cut was obtained within its budget. It does not prove that a point lies
+in a hull, that the original constraints hold, or that the domain is
+empty. Even a successfully checked cut need not be violated enough to
+justify insertion into the LP.
+
+The elementary support calculation can also use a curvature correction.
+If the scalar direction $p$ is twice continuously differentiable on
+$[a,b]$ and a verified bound gives $p''\le M$, then
+\begin{equation}\label{eq:chord-correction}
+\min_{[a,b]}p\ge
+\min\{p(a),p(b)\}-\max\{0,M\}\,(b-a)^2/8.
+\end{equation}
+Indeed, $p(t)-Mt^2/2$ is concave, so its chord inequality rearranges to
+$p(t)\ge\operatorname{chord}_p(t)-M(t-a)(b-t)/2$.
+Use $(t-a)(b-t)\le(b-a)^2/4$ when $M\ge0$; for $M<0$, the
+chord itself is a lower bound. Verified lower endpoint values can
+replace $p(a)$ and $p(b)$. The implementation first checks all feature
+domains, including zero-weight features, then uses the maximum of this
+bound and available natural enclosures. An unavailable derivative bound
+or singular derivative disables this optional strengthening; it does
+not license removing a domain endpoint.
+
+The supported grammar, actual certificate schema, and solver binding
+are stated with their implementation in Section~\ref{sec:implementation}.
+Neither Python's rational arithmetic nor the interval library is
+formally verified here. Replay reduces the trusted computational path
+and catches mismatched artifacts; it is not a proof of the underlying
+software stack.
+

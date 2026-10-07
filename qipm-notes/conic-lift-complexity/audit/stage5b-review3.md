@@ -4,7 +4,7 @@ I found no confirmed major or minor defect requiring correction in the five revi
 
 ## Scope and independence
 
-I read `/home/sgusev/repo/qipm/AGENTS.md` and all 2,286 lines of `sections/12a-resource-ledgers.tex`, `12b-work-contracts.tex`, `12c-newton-comparisons.tex`, `12d-query-output.tex`, and `12e-active-compilers.tex`, end to end. I did not read the other Stage 5B reviewers' reports, author reports, or `root-stage5b-checks`, and did not edit the manuscript. I consulted `audit/source-map.md`, relevant workbench derivations, local primary literature, and online primary sources. I used the required qipm Python interpreter for independent numerical checks. I did not rebuild the shared manuscript during this review.
+I read `/workspace/qipm/AGENTS.md` and all 2,286 lines of `sections/12a-resource-ledgers.tex`, `12b-work-contracts.tex`, `12c-newton-comparisons.tex`, `12d-query-output.tex`, and `12e-active-compilers.tex`, end to end. I did not read the other Stage 5B reviewers' reports, author reports, or `root-stage5b-checks`, and did not edit the manuscript. I consulted `audit/source-map.md`, relevant workbench derivations, local primary literature, and online primary sources. I used the required qipm Python interpreter for independent numerical checks. I did not rebuild the shared manuscript during this review.
 
 ## Mathematical checks
 

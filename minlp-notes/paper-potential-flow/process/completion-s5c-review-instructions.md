@@ -1,6 +1,6 @@
 # Stage 5c independent review instructions
 
-Review only the frozen Stage 5c changes in `/home/sgusev/repo/minlp-notes-potential-flow`. Paper A is `paper-potential-flow/complexity`; Paper B is outside scope. Read all of `sections/10-weighted-blocks.tex`, its integration and new citations, and every earlier theorem/proof on which its reasoning materially depends. Inspect `completion-s5c-build.json`, `completion-s5c-checks.json`, and the new diagnostic code. Check the source hash at the beginning and end. The lead will supply the frozen hash when dispatching you.
+Review only the frozen Stage 5c changes in `/workspace/minlp-notes-potential-flow`. Paper A is `paper-potential-flow/complexity`; Paper B is outside scope. Read all of `sections/10-weighted-blocks.tex`, its integration and new citations, and every earlier theorem/proof on which its reasoning materially depends. Inspect `completion-s5c-build.json`, `completion-s5c-checks.json`, and the new diagnostic code. Check the source hash at the beginning and end. The lead will supply the frozen hash when dispatching you.
 
 Do not read the author report, lead notes, adjudications, historical reviews, or another Stage 5c reviewer report. Do not communicate with other reviewers. Work independently. Do not edit manuscript, bibliography, diagnostic code, managed literature, or any Paper B file. You own only the report path assigned by the lead. No commits. Do not spawn agents.
 

@@ -1,0 +1,48 @@
+# Guarded KAN replay recipe of artifact/README.md (section "Guarded KAN replay"), run as written
+# in a fresh copy of the archive tree: WORK=/tmp/suppgrp/kanwork (paper-open-minlplib and research-20260929 copied with cp -a).
+# Setup: the export, mkdir, cp and ln lines of the README setup block. Instead of the venv, PYTHONUSERBASE
+# points to the user site that holds mpmath (system Python 3.13.11, NumPy 2.5.1, SciPy 1.18.0, mpmath 1.3.0, the pinned versions);
+# the validator, input preparation and make_tables.py were not run. Command: taskset -c 0 bash kan-recipe-test.sh (one core).
+# Started 2026-10-05T05:41:40Z.
+kan_r3_h1_n4 PASS: as archived except time; no guard trigger; bound >= reported L []
+kan_r3_h1_n5 PASS: as archived except time; no guard trigger; bound >= reported L []
+kan_r3_h1_n9 PASS: as archived except time; no guard trigger; bound >= reported L []
+
+real	1m28.174s
+user	1m27.217s
+sys	0m0.750s
+exit 0
+# Finished 2026-10-05T05:43:09Z.
+# Negative control of the comparison step: the replayed kan_r3_h1_n5 result with 'processed' raised by one.
+kan_r3_h1_n5 FAIL ['processed']
+# Script kan-recipe-test.sh (README setup lines and the README recipe block, unchanged except the PYTHONUSERBASE line):
+#   #!/bin/bash
+#   set -e
+#   WORK=/tmp/suppgrp/kanwork; cd "$WORK"
+#   export HOME="$WORK/home" XDG_CACHE_HOME="$WORK/home/.cache"
+#   export TMPDIR="$WORK/tmp" PIP_NO_CACHE_DIR=1 PYTHONDONTWRITEBYTECODE=1
+#   R="$WORK/research-20260929"; P="$WORK/paper-open-minlplib"
+#   export MINLP_REPO_ROOT="$WORK" EG_AUDIT_R="$R" MINLPLIB_OSIL_ROOT="$WORK/osil"
+#   export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
+#   export NUMEXPR_NUM_THREADS=1
+#   mkdir -p "$TMPDIR" "$MINLPLIB_OSIL_ROOT" "$HOME/.cache/minlplib/minlplib"
+#   cp "$R"/publication/minlplib-status/pages/models/osil/*.osil \
+#      "$MINLPLIB_OSIL_ROOT"
+#   ln -s "$MINLPLIB_OSIL_ROOT" "$HOME/.cache/minlplib/minlplib/osil"
+#   export PYTHONUSERBASE=/workspace/local-home/.local  # test only: stands in for the venv of the setup (mpmath is a user-site package here)
+#   A="$P/development/reviews/round1/kan-guard"   # archived guarded code and logs
+#   G="$WORK/kan-guard"; mkdir -p "$G/logs"
+#   cp "$A/kan_bnb_rigexp.py" "$G/"
+#   export PYTHONPATH="$R/reviews/wave3-verification:$R/open-instances-wave3/kan"
+#   for n in kan_r3_h1_n4 kan_r3_h1_n5 kan_r3_h1_n9; do  # r5: kan_r5_h1_n3 kan_r5_h1_n5 kan_r5_h1_n8
+#     python -u "$G/kan_bnb_rigexp.py" "$n" 4e-11 7200 1024 > "$G/logs/$n.guard.log" 2>&1
+#     python - "$n" "$A/logs/$n.bnb.json" "$G/logs/$n.bnb.json" "$P/data/numbers.json" <<'PY'
+#   import json, sys
+#   from fractions import Fraction
+#   n, old, new, numbers = sys.argv[1], *(json.load(open(f)) for f in sys.argv[2:])
+#   diff = sorted(k for k in old.keys() | new.keys() if k != 'time' and old.get(k) != new.get(k))
+#   ok = (not diff and new['done'] and new['open'] == 0 and new['minquad_stats']['guard_entries'] == 0
+#         and Fraction(new['lower_bound']) >= Fraction(numbers['kan'][n]['L']['exact']))
+#   print(n, 'PASS: as archived except time; no guard trigger; bound >= reported L' if ok else 'FAIL', diff)
+#   PY
+#   done

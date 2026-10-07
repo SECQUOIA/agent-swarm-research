@@ -6,7 +6,7 @@ I read the final review instructions in full and read the abstract, introduction
 
 ## Freeze and integrity
 
-The review checkout was `/home/sgusev/repo/minlp-notes-potential-flow`. I checked the supplied manifest and all of its source/payload groups at the beginning and repeated the integrity check after the work. The source/archive checks agreed at both points; I also separately verified the extracted internal manifest:
+The review checkout was `/workspace/minlp-notes-potential-flow`. I checked the supplied manifest and all of its source/payload groups at the beginning and repeated the integrity check after the work. The source/archive checks agreed at both points; I also separately verified the extracted internal manifest:
 
 - `process/completion-s7-manifest.json`: `996816b32ef7c78a5d66ddc0535845575d8e31c968387f97cd6add45b3b1e915`.
 - `dist/potential-flow-paper-a.tar.gz`: `ccdb3657677749bba4e2aa3233ce159dfd90c0ddb3f8dbed21c0ad242a162978`.
@@ -173,8 +173,8 @@ I inspected `reproducibility/README.md`, `build_paper.py`, `reproduce.py`, and `
 
 ```sh
 python paper-potential-flow/reproducibility/build_paper.py
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python -S paper-potential-flow/reproducibility/reproduce.py --output /tmp/s7r1-exact.json
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python paper-potential-flow/reproducibility/reproduce.py --numerical --output /tmp/s7r1-numerical.json
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python -S paper-potential-flow/reproducibility/reproduce.py --output /tmp/s7r1-exact.json
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python paper-potential-flow/reproducibility/reproduce.py --numerical --output /tmp/s7r1-numerical.json
 python paper-potential-flow/reproducibility/package.py
 ```
 

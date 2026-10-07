@@ -1,0 +1,243 @@
+\section{Exact support for quadratic blocks}\label{sec:quadratic}
+
+If every feature $f_j$ is a quadratic polynomial, then every support
+problem~\eqref{eq:support} asks for the minimum of a single quadratic
+function over the block domain. This section gives two exact rational
+algorithms for that problem. The first works for any bounded polytope of
+small dimension; the second works for quadratic stars of any size whose
+constraints couple the center with one leaf at a time. Both return an
+attained minimizer and a rational minimum, so they serve as exact support
+oracles and give support inequalities that are tight.
+
+\subsection{Bounded polytopes in fixed dimension}\label{sec:polytope}
+
+Let $P=\{x\in\R^d:Ax\le b\}$ be a bounded polytope given by $m$ rational
+rows, which include finite variable bounds, and let
+$q(x)=\tfrac12x\T Hx+c\T x+c_0$ with rational data and $H=H\T$. The matrix
+$H$ may be indefinite or singular, $P$ may be lower-dimensional, and rows
+may be redundant or implied equalities; an equality is given by two
+opposite rows. For a set $I$ of rows, $A_I$ and $b_I$ denote the
+corresponding submatrix and subvector, and
+\begin{equation}\label{eq:kkt-system}
+M_I=\begin{pmatrix}H&A_I\T\\ A_I&0\end{pmatrix},\qquad
+M_I\begin{pmatrix}x\\ \mu\end{pmatrix}=\begin{pmatrix}-c\\ b_I\end{pmatrix}.
+\end{equation}
+The \emph{candidates} are the points $x$ obtained from all sets $I$ with
+$\abs I\le d$ for which $M_I$ is nonsingular and $Ax\le b$ holds. The
+multipliers $\mu$ are not sign-restricted: the system expresses
+stationarity on the affine hull of a face, not a KKT condition.
+
+\begin{theorem}[Exact quadratic support on a polytope]\label{thm:polytope}
+If $P\ne\emptyset$, some candidate minimizes $q$ over $P$; hence the least
+candidate value is $\min_Pq$, and it is attained at a rational point. If
+there is no candidate, then $P=\emptyset$. Both statements remain true if
+only sets $I$ of linearly independent rows are enumerated.
+\end{theorem}
+
+The proof (Appendix~\ref{app:polytope}) chooses a global minimizer in the
+relative interior of a face of smallest dimension and shows that $H$ is
+positive definite on the face's direction space, so that a nonsingular
+system~\eqref{eq:kkt-system} of independent active rows has this minimizer
+as its solution. The sign of the multipliers and the inertia of $H$ need not
+be tested, because extra candidates, such as saddle points of faces, are
+feasible and cannot produce a value below the minimum. Dependent rows never
+give a nonsingular $M_I$, so duplicate, redundant and opposite rows are
+harmless. Two parts of the argument cannot be dropped. Boundedness is needed:
+for $P=\{x\in\R:x\ge0\}$ and $q=-x$ the enumeration returns $0$, and for
+$P=\R$ and $q=x$ it returns no candidate. The choice of a minimizer on a face
+of minimal dimension is also needed: for $q=(x-y)^2$ on $[0,1]^2$, the
+minimizers $(t,t)$ with $0<t<1$ give only singular systems, and the
+enumeration finds the minimizers $(0,0)$ and $(1,1)$ instead.
+
+\begin{corollary}[Support of a quadratic feature graph]\label{cor:quad-features}
+If $f_1,\dots,f_p$ are quadratic polynomials with rational coefficients and
+$(a,b)$ is rational, the support value $h_P(a,b)$ is the rational number
+obtained by applying Theorem~\ref{thm:polytope} to $q=a\T x+b\T F$, and the
+support inequality is tight at the returned minimizer.
+\end{corollary}
+
+There are at most $N(m,d)=\sum_{j=0}^d\binom mj$ sets $I$. For each,
+Gaussian elimination on a system of order at most $2d$ and the feasibility
+test take $O(d^3+md)$ arithmetic operations, so the enumeration uses
+$O(N(m,d)(d^3+md))$ operations. With fraction-free elimination, every
+intermediate number is a minor of an integer matrix of order at most $2d$,
+and Hadamard's inequality bounds the bit length of every candidate and of
+the minimum by $O(d(\langle q\rangle+\langle A\rangle+\log d))$, where
+$\langle q\rangle$ is the encoding length of $q$ and $\langle A\rangle$ the
+largest encoding length of a row (Appendix~\ref{app:polytope}). For fixed
+$d$ the algorithm is therefore strongly polynomial, and the minimum has
+polynomial encoding length, in line with the result that quadratic
+programming is in NP \citep{Vavasis1990}. The method is total enumeration of
+faces \citep[Section~2.9]{Murty1997}; what we add is the treatment of the
+degenerate cases that a certificate must cover.
+
+Without a bound on the dimension the problem is hard. The following facts
+are folklore \citep[Section~2.3]{BurerLetchford2009}; Appendix~\ref{app:polytope}
+gives the short proofs.
+
+\begin{proposition}[Hardness in unrestricted dimension]\label{prop:maxcut}
+Computing $\min_{x\in[0,1]^n}q(x)$ for rational quadratics $q$ is strongly
+NP-hard, even when $q$ is multilinear with integer coefficients of absolute
+value at most $n$. Deciding whether a given inequality $q(x)\ge t$ holds on
+$[0,1]^n$ is coNP-complete.
+\end{proposition}
+
+Unless NP${}={}$coNP, the validity of an exact support cut for a quadratic
+block of unrestricted size therefore has no short certificate that can be
+checked in polynomial time, and a certificate that is replayed by repeating
+the enumeration, as ours is, is natural for this class. Useful exact oracles
+must restrict the dimension, as in Theorem~\ref{thm:polytope}, or the
+structure, as in the next subsection. Restricting the interaction graph alone
+is not enough: box-constrained quadratic minimization is strongly NP-hard
+already at treewidth two, and quartic minimization already on paths
+\citep[Theorems~2 and~3]{DelPiaKhajavirad2026}.
+
+\subsection{Quadratic stars with center--leaf constraints}\label{sec:star}
+
+Section~\ref{sec:composition} shows that the blocks worth merging are often
+stars: several pairs that share one variable. For stars there is an exact
+algorithm whose cost is nearly linear in the size of the block. Let $y$ be
+the center and $x_1,\dots,x_k$ the leaves, and consider
+\begin{equation}\label{eq:star}
+q(y,x)=c_0+c_1y+c_2y^2+\sum_{i=1}^k\bigl(\alpha_ix_i^2+(\beta_iy+\gamma_i)x_i\bigr)
+\end{equation}
+with rational coefficients of arbitrary signs. The domain $\Omega$ is given by
+finite rational bounds on all variables and by rational affine rows, each of
+which involves $y$ and \emph{at most one} leaf; an equality is given as two
+rows. Every scalarization $a\T(y,x)+b\T F(y,x)$ of a vector $F$ of quadratics
+with this interaction pattern has the form~\eqref{eq:star}. Rows that couple
+two leaves are excluded, because with them the problem is NP-hard already
+without a center: $\min\sum_ix_i(1-x_i)$ over $0\le x\le1$ and
+$\sum_ia_ix_i=b$ is zero exactly when the subset-sum instance $(a,b)$ is
+feasible \citep{Karp1972}; compare \citet{MoreVavasis1990}.
+
+For fixed $y$, the rows of leaf $i$ restrict $x_i$ to an interval
+$[L_i(y),U_i(y)]$, where $L_i$ is the maximum of the affine lower bounds and
+$U_i$ the minimum of the affine upper bounds that these rows and the leaf
+bounds define. Thus $L_i$ is convex and $U_i$ concave, both piecewise
+affine. The set $J_i=\{y:L_i(y)\le U_i(y)\}$ is an interval because $L_i-U_i$
+is convex. Given $y$, the leaves are constrained independently, so the
+projection of $\Omega$ onto $y$ is the interval $I$ obtained by intersecting
+the bounds of $y$, the rows in $y$ alone, and all $J_i$. If $I$ is empty, so
+is $\Omega$.
+
+\begin{theorem}[Exact support on constrained stars]\label{thm:star}
+Let $m$ be the number of rows that involve a leaf and $m_0$ the number of
+rows in $y$ alone, and suppose $\Omega$ is nonempty. Then $\min_\Omega q$ is
+attained at a rational point, and it can be computed, together with a
+minimizer and a partition of $I$ into at most $2m+4k+1$ intervals on each of
+which every leaf has an affine minimizer, with $O(m_0+(m+k)\log(m+k))$
+arithmetic operations and comparisons. All numbers involved have bit length
+polynomial in the input length; the breakpoints have bit length bounded
+independently of $k$.
+\end{theorem}
+
+\begin{proof}
+Define $\varphi_i(y)=\min\{\alpha_ix_i^2+(\beta_iy+\gamma_i)x_i:L_i(y)\le x_i\le U_i(y)\}$
+for $y\in I$, so that $\min_\Omega q=\min_{y\in I}V(y)$ with
+$V(y)=c_0+c_1y+c_2y^2+\sum_i\varphi_i(y)$. Let $s_i=m_i+2$ be the number of
+affine functions that define $L_i$ and $U_i$, where $m_i$ is the number of
+rows of leaf $i$; together $L_i$ and $U_i$ have at most $s_i-2$ breakpoints.
+
+If $\alpha_i>0$, the minimizer is $\xi_i=\max\{L_i,\min\{v_i,U_i\}\}$ with
+the affine function $v_i(y)=-(\beta_iy+\gamma_i)/(2\alpha_i)$. The function
+$v_i-L_i$ is concave and $v_i-U_i$ convex, so each has at most two isolated
+zeros, and $\xi_i$ is affine between consecutive points of a set of at most
+$s_i+2$ breakpoints. If $\alpha_i\le0$, a minimizer is an endpoint of the
+interval, and
+\begin{equation}\label{eq:endpoint-factor}
+\psi_i(U_i)-\psi_i(L_i)=(U_i-L_i)\bigl(\alpha_i(U_i+L_i)+\beta_iy+\gamma_i\bigr),
+\qquad\psi_i(t)=\alpha_it^2+(\beta_iy+\gamma_i)t .
+\end{equation}
+The first factor is nonnegative on $I$. On each of the at most $s_i-1$
+intervals where $L_i$ and $U_i$ are affine, the second factor is affine and
+has at most one zero, which decides the preferred endpoint; this gives at
+most $2s_i-3$ breakpoints. Taking all breakpoints together splits $I$ into at
+most $\sum_i2s_i+1=2m+4k+1$ intervals on which every leaf rule is affine and
+$V(y)=q(y,\xi(y))$ is a quadratic polynomial in $y$.
+
+Each $\varphi_i$ is continuous on $I$, since it is the minimum of a continuous
+function over an interval whose endpoints depend continuously on $y$. Hence
+$V$ agrees with the quadratic of each interval on its closure, and the
+minimum of $V$ is the least value of these quadratics at the interval
+endpoints and, where the leading coefficient is positive, at interior
+stationary points. All breakpoints and all endpoints of $I$ are zeros of
+affine functions with rational coefficients, so every candidate is rational,
+and the minimizing $y$ together with $x_i=\xi_i(y)$ is a rational minimizer.
+
+For the operation count, intersecting the bounds of $y$ with the $m_0$ rows
+in $y$ alone costs $O(m_0)$. The upper envelope of $s_i$ lines is computed by
+sorting slopes and one stack-based scan in $O(s_i\log s_i)$ operations, and
+$J_i$, the breakpoints and the rules of leaf $i$ in $O(s_i)$ more. Sorting all
+breakpoints costs $O((m+k)\log(m+k))$. A sweep over the sorted breakpoints
+maintains the three coefficients of $V$; at each breakpoint only the leaves
+whose rule changes are updated, so the sweep takes $O(m+k)$ operations. Bit
+lengths are bounded in Appendix~\ref{app:star}.
+\end{proof}
+
+The bound on the number of intervals is tight up to a constant factor: a
+single concave leaf whose bounds zigzag forces $2s_i-3$ rule changes, and $k$
+hinge leaves force $k$ more, so the partition can need $\Theta(m+k)$
+intervals. On instances with $m=\Theta(k)$, the operation bound is optimal up
+to a constant factor for algebraic computation trees: by Ben-Or's theorem,
+applied to a family of instances with $3r$ leaves and $r$ rows whose decision
+set has $r!$ connected components, deciding whether the minimum is at least a
+given value requires $\Omega((m+k)\log(m+k))$ operations
+(Appendix~\ref{app:star}).
+
+\paragraph{Relation to forest algorithms.}
+\citet{DelPiaKhajavirad2026} solve box-constrained quadratic programs on
+forests with $O(n^2)$ arithmetic operations. After an affine scaling of each
+variable to $[0,1]$, a box-constrained star is such a forest, and their
+dynamic program rooted at the center specializes to the box-constrained case
+of Theorem~\ref{thm:star}; in that case our contribution is only the
+$O(k\log k)$ count, which replaces their $O(k^2)$ merge at the root. Rows
+that couple the center with a leaf are outside their model. A shear
+$x_i\mapsto x_i-\rho y$ turns a leaf domain that is a parallelogram with two
+vertical sides back into a box and keeps the star structure, but triangles,
+trapezoids with nonparallel sides and polygons with more sides cannot be
+reduced in this way. Such rows also break the structural property on which
+their algorithm rests: the conditional value of a leaf is then no longer a
+minimum of affine functions of $y$ over a fixed set, and it can have convex
+kinks. For example, for $x\in[0,1]$ with rows $x\ge y-\tfrac12$ and
+$x\ge\tfrac12-y$, the minimum of $x$ is $\abs{y-\tfrac12}$. The SOC
+descriptions of star hulls by \citet{DeyKhajavirad2025} assume sign patterns
+of the square terms and box domains, and the LP approximations of
+\citet{BienstockMunoz2018} allow constraints but are approximate. Our
+algorithm conditions on the center, as nonserial dynamic programming does
+\citep{BerteleBrioschi1972}, and solves a one-parameter quadratic problem for
+each leaf, a special case of multiparametric quadratic programming
+\citep{Bemporad2002}; \citet{BhathenaEtAl2025} use parametric dynamic
+programs of this kind on trees for convex quadratic problems with
+indicators. To our knowledge, no exact algorithm for nonconvex stars with
+center--leaf rows has been published.
+
+\begin{remark}[Deeper trees]\label{rem:trees}
+The argument uses that every vertex other than the center is a leaf. On the
+path $x_1$--$x_2$--$x_3$ over $[0,1]^3$ with
+$f=(x_2-\tfrac18)x_1+x_2^2-x_2+x_2x_3+x_3^2-x_3$, the conditional value of the
+subtree $\{x_1,x_2\}$ given $x_3=t$ is
+$\min\{-\tfrac18,\,-\tfrac14(1-t)^2\}$, which switches at the irrational point
+$t=1-\sqrt2/2$, although $\min f=-\tfrac38$ is rational
+(Appendix~\ref{app:star}). Rooted at $x_2$, the same path is a star, and
+Theorem~\ref{thm:star} gives a rational partition; the obstruction concerns
+nesting conditional values along a tree of depth two.
+\citeauthor{DelPiaKhajavirad2026} handle such breakpoints for boxes with an
+explicit algebraic representation; we do not know whether edge-local affine
+rows can be added to deeper trees with a polynomial algorithm.
+\end{remark}
+
+The certificate of a star support value records the partition of $I$, the
+affine rule of every leaf on every piece, the quadratic of $V$ on every piece
+and the candidates; a checker rebuilds the partition from the rows and
+coefficients and compares. The star oracle in our implementation is simpler
+than the algorithm of the proof: it splits the center interval at all
+pairwise intersections of each leaf's bound lines and recomputes every leaf
+rule on every piece. This costs $O((m+k)^3)$ operations, stores $\Theta(k)$
+rules per piece, and can produce more pieces than Theorem~\ref{thm:star}
+requires. It certified the star cuts of our first implementation, whose
+stars had at most four leaves (Appendix~\ref{app:campaigns12}); in the
+experiments of Section~\ref{sec:computations} every block had at most four
+variables, and the polytope oracle certified every quadratic cut.
+Section~\ref{sec:star-bench} compares the two star algorithms on random
+stars with up to $10^4$ leaves.

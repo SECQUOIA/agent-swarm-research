@@ -1,0 +1,983 @@
+\section{Proofs for integer recourse}\label{app:int}
+
+This appendix proves the results of \cref{sec:int}. \Cref{app:int:solver}
+proves the exact box solver, \cref{app:int:native} the native integer
+theorems and the oracle statements, \cref{app:int:flows} the flow results,
+\cref{app:int:tu} the totally unimodular extension, and
+\cref{app:int:strong-field,app:int:lowrank} the strong-noise and low-rank
+results. The tools \ref{it:app:rec:local}--\ref{it:app:rec:faces} of
+\cref{app:rec:tools} are used freely. We also use the following univariate
+facts \citep{basu2006-algorithms-in-real-algebraic-geometry,mehlhorn2015-from-approximate-factorization-to-root}: for integer
+polynomials of degree at most $\delta$ and coefficient bit length at most
+$\tau$, greatest common divisors, exact quotients, squarefree parts, modular
+inverses, resultants, isolation of all real roots by disjoint rational
+intervals, the sign of another such polynomial at an isolated root, and
+refinement of an isolating interval to width $2^{-q}$ take
+$\poly(\delta,\tau,q)$ bit operations with an absolute exponent, and every
+intermediate result has degree and bit length bounded by a polynomial in
+$\delta,\tau$. Every nonzero root $t$ of an integer polynomial
+$\sum_ja_jt^j$ with $a_0\ne0$ satisfies
+$\abs t\ge\abs{a_0}/(\abs{a_0}+\max_{j\ge1}\abs{a_j})$, by Cauchy's bound applied
+to the reversed polynomial.
+
+\subsection{The exact box solver}\label{app:int:solver}
+
+Let $f$ and $B=\prod_{i=1}^k[\ell_i,u_i]$ be as in \cref{thm:int:solver}.
+Substitute the coordinates with $\ell_i=u_i$; then every interval is
+nondegenerate. A \emph{face} $\Phi$ is a partition of $[k]$ into sets
+$\mathsf L,\mathsf U,\mathsf F$ of coordinates fixed at the lower bound,
+fixed at the upper bound, and free. Write $r=\abs{\mathsf F}$ and
+$f_\Phi(y)$, $y\in\R^r$, for $f$ with the fixed coordinates substituted; its
+degree is at most $d$. Let $D$ be the least even integer greater than $d$,
+let $a=D-1\ge d$, and let $z$ be an indeterminate. For a face with $r\ge1$
+put
+\begin{equation}\label{eq:app:int:system}
+ g_i(y)=y_i^a+\frac zD\,\partial_if_\Phi(y)\qquad(i\in\mathsf F).
+\end{equation}
+For a real $z=1/\varepsilon>0$ these are the stationary equations of
+$f_\Phi(y)+\varepsilon\sum_{i\in\mathsf F}y_i^D$ divided by $\varepsilon D$, and
+$f+\varepsilon\sum_{i=1}^kx_i^D$ restricted to the face is this function plus a
+constant. Let $\mathcal M=\{y^e:0\le e_i<a\}$ and $N=\abs{\mathcal M}=a^r$.
+
+\paragraph{The algorithm.}
+For every face: if $r=0$, the vertex is a candidate. If $r\ge1$:
+\begin{enumerate}[label=(\arabic*)]
+\item Compute the normal forms of all monomials of total degree at most
+$R=r(a-1)+1$ with respect to \eqref{eq:app:int:system}, in order of increasing
+degree: a monomial in $\mathcal M$ is its own normal form, and otherwise
+$\mathrm{NF}(y_i^ay^{e'})=-\frac zD\sum_\mu c_\mu\mathrm{NF}(y^\mu y^{e'})$,
+where $\partial_if_\Phi=\sum_\mu c_\mu y^\mu$. Read off the matrices
+$M_i(z)\in\Q[z]^{N\times N}$ of multiplication by $y_i$ in the basis
+$\mathcal M$.
+\item For $t=0,1,\ldots,Q_r-1$, $Q_r=1+(r-1)(N+\binom N2)$, let
+$\lambda=(1,t,\ldots,t^{r-1})$ and $M_\lambda=\sum_i\lambda_iM_i$. Compute
+$\chi(z,T)=\det(TI-M_\lambda)$ and, for $i\in\mathsf F$,
+$\chi_i(z,T)=-\partial_u\det(TI-M_\lambda-uM_i)\vert_{u=0}$, by interpolation in
+$(z,T,u)$.
+\item Let $K_\lambda=\deg_z\chi$ and $p=[z^{K_\lambda}]\chi\in\Q[T]$. Skip the
+form if $p$ is constant, if some $\deg_z\chi_i>K_\lambda$, if
+$G=\gcd(p,p')$ does not divide $b_i=[z^{K_\lambda}]\chi_i$ for some $i$, or if
+$\gcd(p'/G,p/G)\ne1$. Otherwise let $P=p/G$, $A=p'/G$, $B_i=b_i/G$, and
+$r_i=B_iA^{-1}\bmod P$.
+\item For every real root $\theta$ of $P$, keep the point with free coordinates
+$r_i(\theta)$ and the fixed coordinates of the face if it lies in $B$; the
+membership test consists of signs of $r_i-\ell_i$ and $u_i-r_i$ at $\theta$.
+\end{enumerate}
+Among all kept points and vertices, return the first one of least value in
+a fixed order, compared exactly by \cref{lem:int:values}.
+
+\begin{lemma}[Quotient algebra]\label{lem:int:quotient}
+Let $\mathbb F$ be a field containing $\Q$ and $\zeta\in\mathbb F$, or let
+$\mathbb F$ contain $\Q(z)$ and $\zeta=z$. Under every degree-compatible monomial
+order, the polynomials $g_i$ with $z=\zeta$ form a Gr\"obner basis of the ideal
+$\mathcal I_\zeta\subseteq\mathbb F[y]$ they generate, $\mathcal M$ is a basis
+of $\mathbb F[y]/\mathcal I_\zeta$, and the matrices of multiplication by $y_i$
+in this basis are $M_i(\zeta)$. They commute.
+\end{lemma}
+
+\begin{proof}
+The term $y_i^a$ has coefficient one and degree $a$, and every other term of
+$g_i$ has degree at most $d-1<a$. So the leading monomials are $y_i^a$
+whatever $\zeta$ is, and they are pairwise coprime. By Buchberger's first
+criterion all S-polynomials reduce to zero, so the $g_i$ form a Gr\"obner basis,
+and the monomials not divisible by any $y_i^a$, namely $\mathcal M$, form a
+basis of the quotient \citep{cox2015-ideals-varieties-and-algorithms}. Reduction by the $g_i$
+divides only by the leading coefficient one, so the normal form of a monomial
+is the specialization at $\zeta$ of the normal form computed over $\Q[z]$.
+Each recursion step of the algorithm lowers the total degree by at least
+$a-(d-1)\ge1$, so the normal forms of all monomials of degree at most $R$,
+which include $y_i\mu$ for $\mu\in\mathcal M$, are computed. Multiplication
+operators of a commutative algebra commute.
+\end{proof}
+
+Let $\mathcal P$ be the field of Puiseux series
+$\bigcup_{m\ge1}\overline\Q((\varepsilon^{1/m}))$; it is algebraically closed
+\citep{basu2006-algorithms-in-real-algebraic-geometry}. Embed $\Q(z)$ in $\mathcal P$ by $z\mapsto\varepsilon^{-1}$.
+For $s\in\mathcal P$ let $\operatorname{val}(s)$ be its least exponent, and for a
+vector or a polynomial in $T$ the least valuation of its entries or
+coefficients.
+
+\begin{lemma}[Joint eigenvalues]\label{lem:int:triangular}
+There are points $\xi^{(1)},\ldots,\xi^{(N)}\in\mathcal P^r$, not necessarily
+distinct, such that every $\xi^{(t)}$ is a common zero of the $g_i$ (with
+$z=\varepsilon^{-1}$) and $\det\bigl(TI-\sum_i\lambda_iM_i(\varepsilon^{-1})\bigr)
+=\prod_{t=1}^N(T-\lambda^{\mathsf T}\xi^{(t)})$ for every $\lambda\in\mathcal P^r$.
+\end{lemma}
+
+\begin{proof}
+Commuting matrices over an algebraically closed field are simultaneously
+upper triangularizable \citep{horn2013-matrix-analysis}. Let $\Pi$ triangularize all
+$M_i(\varepsilon^{-1})$, and let $\xi^{(t)}_i$ be the $t$th diagonal entry of
+$\Pi^{-1}M_i\Pi$. Then $\Pi^{-1}M_\lambda\Pi$ is triangular with diagonal
+entries $\lambda^{\mathsf T}\xi^{(t)}$, which gives the determinant. For a
+polynomial $h$, let $M_h$ be the matrix of multiplication by $h$; the map
+sending $h$ to the $t$th diagonal entry of $\Pi^{-1}M_h\Pi$ is a ring
+homomorphism, because diagonal entries of sums and products of upper triangular
+matrices are sums and products of diagonal entries. It sends $y_i$ to
+$\xi^{(t)}_i$ and every element of the ideal to $0$. So $g_i(\xi^{(t)})=0$.
+\end{proof}
+
+Call $t$ \emph{bounded} if $\operatorname{val}(\xi^{(t)})\ge0$, and let
+$v^{(t)}\in\overline\Q^r$ be the vector of its $\varepsilon^0$-coefficients, its
+\emph{limit}. Otherwise let $s_t=-\operatorname{val}(\xi^{(t)})>0$ and let
+$w^{(t)}\ne0$ be the vector of $\varepsilon^{-s_t}$-coefficients, its
+\emph{leading pole}. Let $\mathcal L$ be the set of distinct limits, $\mu_v\ge1$
+the number of bounded $t$ with limit $v$, $\kappa=\sum_{t\text{ unbounded}}s_t$,
+and $C(\lambda)=\prod_{t\text{ unbounded}}(-\lambda^{\mathsf T}w^{(t)})$, a nonzero
+polynomial. Write
+$\chi(\lambda,z,T)=\det(TI-\sum_i\lambda_iM_i(z))=\sum_mc_m(\lambda,T)z^m$ with
+$c_m\in\Q[\lambda,T]$.
+
+\begin{lemma}[The leading coefficient]\label{lem:int:leading}
+The number $\kappa$ is an integer, $c_m=0$ for $m>\kappa$, and
+$c_\kappa(\lambda,T)=C(\lambda)\prod_{v\in\mathcal L}(T-\lambda^{\mathsf T}v)^{\mu_v}$
+as polynomials in $(\lambda,T)$.
+\end{lemma}
+
+\begin{proof}
+Let $\lambda\in\overline\Q^r$ satisfy $\lambda^{\mathsf T}w^{(t)}\ne0$ for every
+unbounded $t$. For unbounded $t$, $\lambda^{\mathsf T}\xi^{(t)}$ has valuation
+$-s_t$ and leading coefficient $\lambda^{\mathsf T}w^{(t)}$, so
+$T-\lambda^{\mathsf T}\xi^{(t)}=(-\lambda^{\mathsf T}\xi^{(t)})
+(1-T/\lambda^{\mathsf T}\xi^{(t)})$, where the second factor is $1$ plus a
+polynomial of positive valuation. For bounded $t$,
+$T-\lambda^{\mathsf T}\xi^{(t)}$ is $T-\lambda^{\mathsf T}v^{(t)}$ plus a
+polynomial of positive valuation. By \cref{lem:int:triangular},
+\[
+ \varepsilon^\kappa\chi(\lambda,\varepsilon^{-1},T)
+ =C(\lambda)\prod_{v\in\mathcal L}(T-\lambda^{\mathsf T}v)^{\mu_v}+\Omega(T),
+ \qquad\operatorname{val}(\Omega)>0 .
+\]
+The left side equals $\sum_mc_m(\lambda,T)\varepsilon^{\kappa-m}$. Comparing the
+coefficients of each power of $T$ shows that $c_m(\lambda,\cdot)=0$ when
+$\kappa-m<0$, and that the $\varepsilon^0$-part of the left side equals the
+nonzero first term on the right; hence some $m$ equals $\kappa$, and
+$c_\kappa(\lambda,T)=C(\lambda)\prod_v(T-\lambda^{\mathsf T}v)^{\mu_v}$. These
+identities hold on the complement of finitely many hyperplanes in
+$\overline\Q^r$, so they hold as polynomial identities.
+\end{proof}
+
+Call a form $\lambda\in\Q^r$ \emph{good} for the face if
+$\lambda^{\mathsf T}w^{(t)}\ne0$ for every unbounded $t$ and
+$\lambda^{\mathsf T}v\ne\lambda^{\mathsf T}v'$ for distinct $v,v'\in\mathcal L$.
+
+\begin{lemma}[Recovery from one root]\label{lem:int:recovery}
+If $\lambda$ is good and $\mathcal L\ne\emptyset$, the form passes step~(3), and
+for every $v\in\mathcal L$ the number $\theta=\lambda^{\mathsf T}v$ is a root of
+$P$ with $r_i(\theta)=v_i$ for all $i$. If $\theta$ is real, $v$ is real.
+\end{lemma}
+
+\begin{proof}
+By \cref{lem:int:leading}, $K_\lambda=\kappa$ because $C(\lambda)\ne0$, and
+$p=C(\lambda)\prod_v(T-\alpha_v)^{\mu_v}$ with distinct $\alpha_v=\lambda^{\mathsf T}v$.
+Since $\chi(\lambda+ue_i,z,T)=\det(TI-M_\lambda-uM_i)$, we have
+$\chi_i=-\partial_{\lambda_i}\chi$; because $c_m\equiv0$ for $m>\kappa$, also
+$\deg_z\chi_i\le\kappa$ and $b_i=-\partial_{\lambda_i}c_\kappa$. Differentiating
+the identity of \cref{lem:int:leading},
+\[
+ b_i=-\frac{\partial C}{\partial\lambda_i}\prod_u(T-\alpha_u)^{\mu_u}
+ +C(\lambda)\sum_v\mu_vv_i\,(T-\alpha_v)^{\mu_v-1}\prod_{u\ne v}(T-\alpha_u)^{\mu_u},
+\]
+while $p'=C(\lambda)\sum_v\mu_v(T-\alpha_v)^{\mu_v-1}\prod_{u\ne v}(T-\alpha_u)^{\mu_u}$
+and $G=\gcd(p,p')$ is a constant times $\prod_v(T-\alpha_v)^{\mu_v-1}$. So $G$
+divides $b_i$, $P$ is a constant times $\prod_v(T-\alpha_v)$, and with a common
+constant $\kappa'\ne0$,
+\[
+ A(\alpha_v)=\kappa'\mu_v\prod_{u\ne v}(\alpha_v-\alpha_u)\ne0,\qquad
+ B_i(\alpha_v)=\kappa'\mu_vv_i\prod_{u\ne v}(\alpha_v-\alpha_u),
+\]
+because the first term of $b_i$ keeps a factor $T-\alpha_v$ after division by
+$G$, and $\mu_v\ne0$ in characteristic zero. Thus $\gcd(A,P)=1$ and
+$r_i(\alpha_v)=B_i(\alpha_v)/A(\alpha_v)=v_i$. The polynomials $A$ and $B_i$ have
+rational coefficients, so a real $\theta$ gives a real $v$.
+\end{proof}
+
+\begin{lemma}[Limits of real critical points]\label{lem:int:limits}
+Let $\varepsilon_m\downarrow0$, and let $y^{(m)}\in\R^r$ be common zeros of the
+$g_i$ with $z=1/\varepsilon_m$ that converge to $y^*$. Then $y^*\in\mathcal L$.
+\end{lemma}
+
+\begin{proof}
+Let $\lambda\in\Q^r$. The row vector $e=(\mu(y^{(m)}))_{\mu\in\mathcal M}$ is
+nonzero, because $1\in\mathcal M$, and satisfies
+$eM_i(1/\varepsilon_m)=y^{(m)}_ie$: evaluation at a common zero is well defined
+on the quotient. So $\lambda^{\mathsf T}y^{(m)}$ is an eigenvalue of
+$M_\lambda(1/\varepsilon_m)$, and by \cref{lem:int:leading}
+\[
+ 0=\varepsilon_m^\kappa\chi(\lambda,1/\varepsilon_m,\lambda^{\mathsf T}y^{(m)})
+ =\sum_{m'\le\kappa}c_{m'}(\lambda,\lambda^{\mathsf T}y^{(m)})\varepsilon_m^{\kappa-m'} .
+\]
+The arguments are bounded, so letting $m\to\infty$ gives
+$c_\kappa(\lambda,\lambda^{\mathsf T}y^*)=0$, that is,
+$C(\lambda)\prod_{v\in\mathcal L}(\lambda^{\mathsf T}(y^*-v))^{\mu_v}=0$ for all
+$\lambda\in\Q^r$. The polynomial on the left vanishes on the Zariski-dense set
+$\Q^r$, so it is zero; $C\ne0$ and the polynomial ring is a domain, so some
+linear factor $\lambda^{\mathsf T}(y^*-v)$ is identically zero. Hence $y^*=v$.
+If $\mathcal L$ were empty the same argument would give $C\equiv0$.
+\end{proof}
+
+\begin{lemma}[Good forms]\label{lem:int:forms}
+Among $\lambda(t)=(1,t,\ldots,t^{r-1})$, $t=0,\ldots,Q_r-1$, at least one form is
+good.
+\end{lemma}
+
+\begin{proof}
+A form fails for $t$ if $\lambda(t)^{\mathsf T}w=0$ for one of at most $N$
+leading poles $w$, or $\lambda(t)^{\mathsf T}(v-v')=0$ for one of at most
+$\binom N2$ pairs of distinct limits. Each condition says that a nonzero
+polynomial in $t$ of degree at most $r-1$, with coefficient vector $w$ or
+$v-v'$, vanishes; it has at most $r-1$ roots. So at most
+$(r-1)(N+\binom N2)<Q_r$ integers fail.
+\end{proof}
+
+\begin{proof}[Proof of correctness in \cref{thm:int:solver}]
+For $\varepsilon>0$ let $x(\varepsilon)$ minimize $f+\varepsilon\sum_ix_i^D$ on
+$B$. Along a sequence $\varepsilon_m\downarrow0$ choose a convergent subsequence
+with limit $\hat x$; since the perturbation converges to zero uniformly on $B$,
+$\hat x$ minimizes $f$. Pass to a further subsequence on which every
+$x(\varepsilon_m)$ lies in the relative interior of one face $\Phi$. If $\Phi$ is
+a vertex, $\hat x$ is that vertex, a candidate. Otherwise the free part of
+$x(\varepsilon_m)$ is an interior minimizer of the deformed face function, hence
+a real common zero of \eqref{eq:app:int:system} with $z=1/\varepsilon_m$. By
+\cref{lem:int:limits} its limit lies in $\mathcal L_\Phi$; by
+\cref{lem:int:forms,lem:int:recovery} some enumerated form recovers it exactly
+from a real root of $P$, and it lies in $B$. So $\hat x$ is kept. Every kept
+point lies in $B$, so a kept point of least value is a global minimizer. Bad
+forms can add kept points, which are feasible and harmless.
+\end{proof}
+
+\begin{lemma}[Values and comparisons]\label{lem:int:values}
+For a kept point with root $\theta$ of $P$ and coordinates $r_i(\theta)$, write
+$f(r(T))\bmod P=h(T)/q_0$ with $h\in\Z[T]$ and $q_0\in\Z\setminus\{0\}$. The
+resultant $\operatorname{Res}_T(P(T),q_0W-h(T))\in\Z[W]$ is nonzero, has degree at
+most $\deg P$, and has the value $f(r(\theta))$ as a root, which is identified by
+refining the interval of $\theta$. Two such values are compared exactly,
+including equality, by isolating the real roots of the squarefree part of the
+product of their two defining polynomials and locating both values among them.
+\end{lemma}
+
+\begin{proof}
+Up to a nonzero constant, the resultant is $\prod_\vartheta(q_0W-h(\vartheta))$
+over the roots $\vartheta$ of $P$, a nonzero polynomial of degree $\deg P$ with
+the root $h(\theta)/q_0$. Refining the interval of $\theta$ encloses $h(\theta)/q_0$
+by interval evaluation; by the root separation bound of the squarefree part,
+polynomially many bits suffice to single out its root. Equal values are the
+same root of the squarefree product, so ties are decided exactly.
+\end{proof}
+
+\begin{lemma}[Cost]\label{lem:int:cost}
+The algorithm uses $c_d^k\poly_d(H)$ bit operations for a constant $c_d$ that
+depends only on $d$. Its output, and the representations of the value, have
+length $c_d^k\poly_d(H)$, and $q$-bit refinements cost $c_d^k\poly_d(H+q)$.
+\end{lemma}
+
+\begin{proof}
+Fix a face with $r\ge1$ free coordinates. There are
+$\binom{r+R}r\le2^{r+R}\le2^{Dr}$ monomials of degree at most $R$ and
+$N=a^r\le2^{Dr}$. Clear the denominators of $\partial_if_\Phi/D$ by one integer of
+$O_d(H)$ bits. Each recursion step multiplies by $z$ and by integer coefficients
+of $O_d(H)$ bits; a normal form is a sum over reduction paths of at most $R$
+steps, of which there are at most $(s+1)^R$, where $s=\poly_d(r)$ bounds the
+number of monomials of a derivative. So every normal form has $z$-degree at most
+$R$ and coefficients of $O_d(R(H+\log(s+1)))$ bits; memoization computes all of
+them without enumerating paths, in $2^{O_d(r)}\poly_d(H)$ operations. The forms
+have $O(r^2\log(N+1))$-bit entries. Each determinant has order $N$, degree at
+most $N$ in $T$ and $u$ and at most $RN$ in $z$, and is interpolated from
+$(RN+1)(N+1)^2$ rational determinants of polynomial length; so $\chi$ and the
+$\chi_i$ have $\poly(N,H,r)$-bit coefficients. The $Q_r=O(rN^2)$ forms, the
+univariate steps (3)--(4) on polynomials of degree at most $N$, the at most $N$
+real roots per form, and the value and comparison steps of
+\cref{lem:int:values} each cost $\poly(N,H,r)$. Summing over at most $3^k$ faces
+gives $c_d^k\poly_d(H)$ with $c_d$ depending on $D$ only.
+
+\emph{Refinement.} Refine the interval of $\theta$ and evaluate the $r_i$ by
+interval arithmetic with derivative bounds on the interval; polynomially many
+additional bits give coordinates within $2^{-q}$. Clipping a rational
+approximation to $B$ does not increase its distance to the exact point, which
+lies in $B$. With a rational bound $G_f\ge\max\{1,\sup_B\norm{\nabla f}_1\}$
+from monomial sums, coordinates within $2^{-q}/(2G_f)$ give a feasible rational
+point whose value exceeds the optimum by at most $2^{-q-1}$; refining the value
+root to width $2^{-q-1}$ gives a lower bound, and so a certified gap $2^{-q}$.
+\end{proof}
+
+\begin{lemma}[An explicit constant]\label{lem:int:budget}
+Implement the algorithm with schoolbook integer arithmetic, fraction-free
+Bareiss determinants, tensor interpolation on consecutive integer nodes,
+subresultant greatest common divisors and B\'ezout coefficients, and squarefree
+Sturm sequences for isolation, sign determination, and refinement. Then its bit
+work for dimension $k$, input length $H$, and $q$ refinement bits is at most
+$C_d\,2^{10000Dk}(H+q+1)^{10000}$ for a constant $C_d$ depending only on $d$. In
+particular $c_d=2^{10000D}$ is a valid constant in \cref{thm:int:solver}.
+\end{lemma}
+
+\begin{proof}
+Put $U=2^{Dk}(H+q+d+2)$. The ledger is deliberately loose. On a face with
+$r\le k$ free coordinates the number of memoized monomials and $N$ are at most
+$2^{Dk}$; normal forms have $z$-degree $O_d(k)$ and coefficient bit length
+$O_d((H+k+1)^2)$; there are $O(rN^2)$ forms with $O_d(k^2)$-bit coefficients;
+determinants have order $N$ and degrees $N$, $N$, $O_d(kN)$, so their
+interpolation grids have $O_d(U^4)$ nodes, sampled values have bit length
+$O_d(U^5)$, and interpolated coefficients $O_d(U^8)$. Subresultant and Sylvester
+bounds keep greatest common divisors, inverses, and the $r_i$ within degree and
+bit length $O_d(U^{12})$; composition with $f$ and the value resultant stay
+within $O_d(U^{18})$; Cauchy and squarefree separation bounds, derivative bounds
+for evaluation, and the $q$ extra bits require precision $O_d(U^{25})$. Every
+primitive call therefore has input length at most $C_dU^{50}$, and the number of
+primitive calls, over at most $3^k\le2^{Dk}$ faces, forms, coordinates, nodes,
+roots, and comparisons, is at most $C_dU^{10}$. Each fixed elementary routine
+costs at most $A(\ell+2)^{100}$ bit operations on inputs of length $\ell$, for an
+absolute constant $A$. The total is at most $C'_dU^{5010}\le
+C_d2^{10000Dk}(H+q+1)^{10000}$.
+\end{proof}
+
+The constant is an explicit proved bound used to define noise laws and fallback
+budgets before sampling. A smaller constant with a proved bound of the same form
+may replace it.
+
+\begin{proof}[Proof of \cref{cor:int:mixed-solver}]
+Enumerate the integer labels, substitute each, and apply \cref{thm:int:solver};
+substitution keeps the degree and gives coefficients of length $\poly_d(H)$.
+Keep the current best value and compare each new value with it by
+\cref{lem:int:values}. Each comparison involves two univariate polynomials of
+degree at most $(D-1)^k$, so the total is $c_d^k\prod_iN_i\poly_d(H)$ after
+enlarging $c_d$ by a factor depending only on $d$. Only the winner's
+representation is retained; isolating its roots afresh in their own polynomials
+removes any extra precision used in comparisons.
+\end{proof}
+
+\subsection{Native integer recourse and integer oracles}\label{app:int:native}
+
+Throughout, $G\ge\max\{1,\sup\sum_{i\in C}\abs{\partial_{v_i}F_\gamma}\}$ over
+$[0,1]^k\times\prod_i[\ell_i,u_i]$ and all noise in $[-\sigma,\sigma]^n$, computed
+by monomial bounds; it satisfies the hypothesis of \cref{lem:rec:value}(c).
+
+\begin{lemma}[Competing labels]\label{lem:int:label}
+Let $\mathcal H$ be a core box, $c\in\mathcal H$, and $z\in Y$ with
+$F_\gamma(c,z)=V(c)$. The sets $Y_i^-=\{z'\in Y:z'_i\le z_i-1\}$ and
+$Y_i^+=\{z'\in Y:z'_i\ge z_i+1\}$ cover $Y\setminus\{z\}$. If
+\eqref{eq:int:label} holds with $V_{\rm other}(c)$ the least exact value over
+the nonempty ones ($+\infty$ if none), then $z$ is the unique minimizer of
+$F_\gamma(v,\cdot)$ on $Y$ for every $v\in\mathcal H$. If moreover $\mathcal H$
+contains the core of every global minimizer, every global minimizer lies in
+$\mathcal H\times\{z\}$ and $\min_{v\in[0,1]^k}F_\gamma(v,z)=f^*$.
+\end{lemma}
+
+\begin{proof}
+A label $z'\ne z$ differs in some coordinate, and by integrality $z'_i\le z_i-1$
+or $z'_i\ge z_i+1$. For $v\in\mathcal H$, \cref{lem:rec:value}(c), applied to
+$Y\setminus\{z\}$ and to $\{z\}$, gives
+$V_{Y\setminus\{z\}}(v)\ge V_{\rm other}(c)-Gw_\infty(\mathcal H)>V(c)+Gw_\infty(\mathcal H)
+=F_\gamma(c,z)+Gw_\infty(\mathcal H)\ge F_\gamma(v,z)$. A global minimizer $(a,z^*)$
+with $a\in\mathcal H$ therefore has $z^*=z$. The slice
+$[0,1]^k\times\{z\}$ lies in $X$ and contains $(a,z)$, so its minimum is $f^*$.
+\end{proof}
+
+\begin{lemma}[Stopping for labels]\label{lem:int:native-stop}
+Suppose $F_\gamma$ has a unique global minimizer $x^*=(a,a_R)$ with point growth
+at least $g_0$ on $X$, let $A_0=2+kL/g_0$, and let $h=2^{-j}$ satisfy
+$h\le\min\{1/(4A_0),g_0/(16GA_0)\}$. Then the test \eqref{eq:int:label} at level
+$j$ passes, with $z_j=a_R$.
+\end{lemma}
+
+\begin{proof}
+By \cref{prop:rec:search} in exact mode, every retained cell has a corner $v$
+with $V(v)\le f^*+2E_j$, and growth gives $\norm{v-a}\le h\sqrt{kL/(4g_0)}$; so
+$\mathcal H_j\subseteq a+[-A_0h,A_0h]^k$ and $w_\infty(\mathcal H_j)\le2A_0h$. The
+incumbent has $F_\gamma(c_j,z_j)\le f^*+E_j$, so
+$\norm{(c_j,z_j)-x^*}\le\sqrt{E_j/g_0}\le A_0h\le\frac14$, which forces
+$z_j=a_R$ because distinct labels are at distance at least one. Every other
+label $z'$ has $F_\gamma(c_j,z')-f^*\ge g_0\norm{z'-a_R}^2\ge g_0$, so
+$V_{\rm other}(c_j)-V(c_j)\ge g_0-E_j\ge\frac78g_0$, since
+$E_j=kLh^2/8\le g_0/256$. Finally $2Gw_\infty(\mathcal H_j)\le4GA_0h\le g_0/4$.
+\end{proof}
+
+\begin{proof}[Proof of \cref{thm:int:native}]
+\emph{Base choices.} Let $B=\max\{2,N_ZC_dc_d^k\}$, where $C_d,c_d$ are those of
+\cref{lem:int:budget} enlarged by \cref{cor:int:mixed-solver}, so that enumerating
+all labels, checking feasibility, solving each core slice, and comparing values
+costs at most $B(I+\log M+1)^{e}$ for a fixed exponent $e$. Let
+$S=k+\sum_i(u_i-\ell_i)$, $n=k+n_R$, and let $C_{\rm tail}$ be the constant of
+\ref{it:app:rec:finite} for $\mathcal D=X$, described by the box, the rows of
+$Az\le b$, and one disjunction per integer coordinate, with all $n$ coordinates
+perturbed; $\log C_{\rm tail}\le\poly_d(I)$. Choose $\rho=1/(4B)$,
+$g_0=\rho\sigma/(2S)$, $A_0=2+kL/g_0$, the least $J\ge0$ with
+$2^{-J}\le\min\{1/(4A_0),g_0/(16GA_0)\}$, and the least power of two
+$M\ge\max\{2,2^J,4nC_{\rm tail}/\rho\}$. All have polynomial bit length, and
+$J,\log_2M\le\poly_d(I)$.
+
+\emph{Algorithm and correctness.} At levels $j=0,\ldots,J$ run the core search in
+exact mode with the integer oracle, and test \eqref{eq:int:label} at
+$(c_j,z_j)$ with at most $2n_R$ further oracle calls on tightened bounds. When it
+passes, apply \cref{thm:int:solver} to $F_\gamma(\cdot,z_j)$ on $[0,1]^k$ and
+return. Otherwise, after level $J$, enumerate the labels on the same draw as in
+\cref{cor:int:mixed-solver}. By \cref{prop:rec:search}(a),(b) and
+\cref{lem:int:label}, every return is correct.
+
+\emph{Probability.} By \cref{lem:int:native-stop}, the fallback runs only if
+$g_*<g_0$, which by \ref{it:app:rec:finite} has probability at most
+$Sg_0/\sigma+2nC_{\rm tail}/M\le\rho=1/(4B)$.
+
+\emph{Work and output.} By \cref{prop:rec:search} the expected number of core
+calls is at most $2^k+8^kJQ_{\rm ex}$; each call, including the label calls,
+has polynomial query length and costs $\poly_d(I)$. The core slice has
+coefficients of length $\poly_d(I+\log M)=\poly_d(I)$, so the completion costs
+$c_d^k\poly_d(I)$ and returns a representation of that length. The fallback
+contributes $\poly_d(I)$ in expectation by \ref{it:app:rec:rare}, and returns one
+label with its re-isolated core representation, of the same length bound. The
+proof record contains the oracle answers, retained lists, label values, and the
+solver's computation; its expected size obeys the work bound. For quadratic
+$F_0$ replace \cref{thm:int:solver} by \ref{it:app:rec:faces} on the core box
+($3^k\poly(I)$, rational output) and take $B=\max\{2,N_Z3^k\}$.
+\end{proof}
+
+\begin{proof}[Proof of \cref{cor:int:native-implicit}]
+Use the base choices above with two changes. Let
+$N'=\max\{1,k3^kN_Z\max(1,d-1)^k\}$, $\tau=\rho\sigma/(2N')$, and require
+additionally $2^{-J}\le\min\{\tau/(8K_2A_0),g_0/(4K_3A_0)\}$ and
+$M\ge2N'/\rho$, where $K_2,K_3$ are as in \eqref{eq:rec:K} over the real box.
+After \eqref{eq:int:label} passes at level $j$, apply the sign tests of
+\cref{lem:rec:closure}(a) to the core coordinates of $f=F_\gamma(\cdot,z_j)$ on
+$Q=\mathcal H_j$, which contains the core of every global minimizer by
+\cref{lem:int:label}, and then the Hessian test of \cref{lem:rec:closure}(b) with
+modulus $g_0$ on the remaining core box $Q'$. If both pass, return $z_j$ and the
+patch $(Q',g_0)$; its minimizer is the global optimizer. Otherwise continue; the
+fallback is that of \cref{thm:int:native}.
+
+\emph{The extra event.} Fix a label $w$ in the bounding box, a face of the core
+cube, and a core coordinate $i$ fixed on it, and condition on all coefficients
+but $\gamma_i$. The free core stationary system of $F_\gamma(\cdot,w)$ on the face
+does not involve $\gamma_i$ and has at most $\max(1,d-1)^k$ nonsingular solutions
+(\ref{it:app:rec:bezout}); at each, the core derivative lies in $[-\tau,\tau]$
+with probability at most $\tau/\sigma+1/M$. On $g_*>0$ the optimal core is a
+nonsingular solution for $w=a_R$ on its face, by two-sided growth. Hence the
+probability that $g_*\ge g_0$ and some active core derivative has magnitude at
+most $\tau$ is at most $N'(\tau/\sigma+1/M)\le\rho$.
+
+\emph{Stopping.} Outside both events, at level $J$ the label test passes
+(\cref{lem:int:native-stop}), $\mathcal H_J\subseteq a+[-A_0h,A_0h]^k$, and the
+midpoint test of a core coordinate at a bound has value at least
+$\tau-2K_2A_0h\ge\frac34\tau$; free core coordinates have zero derivative at $a$
+and are not fixed. Growth with the label fixed gives
+$\nabla^2_{\mathcal U\mathcal U}f(a)\succeq2g_0I$ on the free core coordinates, and
+the Hessian test value is at least $g_0-2K_3A_0h\ge g_0/2$. The failure probability
+is at most $2\rho=1/(2B)$, there is no $c_d^k$ completion term, and a $q$-bit
+evaluation uses \ref{it:app:rec:gls}.
+\end{proof}
+
+\begin{proof}[Proof of \cref{prop:int:hs}]
+Write $Az=b$ as $Az\ge b$, $-Az\ge-b$; with the bound rows, the constraint matrix
+remains totally unimodular, and tightening bounds keeps it so. At a rational core
+point $v$ and rational linear coefficients, each $t\mapsto f_i(v,t)+\gamma_it$ is
+a convex polynomial on $[\ell_i,u_i]$; extending it beyond each endpoint by the
+tangent line there gives a convex function on $\R$ that agrees on the interval and
+has rational values of polynomial length at rational points. The proximity-scaling
+algorithm of \citet[Algorithm~4.2 and Theorem~4.3]{hochbaum1990-convex-separable-optimization-is-not} solves
+separable convex integer minimization over totally unimodular systems exactly,
+using a number of linear programs logarithmic in the numerical bounds, each with an
+optimal extreme point computed exactly in polynomial bit time
+\citep{grotschel1988-geometric-algorithms-and-combinatorial-optimization}, and function evaluations at prescribed
+points. All data have polynomial length, so the oracle runs in polynomial bit
+time, and the exact value is the evaluation at the returned integer point.
+Infeasibility is detected by the linear program of the first stage.
+\end{proof}
+
+\begin{proof}[Proof of \cref{lem:int:potentials}]
+\emph{Sufficiency.} Let $z'\in Y$ and $\Delta=z'-z$. It is a circulation; route
+$\Delta_a>0$ units on the forward residual copy of $a$ and $-\Delta_a$ units on the
+backward copy when $\Delta_a<0$; both copies are available because $z'$ satisfies
+the bounds. By discrete convexity, $f_a(z'_a)-f_a(z_a)$ is at least the residual
+arc cost times the number of units. Summing, $F(z')-F(z)$ is at least the cost of
+this nonnegative residual circulation, which equals its reduced cost because
+potential terms cancel around a circulation, and so is nonnegative.
+
+\emph{Necessity.} If $z$ is optimal, no simple residual cycle has negative cost:
+a simple cycle of length at least three uses at most one copy of each arc, so one
+unit of augmentation changes the objective by exactly its cost, and a two-cycle
+consisting of both copies of one arc has nonnegative cost by convexity. Hence
+shortest-path distances $\pi$ from an added source joined to every node by zero-cost
+arcs are finite and satisfy $c_e+\pi_p-\pi_{p'}\ge0$ on every residual arc from $p$
+to $p'$. A shortest path uses at most $s$ arcs, so $\pi$ has polynomial bit length.
+\end{proof}
+
+\subsection{Flows under core-only noise}\label{app:int:flows}
+
+We treat networks and totally unimodular systems together. Let
+$Y=\{z\in\Z^{n_R}:Az=b,\ \ell\le z\le u\}$ with $A$ totally unimodular; a network
+is the case of a node--arc incidence matrix. The objective is
+$F_\gamma(v,z)=\phi(v)+\sum_if_i(v,z_i)+\gamma^{\mathsf T}v$ with $f_i(v,\cdot)$
+convex on $[\ell_i,u_i]$. A \emph{multiplier map} is a polynomial vector
+$\psi(w)\in\R^{n_R}$ such that $\psi(w)^{\mathsf T}z$ is constant on $Y$ for every
+$w$; for a network $\psi_a(w)=\pi_{p'}(w)-\pi_p(w)$ for an arc $a=(p,p')$, and for a
+totally unimodular system $\psi(w)=A^{\mathsf T}\lambda(w)$. The \emph{adjusted
+costs} are $g_i(w,t)=f_i(w,t)-\psi_i(w)t$, and
+\begin{equation}\label{eq:app:int:adjusted}
+ F_\gamma(w,z)-F_\gamma(w,z')=\sum_i\bigl[g_i(w,z_i)-g_i(w,z'_i)\bigr]
+ \qquad(z,z'\in Y).
+\end{equation}
+
+\begin{definition}[Charts]\label{def:int:charts}
+For a network, a \emph{chart} is determined by a feasible flow $z$, a spanning
+arborescence $\mathcal T$ rooted at an added source in the residual network of
+$z$ augmented by zero-cost source arcs, an arc $a$, and an integer $t$ with
+$t,t+1\in[\ell_a,u_a]$. Its potentials $\pi^{\mathcal T}(v)$ are the sums of the
+residual unit marginals of $z$ along the tree paths, and its \emph{chart
+polynomial} is $m(v)=f_a(v,t+1)-f_a(v,t)+\pi^{\mathcal T}_p(v)-\pi^{\mathcal T}_{p'}(v)$.
+The family $\mathcal C$ of all charts has at most
+$N_Z(2n_R+s)^sR_1$ members, $R_1=\sum_a(u_a-\ell_a)$.
+\end{definition}
+
+A unit difference $f_a(v,t+1)-f_a(v,t)$ has core degree at most $d-1$, so chart
+polynomials and potentials have core degree at most $d-1$, adjusted costs have
+total degree at most $d$, and all chart coefficients have bit length at most a
+base bound $H_0=\poly_d(I)$: labels have base length, and tree paths have at most
+$s$ arcs. A tree chosen by the algorithm is a member of $\mathcal C$, because the
+family contains every structurally valid arborescence of every label. The
+residual reduced costs of a flow under the potentials of such a tree are, up to
+sign, chart polynomials.
+
+\begin{proof}[Proof of \cref{thm:int:flow-interior}]
+\emph{Algorithm.} Run the core search in exact mode with the convex flow oracle.
+At level $j$, at the incumbent corner $c_j$ with flow $z_j$, compute shortest-path
+distances in the residual network at $c_j$, choose a spanning arborescence of the
+subgraph of tight arcs (zero reduced cost) by graph search, and form its potentials
+$\pi(v)$. For every residual arc decide exactly whether its reduced cost is
+nonnegative on $\mathcal H_j$, by minimizing it with \cref{thm:int:solver} and
+comparing the algebraic minimum with zero. If all pass, \cref{lem:int:potentials}
+shows that $z_j$ is optimal at every point of $\mathcal H_j$, which contains every
+optimal core; so the slice $[0,1]^k\times\{z_j\}$ contains a global minimizer, and
+\cref{thm:int:solver} solves it. After level $J$ use label enumeration as in
+\cref{thm:int:native}. Every return is correct, with or without the interiority
+premise.
+
+\emph{Exceptional set.} Let $S\subseteq[0,1]^k$ be the union of the zero sets of
+the chart polynomials that are not identically zero, and
+$\mathcal E=\bigcup_{w}[-\nabla F_w](S)$ over feasible labels $w$, where
+$F_w(v)=\phi(v)+\sum_af_a(v,w_a)$. Both are compact of dimension at most $k-1$. For
+one chart polynomial $m$ and one label $w$, the set $\{\beta:\exists x\in[0,1]^k,\
+m(x)=0,\ \beta+\nabla F_w(x)=0\}$ is defined by a formula with one block of $k$
+variables, $k$ free variables, $O(k)$ atoms, and degree at most $\max\{d,2\}$. By
+\ref{it:app:rec:qe} it is a Boolean combination of at most $\Xi_d(k)$ atoms of degree
+at most $\Xi_d(k)$, with $\Xi_d(k)=(k+1)^{O_d(k^2)}$; as in the proof of
+\cref{prop:rec:tube}(b), the product of its nonconstant atoms is a nonzero
+polynomial of degree at most $\Xi_d(k)^3$ vanishing on it. So $\mathcal E$ lies in the
+zero set of a nonzero polynomial of degree at most
+$D_{\rm int}=\max\{1,N_Z\abs{\mathcal C}\Xi_d(k)^3\}$, and $\log D_{\rm int}\le
+\poly_d(I)$. Nothing of this is computed by the algorithm.
+
+\emph{Base choices.} Let $B$ be the label-enumeration budget of
+\cref{thm:int:native}, $H_2\ge1$ a monomial bound on $\norm{\nabla^2F_w}$ over the
+core box for all labels in the bounding box, $C_{\rm tube}=C(k,D_{\rm int})$ with
+$C$ from \cref{prop:rec:tube}, and $C_{\rm growth}$ the constant of
+\ref{it:app:rec:finite} for the reduced objective $V_0$ (core perturbed, flows as
+the eliminated block). Choose $\rho=1/(4B)$, $g_0=\rho\sigma/(2k)$,
+$A_0=2+kL/g_0$, $\delta=\rho\sigma/(4C_{\rm tube}H_2)$, the least $J$ with
+$2^{-J}\le\delta/(2kA_0)$, and the least power of two
+$M\ge\max\{2,2^J,4kC_{\rm growth}/\rho,4kC_{\rm tube}/\rho\}$.
+
+\emph{Probability.} Let $a$ be an optimal core and $w$ an optimal flow at $a$. Then
+$F_w+\gamma^{\mathsf T}v\ge V_\gamma$ with equality at $a$, so $a$ minimizes this
+smooth function on the box; by the interiority premise $\gamma=-\nabla F_w(a)$, and
+$\dist(\gamma,\mathcal E)\le H_2\dist(a,S)$. By \ref{it:app:rec:finite} and the
+grid tube bound in the proof of \cref{prop:rec:tube}(c), the probability that the
+projected growth is below $g_0$ or that $\dist(\gamma,\mathcal E)\le H_2\delta$ is at
+most $\rho+C_{\rm tube}(H_2\delta/\sigma+\sqrt k/M)\le\frac32\rho<1/(2B)$.
+
+\emph{Stopping.} Outside this event the optimal core $a$ is unique, as in
+\cref{lem:int:native-stop} every point of $\mathcal H_J$ is within Euclidean distance
+$kA_0h_J\le\delta/2$ of $a$, and $\dist(a,S)>\delta$; so $\mathcal H_J\cap S=\emptyset$.
+Each reduced cost of the computed tree is, up to sign, a chart polynomial. If it is
+identically zero it passes. Otherwise it has no zero on the connected box
+$\mathcal H_J$, so it has constant sign there; it is nonnegative and, since
+$c_J\notin S$, nonzero at $c_J$; hence it is positive on $\mathcal H_J$. The test
+passes by level $J$.
+
+\emph{Work.} Each level makes at most $2n_R$ exact box minimizations, of cost
+$c_d^k\poly_d(I)$ in total over the $J$ levels after absorbing $J$ and $n_R$, plus
+shortest paths and the core search. With one completion and the expected fallback,
+the expected work is $[8^kQ_{\rm ex}+c_d^k]\poly_d(I)$. Quadratic objectives use
+\ref{it:app:rec:faces} for the box minimizations and the completion.
+\end{proof}
+
+\begin{proof}[Proof of \cref{lem:int:proximity}]
+We prove it for totally unimodular $A$; networks are a special case. Let $z\in Y$,
+choose $\bar z\in Y_0$ nearest to $z$ in the $\ell_1$ norm, and put $x=z-\bar z\in
+\ker A\cap\Z^{n_R}$. \emph{Conformal circuits.} If $x\ne0$, choose $y\in\ker A$
+conformal to $x$ (same sign wherever $y_i\ne0$) with minimal nonempty support $S$. If
+the vectors of $\ker A$ supported in $S$ formed a space of dimension at least two,
+adding a small multiple of a nonparallel one and following until a coordinate
+vanishes would give a conformal kernel vector with smaller support. So that space
+is a line. Its primitive generator is given by signed maximal minors of the columns
+in $S$, which lie in $\{0,\pm1\}$ by total unimodularity, so a conformal circuit
+$c\in\{0,\pm1\}^{n_R}$ with support $S$ exists. Subtracting the largest integer
+multiple $\min_{i\in S}\abs{x_i}$ of $c$ keeps $x$ integral and conformal and removes
+a coordinate. Repeating gives $x=\sum_j\theta_jc^{(j)}$ with positive integers
+$\theta_j$ and conformal circuits $c^{(j)}$.
+
+\emph{Charging.} Each $\bar z+c^{(j)}$ satisfies $Az=b$ and lies between $\bar z$
+and $z$ coordinatewise, hence within the bounds. If it also had all coordinates in
+the intervals $I_i$, it would belong to $Y_0$ and be closer to $z$. So some
+coordinate $i_j$ has $\bar z_{i_j}\in I_{i_j}$ but $\bar z_{i_j}+c^{(j)}_{i_j}\notin
+I_{i_j}$: $\bar z_{i_j}$ is the endpoint of $I_{i_j}$ toward $z_{i_j}$, and
+$\abs{x_{i_j}}=\dist(z_{i_j},I_{i_j})$. By conformality the multiplicities charged
+to one coordinate $i$ sum to at most $\abs{x_i}$. Each circuit has at most $n_R$
+nonzero entries, so $\norm x_1\le n_R\sum_j\theta_j\le n_R\sum_i\dist(z_i,I_i)$.
+\end{proof}
+
+\begin{lemma}[Optimal-face certificate, general form]\label{lem:int:face-general}
+Let $\mathcal A$, $\mathcal D$, $\mathcal D_{\mathcal A}$, $c$, $\varsigma_i$, $T_1$,
+$T_\infty$, $R_{\mathcal A}$, $H$, $K$ be as in \cref{thm:int:face}, with $K$ bounding
+$\abs{\partial_{v_l}\partial_{z_i}f_i}$. Let $z^0\in Y$ be optimal at $c$ and let
+$\psi$ be a polynomial multiplier map such that every $g_i(c,\cdot)$ is minimized over
+the integers of $[\ell_i,u_i]$ at $z^0_i$. Let $I_i$ be the integer minimizers of
+$g_i(c,\cdot)$, $Y_0=\{z\in Y:z_i\in I_i\}$, and assume (a)--(c) of
+\cref{thm:int:face} for these adjusted costs. Then the conclusions of
+\cref{thm:int:face} hold.
+\end{lemma}
+
+\begin{proof}
+By \eqref{eq:app:int:adjusted}, $Y_0$ is the optimal set at $c$. For
+$w\in\mathcal D_{\mathcal A}$, each $g_i(w,\cdot)$ is convex, constant on $I_i$ by (a),
+and has first outside differences at least $\mu_{\rm out}$ by (b), so
+$g_i(w,t)-g_i(w,z^0_i)\ge\mu_{\rm out}\dist(t,I_i)$ for integers $t$ in the native
+interval. With \eqref{eq:app:int:adjusted},
+\begin{equation}\label{eq:app:int:outside}
+ F_\gamma(w,z)-V(w)\ge\mu_{\rm out}\,v_I(z),\qquad
+ v_I(z)=\sum_i\dist(z_i,I_i),
+\end{equation}
+and every flow of $Y_0$ is optimal at $w$. Now let $v\in\mathcal D$ with face
+projection $w$, write $v=w+\sum_i\varsigma_id_ie_i$ with $d\ge0$ supported on the normal
+coordinates, and let $z\in Y$. Choose $\bar z\in Y_0$ by \cref{lem:int:proximity}. By the
+derivative bounds,
+$\varsigma_i\partial_{v_i}F_\gamma(w,z)\ge\varsigma_i\partial_{v_i}F_\gamma(c,\bar z)
+-HR_{\mathcal A}-K\norm{z-\bar z}_1\ge\beta-HR_{\mathcal A}-Kn_Rv_I(z)$, and Taylor's
+theorem in the core gives
+\[
+ F_\gamma(v,z)-V(w)\ge(\mu_{\rm out}-Kn_R\norm d_1)v_I(z)
+ +(\beta-HR_{\mathcal A})\norm d_1-\frac H2\norm d_2^2
+ \ge\Bigl(\beta-HR_{\mathcal A}-\frac H2T_\infty\Bigr)\norm d_1,
+\]
+using $\norm d_1\le T_1$, $\norm d_2^2\le T_\infty\norm d_1$, and (b). The coefficient
+is positive by (c), so off the face $F_\gamma(v,z)>V(w)$, the value of a feasible
+point on the face. If $\mathcal D$ contains every optimal core, every optimal core
+lies in $\mathcal D_{\mathcal A}$, and $z^0\in Y_0$ is optimal there, so the slice of
+$z^0$ contains a global minimizer.
+\end{proof}
+
+\begin{proof}[Proof of \cref{thm:int:face}]
+For a network take $\psi_a(w)=\pi_{p'}(w)-\pi_p(w)$ from the tree potentials. At $c$
+they certify optimality (\cref{lem:int:potentials}), which says exactly that each
+$g_a(c,\cdot)$ is minimized at $z^0_a$, and $\psi(w)^{\mathsf T}z$ is constant on $Y$
+because supplies are fixed. The intervals $I_a$ are found by binary search on the
+nondecreasing differences $g_a(c,t+1)-g_a(c,t)$. For (c): on an interval with at
+least three integers, convexity and equal values at three of its points make
+$g_a(c,\cdot)$ constant on its convex hull, so $f_a(c,\cdot)$ is affine there and
+$\partial_{tt}f_a(c,t)=0$; since $\partial_{tt}f_a(c+h\varsigma_ie_i,t)\ge0$ for small
+$h\ge0$, the inward derivative $\varsigma_i\partial_{v_i}f_a(c,\cdot)$ is convex on that
+interval. With linear interpolation on two-point intervals and substitution on
+singletons, and tangent extensions, $\beta_i$ is the optimum of a separable convex
+flow problem on the tightened bounds (\cref{prop:int:hs}). The polynomial identities
+in (a) need $d+1$ integer representatives per interval because the adjusted cost has
+total degree at most $d$. \Cref{lem:int:face-general} gives the conclusions.
+\end{proof}
+
+\begin{lemma}[Value margins away from zeros]\label{lem:int:margin}
+Let $p\ne0$ be a rational polynomial of degree at most $d$ in $q\le k$ variables with
+coefficients of bit length at most $H_0$, let $\delta>0$ be rational, let $Z_p$ be its
+zero set in $[0,1]^q$, and let $\mathcal K=\{x\in[0,1]^q:\dist(x,Z_p)\ge\delta\}$ (the
+whole cube if $Z_p=\emptyset$). If $\mathcal K\ne\emptyset$, then
+$\min_{\mathcal K}\abs p\ge2^{-(B_0+1)}$ with $B_0\le\Xi'_d(k)\poly_d(H_0+\langle\delta\rangle+1)$
+and $\Xi'_d(k)=(k+1)^{O_d(k^2)}$.
+\end{lemma}
+
+\begin{proof}
+For $q=0$ the value is a nonzero rational with denominator at most $2^{H_0}$. Let
+$q\ge1$. By compactness $m=\min_{\mathcal K}\abs p>0$. The formula
+\[
+ \exists x\ \forall y:\ x\in[0,1]^q\wedge\bigl[\neg(y\in[0,1]^q\wedge p(y)=0)\vee
+ \norm{x-y}^2\ge\delta^2\bigr]\wedge0<p(x)^2<t
+\]
+has truth set $(m^2,\infty)$: a minimizer witnesses every $t>m^2$, and a witness lies
+in $\mathcal K$, so no $t\le m^2$ is witnessed. It has two blocks of $q$ variables, one
+free variable, $O(q)$ atoms, and degree at most $2\max\{d,1\}$. Clearing denominators
+gives integer coefficients of bit length at most $\binom{q+d}d\poly(H_0+\langle\delta\rangle)$.
+By \ref{it:app:rec:qe}, an equivalent quantifier-free formula has integer coefficients
+of bit length at most $B_0$ of the stated form. The boundary point $m^2$ is a root of a
+nonconstant atom polynomial, since otherwise all atom signs would be constant near
+$m^2$. Remove a power of $t$ from it; the remaining integer polynomial has nonzero
+constant term and coefficients of absolute value at most $2^{B_0}$, so Cauchy's bound
+gives $m^2\ge1/(1+2^{B_0})\ge2^{-(B_0+1)}$, and $m\ge2^{-(B_0+1)}$.
+\end{proof}
+
+\begin{lemma}[Normal margins]\label{lem:int:normal}
+For a face $\mathcal A$ of $[0,1]^k$, let $a_{\mathcal A}$ be the lexicographically
+least minimizer of $V_\gamma$ on $\mathcal A$, $Y^*$ the set of flows optimal at
+$a_{\mathcal A}$, and, for a normal coordinate $i$ of $\mathcal A$,
+$\beta^*_{\mathcal A,i}=\min_{z\in Y^*}\varsigma_i\partial_{v_i}F_\gamma(a_{\mathcal A},z)$.
+Under core-only noise with law $U_{\sigma,M}$,
+$\Pr\{\exists\mathcal A,i:\beta^*_{\mathcal A,i}\in[0,\tau]\}\le k3^k(\tau/\sigma+1/M)$.
+If the optimal core $a$ is unique and lies in the relative interior of $\mathcal A$,
+then $a_{\mathcal A}=a$ and $\beta^*_{\mathcal A,i}\ge0$ for every normal $i$.
+\end{lemma}
+
+\begin{proof}
+On $\mathcal A$, $V_\gamma$ equals $V_0$ plus the free noise terms plus a constant
+given by the normal noises, so $a_{\mathcal A}$ depends only on the free coefficients;
+$Y^*$ depends only on $a_{\mathcal A}$, because core noise is constant in $z$. Hence
+$\beta^*_{\mathcal A,i}=b+\varsigma_i\gamma_i$ with $b$ independent of $\gamma_i$ given
+the other coefficients, and \eqref{eq:model:interval} bounds the conditional
+probability by $\tau/(2\sigma)+1/M$. A union over at most $k3^k$ pairs gives the
+bound. If $a$ is the unique optimal core and lies on $\mathcal A$, every minimizer on
+$\mathcal A$ is a global one, so $a_{\mathcal A}=a$. For $z\in Y^*$,
+$F_\gamma(\cdot,z)\ge V_\gamma\ge V_\gamma(a)=F_\gamma(a,z)$, so $a$ minimizes the smooth
+function $F_\gamma(\cdot,z)$ on the box, and its inward derivatives are nonnegative.
+\end{proof}
+
+\begin{proof}[Proof of \cref{thm:int:flow-boundary}]
+\emph{Algorithm.} At each level $j\le J$ and for each face $\mathcal A$ whose fixed
+bounds lie in the corresponding intervals of $\mathcal H_j$, let $\mathcal D=\mathcal H_j$,
+$c$ the midpoint of $\mathcal D_{\mathcal A}$, compute an optimal flow, tree potentials,
+and intervals at $c$, and test (a)--(c) of \cref{thm:int:face}; on success solve the
+whole core slice by \cref{thm:int:solver}. After level $J$ enumerate labels. Correctness
+follows from \cref{thm:int:face} and \cref{prop:rec:search}(a).
+
+\emph{Analysis sets.} For a face $\mathcal A$ with $q\ge1$ free coordinates, let
+$S_{\mathcal A}$ be the union of the zero sets in the face of the chart polynomials whose
+restriction to the face is not identically zero, and
+$\mathcal E_{\mathcal A}=\bigcup_w[-\nabla_{\mathcal A}F_w](S_{\mathcal A})$. As in the
+interior case, $\mathcal E_{\mathcal A}$ lies in the zero set of a nonzero polynomial of
+degree at most $D=\max\{1,N_Z\abs{\mathcal C}\Xi_d(k)^3\}$. Let $H\ge1$ bound core
+Hessians and $K$ the mixed derivatives, $C_{\rm tot}=3^kC(k,D)$,
+$N_{\rm nor}=k3^k$, and let $C_{\rm growth}$ and $B$ be as before. Choose
+$\rho=1/(8B)$, $g_0=\rho\sigma/(2k)$, $A_0=2+kL/g_0$,
+$\delta=\min\{\frac14,\rho\sigma/(4C_{\rm tot}H)\}$, $\tau=\rho\sigma/(4N_{\rm nor})$, and
+$\mu_0=2^{-(B_0+1)}$ from \cref{lem:int:margin} with $\delta/2$, uniformly for all chart
+polynomials restricted to all faces. Let $J$ be least with
+\[
+ 2^{-J}\le\min\Bigl\{\frac\delta{4kA_0},\frac\tau{16kHA_0},
+ \frac{\mu_0}{4k\max\{1,n_RK\}A_0}\Bigr\},
+\]
+and $M$ the least power of two with $M\ge\max\{2,2^J,4kC_{\rm growth}/\rho,
+4kC_{\rm tot}/\rho,4N_{\rm nor}/\rho\}$. Then $J,\log_2M\le f_d(k)\poly_d(I)$, because
+$\log(1/\mu_0)$ is of that form; no sampled quantity enters these choices.
+
+\emph{Probability.} The growth event costs at most $\rho$. At an optimal core $a$ in
+the relative interior of a face $\mathcal A$ with $q\ge1$, every optimal flow $w$ makes
+$F_w|_{\mathcal A}+\gamma^{\mathsf T}v$ minimal at $a$ in the free directions, so
+$\gamma_{\mathcal A}=-\nabla_{\mathcal A}F_w(a)$ and
+$\dist(\gamma_{\mathcal A},\mathcal E_{\mathcal A})\le H\dist(a,S_{\mathcal A})$; the tube
+event that this is at most $H\delta$ for some face costs at most
+$C_{\rm tot}(H\delta/\sigma+k/M)\le\rho/2$. \Cref{lem:int:normal} costs at most
+$N_{\rm nor}(\tau/\sigma+1/M)\le\rho/2$. The total is at most $2\rho=1/(4B)$.
+
+\emph{Stopping.} Outside these events let $a$ be the unique optimal core and
+$\mathcal A$ its face. At level $J$, $\mathcal H_J\subseteq a+[-A_0h,A_0h]^k$, so the face
+is tried; its normal widths are at most $A_0h$, $T_1\le kA_0h$, $T_\infty\le A_0h$,
+$R_{\mathcal A}\le2kA_0h$, and $\mathcal D_{\mathcal A}$, including $c$, lies within
+Euclidean distance $kA_0h\le\delta/4$ of $a$. If $q\ge1$, then $\dist(a,S_{\mathcal A})>\delta$,
+so $\mathcal D_{\mathcal A}$ is at distance more than $\delta/2$ from $S_{\mathcal A}$. A
+within-interval unit difference of the computed adjusted costs is a chart polynomial
+vanishing at $c\notin S_{\mathcal A}$, hence identically zero on the face: (a) passes.
+A first outside difference is positive at $c$ because the interval is the full set of
+minimizers, so it has no zero on the connected set $\mathcal D_{\mathcal A}$ and, by
+\cref{lem:int:margin}, is at least $\mu_0>\mu_0/4\ge n_RKT_1$ there: (b) passes. For a
+vertex face the same holds with constant charts. Consequently $Y_0$ is the optimal set
+at every point of $\mathcal D_{\mathcal A}$, in particular at $a$, so
+$\beta_i\ge\beta^*_{\mathcal A,i}-HkA_0h>\tau-HkA_0h$ by \cref{lem:int:normal}, and
+$\beta-HR_{\mathcal A}-\frac H2T_\infty>\tau-4kHA_0h\ge\frac34\tau$: (c) passes.
+
+\emph{Work and output.} At most $3^k$ face attempts per level, each with polynomially
+many flow calls, interval searches, identities, and $c_d^k$-cost box minimizations on
+data of length $f_d(k)\poly_d(I)$, give with the core search and the expected fallback
+the bound $f_d(k)Q_{\rm ex}\poly_d(I)$. The completion and the fallback return one flow
+and one common-root core representation of length $f_d(k)\poly_d(I)$.
+\end{proof}
+
+\begin{lemma}[Affine margins]\label{lem:int:affine-margin}
+Let $p(x)=p_0+\pi^{\mathsf T}x$ be a nonzero affine polynomial on $[0,1]^q$ whose
+coefficients have numerators and denominators of bit length at most $H_0$, and let
+$Z_p$ be its zero set in the cube. If $Z_p\ne\emptyset$, then
+$\abs{p(x)}\ge2^{-H_0}\dist(x,Z_p)$; otherwise $\abs p\ge2^{-(q+1)H_0}$ on the cube.
+\end{lemma}
+
+\begin{proof}
+Let $\pi_{\min}\ge2^{-H_0}$ be the least nonzero $\abs{\pi_i}$. If $Z_p\ne\emptyset$ and
+$p(x)>0$, some vertex has $p\le0$. Move from $x$ toward it one coordinate with
+$\pi_i\ne0$ at a time; $p$ decreases at rate at least $\pi_{\min}$ per unit length and
+reaches zero after an $\ell_1$ path of length at most $p(x)/\pi_{\min}$, which bounds the
+Euclidean distance to $Z_p$. Negative values are symmetric. If $Z_p=\emptyset$, $p$
+has one sign on the cube and its least absolute value is attained at a vertex, where
+it is a nonzero rational whose denominator divides a product of at most $q+1$
+denominators.
+\end{proof}
+
+\begin{proof}[Proof of \cref{cor:int:bilinear}]
+All unit marginals $\psi_a(t+1)-\psi_a(t)+(W^{\mathsf T}v)_a$, all potentials, and all
+chart polynomials are affine in the core with base-bounded coefficients. Replace
+$\mu_0$ in the proof of \cref{thm:int:flow-boundary} by
+$2^{-(k+1)H_0}\delta/2$, valid by \cref{lem:int:affine-margin} at distance $\delta/2$;
+it has polynomial length, so $J,\log_2M\le\poly_d(I)$. The identities in (a) are
+coefficient comparisons, the minima in (b) are endpoint choices, and the inward
+derivative $\varsigma_i(\partial_i\phi(c)+\gamma_i+(Wz)_i)$ is linear in $z$, so $\beta_i$
+is a linear-cost flow problem on the tightened bounds. The tube degree bound still uses
+\ref{it:app:rec:qe} for the possibly nonlinear $\phi$, but only its logarithm enters. The
+per-level work is polynomial and is absorbed by $8^kQ_{\rm ex}$; the completion
+minimizes $\phi$ plus a linear function, at cost $c_d^k\poly_d(I)$; quadratic $\phi$
+gives rational output by \ref{it:app:rec:faces}.
+\end{proof}
+
+\subsection{Totally unimodular systems}\label{app:int:tu}
+
+Substitute fixed coordinates, check consistency, and delete dependent rows; the
+remaining $A$ is totally unimodular with full row rank $m$, and every native interval
+has positive length.
+
+\begin{lemma}[A compact dual certificate]\label{lem:int:tu-dual}
+Let $z^0$ be an integer optimum at a rational core point $c$. There is
+$\lambda\in\R^m$ with
+\begin{equation}\label{eq:app:int:slopes}
+ f_i(c,z^0_i)-f_i(c,z^0_i-1)\le(A^{\mathsf T}\lambda)_i\ \ (z^0_i>\ell_i),\qquad
+ (A^{\mathsf T}\lambda)_i\le f_i(c,z^0_i+1)-f_i(c,z^0_i)\ \ (z^0_i<u_i).
+\end{equation}
+Every solution certifies optimality of $z^0$. With a rational bound $\bar V\ge1$ on the
+absolute values of all unit marginals over the core cube, a solution exists in
+$[-R,R]^m$, $R=m\bar V+1$, and a vertex of \eqref{eq:app:int:slopes} intersected with this
+box is computed in polynomial time; its active basis $\mathsf C$, a nonsingular
+submatrix of $A^{\mathsf T}$ with unit rows appended, has an inverse with entries in
+$\{0,\pm1\}$.
+\end{lemma}
+
+\begin{proof}
+Let $\hat f_i$ be the piecewise-linear interpolation of $f_i(c,\cdot)$ at the integers of
+$[\ell_i,u_i]$; it is convex. On each integer unit cell the function
+$\sum_i\hat f_i$ is affine and the cell intersected with $\{Az=b\}$ is a polytope with a
+totally unimodular matrix and integral right-hand side, so its vertices are integral.
+Hence the minimum of $\sum_i\hat f_i$ over the real polytope equals the integer minimum,
+and $z^0$ is a real optimum. Linear programming duality for the epigraph formulation
+gives $\lambda$ such that $z^0$ minimizes $\sum_i[\hat f_i(z_i)-(A^{\mathsf T}\lambda)_iz_i]$
+over the box; for convex piecewise-linear functions with integer breakpoints this is
+\eqref{eq:app:int:slopes}. Conversely, \eqref{eq:app:int:slopes} and discrete convexity
+make each $f_i(c,t)-(A^{\mathsf T}\lambda)_it$ minimal at $z^0_i$, and
+$\lambda^{\mathsf T}Az=\lambda^{\mathsf T}b$ on $Y$.
+
+Every column has an inequality, and a line in the solution set would be orthogonal to
+all columns, which full row rank excludes; so the nonempty polyhedron has a vertex,
+determined by $m$ independent active rows forming a nonsingular signed submatrix of
+$A^{\mathsf T}$, whose inverse has entries in $\{0,\pm1\}$ by Cramer's rule. Its
+coordinates are at most $m\bar V$ in absolute value, so the box contains it. A vertex of
+the bounded polyhedron is found by exact linear programming, and its active rows are
+extracted from the original inequalities and box rows; appending unit rows to
+$A^{\mathsf T}$ preserves total unimodularity.
+\end{proof}
+
+\begin{proof}[Proof of \cref{thm:int:tu} and \cref{cor:int:tu-ineq}]
+At a core point the algorithm uses the totally unimodular oracle of \cref{prop:int:hs},
+computes $\lambda$ and its basis $\mathsf C$ by \cref{lem:int:tu-dual}, and keeps the basis
+symbolically: $\lambda(v)=\mathsf C^{-1}h(v)$, where $h(v)$ consists of unit marginals and
+the constants $\pm R$. This is a multiplier map of core degree at most $d-1$ with
+base-bounded coefficients, and the adjusted costs at $c$ are minimized at $z^0$. The chart
+family consists of the polynomials $f_i(v,t+1)-f_i(v,t)-(A^{\mathsf T}\lambda(v))_i$ over all
+labels, ordered bases of at most $2n_R+2m$ candidate rows, coordinates, and adjacent
+pairs; it has at most $N_Z(2n_R+2m)^mR_1$ members, so all logarithms remain polynomial.
+Only the original adjusted marginals are tested on the hull; the artificial box rows
+serve to select a bounded vertex at $c$. \Cref{lem:int:proximity,lem:int:face-general}
+hold for $A$, and the proofs of \cref{thm:int:flow-boundary} and \cref{cor:int:bilinear}
+apply verbatim with these charts. For \cref{cor:int:tu-ineq}, the slack system
+$Cz+s=b$, $0\le s_i\le b_i-\min_{\ell\le z\le u}C_iz$, has the totally unimodular matrix
+$[C\ I]$ and projects bijectively onto $Y$; slacks have zero cost and coupling, so the
+objective, its core derivatives, and $L$ are unchanged, and the added bounds have
+polynomial length.
+\end{proof}
+
+\subsection{Strong fields}\label{app:int:strong-field}
+
+\begin{proof}[Proof of \cref{thm:int:strong-field}]
+\emph{Enclosures.} For a monomial derivative, the exact range of each univariate power
+on its interval is computed from the endpoints, adding $0$ for an even positive power
+on an interval containing $0$; the product of these intervals, scaled by the
+coefficient, and the sum over monomials enclose $\partial_iF_0$ on the hull. All
+endpoints have polynomial length, and each $q_i$ is computed by counting the grid
+indices of the closed interval $[-\overline\partial_i,-\underline\partial_i]$.
+
+\emph{Pinning.} If $\gamma_i>-\underline\partial_i$, then $\partial_iF_\gamma>0$ on the
+whole continuous hull; for any feasible $x$ with $x_i>\ell_i$, decreasing $x_i$ to
+$\ell_i$, continuously or between integer labels, strictly decreases $F_\gamma$, and the
+product domain keeps the point feasible. So every global minimizer has $x_i=\ell_i$; the
+case $\gamma_i<-\overline\partial_i$ is symmetric. Bad events depend on one coefficient each
+and are independent with probabilities $q_i$.
+
+\emph{Separation.} After substituting the pinned values, each remaining monomial has
+pairwise adjacent bad variables, which lie in one component of the induced subgraph.
+So $F_\gamma=c_\gamma+\sum_Cf_{C,\gamma}$ on a product of component domains, and choosing
+a minimizer of each summand minimizes the sum. Each component is solved by
+\cref{cor:int:mixed-solver}, or for quadratics by \ref{it:app:rec:faces}, in
+$A(C)\poly_d(I+b)$ with $A(C)=\prod_{i\in C}a_i$; the separated data have length
+$\poly_d(I+b)$.
+
+\emph{Expectation.} A connected set of size $t$ containing a vertex $v$ has a rooted
+ordered spanning tree with root $v$; there are at most $4^{t-1}$ shapes and at most
+$\Delta_+^{t-1}$ choices of neighbors, so at most $(4\Delta_+)^{t-1}$ such sets. A
+connected set $S$ is a bad component only if all its vertices are bad, with probability
+at most $\prod_{i\in S}q_i$. Hence
+\[
+ \E\sum_{C}A(C)\le\sum_{S\text{ connected}}\prod_{i\in S}a_iq_i
+ \le\sum_va_vq_v\sum_{t\ge1}(4\Delta_+\beta)^{t-1}=\frac{\sum_va_vq_v}{1-4\Delta_+\beta},
+\]
+which gives \eqref{eq:int:sf-work}. Under \eqref{eq:int:sf-regime},
+\eqref{eq:model:interval} gives $q_i\le R_i/(2\sigma)+1/M$, so
+$a_iq_i\le\frac1{16\Delta_+}+\frac1{16\Delta_+}$.
+
+\emph{Refinement.} Refine each of at most $n$ component values to width $2^{-q}/n$ and
+add; ask each component for a feasible rational point with gap $2^{-q}/n$ and combine
+it with the pinned values. This adds $\lceil\log_2\max\{1,n\}\rceil$ bits. The proof
+record (enclosures, pinning comparisons, partition, component computations) is
+checked within the same bound; independence and the noise condition enter only the
+expectation.
+\end{proof}
+
+\subsection{The low-rank lattice theorem}\label{app:int:lowrank}
+
+\begin{proof}[Proof of \cref{thm:int:lowrank}]
+\emph{Scalar recourse.} For rational $a\in\R^k$ let
+$W(a)=\frac\alpha2\norm a^2+\min_{x\in X}[G(x)-\alpha a^{\mathsf T}Tx]$. The inner
+problem separates into $\psi_j(t)=g_j(t)-\alpha(T^{\mathsf T}a)_jt$ on
+$\{L_j,\ldots,U_j\}$, convex, whose first differences are nondecreasing; binary search
+for the first $t$ with $\psi_j(t+1)-\psi_j(t)\ge0$ (or $U_j$ if none) returns an exact
+minimizer with $O(1+\log(U_j-L_j+1))$ rational comparisons. This gives $W(a)$ and an
+integer witness $x(a)$ in polynomial bit time.
+
+\emph{Square completion.} Since $\frac\alpha2\norm a^2-\alpha a^{\mathsf T}Tx
+=\frac\alpha2\norm{a-Tx}^2-\frac\alpha2\norm{Tx}^2$, $W(a)=\min_x[F(x)+\frac\alpha2
+\norm{a-Tx}^2]$, and $W-\frac\alpha2\norm a^2$ is a minimum of affine functions, so $W$
+has upper coordinate curvature $\alpha$. With $Z_\xi(a)=W(a)+\xi^{\mathsf T}a$ and
+$C_\xi=\norm\xi^2/(2\alpha)$,
+\[
+ Z_\xi(a)=\min_{x\in X}\Bigl[F_\xi(x)+\frac\alpha2\Bigl\lVert a-Tx+\frac\xi\alpha\Bigr\rVert^2\Bigr]-C_\xi .
+\]
+For an optimal $x^*$, $a=Tx^*-\xi/\alpha$ lies in the box
+$\mathcal A=\prod_i[\ell_i-\sigma_i/\alpha,u_i+\sigma_i/\alpha]$, so
+$\min_{\mathcal A}Z_\xi=F_\xi^*-C_\xi$, and every witness satisfies
+$F_\xi(x(a))\le Z_\xi(a)+C_\xi$.
+
+\emph{Search and count.} Run the corrected-corner search of \cref{thm:count:cells} on
+$\mathcal A$ with $f=W$, $c=\xi$, curvature $\alpha$ in every coordinate, and the
+isotropic balanced meshes of \cref{def:count:mesh} ($h_j=s2^{-j}$), through the
+predetermined level $J=\log_2M$, with exact evaluations of $Z_\xi$. Since $m_{iJ}\le2^J=M$,
+\cref{cor:count:levels} with the coordinatewise laws $U_{\sigma_i,M}$ gives expected
+level counts at most $H_{\rm rat}$, and the expected number of evaluations is at most
+$2^k+8^kH_{\rm rat}J$. Every evaluation point has polynomial length.
+
+\emph{Exact termination.} By \cref{thm:count:cells}(iii), the incumbent value satisfies
+$U_J\le\min_{\mathcal A}Z_\xi+E_J$, and its witness has
+$0\le F_\xi(x_{\rm inc})-F_\xi^*\le U_J+C_\xi-(\min_{\mathcal A}Z_\xi+C_\xi)\le E_J$. Here
+$E_J=\frac\alpha8\sum_ih_{iJ}^2\le\frac{k\alpha s^2}{8M^2}\le\frac1{8D_0M}<
+\frac1{D_0(M-1)}$ by the choice of $M$. Every base denominator divides $Q_d$. For
+integer $x$, $g_j(x_j)\in\frac1{Q_d}\Z$, $\frac\alpha2\norm{Tx}^2\in\frac1{2Q_d^3}\Z$, and
+$\xi_i=\sigma_i(2K_i-(M-1))/(M-1)$ gives
+$\xi^{\mathsf T}Tx\in\frac1{Q_d^2(M-1)}\Z$. So every value $F_\xi(x)$ lies in
+$\frac1{D_0(M-1)}\Z$, the gap is zero, and $x_{\rm inc}$ is optimal; its value is
+computed exactly. One common grid size for all rows is what makes the original values
+share the single denominator factor $M-1$; the auxiliary values $Z_\xi$ and $C_\xi$ can
+involve $(M-1)^2$, and no lattice property of them is used. $\log M$, $J$, and all
+arithmetic are polynomial in $I$, so the expected work is $8^kH_{\rm rat}\poly(I)$. If
+$k=0$ the objective separates and scalar recourse solves it.
+\end{proof}

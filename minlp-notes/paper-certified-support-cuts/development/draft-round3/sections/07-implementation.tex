@@ -1,0 +1,155 @@
+\section{Implementation in SCIP}\label{sec:implementation}
+
+We implemented the cuts as a separator for SCIP~10.0.2 \citep{SCIP10},
+written in Python on top of PySCIPOpt~6.2.1 \citep{PySCIPOpt}, with exact
+arithmetic in Python fractions and SymPy, ball arithmetic in Arb through
+python-flint, and HiGHS for the direction LPs. The separator adds global cuts
+at the root node. It does not change SCIP's constraint handlers, presolve,
+propagation or branching, and every native nonlinear constraint stays in the
+model. Figure~\ref{fig:pipeline} shows the data flow. This section describes
+the parts on which validity depends and the choices that shape the
+computational results; Appendix~\ref{app:software} lists the work limits.
+
+\input{figures/pipeline}
+
+\subsection{A faithful model}\label{sec:faithful}
+
+A cut certificate refers to the model that the solver solves. Two ordinary
+steps of model loading, assembling expressions and simplifying them, can
+change that model without notice. We guard against both in every mode,
+including the native baseline, so that all modes solve the same model. We
+also describe the bounds that certificates use.
+
+\paragraph{Arithmetic.}
+Every finite binary64 number in the source file is interpreted as its exact
+rational value. Assembling a native expression can still change values: in
+$(0.1x)^2$ the source coefficient is the exact square of the binary64 number
+$0.1$, whereas a coefficient computed in floating point is that square
+rounded again, and a constraint constructor may move a constant to the other
+side with a rounded subtraction. After assembly, the builder reads back the
+PySCIPOpt expression object that it passes to SCIP and compares its exact
+value with the source expression by symbolic subtraction and expansion, with
+no tolerance. If they differ, it rebuilds the expression as an explicit
+expression graph with separate constant nodes and compares again; a remaining
+difference rejects the model. Constants are kept inside the expression, so
+the constructor cannot round them into the row sides, which are passed
+unchanged. This is translation validation
+\citep{PnueliSiegelSingerman1998,Necula2000} of the model import. It
+addresses the observation of \citet[Section~20]{Neumaier2004} that modeling
+systems introduce uncontrolled rounding, and the requirement of
+\citet[Section~3.1]{SchichlNeumaier2005} that simplification of an expression
+graph introduce no roundoff. Its boundary is the expression object;
+PySCIPOpt's translation of it into SCIP's internal expression, and SCIP's
+later simplification, presolve and floating-point LP, are outside it.
+
+\paragraph{Domains.}
+Simplification can silently enlarge a domain: $0\cdot\log x$, $x/x$,
+$(\sqrt x)^2$ and $(\log x)^0$ are defined only for $x>0$, $x\ne0$, $x\ge0$
+and $x>0$, respectively. The builder visits every node of the source
+expression before simplification and proves each domain requirement from
+bounds and from affine rows; for example, $x-y=1$ proves that $\log(x-y)$ is
+defined, with no bounds on $x$ and $y$. Requirements that cannot be proved
+are enforced by existential constraints in a new variable $u$:
+\[
+d\ne0\iff\exists u:\ du=1,\qquad d>0\iff\exists u\ge0:\ du=1,\qquad d\ge0\ \text{is imposed directly.}
+\]
+The first is the device of \citet{Rabinowitsch1930}. Over the reals these
+constraints describe strict domains exactly, without a positive tolerance
+such as the one used in common benchmark setups \citep{BestuzhevaEtAl2025};
+SCIP then enforces them, like every constraint, with its feasibility
+tolerance. A variable power $b(x)^{e(x)}$ is admitted as $\exp(e(x)\log b(x))$
+only when $b(x)>0$ is proved \citep[compare][]{BelottiEtAl2009}; otherwise
+the model is rejected, because imposing $b>0$ could remove points at which
+the power is defined for other reasons.
+
+\paragraph{Bounds.}
+Support domains need finite bounds. Original affine rows imply bounds that
+may be missing from the declared box: for a row $\sum_ia_ix_i\le b$ with
+$a_j\ne0$, $a_jx_j\le b-\sum_{i\ne j}\min\{a_i\ell_i,a_iu_i\}$. Any finite
+sequence of such steps, with integer rounding for integer variables, yields
+bounds that hold at every feasible point. Each step is recorded with its
+source row, and replay repeats the sequence. The bounds are used only as
+premises of certificates; the model keeps its declared bounds. If the
+propagation derives a contradiction in exact arithmetic, the model is refused:
+under the exact reading of its binary64 data it has no feasible point. This
+happened for 8 of the 322 models of the pool of Part~4D, all with a known
+MINLPLib solution: on two, an affine row is violated by about $10^{-16}$ at
+every point of the box; on six, the rounding of bounds of integer variables
+produces a row that no point satisfies.
+
+\subsection{Blocks, directions and activation}\label{sec:blocks}
+
+Discovery runs at the first separator call, so a model solved during presolve
+pays nothing. A ranged row $\ell\le g(v)\le u$ has two \emph{sides},
+$g(v)\le u$ and $-g(v)\le-\ell$. Discovery writes each finite side of each
+original row, including the objective epigraph row, exactly as a nonlinear
+\emph{remainder} plus an affine part. A side is admissible if its remainder
+involves one to four variables with finite proven bounds and is either a
+polynomial of total degree at most eight or a nonpolynomial expression in one
+variable. Blocks are the variable sets of single sides and greedy unions of
+overlapping sides, with at most four variables, six nonlinear sides and
+sixteen signed affine domain sides; at most 32 blocks are kept, the largest
+first and ties broken by the indices of their variables. Unsupported
+remainders are declined as a whole, and a remainder is never altered. Affine
+rows that involve only block variables, together with the proven bounds, form
+the support domain $D$. The certification kernels apply to the whole block:
+exact enumeration (Theorem~\ref{thm:polytope}) when the combined function is
+quadratic and the number of row subsets is at most 2{,}000, the star oracle
+(the simpler implementation described at the end of Section~\ref{sec:star})
+when the enumeration budget is exceeded and the block is a star, Bernstein
+bounds for polynomials in a block of one or two variables (at most 1{,}024
+tensor coefficients), and ball arithmetic in a block of one variable. With at
+most sixteen affine sides the enumeration budget is never exceeded in
+dimension three or less; for four variables it allows at most seven signed
+affine sides. A direction whose combined function falls outside these cases
+yields no cut.
+
+At an LP solution the separator tries, for each block and each of its source
+sides $j$, the \emph{remainder direction} $a=0$, $\lambda=e_j$. It bounds only
+the side's nonlinear remainder; the side's affine terms in the block variables
+enter the cut only through the elimination. Two variants try other directions
+first. The \emph{whole-row direction} of side $j$ has $\lambda=e_j$ and $a$
+equal to the side's coefficients of the block variables, so that its support
+value is the minimum of the whole side over $D$. The \emph{block direction}
+has $\lambda_j=1$ for every source side of the block and $a$ equal to the sum
+of their coefficients of the block variables; its support value is the minimum
+of the sum of the block's rows. After these directions the separator solves up
+to three LPs that separate the current point, after coordinate scaling, from
+the convex hull of sampled graph points plus the cone of the side coordinates;
+an LP direction is used only if its scaled violation exceeds $10^{-5}$.
+Samples are grid points of the box (33 points in one variable, $7\times7$ in
+two, $3^d$ in $d=3,4$), plus, for quadratic blocks, the exact vertices of the
+domain polytope and their centroid when the enumeration budget allows. Each
+direction is tried at most once per block and run. The binary64 values of $a$
+and $\lambda$ are then certified. For a non-quadratic block, the subdivision is
+refined only until the bound makes the row violated by the threshold at the
+current point; if it does not, the call counts as a failed certification. When
+an exact support computation returns a minimizer that the samples missed, the
+minimizer is added and the LP is solved again.
+
+Two modes add cuts. Mode \code{all} tries the admitted blocks in their fixed
+order until a cap is reached. Mode \code{auto} admits only quadratic blocks
+that contain a side not proved convex and that have either an affine domain
+row that is not a bound or at least two distinct nonlinear rows; it requires
+a larger violation and stops trying a block after two failed certifications.
+Both modes run in at most three root callbacks, cap the number of cuts and
+support calls (\emph{default limits}, Appendix~\ref{app:software}), and give
+all separator work a cumulative allowance of $\min\{1\,\mathrm s,\,0.05\,T\}$
+for a total budget $T$, checked between operations; a single symbolic
+operation can overrun it. A cut is added only if its violation divided by
+$\max\{1,\norm{\hat c}_1\}$ exceeds $10^{-5}$ in \code{all} and
+$5\cdot10^{-4}$ in \code{auto}. The separator runs before SCIP's own
+separators in each root round, and its rows are added with \code{forcecut},
+so they bypass SCIP's cut selection. Mode \code{baseline} uses the same model
+builder and adds nothing. The experiments also use \emph{raised limits} (128
+blocks, 200 cuts) on MINLPLib models and, on the constructed families of
+Section~\ref{sec:mechanism}, limits proportional to the number $n$ of copies:
+\emph{base limits} ($4n$ cuts, $n$ per callback) and \emph{wide limits} ($16n$
+cuts, $4n$ per callback); all of these allow ten root callbacks, and the larger
+cut caps of Section~\ref{sec:mechanism} forty (Table~\ref{tab:modes}). For the star experiment of Section~\ref{sec:star-bench},
+discovery can also form \emph{star blocks}: a center variable together with up
+to sixteen variables that share two-variable sides with it, all these sides,
+and the affine rows among these variables. Star blocks precede the other
+blocks; for blocks of more than four variables the separator tries only the
+block direction and the whole-row directions, without sampling, and the star
+oracle certifies them.

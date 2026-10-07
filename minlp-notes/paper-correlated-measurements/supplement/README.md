@@ -104,10 +104,15 @@ The simple commands above use archived model specifications and source hashes.
 They do not fetch third-party optimization software or literature.
 
 Fresh exact experiments and the source ranking generator can be reproduced with
-explicit new output files:
+explicit new output files. The source ranking replay needs a locally obtained
+input: `source_kinetics/prepare_input.py` retrieves the pinned numerical table
+and verifies its SHA-256 before writing it to an ignored local path. Use
+`--from-file PATH` to verify a separately obtained copy. The scientific checks
+do not download inputs; see [source input provenance](source_kinetics/README.md).
 
 ```sh
 uv run --frozen python fresh_experiments.py all --output results/fresh-rerun.json
+uv run --frozen python source_kinetics/prepare_input.py
 uv run --frozen python source_kinetics/exact_rankings.py --output results/source-rankings-rerun.json
 uv run --frozen python source_kinetics/check_rankings.py --record results/source-rankings-rerun.json --output results/source-rankings-rerun-check.json
 ```

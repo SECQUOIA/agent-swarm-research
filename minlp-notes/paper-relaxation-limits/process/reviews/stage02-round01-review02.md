@@ -41,7 +41,7 @@ The valid chain is “contributes **at most** `delta * sum_j 2^j < 2`.” The fi
 
 ## Independent verification
 
-I wrote and ran `verification/reviewer02/stage02-round01/check.py` with `/home/sgusev/miniconda3/envs/minlp-notes/bin/python`. It passed; exact values and residual lists are in `verification/reviewer02/stage02-round01/results.json`. The script uses integer/rational arithmetic and symbolic polynomial identities. Its finite loops are supporting evidence for the parameterized proofs, not substitutes for them.
+I wrote and ran `verification/reviewer02/stage02-round01/check.py` with `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python`. It passed; exact values and residual lists are in `verification/reviewer02/stage02-round01/results.json`. The script uses integer/rational arithmetic and symbolic polynomial identities. Its finite loops are supporting evidence for the parameterized proofs, not substitutes for them.
 
 ### Dyadic construction and distinct predecessor arguments
 

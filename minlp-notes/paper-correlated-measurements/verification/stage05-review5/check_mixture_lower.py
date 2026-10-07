@@ -1,7 +1,10 @@
+from pathlib import Path as _CleanupPath
+_NOTES_ROOT = _CleanupPath(__file__).resolve().parent.joinpath('../../..').resolve()
+
 from pathlib import Path
 import json
 import sympy as s
-root=Path('/home/sgusev/repo/minlp-notes/paper-correlated-measurements')
+root=Path((str(_NOTES_ROOT) + '/paper-correlated-measurements'))
 d=json.loads((root/'supplement/results/fresh-all.json').read_text())['nested']
 F=s.Matrix(d['model']['F']);J0=s.Matrix(d['model']['prior']);rho=s.Rational(3,5)
 K=s.Matrix(8,8,lambda i,j:rho**abs(i-j));R=K+s.eye(8);rows=[]

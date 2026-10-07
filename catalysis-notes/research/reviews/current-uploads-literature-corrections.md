@@ -9,7 +9,7 @@ The durable intake records are in [`literature/runs/2026-09-16-current-uploads-c
 The final command was:
 
 ```text
-/home/sgusev/repo/skills/literature/scripts/lit.py check /home/sgusev/repo/catalisys-notes/literature
+/workspace/skills/literature/scripts/lit.py check /workspace/catalisys-notes/literature
 ```
 
 It returned `KB_CHECK=ok`, with `UNREAD=39` and `READ_UNCITED=196`. The package-directory scan at that point contained 35 `access: "none"` directories, including the Akin alias; these correspond to 34 distinct canonical missing materials. Four newly added supporting-information packages are included in that count. The unread count includes retained data artifacts and other sources outside this correction batch.

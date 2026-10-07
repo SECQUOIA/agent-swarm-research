@@ -1,0 +1,775 @@
+\section{Integer recourse, flows, and random components}\label{sec:int}
+
+This section treats residual variables that are native integers. The core
+search of \cref{sec:rec} applies unchanged, because it uses only the
+conditional value function on a fixed residual set. Closure changes. A
+patch and a Hessian test are meaningless for integer coordinates; instead,
+a few bound-restricted recourse calls certify that one residual integer
+label is optimal throughout the retained core hull, and an exact solver for
+the small continuous core completes the problem. Under core-only noise
+residual ties can persist on every draw, and for integer flows and totally
+unimodular systems the label certificate is replaced by one that works with
+the whole set of tied optimal labels. The section ends with two results of a
+different kind: exact optimization of mixed boxes under strong noise through
+random components, and an exact lattice argument for separable integer
+problems with a low-rank concave part.
+
+\Cref{tab:int:summary} lists the results. The factor $Q_{\rm ex}$ is defined
+in \eqref{eq:rec:Q}, and $c_d$ is the constant of \cref{thm:int:solver}.
+
+\begin{table}[t]
+\centering
+\caption{Integer recourse and random components. ``Label $+$ algebraic'' is
+an integer residual label together with the algebraic output of
+\cref{def:model:outputs}\ref{it:model:algebraic} for the core and the optimal
+value; its size bound holds on every draw. The function $f_d(k)$ is
+effective.}
+\label{tab:int:summary}
+\small
+\begin{tabularx}{\textwidth}{@{}lXlll@{}}
+\toprule
+Result & Noise; residual structure & $\log_2M$ & Expected work & Output\\
+\midrule
+\cref{thm:int:native} & ambient; exact integer oracle on tightened bounds
+& $\poly_d(I)$ & $[8^kQ_{\rm ex}+c_d^k]\poly_d(I)$ & label $+$ algebraic\\
+\cref{cor:int:native-implicit} & ambient; as above & $\poly_d(I)$
+& $8^kQ_{\rm ex}\poly_d(I)$ & label $+$ implicit\\
+\cref{thm:int:flow-interior} & core-only; convex integer flow, interior
+optimal cores & $\poly_d(I)$ & $[8^kQ_{\rm ex}+c_d^k]\poly_d(I)$
+& label $+$ algebraic\\
+\cref{thm:int:flow-boundary} & core-only; convex integer flow
+& $f_d(k)\poly_d(I)$ & $f_d(k)Q_{\rm ex}\poly_d(I)$ & label $+$ algebraic\\
+\cref{cor:int:bilinear} & core-only; flow, bilinear coupling & $\poly_d(I)$
+& $[8^kQ_{\rm ex}+c_d^k]\poly_d(I)$ & label $+$ algebraic\\
+\cref{thm:int:tu} & core-only; totally unimodular & as for flows
+& as for flows & label $+$ algebraic\\
+\cref{thm:int:strong-field} & ambient, strong; any mixed box & any
+& see \eqref{eq:int:sf-work} & component\\
+\cref{thm:int:lowrank} & aligned; convex piecewise-polynomial unaries on an
+integer box & $\poly(I)$ & $8^kH_{\rm rat}\poly(I)$ & rational, no fallback\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{An exact solver for a small continuous core}\label{sec:int:solver}
+
+All label certificates end with the same task: minimize an explicit
+polynomial exactly over a box of small dimension. A general exact method
+returns separate defining polynomials for the coordinates; pairing their
+roots costs a product of degrees, and it does not by itself say which
+coordinate roots belong to the same optimizer. The following solver returns
+all coordinates and the optimal value as polynomials in one common real
+algebraic number, with a base that is exponential only in the dimension.
+
+\begin{theorem}[Exact box solver through joint critical limits]\label{thm:int:solver}
+Fix $d\ge1$, and let $D$ be the least even integer greater than $d$. There
+are a constant $c_d$, depending only on $d$, and a deterministic algorithm
+with the following properties. The input is an explicit rational polynomial
+$f$ of degree at most $d$ in $k$ variables and a nonempty closed rational box
+$B\subseteq\R^k$; let $H$ be its length. The algorithm returns a global
+minimizer $x^*$ of $f$ on $B$ and the value $f(x^*)$ in the algebraic format
+of \cref{def:model:outputs}\ref{it:model:algebraic}: one real root $\theta$
+of a squarefree integer polynomial $P$ of degree at most $(D-1)^k$, given
+with a rational isolating interval, and polynomials
+$r_1,\ldots,r_k,r_f\in\Q[T]$ of degree less than $\deg P$ with
+\[
+ x^*_i=r_i(\theta)\quad(i=1,\ldots,k),\qquad
+ f(x^*)=r_f(\theta),\qquad
+ r_f=f(r_1,\ldots,r_k)\bmod P .
+\]
+Coordinates whose interval is a point have constant maps. As an auxiliary
+representation, used only for comparisons, the algorithm also returns a
+nonzero integer polynomial with the root $f(x^*)$ and an isolating interval
+of that root. The bit work and the output length are at most
+$c_d^k\poly_d(H)$. For every $q\ge0$, a rational point within Euclidean
+distance $2^{-q}$ of $x^*$, a feasible rational point with certified
+objective gap at most $2^{-q}$, and a rational interval of width at most
+$2^{-q}$ containing $f(x^*)$ are computed within $c_d^k\poly_d(H+q)$. No
+genericity is assumed: ties, singular critical points, and
+positive-dimensional sets of minimizers are allowed.
+\end{theorem}
+
+For each face of the box, the solver deforms the restricted objective by
+$\varepsilon\sum_ix_i^D$. Written in $z=1/\varepsilon$, the deformed
+stationary equations have the pure-power leading monomials $x_i^{D-1}$ over
+the field of rational functions in $z$ and after every finite specialization
+of $z$. In particular this proves the claim for symbolic $\varepsilon$ and
+for every $\varepsilon\ne0$.
+They therefore form a Gr\"obner basis, and the quotient algebra has the
+fixed dimension $(D-1)^r$ on a face with $r$ free coordinates. At
+$\varepsilon=0$ the deformation disappears and the original stationary set
+can be positive dimensional; the limit $\varepsilon\to0$ is handled by a
+branch analysis, not by specializing. View the complex critical points of
+the deformed problem as branches parametrized by $\varepsilon$. Call a linear
+form $\lambda^{\mathsf T}x$ \emph{good} if it does not vanish on the leading
+coefficient vector of any branch that escapes to infinity as
+$\varepsilon\to0$, and if it separates the distinct finite limits of the
+bounded branches. For a good form, the
+leading coefficient in $z$ of the characteristic polynomial of
+$\lambda^{\mathsf T}x$ in the quotient algebra vanishes exactly at the
+projections of these finite limits, and its derivatives with respect to
+independent coefficients of $\lambda$, divided by a greatest common divisor,
+recover all coordinates of each limit as polynomials in its projection. For
+other forms the leading coefficient can retain bounded projections of
+escaping branches, so its roots need not be projections of limits. A
+deterministic list of $O(r(D-1)^{2r})$ moment-curve forms contains a good
+form. Every listed form is screened by degree and divisibility tests, and a
+point reconstructed from any form is kept only after an exact test that it
+lies in the box. A bad form that passes the screening can therefore add only
+feasible candidates, whose values are at least the minimum. The deformed
+minimizers have a convergent subsequence whose limit is a global minimizer of
+$f$, and a good form recovers it, so the kept candidate of least value is
+optimal. The proof is in \cref{app:int:solver}; it uses finite-dimensional
+quotient algebras, simultaneous triangularization, Puiseux series, and exact
+univariate algorithms, and \cref{lem:int:budget} gives the explicit choice
+$c_d=2^{10000D}$ for one elementary implementation. That constant is a proved
+bound used to define noise laws below, not a practical estimate. The
+ingredients are classical. Recovering all coordinates from one univariate
+polynomial and derivatives of a characteristic polynomial is the mechanism of
+the rational univariate representation \citep{rouillier1999-solving-zero-dimensional-systems-through},
+and deformations of stationary systems are standard in critical-point
+methods \citep{basu2006-algorithms-in-real-algebraic-geometry}. We give a self-contained proof for boxes,
+including singular and positive-dimensional critical sets, because the
+recourse theorems need its exact contract and its constant-base bound; we do
+not claim a new general algebraic complexity result.
+
+\begin{corollary}[Mixed boxes and exact comparisons]\label{cor:int:mixed-solver}
+For a mixed box with $k$ continuous coordinates and native integer
+coordinates with $N_1,\ldots,N_t$ labels, enumerating the labels and applying
+\cref{thm:int:solver} to each gives an exact global minimizer and value, in
+the algebraic format with the integer labels listed, in
+$c_d^k\prod_iN_i\poly_d(H)$ bit operations. Values of two algebraic outputs
+of \cref{thm:int:solver} can be compared exactly, including equality, within
+$c_d^k\poly_d(H)$; the comparison uses the two auxiliary value polynomials
+and forms no field containing both.
+\end{corollary}
+
+\subsection{Native integer recourse}\label{sec:int:native}
+
+\begin{definition}[Native integer recourse]\label{def:int:native}
+A \emph{native integer recourse instance} is a core--recourse instance
+(\cref{def:rec:instance}) whose residual set is
+\[
+ Y=\{z\in\Z^{n_R}:\ Az\le b,\ \ell\le z\le u\},
+\]
+with a rational matrix $A$, a rational vector $b$, and integer bounds
+encoded in binary; the curvature bound \eqref{eq:rec:L} is required on
+$[0,1]^k\times\prod_i[\ell_i,u_i]$ (verified by monomial bounds or
+certified). Put $N_Z=\prod_i(u_i-\ell_i+1)$ and $S=k+\sum_i(u_i-\ell_i)$. A
+\emph{box-stable exact integer oracle} receives a rational core point $v$,
+rational linear coefficients, and integer bounds $\ell\le\ell'\le u'\le u$,
+and returns the exact optimal value of
+$\min\{F_\gamma(v,z):z\in Y,\ \ell'\le z\le u'\}$ and an attaining integer
+point, or reports infeasibility, in bit work polynomial in the query length
+with an exponent independent of $k$.
+\end{definition}
+
+The core changes costs, never feasibility: supplies, right-hand sides, and
+bounds do not depend on $v$. The residual set is nonempty by
+\cref{def:rec:instance}; one oracle call with the original bounds decides
+this before sampling, and an empty $Y$ is reported as such. Exact values are
+rational because the core point is rational and residual points are
+integral. The oracle must handle arbitrary tightened coordinate bounds,
+which is how competing labels are excluded.
+
+\begin{theorem}[Native integer recourse]\label{thm:int:native}
+Fix $d$. Let a native integer recourse instance with $k\ge1$ be given,
+together with a box-stable exact integer oracle. There is a power of two $M$,
+computed from the base instance with $\log_2M\le\poly_d(I)$, such that for the
+ambient perturbation model with marginal law $U_{\sigma,M}$ the following
+hold.
+\begin{enumerate}[label=(\roman*)]
+\item On every draw the algorithm returns a global minimizer $(v^*,z^*)$ of
+$F_\gamma$ on $X=[0,1]^k\times Y$ and the optimal value: the label $z^*$
+exactly, and $v^*$ and the value in the algebraic format of
+\cref{thm:int:solver}. Its length is at most $c_d^k\poly_d(I)$ on every
+draw, and a $q$-bit refinement costs $c_d^k\poly_d(I+q)$.
+\item The expected bit work and the expected size of the global proof record
+are at most $[8^kQ_{\rm ex}+c_d^k]\poly_d(I)$.
+\item If $F_0$ is quadratic, the output is rational on every draw and the
+expected work is $[8^kQ_{\rm ex}+3^k]\poly(I)$.
+\end{enumerate}
+No growth, label-gap, uniqueness, or residual convexity premise is used.
+\end{theorem}
+
+For $k=0$ there is no core, and one oracle call with the original bounds
+solves the sampled problem exactly. For $k\ge1$ the certificate is the
+following. At the incumbent corner $c_j$ with label $z_j$, the $2n_R$
+restrictions $z_i\le z_{j,i}-1$ and $z_i\ge z_{j,i}+1$, each together with
+the original constraints, have union exactly $Y\setminus\{z_j\}$, however the
+residual coordinates are coupled. A restriction that leaves the original
+bounds ($z_{j,i}=\ell_i$ in the first case, $z_{j,i}=u_i$ in the second) is
+empty and receives the value $+\infty$ without an oracle call, as does a
+restriction that the oracle reports infeasible. Let $V_{\rm other}(c_j)$ be
+the least of the $2n_R$ values; it is $+\infty$ when all restrictions are
+empty, that is, when $z_j$ is the only feasible label; the minimum of an
+empty restriction list is also $+\infty$. If
+\begin{equation}\label{eq:int:label}
+ V_{\rm other}(c_j)-V(c_j)>2G\,w_\infty(\mathcal H_j),
+\end{equation}
+then $z_j$ is the unique optimal label at every core point of the retained
+hull $\mathcal H_j$ (\cref{lem:rec:value}(c)), so every global minimizer lies
+in $\mathcal H_j\times\{z_j\}$. The whole slice $[0,1]^k\times\{z_j\}$ is
+feasible and contains a global minimizer, so \cref{thm:int:solver} applied to
+$F_\gamma(\cdot,z_j)$ on $[0,1]^k$ finishes the problem, whether the core
+minimizers are unique, tied, or form a continuum. Feasible values for the
+restricted problems would not suffice; \eqref{eq:int:label} needs their exact
+optimal values. Distinct integer labels are at unit distance, so point growth
+forces \eqref{eq:int:label} at a base-computed level; no label gap is supplied
+or charged separately. On the remaining draws the algorithm enumerates the
+$N_Z$ labels on the same draw, solves each core slice, and keeps the best by
+exact comparisons (\cref{cor:int:mixed-solver}). It returns only the winning
+label and its core representation, so the output bound does not depend on
+how many labels were examined. The proof is in \cref{app:int:native}.
+
+\begin{corollary}[Implicit core output]\label{cor:int:native-implicit}
+Under the hypotheses of \cref{thm:int:native}, an algorithm with expected bit
+work $8^kQ_{\rm ex}\poly_d(I)$ returns on ordinary draws the exact label $z^*$
+and an implicit patch output for the core slice $F_\gamma(\cdot,z^*)$, and on
+the remaining draws the output of \cref{thm:int:native}. A $q$-bit evaluation
+of the ordinary output costs $\poly_d(I+q)$, and its expected cost over all
+draws is $\poly_d(I+q)$.
+\end{corollary}
+
+The variant replaces the exact core solve by the sign and Hessian tests of
+\cref{lem:rec:closure} on the core coordinates of the certified slice; it pays
+for an additional active-gradient event instead of the term $c_d^k$.
+
+\paragraph{Separable convex recourse over totally unimodular systems.}
+The main source of exact integer oracles in this paper is the following
+classical result.
+
+\begin{proposition}[Separable convex integer oracles]\label{prop:int:hs}
+Let $Y=\{z\in\Z^{n_R}:Az=b,\ \ell\le z\le u\}$, where $A$ is an integer
+totally unimodular matrix (promised; automatic for network matrices), $b$ is
+integral, and the bounds are integral and finite. Let
+$F_0(v,z)=\phi(v)+\sum_if_i(v,z_i)$ with explicit rational polynomials of
+fixed degree, and suppose $t\mapsto f_i(v,t)$ is convex on $[\ell_i,u_i]$ for
+every $v\in[0,1]^k$ (promised, or certified). Then a box-stable exact integer
+oracle exists for every rational linear perturbation, with bit work
+polynomial in the query length and logarithmic dependence on the numerical
+bounds. This includes integer flows on a directed network with integral
+supplies and arc bounds; inequality systems $Cz\le b$ with $C$ totally
+unimodular reduce to this form (\cref{cor:int:tu-ineq}).
+\end{proposition}
+
+The oracle is the proximity-scaling algorithm of
+\citet[Theorem~4.3]{hochbaum1990-convex-separable-optimization-is-not}, which solves separable convex
+integer minimization over totally unimodular systems with logarithmically
+many linear programs in the numerical bounds and function evaluations at
+prescribed points. At a rational core point all evaluations are rational of
+polynomial length; tightening coordinate bounds and adding linear terms keep
+the class; and convex tangent extensions beyond the native intervals supply
+evaluations if the algorithm requests them
+(\cref{app:int:native}). The convexity premise concerns each scalar cost on its
+whole real interval. For networks, optimality also has a short certificate.
+
+\begin{lemma}[Marginal potentials]\label{lem:int:potentials}
+Let $Y$ be the integer flows of a directed network with $s$ nodes, fixed
+integral supplies, and arc bounds, where parallel arcs and loops are allowed,
+and let each $t\mapsto f_a(t)$ be convex on $[\ell_a,u_a]$. A feasible $z$
+minimizes $\sum_af_a(z_a)$ over $Y$ if and only if there are node potentials
+$\pi$ for which every arc of the residual network of $z$ has nonnegative
+reduced cost, where a forward arc $a=(p,p')$ with $z_a<u_a$ costs
+$f_a(z_a+1)-f_a(z_a)$ and a backward arc with $z_a>\ell_a$ costs
+$f_a(z_a-1)-f_a(z_a)$, and the reduced cost adds $\pi_p-\pi_{p'}$ along the
+residual arc from $p$ to $p'$. If the residual arc costs are rational
+numbers of bit length at most $H_m$, shortest-path distances from an added
+zero-cost source supply such potentials, of bit length polynomial in $s$ and
+$H_m$.
+\end{lemma}
+
+This is a certificate, not an algorithm: repeated unit augmentation is not
+claimed to run in polynomial time. The characterization holds for arbitrary
+real convex costs. The bit-length statement needs rational marginal costs
+of polynomial length; explicit rational polynomials of fixed degree have
+them at rational core points, while an arbitrary convex real function need
+not. With \cref{prop:int:hs}, \cref{thm:int:native} applies to separable
+convex integer flows and totally unimodular systems whose costs depend
+arbitrarily on the core. For instance,
+$F_0(v,z)=\phi(v)+\sum_a\psi_a(z_a)+v^{\mathsf T}Wz$ with convex $\psi_a$ allows
+arbitrary core-to-arc coupling $W$; the curvature bound $L$ is that of $\phi$,
+and $W$ enters only through its bit length. Convexity of a fixed-degree
+univariate $\psi_a$ on its interval can be verified by univariate sign
+determination.
+
+\subsection{Core-only noise for integer flows}\label{sec:int:flows}
+
+Under core-only noise the residual costs are not perturbed, and many optimal
+labels can persist on every draw. Full point growth then fails, and the
+competing-label certificate cannot pass when two labels are optimal at the
+optimal core. Throughout this subsection the instance is a core--recourse
+instance (\cref{def:rec:instance}) in which $Y$ is the set of integer flows
+of a directed network with $s$ nodes and $n_R$ arcs (parallel arcs and loops
+allowed), integral supplies, and integral arc bounds $[\ell_a,u_a]$ in
+binary; in particular $Y$ is nonempty. Nonemptiness is decided before
+sampling by one exact feasibility linear program, whose vertices are integral
+by total unimodularity, and an infeasible network is reported as such. The
+sampled objective is
+\begin{equation}\label{eq:int:flow-model}
+ F_\gamma(v,z)=\phi(v)+\sum_af_a(v,z_a)+\gamma^{\mathsf T}v,
+ \qquad v\in[0,1]^k,\ z\in Y,
+\end{equation}
+with explicit rational polynomials of degree at most $d\ge1$ in expanded
+form, each $f_a(v,\cdot)$ convex on $[\ell_a,u_a]$ for every $v\in[0,1]^k$
+(promised or certified), and a curvature bound $L$ as in \eqref{eq:rec:L}
+(verified or certified). Only the $k$ core coefficients are perturbed. By
+\cref{prop:model:regret} the sampled optimizer is within $k\sigma$ of
+$\min_XF_0$ in original objective value, whatever the size of the network.
+
+A deterministic baseline shows what the noise adds. It uses no flow
+structure: exact or certified conditional values on a fixed core grid give
+an additive approximation for every core--recourse instance.
+
+\begin{corollary}[A deterministic core grid]\label{cor:int:grid}
+Let a core--recourse instance (\cref{def:rec:instance}) with $k\ge1$ and a
+fixed rational linear term $\gamma$, for instance $\gamma=0$, be given,
+together with a conditional oracle (\cref{sec:rec:value}) that answers
+either exactly, in which case put $\eta=0$, or in certified mode with a fixed
+accuracy $\eta>0$. For an integer $m\ge1$, query the oracle at all $(m+1)^k$
+points of $G_m=\{0,\frac1m,\ldots,1\}^k$, let $(\hat v,\hat z)$ be a returned
+completion of least upper value, and put
+$\underline f=\min_{v\in G_m}\ell(v)-kL/(8m^2)$. Then $(\hat v,\hat z)\in X$
+and
+\[
+ \underline f\le f^*\le F_\gamma(\hat v,\hat z)
+ \le\underline f+\frac{kL}{8m^2}+\eta .
+\]
+For every $\varepsilon>0$, $m=\lceil\sqrt{kL/(8\varepsilon)}\,\rceil$ gives an additive
+gap at most $\varepsilon+\eta$ with $(m+1)^k$ oracle calls. For integer
+flows, \cref{prop:int:hs} supplies exact values.
+\end{corollary}
+
+The grid rounds only the $k$ core coordinates. The error and the number of
+calls do not depend on the number of residual variables, which the oracle
+optimizes exactly; rounding them as well would reintroduce a
+dimension-dependent error (\cref{ex:rec:star}). The corollary is
+deterministic and uses no noise; its proof is in \cref{app:int:flows}. It is
+an approximation, not an exact method. With $\sigma=\varepsilon/(2k)$ and an
+evaluation of accuracy $\varepsilon/2$, the core-only theorems below also
+certify an $\varepsilon$-approximate solution of $F_0$ on every draw
+(\cref{prop:model:regret}), but their expected work contains the factor
+$[3+(1+k/2)kL/\varepsilon]^k$, whose dependence on $1/\varepsilon$ is worse
+than the $(2+\sqrt{kL/(8\varepsilon)})^k$ calls of the grid. The smoothed theorems do not improve additive approximation of
+$F_0$; what they add is exact optimization of the sampled objective, with
+exact output, on every draw.
+
+A natural exact certificate selects one flow and proves it optimal on the
+retained hull by polynomial potentials. Boundary core optima defeat it:
+\cref{prop:lim:flow} gives two parallel arcs and a two-dimensional core on
+which, with probability $\frac1{16}$ for every grid size, the optimal core
+is a vertex with projected growth constant at least one, both flows are
+optimal there, and no single flow is optimal on any box at that vertex,
+while the core search retains such a box at every level. With $m$ stages,
+an algorithm that insists on a single-flow certificate and enumerates
+labels when it fails does work at least $2^m/16$ in expectation. The
+obstruction concerns that certificate; the instance itself is easy. Two
+remedies follow: a premise that all optimal cores are interior, and a
+certificate that uses all tied flows at once.
+
+\begin{theorem}[Core-only flow recourse with interior optimal cores]\label{thm:int:flow-interior}
+Fix $d$, and assume, in addition to the model \eqref{eq:int:flow-model} with
+$k\ge1$, that for every $\gamma\in[-\sigma,\sigma]^k$ every optimal core point
+of $F_\gamma$ lies in $(0,1)^k$ (promised, or certified, for instance by
+$\partial_iF_0\le-\sigma-\tau'$ on $\{v_i=0\}$ and $\partial_iF_0\ge\sigma+\tau'$
+on $\{v_i=1\}$ for all $z$ in the bounding box $\prod_a[\ell_a,u_a]$ and some
+rational $\tau'>0$). There is a power of two $M$, computed from the base
+instance with $\log_2M\le\poly_d(I)$, such that for core-only noise with
+marginal law $U_{\sigma,M}$ the algorithm returns on every draw an optimal
+integer flow and an algebraic output of one optimal core and the optimal
+value, of length $c_d^k\poly_d(I)$, with $q$-bit refinement in
+$c_d^k\poly_d(I+q)$, and with expected bit work
+$[8^kQ_{\rm ex}+c_d^k]\poly_d(I)$. For quadratic objectives the output is
+rational.
+\end{theorem}
+
+The interiority premise is used only in the running-time analysis;
+correctness holds on every draw without it, and its sufficient certificate
+enters no numerical factor. The premise is not vacuous because $Y$ is
+nonempty. At the incumbent corner the algorithm computes an optimal flow, a
+tight shortest-path tree of its residual network, and the corresponding
+polynomial potentials, and it tests exactly whether every residual reduced
+cost is nonnegative on the whole retained hull; identically zero reduced
+costs pass, so persistent ties are allowed. If the test passes, the flow is
+optimal on the hull, and the exact solver finishes its whole core slice. The
+analysis uses a finite family of reduced-cost polynomials over all labels
+and trees, fixed before sampling: an optimal core in the interior is a
+stationary point of every attaining fixed-flow slice, so the noise equals a
+negative gradient there, and the event that the optimal core is near a zero
+of a chart polynomial has small probability by an algebraic tube estimate.
+
+\paragraph{All tied flows at once.}
+At a core point $c$ on a face $\mathcal A$ of the core cube, let $z^0$ be an
+optimal flow and $\pi$ potentials certifying it (\cref{lem:int:potentials}).
+The adjusted costs $g_a(c,t)=f_a(c,t)+(\pi_p-\pi_{p'})t$ of the arcs $a=(p,p')$
+are convex, and their integer minimizers form intervals $I_a\ni z^0_a$, found
+by binary search on monotone first differences. The set
+$Y_0=\{z\in Y:z_a\in I_a\text{ for all }a\}$ is exactly the set of optimal flows
+at $c$: the potential terms sum to a constant over $Y$, and the objective gap is
+a sum of nonnegative scalar gaps. Minimizing an inward core derivative over
+$Y_0$ is again a convex flow problem, because on an interval with at least
+three integers the adjusted cost is constant, so the original arc cost is
+affine there and its inward derivative is convex; two-point intervals use
+linear interpolation, and singleton intervals are substituted. Finally, every
+feasible flow is close to $Y_0$.
+
+\begin{lemma}[Proximity to the optimal set]\label{lem:int:proximity}
+For every $z\in Y$ there is $\bar z\in Y_0$ with
+$\norm{z-\bar z}_1\le n_R\sum_a\dist(z_a,I_a)$.
+\end{lemma}
+
+The deterministic certificate uses these facts on a rational core box
+$\mathcal D$ whose intervals in the normal coordinates of $\mathcal A$ contain
+the corresponding bounds, with projection $\mathcal D_{\mathcal A}$ onto the
+face and $c\in\mathcal D_{\mathcal A}$. Let $\varsigma_i=+1$ for a normal
+coordinate fixed at $0$ and $\varsigma_i=-1$ for one fixed at $1$, let $T_1$ and
+$T_\infty$ be the sum and the maximum of the normal widths of $\mathcal D$, let
+$R_{\mathcal A}$ bound $\norm{w-c}$ on $\mathcal D_{\mathcal A}$, and let
+$H\ge1$ and $K\ge0$ be rational bounds on $\norm{\nabla^2_vF_0}$ and on
+$\abs{\partial_{v_i}\partial_{z_a}f_a}$ on the real bounding domain.
+
+\begin{theorem}[An optimal-face certificate]\label{thm:int:face}
+Suppose that, with the potentials taken as polynomials of the core obtained
+from a tight shortest-path tree at $c$:
+\begin{enumerate}[label=(\alph*)]
+\item for every arc, $g_a(w,t)=g_a(w,z^0_a)$ for all $w\in\mathcal D_{\mathcal A}$
+and all integers $t\in I_a$;
+\item every first adjusted marginal outside $I_a$ that stays in the native
+interval is at least $\mu_{\rm out}=n_RKT_1$ on $\mathcal D_{\mathcal A}$; and
+\item if $\mathcal A$ has normal coordinates, $\beta=\min_i\beta_i$ satisfies
+$\beta-HR_{\mathcal A}-\frac H2T_\infty>0$, where
+$\beta_i=\min_{z\in Y_0}\varsigma_i\partial_{v_i}F_\gamma(c,z)$.
+\end{enumerate}
+Then every flow of $Y_0$ is optimal at every point of $\mathcal D_{\mathcal A}$,
+and every point of $\mathcal D\times Y$ off the face is strictly worse than some
+feasible point on it. If $\mathcal D$ contains the core of every global
+minimizer, the slice $[0,1]^k\times\{z^0\}$ contains a global minimizer.
+Conditions (a)--(c) are decided exactly, (a) by at most $d+1$ polynomial
+identities per arc, (b) by exact polynomial minimization on a rational box
+(\cref{thm:int:solver}), and (c) by one convex flow problem per normal
+coordinate.
+\end{theorem}
+
+The certificate is sound on every draw and needs neither uniqueness of the
+optimal flow nor a noise assumption. Both (b) and (c) are needed: (c) uses the
+minimum over \emph{all} optimal flows, since a single tied flow can have the
+wrong inward sign, and without (b) a flow that loses at $c$ can become optimal
+off the face. In the instance of \cref{prop:lim:flow} the certificate with the origin
+face closes every box of maximum width less than $2\min_i\gamma_i$.
+
+\begin{theorem}[Core-only flow recourse at arbitrary core faces]\label{thm:int:flow-boundary}
+Fix $d$. For the model \eqref{eq:int:flow-model} with $k\ge1$ there are an
+effective function $f_d$ and a power of two $M$, computed from the base
+instance with
+\[
+ \log_2M\le f_d(k)\poly_d(I),
+\]
+such that for core-only noise with marginal law $U_{\sigma,M}$ the algorithm
+returns on every draw an optimal integer flow and an algebraic output of one
+optimal core and the optimal value, of length $f_d(k)\poly_d(I)$, with
+$q$-bit refinement in $f_d(k)\poly_d(I+q)$, and with expected bit work
+$f_d(k)Q_{\rm ex}\poly_d(I)$. No interiority, growth, or uniqueness premise is
+used, and arbitrarily many optimal flows may persist.
+\end{theorem}
+
+At each level the algorithm tries the certificate of \cref{thm:int:face} on
+every face of the core cube compatible with the retained hull, at the midpoint
+of the projected hull, and solves the whole core slice of $z^0$ when one passes.
+The analysis needs three probability bounds: projected growth, distance of the
+optimal core from the zeros of a base-only family of chart polynomials (tube
+estimate), and a margin $\tau$ for the minimal inward derivative over all
+optimal flows. The last is obtained without conditioning on a random label: on
+each fixed face, the optimal core and its whole optimal flow set do not depend
+on the normal noise coefficients. A tube controls the distance from a zero set,
+not the value of a polynomial away from it. Converting distance into a value
+margin uses fixed-block quantifier elimination with its coefficient-height
+bound, and costs a precision of $f_d(k)\poly_d(I)$ bits. This is why the
+sampling precision in \cref{thm:int:flow-boundary} depends on $k$.
+
+\begin{corollary}[Bilinear coupling]\label{cor:int:bilinear}
+If $F_\gamma(v,z)=\phi(v)+\sum_a\psi_a(z_a)+v^{\mathsf T}Wz+\gamma^{\mathsf T}v$
+with a rational matrix $W$, fixed degree $d\ge2$, convex $\psi_a$ on
+$[\ell_a,u_a]$, and $\partial_{ii}\phi\le L$ on $[0,1]^k$, then the conclusions
+of \cref{thm:int:flow-boundary} hold with $\log_2M\le\poly_d(I)$, output length
+$c_d^k\poly_d(I)$, refinement $c_d^k\poly_d(I+q)$, and expected bit work
+$[8^kQ_{\rm ex}+c_d^k]\poly_d(I)$. For quadratic $\phi$ the output is rational.
+\end{corollary}
+
+All chart polynomials are then affine in the core, and their value margins
+have polynomial length. Let $p$ be such a chart, nonzero, with coefficients
+of bit length at most $H_0$, on a face identified with $[0,1]^q$. If its zero
+set $Z$ in the cube is nonempty, then $p$ is not constant and
+$\abs{p(x)}\ge b_{\min}\dist(x,Z)$, where $b_{\min}\ge2^{-H_0}$ is the least
+absolute value of a nonzero linear coefficient. If $p$ is a nonzero constant
+or has no zero in the cube, then $\abs p$ is at least its least absolute
+vertex value, a positive rational at least $2^{-(q+1)H_0}$; this case includes
+vertex faces. Identically zero charts are discarded from the exceptional
+family, and they pass the non-strict certificate tests. The curvature in the
+numerical factor is that of $\phi$ alone. This would fail for nonlinear
+coupling: a term $v_i^2z_a^2$ makes the core curvature grow quadratically with
+the capacity of arc $a$.
+
+\subsection{Totally unimodular systems}\label{sec:int:tu}
+
+\begin{theorem}[Totally unimodular recourse]\label{thm:int:tu}
+Fix $d$ and $k\ge1$. Let $Y=\{z\in\Z^{n_R}:Az=b,\ \ell\le z\le u\}$ be
+nonempty, where $A$ is an integer totally unimodular matrix (promised), $b$
+is integral, and the bounds are finite integers encoded in binary. Let
+\[
+ F_\gamma(v,z)=\phi(v)+\sum_if_i(v,z_i)+\gamma^{\mathsf T}v
+ \qquad(v\in[0,1]^k,\ z\in Y),
+\]
+where $\phi$ and the $f_i$ are explicit rational polynomials of degree at most
+$d$ in expanded form, each $f_i(v,\cdot)$ is convex on $[\ell_i,u_i]$ for
+every $v\in[0,1]^k$ (promised or certified), $L>0$ is a rational bound
+\eqref{eq:rec:L} on $[0,1]^k\times\prod_i[\ell_i,u_i]$ (verified or
+certified), and only the $k$ core coefficients are perturbed, with law
+$U_{\sigma,M}$. Then the conclusions of \cref{thm:int:flow-boundary} hold. If
+moreover $F_\gamma=\phi(v)+\sum_i\psi_i(z_i)+v^{\mathsf T}Wz+\gamma^{\mathsf T}v$
+with the premises of \cref{cor:int:bilinear}, its conclusions hold.
+\end{theorem}
+
+These are the premises of the flow model, with the network replaced by a
+totally unimodular system; certificates are part of the input length, and
+nonemptiness is decided by one linear program. The premises are used: the
+proof evaluates and differentiates explicit rational polynomials at rational
+core points, needs rational unit marginals of polynomial length for its
+charts, and uses $L$ for the count. Total unimodularity with arbitrary convex
+costs, or with succinctly encoded costs, does not provide these interfaces.
+Two further ingredients replace network structure. Shortest-path potentials
+become a dual vector satisfying at most $2n_R$ adjacent-slope inequalities,
+which exist because the piecewise-linear interpolation of the separable costs
+has an integral optimum over the real totally unimodular polytope; a dual
+vertex in a pre-draw box has inverse-basis entries in $\{0,\pm1\}$, which
+bounds the chart coefficients. Directed cycles become conformal circuits of
+$\ker A$ with entries in $\{0,\pm1\}$, which gives \cref{lem:int:proximity}
+with the same factor $n_R$. Both ingredients use total unimodularity; neither
+holds for general integer matrices.
+
+\begin{corollary}[Bounded totally unimodular inequalities]\label{cor:int:tu-ineq}
+Under the premises of \cref{thm:int:tu} on the core and the costs, its
+conclusions hold for a nonempty
+$Y=\{z\in\Z^{n_R}:Cz\le b,\ \ell\le z\le u\}$ with $C$ totally unimodular, $b$
+integral, and finite integral bounds.
+\end{corollary}
+
+Add the slack $s_i=b_i-C_iz$ with the explicit bounds
+$0\le s_i\le b_i-\min_{\ell\le z\le u}C_iz$; the matrix $[C\ I]$ is totally
+unimodular, projection is a bijection onto $Y$, and slacks have zero cost, so
+the curvature bound and all objective values are unchanged. A negative slack
+bound proves infeasibility.
+
+\subsection{Strong noise and random components}\label{sec:int:strong-field}
+
+The previous results allow every noise scale $\sigma>0$, with numerical
+ratios such as $L/\sigma$ in their bounds, and they need a small core. The
+following result needs neither a core nor a decomposition, but it requires a
+lower bound on the noise: noise that dominates the variation of every
+coordinate derivative. Let $X=\prod_iX_i$ be a mixed box
+(\cref{sec:model:input}) with $n$ coordinates after preprocessing, and let
+$F_0$ be an explicit rational polynomial of degree at most $d$. If $n=0$ the
+objective is a constant, which is returned directly; assume $n\ge1$. The
+\emph{primal graph} joins two coordinates when they occur together in a
+nonzero monomial, so each monomial support is a clique; let
+$\Delta_+=\max\{1,\text{maximum degree}\}$. Before sampling, compute rational
+enclosures $\partial_iF_0\in[\underline\partial_i,\overline\partial_i]$ on the
+continuous hull, by multiplying exact interval ranges of univariate powers
+over each derivative monomial. Put $R_i=\overline\partial_i-\underline\partial_i$,
+\[
+ a_i=\begin{cases}c_d,&i\text{ continuous},\\u_i-\ell_i+1,&i\text{ native integer},
+ \end{cases}\qquad
+ q_i=U_{\sigma,M}\bigl([-\overline\partial_i,-\underline\partial_i]\bigr),\qquad
+ \beta=\max_ia_iq_i,
+\]
+where $c_d$ is the constant of \cref{thm:int:solver}; for quadratic
+objectives one may take $a_i=3$ for continuous coordinates. Each $q_i$ is an
+exactly computable rational number, which depends on $M$.
+
+\begin{theorem}[Strong fields and random components]\label{thm:int:strong-field}
+Fix $d$, and let $M\ge2$ be any power of two. Under the ambient perturbation
+model with marginal law $U_{\sigma,M}$, a deterministic algorithm returns on
+every draw an exact global minimizer of $F_\gamma$ on $X$ in the component
+format of \cref{def:model:outputs}\ref{it:model:component}: rational values
+for the pinned coordinates, and for each remaining component its integer labels
+and one common-root algebraic representation of its continuous coordinates and
+value. If $4\Delta_+\beta<1$, its expected bit work is at most
+\begin{equation}\label{eq:int:sf-work}
+ \poly_d(I+\log_2M)\Bigl[1+\frac{\sum_ia_iq_i}{1-4\Delta_+\beta}\Bigr].
+\end{equation}
+A $q$-bit evaluation of the output, that is, a rational point within
+Euclidean distance $2^{-q}$ of the represented optimizer and a rational
+interval of width at most $2^{-q}$ containing the optimal value, together with
+a feasible rational point whose objective gap is certified to be at most
+$2^{-q}$, has expected cost bounded by \eqref{eq:int:sf-work} with
+$\poly_d(I+\log_2M+q)$ in place of $\poly_d(I+\log_2M)$. For quadratic
+objectives the output is an exact rational optimizer and value, with $a_i=3$
+for continuous coordinates. A sufficient condition for a bounded denominator
+is
+\begin{equation}\label{eq:int:sf-regime}
+ \sigma\ge8\Delta_+\max_i(a_iR_i),\qquad M\ge16\Delta_+\max_ia_i,
+\end{equation}
+which gives $a_iq_i\le1/(8\Delta_+)$ and $4\Delta_+\beta\le\frac12$.
+\end{theorem}
+
+Outside the closed interval in the definition of $q_i$, the sampled
+derivative $\partial_iF_\gamma$ has a strict sign throughout the continuous
+hull, so every global minimizer has $x_i$ at the corresponding bound; this
+holds for integer coordinates as well, by monotonicity between labels. These
+\emph{bad} events depend on one coefficient each, so they are independent
+Bernoulli events with the exact probabilities $q_i$; recomputing the
+enclosures after pinning would destroy this independence and is not needed.
+After pinning, every surviving monomial lies in one connected component of the
+graph induced by the bad coordinates, so the objective splits into independent
+component problems, each solved exactly by \cref{cor:int:mixed-solver} or, for
+quadratics, by face enumeration. At most $(4\Delta_+)^{t-1}$ connected sets of
+size $t$ contain a given vertex, and a subcritical branching bound gives
+\eqref{eq:int:sf-work}. The $q$-bit evaluation refines each of the at most $n$
+components with $q+\lceil\log_2(n+1)\rceil$ bits, for its point, its value,
+and its certified objective gap separately. Combining their point errors
+in Euclidean norm and adding their value widths and gaps gives the stated
+joint contract; an objective gap alone would not bound the distance to the
+optimizer on a flat or singular component. The proof is in
+\cref{app:int:strong-field}.
+
+The algorithm is exact on every draw, also when $4\Delta_+\beta\ge1$, but the
+theorem then gives no useful bound. The probabilities $q_i$ are not monotone
+in $M$: grids of sizes $M$ and $2M$ are not nested, so an interval without
+atoms of one grid can contain atoms of the other. A value of $\beta$
+computed for one grid size therefore does not transfer to another; $q_i$ and
+$\beta$ must be computed for the $M$ actually used. The sufficient condition
+\eqref{eq:int:sf-regime}, in contrast, holds for every larger power of two.
+This sufficient regime scales with the full derivative
+variation, with the graph degree, and, for integer coordinates, with the
+numerical number of labels; for continuous coordinates of nonquadratic
+objectives it scales with the large effective constant $c_d$. The total value
+is reported as a rational constant plus a sum of component values. Expanding
+that sum into one defining polynomial can have degree exponential in the
+number of components, and exact sign or equality tests for sums of unrelated
+algebraic numbers are not claimed; rational enclosures of the total are
+obtained by refining each component. The regret bound of
+\cref{prop:model:regret} is $\sigma\sum_iw_i$, which is large in this regime.
+
+\subsection{Separable integer problems with a low-rank concave part}\label{sec:int:lowrank}
+
+The last result uses aligned noise (\cref{def:model:perturbation}) and an exact
+argument of a different kind: the original objective values of the sampled
+problem lie on a lattice whose spacing is controlled by the same grid that
+controls the expected count. Let $X=\prod_{j=1}^nX_j$ with
+$X_j=\{L_j,\ldots,U_j\}$ and integer bounds $L_j\le U_j$ in binary, and
+\begin{equation}\label{eq:int:lowrank-model}
+ F(x)=\sum_{j=1}^ng_j(x_j)-\frac\alpha2\norm{Tx}^2,
+\end{equation}
+with a rational $\alpha>0$ and an arbitrary supplied $T\in\Q^{k\times n}$,
+whose rows may be zero, linearly dependent, or constant on $X$. Fix a degree
+bound $d_*$. Each $g_j$ is a continuous convex function on $[L_j,U_j]$, given
+by an explicit list of polynomial pieces of degree at most $d_*$, in expanded
+monomial form with rational coefficients, on consecutive intervals with
+rational breakpoints that cover $[L_j,U_j]$; a single polynomial is a list with
+one piece. Fixed-degree shifted or factored pieces can first be expanded in
+polynomial time; their expanded coefficients define the denominator budget.
+Convexity is verified: continuity and the order of the one-sided
+derivatives at each breakpoint are rational evaluations, and nonnegativity of
+the second derivative of each piece on its interval is a univariate sign
+determination. Smoothness at the breakpoints is not assumed. For $k\ge1$
+choose a rational $\sigma_i>0$ for each row, let $\ell_i=\min_X(Tx)_i$,
+$u_i=\max_X(Tx)_i$, $w_i=u_i-\ell_i+2\sigma_i/\alpha$, and $s=\max_iw_i$. Let
+$Q_{\rm den}$ be the product of the denominators of all base rational data,
+with the pieces in expanded form, put $D_0=2Q_{\rm den}^3$, and let $M$ be the
+least power of two with $M\ge\max\{2,k\alpha s^2D_0\}$. The sampled objective
+is $F_\xi(x)=F(x)+\xi^{\mathsf T}Tx$, where $\xi_1,\ldots,\xi_k$ are
+independent and $\xi_i$ has law $U_{\sigma_i,M}$; all rows use the same $M$.
+
+\begin{theorem}[Exact low-rank separable integer optimization]\label{thm:int:lowrank}
+If $k=0$, a deterministic algorithm minimizes $F$ on $X$ exactly in
+polynomial time. If $k\ge1$, then for every draw a deterministic algorithm
+returns an exact integer minimizer of $F_\xi$ on $X$ and the exact rational
+optimal value, both of polynomial length. Its expected bit work is at most
+\[
+ 8^kH_{\rm rat}P(I),\qquad
+ H_{\rm rat}=\prod_{i=1}^k\Bigl[3+\frac{(1+2k)\alpha w_i}{2\sigma_i}\Bigr],
+\]
+where $P$ is a polynomial with an absolute exponent and coefficients
+depending only on $d_*$. No growth, uniqueness, or separation premise is
+used, and there is no fallback. The number of integer coordinates, the
+numbers of pieces, and the numerical lengths of the integer intervals do not
+enter $H_{\rm rat}$ except through the row ranges $u_i-\ell_i$.
+\end{theorem}
+
+Completing the square gives the auxiliary value
+$W(a)=\frac\alpha2\norm a^2+\min_{x\in X}[G(x)-\alpha a^{\mathsf T}Tx]$ on the
+fixed box $\prod_i[\ell_i-\sigma_i/\alpha,u_i+\sigma_i/\alpha]$, with
+$G=\sum_jg_j$. It has upper coordinate curvature $\alpha$, because
+$W-\frac\alpha2\norm a^2$ is a minimum of affine functions. Its inner problem
+separates into scalar problems over consecutive integers. Real convexity of
+$g_j$ makes the forward differences of $g_j(t)-\lambda t$ nondecreasing, also
+between different pieces, so binary search on them finds an exact integer
+minimizer with $O(1+\log(U_j-L_j+1))$ evaluations, without listing labels.
+Moreover $\min_aW(a)+\xi^{\mathsf T}a$ equals $\min_XF_\xi$ up to the known
+constant $\norm\xi^2/(2\alpha)$. The corrected-corner search of
+\cref{thm:count:cells} on the $k$ auxiliary coordinates gives an integer
+witness whose original gap is below $E_J<1/(D_0(M-1))$ at the predetermined
+level $J=\log_2M$, while every original value $F_\xi(x)$ lies in
+$\frac1{D_0(M-1)}\Z$. At an integer argument every expanded monomial is an
+integer, so the unary degree and the pieces add no denominator, and one
+common grid denominator suffices because the noise enters the original
+objective linearly. The auxiliary values may have denominators involving
+$(M-1)^2$, but no lattice property of them is used. The proof is in
+\cref{app:int:lowrank}.
+
+The argument uses discrete convexity of the unaries, their exact evaluation,
+and a common denominator of their values, and nothing else about them. The
+fixed degree and the explicit piece lists guarantee exact evaluation in
+polynomial time with values of polynomial length. A succinct encoding would
+not: evaluating a monomial $t^{2^b}$ with a binary exponent at $t=2$
+produces an integer of length $2^b$. Continuous coordinates and coupled
+integer constraints are outside the theorem: continuous minima can be
+irrational, and coupling destroys the separable scalar recourse.
+
+The numerical ratios $\alpha w_i/\sigma_i$ are explicit; binary-encoded bounds
+alone do not make them small. For binary variables, and more generally for
+explicitly listed labels, deterministic fixed-rank algorithms already exist. On
+$\{0,1\}^n$ each $g_j$ agrees with the affine function $g_j(0)+c_jx_j$,
+$c_j=g_j(1)-g_j(0)$, so $F$ is a concave
+function of $(Tx,c^{\mathsf T}x)$; it attains its minimum at a vertex of the
+zonotope that is the image of the cube, and this zonotope in dimension $k+1$
+has $O(n^k)$ vertices. With explicitly listed labels, the planar polytopes
+$\conv\{(T_{\cdot j}t,g_j(t)):t\in X_j\}$ give a Minkowski-sum enumeration
+that, for fixed $k$, is polynomial in the total number of labels. The theorem
+does not improve these cases; it allows binary-encoded intervals without listing
+their labels.
+
+\subsection{Scope}\label{sec:int:scope}
+
+The residual feasible set must not depend on the core, and the exact integer
+oracle must handle all tightened coordinate bounds. The flow and totally
+unimodular results need nonempty residual sets and separable costs that are
+convex in each residual coordinate for every core point; they do not cover
+nonseparable integer convexity, arbitrary integer matrices, or core-dependent
+supplies and right-hand sides. Under core-only noise, single-flow certificates
+fail at boundary cores (\cref{prop:lim:flow}); the face certificate needs a
+parameter-dependent sampling precision for nonlinear coupling, which bilinear
+coupling avoids. The strong-field theorem is a strong-noise statement, and the
+low-rank theorem uses aligned rather than ambient noise. All results optimize
+the sampled objective exactly; none optimizes $F_0$.
+
+The native, interior-flow, and bilinear results, including the bilinear
+totally unimodular case, and the lattice theorem have polynomial sampling
+precision. By \cref{cor:count:universal-law}, with a fixed oracle
+implementation where an oracle is used, their grid size can therefore be
+replaced by one depending only on the input length; in the lattice theorem
+the level cap is reset to $\log_2M$. For the nonlinear results at arbitrary
+core faces (\cref{thm:int:flow-boundary} and the corresponding case of
+\cref{thm:int:tu}), the level cap and the grid exponent are bounded by
+$F_d(k)P_d(I)$ for an effective nondecreasing $F_d$. A common resolution then
+exists for the instances with a supplied bound $K\ge k$, and $F_d(K)$ enters
+their sampling, output, and work bounds; taking $K=I$ gives a law that
+depends only on $I$, but its sampling cost need not stay within
+$f_d(k)\poly_d(I)$ for the actual $k$. The strong-noise theorem holds for
+every $M$, with $q_i$ and $\beta$ computed for the $M$ used.
+
+The integer oracles, fixed-block elimination, tube estimates, and
+connected-set counting are established tools; what this section proves is
+their composition with one base-selected finite law, the label and face
+certificates, and the bit and output bounds, including exact algebraic output
+in which all coordinates of the optimizer and the optimal value share one
+root.

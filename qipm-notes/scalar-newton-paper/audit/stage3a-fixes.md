@@ -62,7 +62,7 @@ The article DOI is 10.22331/q-2021-11-08-573.
 
 ## Validation
 
-- `/home/sgusev/miniconda3/envs/qipm/bin/python
+- `/workspace/local-home/miniconda3/envs/qipm/bin/python
   notes/scalar-newton-paper/scripts/verify_cyclic.py` passed all cyclic
   history, public metadata, tilt, decrement, tree, and completion checks.
 - A clean, forced build ran through `conda run -n qipm --live-stream`

@@ -1,7 +1,7 @@
 # Scout report, Area 1: convexification and cutting planes for nonconvex quadratic and polynomial MINLP
 
 Date: 2026-09-22. Scope: 2021-2026 work, with older anchors where needed.
-Sources: the local KB (`/home/sgusev/repo/minlp-notes/literature/papers/<slug>/paper.md`, cited as `[KB:slug]`) plus web and arXiv (cited by arXiv id or DOI). Quotes come from full texts: the KB `fulltext.md` or the arXiv PDFs saved under `/tmp/scout1/*.txt`. "Not found" means I searched for the item and did not find it. It does not mean the item is proven absent.
+Sources: the local KB (`/workspace/minlp-notes/literature/papers/<slug>/paper.md`, cited as `[KB:slug]`) plus web and arXiv (cited by arXiv id or DOI). Quotes come from full texts: the KB `fulltext.md` or the arXiv PDFs saved under `/tmp/scout1/*.txt`. "Not found" means I searched for the item and did not find it. It does not mean the item is proven absent.
 
 ---
 

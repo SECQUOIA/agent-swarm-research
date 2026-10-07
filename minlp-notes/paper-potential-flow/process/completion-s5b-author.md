@@ -51,7 +51,7 @@ No new exhaustive priority search was performed. Older literature assessments in
 
 ## Verification and implementation boundary
 
-`completion-s5b-checks.json` records every command, exact stdout and stderr, return code, elapsed time, script hash, hashes for all potential-flow Python dependencies, and the saved certificate hash. All 13 commands passed under `/home/sgusev/miniconda3/envs/minlp-notes/bin/python`:
+`completion-s5b-checks.json` records every command, exact stdout and stderr, return code, elapsed time, script hash, hashes for all potential-flow Python dependencies, and the saved certificate hash. All 13 commands passed under `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python`:
 
 - Total-flow numerical checker: 1,197 complete positive DAG states, 192 exact rational threshold gaps, 63 comparison graphs; largest physical residual `4.90909e-91`.
 - Independent exact total-flow checker: 71 actual cacti, 1,068 exact physical profiles, 205 rational thresholds.

@@ -1,0 +1,343 @@
+% Plan: development/outline.md, section 6, item B.9.
+% Sources: development/dossiers/ann-kan.md and ann-kan.critique.md;
+% development/reviews/sol-kan-rigexp.md; ANN replay and verification times
+% from R/publication/reproduction/network/logs/ann.*.time (replay user
+% times 1,860 + 5,180 s; verification 1,159 + 5,234 + 924 s on two
+% processes, 70.7 min elapsed), as in Section 10.
+\subsection{\inst{ann_cumene_tanh} and the Kolmogorov--Arnold network (KAN) instances}\label{app:annkan}
+
+Both families embed trained networks whose variables are determined by a few inputs, so the dual bounds come from branch and bound over the inputs.
+\Cref{app:annkan-ann,app:annkan-ann-bb,app:annkan-ann-verif} prove \cref{thm:ann-bound}, and \cref{app:annkan-kan,app:annkan-kan-infeasible,app:annkan-kan-enclosure} prove \cref{prop:kan-infeasible,thm:kan-enclosure}.
+
+\subsubsection{The model \texorpdfstring{\inst{ann_cumene_tanh}}{ann\_cumene\_tanh}}\label{app:annkan-ann}
+
+The instance comes from \citet[Section~5.4]{schweidtmann2019-deterministic-global-optimization-with-artificial}: the operating point of a cumene process is optimized on a hybrid model of 14 multilayer perceptrons with tanh activations.
+MINLPLib added it in 2021 in the source's full-space formulation.
+It has 794 continuous variables and 790 rows (789 equalities) and minimizes \texttt{objvar}, the negative profit.
+The inputs $u=(x_{723},\dots,x_{727})$ range over the box $\mathcal U=[360,390]\times[0.37,1]\times[1.31,1.97]\times[0.85,0.99]\times[0.2,1.2]$, and the inequality row \texttt{e789} is the purity requirement $x_{772}\ge0.999$.
+
+In a suitable order, 529 linear rows and 250 rows $x_v=\tanh(x_s)$ each contain exactly one new variable, which enters linearly with a nonzero constant coefficient or as the left side of a tanh row.
+They determine 779 variables as explicit functions $x(u)$, of which 722 have finite bounds, among them the training domain $[-1,1]$ of 70 normalized network inputs.
+The remaining ten variables are free except \texttt{objvar} (bounds $\pm10^{20}$) and occur only in \texttt{e749}, \texttt{e750}, \texttt{e782}--\texttt{e788} and the objective row \texttt{e790}.
+Rows \texttt{e782}--\texttt{e786} read $x_{746}x_w=\Pi_w$ for $w=x_{787},\dots,x_{791}$, with $\Pi_w$ quadratic in determined variables; \texttt{e787} reads $x_{765}x_{772}+x_{766}x_{792}=x_{760}x_{763}$ and \texttt{e788} reads $x_{792}+x_{793}=1$; and \texttt{e790} writes \texttt{objvar} as $c_0=10619.965999999999$ plus six linear terms in determined variables plus multiples of $x_{746}x_w$, $x_{766}x_{792}$ and $x_{766}x_{793}$.
+Substituting the products gives
+\[
+\begin{aligned}
+f(u)={}&c_0+\textstyle\sum_{j\in J}a_jx_j(u)+\sum_wc_w\Pi_w(x(u))\\
+&+c_{92}\bigl(x_{760}x_{763}-x_{765}x_{772}\bigr)(u)+c_{93}\bigl(x_{766}-x_{760}x_{763}+x_{765}x_{772}\bigr)(u),
+\end{aligned}
+\]
+and we bound $f$ over
+\[
+\Omega:=\bigl\{u\in\mathcal U:\ \ell_v\le x_v(u)\le\upsilon_v\ \text{for all 722 bounded determined }v,\ \ x_{772}(u)\ge0.999\bigr\}.
+\]
+
+\begin{lemma}[reduction]\label{lem:ann-reduction}
+If $x$ is an exactly feasible point of \inst{ann_cumene_tanh} and $u=(x_{723},\dots,x_{727})$, then $u\in\Omega$, the determined coordinates of $x$ equal $x(u)$, and $\texttt{objvar}=f(u)$.
+Hence $\vstar(\model_{\mathrm{ann}})\ge\inf_\Omega f$.
+\end{lemma}
+
+\begin{proof}
+The forward rows determine the coordinates of~$x$ one by one, so they equal $x(u)$, and their bounds and \texttt{e789} are the constraints of~$\Omega$.
+Rows \texttt{e782}--\texttt{e786} give $x_{746}x_w=\Pi_w(x(u))$, row \texttt{e787} gives $x_{766}x_{792}=x_{760}x_{763}-x_{765}x_{772}$, and row \texttt{e788} multiplied by $x_{766}$ gives $x_{766}x_{793}=x_{766}-x_{766}x_{792}$; substituting into \texttt{e790} yields $\texttt{objvar}=f(u)$.
+No division is used, so points where $x_{746}$ or $x_{766}$ vanishes are covered.
+\end{proof}
+
+$\Omega$ drops \texttt{e749}, \texttt{e750}, the solvability of the product rows and the bound on \texttt{objvar}, so it may be larger than the projection of the feasible set.
+MINLPLib's \inst{ann_cumene_exp} replaces $-\tanh(x_s)$ in each tanh row by $2/(\exp(2x_s)+1)-1$ and moves the constant into the row bounds; an exact comparison of the OSIL files shows that all other data coincide.
+Since $\exp(2x_s)+1>0$, both models have the same feasible points and objective values, so \cref{thm:ann-bound} and the primal point hold verbatim for \inst{ann_cumene_exp}.
+\Cref{app:literature} compares $\Omega$ with the reduced-space formulation of the source.
+
+\subsubsection{Branch and bound over the inputs}\label{app:annkan-ann-bb}
+
+The search starts from the outward binary64 enclosure of~$\mathcal U$.
+It prunes a box~$Q$, bisects it at a binary64 point of one coordinate, or shrinks it by interval propagation to $Q_{\mathrm{red}}$ and records the removed part as at most ten slab boxes, so that $Q$ is the union of $Q_{\mathrm{red}}$ and the slabs.
+It ran for 1800\,s from $\mathcal U$, and then for 5400\,s from the 111,474 boxes left open.
+
+\begin{lemma}[covering]\label{lem:ann-cover}
+$\mathcal U$ is contained in the union of $1{,}644{,}110$ pruned regions (pruned boxes and slabs: $212{,}092+66{,}403$ in the first run and $899{,}981+465{,}634$ in the second) and the $208{,}223$ unsplit leaf boxes left open by the second run (its open boxes).
+\end{lemma}
+
+\begin{proof}
+By induction over the search tree: every operation replaces a box by boxes whose union contains it, and the second run starts from all open boxes of the first.
+\end{proof}
+
+A replay driver written in a later agent session, using the first implementation's bounding routines, reproduced every log line and both saved frontiers of the two runs bit for bit and extracted the pruned regions; the region volumes add up to the start volume to 12 digits, and each of 4000 random points lies in exactly one region.
+The covering argument trusts this reconstruction.
+
+Two implementations bound $f$ on the regions, both by the following three lemmas: the first was written together with the search, the second later, in a separate agent session that also read the first in full (\cref{app:annkan-ann-verif}).
+On a region~$Q$, with binary64 vectors $m$ and $\rho>0$ such that $Q\subseteq\{m+\operatorname{diag}(\rho)\xi:\ \xi\in[-1,1]^5\}$, the bound uses affine forms in $N=255$ noise symbols: five for the inputs and one per tanh neuron, shared by all variables downstream of that neuron \citep{stolfi2003-an-introduction-to-affine-arithmetic,messine2002-extensions-of-affine-arithmetic-application}.
+
+\begin{lemma}[tanh enclosure]\label{lem:ann-tanh}
+Let $[l,t]$ be an interval, $\alpha\in[0,1]$ and $g(s)=\tanh(s)-\alpha s$.
+Finitely many values of $\tanh$ and $\tanh'$ at $l$, $t$, $0$ and tangent points give $g_{\min},g_{\max}$ with $g([l,t])\subseteq[g_{\min},g_{\max}]$; with $\beta=(g_{\min}+g_{\max})/2$ and $\varrho=(g_{\max}-g_{\min})/2$, $|\tanh(s)-\alpha s-\beta|\le\varrho$ on $[l,t]$.
+\end{lemma}
+
+\begin{proof}
+Since $\tanh''=-2\tanh\operatorname{sech}^2$, $g$ is convex on $(-\infty,0]$ and concave on $[0,\infty)$; split $[l,t]$ at~$0$ and take the hull of the ranges.
+On a convex piece the maximum of~$g$ is at an end point, and the tangent $g(p)+g'(p)(s-p)$ at any $p$ of the piece is a minorant whose minimum is at an end point; on a concave piece the roles are exchanged.
+If $\alpha\le\min\{\tanh'(l),\tanh'(t)\}=\min_{[l,t]}\tanh'$, then $g$ is nondecreasing and $g([l,t])=[g(l),g(t)]$.
+\end{proof}
+
+The first implementation computes $g_{\min}$ and $g_{\max}$ as in this proof.
+The second splits $[l,t]$ at $0$ and near the stationary points of~$g$, places the extremes at end points where $g'=\operatorname{sech}^2-\alpha$ has a proved constant sign, and otherwise uses the enclosure $[\tanh(l)-\alpha t,\ \tanh(t)-\alpha l]$, which is valid because $\alpha\ge0$.
+
+\begin{lemma}[affine forms with shared noise symbols]\label{lem:ann-affine}
+There are reals $C_v$, vectors $A_v\in\R^N$ and radii $r_v\ge0$ for every determined variable~$v$ and for $v=f$, and a map $\xi:Q\to[-1,1]^N$, such that $|x_v(u)-C_v-A_v^{\top}\xi(u)|\le r_v$ and $|f(u)-C_f-A_f^{\top}\xi(u)|\le r_f$ for all $u\in Q$.
+\end{lemma}
+
+\begin{proof}
+Put $\xi_i(u)=(u_i-m_i)/\rho_i$ for $i\le5$ and proceed in the forward order.
+A linear row $x_v=\sum_kw_kx_k+b$ gives $C_v=\sum_kw_kC_k+b$, $A_v=\sum_kw_kA_k$ and $r_v=\sum_k|w_k|r_k$.
+For tanh neuron~$n$ with argument $x_s$, the interval $[C_s-\|A_s\|_1-r_s,\ C_s+\|A_s\|_1+r_s]$ contains $x_s(Q)$, and \cref{lem:ann-tanh} gives $\alpha_n,\beta_n,\varrho_n$ on it.
+Define $\xi_{5+n}(u)=(\tanh(x_s(u))-\alpha_nx_s(u)-\beta_n)/\varrho_n\in[-1,1]$ (or $0$ if $\varrho_n=0$); then $C_v=\alpha_nC_s+\beta_n$, $A_v=\alpha_nA_s+\varrho_n\mathbf e_{5+n}$ and $r_v=|\alpha_n|r_s$.
+This is well defined because the form of $x_s$ was built before symbol $5+n$ existed, so $(A_s)_{5+n}=0$.
+A product of two forms satisfies $(C_p+A_p^{\top}\xi\pm r_p)(C_q+A_q^{\top}\xi\pm r_q)\subseteq C_pC_q+(C_pA_q+C_qA_p)^{\top}\xi\pm\bigl(|C_p|r_q+|C_q|r_p+(\|A_p\|_1+r_p)(\|A_q\|_1+r_q)\bigr)$, which gives the form of~$f$.
+\end{proof}
+
+The second implementation uses the sharper split $(A_p^{\top}\xi)(A_q^{\top}\xi)=\tfrac12\sum_iA_{p,i}A_{q,i}+\nu$ with $|\nu|\le\|A_p\|_1\|A_q\|_1-\tfrac12\sum_i|A_{p,i}A_{q,i}|$, valid since $\xi_i^2\in[0,1]$.
+Shared symbols let the linearization errors of a neuron cancel where its output enters several variables (on boxes of relative width $10^{-3}$ near the best known point, median gaps to the best known value of $0.0866$ against $0.294$ with one remainder per variable and $2.06$ for interval and mean-value forms; numerical evidence).
+
+\begin{lemma}[weak duality over the cube]\label{lem:ann-duality}
+Write the constraints of $\Omega$ as $\sigma_j(x_{v_j}(u)-b_j)\ge0$ with $\sigma_j=\pm1$.
+For every $\mu\ge0$ and $u\in Q\cap\Omega$,
+\[
+f(u)\ \ge\ \Phi(\mu):=C_f-r_f-\sum_j\mu_j\bigl(\sigma_j(C_{v_j}-b_j)+r_{v_j}\bigr)-\Bigl\|A_f-\sum_j\mu_j\sigma_jA_{v_j}\Bigr\|_1,
+\]
+and if $\sum_j\mu_j(\sigma_j(C_{v_j}-b_j)+r_{v_j})+\|\sum_j\mu_j\sigma_jA_{v_j}\|_1<0$ for some $\mu\ge0$, then $Q\cap\Omega=\emptyset$.
+\end{lemma}
+
+\begin{proof}
+By \cref{lem:ann-affine}, $0\le\sigma_j(x_{v_j}-b_j)\le\sigma_j(C_{v_j}-b_j)+\sigma_jA_{v_j}^{\top}\xi+r_{v_j}$ and $f\ge C_f+A_f^{\top}\xi-r_f$.
+Subtracting the $\mu$-weighted constraint terms gives $f\ge C_f-r_f-\sum_j\mu_j(\sigma_j(C_{v_j}-b_j)+r_{v_j})+(A_f-\sum_j\mu_j\sigma_jA_{v_j})^{\top}\xi\ge\Phi(\mu)$, since $|\xi_i|\le1$.
+The second claim follows in the same way from $0\le\sum_j\mu_j\sigma_j(x_{v_j}-b_j)$.
+\end{proof}
+
+So $\mu$ may come from any untrusted LP solver; rigor comes only from evaluating $\Phi(\mu)$ with outward rounding \citep{neumaier2004-safe-bounds-in-linear-and}, and dropping constraints only weakens the bound.
+We claim no novelty for the method: \citet{ninin2015-a-reliable-affine-relaxation-method} obtain rigorous bounds and infeasibility certificates in this way from reliable affine relaxations within interval branch and bound (see also \citealp{figueiredo1997-fast-interval-branch-and-bound,berz2009-rigorous-global-search-using-taylor}).
+Recent interval solvers combine such affine relaxations with Taylor-based ones \citep{araya2025-hybridizing-two-linear-relaxation-techniques}.
+Specific here are the reduced space, one shared symbol for each of the 250 tanh neurons, the explicit rounding analysis and a partition re-certified by a second code.
+
+\begin{proof}[Proof of \cref{thm:ann-bound}]
+Let $\Lcert^*=-7447080719734483\cdot2^{-41}$.
+By \cref{lem:ann-reduction,lem:ann-cover} it suffices to show $f\ge\Lcert^*$ on $Q\cap\Omega$ for each of the $1{,}852{,}333$ regions~$Q$, and the second implementation proves this for every region.
+It computes the forms of \cref{lem:ann-affine} without clipping, collects every constraint of $\Omega$ that the affine range can violate, takes $\mu$ from an LP over all $N$ symbols (elastic if infeasible), and evaluates $\Phi(\mu)$ and the emptiness test of \cref{lem:ann-duality} in outward-rounded interval arithmetic.
+If neither $\Phi(\mu)\ge\Lcert^*$ nor emptiness is proved, it bisects the region along its relatively widest input, with at most 4000 nodes per region.
+Every region succeeded, after subdivision for 1,512 regions of the first run (at most 223 nodes), 173 of the second (at most 21 nodes) and 5 open boxes (at most 3 nodes).
+A NaN bound counts as ``not proved''.
+Hence $f\ge\Lcert^*$ on~$\Omega$, and $\vstar\ge\Lcert^*\ge-3386.5403$.
+\end{proof}
+
+The first implementation proved the same regions with its own bound: the forms of \cref{lem:ann-affine}, also with one lumped remainder per variable, \cref{lem:ann-duality} with $\mu$ supported on at most three constraints, interval passes on wide boxes, clipping of forms that is valid at feasible points, and an objective cut that removes only points with $f>\Uprim_{\mathrm{inc}}$, the incumbent value.
+Its certified value is the minimum of the closed-region bounds ($-3379.985488216472$), the least open-box bound ($\Lcert^*$) and $\Uprim_{\mathrm{inc}}$, which is valid whether or not $\Uprim_{\mathrm{inc}}$ is attained.
+So every region has two proofs, and $\Lcert^*$ is valid if either implementation is correct, given the covering.
+
+\subsubsection{Arithmetic, verification and the remaining gap}\label{app:annkan-ann-verif}
+
+Both implementations use IEEE binary64 arithmetic with \texttt{nextafter} steps in the default floating-point environment (\cref{hyp:fp-ieee}).
+The first bounds every rounding error by $\gamma_n=n\uround/(1-n\uround)$, valid for any summation order and with or without fused multiply-add, and inflates radii by $1+\gamma_{2k+20}$.
+The second adds a relative slack $\tau=10^{-12}$ per operation, at least 30 times the $\gamma_n$ of any sum it forms ($n\le260$), applied to sums of absolute values; the slack also covers the rounding of the decimal constants, which it uses as correctly rounded binary64 values.
+Neither trusts a library transcendental: $\tanh(s)=\operatorname{sign}(s)(1-2/(e^{2|s|}+1))$ with $\exp$ enclosed from $+,-,\times,\div$, by a 64-entry table of $\exp(j\ln2/64)$ and a degree-8 Taylor polynomial (remainder at most $10^{-25}$) in the first, and by its own reduction and a degree-22 Taylor polynomial (remainder at most $10^{-30}$) in the second.
+Their constants (enclosures of $\ln2$, table entries, remainder bounds) were checked in exact rational arithmetic.
+
+\begin{remark}[saturated neurons]\label{rem:ann-saturation}
+For $|z|\ge300$ both implementations return $[1,1]$ (or $[-1,-1]$) for $\tanh(z)$, which misses the true value by less than $2e^{-600}<6\cdot10^{-261}$.
+Such a value $T$ enters only outward-rounded operations ($T-\alpha s$, $1-T\cdot T$, $wT$), and each outward step moves the result end by at least a quarter unit in the last place.
+For $T-p$ with $p=\alpha s\ge0$ enclosed outward, the slack at $p$ or at $1-p$ is at least $2^{-55}$, since $\max\{p,|1-p|\}\ge\tfrac12$; for $wT$ it is at least $2^{-55}|w|$; and $1-T\cdot T$ yields an interval containing $[-2^{-52},2^{-53}]\ni\operatorname{sech}^2(z)$.
+So every derived enclosure remains valid.
+The second implementation copied this idiom from the first, so in this detail the two are not separately written; the argument covers both.
+\end{remark}
+
+The second implementation does not import the first, but the session that wrote it also read the first in full (and found no rigor error), and the second copied one idiom of the first (\cref{rem:ann-saturation}); so the second is not separately written in the sense of \cref{sec:semantics-protocol}, and \cref{thm:ann-bound} has the status proved, not verified.
+The trust base of $\Lcert^*$ is \cref{hyp:fp-ieee}, the model reading (two decoders and a reader checked against a separately written one; certificate box below), the covering as produced by the search and extracted by the replay (which runs the first implementation's bounding routines), and the correctness of either bounding implementation.
+The search tree is not stored, but both runs replay deterministically by saved node counts, and the replay regenerates the region lists of the re-certification, which were not archived; the 208,223 open boxes can also be re-certified directly from the stored frontier.
+
+The exactly feasible point of \cref{app:points} has an objective enclosure of width below $3\cdot10^{-89}$ in exact rational interval arithmetic, so $\Uprim\le-3379.9823940$, $\gapabs\le6.56$ and $\gaprel\le0.195\%$ ($0.194\%$ relative to the dual bound).
+MINLPLib lists no dual bound for \inst{ann_cumene_tanh}; for \inst{ann_cumene_exp}, SCIP and LINDO list floating-point dual bounds equal to the listed point (\cref{app:literature}), and our bound is weaker.
+Our point, also exactly feasible for \inst{ann_cumene_exp}, lies at least $7.17\cdot10^{-8}$ below their displayed value $-3379.982394$, less than half a unit in the last displayed digit; this is consistent with rounding of the display and says nothing about the underlying solver values.
+At the best known point $x_{772}\ge0.999$ and $x_{647}\ge-1$ are active, and $f$ grows only quadratically along the remaining three-dimensional tangent space.
+We interpret the remaining gap as consistent with a constrained cluster effect of first-order bounds along a large, nearly flat valley on $x_{772}=0.999$ \citep{kannan2017-the-cluster-problem-in-constrained}; this was not tested.
+
+\begin{certbox}[Certificate for \cref{thm:ann-bound}]
+\certitem{Inputs}{OSIL SHA-256 prefix \texttt{13a44f74762f}; code and settings of both search runs; the stored frontier of 208,223 open boxes.}
+\certitem{Computation}{covering by the replayed search; per region, affine forms with 255 shared symbols and the outward-rounded bound of \cref{lem:ann-duality}; \arith{F}, with $\exp$ enclosed from $+,-,\times,\div$.}
+\certitem{Data reading}{each decimal is read as an exact rational; the first implementation encloses it by a binary64 midpoint and radius (outward), the second uses its correctly rounded binary64 value, a rounding that its slack covers; two separately written decoders agree on the input box, the bounds that define~$\Omega$ and the 779 forward rows as exact rationals (objectives within $3.3\cdot10^{-47}$ at 20 random points, 50 digits); their shared OSIL reader is reproduced exactly by a separately written one.}
+\certitem{Implementations}{each of the 1,852,333 regions proved by both; $\Lcert^*$ valid if either is correct, given the covering; the second does not import the first, but it copied one idiom of the first (\cref{rem:ann-saturation}), so it is not separately written (status proved).}
+\certitem{Evidence level}{\evid{hand} for \cref{lem:ann-reduction,lem:ann-cover,lem:ann-tanh,lem:ann-affine,lem:ann-duality}; \evid{rerun} overall.}
+\certitem{Replay}{Tier~3; search replay about 2\,h on one core; re-certification of all regions 2.0 CPU-hours, of the open boxes alone about 15 CPU-minutes.}
+\end{certbox}
+
+\subsubsection{The KAN instances and the relaxations \texorpdfstring{$\Rnet$ and $\RP$}{R and R\_P}}\label{app:annkan-kan}
+
+The six instances in our set come from \citet{karia2025-deterministic-global-optimization-over-trained} (data in \citealp{karia2025-karia-et-al-zenodo-default}).
+Each minimizes a trained Kolmogorov--Arnold network \citep{liu2024-kan-kolmogorov-arnold-networks} that approximates the Rosenbrock function in three (\texttt{r3}) or five (\texttt{r5}) dimensions, in the source's ``Default'' formulation; the counts in \cref{tab:kan-edges} match the source's data.
+MINLPLib contains four further KAN instances, not among our 43, about which we claim nothing.
+
+With $d$ inputs and $n$ hidden neurons, the network has edges $(i,j)$ from input~$i$ to neuron~$j$ and edges $(j,\mathrm{out})$.
+Edge~$e$ carries $\phi_e(z)=w^{\mathrm s}_eS_e(z)+w^{\mathrm b}_e\operatorname{silu}(z)$, where $\operatorname{silu}(z)=z/(1+e^{-z})$ and $S_e=\sum_mc_{e,m}B_{e,m}$ is a cubic B-spline on a uniform grid extended by three knots on each side ($K=18$ knot intervals per edge for \texttt{r3}, $K=12$ for \texttt{r5}).
+Neuron~$j$ computes $h_j=\beta_j+\sum_i\phi_{(i,j)}(u_i)$, the output is $y=\beta_0+\sum_j\phi_{(j,\mathrm{out})}(h_j)$, and the objective is $\theta_1y+\theta_0$ with $\theta_1\approx970.2$ (\texttt{r3}) or $1439.6$ (\texttt{r5}).
+The encoding gives each edge its own argument variable $z_e$ (a copy of $u_i$ or $h_j$) and binaries $b_{e,1},\dots,b_{e,K}$ with a one-hot row; big-$M$ rows force $z_e\in I_{e,k}=[\mathrm{lo}_{e,k},\mathrm{hi}_{e,k}]$ when $b_{e,k}=1$.
+Cox--de Boor rows, bilinear in binaries or lower-degree basis variables and $z_e$, define the basis variables of degrees 1--3; three partition-of-unity rows $\sum_mB_{e,m,p}=1$ ($p=1,2,3$), a spline-sum row, a SiLU row and an edge row follow, and copy, scaling, neuron-sum, output and objective rows complete the model.
+Each scaling row maps an input to its Rosenbrock coordinate in $[-2.048,2.048]$.
+The input class box $Z_i$ is the intersection of the bounds of $u_i$, its copies and its scaled copy, $Z=\prod_iZ_i$, and the hidden class box $H_j$ is the intersection of the bounds of $h_j$ and its copy.
+Neighbouring big-$M$ intervals overlap by at most $7\cdot10^{-16}$ or leave gaps of at most $1.5\cdot10^{-15}$; all bounds below cover every admissible choice of intervals.
+
+If $b_{e,\cdot}$ is the $k$-th unit vector, each Cox--de Boor row of~$e$, processed by degree, has exactly one unknown, which enters linearly with a nonzero constant coefficient.
+So the rows fix every basis variable to a polynomial in $z_e$ with rational coefficients, and $\phi_e(z;k)=w^{\mathrm s}_eP_{e,k}(z)+w^{\mathrm b}_e\operatorname{silu}(z)$ with an exact rational cubic $P_{e,k}$, the model's piece.
+For exact cubic B-splines on knots $t_0<\dots<t_K$, $\sum_mB_{m,p}=1$ on $[t_p,t_{K-p}]\supseteq[t_3,t_{K-3}]$, which contains the admissible arguments, so the partition rows are identities of the exact network; they fail in the stored models only because the recursion coefficients are 16-digit decimals (residual coefficients of order $10^{-17}$ to $10^{-15}$).
+
+\begin{definition}[the relaxations $\Rnet$ and $\RP$]\label{def:kan-relaxations}
+For a choice $k=(k_e)_e$ of one knot interval per edge, let $h_j(u,k)=\beta_j+\sum_i\phi_{(i,j)}(u_i;k_{(i,j)})$ and $F(u,k)=\theta_1\bigl(\beta_0+\sum_j\phi_{(j,\mathrm{out})}(h_j(u,k);k_{(j,\mathrm{out})})\bigr)+\theta_0$.
+(a) $\Rnet$ is the set of pairs $(u,k)$ with $u\in Z$, $u_i\in I_{(i,j),k_{(i,j)}}$ for every edge $(i,j)$, and $h_j(u,k)\in H_j\cap I_{(j,\mathrm{out}),k_{(j,\mathrm{out})}}$ for every~$j$, with objective~$F$.
+(b) $\RP$ is the set of points that satisfy every row, bound and integrality requirement of the OSIL model except the partition-of-unity rows, with the OSIL objective.
+\end{definition}
+
+$\Rnet$ is the reduced form of the OSIL model without the partition rows and without the bounds on basis, spline, edge-output and output variables (and an inactive SiLU bound); it allows different edges of one input to choose different intervals where big-$M$ intervals overlap.
+
+\begin{lemma}[projection]\label{lem:kan-projection}
+(a) Every $x\in\RP$ defines a pair $(u,k)\in\Rnet$, its inputs and one-hot choices, with $F(u,k)$ equal to the objective of~$x$; hence $\vstar(\Rnet)\le\vstar(\RP)$, where $\vstar$ denotes the infimum of the objective, as in \cref{def:sem-feasible}.
+(b) If $\Rnet$ and $\RP$ are nonempty, both infima are attained.
+\end{lemma}
+
+\begin{proof}
+(a) The one-hot rows and integrality give one interval $k_e$ per edge and the big-$M$ rows give $z_e\in I_{e,k_e}$; the copy rows identify $z_e$ with $u_i$ or $h_j$, whose copy bounds give $u\in Z$ and $h_j\in H_j$.
+With $(u,k)$ fixed, each equality row other than the partition rows has, in a suitable order, one unknown entering linearly with a nonzero constant coefficient, so the rows determine every variable and the objective equals $F(u,k)$.
+(b) For each of the finitely many~$k$, the inputs $u$ with $(u,k)\in\Rnet$ form a compact set, defined by non-strict inequalities between continuous functions on the compact~$Z$, and $F(\cdot,k)$ is continuous on it.
+The same holds for the inputs of points of $\RP$ with fixed binaries, since every other variable is a continuous function of the inputs.
+\end{proof}
+
+\begin{table}[t]
+\centering\small
+\caption{The six KAN instances of our set. Network $[d,n,1]$; variables (binary) and rows of the OSIL model; edges; knot intervals per edge~$K$. Certifying edge: the edge argument used in the proof of \cref{prop:kan-infeasible}, with its input. Intervals: knot intervals that meet the input class box. Last column: layer-1 edges for which a separately written check found a complete certificate.}
+\label{tab:kan-edges}
+\begin{tabular}{@{}lllllllll@{}}
+\toprule
+instance & network & variables & rows & edges & $K$ & certifying edge & intervals & layer-1 edges\\
+\midrule
+\inst{kan_r3_h1_n4} & $[3,4,1]$ & 1129 (288) & 1478 & 16 & 18 & \texttt{x1076} (input 2) & 12 & 4 of 12\\
+\inst{kan_r3_h1_n5} & $[3,5,1]$ & 1410 (360) & 1847 & 20 & 18 & \texttt{x1344} (input 2) & 12 & 5 of 15\\
+\inst{kan_r3_h1_n9} & $[3,9,1]$ & 2534 (648) & 3323 & 36 & 18 & \texttt{x2416} (input 2) & 12 & 9 of 27\\
+\inst{kan_r5_h1_n3} & $[5,3,1]$ & 838 (216) & 1121 & 18 & 12 & \texttt{x776} (input 1) & 6 & 15 of 15\\
+\inst{kan_r5_h1_n5} & $[5,5,1]$ & 1392 (360) & 1867 & 30 & 12 & \texttt{x1292} (input 1) & 6 & 25 of 25\\
+\inst{kan_r5_h1_n8} & $[5,8,1]$ & 2223 (576) & 2986 & 48 & 12 & \texttt{x2066} (input 1) & 6 & 40 of 40\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Exact infeasibility of the OSIL models}\label{app:annkan-kan-infeasible}
+
+\begin{proof}[Proof of \cref{prop:kan-infeasible}]
+Fix the certifying edge $e^*$ of \cref{tab:kan-edges}, with argument~$z$ and input~$i$, and suppose $x$ is exactly feasible.
+The one-hot row and integrality give a unique $k$ with $b_{e^*,k}=1$, the big-$M$ rows give $z\in I_{e^*,k}$, and the copy and scaling rows give $z\in Z_i$.
+The Cox--de Boor rows of $e^*$ then fix every basis variable of $e^*$ to a polynomial $B^{(k)}_{m,p}(z)$ with rational coefficients, and the partition rows require $\rho^{(k)}_p(z):=\sum_mB^{(k)}_{m,p}(z)-1=0$ for $p=1,2,3$.
+For every $k$ with $I_{e^*,k}\cap Z_i\ne\emptyset$, an exact computation over~$\Q$ shows that $\rho^{(k)}_1,\rho^{(k)}_2,\rho^{(k)}_3$ have no common zero in $I_{e^*,k}\cap Z_i$: one of them is a nonzero constant or has no root there (Sturm count), or the nonzero residuals have no common complex root (shown by a nonzero pairwise resultant or by a constant greatest common divisor; either test suffices).
+The rows involved belong to $e^*$ alone, so this holds whatever the other edges choose.
+\end{proof}
+
+For \inst{kan_r5_h1_n3} and edge \texttt{x776}, the interval of binary \texttt{b6} allows $z\in[-0.5857759315175706,\allowbreak\,-0.0040155389917946]$.
+With $\texttt{b6}=1$, the Cox--de Boor rows \texttt{e48} and \texttt{e49} give
+\[
+\begin{aligned}
+x_{221}&=-0.006902393224744528-1.718920732397047\,z,\\
+x_{222}&=\phantom{-}1.0069023932247445+1.718920732397047\,z,
+\end{aligned}
+\]
+and the other degree-1 basis variables of the edge vanish.
+The partition row \texttt{e77} requires $x_{221}+x_{222}=1$, but $\rho_1$ is the constant $1.0069023932247445-0.006902393224744528-1=-2.8\cdot10^{-17}$.
+On the intervals of \texttt{b7}--\texttt{b9}, $\rho_1$ is again a nonzero constant; on that of \texttt{b4}, $\rho_1\equiv\rho_2\equiv0$ and $\rho_3$ has no root in the interval; on that of \texttt{b5}, $\rho_2$ and $\rho_3$ have no common root.
+For \inst{kan_r5_h1_n5} and \inst{kan_r5_h1_n8} the bounds of the edge argument alone suffice; for the \texttt{r3} models one interval needs the bound of the scaled copy.
+On the interval of binary \texttt{b22}, the first interval of \texttt{x1076} that meets~$Z_2$, $\rho_1\equiv0$, and $\rho_2$ and $\rho_3$ (rows \texttt{e197}, \texttt{e198}) are proportional linear polynomials with the common root $z=-1.7755611391195993$, the argument's own lower bound.
+The scaling row $1.1829802422633118\,x_{1076}-x_{1077}=-0.041069570755708745$ and $x_{1077}\ge-2.048$ give $z\ge-1.765937837439145\ldots$, which excludes this root; the same holds for \texttt{x1344} and \texttt{x2416}.
+
+The certificates were computed twice in exact rational arithmetic, in about a second per model: by a check with Sturm counts and pairwise resultants, confirmed by a separate greatest-common-divisor and root-isolation analysis, and by a separately written propagation over~$\Q$ that shares only the OSIL reader, which agrees exactly with a separately written reader on all six files.
+So $\vstar=+\infty$ for the six OSIL models, and every number, including every listed dual bound, is a valid but vacuous dual bound for them.
+The GAMS form was compared with the OSIL form only at sample points, so the statement concerns the OSIL decimals.
+
+\subsubsection{The enclosure of \texorpdfstring{$\vstar(\RP)$}{v*(R\_P)}}\label{app:annkan-kan-enclosure}
+
+The lower bound $\Lcert\le\vstar(\Rnet)$ comes from two branch-and-bound implementations over the input box~$Z$ of dimension 3 or~5: path~(I) was written later, in a separate agent session, with its own decoder, and path~(II) was written together with the original search.
+Both start from the outward binary64 enclosure of~$Z$, decide admissibility of intervals with outward enclosures of the big-$M$ intervals, and give bounds that hold for every admissible choice of intervals at once.
+
+\paragraph{Path~(I): the model's own pieces.}
+Path~(I) bounds $F$ on a box $Q\subseteq Z$ by the largest of three bounds valid for all $(u,k)\in\Rnet$ with $u\in Q$: a natural interval enclosure with the hull over admissible pieces (Taylor ranges intersected with mean-value forms) and $h_j\cap H_j$; a second-order form around the centre with a reference piece, where exact bounds on $|P_{e,k}-P_{e,k_0}|$ penalize arguments that cross knots; and a third-order form, used only when the centre Hessian is proved positive definite by an exact rational $LDL^{\top}$ factorization.
+It discards a box when its bound is at least $\Uprim_{\mathrm{inc}}-\mathrm{tol}$ with $\mathrm{tol}=4\cdot10^{-11}\max\{1,|\Uprim_{\mathrm{inc}}|\}$, recomputed as the incumbent value $\Uprim_{\mathrm{inc}}$ decreases, and returns $\Lcert_{\mathrm{ver}}=\min\{\Uprim_{\mathrm{inc}}-\mathrm{tol},\min_{\text{open}}\text{bound}\}$, rounded down.
+This is valid because $x\mapsto x-r\max\{1,|x|\}$ is nondecreasing for $0\le r<1$, so every point of a box discarded earlier has $F\ge\Uprim_{\mathrm{inc}}-\mathrm{tol}$ at the end; NaN bounds are mapped to $-\infty$.
+
+\paragraph{Path~(II): the exact-spline network.}
+Path~(II) bounds the exact $C^2$ cubic spline network with the decoded knots and coefficients and subtracts a perturbation term.
+
+\begin{lemma}[perturbation]\label{lem:kan-perturbation}
+Let $\tilde\phi_e$, $\tilde h_j(u)$ and $\tilde f(u)$ be the edge functions, hidden values and objective of the exact spline network.
+Let $\varepsilon_e\ge|P_{e,k}(z)-\tilde S_e(z)|$ for all admissible $k$ and $z\in I_{e,k}$ in the class box, where $\tilde S_e$ is the exact spline; put $\varepsilon^h_j=\sum_i|w^{\mathrm s}_{(i,j)}|\varepsilon_{(i,j)}$ and $\varepsilon^o_j=|w^{\mathrm s}_{(j,\mathrm{out})}|\varepsilon_{(j,\mathrm{out})}$; and let $\Lambda_j\ge|\tilde\phi'_{(j,\mathrm{out})}|$ on $H_j+[-\varepsilon^h_j,\varepsilon^h_j]$.
+Then for every $(u,k)\in\Rnet$: $|h_j(u,k)-\tilde h_j(u)|\le\varepsilon^h_j$, $\tilde h_j(u)\in H_j+[-\varepsilon^h_j,\varepsilon^h_j]$, and $F(u,k)\ge\tilde f(u)-E$ with $E:=|\theta_1|\sum_j(\varepsilon^o_j+\Lambda_j\varepsilon^h_j)$.
+\end{lemma}
+
+\begin{proof}
+The SiLU terms of model and exact edges coincide, so $|\phi_{(i,j)}(u_i;k)-\tilde\phi_{(i,j)}(u_i)|\le|w^{\mathrm s}_{(i,j)}|\varepsilon_{(i,j)}$; summing over~$i$ gives the first claim, and the second follows from $h_j(u,k)\in H_j$.
+For the output edges, $|\phi_{(j,\mathrm{out})}(h_j;k)-\tilde\phi_{(j,\mathrm{out})}(\tilde h_j)|\le|\phi_{(j,\mathrm{out})}(h_j;k)-\tilde\phi_{(j,\mathrm{out})}(h_j)|+|\tilde\phi_{(j,\mathrm{out})}(h_j)-\tilde\phi_{(j,\mathrm{out})}(\tilde h_j)|\le\varepsilon^o_j+\Lambda_j\varepsilon^h_j$ by the mean value theorem, since the segment between $h_j$ and $\tilde h_j$ lies in $H_j+[-\varepsilon^h_j,\varepsilon^h_j]$.
+Multiply by $|\theta_1|$ and sum.
+\end{proof}
+
+Hence $\vstar(\Rnet)\ge\inf\{\tilde f(u):u\in Z,\ \tilde h(u)\in H+[-\varepsilon^h,\varepsilon^h]\}-E\ge\Lcert_{\mathrm{ideal}}-E$, where $\Lcert_{\mathrm{ideal}}$ comes from a branch and bound on the exact network.
+The $\varepsilon_e$ are computed in exact rational arithmetic, the $\Lambda_j$ by outward interval evaluation on 4000 cells covering the enlarged hidden boxes, and $E\le1.39\cdot10^{-10}$ for all six models.
+This branch and bound uses natural, mean-value, second- and third-order forms and a monotonicity reduction, discards a box when its bound is at least $\Uprim_{\mathrm{inc}}-10^{-10}\max\{1,|f_{\mathrm{best}}|\}$ with $f_{\mathrm{best}}$ fixed by a local search, and returns the minimum of the discarded bounds, the open bounds and $\Uprim_{\mathrm{inc}}$.
+The reported $\Lcert$ satisfies $\Lcert\le\Lcert_{\mathrm{ideal}}-E$ in exact arithmetic.
+This path discards NaN bounds silently, so it assumes, without a check, that none occurred.
+Its tolerance, $10^{-10}\cdot262.9\approx2.6\cdot10^{-8}$ for \inst{kan_r5_h1_n3}, explains the largest gap in \cref{tab:kan}.
+
+\begin{proof}[Proof of \cref{thm:kan-enclosure}]
+Path~(II) gives $\Lcert\le\Lcert_{\mathrm{ideal}}-E\le\vstar(\Rnet)$, and path~(I) gives $\Lcert<\Lcert_{\mathrm{ver}}\le\vstar(\Rnet)$ (\cref{tab:kan-rerun}); so $\Lcert$ is valid if either path is correct, given the shared components named below.
+\Cref{lem:kan-projection} gives $\vstar(\Rnet)\le\vstar(\RP)$.
+Finally $\vstar(\RP)\le\Uprim$, because $\Uprim$ is the upper end of an enclosure of the objective at a point of $\RP$ (\cref{app:points}).
+\end{proof}
+
+\begin{table}[t]
+\centering\small
+\caption{Path~(I) with the rigorous exponential. $\Lcert_{\mathrm{ver}}$: its bound, rounded down; the guarded runs give the same values bit for bit. Margin: $\Lcert_{\mathrm{ver}}-\Lcert$ for the reported $\Lcert$ of \cref{tab:kan}, rounded down. Change: $\Lcert_{\mathrm{ver}}$ minus that of the earlier run with the library exponential. Boxes: processed boxes of path~(I) and of path~(II).}
+\label{tab:kan-rerun}
+\begin{tabular}{@{}llllll@{}}
+\toprule
+instance & $\Lcert_{\mathrm{ver}}$ & margin & change & boxes (I) & boxes (II)\\
+\midrule
+\inst{kan_r3_h1_n4} & $0.002781237187850$ & $3.52\cdot10^{-11}$ & 0 & 26,353 & 4,499\\
+\inst{kan_r3_h1_n5} & $-0.01104267944969$ & $7.20\cdot10^{-11}$ & 0 & 22,301 & 4,663\\
+\inst{kan_r3_h1_n9} & $0.01296366002829$ & $6.48\cdot10^{-11}$ & 0 & 42,633 & 3,895\\
+\inst{kan_r5_h1_n3} & $-262.8642258942$ & $1.50\cdot10^{-8}$ & $\approx-3.2\cdot10^{-12}$ & 1,648,095 & 2,855,508\\
+\inst{kan_r5_h1_n5} & $0.2725832539233$ & $6.85\cdot10^{-11}$ & 0 & 709,937 & 85,991\\
+\inst{kan_r5_h1_n8} & $0.06932786057952$ & $6.89\cdot10^{-11}$ & 0 & 615,673 & 96,998\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{The exponential and the guarded quadratic routine.}
+Path~(I) uses the exponential enclosure of path~(II): a 64-entry table, a degree-8 Taylor polynomial with remainder at most $10^{-25}$, one \texttt{nextafter} step per operation, exact scaling by powers of two, and constants checked in exact rational arithmetic.
+A separate agent session read this exponential code, checked its constants and tested the enclosure at 19,916 arguments against 100-digit values.
+Its quadratic lower-bound routine is guarded: every scalar quadratic calculation checks finite inputs and intermediates, ordered intervals, signed displacements $s_l\le0\le s_h$, and exact representability of $m/2$ by the test $2\operatorname{fl}(m/2)=m$, and the convex vertex location is enclosed by outward rounding.
+If a check fails, the minimum over the endpoint slopes, the displacement endpoints and the admissible convex vertices is computed in exact rational arithmetic and rounded down; nonfinite or reversed interval data return $-\infty$.
+The endpoint and vertex formulas, together with this fallback, give a lower bound even for subnormal inputs.
+The guards close a gap in the original routine, which assumed that halving a binary64 curvature is exact and can return a value above the true minimum for a subnormal curvature.
+All six complete guarded runs reproduced the values $\Lcert_{\mathrm{ver}}$ of \cref{tab:kan-rerun} bit for bit, with no open boxes, no guard failures and no fallbacks; each value strictly exceeds the reported $\Lcert$, comparing the exact stored numbers.
+
+The trust base of path~(I) is \cref{hyp:fp-ieee}, the correctness of the OSIL reader and exact decoder, the interval and bounding implementation including these guards, the rigorous exponential enclosure and its rationally checked constants, the certified SiLU minimum constants, the exact rational positive-definite Hessian check, and the box covering and pruning performed by the search.
+The guards do not replace the correctness premise for the remaining implementation or the components shared with path~(II).
+The exponential enclosure, its interval core and the OSIL reader are shared by the two paths, so agreement does not remove those shared premises.
+The shared code was read in full in at least two separate agent sessions, and the reader agrees exactly with a separately written one; so $\Lcert$ is valid if either path and the shared components are correct.
+An earlier run of path~(I) with the library exponential, widened by a relative $2^{-50}$, also exceeds every reported $\Lcert$ without using the shared exponential, but rests on that accuracy assumption, which only sampling supports (\cref{tab:kan-rerun}, column ``change'').
+Both paths need a lower bound on $\min\operatorname{silu}=-0.27846454276107\ldots$; the constants used were proved valid in exact rational arithmetic.
+Neither code was read line by line by another session, and path~(I) was tested by sampling on five of the six models.
+We report the weaker $\Lcert$ rather than $\Lcert_{\mathrm{ver}}$ because $\Lcert_{\mathrm{ver}}$ rests on path~(I) alone.
+
+The points of $\RP$ and their exact checks are described in \cref{app:points}; their partition rows are violated by at most $2.5\cdot10^{-15}$.
+For \inst{kan_r5_h1_n3}, \inst{kan_r5_h1_n5} and \inst{kan_r5_h1_n8}, $\Uprim$ lies below the listed primal value by at least $0.558$, $7.1\cdot10^{-5}$ and $0.291$; for the \texttt{r3} models the listed inputs give network values slightly below~$\Uprim$, so we claim no improvement there.
+
+$\Lcert$ bounds exactly feasible points of $\Rnet$ and $\RP$ only.
+If rows may be violated by $10^{-6}$, as under a typical solver feasibility tolerance, the objective can move by about $\theta_1\cdot10^{-6}\approx10^{-3}$, the scale by which the published zero-gap SCIP values for \inst{kan_r3_h1_n4} and \inst{kan_r3_h1_n5} lie below $\Lcert$ (\cref{prop:kan-scip}).
+
+\begin{certbox}[Certificate for \cref{prop:kan-infeasible,thm:kan-enclosure}]
+\certitem{Inputs}{OSIL SHA-256 prefixes \texttt{2991cd53706d} (r3\_n4), \texttt{203647dbe259} (r3\_n5), \texttt{267fc6596ea1} (r3\_n9), \texttt{75d599868615} (r5\_n3), \texttt{4288259a89d6} (r5\_n5), \texttt{595f66966d00} (r5\_n8); the point files of $\RP$; the guarded path~(I) source (SHA-256 prefix \texttt{e5783a24}) and its replay logs (\cref{app:repro-regen}).}
+\certitem{Computation}{infeasibility: exact polynomial arithmetic over $\Q$ on one edge \arith{E}; enclosure: branch and bound over the inputs in \arith{F}, with $\exp$ enclosed from $+,-,\times,\div$; points of $\RP$ in exact rational interval arithmetic \arith{E}.}
+\certitem{Data reading}{decimals read as exact rationals, enclosed by outward binary64 numbers where needed.}
+\certitem{Implementations}{infeasibility: two separately written exact checks; $\Lcert$: the weaker of the two paths, valid if either branch-and-bound path is correct, given the shared exponential, interval core and reader; path~(II) assumes, without a check, that no NaN bound occurred; path~(I) with guarded quadratic bounds; $\Uprim$: two checkers.}
+\certitem{Evidence level}{infeasibility \evid{hand} and \evid{stored}; enclosure \evid{hand} (\cref{lem:kan-projection,lem:kan-perturbation}) and \evid{rerun}.}
+\certitem{Replay}{infeasibility: Tier~1; about a second per model. Enclosure: Tier~1 for the three \texttt{r3} models (path~(II) 22 to 24\,s, guarded path~(I) 23 to 59\,s per model); Tier~2 for the three \texttt{r5} models (path~(II) 87\,s to 18\,min, guarded path~(I) 12 to 20\,min wall per model, six concurrent processes).}
+\end{certbox}

@@ -1,0 +1,85 @@
+\section{A checked reason to skip separation}\label{sec:screening}
+
+A support oracle should not run merely because a block exists. One
+inexpensive certificate can rule out cuts with sufficiently large
+normalized violation at the current query. This is a local statement
+about a chosen normalization and tolerance, not a prediction of total
+solver time.
+
+Let $g(x)=(x,F(x))\in\R^r$ denote the feature vector used by a block,
+let $\bar z\in\R^r$ be the current lifted query, and choose positive
+coordinate scales $s_1,\ldots,s_r$. Suppose $x^1,\ldots,x^N\in D$
+are verified parameter samples and $\lambda_i\ge0$,
+$\sum_i\lambda_i=1$. Put $z^*=\sum_i\lambda_i g(x^i)\in H_D$.
+With exact graph values, define
+\[
+\rho_1=\sum_j\frac{|\bar z_j-z_j^*|}{s_j},\qquad
+\rho_\infty=\max_j\frac{|\bar z_j-z_j^*|}{s_j}.
+\]
+The implementation can instead have verified enclosures
+$g_j(x^i)\in[\ell_{ij},u_{ij}]$. Define
+$L_j=\sum_i\lambda_i\ell_{ij}$, $U_j=\sum_i\lambda_i u_{ij}$, and
+\begin{equation}\label{eq:screen}
+r_j=\frac{\max\{|\bar z_j-L_j|,|\bar z_j-U_j|\}}{s_j},
+\qquad R_1=\sum_jr_j,\quad R_\infty=\max_jr_j.
+\end{equation}
+All quantities in this expression are rational in the certificate.
+
+\begin{theorem}[Normalized violation screening]\label{thm:screen}
+For every valid lower support inequality $c^\top z\ge\beta$ on $H_D$,
+\[
+\beta-c^\top\bar z\le R_1
+\quad\text{if }\max_j s_j|c_j|\le1,
+\]
+and
+\[
+\beta-c^\top\bar z\le R_\infty
+\quad\text{if }\sum_j s_j|c_j|\le1.
+\]
+Consequently, $R_1\le\tau$ rules out support cuts with violation
+strictly larger than $\tau$ under the first normalization; the
+corresponding statement holds for $R_\infty$ under the second.
+\end{theorem}
+\begin{proof}
+The actual convex combination $z^*$ belongs to $H_D$ and satisfies
+$L_j\le z_j^*\le U_j$. Validity gives
+\[
+\beta-c^\top\bar z\le c^\top(z^*-\bar z)
+\le\sum_j(s_j|c_j|)\frac{|z_j^*-\bar z_j|}{s_j}.
+\]
+Bound the last expression by $R_1$ when each first factor is at most
+one, or by $R_\infty$ when their sum is at most one. These are the
+finite-dimensional H\"older inequalities with an interval upper bound
+for each residual.
+\end{proof}
+
+Proposed convex weights may come from an ordinary numerical LP. To
+obtain a valid witness, interpret its finite coefficients exactly,
+replace negative weights by zero, and divide by their positive exact
+sum. This preserves a convex combination regardless of the accuracy of
+the proposal. An all-nonpositive vector supplies no witness. Each sample
+must satisfy the exact box and affine rows, and its original graph value
+must be enclosed by the trusted evaluator. A sample feasible only for a
+relaxation of the \emph{block domain being certified} is not sufficient
+for this screening theorem. If the block deliberately uses a larger
+domain than the original model, the conclusion concerns cuts for that
+larger-domain hull.
+
+The screen is safe to omit: a large residual, failed LP, rejected sample,
+or failed enclosure causes ordinary bounded separation to continue.
+For a positive tolerance, a successful screen does not prove exact hull
+membership or original nonlinear feasibility. At exactly zero residual,
+it proves membership of the query in the chosen block hull, which still
+does not imply membership of the query in the original graph or in the
+full model's simultaneous hull.
+
+The integration's direction LP bounds each scaled direction coordinate
+individually, so the applicable certificate is $R_1$, not $R_\infty$.
+The two variants are implemented explicitly in
+\pathref{../solver/screening.py}{solver/screening.py}. Sample enclosures
+are cached against a fixed evaluator and domain. Serialized replay
+re-evaluates the original graph and verifies the proposed mixture, query,
+normalization, and threshold; serialized enclosures alone are not trusted.
+This theorem is standard convex-combination geometry. Its role is to
+give a concrete, checkable skip condition, separate from the heuristic
+decision to spend time looking for one.

@@ -1,0 +1,138 @@
+{
+ "summary": "Yes. The tangent-edge obstruction does occur for the sets SCIP uses for implied minor equations, and the gaps are larger than in the bilinear case.\n\n**What SCIP uses (read in the source, then tested).** Only sepa_interminor builds S-free sets for minors. It is off by default (freq = -1). Even when switched on, it returns at once unless SCIP is linked with Ipopt, although it never calls Ipopt. So the local binary (IPOPT=OFF) never separates minors; PySCIPOpt's bundled SCIP does when the separator is enabled.\n\n**SCIP's set is the polar-decomposition set (proved).** The set is C_U = {M : sym(U^T M) \u2ab0 0}, where M\u0304 = UP is the polar decomposition of the minor's LP value. This is exactly Bienstock\u2013Chen\u2013Mu\u00f1oz's set (14a) with their \u03bb of (17a). In a targeted run, all 258 cuts SCIP applied matched the C_U cut; the largest normalized difference was 4.5e-15.\n\n**The orbit and its subfamilies (proved).**\n- Under the automorphisms M \u21a6 AMB^T (and transposition), the orbit of SCIP's set is the 3-parameter family {C_F : det F > 0}. These sets are already maximal, so there is no completion step as in the bilinear case.\n- The family contains a 2-parameter point-rule subfamily (F^T M\u0304 symmetric positive definite: SCIP's construction after every change of coordinates) and the 1-parameter BCM family (every \u03bb). SCIP's set is the unique common member of the two.\n\n**Structural results (proved).**\n- A tangent edge forces any orbit set into a one-parameter pencil (homogeneous version of sfree Lemma 13).\n- Corner minimizers have support at most 3, and support 3 needs s\u0304 to lie in the span of three rays. Every support-2 minimizer lies on a tangent edge.\n- The sfree bilinear counterexamples embed as lower-dimensional minor corners.\n- A fixed set such as SCIP's can attain z_K only if a corner minimizer lies in its 2-dimensional contact cone.\n- SCIP's choice depends on variable scaling. Rescaling one problem variable turns a corner where SCIP's cut is optimal into one where it gives 2\u221a\u03b4\u00b7z_K. The point-rule and orbit families are scale-invariant and stay optimal.\n\n**Exact counterexamples (certified in rational arithmetic).**\n\n| Instance | Minimizer | Orbit | Point rule | BCM | SCIP |\n| --- | --- | --- | --- | --- | --- |\n| A | tangent edge | \u2264 9/20, bracket [0.4495347, 0.4495363] | \u2248 0.1976 | \u2248 0.3173 | 0.1358 |\n| S1 | support one, all edges transversal | \u2264 0.779 | 0.4543 | 0.4855 | 0.312 |\n\n- Instance A is a full-dimensional simplicial corner in R^4 with z_K = 1, attained only on the tangent edge. The gap persists on a neighbourhood of the data.\n- Instance S1 also has z_K = 1, a unique minimizer at a vertex, and strictly positive multipliers on the other rays.\n- SCIP values are computed in 50-digit arithmetic, not certified.\n\n**Numbers (numerical).**\n- *Random corners, 4 rays (600):* the orbit attains z_K in 593, the point-rule family in 521, BCM in 435, SCIP's set in 5 (mean ratio 0.883). All 12 random misses (N = 4 and N = 8) are certified exactly.\n- *McCormick LP vertices of random bipartite bilinear programs (157):* the orbit attains z_K in all of them, SCIP's set in 12 (mean ratio 0.92\u20130.93).\n- *Adversarial search:* with every invariant non-degeneracy margin at least 1%, the orbit ratio reached 0.200 (certified exactly for the rounded corner). That value is set by the margin; with a 5% margin the best was 0.326.\n\n**Solver relevance (negative or weak).**\n- Attaining z_K does not by itself give a better LP bound after re-solving. With the max-margin orbit set the bisection returns, the gap closed was lower than with SCIP's cut: 0.70 vs 0.78.\n- The optimal orbit set nearest to SCIP's set did slightly better than SCIP's cut: 0.800 vs 0.778 and 0.777 vs 0.771 on the two sizes.\n- These cuts are off by default in SCIP 10, so nothing here shows a benefit inside SCIP.",
+ "note_path": "/workspace/minlp-notes/research-20261001/minor-sets/note.md",
+ "results": [
+  {
+   "claim": "sepa_interminor is the only SCIP 10.0.3 component that builds S-free sets for minors. It is off by default (freq -1) and returns immediately unless Ipopt is linked, although it never calls Ipopt. The local binary (IPOPT=OFF) makes 0 calls even with freq 0; PySCIPOpt's SCIP (Ipopt 3.14.19) calls it (1 call, 8 cuts found, 1 applied on the probe model). nlhdlr_quadratic Case 1 (also off by default) uses the same set for an explicit homogeneous constraint (from the source; not tested).",
+   "status": "computed-exactly",
+   "location": "note.md Section 2; code/scip_probe.py; logs/scip_probe.log"
+  },
+  {
+   "claim": "Proposition 1: SCIP's minor set (det M\u0304 > 0) is C_U = {M : sym(U^T M) \u2ab0 0}, M\u0304 = UP polar decomposition; it equals BCM (14a) with lambda of (17a); for det < 0, the column swap gives {M : sym(W^T M) \u2ab0 0} with W the orthogonal polar factor.",
+   "status": "proved",
+   "location": "note.md Proposition 1"
+  },
+  {
+   "claim": "Fidelity: SCIP's applied interminor cuts equal the predicted C_U intersection cuts: 258 of 258 matched (60 random bipartite bilinear models), max normalized difference 4.5e-15; SCIP's literal step formula agrees with C_U to 1.4e-13 on 1709 rays.",
+   "status": "numerical",
+   "location": "note.md Section 2; code/scip_fidelity.py; logs/scip_fidelity_3x3.log, logs/scip_fidelity_4x4.log, logs/test_core.log"
+  },
+  {
+   "claim": "Lemma 2 and Proposition 3: S-free sets of a minor are exactly the closed convex subsets of {det >= 0} with interior; maximal ones are cones (MPS C_Gamma, infinite-dimensional). The automorphism orbit of SCIP's set is {C_F : det F > 0} (3 parameters, all maximal). The point rule under all automorphisms gives PR = {C_F : F^T M\u0304 symmetric PD} (2 parameters, equivariant); the BCM family is {C_R : R in SO(2)}; BCM \u2229 PR = {C_U}.",
+   "status": "proved",
+   "location": "note.md Section 3"
+  },
+  {
+   "claim": "Proposition 4: the best one-cut bound of each family (orbit, PR, BCM) is found by bisection over 2x2 LMIs; rational positive definite dual certificates prove upper bounds exactly.",
+   "status": "proved",
+   "location": "note.md Proposition 4"
+  },
+  {
+   "claim": "Proposition 5: for S = {det = 0}, minimizers with injective P_J have support <= 3; support 3 only if sbar lies in the span of three rays; every support-2 minimizer lies on a tangent edge with det(d) >= 0.",
+   "status": "proved",
+   "location": "note.md Proposition 5"
+  },
+  {
+   "claim": "Lemma 6: a tangent edge at M0 = a0 b0^T forces F^T = theta(G0 + kappa G1), G0 = J adj(D), G1 = J adj(M0) (homogeneous version of sfree Lemma 13).",
+   "status": "proved",
+   "location": "note.md Lemma 6"
+  },
+  {
+   "claim": "Corollary 7: sfree bilinear corners embed as minor corners with identical z_K and orbit bound, so sfree Theorem 14 (0.97539), the second instance (0.83477) and Proposition 16 (0.98385) are lower-dimensional minor counterexamples; reproduced numerically.",
+   "status": "proved",
+   "location": "note.md Corollary 7; code/embed_check.py; logs/embed_check.log"
+  },
+  {
+   "claim": "Theorem 8 (instance A): rational, full-dimensional simplicial corner in R^4 with z_K = 1, unique minimizer on a tangent edge. No orbit set contains T*, z_orbit <= 9/20 (exact bracket [0.4495347, 0.4495363]); point rule [0.1975640, 0.1975643]; BCM [0.3172917, 0.3172929]; SCIP 0.1358 (50-digit arithmetic). The gap persists on a neighbourhood of the data. Instance B: orbit [0.92194, 0.92196], SCIP 0.325.",
+   "status": "computed-exactly",
+   "location": "note.md Theorem 8; code/certify_cex.py; logs/certify_cex_A.log, logs/certify_cex_B.log"
+  },
+  {
+   "claim": "Theorem 9 (instance S1): support-one minimizer, all edges transversal, strictly positive multipliers, z_K = 1, yet z_orbit <= 779/1000 (bracket [0.7780998, 0.7781193]); point rule 0.4543, BCM 0.4855, SCIP 0.3121.",
+   "status": "computed-exactly",
+   "location": "note.md Theorem 9; code/certify_supp1_full.py; logs/certify_supp1_full.log"
+  },
+  {
+   "claim": "Proposition 10: a fixed set C attains z_K only if every corner minimizer lies in C \u2229 S; for C_F this is a 2-dimensional cone. With a unique support-one minimizer on ray j, SCIP's set attains z_K only if xhat(p_j) is parallel to xhat(sbar).",
+   "status": "proved",
+   "location": "note.md Proposition 10; illustration logs/check_prop10.log"
+  },
+  {
+   "claim": "Proposition 11: SCIP's choice depends on variable scaling. On a corner obtained by rescaling one variable by delta, z_SCIP = 2 sqrt(delta) z_K, BCM < 11.1 sqrt(delta) z_K (numerically about 4 sqrt(delta)), while a point-rule set (hence the orbit) attains z_K; in the original scaling SCIP's set attains z_K.",
+   "status": "proved",
+   "location": "note.md Proposition 11; code/scaling_example.py; logs/scaling_example.log"
+  },
+  {
+   "claim": "Random corners (600 with 4 rays, 300 with 8 rays): supports 1 and 2 only. The orbit attains z_K in 593/600 and 295/300 (all 12 misses certified exactly, worst 0.775); point rule 521/274; BCM 435/240; SCIP 5/6 (mean ratio 0.883/0.936).",
+   "status": "numerical",
+   "location": "note.md Section 7.1; logs/exp_random_*.jsonl, logs/verify_misses.log, logs/analysis.log"
+  },
+  {
+   "claim": "LP corners of random bipartite bilinear McCormick relaxations (86 at 3x3, 71 at 4x4): the orbit attains z_K in all; point rule 83/69; BCM 73/59; SCIP 5/7 (mean ratio 0.922/0.931).",
+   "status": "numerical",
+   "location": "note.md Section 7.2; logs/exp_lp_3x3.jsonl, logs/exp_lp_4x4.jsonl"
+  },
+  {
+   "claim": "LP re-solve: the bisection's max-margin orbit set closes less of the single-minor gap than SCIP's cut (0.702 vs 0.778; 0.706 vs 0.771); the optimal orbit set nearest to SCIP's set closes slightly more (0.800 vs 0.778; 0.777 vs 0.771). A better corner bound alone does not improve the LP bound; no evidence of a solver-level benefit.",
+   "status": "negative-result",
+   "location": "note.md Section 7.2"
+  },
+  {
+   "claim": "Adversarial search with invariant non-degeneracy margins of 1%: orbit ratio down to 0.200; all 10 final corners certified exactly after rounding (smallest exact bound 0.20033). With 5% margins, 0.326. The minimum is set by the margin; heuristic upper bound on the worst case.",
+   "status": "numerical",
+   "location": "note.md Section 7.3; logs/adversarial_*.jsonl, logs/certify_ratio_adv_*.log"
+  },
+  {
+   "claim": "Principal minors with det(M\u0304) > 0: the PSD (or NSD) cone is the unique maximal S-free set, so SCIP's set attains the best single-cut bound z_K there.",
+   "status": "proved",
+   "location": "note.md Section 8"
+  }
+ ],
+ "commands_run": [
+  "cd code; OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 PYTHONDONTWRITEBYTECODE=1 python3 scip_probe.py  -> logs/scip_probe.log (binary 0 interminor calls; PySCIPOpt freq 0: 1 call, 8 found, 1 applied)",
+  "python3 scip_fidelity.py 1 5 (smoke: 19/19 matched); python3 scip_fidelity.py 11 40 3 3 -> 143/143 matched; python3 scip_fidelity.py 12 20 4 4 -> 115/115 matched",
+  "python3 test_core.py 0 -> logs/test_core.log (step formula 1.44e-13; z_K vs SCIP max rel diff 1.46e-6 on 40 corners; 0 nesting violations)",
+  "python3 search_cex.py 1 20000 (exploratory); python3 search_cex.py S 200000 for S=2..5 -> 1487 valid tangent-edge corners, 354 with disjoint kappa-intervals, worst 0.4495",
+  "python3 certify_cex.py -> logs/certify_cex_A.log ALL PASS; python3 certify_cex.py '<instance B JSON>' -> logs/certify_cex_B.log ALL PASS",
+  "python3 search_supp1.py 7 20000 -> 717 valid support-one corners, 89 failures, worst 0.778",
+  "python3 certify_supp1_full.py -> logs/certify_supp1_full.log ALL PASS",
+  "python3 embed_check.py -> 0.97539, 0.83477, 0.98385",
+  "python3 scaling_example.py -> SCIP = 2 sqrt(delta), PR = orbit = 1",
+  "python3 exp_random.py 101 300 4 ...; 102 300 4 ...; 103 300 8 ... -> logs/exp_random_*.jsonl",
+  "python3 verify_misses.py ../logs/exp_random_N4_a.jsonl ../logs/exp_random_N4_b.jsonl ../logs/exp_random_N8.jsonl -> 12/12 misses certified",
+  "python3 check_prop10.py ../logs/exp_random_N4_a.jsonl ../logs/exp_random_N4_b.jsonl -> logs/check_prop10.log",
+  "python3 exp_lp.py 31 200 3 3 3 ../logs/exp_lp_3x3.jsonl (86 corners); python3 exp_lp.py 41 120 4 4 4 ../logs/exp_lp_4x4.jsonl (71 corners)",
+  "python3 adversarial.py 1 6 0.01 ...; python3 adversarial.py 2 6 0.01 ...; python3 adversarial.py 1 8 0.05 ...",
+  "python3 certify_ratio.py on /tmp/adv1.jsonl, ../logs/adversarial_m01_s1.jsonl, ../logs/adversarial_m01_s2.jsonl, ../logs/adversarial_m05_s1.jsonl -> all 12 adversarial corners certified",
+  "python3 analyze.py > ../logs/analysis.log"
+ ],
+ "files": [
+  "/workspace/minlp-notes/research-20261001/minor-sets/note.md",
+  "/workspace/minlp-notes/research-20261001/minor-sets/code/minor_core.py",
+  "/workspace/minlp-notes/research-20261001/minor-sets/code/exact_tools.py",
+  "/workspace/minlp-notes/research-20261001/minor-sets/code/cert_lib.py",
+  "/workspace/minlp-notes/research-20261001/minor-sets/code/certify_cex.py",
+  "/workspace/minlp-notes/research-20261001/minor-sets/code/certify_supp1_full.py",
+  "/workspace/minlp-notes/research-20261001/minor-sets/code/certify_ratio.py",
+  "/workspace/minlp-notes/research-20261001/minor-sets/code/verify_misses.py",
+  "/workspace/minlp-notes/research-20261001/minor-sets/code/scip_fidelity.py",
+  "/workspace/minlp-notes/research-20261001/minor-sets/code/scip_probe.py",
+  "/workspace/minlp-notes/research-20261001/minor-sets/code/exp_random.py",
+  "/workspace/minlp-notes/research-20261001/minor-sets/code/exp_lp.py",
+  "/workspace/minlp-notes/research-20261001/minor-sets/code/adversarial.py",
+  "/workspace/minlp-notes/research-20261001/minor-sets/code/analyze.py",
+  "/workspace/minlp-notes/research-20261001/minor-sets/logs/analysis.log",
+  "/workspace/minlp-notes/research-20261001/minor-sets/sources/MANIFEST.md"
+ ],
+ "corrections_to_earlier_notes": [
+  "No errors found in the earlier notes. One precision for sfree section 10.2: the sets C_F are not merely 'related to' BCM's outer-product-free minor sets. BCM's (14a) sets are exactly the rotation members C_R of the orbit, and SCIP's minor set is the member C_U, where U is the polar factor. The question sfree section 10.2 left open, whether the tangent-edge obstruction also occurs for the minor sets, is answered yes."
+ ],
+ "open_questions": [
+  "Is there a quantitative non-degeneracy condition on the optimal simplex under which the orbit attains z_K for minors? Instance S1 shows that transversality alone is not enough.",
+  "Is the worst-case orbit ratio bounded away from 0 under invariant non-degeneracy margins? The search reached 0.200 at 1% margins and 0.326 at 5%.",
+  "Which tie-break among the sets attaining z_K gives good LP bounds after re-solving, and does any beat SCIP's point-rule set over several rounds inside SCIP?",
+  "Is the closure of the orbit family's cuts exact for minors?",
+  "For minors with a diagonal entry (S' = {det = 0, a >= 0}), which maximal S'-free family attains the corresponding corner bound?"
+ ],
+ "solver_relevance": "Low. In SCIP 10.0.3, minor intersection cuts are off by default, and the local Ipopt-free build can never run them. When they are enabled (PySCIPOpt's bundled SCIP), the set used is C_U, confirmed cut by cut. That set is not scale-invariant and almost never attains the corner bound, whereas the orbit (and largely the point-rule) family does. But after re-solving the LP, the bound-optimal set gains more than SCIP's cut only if it is chosen close to SCIP's set (+0.006 to +0.022 of the gap on average); the max-margin choice gains less. No experiment inside SCIP's cutting loop or on MINLPLib/QPLIB was run."
+}

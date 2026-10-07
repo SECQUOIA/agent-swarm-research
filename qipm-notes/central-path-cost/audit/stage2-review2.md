@@ -36,7 +36,7 @@ The initial-coordinate decomposition and weighted Cauchy–Schwarz yield exactly
 
 I independently derived `E=y/v` and `dE/dlog(y)=E-K`, including the stated expression for K. The polynomial proving `rho<B` is positive throughout `(0,1)`. The sharper K bound on `E>2` follows from the monotonicity of E, the verified threshold at x=4/5, and the logarithmic derivative estimate for G. Integration of the two differential inequalities gives the displayed h_1 and h_k, with the correct factors and strict directions. The rational logarithm lower bounds have the proper series-tail direction. The lower certificate correctly checks a feasible witness in P coordinates before passing through its monotone inverse. Attainment, rather than a claimed unique stationary point, justifies the strict global upper enclosure.
 
-Executed `scripts/verify_scalar_certificate.py` under `/home/sgusev/miniconda3/envs/qipm/bin/python`; every exact Fraction/radical/series-tail check passed. Separately evaluated the displayed transform using 65-digit standard-library Decimal arithmetic and an independent golden-section search in `(0.93,0.96)`, obtaining a local maximizing candidate
+Executed `scripts/verify_scalar_certificate.py` under `/workspace/local-home/miniconda3/envs/qipm/bin/python`; every exact Fraction/radical/series-tail check passed. Separately evaluated the displayed transform using 65-digit standard-library Decimal arithmetic and an independent golden-section search in `(0.93,0.96)`, obtaining a local maximizing candidate
 
 `v = 0.94675629219174803551305297151585184...`
 

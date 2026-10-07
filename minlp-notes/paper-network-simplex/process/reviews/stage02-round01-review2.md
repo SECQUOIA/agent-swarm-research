@@ -147,7 +147,7 @@ include:
 All checks passed. Command actually run:
 
 ```sh
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python paper-network-simplex/verification/reviewer2/stage02-round01/check_elimination.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python paper-network-simplex/verification/reviewer2/stage02-round01/check_elimination.py
 ```
 
 The finite computations support the independent proof assessment; they do not

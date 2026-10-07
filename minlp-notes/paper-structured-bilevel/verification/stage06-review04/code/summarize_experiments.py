@@ -1,7 +1,10 @@
 """Regenerate manuscript tables and validate the recorded experimental outcomes."""
+from pathlib import Path as _CleanupPath
+_NOTES_ROOT = _CleanupPath(__file__).resolve().parent.joinpath('../../../..').resolve()
+
 from pathlib import Path
 import json,statistics as st,hashlib,sys
-P=Path(__file__).resolve().parents[1];R=Path('/home/sgusev/repo/minlp-notes')
+P=Path(__file__).resolve().parents[1];R=Path((str(_NOTES_ROOT)))
 x=json.loads((P/'data/stage06-results.json').read_text());records=x['records']
 assert len(records)==60 and all(r['exit_code']==0 for r in records)
 def group(method,name):return [r for r in records if r['method']==method and r['name']==name]

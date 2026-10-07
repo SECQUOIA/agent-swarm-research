@@ -1,6 +1,9 @@
+from pathlib import Path as _CleanupPath
+_NOTES_ROOT = _CleanupPath(__file__).resolve().parent.joinpath('../../..').resolve()
+
 from pathlib import Path
 import argparse, ast, json
-HERE=Path('/home/sgusev/repo/minlp-notes/paper-correlated-measurements/supplement')
+HERE=Path((str(_NOTES_ROOT) + '/paper-correlated-measurements/supplement'))
 tree=ast.parse((HERE/'reproduce.py').read_text())
 commands_node=next(n.value for n in ast.walk(tree) if isinstance(n,ast.Assign) and any(isinstance(t,ast.Name) and t.id=='commands' for t in n.targets))
 commands=eval(compile(ast.Expression(commands_node),'wrapper','eval'),{'root':HERE/'legacy','str':str})

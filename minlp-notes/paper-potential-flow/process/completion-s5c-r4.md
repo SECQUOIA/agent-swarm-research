@@ -92,7 +92,7 @@ These checks support the comparison actually made. They do not establish an exha
 
 ## Diagnostic and build evidence
 
-I read the full `verification/check_s5c_scalar_approximation.py` and independently reran it with `/home/sgusev/miniconda3/envs/minlp-notes/bin/python`. It exited successfully and reproduced the manifest's four fixture records. Its SHA256 is `ae633732ca9ea4f47986eb2d46ab0c35590f0bc8fdbfad5767a8d2d11ca4985e`.
+I read the full `verification/check_s5c_scalar_approximation.py` and independently reran it with `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python`. It exited successfully and reproduced the manifest's four fixture records. Its SHA256 is `ae633732ca9ea4f47986eb2d46ab0c35590f0bc8fdbfad5767a8d2d11ca4985e`.
 
 The fixtures are an implicit quintic, a real branch switch, near-nonreal branch points, and a nearby external pole. The run checked geometry on 988, 896, 904, and 1038 constructed panels respectively; it interpolated selected panels, not every panel. It checked exact interpolation identities, rational remainder inequalities, and 170/170/170/85 certified sampled errors. Coefficient sizes reach 172713 bits in the external-pole fixture. The use of explicit `require` checks means the tests remain active under `python -O`; the supplied checks manifest records a successful optimized-mode run as well. I did not repeat that second execution.
 

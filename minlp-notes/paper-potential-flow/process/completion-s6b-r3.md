@@ -61,7 +61,7 @@ The coverage inventory resolves to 308 distinct existing direct source paths, in
 
 All extraction, building, downloads and replays used `/tmp/s6b-r3-giknljda`, outside the checkout. The actual final archive extracted to `/tmp/s6b-r3-giknljda/potential-flow-paper-a`. All 63 payload hashes in its manifest matched; the 64th archive file is the manifest itself. The archive contains the selected scientific sources, verification code and retained evidence. I found no Paper B, managed copyrighted PDFs, raw external data, agent review reports or temporary build files in its payload. Generated Python caches appeared only after executing the extracted code.
 
-Commands below ran from that extracted root unless indicated otherwise. `PY` denotes `/home/sgusev/miniconda3/envs/minlp-notes/bin/python`.
+Commands below ran from that extracted root unless indicated otherwise. `PY` denotes `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python`.
 
 ```text
 PY paper-potential-flow/reproducibility/build_paper.py

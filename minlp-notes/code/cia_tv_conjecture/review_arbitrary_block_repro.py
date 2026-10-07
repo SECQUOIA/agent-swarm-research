@@ -25,7 +25,7 @@ terminal mass is at most C_{n,k} T the positive discrepancy is also checked.
 Ties for the maximum-mass mode are broken by the last maximiser here (the
 committed checker takes the first); the proof allows either.
 
-Run: /home/sgusev/miniconda3/envs/minlp-notes/bin/python review_arbitrary_block_repro.py
+Run: python review_arbitrary_block_repro.py
 """
 from fractions import Fraction as F
 from random import Random

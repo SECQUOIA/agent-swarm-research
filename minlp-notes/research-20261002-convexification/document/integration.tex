@@ -1,0 +1,222 @@
+\section{Implementation and model binding}\label{sec:integration}
+
+\subsection{What the certificate actually checks}
+
+The main entry points in
+\pathref{../solver/certified.py}{solver/certified.py} are
+\texttt{certify\_support} and \texttt{replay\_support}. Their features
+are SymPy expression objects with an explicit ordered symbol tuple;
+certificates never supply source code to be evaluated. The serialized
+format \texttt{support-cut-v1} binds the following data:
+\begin{enumerate}
+\item a typed expression tree over a fixed whitelist of operations;
+\item the exact rational box and every supplied affine inequality;
+\item the final coefficient vector through binary floating-point
+      hexadecimal identities;
+\item the selected arithmetic method and precision;
+\item a complete dyadic subdivision proof, exact polygon candidate
+      proof, or exact star partition proof;
+\item the rational lower bound and downward-rounded binary right-hand
+      side.
+\end{enumerate}
+The polynomial path accepts rational algebra and nonnegative integer
+powers up to the stated degree cap. The general elementary path is
+univariate and accepts addition, multiplication, rational powers,
+$\exp$, $\log$, $\sin$, $\cos$, $\sinh$, $\cosh$, $\tanh$,
+$\arctan$, and absolute value, with $\pi$ and $e$ constants.
+Rational powers use the nonnegative-base real convention, with a
+strictly positive base for negative fractional exponents. An odd-root
+extension to negative arguments is not inferred. Negative integer powers
+require a denominator interval excluding zero. Elementary enclosures
+use the Arb library through python-flint \cite{Johansson2017arb}.
+
+For nonquadratic polynomials, the implemented Bernstein fallback is
+restricted to one or two variables and at most 1024 tensor coefficients.
+Higher-dimensional supported quadratics use the star oracle. The kernel
+degree cap and integration discovery caps are different: the general
+kernel admits integer powers up to 32, while the experiment's discovery
+limits total degree to eight for one variable and four for a pair.
+These are explicit work limits, not mathematical barriers of the
+support construction.
+
+Affine rows may exclude a subdivision cell only when an exact lower
+bound on the row's left side exceeds its right side. If all cells are
+excluded, the record proves the supplied box-and-row domain empty.
+Otherwise each remaining cell needs a support lower bound. Replay
+reconstructs the dyadic children from the trusted parent box, rejects
+missing children, and recomputes the local enclosures or exact oracle.
+It then checks the final right-hand side against the minimum verified
+lower bound. Finite work limits return \texttt{incomplete}, with no
+cut; unsupported expressions return \texttt{unsupported}. A valid but
+insufficiently strong exact support value can likewise fail a requested
+separation target.
+
+The trusted representation starts at the supplied expression objects.
+Simplifications performed before this boundary cannot be undone by
+the checker. The solver integration therefore also retains original
+parsed expression trees and native equalities. Loaded OSiL constants
+are binary64 values; the new cut proof treats those exact binary values
+as real constants. It is not a separate certificate that every original
+decimal token in an OSiL file has been modeled over exact decimal
+arithmetic. Saved file hashes and original-tree checks bind the
+experiment to that parsed model.
+
+The import boundary is deliberately narrower than an ordinary numerical
+OSiL reader. Before simplification, a walk of every original source tree
+checks denominators, logarithm arguments, square roots, and fractional
+or negative powers on the complete declared box. An unproved domain
+restriction refuses the model in every mode. A valid model whose rows
+or nonlinear functions themselves narrow an overly broad declared box
+can therefore be refused. This admission check does not infer bounds
+from affine rows. Invalid sides, reversed bounds, NaN, and finite bounds
+or row sides reaching SCIP's infinity sentinel are also refused.
+
+PySCIPOpt can combine stored coefficients using binary64
+arithmetic while assembling a row. The integration reconstructs the
+assembled expression's stored coefficients exactly and compares its
+algebraic value with the exact source-tree value. It applies this
+whole-row check in \emph{all four modes}, including the native baseline.
+A mismatch rejects the model import. Constant arithmetic subtrees are
+folded beforehand only when their exact value is representable as a
+finite binary64 number; variable-bearing nodes retain their native
+domain restrictions. This does not make all decimal-coefficient models
+admissible: ordinary coefficient folding can fail the exact test.
+Refusal is an applicability outcome and must remain in the denominator
+of the selected experiment population.
+The structured status \texttt{source\_model\_mismatch} carries its
+diagnostic and supplies no primal value, dual bound, or cut.
+
+The same comparison checks candidate auxiliary definitions. After
+reformulation it checks entire rewritten rows with the auxiliary
+expressions substituted back. A failed auxiliary comparison declines
+the atom; a failed rewritten-row comparison retains the original row.
+The comparison establishes algebraic equality where the native source
+expressions are defined. Native domain enforcement remains necessary,
+and this is not a proof that all symbolic or later solver
+transformations preserve every domain.
+
+\subsection{Discovery and native enforcement}
+
+\pathref{../solver/integration.py}{solver/integration.py} collects
+bounded nonlinear atoms with one or two original variables. It preserves
+additive terms and constant multipliers so that several functions of a
+shared variable remain visible. Atoms are identified by their original
+source trees; equal simplified formulas with different source domains
+are not silently merged. Original quadratic row terms are included.
+Pair candidates arise from a two-variable atom or an original affine
+row containing that pair. No exhaustive search over all variable pairs
+is needed.
+
+Every selected atom receives an auxiliary $w=f(x)$ that is enforced
+by SCIP's native nonlinear constraints. Rewritten objective and model
+rows use these auxiliaries. Original variables and auxiliary definitions
+remain present for nonlinear feasibility and branching. The same
+reformulation and aggregation restrictions are applied in the
+\texttt{control}, \texttt{all}, and \texttt{auto} modes. Thus
+\texttt{control} isolates the cost and effect of this representation
+from the added cuts. The \texttt{baseline} mode builds the parsed
+original model without these new auxiliaries.
+
+The extension proposes selected quadratic stars with two to four
+leaves from their feature interaction graph. The exact support oracle
+also checks every retained affine row against the center structure;
+a candidate containing incompatible leaf--leaf rows is rejected, not
+silently relaxed while being called exact. Discovery caps the number
+of atoms at 256, blocks at 64,
+and coordinates per block at eight, including original coordinates and
+nonlinear features. Retaining a capped subset remains a valid outer
+relaxation; it is not an assertion that all dependencies in a large
+model were captured.
+
+All added rows in this implementation are global root cuts. Their
+proof domains are original declared finite boxes together with the
+retained original affine rows. No numerical presolve bound or local
+node interval is silently promoted into a globally valid cut domain.
+The component adds neither custom feasibility enforcement nor custom
+branching or propagation. This deliberately keeps the cut's trust
+scope smaller than the complete solver's.
+
+Before insertion, the component inspects the actual SCIP row's
+columns, coefficients, constant, sides, and local flag. It requires
+exact agreement with the certified row after the explicit original-to-
+transformed variable mapping. A dropped variable, numerical fixing,
+aggregation substitution, changed coefficient, or changed effective
+right-hand side causes rejection. This conservative check supplies no
+proof for an unrecorded presolve deduction. The saved artifact includes
+the inspected row, so replay can check this binding rather than trust
+the generator's claimed variable names alone.
+
+\subsection{Automatic activation and bounded repeated work}
+
+The direction LP separates the current lifted point from a finite
+sample hull after coordinate scaling. It has one free intercept and
+one coefficient in $[-1,1]$ for each scaled coordinate. The samples
+only propose a direction. A one-variable grid has 65 points; a pair
+uses a 13-by-13 grid. Larger stars use 128 deterministic Halton points
+and box corners. Exact polygon vertices, edge midpoints, and a centroid,
+or exact star coordinate extrema, supply feasible seeds when affine
+equalities defeat a box grid. Candidate-row admission can use numerical tolerances,
+because a sample grants no authority to validate a cut. A screening
+witness, in contrast, must pass exact box-and-row feasibility.
+
+The automatic policy requires shared univariate structure, a pair
+with a retained affine row, or a recognized larger star. It uses a larger minimum scaled
+violation ($5\cdot10^{-4}$ rather than $10^{-5}$), stops trying a block
+after two failed useful certifications, and can reuse the checked
+convex-combination screen from Section~\ref{sec:screening}. The
+screen is initialized only for source-polynomial features, whose
+domains have no hidden elementary-function exclusions. A failed
+screen never causes a skip. Identical-direction and nearly unchanged
+query checks also avoid repeated work. These latter work-selection
+rules are heuristics: they may miss useful cuts and do not certify
+that more separation is unnecessary.
+
+For exact quadratic support, a direction with insufficient violation
+still returns an attained minimizing parameter point. The integration
+can add that point to the numerical sample set and resolve the
+direction LP, with at most three exchange rounds. This addresses a
+concrete weakness of a fixed sample hull without assuming that a
+fixed number of exchanges makes separation complete. Samples used
+by the certified screen are reevaluated from their retained exact
+rational parameter values.
+
+Within one model, cached samples, normalization, expression
+preparation, and feasible graph evaluations avoid repeated setup.
+Their domain is fixed. The public screening checker re-evaluates
+serialized graph samples; in-process cache reuse is not a reason to
+trust a foreign record.
+
+The default limits are five root callbacks, 24 total cuts, six cuts
+per callback, 128 visited support cells, and subdivision depth 16.
+The total callback budget is the smaller of two seconds and 15\% of
+the solve's integration budget. Time checks occur between block
+operations, so this budget is cooperative and can be exceeded by a
+single expensive operation. The experiment additionally gives each
+worker an external hard process timeout. This distinction prevents a
+soft timing setting from being described as a strict worst-case bound.
+
+The implementation records discovery, model construction, candidate
+generation, support certification, row insertion, and total callback
+time. Callback time is already included in SCIP solve time and must
+not be added a second time. Imports and worker startup are outside the
+in-process budget and are reported through outer process time.
+
+\subsection{The native sampling kernel}
+
+The optional C kernel in
+\pathref{../solver/native_sampling.c}{solver/native_sampling.c}
+reuses integer powers while evaluating several polynomial features on
+the same sample points. NumPy remains the default. An explicit build
+attempt compiles a private temporary shared library; import and ordinary
+sampling do not start a compiler. Even after a build, the C path is
+selected only for at least 256 points and individual-variable degrees
+from three through 64. Small or low-degree cases remain with NumPy.
+Expression preparation has a bounded cache; values on mutable caller
+arrays are not cached.
+
+This is a native \emph{sampling} implementation, not a native SCIP
+nonlinear handler or a C implementation of exact support. Its outputs
+are floating point and can overflow. Candidate generation must reject
+nonfinite values; final validity still comes from the original exact
+features and the checked support bound. The microbenchmark and its
+unfavorable low-degree cases appear in Section~\ref{sec:evidence}.

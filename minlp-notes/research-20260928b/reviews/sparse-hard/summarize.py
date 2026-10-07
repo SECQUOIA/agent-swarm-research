@@ -1,10 +1,13 @@
 """Summaries of e2.jsonl (pure noise vs planted, exact cliques, C1 halves) and e3.jsonl (SNR scan)."""
+from pathlib import Path as _CleanupPath
+_NOTES_ROOT = _CleanupPath(__file__).resolve().parent.joinpath('../../..').resolve()
+
 import json, sys
 import numpy as np
 from collections import defaultdict
 from cliquelib import instance_author
 
-D = '/home/sgusev/repo/minlp-notes/research-20260928b/reviews/sparse-hard/'
+D = (str(_NOTES_ROOT) + '/research-20260928b/reviews/sparse-hard/')
 
 
 def e2():

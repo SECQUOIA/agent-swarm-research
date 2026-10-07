@@ -168,8 +168,8 @@ I wrote two standalone exact checks without importing repository hull code:
 Commands actually run:
 
 ```sh
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python paper-network-simplex/verification/reviewer2/stage05-round01/check_circuits.py
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python paper-network-simplex/verification/reviewer2/stage05-round01/check_fibonacci.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python paper-network-simplex/verification/reviewer2/stage05-round01/check_circuits.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python paper-network-simplex/verification/reviewer2/stage05-round01/check_fibonacci.py
 ```
 
 The occurrence enumeration isolates each gadget because an observed product is

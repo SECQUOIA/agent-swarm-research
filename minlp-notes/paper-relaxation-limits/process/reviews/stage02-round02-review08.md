@@ -28,7 +28,7 @@ None. In particular, the three smaller two-level witnesses and the within-family
 
 ## Independent verification
 
-The reproducible checker is `verification/reviewer08/stage02-round02/check.py`; its output is `results.json` in the same directory. It reads the frozen appendix for the printed program. I used `/home/sgusev/miniconda3/envs/minlp-notes/bin/python` to run it successfully. The following proof checks were performed independently of earlier audit verdicts.
+The reproducible checker is `verification/reviewer08/stage02-round02/check.py`; its output is `results.json` in the same directory. It reads the frozen appendix for the printed program. I used `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python` to run it successfully. The following proof checks were performed independently of earlier audit verdicts.
 
 ### Probability laws and dyadic exactness
 

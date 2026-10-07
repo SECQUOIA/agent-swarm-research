@@ -1,0 +1,41 @@
+Patch 04 (repro-cops): missing script for the catmix800 primal (_snap) evaluation.
+
+Problem: logs/catmix800_primal_snap.{json,txt} (the catmix800 primal value -0.0480559013308475
+quoted in the wave-2 report) were produced by an inline python snippet that was never saved.
+Fix: add explore/catmix_primal_snap_eval.py, the snippet recovered from the wave-2 agent
+transcript. Rerun after explore/catmix_primal_snap.py 800 2e-3, it rewrites both files
+byte-identically to the committed ones.  Apply:  git apply 04-add-catmix-snap-eval-script.patch
+
+diff --git a/research-20260929/open-instances-wave2/cops/explore/catmix_primal_snap_eval.py b/research-20260929/open-instances-wave2/cops/explore/catmix_primal_snap_eval.py
+new file mode 100644
+index 00000000..a1b41e40
+--- /dev/null
++++ b/research-20260929/open-instances-wave2/cops/explore/catmix_primal_snap_eval.py
+@@ -0,0 +1,27 @@
++"""Evaluate the snapped catmix primal rigorously (writes logs/catmixN_primal_snap.{json,txt}).
++
++This is the step that produced logs/catmix800_primal_snap.json/.txt in wave 2. It was run
++as an inline python snippet and is saved here so that it can be rerun. Run from explore/
++after catmix_primal_snap.py:  python3 catmix_primal_snap_eval.py 800
++"""
++import json
++import sys
++
++import mpmath as mp
++import numpy as np
++
++sys.path.insert(0, '..')
++import catmix_model as cmx
++import catmix_primal as cp
++
++N = int(sys.argv[1])
++m, K = cmx.extract(N)
++u = np.load('../logs/catmix%d_u_snap.npy' % N)
++Jiv = cp.exact_objective_enclosure(K, u)
++X, obj_d, viol_d, bviol = cp.double_vector_check(N, m, K, u)
++out = dict(N=N, source='catmix%d_u_snap.npy (catmix%d_u.npy with controls < 2e-3 set to 0, then L-BFGS-B)' % (N, N),
++           exact_point_objective_enclosure=[mp.nstr(Jiv.a, 20), mp.nstr(Jiv.b, 20)], double_vector_objective=obj_d,
++           double_vector_max_row_violation=viol_d, double_vector_bound_violation=bviol)
++print(json.dumps(out, indent=1))
++json.dump(out, open('../logs/catmix%d_primal_snap.json' % N, 'w'), indent=1)
++open('../logs/catmix%d_primal_snap.txt' % N, 'w').write('\n'.join(repr(v) for v in X) + '\n')

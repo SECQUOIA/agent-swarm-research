@@ -50,4 +50,4 @@ Read both complete new sections, the Stage 3b author record, and the relevant Se
 
 ## Validation
 
-`/home/sgusev/miniconda3/envs/qipm/bin/python notes/scalar-newton-paper/checks/check_temporal_identities.py` passes the kernel, threshold/XOR, sparse KKT and rank/volume diagnostics. The analytic checks above supply the proof assessment; finite examples alone would not establish the claims.
+`/workspace/local-home/miniconda3/envs/qipm/bin/python notes/scalar-newton-paper/checks/check_temporal_identities.py` passes the kernel, threshold/XOR, sparse KKT and rank/volume diagnostics. The analytic checks above supply the proof assessment; finite examples alone would not establish the claims.

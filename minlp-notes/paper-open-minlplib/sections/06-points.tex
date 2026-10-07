@@ -1,0 +1,83 @@
+% Plan: development/outline.md, section 5, "§6". Proposition prop:pts-exact and
+% Remark rem:lukvle10-seeds are stated in the supplement (app:points).
+% Final build of round 3 (sol-status 2): the pricing050 point is checked by two
+% separately written codes (development/dossiers/small-checks/pricing_check.py and
+% r2/pricing_check.py; the r2 session did not read the earlier check before writing
+% its own), as in B5-small, C-points, tab:points-all and the register.
+\section{Exactly feasible points}\label{sec:points}
+
+The objective value at a point is a proved upper bound on $\vstar(\model)$ only if the point is proved to lie in $\feas$ \citep[Sect.~20]{neumaier2004-complete-search-in-continuous-global}.
+A point computed in floating point satisfies nonlinear equality rows only up to rounding, so its objective value can even lie below a valid dual bound (\cref{lem:sem-enclosure}(b)), and rounding it to rationals almost never makes nonlinear equalities hold.
+Every primal value $\Uprim$ in this paper is therefore the upper end (for \inst{pricing050}, the lower end) of a rigorous enclosure of the objective at a point that we prove satisfies every row, bound and integrality requirement of the stored model exactly; for the six KAN instances the point lies in $\RP$ (\cref{prop:kan-infeasible}).
+
+\subsection{Four constructions}\label{sec:points-constructions}
+
+Each construction starts from a numerical candidate; a proof then decides every row, bound and integrality requirement, exactly or over an outward-rounded enclosure within the bounds (\cref{tab:points-all} gives the construction of each point).
+\begin{description}\setlength{\itemsep}{0pt}\setlength{\parsep}{0pt}
+\item[Explicit exact points] have coordinates in $\Q$ or in a quadratic field $\Q(\sqrt D)$; signs in $\Q(\sqrt D)$ are decidable, and a \texttt{sqrt} node is accepted if the root is nonnegative and squares to the argument (\cref{prop:pts-exact}).
+\item[Triangular definitions] fix seed values and define each further variable or block by rows in which it is the only unknown (\cref{prop:pts-triangular}).
+\item[Interval existence proofs] use a Krawczyk test with fixed coordinates (\cref{thm:pts-krawczyk}), an intermediate-value bracket in one variable, or a scalar interval test for each implicit state.
+\item[Strictly interior points] of models whose rows are all inequalities are proved by outward enclosures of the row bodies, with bounds and integrality checked exactly.
+\end{description}
+In triangular definitions and interval existence proofs, certificate data define the point: seeds and a recursion, a box and a square system, or a bracket and a sign change; for \inst{catmix} the recursion gives exact rationals.
+We claim no stored decimal vector of these points, such as a box centre, to be exactly feasible.
+The results below are proved in \cref{app:points}.
+
+\begin{theorem}[Krawczyk test on a square subsystem with fixed coordinates]\label{thm:pts-krawczyk}
+Fix $n-m$ coordinates of the variables of $\model$ at rational values $\xi$, and write the remaining $m$ coordinates as $z\in\R^m$.
+Let $E$ be a set of $m$ rows of $\model$ and, for $i\in E$, let $t_i$ be a finite bound of row $i$ (its right-hand side if the row is an equality).
+Let $G\colon\R^m\to\R^m$ have components $G_i(z)=g_i(\xi,z)-t_i$, where $g_i$ is the body of row $i$.
+Let $X\subset\R^m$ be a closed box with finite, positive widths, and let $y\in X$.
+Assume:
+\begin{itemize}\setlength{\itemsep}{0pt}\setlength{\parsep}{0pt}
+\item[(a)] every $G_i$ is defined and continuously differentiable on an open set containing $X$;
+\item[(b)] $\mathbf{A}$ is an interval matrix with $G'(z)\in\mathbf{A}$ for all $z\in X$; $\mathbf{v}$ is an interval vector with $G(y)\in\mathbf{v}$; $C$ is a real $m\times m$ matrix; and $\mathbf{B}$ is an interval matrix with $I-CA\in\mathbf{B}$ for every $A\in\mathbf{A}$;
+\item[(c)] $K$ is an interval vector that contains $y-Cv+M(z-y)$ for all $v\in\mathbf{v}$, $M\in\mathbf{B}$ and $z\in X$, and $K\subseteq\operatorname{int}X$.
+\end{itemize}
+Then $C$ and every $A\in\mathbf{A}$ are nonsingular, and $G$ has exactly one zero $z^*$ in $X$, which lies in $K$.
+If, in addition,
+\begin{itemize}\setlength{\itemsep}{0pt}\setlength{\parsep}{0pt}
+\item[(d)] every row of $\model$ outside $E$ and every variable bound holds at all points of $\{\xi\}\times X$, the objective and all expressions of these rows being defined there, and every integer variable is among the fixed coordinates and has an integral value,
+\end{itemize}
+then $x^*=(\xi,z^*)\in\feas$, and $f(x^*)$ lies in every enclosure of $f$ over $\{\xi\}\times K$.
+\end{theorem}
+
+\Cref{thm:pts-krawczyk} is the Krawczyk test \citep{krawczyk1969-newton-algorithmen-zur-bestimmung-von} in the form of \citet[Thm.~13.3]{rump2010-verification-methods-rigorous-results-using}, applied after fixing coordinates.
+Fixing coordinates is a device for underdetermined systems that \citet[Sect.~3]{kearfott1998-on-proving-existence-of-feasible} attributes to Hansen and implements to verify approximate feasible points returned by floating-point solvers, the direct antecedent of our \inst{powerflow} construction; imposing nearly active inequality rows as equalities follows \citet[Sect.~3.2]{fullner2024-feasibility-verification-and-upper-bound}.
+Our proof allows a centre $y$ other than the midpoint and derives nonsingularity from the widths alone; the midpoint--radius test of the audit (\cref{lem:audit-krawczyk}) is a special case.
+For MIP, \citet[Sect.~2.2]{hoen2025-analyzing-the-numerical-correctness-of} repair floating-point solutions by rounding the integer variables and computing rational values of the continuous ones; with nonlinear rows, rational feasible points need not exist (\cref{prop:pts-lindemann}), so triangular definitions and interval existence proofs are needed as well.
+
+\begin{proposition}[Triangular definitions]\label{prop:pts-triangular}
+Partition the variables of $\model$ into blocks $z_0,z_1,\dots,z_T$, and give the seed block $z_0$ rational values.
+For $t=1,\dots,T$ let $R_t$ be a set of rows that involve only $z_0,\dots,z_t$, with $R_1,\dots,R_T$ pairwise disjoint.
+Let $\varphi_t$ be a function on a set $\mathcal{D}_t$ of values of $(z_0,\dots,z_{t-1})$ such that, for every $(z_0,\dots,z_{t-1})\in\mathcal{D}_t$, all expressions of the rows in $R_t$ are defined at $(z_0,\dots,z_{t-1},\varphi_t(z_0,\dots,z_{t-1}))$ and these rows hold there exactly.
+Let $Z_0=\{z_0\}$ and let $Z_1,\dots,Z_T$ be boxes with $Z_0\times\dots\times Z_{t-1}\subseteq\mathcal{D}_t$ and $\varphi_t(Z_0\times\dots\times Z_{t-1})\subseteq Z_t$ for every $t$.
+Then $z^*_t:=\varphi_t(z^*_0,\dots,z^*_{t-1})$ defines a point $z^*\in Z:=Z_0\times\dots\times Z_T$ that satisfies every row in $R_1\cup\dots\cup R_T$ exactly.
+If, in addition, every other row and every bound holds at all points of $Z$, the objective and all expressions of these rows being defined there, and every integer variable has an integral singleton box, then $z^*\in\feas$ and $f(z^*)$ lies in every enclosure of $f$ over $Z$.
+\end{proposition}
+
+Where the rows in $R_t$ are affine in $z_t$, an enclosure of the determinant of their coefficient matrix that excludes $0$, computed over boxes on which the coefficients are defined, proves $Z_0\times\dots\times Z_{t-1}\subseteq\mathcal{D}_t$; for \inst{hvycrash} and \inst{pindyck}, $\varphi_t$ is an inverse function on a proved domain (\cref{app:points-instances}).
+
+\begin{proposition}[No algebraic \inst{lnts} point]\label{prop:pts-lindemann}
+For $N\in\{50,100,200,400\}$, every exactly feasible point of \inst{lnts}$N$ has at least one transcendental coordinate among $\theta_0,\dots,\theta_N,h$.
+In particular, \inst{lnts}$N$ has no exactly feasible point with rational coordinates.
+\end{proposition}
+
+So \inst{lnts} needs an existence proof rather than an exact point; for \inst{lukvle10}, rational points exist, but their denominators roughly square at each of the 998 rows (\cref{rem:lukvle10-seeds}).
+
+\subsection{Closures whose earlier points were feasible only within a tolerance}\label{sec:points-former}
+
+For 13 closures, the points that first indicated a closure violate rows slightly: our own points computed in floating point for \inst{lnts}, \inst{dtoc5} and \inst{chain}, and MINLPLib's listed points p5 for \inst{lukvle10} and p1 for the three \inst{powerflow} instances.
+\Cref{prop:pts-former} replaces each by an exactly feasible point; \cref{tab:points} gives the violations and the methods.
+For \inst{lnts}, $\Uprim$ comes from the attaining point of \cref{thm:lnts-opt}, enclosed in \arith{E} with width below \sci{1.11}{-91}; the Krawczyk points are a second, strictly suboptimal witness (\cref{rem:lnts-stored}).
+To our knowledge, within the search of \cref{app:literature}, no point proved exactly feasible had been published for these 13 instances.
+
+\input{tables/tab-points}
+
+\subsection{Trust base of the primal claims}\label{sec:points-trust}
+
+All primal proofs read the decimal strings of the OSIL file as exact rationals.
+Every primal claim except those of \inst{hvycrash}, \inst{etamac}, \inst{pricing050} and \inst{pindyck} has a proof in integer and rational arithmetic, with explicit remainder bounds where elementary functions occur, and a separately written implementation proves it again, in mpmath interval arithmetic where \cref{tab:points-all} says so.
+The claim of \inst{etamac} rests on one implementation in mpmath interval arithmetic, and those of \inst{pricing050} and \inst{pindyck} on two.
+For \inst{hvycrash} the existence proof is a written proof (evidence level \evid{hand}) and the objective is constant on $\feas$ (\cref{prop:hvycrash-identity}); \cref{sec:other-hvycrash} lists the computer checks.
+\Cref{rem:sem-readings} and \cref{app:semantics-binary64} state which points stay exactly feasible under binary64 data.

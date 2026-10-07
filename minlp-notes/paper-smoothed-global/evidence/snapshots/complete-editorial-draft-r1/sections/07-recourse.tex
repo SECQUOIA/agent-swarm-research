@@ -1,0 +1,671 @@
+\section{Conditional recourse: a small nonconvex core}\label{sec:rec}
+
+Many structured problems contain a few complicating continuous variables
+and many variables that are easy to optimize once the complicating ones are
+fixed. Two-stage models with a few first-stage decisions, design problems
+with a few shape or price parameters, and decomposition methods that branch
+only on linking variables have this form. We call the complicating variables
+the \emph{core} $v\in[0,1]^k$ and the others the \emph{residual} variables
+$z$. Of the three structural routes in this paper, a small nonconvex factor,
+sparse bags, and a small core with tractable conditional recourse, this
+section and \cref{sec:int} develop the third. Its parameter is the core
+size $k$ together with the ratio $L/\sigma$ of core curvature to noise. The
+number of residual variables, their coupling, and their curvature enter only
+through the input length.
+
+The mechanism has four parts.
+\begin{enumerate}[label=(\roman*)]
+\item Minimizing over a residual set that does not depend on the core
+preserves upper coordinate curvature. The conditional value
+$V(v)=\min_zF_\gamma(v,z)$ therefore obeys the corrected-corner inequality
+of \cref{lem:count:rounding} on the core cube, and no residual coordinate is
+rounded.
+\item Independent linear noise on the core coefficients bounds the expected
+number of near-optimal core grid points by a product of $k$ one-dimensional
+factors. Residual noise, when present, is conditioned on.
+\item Residual coordinates are never refined, so closure needs a separate
+global certificate. A few restricted recourse calls prove that every global
+optimizer lies in a small product patch (this section) or uses one residual
+integer label (\cref{sec:int}).
+\item A base-selected finite law makes failure of these certificates rare
+enough to pay for an exact fallback on the same draw
+(\cref{sec:model:algorithms}).
+\end{enumerate}
+\Cref{tab:rec:summary} lists the results of this section. Throughout,
+\begin{equation}\label{eq:rec:Q}
+ Q_{\rm ex}=\Bigl[3+\frac{(1+k/2)L}{2\sigma}\Bigr]^k,
+ \qquad
+ Q_{\rm ap}=\Bigl[3+\frac{(1+k)L}{2\sigma}\Bigr]^k .
+\end{equation}
+The first factor applies when conditional values are computed exactly, the
+second when they are computed with certified error. Both are numerical:
+they depend on the magnitude of $L/\sigma$, not on its encoding length.
+
+\begin{table}[t]
+\centering
+\caption{Continuous conditional recourse. Here $b=\log_2M$ is the number of
+sampling bits per perturbed coordinate, and ``implicit'' is the patch output of
+\cref{def:model:outputs}\ref{it:model:implicit}. On rare draws every result
+returns the exact output of a fallback on the same draw: rational for the
+quadratic results, and root representations from \cref{thm:count:fallback}
+otherwise.}
+\label{tab:rec:summary}
+\small
+\begin{tabularx}{\textwidth}{@{}lXlll@{}}
+\toprule
+Result & Noise; residual premise and oracle & $b$ & Expected work & Ordinary output\\
+\midrule
+\cref{thm:rec:qp} & ambient; quadratic, exact recourse on every residual
+subbox & $\poly(I)$ & $8^kQ_{\rm ex}\poly(I)$ & rational\\
+\cref{cor:rec:forest} & ambient; quadratic, residual interaction graph a
+forest & $\poly(I)$ & $8^kQ_{\rm ex}\poly(I)$ & rational\\
+\cref{thm:rec:poly} & ambient; certified values on every residual subbox,
+e.g.\ residual convexity & $\poly_d(I)$ & $8^kQ_{\rm ap}\poly_d(I)$ & implicit\\
+\cref{thm:rec:core-only} & core-only; residual Hessian $\succeq\mu I$
+& $\poly_d(I)$ & $8^kQ_{\rm ap}\poly_d(I)$ & implicit\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{The conditional value function}\label{sec:rec:value}
+
+\begin{definition}[Core--recourse instance]\label{def:rec:instance}
+A \emph{core--recourse instance} consists of integers $k,n_R\ge0$ with
+$n=k+n_R\ge1$, a nonempty compact \emph{residual set}
+$Y\subseteq\R^{n_R}$, an explicit rational polynomial $F_0(v,z)$ of total
+degree at most $d$ in the core variables $v\in\R^k$ and residual variables
+$z\in\R^{n_R}$, a rational $L>0$ with
+\begin{equation}\label{eq:rec:L}
+ \frac{\partial^2F_0}{\partial v_i^2}(v,z)\le L
+ \qquad\bigl(i=1,\ldots,k,\ (v,z)\in[0,1]^k\times\conv Y\bigr),
+\end{equation}
+and a rational noise half-width $\sigma>0$. The feasible set is
+$X=[0,1]^k\times Y$. We write $C$ and $R$ for the core and residual index
+sets. In this section $Y=[0,1]^{n_R}$; \cref{sec:int} uses integer sets.
+\end{definition}
+
+The essential restriction is that the residual feasible set does not depend
+on the core: the core enters only the objective. Core coordinates with other
+rational ranges can be mapped affinely onto $[0,1]$; this rescales $L$ and
+the physical noise, and the rescaled data are part of the input. A valid $L$
+can always be computed from monomial coefficients, but the numerical factors
+below use the supplied value, which may be much smaller; a sharper value is
+a certified premise whose proof is charged to $I$. For the sampled
+objective $F_\gamma(v,z)=F_0(v,z)+\gamma_C^{\mathsf T}v+\gamma_R^{\mathsf T}z$
+(with $\gamma_R=0$ under core-only noise) define, for a nonempty closed
+$Y'\subseteq Y$,
+\begin{equation}\label{eq:rec:V}
+ V_{Y'}(v)=\min_{z\in Y'}F_\gamma(v,z),\qquad V=V_Y,\qquad
+ f^*=\min_XF_\gamma=\min_{[0,1]^k}V.
+\end{equation}
+
+\begin{lemma}[Conditional values]\label{lem:rec:value}
+Let $G\ge\sup\{\sum_{i\in C}\abs{\partial_{v_i}F_\gamma(v,z)}:
+v\in[0,1]^k,\ z\in\conv Y\}$.
+\begin{enumerate}[label=(\alph*)]
+\item The function $V(v)-\gamma_C^{\mathsf T}v$ depends on $\gamma_R$ but not
+on $\gamma_C$.
+\item For every $i\in C$ and every $v$, the function
+$t\mapsto V(v+te_i)-Lt^2/2$ is concave on the interval where
+$v+te_i\in[0,1]^k$.
+\item For every nonempty closed $Y'\subseteq Y$, the function $V_{Y'}$ is
+$G$-Lipschitz with respect to the maximum norm on the core:
+$\abs{V_{Y'}(v)-V_{Y'}(w)}\le G\norm{v-w}_\infty$.
+\end{enumerate}
+None of these statements uses convexity of the residual problem.
+\end{lemma}
+
+Part~(b) is the reason for fixed residual feasibility. It makes $V$ satisfy
+the curvature hypothesis of \cref{thm:count:local} in dimension $k$: for a
+dyadic cell of side $h_j=2^{-j}$ in the core cube,
+\begin{equation}\label{eq:rec:corner}
+ \min_{v\in C}V(v)\ \ge\ \min_{v\text{ corner of }C}V(v)-E_j,
+ \qquad E_j=\frac{kLh_j^2}8 .
+\end{equation}
+Only core coordinates contribute to $E_j$. When residual feasibility depends
+on the core, \eqref{eq:rec:corner} fails, even for linear data.
+
+\begin{example}[Core-dependent feasibility]\label{ex:rec:feasibility}
+Let $k=n_R=1$, $F_0(v,z)=z$, and replace the fixed residual set by
+$Y(v)=\{z\in[0,1]:z\ge v-\frac13,\ z\ge\frac13-v\}$. Then $\partial_{vv}F_0=0$
+and $V(v)=\abs{v-\frac13}$. At every level $j$ the cell containing $\frac13$
+has corners at distances $h_j/3$ and $2h_j/3$ from $\frac13$, because
+$2^j\not\equiv0\pmod3$. Its minimum corner value is $h_j/3$, while
+$\min_CV=0$. Thus \eqref{eq:rec:corner} fails with $L=0$, and for every
+$L>0$ it fails at all levels with $h_j<8/(3kL)$. A search based on it would
+report the value interval $[U_j-E_j,U_j]$, which excludes $f^*=0$.
+\end{example}
+
+The corrected-corner inequality also shows why conditional values must be
+exact or certified, rather than computed by rounding the residual variables
+to a grid. Rounding residual variables reintroduces a discretization error
+whose variation over core states grows with the number of residual
+variables, and normalizing grid messages does not remove it.
+
+\begin{example}[Rounded residuals]\label{ex:rec:star}
+Let $m=32$, $\varepsilon=\frac1{16}$, and on $[0,1]^{m+1}$ let
+\[
+ F_0(v,z)=v^2-\frac v2\sum_{i=1}^mz_i+\sum_{i=1}^mz_i^2
+ +\Bigl(\frac m{16}-1-\varepsilon\Bigr)v .
+\]
+Its interaction graph is a star, every coordinate second derivative equals
+$2$, and $V(v)=(1-\frac m{16})v^2+(\frac m{16}-1-\varepsilon)v$ is strictly
+concave with $V(0)=0>V(1)=-\varepsilon$. The unique optimizer is
+$(1,\frac14,\ldots,\frac14)$ with value $-\frac1{16}$. With $h=\frac12$, let
+$V_h(v)$ minimize over residual points of the grid $\{0,\frac12,1\}^m$. Then
+$V_h(0)=0$, $V_h(\frac12)=\frac{23}{32}$, and $V_h(1)=\frac{31}{16}$, and
+$V_h(v)-V(v)=m\dist(v/4,\{0,\frac12,1\})^2$. The bag cell
+$[\frac12,1]\times[0,\frac12]$ of $\{v,z_1\}$ contains the optimizer's bag
+projection, its smallest grid min-marginal is $\frac{23}{32}$, the grid
+incumbent is $0$, and the bag-local correction $\abs BLh^2/8=\frac18$
+discards it. The global correction $(m+1)Lh^2/8=\frac{33}{16}$ is valid. With
+exact conditional values $V$ in place of $V_h$, the corner correction is
+$Lh^2/8$ for the single core coordinate, independently of $m$.
+\end{example}
+
+The proof (\cref{app:rec:examples}) also gives a uniformly positive definite
+variant on a star with $m=d^2$ leaves, $d\ge8$, in which the variation of
+$V_h-V$ between two adjacent core states is $(d-1)h^2$. Positive
+definiteness and bounded coloring number therefore do not make a bag-local
+budget valid for grid min-marginals. These examples concern the retention
+rule; they are not hardness results.
+
+\paragraph{The core search.}
+A \emph{conditional oracle} receives a rational core point $v$. In
+\emph{exact mode} it returns $V(v)$ and a residual point $z\in Y$ with
+$F_\gamma(v,z)=V(v)$. In \emph{certified mode} it also receives a rational
+accuracy $\eta>0$ and returns rationals $\ell\le V(v)\le u$ with
+$u-\ell\le\eta$ and a residual point $z\in Y$ with $F_\gamma(v,z)=u$. For
+uniform notation, exact mode returns $\ell=u=V(v)$.
+
+The \emph{core search} processes levels $j=0,1,\ldots$. At level $0$ the
+only generated cell is $[0,1]^k$. At level $j\ge1$ the generated cells are
+the $2^k$ children of every cell retained at level $j-1$; the full level-$j$
+grid is never enumerated. At every level the search queries the oracle once
+at every distinct corner of a generated cell, in certified mode with
+$\eta=E_j$. Let $U_j$ be the least upper value $u$ returned at this
+level, attained at a corner $c_j$ with completion $z_j$. A generated cell is
+retained if and only if
+\begin{equation}\label{eq:rec:retain}
+ \min_{v\text{ corner of }C}\ell(v)-E_j\ \le\ U_j .
+\end{equation}
+The \emph{retained hull} $\mathcal H_j$ is the smallest box containing all
+retained cells. For $k=0$ there is one empty core cell; each level makes one
+query with accuracy $4^{-j}$ in certified mode, and $\mathcal H_j$ is a point.
+
+\begin{proposition}[Core search]\label{prop:rec:search}
+Let $\varepsilon_j=E_j$ in exact mode and $\varepsilon_j=2E_j$ in certified
+mode. On every draw and for every admissible oracle answer:
+\begin{enumerate}[label=(\alph*)]
+\item for every global minimizer $(a,z^*)$ of $F_\gamma$ on $X$, a retained
+cell contains $a$, so $a\in\mathcal H_j$;
+\item $f^*\le U_j\le f^*+\varepsilon_j$, and $c_j$ is a corner of a retained
+cell, so $c_j\in\mathcal H_j$;
+\item every retained cell has a corner $v$ with $V(v)\le f^*+2\varepsilon_j$.
+\end{enumerate}
+Suppose the core coefficients $\gamma_C$ are independent with law
+$U_{\sigma,M}$ and independent of $\gamma_R$, and $M\ge2^J$. Conditionally
+on $\gamma_R$, for every $j\le J$ the expected number of points $v$ of the
+full grid $(h_j\Z)^k\cap[0,1]^k$ with $V(v)\le f^*+2\varepsilon_j$ is at most
+$Q_{\rm ex}$ in exact mode and $Q_{\rm ap}$ in certified mode. The expected
+number of oracle calls through level $J$ is at most $2^k+8^kJQ$, with
+$Q=Q_{\rm ex}$ or $Q=Q_{\rm ap}$ respectively.
+\end{proposition}
+
+The expectation statement uses a deterministic grid fixed before sampling.
+Each retained cell is charged to a near-optimal corner, and near-optimality
+of a fixed grid point is a condition on the true function $V$, so arbitrary
+noise-dependent choices of the oracle within its error bounds do not affect
+the count. The bound is \cref{thm:count:local} applied, conditionally on the
+residual noise, to $V-\gamma_C^{\mathsf T}v$, which has upper coordinate
+curvature $L$ and does not depend on $\gamma_C$. With exact values the search
+is a variant of the corrected-corner search of \cref{thm:count:cells} on the
+core, with the incumbent taken over the current level. The proof is in
+\cref{app:rec:search}.
+
+\subsection{Global containment and closure certificates}\label{sec:rec:certificates}
+
+The core search alone does not finish the problem: it localizes the core but
+says nothing about residual coordinates. The next two lemmas supply sound
+certificates. Here $Y=\prod_{i\in R}[\ell_i,u_i]$ is a box.
+
+Let $c$ be a point of a core box $\mathcal H$, let $z_c\in Y$, and let $r>0$.
+The \emph{residual patch} is
+\[
+ P=\prod_{i\in R}\bigl[\max\{\ell_i,z_{c,i}-r\},\ \min\{u_i,z_{c,i}+r\}\bigr].
+\]
+For each $i\in R$ with $\ell_i<z_{c,i}-r$ form the \emph{lower slab}
+$Y_i^-=\{z\in Y:z_i\le z_{c,i}-r\}$, and for each $i\in R$ with
+$z_{c,i}+r<u_i$ the \emph{upper slab} $Y_i^+=\{z\in Y:z_i\ge z_{c,i}+r\}$.
+No slab is formed on a side where the patch reaches an original bound; a
+singleton slab at an original bound could contain an optimizer and destroy
+the certificate.
+
+\begin{lemma}[Excluded slabs]\label{lem:rec:exclusion}
+The slabs cover $Y\setminus P$. Let $\lambda_{\rm out}$ be at most the least
+conditional value $V_{Y_i^\pm}(c)$ over all slabs ($\lambda_{\rm out}=+\infty$
+if there are none), let $U\ge V(c)$, and let $w_\infty(\mathcal H)$ be the
+largest coordinate width of $\mathcal H$. If
+\begin{equation}\label{eq:rec:exclusion}
+ \lambda_{\rm out}-U>2G\,w_\infty(\mathcal H),
+\end{equation}
+then for every $v\in\mathcal H$ every minimizer of $F_\gamma(v,\cdot)$ on $Y$
+lies in $P$. If moreover $\mathcal H$ contains the core of every global
+minimizer, then every global minimizer of $F_\gamma$ on $X$ lies in
+$\mathcal H\times P$.
+\end{lemma}
+
+The certificate needs a certified \emph{lower} bound on every slab. A
+feasible value on a slab, which is all an approximate solver returns by
+itself, does not suffice: a better competitor could be hidden in the slab.
+It also needs restricted recourse on slabs, so the conditional oracle must
+accept arbitrary residual subboxes. This is the \emph{box-stability}
+requirement of the following sections.
+
+Once global containment is certified, two sound local tests finish the
+problem. Let $Q\subseteq[0,1]^n$ be a box containing every global
+minimizer, with midpoint $m$ and maximum-norm radius $r_Q$, and put
+\begin{equation}\label{eq:rec:K}
+ K_2\ge\max\Bigl\{1,\max_i\sum_j\sup_{[0,1]^n}\abs{\partial_{ij}F_0}\Bigr\},
+ \qquad
+ K_3\ge\max\Bigl\{1,\max_i\sum_{j,l}\sup_{[0,1]^n}\abs{\partial_{ijl}F_0}\Bigr\},
+\end{equation}
+rational bounds computed from monomial coefficients.
+
+\begin{lemma}[Sign fixing and convexity tests]\label{lem:rec:closure}
+\leavevmode
+\begin{enumerate}[label=(\alph*)]
+\item If the original lower bound of coordinate $i$ lies in the $i$th
+interval of $Q$ and $\partial_iF_\gamma>0$ on $Q$, every global minimizer has
+$x_i$ at that bound; symmetrically for an upper bound and
+$\partial_iF_\gamma<0$. The midpoint test $\pm\partial_iF_\gamma(m)>K_2r_Q$
+is a sufficient condition for the sign; for quadratics the sign can be
+decided exactly. Every global minimizer lies in the box $Q'$ obtained by
+fixing all coordinates that pass.
+\item Let $m'$ and $r_{Q'}$ be the midpoint and radius of $Q'$ and let
+$g_0>0$. If the Hessian of $F_0$ in the unfixed coordinates satisfies
+$\nabla^2F_0(m')-(K_3r_{Q'}+g_0)I\succeq0$, then $F_\gamma$ is
+$g_0$-strongly convex on $Q'$, its unique minimizer on $Q'$ is the unique
+global minimizer of $F_\gamma$ on $X$, and $(Q',g_0)$ is an implicit patch
+output (\cref{def:model:outputs}).
+\item If $F_0$ is quadratic and its Hessian in the unfixed coordinates is
+positive semidefinite, then every exact minimizer of the convex quadratic
+program $\min_{Q'}F_\gamma$ is a global minimizer of $F_\gamma$ on $X$.
+\end{enumerate}
+\end{lemma}
+
+The tests may fix only \emph{original} bounds, and only bounds that lie in
+the current interval. Fixing an artificial patch endpoint would be unsound.
+A coordinate whose derivative vanishes at a contained optimizer never passes
+a strict sign test. All tests in this section are exact rational
+computations and are sound on every draw; the probabilistic analysis only
+shows that they pass early.
+
+\subsection{Exact recourse for quadratic objectives}\label{sec:rec:qp}
+
+\begin{definition}[Box-stable exact recourse]\label{def:rec:qp-oracle}
+Let $F_0(x)=\frac12x^{\mathsf T}Ax+a^{\mathsf T}x+c_0$ be a rational quadratic
+on $[0,1]^n$ with core $C$ and residual $R$. A \emph{box-stable exact
+recourse oracle} receives a rational core point $v\in[0,1]^k$, a rational
+box $\prod_{i\in R}[\ell'_i,u'_i]\subseteq[0,1]^{n_R}$, possibly with
+degenerate intervals, and rational linear coefficients $\gamma$, and returns
+an exact rational global minimizer of $z\mapsto F_\gamma(v,z)$ on that box and
+its value. Its bit work is bounded by a polynomial in the query length whose
+exponent does not depend on $k$.
+\end{definition}
+
+An oracle that solves only the unrestricted residual problem does not
+satisfy this definition, and the slab certificate cannot be run with it.
+
+\begin{theorem}[Exact quadratic recourse]\label{thm:rec:qp}
+Let $F_0(x)=\frac12x^{\mathsf T}Ax+a^{\mathsf T}x+c_0$ be a rational quadratic
+on $X=[0,1]^n$, let $C$ be a supplied core of size $k\ge1$, and let $L>0$
+be rational with $A_{ii}\le L$ for $i\in C$ (verified). Assume a box-stable
+exact recourse oracle. There is a power of two $M$, computed from the base
+instance with $\log_2M\le\poly(I)$, such that for the ambient perturbation
+model with marginal law $U_{\sigma,M}$ the following hold.
+\begin{enumerate}[label=(\roman*)]
+\item On every draw the algorithm returns a rational global minimizer of
+$F_\gamma$ on $X$ and the optimal value, of bit length $\poly(I)$.
+\item The expected bit work, including oracle calls and the computation of
+$M$, is at most $8^kQ_{\rm ex}\poly(I)$.
+\end{enumerate}
+No growth, uniqueness, nondegeneracy, or residual convexity premise is used.
+\end{theorem}
+
+The polynomial factor depends on the oracle's bound but has an exponent
+independent of $k$. The algorithm runs the core search in exact mode; at
+each level it tests \cref{lem:rec:exclusion} with at most $2n_R$ additional
+oracle calls and then the tests of \cref{lem:rec:closure}. If they have not
+passed by a base-computed level $J$, it enumerates the $3^n$ faces of the
+box on the same draw (\cref{lem:sp:faces}). The proof in
+\cref{app:rec:main} shows that under point growth $g_0$ and active-gradient
+margin $\tau$, both chosen from base data, all tests pass by level $J$, and
+that the growth and active-gradient tails make the fallback rare. The
+stopping depth depends only on base data: no rational-reconstruction bound
+that grows with the sampling precision is needed.
+
+\begin{corollary}[Residual forests]\label{cor:rec:forest}
+In \cref{thm:rec:qp}, suppose that deleting the core $C$ from the
+interaction graph of $A$ (vertices $[n]$, an edge $ij$ when $i\ne j$ and
+$A_{ij}\ne0$) leaves a forest. Then the box-stable exact recourse oracle
+exists, and the expected bit work is $8^kQ_{\rm ex}\poly(I)$. This bound is
+fixed-parameter in the size $k$ of the supplied feedback vertex set and in
+$L/\sigma$.
+\end{corollary}
+
+The oracle is the exact algorithm of \citet{pia2026-treewidth-and-the-complexity-of} for
+box-constrained quadratic programs whose interaction graph is a forest:
+fixing core coordinates and adding linear terms change only linear
+coefficients, and restricting a residual box and rescaling its nondegenerate
+intervals keeps the residual graph a forest. The residual quadratic need not
+be convex, have bounded negative inertia, or be separable. The corollary
+is not fixed-parameter in treewidth alone: a graph of treewidth two can
+require a large feedback vertex set, and box-constrained quadratic
+programming is strongly NP-hard at treewidth two
+\citep{pia2026-treewidth-and-the-complexity-of}.
+
+\subsection{Certified convex recourse for polynomial objectives}\label{sec:rec:poly}
+
+For nonlinear recourse the conditional values are usually irrational, and
+exact comparisons between them are unavailable. The theorem below uses only
+certified intervals for conditional values and feasible rational
+completions.
+
+\begin{definition}[Box-stable certified recourse]\label{def:rec:cert-oracle}
+For an explicit rational polynomial $F_0$ on $[0,1]^n$ with core $C$, a
+\emph{box-stable certified recourse oracle} receives a rational core point
+$v$, a rational residual box $Y'\subseteq[0,1]^{n_R}$, rational linear
+coefficients $\gamma$, and a rational $\eta>0$. It returns a rational $\ell$
+and a rational $z\in Y'$ with $\ell\le V_{Y'}(v)\le F_\gamma(v,z)\le\ell+\eta$.
+Its bit work is polynomial in the query length, including the length of
+$\eta$, with an exponent independent of $k$.
+\end{definition}
+
+\begin{lemma}[Certified convex recourse]\label{lem:rec:convex-oracle}
+Fix $d$. If $\nabla^2_{RR}F_0\succeq0$ on $[0,1]^n$, a box-stable certified
+recourse oracle exists with bit work $\poly_d$ in the query length. Moreover,
+the returned lower bound can be taken as the tangent bound
+\begin{equation}\label{eq:rec:tangent}
+ \ell=f(z)+\min_{y\in Y'}\nabla f(z)^{\mathsf T}(y-z),\qquad
+ f=F_\gamma(v,\cdot),
+\end{equation}
+which a verifier checks by evaluating $f$ and $\nabla f$ at the rational
+point $z$ and choosing one endpoint per coordinate.
+\end{lemma}
+
+The proof (\cref{app:rec:convex}) uses weak convex optimization over a capped
+epigraph \citep[Definition~2.1.10 and Corollary~4.2.7]{grotschel1988-geometric-algorithms-and-combinatorial-optimization}
+to find a feasible point of small objective error; convexity alone makes
+\eqref{eq:rec:tangent} a global lower bound, and a smoothness bound along a
+feasible segment makes its gap small. No strong convexity modulus is used.
+The convexity premise is not decidable from an arbitrary polynomial in
+general; it is certified, for example by an explicit sum of squares or by a
+structural form such as a sum of even powers of affine functions.
+
+\begin{theorem}[Polynomial recourse with certified conditional values]\label{thm:rec:poly}
+Fix $d$. Let $F_0$ be an explicit rational polynomial of degree at most $d$
+on $X=[0,1]^n$, let $C$ be a supplied core of size $k\ge0$, and let $L>0$ be
+rational with \eqref{eq:rec:L} (verified by monomial bounds or certified).
+Assume a box-stable certified recourse oracle; by
+\cref{lem:rec:convex-oracle} one exists when $\nabla^2_{RR}F_0\succeq0$ on
+$X$ (certified). There is a power of two $M$, computed from the base
+instance with $\log_2M\le\poly_d(I)$, such that for the ambient perturbation
+model with marginal law $U_{\sigma,M}$ the following hold.
+\begin{enumerate}[label=(\roman*)]
+\item On every draw the algorithm returns an exact global optimizer of
+$F_\gamma$ on $X$. On ordinary draws the output is an implicit patch output
+$(S,z_S,Q,g_0)$ of length $\poly_d(I)$, with a global proof record. On the
+remaining draws it is the output of the exact fallback of
+\cref{thm:count:fallback} on the same draw: root representations of the
+optimal value and of the coordinates of one canonical global minimizer.
+\item The expected bit work and the expected size of the global proof
+record are at most $8^kQ_{\rm ap}\poly_d(I)$.
+\item A $q$-bit evaluation of an implicit patch output costs
+$\poly_d(I+q)$ bit operations; the expected cost of a $q$-bit evaluation of
+the output, over all draws, is $\poly_d(I+q)$.
+\end{enumerate}
+No growth, uniqueness, or nondegeneracy premise is used.
+\end{theorem}
+
+The ordinary branch decides no exact comparison between irrational
+conditional values. The patch descriptor determines one point because
+$F_\gamma$ is strongly convex on $Q$, and the global proof record shows that
+this point is the global optimizer; the record contains the pruning trace and
+has only an expected size bound. An expanded algebraic representation of the
+optimizer can have large degree even on an ordinary draw; the output contract
+does not include one. For $k=0$ the problem is a convex polynomial on a box
+with ambient noise. The theorem then still applies: the patch certificate
+replaces any need to decide uniqueness or the active set.
+
+The residual objective may be nonlinear, nonseparable, dense, and not
+strongly convex. For example,
+$F_0(v,z)=\psi(v)+\sum_iz_i^4+\norm{Dz-Ev}^2$ has convex recourse for any
+rational matrices $D,E$ and any polynomial $\psi$. The core curvature bound
+need not reflect the size of the core--residual coupling, and a small core
+need not arise from a low-rank quadratic convexifier.
+
+\begin{proposition}[A core not given by a low-rank convexifier]\label{prop:rec:rank}
+For integers $m\ge1$ and rationals $\lambda,T>0$, $t_0\in[0,1]$,
+$\beta\in\Q^m$, let
+\[
+ F(t,z)=\frac\lambda2(t-t_0)^2+T\,t\,P(z)-\beta^{\mathsf T}z,\qquad
+ P(z)=\sum_{i=1}^mz_i^4+\Bigl(\sum_{i=1}^mz_i\Bigr)^4,
+\]
+on $[0,1]\times[0,1]^m$. Then $\partial_{tt}F=\lambda$, the residual problem
+is convex for every $t$, and the core--residual cross derivatives grow
+linearly with $T$. If a symmetric positive semidefinite matrix $K$ makes
+$F+\frac12(t,z)^{\mathsf T}K(t,z)$ convex on the box, then $K_{zz}\succ0$; in
+particular $\rank K\ge m$.
+\end{proposition}
+
+\Cref{thm:rec:poly} applies to this family with one core coordinate and
+$L=\lambda$, so its numerical factor does not depend on $T$; the
+coefficient $T$ enters only the polynomial factor through its bit length.
+By the proposition, no fixed positive semidefinite quadratic correction of
+rank independent of $m$ makes the objective convex. The proposition
+excludes only fixed quadratic corrections. A one-coordinate correction
+$Ct\log t$ with $C$ of order $T\max P$ does convexify the family, so the
+example separates the theorem from small-rank quadratic convexifiers, not
+from all difference-of-convex representations. It is not a hardness
+result.
+
+\subsection{Core-only noise and strongly convex recourse}\label{sec:rec:core-only}
+
+\Cref{thm:rec:poly} perturbs every coordinate. Residual noise is what
+produces full point growth and nonzero active gradients at residual bounds
+with high probability. Under core-only noise neither holds in general: the
+residual optimal set can be a segment on every draw, and residual bound
+multipliers can vanish identically. A residual modulus restores closure.
+
+\begin{theorem}[Core-only noise with strongly convex recourse]\label{thm:rec:core-only}
+Fix $d$. Let $F_0$, $X=[0,1]^n$, $C$, and $L$ be as in \cref{thm:rec:poly},
+with $k\ge1$ and $n_R\ge1$, and let $\mu>0$ be rational with
+\begin{equation}\label{eq:rec:mu}
+ \nabla^2_{RR}F_0(x)\succeq\mu I\qquad(x\in X)
+\end{equation}
+(certified). There is a power of two $M$, computed from the base instance
+with $\log_2M\le\poly_d(I)$, such that for the core-only perturbation model
+with marginal law $U_{\sigma,M}$ (all residual coefficients unperturbed) the
+conclusions (i)--(iii) of \cref{thm:rec:poly} hold. The ordinary output is
+an implicit patch output in which some original core and residual bounds may
+be fixed.
+\end{theorem}
+
+No residual interiority, strict complementarity, active-set, or growth
+premise is used, and residual bound multipliers may vanish identically. The
+numerical factor contains the core curvature $L$ only. The modulus $\mu$ and
+the size of mixed derivatives enter the polynomial factor through the bit
+lengths of the derived constants. By \cref{prop:model:regret}, the exact
+sampled optimizer is within $k\sigma$ of $\min_XF_0$ in original objective
+value, independently of the number of residual variables.
+
+The class admits a fixed rank-$k$ quadratic convexifier: the Schur complement
+of the residual block and \eqref{eq:rec:K} give
+$\nabla^2F_0+\alpha\diag(I_C,0)\succeq0$ for $\alpha=K_2+K_2^2/\mu$. Its
+curvature can be much larger than $L$. The contribution of
+\cref{thm:rec:core-only} is that the numerical factor keeps $L/\sigma$ under
+core-only noise, despite changing and weakly active residual bounds; it is
+not that the class lacks a low-rank convexifier.
+
+The proof (\cref{app:rec:core-only}) has three new ingredients. First,
+the residual selector $s(v)=\argmin_{z\in Y}F_0(v,z)$ is unique and
+$(K_2/\mu)$-Lipschitz, the conditional value is continuously differentiable,
+and projected growth $g_V$ of $V$ at its optimal core lifts to full point
+growth $\min\{g_V/(1+2K_2^2/\mu^2),\mu/4\}$. The growth tail of
+\cref{thm:count:growth-tail} applies to $V$ on the $k$-dimensional core box.
+Second, core noise keeps the optimal core away from changes of the residual
+active set, with a coefficient-independent probability bound. Third, small
+residual multipliers can be released without losing a positive Hessian
+modulus. We state the last two ingredients because they are the reason the
+theorem needs no strict complementarity.
+
+For a face $K$ of $[0,1]^k$ with $q\ge1$ free coordinates, identified with a
+$q$-dimensional box, let $A_i^{\ell}=\{v\in K:s_i(v)=\ell_i\}$ and
+$A_i^u=\{v\in K:s_i(v)=u_i\}$, and define
+\begin{equation}\label{eq:rec:SK}
+ S_K=\partial K\cup\bigcup_{i\in R}\bigl(\operatorname{bd}_KA_i^\ell\cup
+ \operatorname{bd}_KA_i^u\bigr),
+ \qquad
+ \mathcal E_K=-\nabla_KV_0(S_K)\subseteq\R^q,
+\end{equation}
+where $\operatorname{bd}_K$ is the boundary relative to $K$, $V_0$ is the
+conditional value without noise, and $\nabla_K$ is the gradient in the free
+coordinates of $K$.
+
+\begin{proposition}[Active-set changes are rarely near the optimum]\label{prop:rec:tube}
+In the setting of \cref{thm:rec:core-only}, let $K$ be a face of $[0,1]^k$
+with $q\ge1$ free coordinates.
+\begin{enumerate}[label=(\alph*)]
+\item $S_K$ and $\mathcal E_K$ are compact semialgebraic sets of dimension at
+most $q-1$. If $a\in\operatorname{relint}K$ and
+$0<\eta'<\dist(a,S_K)$, the relative ball of radius $\eta'$ about $a$ lies in
+$\operatorname{relint}K$, and the bound status of each residual coordinate
+of $s(v)$ is constant on it.
+\item There is a base-computable $D_*$ with $\log D_*\le\poly_d(I)$ such that
+$\mathcal E_K$ lies in the zero set of a nonzero polynomial of degree at most
+$D_*$.
+\item If $\gamma_K$ has independent coordinates with law $U_{\sigma,M}$, then
+for every $\delta\ge0$
+\[
+ \Pr\{\dist(\gamma_K,\mathcal E_K)\le\delta\}
+ \le\min\Bigl\{1,\ C(q,D_*)\Bigl(\frac\delta\sigma+\frac{\sqrt q}M\Bigr)\Bigr\},
+ \qquad C(q,D)=16q^{q+1}D(4D+2)^{q-1}.
+\]
+\end{enumerate}
+\end{proposition}
+
+At an optimal core $a\in\operatorname{relint}K$ the free coordinates of the
+noise satisfy $\gamma_K=-\nabla_KV_0(a)$, so (c) bounds the probability that
+the optimal core is close to a change of the residual active set. Part~(b)
+uses fixed-block quantifier elimination only as an analysis device: the
+algorithm never computes $S_K$ or the polynomial. Part~(c) combines a tube
+estimate for singular algebraic sets \citep{basu2023-hausdorff-approximations-and-volume-of} with a jitter
+argument that covers every atom of the grid, including atoms on
+$\mathcal E_K$. The conclusion is a stable residual active set near the
+optimum; it gives no positive lower bound on active multipliers.
+
+\begin{proposition}[Releasing small residual multipliers]\label{prop:rec:release}
+In the setting of \cref{thm:rec:core-only}, let $x^*=(a,s(a))$ with $a$ in
+the relative interior of a face $K$ with $q\ge1$ free coordinates. Suppose the
+residual bound status is constant on the relative ball of radius $\eta>0$
+about $a$, $\nabla_KV_\gamma(a)=0$, and $\nabla_K^2V_\gamma(a)\succeq2gI$
+with $g>0$. For an active residual coordinate $i$ let
+$\lambda_i=\pm\partial_{z_i}F_0(x^*)\ge0$ be its inward multiplier. Put
+$H=K_2/\mu$, $K_\lambda=\max\{1,K_3(1+H)^3\}$, and
+\[
+ \theta=\min\Bigl\{\frac{K_\lambda\eta^2}2,\ \frac{\mu g}{4n_RK_\lambda}\Bigr\},
+ \qquad
+ \nu=\min\Bigl\{\frac\mu2,\ \frac{\min\{g,\mu/2\}}{1+2H^2}\Bigr\}.
+\]
+Let $\mathcal J$ be any set of active residual coordinates with
+$\lambda_i\le\theta$. Then the Hessian of $F_0$ at $x^*$, restricted to the
+free coordinates of $K$, the residual coordinates strictly inside their
+bounds, and $\mathcal J$, is at least $\nu I$. The same holds for every principal submatrix.
+\end{proposition}
+
+The bound uses the two-sided ball in the free core directions: nonnegativity
+of a multiplier on both sides of $a$ and a Hessian bound force a small
+multiplier to have a small gradient, which controls the cross terms between
+released coordinates and the core. The algorithm never identifies the
+active set or classifies multipliers. It fixes the coordinates whose
+derivative signs are certified, which include all active residual
+coordinates with $\lambda_i>\theta$ once the patch is small, and tests the
+Hessian on the rest.
+
+\begin{remark}[Interior recourse]\label{rem:rec:interior}
+If, in addition, every conditional residual minimizer is interior to the
+residual box (certified, for example by strict inward derivative signs on the
+residual facets), then no residual coordinate is active. After the active
+core coordinates are fixed, point growth alone gives a positive Hessian on
+all remaining coordinates, and the proof of \cref{thm:rec:core-only}
+needs neither \cref{prop:rec:tube} nor \cref{prop:rec:release}. No
+quantitative distance from the residual bounds is used, and an accepted
+patch may touch them.
+\end{remark}
+
+The following examples show which hypotheses cannot be dropped. Proofs are
+in \cref{app:rec:examples}.
+
+\begin{example}[Flat residual fibers]\label{ex:rec:fiber}
+On $[0,1]^3$ with core $v$ and residual $(z_1,z_2)$ let
+$F_\gamma(v,z)=(v-\frac12)^2+(z_1-vz_2)^2+\gamma v$. The residual Hessian is
+positive semidefinite, $\partial_{vv}F_0\le4$, and for every
+$\gamma\in(-1,1)$ the optimal core $a_\gamma=\frac12-\frac\gamma2$ is unique
+with projected growth constant one. The optimal set
+$\{(a_\gamma,a_\gamma s,s):s\in[0,1]\}$ is a segment, and the full Hessian is
+indefinite at every point with $z_1\ne vz_2$. Hence no full-dimensional box
+in $X$ carries a convex restriction of $F_\gamma$. Residual convexity without
+a modulus does not support the closure of \cref{thm:rec:core-only}. If the
+residual term is replaced by $(z_1-\frac12-v(z_2-\frac12))^2+(z_2-\frac12)^4$,
+the residual problem is strictly convex with the unique interior minimizer
+$(\frac12,\frac12)$ for every $v$, the optimizer
+$(a_\gamma,\frac12,\frac12)$ is unique, and still the full Hessian is
+indefinite at points arbitrarily close to it. Strict residual convexity and
+interior uniqueness therefore do not replace the uniform modulus $\mu$.
+\end{example}
+
+\begin{example}[Vanishing multipliers]\label{ex:rec:weak}
+On $[0,1]^2$ let $F_0(v,y)=\phi(v)+y^2$, with residual $y$. The residual
+modulus is $2$, the selector is $s\equiv0$, and the multiplier of the active
+bound $y=0$ vanishes identically, on every draw of core-only noise. The
+coupled variant $F_0=(v-\frac12)^2+(y+(v-\frac12)^2)^2$ has multiplier
+$2(v-\frac12)^2$, which vanishes at an interior core point while the
+conditional value has quadratic growth. A closure that requires residual
+multipliers bounded away from zero fails here; \cref{prop:rec:release} keeps
+such coordinates free.
+\end{example}
+
+\begin{example}[Why active core coordinates are fixed first]\label{ex:rec:two-sided}
+On $[0,1]^2$ let $F_\gamma(v,y)=\frac14v^2+vy+\frac12y^2+\gamma v$ with
+residual $y$. The selector is $y=0$, $V_\gamma(v)=\frac14v^2+\gamma v$, the
+residual modulus is one, and the full Hessian
+$\bigl(\begin{smallmatrix}1/2&1\\1&1\end{smallmatrix}\bigr)$ is indefinite.
+The multiplier $\lambda(v)=v$ is nonnegative on the feasible side only; at
+the core vertex $v=0$ it vanishes while its derivative is one. For
+$\gamma>0$ the optimum is $(0,0)$, the core derivative there is $\gamma$, and
+the closure succeeds only because the sign test fixes $v=0$ first.
+\Cref{prop:rec:release} applies only in the free directions of the optimal
+core face.
+\end{example}
+
+\subsection{Scope}\label{sec:rec:scope}
+
+All results in this section optimize the sampled objective exactly; none
+recovers an optimizer of $F_0$. The core, the curvature bound $L$, the
+residual convexity or modulus, and the box-stable oracle are inputs. The
+results do not recognize a good core, and they do not decide residual
+convexity of an arbitrary polynomial. The residual set must not depend on
+the core (\cref{ex:rec:feasibility}), and the oracle must handle every
+residual subbox. The numerical factors depend on the magnitude of
+$L/\sigma$, so these are expected polynomial bounds only when that ratio
+is polynomially bounded. The certificates are exact and sound on every draw,
+while their early success, the stopping depth, and the size of the sampling
+grid rest on growth and active-gradient tails for the base-selected finite
+law (\cref{thm:count:growth-tail,lem:count:finite-tails}). Under core-only noise,
+residual convexity without a modulus is not enough for the closure used here
+(\cref{ex:rec:fiber}); it remains open whether a different certificate,
+for instance one selecting an optimal residual face, gives a comparable
+theorem. For integer residual variables the patch and Hessian tests are
+replaced by label certificates; \cref{sec:int} treats that case, together
+with core-only noise for integer flows.

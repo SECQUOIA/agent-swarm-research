@@ -1,0 +1,56 @@
+usage: collect.py [-h] [--runs RUNS] [--out OUT]
+
+Parse all runs of the solver campaign into results.csv and results.json.
+
+One row per run directory <runs>/<instance>__<solver>/ (or an archived
+attempt <instance>__<solver>__a<k>/). Sources per run:
+  run.json   written by driver.py (settings, attempt, validity, wall/CPU time,
+             kills, memory)
+  trace.trc  GAMS trace record (traceopt=3): statuses, objective, objest, nodes
+  gams.log   GAMS + solver log: versions, final bounds, thread evidence
+  <inst>.lst GAMS listing: status texts
+  m_p.gdx    GAMS savepoint of the returned point (presence only)
+
+Dual bound. GAMS reports the solver's bound as the model attribute objest
+(trace field ObjectiveValueEstimate). GAMS/Gurobi leaves it NA for continuous
+(NLP) models, so the final bound is also read from each solver's end-of-run
+summary in the log: BARON "Best possible = ...", Gurobi "Best objective ...,
+best bound ...", SCIP "Dual Bound : ...". These are final solver-reported
+values. Globality disclaimers and argument-domain tightening are preserved
+separately; the values are not rigorous certificates. dual_bound is objest if available, otherwise
+the log summary value; if both exist they must agree (relative 1e-10), else
+the row is flagged. A run without a final summary (killed) gets no dual_bound;
+its last progress-table value is kept separately in dual_bound_last_logged.
+Values with magnitude >= 1e20 are written as "inf"/"-inf".
+
+Precision. dual_bound_text is the decimal string exactly as the source
+printed it: the trace prints 15 significant digits, the GUROBI log summary 13
+(format %.12e), the BARON and SCIP log summaries 15, BARON's progress table 6.
+dual_bound_print_halfunit is half a unit in the last printed digit of
+dual_bound_text; the solver's internal value lies within it, assuming
+round-to-nearest printing. It is conservative: when the printer drops
+trailing zeros (trace, BARON), the true printing error is at most half a unit
+in the 15th significant digit. GAMS/Gurobi leaves objest NA for general
+nonlinear NLPs, so their GUROBI dual bound comes from the log summary with
+only 13 significant digits; such rows get a note. primal_objective is the objective of the point
+GAMS returned (trace); the point itself is in m_p.gdx. GAMS can return a point
+other than the solver's own final incumbent (seen for SCIP), so
+solver_log_primal is reported separately and any difference beyond the
+printing precision is noted.
+
+Validity (decided by driver.py, copied from run.json): attempt is the
+attempt number of this run, attempts_total the number of attempts made,
+valid is true if the attempt ended by its own completion or the hard timeout
+and got cpu/wall >= 0.9 (attempts that completed within 60 s, not at the
+solver's time limit, are exempt from the cpu/wall test), validity explains the decision, and end_kind says how
+the attempt ended. A row with valid false is the best of the allowed
+attempts (kept_best) or an archived attempt. Runs from driver version 1 have
+no validity fields (empty).
+
+usage: python3 collect.py [--runs DIR] [--out PREFIX]
+  defaults: --runs runs  --out results   (relative to this folder)
+
+options:
+  -h, --help   show this help message and exit
+  --runs RUNS  directory holding <instance>__<solver> run dirs
+  --out OUT    output prefix (writes PREFIX.csv and PREFIX.json)

@@ -36,9 +36,9 @@ or the separate rectangular bus-angle-box variant. See
   fights the irrationality issue inside the NP-hardness proof. The search did not locate an explicit AC-feasibility PSPACE/∃R classification.
   The rectangular membership observation is routine and is not a novelty claim.
   (b) The resistive model in claim (1) is exactly the "OPF in DC networks" model of Gan–Low 2014
-  (IEEE TPS 29(6)), who state it is "non-convex and NP-hard in general", and it is Lavaei–Low
-  2012's "resistive network with active loads" case. The standard citation "OPF is NP-hard even
-  if the network is resistive and there are no reactive loads" is Lavaei–Low 2012, Appendix B,
+  (IEEE TPS 29(6)), who describe the general problem as nonconvex and NP-hard. It also matches
+  Lavaei–Low 2012's resistive-network case with active loads. The standard citation for
+  NP-hardness of OPF on resistive networks without reactive loads is Lavaei–Low 2012, Appendix B,
   Case 2 — see (c). No searched source gives a complexity classification beyond NP-hardness for this model, and the
   DC-with-constant-power-loads literature (Bolognani–Zampieri, Simpson-Porco–Dörfler–Bullo,
   Barabanov et al., Matveev et al., Jeeninga–De Persis–van der Schaft) contains no complexity
@@ -83,13 +83,12 @@ Local KB: no package mentions ∃R/ETR together with power, grid or flow; `biens
 
 - Bienstock–Verma, *Strong NP-hardness of AC power flows feasibility*, Oper. Res. Lett. 47 (2019)
   494–501 (arXiv:1512.07315). Model: lossless (zero resistance, reactance x_ij > 0), unit voltage
-  magnitudes, phase-angle limits θ_ij^max < π/2, "unconstrained reactive power flows and
-  injections" [[bienstock2019-strong-np-hardness-of-ac]] p.1. Reduction from one-in-three 3SAT;
-  the reduction "encodes some irrational quantities". Section 1.3 "Membership in NP": "A
-  straightforward proof of such a fact, if true, is unlikely, for the reason that in a feasible
-  solution very likely the f_ij (and possibly even some of the θ_i) would be irrational values. We
-  conjecture that an approximate version of system (1) where equation (1b) is replaced with
-  |sin(θ_i − θ_j) − x_ij f_ij| ≤ ε ... belongs to NP." [[bienstock2019-strong-np-hardness-of-ac]] p.6.
+  magnitudes, phase-angle limits θ_ij^max < π/2, and no constraints on reactive flows or
+  injections [[bienstock2019-strong-np-hardness-of-ac]] p.1. The one-in-three 3SAT reduction
+  includes irrational quantities. Section 1.3 "Membership in NP" identifies possible
+  irrationality of feasible f_ij and possibly θ_i as an obstacle to a simple membership proof.
+  The authors conjecture NP membership for the approximation of system (1) that replaces
+  equation (1b) with |sin(θ_i − θ_j) − x_ij f_ij| ≤ ε. [[bienstock2019-strong-np-hardness-of-ac]] p.6.
   This is the only place in the power-flow literature where NP membership is discussed. The claim
   under audit answers the implicit question (conditionally) and covers a *different* model
   (resistive instead of lossless); both hardness results together show the two extreme line
@@ -97,9 +96,9 @@ Local KB: no package mentions ∃R/ETR together with power, grid or flow; `biens
 - Verma, *Power grid security analysis: an optimization approach*, PhD thesis, Columbia 2009
   (open: http://www.columbia.edu/~dano/theses/verma.pdf). Chapter 5 proves Theorem 4.6.2
   (capacitated throughput maximization in the lossless nonlinear flow model is NP-hard) from
-  one-in-three 3SAT with the "banana" network; Remark 5.1.6 (thesis pp. 142–144): "the two
-  points where the curve crosses the horizontal line probably have irrational values, so we
-  cannot express them exactly in the NP-completeness proof", fixed by a perturbation lemma. No
+  one-in-three 3SAT with the "banana" network. Remark 5.1.6 (thesis pp. 142–144) raises the
+  possibility that both intersections with that horizontal line are irrational and thus unavailable as
+  exact encodings in the reduction; a perturbation lemma addresses this issue. No
   membership discussion. (Chapter title says "NP-completeness proof" but only hardness is proved.)
 - Lehmann, Grastien, Van Hentenryck, *AC-Feasibility on Tree Networks is NP-Hard*, IEEE TPS 31(1)
   2016, 798–801 (arXiv:1410.8253, downloaded and read). Model (Section II): polar; all voltage
@@ -107,10 +106,10 @@ Local KB: no package mentions ∃R/ETR together with power, grid or flow; `biens
   reactive demands P_i, Q_i at loads; generators with Σ p_ij ≥ 0 (no upper bound); angle-difference
   limit 0 < ∆ ≤ π/2; flows p_ij = g(1 − cos θ_ij) − b sin θ_ij, q_ij = −b(1 − cos θ_ij) − g sin θ_ij.
   Theorem 1: star networks with one load are NP-hard by reduction from Subset Sum (weak
-  NP-hardness); the encoding "uses only rational numbers and finitely many real numbers
-  constructed from rational numbers, sine, and cosine". Conclusion: the proof "relies on the
-  existence of arbitrarily small bounds on voltage magnitudes ... and either generation bounds,
-  capacity constraints, or a bound on phase angle differences". No membership discussion, no
+  NP-hardness). The encoding uses rational data together with finitely many real constants
+  obtained from rational numbers through sine and cosine. The conclusion identifies arbitrarily
+  small voltage-magnitude bounds as necessary to the proof, together with generation bounds,
+  capacity constraints, or phase-angle-difference bounds. No membership discussion, no
   ∃R. Their model needs b ≠ 0 or g ≠ 0 with the ratio condition of Lemma 2; the lossy line (g > 0)
   with reactive demand is essential, unlike the claim's zero-reactive setting.
 - Molzahn–Hiskens, *A Survey of Relaxations and Approximations of the Power Flow Equations*,
@@ -120,8 +119,8 @@ Local KB: no package mentions ∃R/ETR together with power, grid or flow; `biens
 - Bienstock, Escobar, Gentile, Liberti, *Mathematical programming formulations for the AC-OPF*
   (4OR 2020 / Ann. Oper. Res. 2022; arXiv:2007.05334): "The ACOPF is NP-hard [12]"; nothing on
   membership or Tarski/PSPACE. Kocuk–Dey–Sun 2016 (arXiv:1504.06770): NP-hardness only.
-- Bienstock–Muñoz 2018: "simple instances of PO (in fact convex, quadratically constrained
-  problems) where all feasible solutions have irrational coordinates"
+- Bienstock–Muñoz 2018 give simple convex, quadratically constrained polynomial-optimization
+  instances that admit no feasible solution with entirely rational coordinates
   [[bienstock2018-lp-formulations-for-polynomial-optimization]] p.9; PTAS for AC-OPF on bounded
   treewidth (Corollary 8). Consistent with the claim (approximate feasibility is easy on
   bounded treewidth; exact feasibility is ∃R-hard on degree-3 graphs of unbounded treewidth).
@@ -133,9 +132,8 @@ Local KB: no package mentions ∃R/ETR together with power, grid or flow; `biens
 
 - Lavaei–Low, *Zero duality gap in optimal power flow problem*, IEEE TPS 27(1) 2012, 92–107
   (open: https://smart.caltech.edu/papers/zeroduality.pdf). Section "Resistive networks with
-  active loads": "the OPF problem is NP-hard even if the network is resistive and there are no
-  reactive loads. This situation, which corresponds to DC power distribution, is itself
-  important". Appendix B, "NP-hardness of OPF problems", Case 2: Im{Y} = 0, |V_k| = 1,
+  active loads" asserts NP-hardness of OPF for resistive networks without reactive loads and
+  relates this setting to DC power distribution. Appendix B, "NP-hardness of OPF problems", Case 2: Im{Y} = 0, |V_k| = 1,
   Q_k^min = Q_k^max = 0 for all generators, no line or angle limits (S^max = P^max = ∆V^max = ∞);
   they then write the OPF as min V^T Y V + Σ P_Dk s.t. V_k ∈ {−1, 1}, call this NP-hard "[33]"
   (a generic handbook citation; the problem is max-cut-like). Caveat: the step "Q ≡ 0 and Im Y = 0
@@ -151,16 +149,16 @@ Local KB: no package mentions ∃R/ETR together with power, grid or flow; `biens
   balance, power balance p_i = V_i I_i, giving p_i = Σ_j y_ij V_i (V_i − V_j) (their (1)); substation
   bus 0 with fixed voltage; injection sets that are singletons (inelastic loads), two-point sets
   (on/off loads) or intervals [0, capacity] (generators); branch voltages within
-  [V^min, V^max] (their (4a)–(4b)); line limits ignored. Abstract: "It is non-convex and NP-hard
-  in general" (citing Lavaei–Low). This is the audited resistive model up to the choice of
+  [V^min, V^max] (their (4a)–(4b)); line limits ignored. The abstract describes the general
+  problem as nonconvex and NP-hard, citing Lavaei–Low. This is the audited resistive model up to the choice of
   injection sets (the claim uses intervals, which include singletons); the claim should name it
   as the "DC network OPF"/"DC microgrid OPF" model and cite Gan–Low for its provenance and for the
   SOCP-exactness results (exact if voltage upper bounds do not bind, or uniform upper bounds and
   nonpositive injection lower bounds) — those tractable regimes are exactly the ones the gadgets
   violate (binding upper bounds, mixed-sign injections).
 - Liu, Cui, Molzahn, Chen, Lu, *Optimal power flow in DC networks with robust feasibility and
-  stability guarantees* (arXiv:1902.08163; IEEE TCNS): "there is no efficient solver with global
-  optimality guarantee" for DN-OPF; NP-hardness via [9]/[27]; no class.
+  stability guarantees* (arXiv:1902.08163; IEEE TCNS): the authors report no efficient
+  DN-OPF solver that guarantees global optimality; NP-hardness via [9]/[27]; no class.
 - Solvability literature for DC grids with constant-power loads (all downloaded, grepped for
   NP, polynomial time, complexity, tractable, decide, LMI, convex):
   - Bolognani–Zampieri, *On the existence and linear approximation of the power flow solution
@@ -214,8 +212,8 @@ Local KB: no package mentions ∃R/ETR together with power, grid or flow; `biens
   the boundary; connectedness with g_ij > 0 still gives equal angles).
 - Molzahn, Lesieutre, DeMarco, *A sufficient condition for power flow insolvability with
   applications to voltage stability margins*, IEEE TPS 28(3) 2013 (arXiv:1204.6285, Section II-A):
-  for a lossless system with zero injections "we restrict attention to candidate solutions in
-  which all buses have the same voltage angle of zero" — existence direction only.
+  for a lossless system with zero injections, the analysis considers only candidates with
+  every bus angle set to zero — existence direction only.
 - Morton, *The admittance matrix and network solutions* (arXiv:2507.15331, Section on AC
   networks) and *Power flows with flat voltage profiles* (arXiv:2207.11963): classical
   observations that purely resistive AC networks with in-phase sources have in-phase voltages;
@@ -234,8 +232,8 @@ Local KB: no package mentions ∃R/ETR together with power, grid or flow; `biens
   `notes/pooling-existential-reals-novelty.md`.
 - Miltzow–Schmiermann, *On classifying continuous constraint satisfaction problems* (FOCS 2021 /
   arXiv:2106.02397, compendium ref. [MS24]): CCSPs with addition and any "curved" equality
-  constraint are ∃R-complete; the compendium (Section 1.4) summarizes it as "the inversion in
-  ETR-INV can be replaced by virtually any curved function". The constraint V_i(V_i − V_j) = c of a
+  constraint are ∃R-complete; the compendium (Section 1.4) describes broad classes of curved
+  functions that can replace inversion in ETR-INV. The constraint V_i(V_i − V_j) = c of a
   fixed-injection one-neighbour bus is such a curved constraint, so a CCSP-based route exists;
   it does not by itself handle the network structure (each bus equation couples all neighbours,
   variables are voltages shared across gadgets, degree ≤ 3), which is what the gadget

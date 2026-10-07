@@ -1,0 +1,778 @@
+\section{Lower reductions: certified quartics carry the full sign problem}
+\label{sec:reductions}
+
+Theorem~\ref{thm:exact-upper} turns every exact order or equality test at
+the minimizer of an explicitly given, globally strongly convex polynomial
+into one $\PosSLP$ instance. This section shows that the order tests are no
+easier, even in a setting that removes every familiar source of difficulty:
+a single quartic on all of $\R^n$, supplied with a rational positive definite
+Hessian Gram matrix that certifies uniform strong convexity and can be checked
+in polynomial time. The tests stay $\PosSLP$-hard when the optimal value is
+promised to be nonzero. The coordinate tests stay $\PosSLP$-hard when the
+optimizer is promised to be rational, to lie in $[-1,1]^n$, and to have the
+known optimal value zero.
+
+These are the exact decisions that a branch-and-bound method for
+mixed-integer nonlinear optimization makes at a node: whether the bound of a
+node relaxation lies below an incumbent value, and on which side of a
+branching threshold an optimal coordinate lies. Certified strong convexity,
+the absence of constraints, and a rational optimizer each remove a known
+obstacle to exact computation, but none of them removes the arithmetic one.
+An ordinary polynomial-time algorithm for any of the comparisons below would
+place $\PosSLP$ in P. \citet{AllenderEtAl2009} show that $\PosSLP$ lies in the
+counting hierarchy and that $\mathrm{P}^{\PosSLP}$ is the Boolean part of
+polynomial-time computation over the reals with constants $0$ and $1$ in the
+Blum--Shub--Smale model; whether $\PosSLP$ lies in P is open. The results here
+concern exact comparisons only. Approximate optimal values and approximate
+optimizers of the same quartics are computable in polynomial time
+(Theorem~\ref{thm:global-point}).
+
+\paragraph{Mechanism.}
+Every lower bound below has three steps.
+\begin{enumerate}[label=(\arabic*)]
+\item A \emph{sign compiler} converts an integer straight-line program into a
+circuit whose gate values stay bounded and whose designated output has the
+sign of the program's output. The compilers never represent the integer
+values themselves, which can have doubly exponential magnitude. They carry
+only signs, through real signals that can be as small as $2^{-2^{cT}}$ for a
+program with $T$ operations.
+\item A \emph{realization} places the list of all gate values at the unique
+zero of one rational quartic. A gate-specific exposing quadratic supplies
+positive curvature in every direction at that zero, and the assembly
+Lemma~\ref{lem:quartic-realization} combines it with the gate residuals into
+a globally strongly convex sum of squares with a rational positive definite
+Hessian Gram.
+\item For value comparisons, a \emph{cubic perturbation} transfers the
+designated sign to the sign of the optimal value without losing the Hessian
+certificate.
+\end{enumerate}
+We use two compilers. Certified cube-root circuits
+(Section~\ref{sec:reductions-root-compiler}) give hardness of exact
+feasibility, of optimization over a fixed cube, and of the sign of an
+unconstrained minimum. Circuits of rational unit quaternions
+(Section~\ref{sec:reductions-quaternion}) keep every gate value rational and
+give coordinate hardness with a rational optimizer.
+
+\subsection{Statements}
+\label{sec:reductions-statements}
+
+$\PosSLP$ asks whether the output $V$ of a division-free integer
+straight-line program with constants $0,1$ and operations $+,-,\times$ is
+positive. Programs and all circuits below are directed acyclic graphs: a gate
+may be used by any number of later gates, and sizes count gates of the shared
+graph, never an expanded formula or expanded fractions. The integer $W=2V-1$
+is never zero, and $W>0$ exactly when $V>0$; replacing $V$ by $1-V$ reverses
+the answer. All reductions are deterministic polynomial-time many-one
+reductions, and $L$ denotes total binary input length.
+
+A \emph{certified quartic} on $\R^n$ is a pair $(f,M)$, where
+$f\in\Q[x_1,\ldots,x_n]$ has degree at most four and $M$ is a rational
+symmetric positive definite matrix of order $n+n^2$ such that
+\begin{equation}
+ v^{\mathsf T}\nabla^2f(x)\,v=(v,x\otimes v)^{\mathsf T}M\,(v,x\otimes v)
+ \qquad\text{identically in }(x,v)\in\R^n\times\R^n,
+ \label{eq:reductions-certified}
+\end{equation}
+with $(x\otimes v)_{(k,j)}=x_kv_j$ (Definition~\ref{def:models-hessian-gram}).
+Coefficient comparison and rational symmetric elimination check this format in
+polynomial time. The matrix certifies $\nabla^2f\succeq\lambda_{\min}(M)I$, and
+$\det M/(\tr M)^{n+n^2-1}$ is a positive rational lower bound on
+$\lambda_{\min}(M)$ of polynomial bit length
+(Lemma~\ref{lem:models-det-trace}). Hence $f$ has a unique minimizer $p$ and
+optimal value $f^*=f(p)$.
+
+\begin{theorem}[Certified quartic classification]
+\label{thm:quartic-complete}
+Consider inputs consisting of a certified quartic $(f,M)$ on $\R^n$, a
+rational threshold $r$ and, for coordinate tests, an index
+$j\in\{1,\ldots,n\}$. Inputs violating the format are no-instances.
+\begin{enumerate}[label=(\roman*)]
+\item Each of the eight tests $f^*<r$, $f^*\le r$, $f^*>r$, $f^*\ge r$,
+$p_j<r$, $p_j\le r$, $p_j>r$, $p_j\ge r$ is $\PosSLP$-complete.
+\item Each of the tests $f^*=r$ and $p_j=r$ reduces to $\PosSLP$. No matching
+lower bound is asserted.
+\item Each of the following properties is $\PosSLP$-complete: $f\ge0$ on
+$\R^n$; $f$ is a sum of squares of real polynomials; $f$ has a rational
+positive definite Gram matrix on the vector of all monomials of degree at most
+two. Being a sum of squares of rational polynomials is $\PosSLP$-hard.
+\item The lower bounds for the value tests in (i) and for all properties in
+(iii) hold already for instances with $r=0$, $M\succeq I$ and $f^*\ne0$. The
+lower bounds for the coordinate tests hold under the promises of
+Theorem~\ref{thm:rational-optimizer}.
+\end{enumerate}
+\end{theorem}
+
+The upper bounds are Theorem~\ref{thm:exact-upper}; the content of this
+section is the lower bounds. Part~(iii) concerns three different certificate
+notions. In the certified class, nonnegativity
+and real sums of squares are equivalent, and a rational positive definite
+polynomial Gram exists exactly when $f^*>0$. Rational sums of squares at
+$f^*=0$ are a different matter: Example~\ref{ex:fields-ternary} is a
+certified quartic with minimum zero that is a sum of squares over a real field
+$E$ exactly when $2^{1/5}\in E$. No upper bound for rational sum-of-squares
+membership is claimed.
+
+Quartics are the lowest degree at which these lower bounds can hold. A
+globally convex polynomial of degree at most three is quadratic
+(Lemma~\ref{lem:models-low-degree}), and a strongly convex rational quadratic
+has a rational minimizer computable by rational linear algebra.
+
+\begin{theorem}[Rational optimizer and known value]
+\label{thm:rational-optimizer}
+There is a polynomial-time many-one reduction from $\PosSLP$ to the test
+$p_j>0$ for certified quartics, whose output instances $(F,M,j)$ on $\R^N$
+satisfy all of the following promises:
+\begin{enumerate}[label=(\roman*)]
+\item $p\in\Q^N\cap[-1,1]^N$ and $p_j\ne0$;
+\item $F^*=0$, and $F$ is supplied as a sum of $N+1$ squares of rational
+quadratic polynomials;
+\item $\nabla^2F\succeq\frac32I$ on $\R^N$.
+\end{enumerate}
+Consequently each of the four coordinate order tests at threshold zero remains
+$\PosSLP$-complete on the instances satisfying these promises.
+\end{theorem}
+
+Rationality of the optimizer is a promise satisfied by the constructed
+instances; the reduction neither recognizes nor needs to recognize it. The
+theorem shows that exact field membership does not supply an exact algorithm:
+the optimizer is rational, its value is known, and the objective comes with
+short rational square factors, yet a single coordinate sign still carries an
+arbitrary $\PosSLP$ instance. Rationality also gives no bound on representation
+size: in the constructed instances one coordinate of $p$ is a nonzero rational of absolute
+value below $2^{-2^{cN}}$ for an absolute constant $c>0$
+(Remark~\ref{rem:reductions-rational-length}), so its expanded fraction has
+exponentially many bits. Theorem~\ref{thm:rational-height} gives
+unconditional families of bounded rational optimizers with long expanded
+encodings and additional conditioning properties. Corollary~\ref{cor:constraints-binary}
+uses the instances of Theorem~\ref{thm:rational-optimizer} to show that one
+optimal binary decision remains $\PosSLP$-hard to extract when the optimal
+value is known in advance.
+
+\paragraph{Relation to earlier hardness results.}
+Exact convex feasibility was already known to capture arithmetic circuit
+comparison: \citet{TarasovVyalyi2008} reduce $\PosSLP$ to exact feasibility of
+semidefinite programs. Bounded arithmetic circuits also capture $\PosSLP$:
+\citet[Lemma~5]{EY2010} reduce it, with a circuit of linear size over
+$\{+,\times,/\}$ whose gate values all lie in $(0,1)$, to an order comparison
+of that circuit's output.
+The contribution here is the restriction to one explicitly expanded
+quartic with a checked strict Hessian certificate and no constraints, together
+with the two sign compilers it requires. The analytic compiler avoids products
+of independent values, which the quartic realization cannot accept; the
+quaternion compiler keeps every gate value exactly rational and bounded.
+Commutators of near-identity rotations are a classical tool for multiplying
+small rotation angles, used in the Solovay--Kitaev algorithm for approximate
+synthesis in $\mathrm{SU}(2)$~\cite{DawsonNielsen2006}, and identity testing
+for shared circuits over linear groups has also been
+studied~\cite{KoenigLohrey2015}.
+Those works concern approximate synthesis and identity testing,
+respectively; they do not decide the sign of a designated rational coordinate
+in a fixed compact group. Our use requires exact rational gates and error
+control below a doubly exponentially small nonzero signal.
+Version~1 of \citet{SlotSteurerWiedmer2025} proves polynomial-time
+approximation for convex polynomial programming and leaves the complexity of
+the exact decision problem $\exists x\in P:\ f(x)\le0$ for convex quartics
+open.
+Corollary~\ref{cor:reductions-feasibility} shows that this decision is
+$\PosSLP$-hard already when $P$ is a halfspace or the unit cube and $f$ is a
+certified quartic. It does not determine the complexity class of that
+constrained problem: Theorem~\ref{thm:exact-upper} concerns unconstrained
+minimization, and Section~\ref{sec:constraints} treats constrained exact
+comparison.
+
+\subsection{Two obstacles}
+\label{sec:reductions-obstacles}
+
+The following two facts explain the shape of the constructions. The first
+shows why the compilers carry only signs through bounded signals. The second
+shows why the realizations need a gate-specific exposing quadratic rather than
+squared gate equations.
+
+\begin{proposition}[Radius and naive lifting]
+\label{prop:reductions-obstacles}
+\leavevmode
+\begin{enumerate}[label=(\roman*)]
+\item If $F\colon\R^n\to\R$ is twice continuously differentiable with
+$\nabla^2F\succeq I$ and minimizer $p$, then $\norm{p}\le\norm{\nabla F(0)}$.
+In particular, a rational polynomial whose coefficients have bit length at
+most $b$ has a minimizer of norm at most $\sqrt n\,2^b$.
+\item For every $\varepsilon>0$ the nonnegative quartic
+$H(x,y)=x^2+x^4+\varepsilon(y-x^2)^2$ has the unique zero $(0,0)$, at which
+the residual map $(x,y-x^2)$ has the identity Jacobian, but
+$\partial_x^2H(0,y)=2-4\varepsilon y$ is negative for $y>1/(2\varepsilon)$.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+For~(i), strong monotonicity of $\nabla F$ gives
+$(\nabla F(0)-\nabla F(p))^{\mathsf T}(0-p)\ge\norm{p}^2$; since
+$\nabla F(p)=0$, the Cauchy--Schwarz inequality gives the bound. The linear
+coefficients of $F$ form $\nabla F(0)$. For~(ii), the zero set is clear, and
+$\partial_x^2[\varepsilon(y-x^2)^2]=-4\varepsilon y+12\varepsilon x^2$.
+\end{proof}
+
+Part~(i) rules out realizations that keep unscaled integer values: a
+program with $m$ squarings computes $2^{2^m}$, whereas a polynomial-size
+normalized quartic has a minimizer of singly exponential norm. Part~(ii) shows
+that a nonsingular Jacobian at the intended zero does not make squared gate
+residuals globally convex: at $x=0$ the squared residual term
+$\varepsilon(y-x^2)^2$ contributes $-4\varepsilon y$ to $\partial_x^2H$, which
+is unbounded below as $y$ grows. The realizations below control such negative
+curvature with one additional square, that of a gate-specific exposing
+quadratic whose quadratic part is positive definite; after scaling, this
+square makes the whole sum uniformly strongly convex on the whole space
+(Lemma~\ref{lem:quartic-realization}).
+This is a feature of our construction, not a necessary condition for
+convexity: $(x^2-y^2)^2+(2xy)^2=(x^2+y^2)^2$ is convex, although both squared
+quadratics have indefinite quadratic parts.
+
+\subsection{Sign compiler I: certified cube-root circuits}
+\label{sec:reductions-root-compiler}
+
+\begin{definition}[Certified odd-root circuits]
+\label{def:reductions-root-circuit}
+A \emph{certified odd-root circuit} with $k$ gates consists of odd integers
+$d_i=2n_i-1\ge3$ written in unary, rational coefficients $c_i$ and $a_{ije}$
+for $1\le j<i\le k$ and $1\le e\le n_j$, and rational boxes
+$[\underline\xi_i,\overline\xi_i]$ not containing zero, such that for every
+$i$
+\begin{equation}
+ c_i+\sum_{j<i}\sum_{e=1}^{n_j}a_{ije}R_{j,e}
+ \subseteq[\underline\xi_i^{\,d_i},\overline\xi_i^{\,d_i}],
+ \qquad
+ R_{j,e}=\{s^e:\ s\in[\underline\xi_j,\overline\xi_j]\},
+ \label{eq:reductions-interval-test}
+\end{equation}
+where the left side is a Minkowski sum of intervals. The circuit defines reals
+$\xi_1,\ldots,\xi_k$ by
+\begin{equation}
+ \xi_i^{d_i}=\rho_i(\xi):=c_i+\sum_{j<i}\sum_{e=1}^{n_j}a_{ije}\xi_j^e,
+ \label{eq:reductions-root-gate}
+\end{equation}
+taking the unique real $d_i$-th root. It is a \emph{cube-root circuit} if every
+$d_i=3$; then each radicand is a rational affine combination of earlier roots
+and their squares.
+\end{definition}
+
+The test~\eqref{eq:reductions-interval-test}, which we call the
+\emph{direct interval test}, uses exact rational arithmetic and unary
+exponents, so it is checkable in polynomial time. By induction over $i$, it
+implies $\xi_i\in[\underline\xi_i,\overline\xi_i]$ for every gate: if all
+earlier roots lie in their boxes, then $\rho_i(\xi)$ lies in the left side of
+\eqref{eq:reductions-interval-test}, and the real $d_i$-th root is increasing.
+Radicand coefficients may have either sign. A product $\xi_j\xi_l$ of two
+different earlier gates is not available; this restriction is what makes a
+quartic realization possible, and it is the reason a new compiler is needed.
+
+\begin{theorem}[Cube-root sign compiler]
+\label{thm:reductions-root-circuit}
+Given an integer straight-line program with output $V$, one can compute in
+polynomial time a certified cube-root circuit with boxes
+$[1-w_i,1+w_i]$, $0<w_i\le10^{-9}$, and two distinct gates $o$ and $e$ such
+that
+\begin{equation}
+ \xi_o\ne1,\qquad \operatorname{sign}(\xi_o-1)=\operatorname{sign}(2V-1),
+ \qquad\abs{\xi_o-1}\le2^{-29},
+ \qquad 0<(\xi_e-1)^2\le\tfrac18\abs{\xi_o-1}.
+ \label{eq:reductions-compiler-output}
+\end{equation}
+Every radicand is a rational constant, an affine function
+$1+\sum_j\lambda_j(\xi_j-1)$ with $\sum_j\abs{\lambda_j}\le6$, or the square
+gate $3\xi_j^2-6\xi_j+4=1+3(\xi_j-1)^2$.
+\end{theorem}
+
+The proof is in Appendix~\ref{app:reductions-root-compiler}. Its gadgets act
+on small real signals $x$, stored as roots $\xi=1+x$. Put
+\[
+ \phi(z)=(1+3z)^{1/3}-1,\qquad
+ \operatorname{sq}(z)=\phi(z^2),\qquad
+ \theta(z)=\tfrac12\bigl[\operatorname{sq}(\phi(z))+\operatorname{sq}(\phi(-z))\bigr],
+\]
+\[
+ \operatorname{mul}(x,y)=\phi\Bigl(\tfrac14\bigl[\theta(x+y)-\theta(x-y)\bigr]\Bigr).
+\]
+One root gate computes $\phi$ of an affine combination of signals, and one
+square gate computes $\operatorname{sq}$; $\operatorname{mul}$ uses nine root
+gates. The function $\theta$ is even with $\theta(z)=z^2+O(z^4)$, so
+$\operatorname{mul}(x,y)=xy+O(\abs{(x,y)}^4)$. The decisive property is exact:
+$\operatorname{mul}(x,0)=\operatorname{mul}(0,y)=0$. A Cauchy estimate then gives
+the relative error bound
+$\abs{\operatorname{mul}(x,y)-xy}\le2^{24}\abs{xy}(\abs x+\abs y)$, which stays
+proportional to the product even when the two inputs have very different
+magnitudes. Each integer gate value $V_i$ is carried by a pair of signals of a
+common order $d_i$ in a tiny parameter $\delta$, with leading coefficients
+$V_i$ and $1$; addition cross-multiplies by the denominator signals, so that
+it only ever adds signals of equal order. All error bounds are absolute
+multiples of $\delta^{d_i+1}$ and never divide by a leading coefficient, so
+cancellation and zero intermediate values need no special treatment. The
+parameter $\delta$ is the output of $2T+5$ chained square gates starting from
+the printed rational $1000^{-O(T)}$; it is never printed itself. The boxes are
+verified directly, independently of the analytic estimates, by
+Lemma~\ref{lem:reductions-small-signal}.
+
+For completeness of the picture, the language produced by the compiler is
+itself $\PosSLP$-complete.
+
+\begin{theorem}[Certified cube-root comparison]
+\label{thm:reductions-root-language}
+For a certified cube-root circuit with positive boxes, a gate $o$, and a
+rational $r$, each of the tests $\xi_o>r$, $\xi_o\ge r$, $\xi_o<r$, $\xi_o\le r$
+is $\PosSLP$-complete, and $\xi_o=r$ reduces to $\PosSLP$. Malformed inputs,
+including inputs failing the direct interval test, are no-instances.
+\end{theorem}
+
+The lower bounds follow from Theorem~\ref{thm:reductions-root-circuit} with
+$r=1$, after replacing $V$ by $1-V$ for the tests $<$ and $\le$. The upper
+bound, proved in Appendix~\ref{app:reductions-root-language}, uses the same
+architecture as Theorem~\ref{thm:exact-upper} with a more elementary separation
+bound: after clearing denominators every gate value is an algebraic integer of
+degree at most $3^k$, so a field norm bounds $\abs{\xi_o-r}$ away from zero,
+and polynomially many exact Newton steps for each cube root reach that
+accuracy in a shared rational circuit.
+
+\subsection{Quartic realization of certified root circuits}
+\label{sec:reductions-realization}
+
+\begin{theorem}[Signed odd-root realization]
+\label{thm:reductions-signed-root}
+There is a deterministic polynomial-time algorithm that, given a certified
+odd-root circuit, computes signs $\sigma_i\in\{-1,1\}$, a rational
+$\kappa\ge1$, and a rational quartic $F$ in the $N=\sum_in_i$ variables
+$X=(X_{i,e})_{1\le i\le k,\,1\le e\le n_i}$ with the following properties.
+\begin{enumerate}[label=(\roman*)]
+\item $F$ is supplied as a sum of $N+1$ squares of rational quadratic
+polynomials, and $\nabla^2F\succeq\frac32I$ on $\R^N$.
+\item $F^{-1}(0)=\{p\}$, where $p_{i,e}=(\sigma_i\kappa\xi_i)^e$. In
+particular $\xi_i=\sigma_ip_{i,1}/\kappa$.
+\item A rational positive definite Hessian Gram matrix for $F$ in the sense
+of~\eqref{eq:reductions-certified} is computed as part of the output.
+\end{enumerate}
+Here $\sigma_i$ is the sign of the box of gate $i$, and
+$\kappa=\max\{1,\max_i1/\min(\abs{\underline\xi_i},\abs{\overline\xi_i})\}$.
+\end{theorem}
+
+The proof is in Appendix~\ref{app:reductions-signed-root}. After the
+normalization $\alpha_i=\sigma_i\kappa\xi_i\ge1$, the coordinates $X_{i,e}$
+stand for the powers $\alpha_i^e$, $e\le n_i$, and the $N$ residuals
+\[
+ X_{i,1}X_{i,e}-X_{i,e+1}\quad(1\le e<n_i),\qquad
+ X_{i,n_i-1}X_{i,n_i}-b_i(X),\quad
+ b_i(X)=c_i'+\sum_{j<i,\,e}a_{ije}'X_{j,e},
+\]
+have $p$ as their unique real zero, with a block-triangular Jacobian whose
+determinant has absolute value $\prod_id_i\alpha_i^{d_i-1}\ge1$. For one gate with root $\alpha$ and
+$d=2n-1$, put $\ell_j=X_{j+1}-\alpha X_j$ for $0\le j<n$, with $X_0=1$. A
+tridiagonal positive definite form $P_\alpha=\ell^{\mathsf T}T_\alpha\ell$
+restricts to the power curve $X_j=t^j$ as
+\[
+ P_\alpha(t,t^2,\ldots,t^n)=(t-\alpha)(t^d-\alpha^d),
+\]
+and the gate's exposing quadratic is
+\[
+ E_i^*=P_{\alpha_i}(X_i)+(\alpha_i-X_{i,1})\bigl(b_i(X)-\alpha_i^{d_i}\bigr).
+\]
+It vanishes to second order at $p$, its quadratic part is positive definite
+on the gate's own coordinates, and its only coupling to earlier gates is the
+quadratic cross term $-u_{i,1}\sum_{j,e}a'_{ije}u_{j,e}$ in centered
+coordinates $u=X-p$. Geometrically decreasing gate weights make the weighted
+sum $\sum_i\rho^{i-1}E_i^*$ positive definite in all directions, including
+signed couplings and arbitrary reuse of earlier gates. The coefficients of
+$E_i^*$ involve the algebraic number $\alpha_i$, but $E_i^*$ is an explicit
+combination, with coefficients polynomial in $\alpha_i$, of rational quadratics
+vanishing at $p$. Replacing $\alpha_i$ by a certified rational approximation in
+those coefficients therefore keeps the zero exactly while making the gradient
+at $p$ as small as required. Lemma~\ref{lem:quartic-realization} then supplies
+the quartic and its certificate. No minimal polynomial of a gate value, or of
+the field generated by all gate values, is ever expanded; that field has degree
+at most $\prod_id_i$.
+
+\begin{remark}[Monotone cube-root circuits]
+\label{rem:reductions-monotone}
+If $d_i=3$, $c_i\ge1$, and every radicand uses only first powers with
+nonnegative coefficients $a_{ij1}\ge0$, boxes need not be part of the input. With
+$A=2+\sum_i(c_i+\sum_ja_{ij1})$, the boxes $[1,A]$ pass the direct interval
+test, because each radicand interval lies in $[1,A\,(c_i+\sum_ja_{ij1})]
+\subseteq[1,A^2]\subseteq[1,A^3]$. Theorem~\ref{thm:reductions-signed-root}
+then applies with $\kappa=1$.
+\end{remark}
+
+\subsection{Feasibility, a fixed cube, and the sign of the minimum}
+\label{sec:reductions-consequences}
+
+Apply Theorem~\ref{thm:reductions-signed-root} to the circuit of
+Theorem~\ref{thm:reductions-root-circuit}. All boxes are positive, so every
+$\sigma_i=1$ and $\kappa=1/(1-\max_iw_i)\in[1,1+2\cdot10^{-9}]$. The unique zero
+has $p_{i,1}=\kappa\xi_i$ and $p_{i,2}=\kappa^2\xi_i^2$, all in $(0,4)$.
+
+\begin{corollary}[Exact feasibility and a fixed cube]
+\label{cor:reductions-feasibility}
+For the quartic $F$ just described, with designated output gate $o$:
+\begin{enumerate}[label=(\roman*)]
+\item The set $\{X:\ F(X)\le0,\ X_{o,1}\ge\kappa\}$ is nonempty exactly when
+$V>0$, and it is then a single point.
+\item Let $X=\Delta Y+\kappa e_{o,1}$, where $\Delta$ is diagonal with entry $8-\kappa$ at
+$(o,1)$ and $8$ elsewhere, and put $\widetilde F(Y)=F(\Delta Y+\kappa e_{o,1})$. Then
+$\widetilde F$ is a sum of $N+1$ squares of rational quadratics, has a rational
+positive definite Hessian Gram, satisfies $\nabla^2\widetilde F\succeq54I$, and
+\[
+ \min_{Y\in[0,1]^N}\widetilde F(Y)=0\iff V>0;
+\]
+otherwise the minimum over the cube is positive.
+\end{enumerate}
+\end{corollary}
+
+\begin{proof}
+Since $F\ge0$ vanishes only at $p$, the first set is $\{p\}$ when
+$p_{o,1}=\kappa\xi_o\ge\kappa$, that is, when $\xi_o\ge1$, and empty
+otherwise. By~\eqref{eq:reductions-compiler-output}, $\xi_o\ge1$ holds exactly
+when $\xi_o>1$, that is, when $2V-1>0$. For~(ii), the affine map sends
+$[0,1]^N$ onto the box with $X_{o,1}\in[\kappa,8]$ and all other coordinates in
+$[0,8]$. All coordinates of $p$ lie in $(0,4)$, so this box contains $p$
+exactly when $p_{o,1}\ge\kappa$. If it does, the minimum is $F(p)=0$. If not,
+$F$ is positive on the compact box. Composition with an affine map preserves
+the rational square factors, and Lemma~\ref{lem:models-gram-curvature}
+transforms the Hessian Gram by an invertible rational congruence. Finally
+$\nabla^2\widetilde F(Y)=\Delta\,\nabla^2F(X)\,\Delta\succeq\frac32\cdot36\,I$ because
+$8-\kappa>6$.
+\end{proof}
+
+Part~(i) is a degenerate exact feasibility problem: its feasible set is
+empty or a single point, so it has no Slater point. Part~(ii) separates that
+degeneracy from the domain: the cube has the interior point
+$(\frac12,\ldots,\frac12)$, and only the threshold $\widetilde F\le0$ is
+degenerate. In the no case of part~(ii), the positive minimum is not shown to
+be at least $2^{-\poly(L)}$.
+
+The unconstrained value test needs a different idea, since an unconstrained
+minimum of a sum of squares is never negative. The auxiliary gate $e$ of
+Theorem~\ref{thm:reductions-root-circuit} supplies a nonzero signal whose
+square is at most one eighth of the output signal's absolute value. A cubic
+tilt built from the two signals encodes the output sign in the minimum.
+
+\begin{theorem}[Sign of an unconstrained minimum]
+\label{thm:reductions-min-sign}
+There is a polynomial-time many-one reduction from $\PosSLP$ to the test
+$f^*<0$ for certified quartics, whose output instances $(G,M_G)$ satisfy
+$M_G\succeq I$ and $G^*\ne0$. More precisely, $V>0$ implies $G^*<0$, and
+$V\le0$ implies $G^*>0$.
+\end{theorem}
+
+\begin{proof}
+Let $F$, $p$, $\kappa$ and the gates $o\ne e$ be as above, and let $M$ be the
+rational positive definite Hessian Gram of $F$, of order $N+N^2$. Put
+\[
+ u(X)=X_{e,1}-\kappa,\qquad v(X)=X_{o,1}-\kappa,\qquad
+ u_0=u(p)=\kappa(\xi_e-1),\qquad v_0=v(p)=\kappa(\xi_o-1).
+\]
+By~\eqref{eq:reductions-compiler-output} and $1\le\kappa<2$,
+\begin{equation}
+ u_0\ne0,\qquad v_0\ne0,\qquad \operatorname{sign}v_0=\operatorname{sign}(2V-1),
+ \qquad \abs{v_0}\le\tfrac18,\qquad u_0^2\le\tfrac{\kappa}{8}\abs{v_0}\le\tfrac12\abs{v_0}.
+ \label{eq:reductions-tilt-signals}
+\end{equation}
+The cubic $-u^2v$ has
+$z^{\mathsf T}\nabla^2(-u^2v)(X)z=2\kappa z_a^2+4\kappa z_az_b-2X_bz_a^2-4X_az_az_b$,
+where $a=(e,1)$ and $b=(o,1)$ are distinct indices. On the basis $(z,X\otimes z)$
+this biform has the rational symmetric Gram matrix $B$ whose only nonzero
+entries are
+\[
+ B_{z_a,z_a}=2\kappa,\quad B_{z_a,z_b}=B_{z_b,z_a}=2\kappa,\quad
+ B_{z_a,X_bz_a}=B_{X_bz_a,z_a}=-1,\quad
+ B_{z_b,X_az_a}=B_{X_az_a,z_b}=-2,
+\]
+and $\norm{B}\le\norm{B}_F=(12\kappa^2+10)^{1/2}<8$. Let
+$\mu=\det M/(\tr M)^{N+N^2-1}\le\lambda_{\min}(M)$ and
+$\lambda=\lceil9/\mu\rceil$. Then
+\[
+ G=\lambda F-u^2v,\qquad M_G=\lambda M+B\succeq(\lambda\mu-8)I\succeq I,
+\]
+so $(G,M_G)$ is a certified quartic with $\nabla^2G\succeq I$; the cubic tilt
+leaves the quartic part unchanged. All data have polynomial bit length.
+
+Since $F\ge0$ and $F(p)=0$, we have $\nabla F(p)=0$, hence
+\[
+ G(p)=-u_0^2v_0,\qquad \nabla G(p)=-2u_0v_0e_a-u_0^2e_b,\qquad
+ \norm{\nabla G(p)}^2=4u_0^2v_0^2+u_0^4.
+\]
+If $V>0$, then $v_0>0$ and $G^*\le G(p)<0$. If $V\le0$, write $t=-v_0>0$.
+Strong convexity with modulus one gives
+$G(X)\ge G(p)+\nabla G(p)^{\mathsf T}(X-p)+\frac12\norm{X-p}^2
+\ge G(p)-\frac12\norm{\nabla G(p)}^2$, so
+\[
+ G^*\ge u_0^2t-2u_0^2t^2-\tfrac12u_0^4
+ =u_0^2\bigl(t-2t^2-\tfrac12u_0^2\bigr)
+ \ge u_0^2\bigl(t-\tfrac t4-\tfrac t4\bigr)=\tfrac12u_0^2t>0,
+\]
+using $t\le\frac18$ and $u_0^2\le\frac t2$ from~\eqref{eq:reductions-tilt-signals}.
+\end{proof}
+
+The perturbation can move the minimizer to an irrational point; no rationality
+statement is made for $G$. The positive value in the no case is at least
+$\frac12u_0^2\abs{v_0}$, a quantity of doubly exponentially small size, and no
+better lower bound is claimed. The perturbation argument uses only two
+distinct affine signals satisfying~\eqref{eq:reductions-tilt-signals} at the
+zero of a certified sum of squares; the compiler is what produces such signals
+with polynomial-size data.
+
+\subsection{Sign compiler II: rational unit quaternions}
+\label{sec:reductions-quaternion}
+
+Write a quaternion as $u=(u_0,\vec u)$ with scalar part $u_0$ and vector part
+$\vec u=(u_1,u_2,u_3)$. The product is
+$uw=(u_0w_0-\vec u\cdot\vec w,\ u_0\vec w+w_0\vec u+\vec u\times\vec w)$, the
+conjugate is $\bar u=(u_0,-\vec u)$, and $\abs{uw}=\abs u\abs w$ for the
+Euclidean norm. For a unit quaternion, $u^{-1}=\bar u$. Let $\mathbf1=(1,0,0,0)$
+and $\mathbf i=(0,1,0,0)$.
+
+\begin{definition}[Rational unit-quaternion circuits]
+\label{def:reductions-quaternion-circuit}
+A \emph{rational unit-quaternion circuit} with $k$ gates lists, in
+topological order, gates of three kinds: an explicitly given rational unit
+quaternion; the product $g_ag_b$ of two earlier gates, where $a=b$ is allowed;
+or the conjugate $\bar g_a$ of an earlier gate. Every gate value is a rational
+unit quaternion. The input lists the generators and the operations, not the
+expanded coordinates of gate values.
+\end{definition}
+
+\begin{theorem}[Quaternion sign compiler]
+\label{thm:reductions-quaternion}
+Let $\mathbf c=\frac12(1,1,1,1)$ and
+$\mathbf w_\vartheta=\bigl(\frac{1-\vartheta^2}{1+\vartheta^2},\frac{2\vartheta}{1+\vartheta^2},0,0\bigr)$
+with $\vartheta=2^{-20}$. Given an integer straight-line program with output
+$V$, one can compute in polynomial time a rational unit-quaternion circuit
+whose generators are among $\mathbf1,\mathbf i,\mathbf c,\mathbf w_\vartheta$,
+together with an output gate whose value $u$ satisfies
+\[
+ u_1\ne0,\qquad \operatorname{sign}u_1=\operatorname{sign}(2V-1).
+\]
+Consequently, deciding whether a specified coordinate of a specified gate of a
+rational unit-quaternion circuit is positive is $\PosSLP$-complete.
+\end{theorem}
+
+The proof is in Appendix~\ref{app:reductions-quaternion-compiler}. Two
+conjugations do the work. Conjugation by $\mathbf i$ is
+$\iota(u)=(u_0,u_1,-u_2,-u_3)$, and conjugation by $\mathbf c$ permutes the axes
+cyclically, $\operatorname{rot}(u)=(u_0,u_3,u_1,u_2)$. For a unit quaternion,
+the product
+\[
+ \operatorname{pr}(u)=u\,\iota(u)=\bigl(1-2u_1^2,\ 2u_0u_1,\ 2u_1u_3,\ -2u_1u_2\bigr)
+\]
+keeps the selected coordinate, doubled, and suppresses the other vector
+coordinates to second order. The commutator satisfies the exact identity
+$[u,w]-\mathbf1=uw\bar u\bar w-\mathbf1=2(0,\vec u\times\vec w)\,\bar u\bar w$, so
+near the identity it multiplies small rotation vectors. Accordingly,
+$\operatorname{add}(u,w)=\operatorname{pr}(uw)$ adds two signals and
+$\operatorname{prod}(u,w)=\operatorname{pr}(\operatorname{rot}([u,\operatorname{rot}(w)]))$
+multiplies them, up to the constant factors two and four and errors of
+relative order $\delta$. Iterating $\operatorname{prod}(g,g)$ from
+$\mathbf w_\vartheta$ produces an exact rational quaternion whose selected
+coordinate $\delta$ satisfies $0<\delta<2^{-16\cdot2^j}$ after $j$ steps. The same numerator--denominator homogenization as in the cube-root
+compiler handles orders and cancellation; here the common leading factors are
+four for products and eight for sums. The upper bound is elementary: four
+integer numerator circuits and one positive common denominator per gate
+represent every gate value exactly.
+
+\begin{proposition}[Realization of quaternion circuits]
+\label{prop:reductions-quaternion-realization}
+Given a rational unit-quaternion circuit with $k$ gates and values
+$p_1,\ldots,p_k$, one can compute in polynomial time a rational quartic $F$ in
+the $N=4k$ variables $X=(X_1,\ldots,X_k)$, $X_i\in\R^4$, such that $F$ is
+supplied as a sum of $N+1$ squares of rational quadratics,
+$\nabla^2F\succeq\frac32I$, $F^{-1}(0)=\{p\}$ with $p=(p_1,\ldots,p_k)$, and a
+rational positive definite Hessian Gram for $F$ is part of the output. The
+coordinates of $p$ are preserved exactly; in particular $p\in\Q^N\cap[-1,1]^N$.
+\end{proposition}
+
+The proof is in Appendix~\ref{app:reductions-quaternion-realization}. The
+residuals are $X_i-p_i$ for a constant gate, $X_i-X_aX_b$ and $X_i-\bar X_a$. With
+$q_i=\abs{X_i}^2-1$, the exposing quadratic of a product gate is
+$q_i-2\langle p_i,X_i-X_aX_b\rangle-q_a-q_b$, which equals
+$\abs{X_i-p_i}^2-\abs{X_a-p_i\bar X_b}^2$ because $p_i\bar p_b=p_a$ for unit
+quaternions; the identity also holds when $a=b$. Weights $16^{1-i}$ absorb the
+negative terms of all later gates. Only the coefficients $p_i$ multiplying the
+residuals are rounded, so the zero stays exactly at the rational gate list.
+
+\begin{proof}[Proof of Theorem~\ref{thm:rational-optimizer}]
+Apply Theorem~\ref{thm:reductions-quaternion} and then
+Proposition~\ref{prop:reductions-quaternion-realization}, and let $j$ index the
+first vector coordinate of the output gate. The unique zero of $F$ is its
+unique minimizer, so $F^*=0$ and $p$ is the rational list of gate values,
+which lies in $[-1,1]^N$ because every gate is a unit quaternion. The
+selected coordinate satisfies $p_j\ne0$ and $p_j>0$ exactly when $V>0$. The
+remaining promises are part of
+Proposition~\ref{prop:reductions-quaternion-realization}. This proves the
+reduction to $p_j>0$ and, since $p_j\ne0$, also to $p_j\ge0$. Replacing $V$ by
+$1-V$ gives the tests $p_j<0$ and $p_j\le0$. The upper bounds follow from
+Theorem~\ref{thm:exact-upper} with the observable $x_j$.
+\end{proof}
+
+\begin{remark}[Length of the rational optimizer]
+\label{rem:reductions-rational-length}
+In Theorem~\ref{thm:rational-optimizer}, the generator gate after $2T+2$
+iterations is one of the gates, so its selected coordinate is a coordinate of
+$p$. It is a nonzero rational of absolute value below $2^{-64\cdot4^T}$
+(Lemma~\ref{lem:reductions-generator}), so its reduced denominator has more
+than $64\cdot4^T$ bits. The construction has $N=O(T)$ variables, so this
+length is exponential in $N$. The reduction never computes this fraction.
+\end{remark}
+
+\subsection{Proof of the classification}
+\label{sec:reductions-proof-main}
+
+\begin{proof}[Proof of Theorem~\ref{thm:quartic-complete}]
+\emph{Validity.} A reduction first checks the format
+\eqref{eq:reductions-certified} by coefficient comparison and rational
+elimination. On an invalid input it outputs a fixed program with output
+$-1$, which is a no-instance of $\PosSLP$. All further statements concern
+valid inputs.
+
+\emph{Upper bounds in (i) and (ii).} A valid certified quartic satisfies the
+hypotheses of Theorem~\ref{thm:exact-upper}, with the checked Hessian Gram as
+curvature certificate. Applying it to the observable $h=f-r$, for which
+$h(p)=f^*-r$, handles the five relations between $f^*$ and $r$, and $h=x_j-r$
+handles those between $p_j$ and $r$; each yields one $\PosSLP$ instance.
+
+\emph{Lower bounds in (i).} Theorem~\ref{thm:reductions-min-sign} maps an
+instance with output $V$ to a certified quartic with $r=0$, $M_G\succeq I$,
+$G^*\ne0$, and $V>0\iff G^*<0$. Because $G^*\ne0$, the same instance also
+decides $G^*\le0$. Applied to the program with output $1-V$, which is positive
+exactly when $V\le0$, it gives $V>0\iff G^*>0\iff G^*\ge0$. The coordinate tests
+are Theorem~\ref{thm:rational-optimizer}.
+
+\emph{Part (iii).} For a valid certified quartic, $f-f^*$ is a sum of squares
+of real polynomials by Taylor integration of the Hessian Gram at the
+stationary point $p$ (Lemma~\ref{lem:taylor-sos}). Hence $f\ge0$, $f^*\ge0$ and
+membership in the real sum-of-squares cone are equivalent. If $f$ has a
+positive definite Gram matrix $Q$ on the monomial vector $m(x)$ of degree at
+most two, then $f(x)\ge\lambda_{\min}(Q)\norm{m(x)}^2\ge\lambda_{\min}(Q)>0$,
+because $m(x)$ contains the constant monomial; hence $f^*>0$. Conversely, if
+$f^*>0$, a rational positive definite Gram exists by
+Theorem~\ref{thm:interior-gram}. Thus these three properties are the tests
+$f^*\ge0$, $f^*\ge0$ and $f^*>0$, which reduce to $\PosSLP$ by the upper bounds
+in (i). For the lower bounds, apply Theorem~\ref{thm:reductions-min-sign} to the
+program with output $1-V$. If $V>0$, its output quartic has $G^*>0$; it is
+nonnegative, real SOS, has a rational positive definite polynomial Gram, and is
+a sum of squares of rational polynomials, because rational elimination of a
+positive definite rational Gram gives positive rational weights and every
+positive rational is a sum of rational squares
+(Lemma~\ref{lem:models-rational-squares}). If $V\le0$, then $G^*<0$, and $G$ has
+none of these properties.
+
+\emph{Part (iv).} The instances used above have exactly the stated additional
+properties.
+\end{proof}
+
+\subsection{Related comparisons}
+\label{sec:reductions-comparisons}
+
+\paragraph{Sums of numbers with one real conjugate.}
+A different source problem is also encoded by one quartic and one affine
+inequality. It concerns algebraic numbers given by dense minimal polynomials,
+rather than circuits, and its relation to $\PosSLP$ and to the Square Root Sum
+problem is not settled here.
+
+\begin{proposition}[One-real-conjugate sums]
+\label{prop:reductions-sums}
+Let $P_1,\ldots,P_m\in\Q[T]$ be given by dense coefficient lists, each
+irreducible with exactly one real root $\alpha_i$, and let
+$c_1,\ldots,c_m,b\in\Q$. In polynomial time one can compute a rational quartic
+$F$, supplied as a sum of squares of rational quadratics with
+$\nabla^2F\succeq I$, and a rational affine function $\ell$, such that
+$\{F\le0\}$ is a single point and
+\[
+ \{F\le0,\ \ell\le b\}\ne\emptyset\iff\sum_{i=1}^mc_i\alpha_i\le b.
+\]
+The comparison $\sum_ic_i\alpha_i\le b$, and likewise $<$ and $=$, reduces to
+$\PosSLP$.
+\end{proposition}
+
+\begin{proof}
+For each $i$ with $\deg P_i>1$, Theorem~\ref{thm:singleton-field} constructs,
+in time polynomial in the dense encoding of $P_i$, a rational quartic $F_i$ on
+its own block of variables, given as a sum of squares of rational quadratics,
+with $\nabla^2F_i\succeq I$ and a unique zero whose first coordinate is
+$\alpha_i$. For a rational root use the one-variable quartic
+$(z-\alpha_i)^2+(z-\alpha_i)^4$. Put $F=\sum_iF_i$ on disjoint blocks and
+$\ell=\sum_ic_iz_{i,1}$, where $z_{i,1}$ is the first coordinate of block $i$.
+Every summand is nonnegative, so $F\le0$ forces every block to its zero, and
+the affine row then tests the sum. The Hessian is block diagonal with blocks at
+least $I$. For an empty list, use $F(z)=z^2+z^4$ and $\ell=0$. Finally, $F$ has
+the supplied curvature bound $\nabla^2F\succeq I$, and the observable $\ell-b$
+at its unique minimizer is $\sum_ic_i\alpha_i-b$; Theorem~\ref{thm:exact-upper}
+reduces each relation of that observable to zero to one $\PosSLP$
+instance.
+\end{proof}
+
+Signed sums of real cube roots of integers are the special case
+$P_i=T^3-a_i$. Such a cubic is irreducible unless $a_i$ is a perfect cube,
+which binary search detects in polynomial time; negative radicands only change
+the sign of $c_i$. Unlike Theorem~\ref{thm:quartic-complete}, the proposition is
+an upper bound for its source problem together with a convex encoding of it.
+We do not know whether $\PosSLP$ reduces to the comparison of sums of
+one-real-conjugate numbers, and none of our results implies such a reduction.
+Square Root Sum is not covered by this construction: every coordinate of a
+singleton defined by rational convex polynomial inequalities has exactly one
+real conjugate (Theorem~\ref{thm:singleton-field}), so no such singleton has a
+coordinate $\sqrt2$. This obstruction concerns value-preserving encodings only;
+it does not exclude other reductions. The block sum has a rational positive
+semidefinite Hessian Gram, obtained by embedding the block certificates. When
+$m\ge2$, so that $F$ has at least two nonempty blocks of variables, it has no
+positive definite Hessian Gram on the full basis
+(Remark~\ref{rem:models-gram-kinds}). With a single block, and for the empty
+list, $F$ is itself a quartic of Theorem~\ref{thm:singleton-field}, so it has
+a positive definite rational Hessian Gram; for the empty list, $z^2+z^4$ has
+the Hessian Gram $\diag(2,12)$ on $(v,zv)$. The reduction to $\PosSLP$ in
+the proof uses the supplied curvature bound $\nabla^2F\succeq I$, which holds
+in every case, and needs no positive definite Hessian Gram.
+
+\paragraph{A compact convex program with the same optimizer.}
+Placing the values of a certified root circuit at the unique optimizer of
+\emph{some} compact convex program is much easier than
+Theorem~\ref{thm:reductions-signed-root}.
+
+\begin{proposition}[Box-convex baseline]
+\label{prop:reductions-box-baseline}
+Let a certified odd-root circuit have boxes with $\underline\xi_i\ge1$, which
+the normalization in Theorem~\ref{thm:reductions-signed-root} always achieves,
+and let $A\ge1$ bound every $\overline\xi_i$ and the sum of the absolute values
+of all coefficients. In the variables $X_i$ and $Y_{i,e}$, $2\le e\le n_i$, with
+$Y_{i,1}=X_i$, consider the compact convex set defined by the boxes
+$X_i\in[\underline\xi_i,\overline\xi_i]$,
+$Y_{i,e}\in[\underline\xi_i^{\,e},\overline\xi_i^{\,e}]$ and the inequalities
+\[
+ X_i^{d_i}\le c_i+\sum_{j<i,\,e}a_{ije}Y_{j,e},\qquad X_i^e\le Y_{i,e}
+ \quad(2\le e\le n_i).
+\]
+Order the variables gate by gate, each root before its powers, and set
+$y_t=X_i$ or $y_t=-Y_{i,e}$ accordingly. With $C=NA^N$ and
+$W_t=(2C+2)^{N-t}$, the circuit point $X_i=\xi_i$, $Y_{i,e}=\xi_i^e$ is the
+unique maximizer of $\sum_tW_ty_t$ over this set. All data have polynomial bit
+length.
+\end{proposition}
+
+The proof is in Appendix~\ref{app:reductions-comparisons}. The program has
+constraints of the circuit's own degrees, needs the boxes to be convex, and
+represents the circuit only as the optimizer of a linear objective. The
+realization of Theorem~\ref{thm:reductions-signed-root} adds what the
+comparisons in Theorem~\ref{thm:quartic-complete} need: a single globally
+strongly convex polynomial of degree four, without constraints, with the
+circuit as its unique zero and a checked rational Hessian certificate.
+
+\subsection{Scope}
+\label{sec:reductions-scope}
+
+The lower bounds are conditional statements about exact computation: a
+polynomial-time algorithm for any problem in Theorem~\ref{thm:quartic-complete}(i)
+or (iii) would give one for $\PosSLP$. They imply neither NP-hardness nor a
+superpolynomial lower bound, since neither is known for $\PosSLP$, and they give
+no lower bound for approximate value or point computation. Equality tests have only the upper bound of
+Theorem~\ref{thm:exact-upper}; the constructed instances deliberately avoid
+equality. Every hard instance encodes its sign by a doubly exponentially small
+signal, so no inverse-polynomial separation of the hard instances from the
+threshold is asserted. In particular, the results say nothing about
+algorithms that may err when the optimal value or coordinate lies within
+$2^{-\poly(L)}$ of the threshold. The quartics are explicitly expanded with polynomially
+many monomials; the lower bounds do not depend on succinct or circuit-encoded
+input. They concern unconstrained optimization, a halfspace, or a fixed cube.
+Exact comparison over general rational polyhedra is treated in
+Section~\ref{sec:constraints}.

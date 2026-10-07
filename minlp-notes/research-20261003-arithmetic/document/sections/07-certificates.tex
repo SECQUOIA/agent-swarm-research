@@ -1,0 +1,140 @@
+\section{Certificates and exact representations}
+\label{sec:certificates}
+
+An exact witness is useful only with a specified representation and checking
+contract. Section~\ref{sec:exact-arithmetic} separates expanded rational
+coordinates from shared arithmetic circuits. The same distinction applies to
+positive definite Gram matrices: an exponential lower bound on expanded
+denominator lengths can coexist with a polynomial-size shared circuit.
+
+\subsection{A compact interior Gram without a sign oracle}
+
+\begin{theorem}[Circuit representation of an interior Gram]
+\label{thm:circuit-gram}
+Let $f\in\Q[X_1,\ldots,X_n]$, $n\ge1$, have degree at most four.
+Suppose its input includes a full rational positive definite matrix $A$ with
+\[
+ v^{\mathsf T}\nabla^2f(X)v
+  =(v,X\otimes v)^{\mathsf T}A(v,X\otimes v).
+\]
+Let $z_2(X)$ list every monomial of degree at most two. A deterministic
+polynomial-time algorithm constructs a symmetric shared rational-circuit
+matrix $Q$ such that
+\[
+ f(X)=z_2(X)^{\mathsf T}Qz_2(X),\qquad
+ Q\succ0\ \Longleftrightarrow\ \min_{\R^n} f>0.
+\]
+The identity and all divisions in the construction are valid on every valid
+input, independently of the sign of the minimum. Construction requires
+neither a sign oracle nor a supplied positive objective margin.
+\end{theorem}
+
+\begin{proof}
+Put $m=n+n^2$ and $\mu=\det(A)/(\operatorname{tr}A)^{m-1}$, so
+$A\succeq\mu I$. The explicit observable
+\[
+ h(X)=f(X)-\frac{\norm{\nabla f(X)}^2}{2\mu}
+\]
+has degree at most six and polynomial encoding length. If $p$ is the unique
+minimizer, then $h(p)=f(p)$. The constructive upper reduction of
+Theorem~\ref{thm:exact-upper}, stopped before its final sign query, gives a
+rational-circuit vector $a$ for which
+\[
+ |h(a)-h(p)|\le g/8,
+ \qquad h(p)\ne0\ \Longrightarrow\ |h(p)|\ge g.
+\]
+Thus $c=h(a)>0$ whenever $f(p)>0$. No sign of $c$ is tested.
+
+Set $d=X-a$, $b=\nabla f(a)$, and
+$\bar A=A-\mu\operatorname{diag}(I_n,0)$. Define coefficient matrices by
+\[
+ (d,a\otimes d)=C_Uz_2,\qquad
+ (0,d\otimes d)=C_Vz_2,\qquad
+ d+b/\mu=C_{\rm aff}z_2.
+\]
+Their dimensions and their shared circuit sizes are polynomial in the
+original input length. If $e_0$ selects the constant monomial, put
+\begin{align*}
+ Q={}&\tfrac12(C_U+C_V/3)^{\mathsf T}\bar A(C_U+C_V/3)
+       +\tfrac1{36}C_V^{\mathsf T}\bar A C_V\\
+    &+\tfrac\mu2 C_{\rm aff}^{\mathsf T}C_{\rm aff}
+       +c e_0e_0^{\mathsf T}.
+\end{align*}
+Taylor's integral identity and completion of the gradient square give
+$f=z_2^{\mathsf T}Qz_2$ exactly. In particular, $a$ denotes an exact
+rational vector even though it approximates an optimizer.
+
+Since $\bar A\succeq\mu\operatorname{diag}(0,I_{n^2})$, the first
+three summands are positive semidefinite. When $c>0$, the second summand
+controls all translated homogeneous quadratics $d_id_j$, the third controls
+the affine factors $d_i+b_i/\mu$, and the last controls the constant.
+Those polynomials span the full space of degree at most two. Their Gram
+sum is therefore positive definite. Conversely, $Q\succ0$ would imply
+$f(X)\ge\lambda_{\min}(Q)\norm{z_2(X)}^2\ge\lambda_{\min}(Q)>0$.
+This proves the equivalence. Every matrix operation appends polynomially
+many gates while retaining the shared circuit for $a$.
+\end{proof}
+
+The \href{../reviews/exact-core/general-degree/circuit-interior-gram.md}{complete
+companion argument} and its
+\href{../reviews/exact-core/general-degree/circuit-interior-gram-review.md}{independent
+review} give the exact Taylor constants and representation contract.
+The expanded positive definite Gram lower bound in
+Theorem~\ref{thm:expanded-witnesses} still applies. The entries of the
+circuit matrix can still require exponentially many bits when expanded.
+
+It also does not give ordinary polynomial-time verification of
+circuit-encoded identities or positive definiteness. In fact the equivalence
+links positive definiteness of this constructed circuit matrix to exact
+optimization. Nor does it produce a polynomial-size unweighted rational SOS
+factorization: decomposing circuit-encoded positive weights into rational
+squares is a separate task.
+
+\subsection{A reference checker for the three approximation contracts}
+
+The \href{../implementation/README.md}{reference implementation} makes the
+output distinctions executable with exact rational arithmetic. It accepts a
+sparse rational polynomial, a rational box, optional additional rational
+linear inequalities, and an explicit identity
+\[
+ f(x)=a^{\mathsf T}x+b+
+           \sum_j w_j(u_j^{\mathsf T}x+v_j)^{2d_j},
+ \qquad w_j\ge0,\quad d_j\ge1.
+\]
+Coefficient comparison verifies the identity and hence global convexity.
+This is a sufficient certificate language; general convexity recognition is
+not included. Expanding a succinct factored identity can be expensive, so no
+polynomial complexity claim in the factored encoding is made.
+
+A witness provides a feasible candidate and a tangent anchor. The checker
+forms a supporting affine function and minimizes it over the box to obtain
+a justified lower bound on the constrained optimum. It accepts no asserted
+optimal value. Its three entry points then check, respectively:
+\begin{enumerate}
+\item an objective-gap certificate;
+\item distance to the optimizer set using an error-bound constant derived
+      from the checked polynomial and domain;
+\item distance to the fixed minimum-norm optimizer, using a checked
+      regularized objective and the effective selector schedule.
+\end{enumerate}
+The gradient coefficient matrix is extracted exactly; its constant row is
+retained so that an affine slope is not mistaken for an invariant direction.
+Every comparison uses rational arithmetic. Floating-point inputs are
+rejected.
+
+These checkers are sound but incomplete even in their supported class. A box
+tangent may be too weak for an optimum determined by an extra linear
+inequality. Rejection says that the supplied certificate is insufficient;
+it does not prove that the candidate is inaccurate. A regression test
+records this case. The implementation searches for no optimizer or witness,
+does not implement the unbounded-domain reduction, and does not solve
+$\PosSLP$. Its role is to make the contract distinctions testable without
+presenting a small example as a general optimization solver.
+
+The ten focused tests cover nonunique minimizers, a tiny value gap with
+large coordinate error, fixed minimum-norm selection, lower-dimensional
+domains, affine objectives, incorrect convexity identities, and infeasible
+points. The deterministic demonstration also shows thirteen shared
+recurrence nodes whose expanded rational denominator has 4,097 bits.
+These finite checks support the implementation and the displayed identities;
+the proofs establish the asymptotic theorems.

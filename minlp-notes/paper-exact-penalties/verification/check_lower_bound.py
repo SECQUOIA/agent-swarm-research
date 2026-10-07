@@ -1,4 +1,4 @@
-"""Exact finite checks of Sections 2--3; no floating point or solver oracle."""
+"""Exact finite checks of Sections 2--3 and Appendices A--B; no floating point or solver oracle."""
 from fractions import Fraction as F
 from itertools import combinations
 
@@ -79,6 +79,34 @@ for n in range(1, 11):
     # Exponent arithmetic for the fractional-power identity; no power evaluation.
     assert F(2 ** n) * F(1, 2 ** n) == 1
 
+# Seed variant a_1 >= 2^-t (Remark rem:seed): separation, thresholds, bits,
+# dual formula and strict-point slacks.
+seed_cases = 0
+for t_seed in [2, 3, 5, 8]:
+    for n in range(1, 7):
+        a = [F(1, 2 ** t_seed)]
+        for _ in range(n - 1):
+            a.append(a[-1] ** 2)
+        delta = a[-1]
+        assert delta == F(1, 2 ** (t_seed * 2 ** (n - 1)))
+        threshold = 1 / (2 * delta)
+        assert threshold.denominator == 1
+        assert threshold.numerator.bit_length() == t_seed * 2 ** (n - 1)
+        assert (1 / delta).numerator.bit_length() == t_seed * 2 ** (n - 1) + 1
+        one = [(F(0), F(-1)), (F(0), F(0)), (F(0), F(1)),
+               (F(-1), delta), (F(-1), F(1))]
+        for rho in [F(0), threshold / 2, threshold, 2 * threshold]:
+            assert optimized_envelope(one, rho) == min(
+                F(0), (2 * rho * delta - 1) / (1 + delta))
+        s = F(3, 8)
+        for q, y in [(0, F(0)), (1, F(1, 2))]:
+            slacks = [s, 1 - s, s - F(1, 2 ** t_seed), 1 - y, 1 + y,
+                      y - s + 2 * (1 - q)]
+            if n > 1:
+                slacks.append(s - s * s)
+            assert min(slacks) >= F(1, 8)
+        seed_cases += 1
+
 # Scalar balanced-ratio identity, including negative A contributions.
 ratio_cases = 0
 for a in [F(1, 7), F(1), F(3)]:
@@ -99,4 +127,5 @@ for t in [F(1, 2), F(3, 4), F(1), F(2), F(10)]:
         assert v+t*v*v+1/(4*t) == t*(v+1/(2*t))**2
 print(f"PASS: {cases} exact projected-envelope cases, {symmetric_cases} symmetric multiplier cases,")
 print(f"      {ratio_cases} scalar mixture identities, accuracy thresholds, strict margins,")
-print("      chain/encoding and exponent arithmetic, and the source continuous-branch identity.")
+print("      chain/encoding and exponent arithmetic, and the source continuous-branch identity;")
+print(f"      {seed_cases} seed-variant cases (separation, thresholds, bits, dual formula, slacks).")

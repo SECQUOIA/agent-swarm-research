@@ -1,5 +1,8 @@
+from pathlib import Path as _CleanupPath
+_NOTES_ROOT = _CleanupPath(__file__).resolve().parent.joinpath('../../../..').resolve()
+
 import sys, time, numpy as np
-sys.path.insert(0,'/home/sgusev/repo/minlp-notes/research-20260928b/scouting/bb-tree-size-convex')
+sys.path.insert(0,(str(_NOTES_ROOT) + '/research-20260928b/scouting/bb-tree-size-convex'))
 from sparse_bb import Relaxation, instance as inst0
 from core import *
 rng=np.random.default_rng(3)

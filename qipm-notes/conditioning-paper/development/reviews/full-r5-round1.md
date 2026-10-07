@@ -52,7 +52,7 @@ The repository inclusion map is reflected in the finished manuscript: the old de
 
 ## Independent reproduction and submission checks
 
-A new isolated copy was created at `/tmp/qipm-full-r5-sr2rw2ap/conditioning-paper`. The documented single-threaded command with `/home/sgusev/miniconda3/envs/qipm/bin/python` completed successfully. All **23 manifest hashes** matched the supplied files exactly, including regenerated raw results, figures, and tables; the supplied artifacts also matched their manifest hashes. All exact rational input checks passed. The code and prose distinguish these instance certificates from numerical SVD resolution, preserve rejected benchmark rows, and report the actual rounded-system CG reference errors.
+A new isolated copy was created at `/tmp/qipm-full-r5-sr2rw2ap/conditioning-paper`. The documented single-threaded command with `/workspace/local-home/miniconda3/envs/qipm/bin/python` completed successfully. All **23 manifest hashes** matched the supplied files exactly, including regenerated raw results, figures, and tables; the supplied artifacts also matched their manifest hashes. All exact rational input checks passed. The code and prose distinguish these instance certificates from numerical SVD resolution, preserve rejected benchmark rows, and report the actual rounded-system CG reference errors.
 
 A fresh `make clean` followed by `make` succeeded in that isolated copy and produced the complete 36-page PDF. The final TeX log has no warnings, unresolved references/citations, or overfull/underfull boxes. I inspected the formulation page and the numerical-page presentation; equations, labels, figures, and tables are readable. Logs are `/tmp/qipm-full-r5-reproduce.log` and `/tmp/qipm-full-r5-build.log`.
 

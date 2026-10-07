@@ -1,0 +1,362 @@
+% Plan: development/outline.md, section 6, item B.7 (eg_int_s, eg_disc_s,
+% eg_disc2_s). Sources: development/dossiers/eg.md and eg.critique.md,
+% development/decision-register.md (EG-01 to EG-18, SV-09), the audited rerun
+% in development/eg-audit/out/, development/eg-lemma-A1.md and the separate
+% review development/reviews/sol-eg-audit.md. Figure fig:eg-enclosures moved
+% here from Section 5 (development/moves/m-other.md, item 1). Prior results
+% of the instances are in D-literature.tex (tab:literature); the audited rerun
+% (regenerated recordings, comparison with the original runs) is in
+% F-eg-rounding.tex.
+\subsection{The \inst{eg} instances}\label{app:eg}
+
+This subsection gives the model, the bounding lemmas, the computations and the exactly feasible points behind \cref{thm:eg-bounds}, and proves it; the rounding-error analysis is in \cref{app:egrounding}.
+
+\subsubsection{Model}\label{app:eg-model}
+
+The three models come from ``Bram Schoonen's Model Collection'' and were added to MINLPLib in 2002 without a reference.
+We found no document on their origin or meaning, so we describe their structure only.
+Our claims concern the OSIL files with SHA-256 prefixes \texttt{a462a01b} (\inst{eg_int_s}), \texttt{5f21b8d7} (\inst{eg_disc_s}) and \texttt{8849e06b} (\inst{eg_disc2_s}).
+
+Each model has seven decision variables $x=(x_1,\dots,x_7)$, a free objective variable $x_{\mathrm{obj}}$, 28 rows and 220 nonzeros, 196 of them nonlinear.
+The decision variables enter only through $y=s\circ x$, with a fixed scaling $s\in\{1,\tfrac1{10}\}^7$ (\cref{tab:eg-instances}).
+For $k=1,\dots,28$ the row functions are
+\begin{equation}\label{eq:eg-row}
+  g_k(x)=\sum_{m=1}^{97} a_{km}\exp\Bigl(\sum_{i=1}^{7}\gamma_{ki}\,(s_ix_i-z_{mi})^2\Bigr)+\sum_{i=1}^{7}\lambda_{ki}x_i ,
+  \qquad \gamma_{ki}<0 .
+\end{equation}
+The OSIL file stores each term as a weight times seven factors $\exp(\gamma_{ki}(-z_{mi}+s_ix_i)^2)$, whose product is the exponential in \eqref{eq:eg-row}.
+The linear coefficients $\lambda_{ki}$ are nonzero only in rows e25 and e26, where they read $-0.45\,y_3$ and $-0.45\,y_2$ (in \inst{eg_disc_s}: $-0.045\,x_3$ and $-0.045\,x_2$, the same functions).
+The model is
+\begin{equation}\label{eq:eg-model}
+\begin{aligned}
+  \min\;& x_{\mathrm{obj}}\\
+  \text{s.t. }& x_{\mathrm{obj}}\ \ge\ c_k+g_k(x), && k=1,\dots,24 \quad(\text{rows e1--e24}),\\
+  & g_{25}(x)\le -0.350268824,\quad g_{26}(x)\le -0.374014485, && \\
+  & g_{27}(x)\ge -346.198237,\quad g_{28}(x)\le 53.8017630000004, && \\
+  & x \text{ within its bounds, integrality as in \cref{tab:eg-instances}},
+\end{aligned}
+\end{equation}
+where $g_{27}=g_{28}$ (rows e27 and e28 have identical data) and $c_k\in[1.291143688,\,13.56829208]$.
+In $y$-coordinates the bounds are the same for all three models:
+$y\in[0.3,0.6]\times[0.4,1]\times[0.4,1]\times[0.7,1.5]\times[1,2]\times[3,4]\times[2,5]$.
+We write $h_k^+$ and $h_k^-$ for the right-hand sides of the side rows e25--e28 (with $h^-_{25}=h^-_{26}=h^-_{28}=-\infty$ and $h^+_{27}=+\infty$), $X_I$ for the set of points $x$ that satisfy the bounds, the integrality conditions and rows e25--e28 of instance $I$, and
+\begin{equation}\label{eq:eg-phi}
+  \Phi(x)=\max_{k\le 24}\bigl(c_k+g_k(x)\bigr).
+\end{equation}
+
+\begin{table}[ht]
+\centering
+\footnotesize
+\caption{The three \inst{eg} models: integer variables, scaling $s$ in $y=s\circ x$, and the number of integer assignments.
+Each model has 8 variables (including $x_{\mathrm{obj}}$), 28 rows and 220 nonzeros.}
+\label{tab:eg-instances}
+\begin{tabular}{@{}llll@{}}
+\toprule
+instance & integer variables & scaling $s$ & assignments\\
+\midrule
+\inst{eg_int_s} & $x_5\in\{1,2\}$, $x_6\in\{3,4\}$, $x_7\in\{2,\dots,5\}$ & $(1,1,1,1,1,1,1)$ & 16\\
+\inst{eg_disc_s} & $x_1\in\{3,\dots,6\}$, $x_2,x_3\in\{4,\dots,10\}$, $x_4\in\{7,\dots,15\}$ & $(0.1,0.1,0.1,0.1,1,1,1)$ & 1,764\\
+\inst{eg_disc2_s} & $x_5\in\{10,\dots,20\}$, $x_6\in\{30,\dots,40\}$, $x_7\in\{20,\dots,50\}$ & $(1,1,1,1,0.1,0.1,0.1)$ & 3,751\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+All 28 rows use the same 97 centres $z_m$, and within a row the length scales $\gamma_{ki}$ do not depend on $m$.
+Each row is therefore a Gaussian-kernel expansion on a common 97-point design; this is an observation about the stored data, not documented provenance.
+The weights $a_{km}$ have both signs and cancel strongly.
+The sums $\sum_m|a_{km}|$ range from 27.8 to 667.5 on the objective rows and reach 39{,}666.8 on e27 and e28.
+At our point for \inst{eg_int_s} (\cref{app:eg-primal}) the active objective row e12 has $\sum_m|a_{km}e^{E_{km}}|=61.4$ against $|g_{12}|=7.115$, and the active side row e26 has 78.4 against a kernel part of $-0.0829$, where $E_{km}$ is the exponent of term $m$ (\cref{fig:eg-enclosures}b).
+A bound that adds up the ranges of individual terms loses this cancellation.
+
+\paragraph{Published values.}
+The points of \cref{tab:eg-points} show that the best bounds recorded for Gurobi~13.0.0 in the public CAMINO data \citep{ghezzi2026-camino-benchmark-results-for-nonconvex} are invalid (\cref{prop:camino-eg}, proved in \cref{sec:solvers-invalid}; inputs in \cref{app:solvers-published}).
+Two published values lie below our dual bounds and are therefore not attainable by any exactly feasible point (category~A, \cref{tab:claims}): the objective value 5.642100351878204 recorded for the S-B-MIQP method of CAMINO on \inst{eg_disc2_s}, and the objective value 6.4531031527 of the old GAMS World point of \inst{eg_int_s}, which violates row e12 by $\sci{6.37}{-9}$.
+
+\subsubsection{Bounding lemmas}\label{app:eg-lemmas}
+
+\begin{lemma}[minimax form]\label{lem:eg-minimax}
+A point $(x,x_{\mathrm{obj}})$ is exactly feasible for $\model_I$ if and only if $x\in X_I$ and $x_{\mathrm{obj}}\ge\Phi(x)$.
+Hence $\vstar(\model_I)=\inf\{\Phi(x):x\in X_I\}$.
+\end{lemma}
+
+\begin{proof}
+The variable $x_{\mathrm{obj}}$ has no bounds and appears only in rows e1--e24, each time with coefficient 1; we checked this on the decompressed linear-coefficient block of the OSIL files.
+Rows e1--e24 are exactly the inequalities $x_{\mathrm{obj}}\ge c_k+g_k(x)$.
+The exponential is defined everywhere, so the domain rule of \cref{def:sem-model} imposes no further condition.
+\end{proof}
+
+We now fix one row and drop the row index $k$.
+Let $c\in\R^7$ be a centre and $r\in\R^7_{\ge0}$ a vector of radii, and write $d=x-c$.
+For $m=1,\dots,97$ and $i=1,\dots,7$ put
+\begin{gather*}
+  t_{mi}=s_ic_i-z_{mi},\qquad E_m=\sum_i\gamma_it_{mi}^2,\qquad w_m=a_me^{E_m},\qquad
+  K_{1,i}=2\gamma_is_i,\qquad K_{D,i}=2\gamma_is_i^2,\\
+  S_0=\sum_m w_m,\quad S_{1,i}=\sum_m w_mt_{mi},\quad S_{2,ij}=\sum_m w_mt_{mi}t_{mj},\quad T_{ijl}=\sum_m w_mt_{mi}t_{mj}t_{ml},\\
+  G_0=S_0+\lambda\cdot c,\qquad \nabla_i=K_{1,i}S_{1,i}+\lambda_i,\qquad H_{ij}=K_{1,i}K_{1,j}S_{2,ij}+\delta_{ij}K_{D,i}S_0,\\
+  \ell_m=\sum_i|K_{1,i}t_{mi}|\,r_i,\qquad q=\sum_i|\gamma_i|\,s_i^2r_i^2 .
+\end{gather*}
+The moments $S_0,S_1,S_2,T$ are signed sums over the 97 terms, so the cancellation among the weights is kept; only the remainder terms below are bounded in absolute value.
+The two remainder functions are
+\begin{equation*}
+  R_2(\ell,q)=e^{\ell}\Bigl[\tfrac16(\ell+2q)^3+q(\ell+2q)\Bigr],\qquad
+  R_4(\ell,q)=\tfrac1{24}e^{\ell}\Bigl[(\ell+2q)^4+12q(\ell+2q)^2+12q^2\Bigr].
+\end{equation*}
+
+\begin{lemma}[Taylor model with signed moments]\label{lem:eg-taylor}
+For every $d$ with $|d_i|\le r_i$ for all $i$,
+\begin{equation*}
+  \Bigl|g(c+d)-G_0-\nabla\cdot d-\tfrac12d^\top Hd\Bigr|\le\min(P_2,P_3),
+\end{equation*}
+where
+\begin{align*}
+  P_2&=\sum_m|w_m|\,R_2(\ell_m,q),\\
+  P_3&=\tfrac16\sum_{i,j,l}|K_{1,i}K_{1,j}K_{1,l}|\,|T_{ijl}|\,r_ir_jr_l+\Bigl(\sum_i|K_{1,i}S_{1,i}|\,r_i\Bigr)q+\sum_m|w_m|\,R_4(\ell_m,q).
+\end{align*}
+\end{lemma}
+
+\begin{proof}
+For term $m$ the exponent at $c+d$ is $\sum_i\gamma_i(t_{mi}+s_id_i)^2=E_m+L_m(d)+Q(d)$ with
+$L_m(d)=\sum_iK_{1,i}t_{mi}d_i$ and $Q(d)=\sum_i\gamma_is_i^2d_i^2$; note that $Q$ does not depend on $m$ because $\gamma$ is common to the row.
+For $|d_i|\le r_i$ we have $|L_m(d)|\le\ell_m$ and $-q\le Q(d)\le0$.
+Fix $m$ and $d$, put $a=L_m(d)$, $b=Q(d)$, $\varphi(\tau)=\exp(\tau a+\tau^2b)$ and $p(\tau)=a+2b\tau$.
+Differentiation gives
+\begin{equation*}
+  \varphi'=p\varphi,\quad \varphi''=(p^2+2b)\varphi,\quad \varphi'''=p(p^2+6b)\varphi,\quad \varphi''''=(p^4+12bp^2+12b^2)\varphi .
+\end{equation*}
+For $\tau\in[0,1]$ we have $|p|\le\ell_m+2q$ and, since $b\le0$, $0<\varphi(\tau)\le e^{\tau|a|}\le e^{\ell_m}$.
+Taylor's theorem at $\tau=0$ with the Lagrange remainder therefore gives
+\begin{align*}
+  \varphi(1)&=1+a+b+\tfrac12a^2+\rho_2, & |\rho_2|&\le R_2(\ell_m,q),\\
+  \varphi(1)&=1+a+b+\tfrac12a^2+\bigl(\tfrac16a^3+ab\bigr)+\rho_4, & |\rho_4|&\le R_4(\ell_m,q),
+\end{align*}
+using $\varphi'''(0)/6=a^3/6+ab$.
+Now $g(c+d)=\sum_mw_m\varphi_m(1)+\lambda\cdot(c+d)$.
+Summing the terms of order at most two over $m$ gives $G_0+\nabla\cdot d+\frac12d^\top Hd$, because
+\begin{gather*}
+  \sum_mw_mL_m(d)=\sum_iK_{1,i}S_{1,i}d_i,\qquad
+  \sum_mw_mL_m(d)^2=\sum_{i,j}K_{1,i}K_{1,j}S_{2,ij}d_id_j,\\
+  \sum_mw_mQ(d)=\tfrac12\sum_iK_{D,i}S_0d_i^2 .
+\end{gather*}
+This proves the bound $P_2$.
+For $P_3$, the third-order part is
+\begin{equation*}
+  \sum_mw_m\bigl(\tfrac16L_m(d)^3+L_m(d)Q(d)\bigr)=\tfrac16\sum_{i,j,l}K_{1,i}K_{1,j}K_{1,l}T_{ijl}d_id_jd_l+\Bigl(\sum_iK_{1,i}S_{1,i}d_i\Bigr)Q(d),
+\end{equation*}
+whose absolute value is at most the first two terms of $P_3$; the remainders $\rho_4$ contribute at most the third.
+\end{proof}
+
+The first code uses a different valid remainder, $\ell q+\frac12q^2+\frac16(\ell+q)^3e^{\ell}$ at second order and an analogous fourth-order expression.
+It follows from $e^u=1+u+\frac12u^2+\frac16u^3e^{\vartheta u}$ ($0<\vartheta<1$) with $u=L_m+Q$, since $u\le L_m\le\ell$ and $|u|\le\ell+q$.
+Both programs use, row by row, the smaller of their second- and third-order totals.
+
+\begin{lemma}[affine bounds]\label{lem:eg-affine}
+Let $c$, $r$ and $P\ge\min(P_2,P_3)$ be as in \cref{lem:eg-taylor}.
+Let $e_G\ge0$, $\beta\in\R^7$ and $e\in\R^7_{\ge0}$, and let $\hat G$ and matrices $H^-\le H\le H^+$ (elementwise) satisfy $|\hat G-G_0|\le e_G$ and $|\nabla_i-\beta_i|\le e_i$.
+With $\bar H_{ij}=\max(|H^-_{ij}|,|H^+_{ij}|)$ put
+\begin{equation*}
+  Q_L=\tfrac12\sum_i\min(H^-_{ii},0)\,r_i^2-\sum_{i<j}\bar H_{ij}r_ir_j,\qquad
+  Q_U=\tfrac12\sum_i\max(H^+_{ii},0)\,r_i^2+\sum_{i<j}\bar H_{ij}r_ir_j .
+\end{equation*}
+Then for every $d$ with $|d_i|\le r_i$,
+\begin{equation*}
+  \hat G-e_G-P+Q_L-e\cdot r+\beta\cdot d\ \le\ g(c+d)\ \le\ \hat G+e_G+P+Q_U+e\cdot r+\beta\cdot d .
+\end{equation*}
+\end{lemma}
+
+\begin{proof}
+Write $\frac12d^\top Hd=\frac12\sum_iH_{ii}d_i^2+\sum_{i<j}H_{ij}d_id_j$.
+Since $H^-_{ii}\le H_{ii}$ and $d_i^2\le r_i^2$, the diagonal part is at least $\frac12\sum_i\min(H^-_{ii},0)r_i^2$, and each off-diagonal term is at least $-\bar H_{ij}r_ir_j$; the upper bound is symmetric.
+Further $|\nabla\cdot d-\beta\cdot d|\le\sum_ie_i|d_i|\le e\cdot r$ and $|G_0-\hat G|\le e_G$.
+Insert these bounds into \cref{lem:eg-taylor}.
+\end{proof}
+
+\begin{lemma}[natural enclosure]\label{lem:eg-natural}
+Let $X=[lo,hi]\subset\R^7$ be a box.
+For each $m$ and $i$, let $\theta^{\max}_{mi}$ and $\theta^{\min}_{mi}$ be the maximum and minimum of $\theta^2$ over the interval $[s_ilo_i-z_{mi},\,s_ihi_i-z_{mi}]$ (the minimum is 0 if the interval contains 0).
+Then for every $x\in X$ the exponent of term $m$ lies in $[\sum_i\gamma_i\theta^{\max}_{mi},\ \sum_i\gamma_i\theta^{\min}_{mi}]$, term $m$ lies between $a_m$ times the exponentials of these two numbers, and $g(x)$ lies between the sums over $m$ of the term bounds plus the minimum and maximum of $\lambda\cdot x$ over $X$.
+\end{lemma}
+
+\begin{proof}
+The exponent is a separable sum, $s_i>0$, every $\gamma_i$ is negative and the exponential is increasing.
+\end{proof}
+
+For a box $X$ with centre $c$, let every row $k$ satisfy, for all $x\in X$,
+\begin{equation}\label{eq:eg-rowbounds}
+  \max\bigl(aL_k+\beta_k\cdot(x-c),\,n^{\mathrm{lo}}_k\bigr)\ \le\ g_k(x)\ \le\ \min\bigl(aU_k+\beta_k\cdot(x-c),\,n^{\mathrm{hi}}_k\bigr),
+\end{equation}
+as provided by \cref{lem:eg-affine,lem:eg-natural}, and let $\underline g_k$ and $\overline g_k$ be the minimum and maximum of these bounds over $X$.
+
+\begin{lemma}[box tests]\label{lem:eg-boxtests}
+Let a box $X$ satisfy \eqref{eq:eg-rowbounds} and let $\theta\in\Q$.
+Each of the following conditions implies that no $x\in X\cap X_I$ has $\Phi(x)<\theta$.
+\begin{enumerate}
+\item[(a)] (row test) $c_k+\underline g_k\ge\theta$ for some $k\le24$.
+\item[(b)] (side test) $\underline g_k>h^+_k$ or $\overline g_k<h^-_k$ for some $k\ge25$; then $X\cap X_I=\emptyset$.
+\item[(c)] (weak duality) There are $y\in\R^{24}_{\ge0}$ with $\sigma=\sum_ky_k>0$ and $z^+,z^-\in\R^{4}_{\ge0}$, with $z^\pm_k=0$ where $h^\pm_k$ is infinite, such that
+\begin{multline*}
+  \frac1\sigma\Bigl[\sum_{k\le24}y_k(c_k+aL_k)+\sum_{k\ge25}\bigl(z^+_k(aL_k-h^+_k)+z^-_k(h^-_k-aU_k)\bigr)\\
+  +\min_{x\in X}\Bigl(\sum_{k\le24}y_k\beta_k+\sum_{k\ge25}(z^+_k-z^-_k)\beta_k\Bigr)\cdot(x-c)\Bigr]\ \ge\ \theta .
+\end{multline*}
+\item[(d)] (Farkas test) There are nonnegative multipliers on the affine functions $c_k+aL_k+\beta_k\cdot(x-c)-\theta$ ($k\le24$), $aL_k+\beta_k\cdot(x-c)-h^+_k$ and $h^-_k-aU_k-\beta_k\cdot(x-c)$ ($k\ge25$, finite right-hand sides) whose combination is positive on all of $X$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+Let $x\in X\cap X_I$.
+For $k\le24$ we have $\Phi(x)\ge c_k+g_k(x)\ge c_k+aL_k+\beta_k\cdot(x-c)$.
+For $k\ge25$ the side rows give $aL_k+\beta_k\cdot(x-c)-h^+_k\le g_k(x)-h^+_k\le0$ and $h^-_k-aU_k-\beta_k\cdot(x-c)\le h^-_k-g_k(x)\le0$.
+Conditions (a) and (b) follow at once.
+For (c), multiply the first family by $y_k$ and the side-row inequalities by $z^\pm_k$ and add: $\sigma\Phi(x)$ is at least the bracket with $x$ in place of the minimum, hence at least $\sigma\theta$.
+For (d), if $\Phi(x)<\theta$ then every listed affine function is nonpositive at $x$, and so is their nonnegative combination, which contradicts positivity on $X$.
+\end{proof}
+
+The multipliers in (c) and (d) may come from any source; in our programs an LP solver proposes them and the bound is then evaluated rigorously, so the LP solver is not trusted, as in the safe bounds of \citet{neumaier2004-safe-bounds-in-linear-and} and the reliable affine relaxations of \citet{ninin2015-a-reliable-affine-relaxation-method}.
+
+\begin{lemma}[coverage]\label{lem:eg-cover}
+Let $D_I$ be the set of points that satisfy the bounds and integrality conditions of $\model_I$.
+Let $B_1,\dots,B_N$ be boxes whose union contains $D_I$, and suppose that every $B_j$ is covered by finitely many boxes, each of which satisfies \eqref{eq:eg-rowbounds} and passes one of the tests of \cref{lem:eg-boxtests} at the level $\theta$.
+Then every exactly feasible point of $\model_I$ has $x_{\mathrm{obj}}\ge\theta$, that is, $\vstar(\model_I)\ge\theta$.
+\end{lemma}
+
+\begin{proof}
+Let $(x,x_{\mathrm{obj}})\in\feas[\model_I]$.
+By \cref{lem:eg-minimax}, $x\in X_I\subseteq D_I$ and $x_{\mathrm{obj}}\ge\Phi(x)$.
+The point $x$ lies in some $B_j$ and in one of its covering boxes, whose test excludes $\Phi(x)<\theta$.
+\end{proof}
+
+Integer coordinates may be relaxed to intervals inside a box; this only enlarges the set that each test bounds.
+
+\subsubsection{Computations}\label{app:eg-computation}
+
+\paragraph{The first code: the search.}
+The first code is a best-first branch and bound on the seven decision variables; it bisects continuous coordinates and splits integer intervals at integers.
+On each box it computes affine bounds by \cref{lem:eg-taylor,lem:eg-affine}, intersects them with the natural enclosure on boxes wider than $1/16$ of the root box in some coordinate, runs two rounds of interval propagation on the affine rows including the objective cuts $c_k+aL_k+\beta_k\cdot(x-c)\le\theta$ (integer bounds are rounded inward), and applies the tests of \cref{lem:eg-boxtests} with LP multipliers from HiGHS.
+Incumbents come from a local solve of the minimax problem with fixed integers, followed by a push into the interior of nearly active side rows.
+The search stops when every box is closed at the cutoff $\theta=U'-10^{-9}\max(1,|U'_0|)$, where $U'$ is the interval upper bound of the incumbent and $U'_0$ that of the starting point.
+Instance \inst{eg_disc_s} is searched in two parts, $x_4\in[7,11]$ and $x_4\in[12,15]$, and \inst{eg_disc2_s} in eight parts, $x_7\in[20,23],[24,27],\dots,[44,47],[48,50]$, numbered from 0.
+The parts cover the integer ranges, and the best points of both instances lie in part~1.
+
+The search runs in two arithmetic modes.
+The \emph{interval mode} evaluates every bound in outward-rounded interval arithmetic (round to nearest, then one ulp outward per operation), encloses every decimal datum between two doubles and calls no library function in any bound: its exponential reduces the argument by multiples of $\ln2/64$, evaluates a degree-8 Taylor polynomial with a remainder bound of $10^{-25}$, and multiplies by a table of $2^{j/64}$ whose enclosures, like the $\ln2$ bracket, were checked in rational arithmetic.
+The \emph{fast mode} evaluates the same bounds in floating point with an explicit error analysis and its own exponential, but takes integer powers from NumPy's library power function, for which no error bound is proved.
+The interval mode ran on \inst{eg_int_s}, \inst{eg_disc_s} and part~1 of \inst{eg_disc2_s}, the fast mode on all parts.
+\begin{remark}[validity of the search]\label{rem:eg-search}
+At every moment of the search, every $x\in X_I$ lies in one of the following:
+an open box whose key is at most $\Phi(x)$;
+a box that was closed because its lower bound reached the cutoff in force at that time;
+a region that propagation or the Farkas test removed because $\Phi$ exceeds the cutoff there;
+or a box proved to contain no point of $X_I$.
+The proof is by induction over the steps of the search.
+Children lie in the reduced box, which keeps every point with $\Phi$ at most the cutoff; integer splits act on integral ends; and when the incumbent improves within an iteration, later boxes are closed against the new, lower cutoff.
+The cutoffs decrease, so when no box is open at the end, every $x\in X_I$ has $\Phi(x)\ge U'_{\mathrm{fin}}-10^{-9}\max(1,|U'_0|)$, the final cutoff.
+In the reported runs no box was open at the end.
+Each run therefore certifies its final cutoff under \cref{hyp:fp-ieee} and the correctness of its code; validity does not need the incumbent to be feasible.
+\end{remark}
+
+\paragraph{The second code: the leaf re-certifier.}
+The displayed dual bounds rest on a separately written program that uses the leaves of the recorded search trees, that is, the closed boxes and the regions removed by propagation, only as a proposed partition.
+It computes the natural enclosure and the Taylor-model bounds in binary64 with explicit paddings, which \cref{lem:eg-padding} proves sufficient, and evaluates the tests of \cref{lem:eg-boxtests} in exact rational arithmetic on the resulting floats, the exact data $c_k$, $h^\pm_k$ and bounds, and an exact decimal target $\theta^*_I$.
+The target equals the displayed $\Lcert$ for \inst{eg_int_s} and \inst{eg_disc2_s} and exceeds it by $10^{-15}$ for \inst{eg_disc_s}.
+Its multipliers come from SciPy's HiGHS interface and are not trusted.
+A box that passes no test is bisected (integer coordinates at integers), and the pieces are certified recursively up to depth 24.
+\Cref{tab:eg-audit} gives the statistics of the audited rerun, and \cref{app:egrounding-run} describes that run and its comparison with the original runs.
+
+\paragraph{Coverage.}
+Two checks establish the hypothesis of \cref{lem:eg-cover}.
+The first is bookkeeping on the recorded trees: the multiset of generated boxes equals the multiset of processed boxes, the children of every split box cover it, and no reduced box lies outside its parent.
+The second uses only the leaf set and no tree data.
+It proves recursively that the leaves inside a node box cover it: a node with one leaf must be contained in that leaf; otherwise the program finds a coordinate and a value $v$ such that every leaf of the node ends at or below $v$ (at or below $v-1$ for an integer coordinate) or starts at or above $v$, and it recurses on the two halves of the node box, whose union contains the node box (all of its integer points, for an integer coordinate).
+All comparisons are exact.
+Both checks passed for every part of every instance, and the root boxes contain the continuous box of the model and tile every integer range.
+So the leaf partition is stored and its coverage is checked exactly; only the per-leaf certificates are recomputed.
+
+\paragraph{Margins.}
+Of the 1{,}114{,}361 leaves of \inst{eg_disc2_s}, 98{,}234 have margin $+\infty$ and 15 have a margin below $10^{-8}$; the smallest, in part~1, lies about two orders of magnitude above the floating-point error scale of the certificates.
+The smallest margins of \inst{eg_int_s} (an LP test) and \inst{eg_disc_s} (a row test in part~1) do not: at the tightest \inst{eg_int_s} leaf the paddings of \cref{lem:eg-padding} add up to about $\sci{2.5}{-10}$, more than the margin.
+These leaves are certified because \cref{lem:eg-padding} holds as proved.
+A margin argument could not replace the lemma in any case, because it bounds what small rounding errors could do, not what a faulty function could do.
+
+\paragraph{Evidence about the method.}
+The following measurements are evidence, not part of any proof.
+Without the LP test, the search on \inst{eg_int_s} did not close within 900~s; near the best point the LP bound combines row e12 with the side row e26 (multiplier 22.27), and no single row gives the bound there.
+On 64 sampled boxes and the 24 objective rows of \inst{eg_int_s}, we compared the median gap between the sampled minimum of a row and its lower bound at relative box widths 0.3, 0.1, 0.03, 0.01 and 0.003 (\cref{fig:eg-enclosures}a).
+Against the Taylor model of \cref{lem:eg-taylor}, this gap was 3.2, 19, 15, 7.1 and 2.9 times larger for the earlier enclosure (natural enclosure intersected with a mean-value form) and 3.2, 44, 112, 146 and 151 times larger for the natural enclosure of \cref{lem:eg-natural} alone, which sums term ranges.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{fig-eg-enclosures.pdf}
+\caption{(a) Median gap between the sampled minimum of a row over a box and three lower bounds, against relative box width, over 64 boxes and 24 rows of \inst{eg_int_s} (numerical evidence). (b) Cancellation at our best point of \inst{eg_int_s}: sum of absolute values of the 97 kernel terms against the absolute value of their sum, for the active objective row e12 and the Gaussian part of the active side row e26.}
+\label{fig:eg-enclosures}
+\end{figure}
+
+\subsubsection{Exactly feasible points}\label{app:eg-primal}
+
+\Cref{tab:eg-points} lists the points.
+The decision variables are the shortest round-trip decimal strings of binary64 search points, read as exact decimals, and $x_{\mathrm{obj}}$ is a 20-digit decimal obtained by rounding up a high-precision evaluation of $\Phi$.
+The objective of the point is $x_{\mathrm{obj}}$ itself, so $\Uprim_I$ is this decimal; \cref{tab:closures} displays it rounded up.
+
+\begin{table}[ht]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\caption{Exactly feasible points (decimal strings read as exact rationals).}
+\label{tab:eg-points}
+\begin{tabular}{@{}lll>{\raggedright\arraybackslash}p{6.5cm}@{}}
+\toprule
+instance & $x_{\mathrm{obj}}=\Uprim_I$ & integer coordinates & continuous coordinates\\
+\midrule
+\inst{eg_int_s} & 6.4531031593842274088 & $(x_5,x_6,x_7)=(2,4,3)$ & $(x_1,\dots,x_4)=(0.564219345763436$, $0.6468471890552644$, $1.0$, $0.9390699678023392)$\\
+\inst{eg_disc_s} & 5.7605396164535106058 & $(x_1,\dots,x_4)=(3,10,8,12)$ & $(x_5,x_6,x_7)=(1.0800209145804143$, $3.485358811359775$, $2.2415838244871797)$\\
+\inst{eg_disc2_s} & 5.6421005799711067563 & $(x_5,x_6,x_7)=(11,34,24)$ & $(x_1,\dots,x_4)=(0.339986187975027$, $1.0$, $0.7526242429543005$, $1.2370734367691458)$\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+All bounds and integrality conditions hold exactly.
+A library-free evaluation in dyadic interval arithmetic with its own OSIL reader (\cref{app:points-instances}) proves all 28 rows, with enclosure widths below $10^{-73}$, so the primal claims do not depend on mpmath; tests of its logarithm support, and do not replace, its alternating-series proof.
+The smallest proved slacks of the objective rows, $\sci{5.57}{-20}$ (e12), $\sci{7.80}{-20}$ (e12) and $\sci{7.49}{-20}$ (e10), come from rounding $x_{\mathrm{obj}}$ up; the smallest side-row slacks are $\sci{1.49}{-11}$ (e26 of \inst{eg_int_s}, the row into whose interior the point was pushed), 0.140 and 0.123 (e25).
+
+Under \cref{hyp:fp-ieee} and the correctness of the interval-mode implementation and its reader, the interval mode of the search proves the binary64 search points feasible with $\Phi$ at most $\Uprim'_I=6.4531031593862185$, $5.760539616455533$ and $5.642100579973559$.
+Measured against these values the relative gaps are at most $\sci{1.00000008}{-9}$; against $\Uprim_I$ they are at most $\sci{9.997}{-10}$.
+MINLPLib's listed points p1 of \inst{eg_int_s} and \inst{eg_disc_s} are feasible only within a tolerance: in a 60-digit evaluation, the first violates row e26 by $\sci{2.89}{-16}$ and, with its listed objective value, row e12 by $\sci{4.57}{-15}$, and the second violates row e12 by $\sci{1.66}{-14}$.
+We do not use the listed points.
+
+\subsubsection{Proof of \texorpdfstring{\cref{thm:eg-bounds}}{the eg theorem}}\label{app:eg-proof}
+
+\begin{proof}[Proof of \cref{thm:eg-bounds}]
+\emph{Dual bounds.}
+Under the hypotheses of \cref{thm:eg-bounds}, \cref{thm:eg-trust} gives $\vstar(\model_I)\ge\theta^*_I\ge\Lcert_I$, from the coverage checks above, \cref{lem:eg-padding,lem:eg-boxtests,lem:eg-cover} and the audit.
+
+\emph{Primal bounds.}
+The points of \cref{tab:eg-points} are exactly feasible, and their objective values are $\Uprim_I$, so $\vstar(\model_I)\le\Uprim_I$.
+The exact values of $\Lcert_I$ and $\Uprim_I$ give $\gapabs\le\sci{6.46}{-9}$, $\sci{5.76}{-9}$ and $\sci{5.64}{-9}$, and $\gaprel\le\sci{9.997}{-10}$ for all three.
+\end{proof}
+
+\Cref{tab:eg-matrix} records which certificate covers which part of each domain; the leaf re-certifier carries the displayed bounds.
+The first implementation, the search that proposed the leaves, also certifies on its own, in outward-rounded interval arithmetic without library functions (its interval mode, under \cref{hyp:fp-ieee} and the correctness of its code), the bounds $6.4531031529331155383\ldots$ for \inst{eg_int_s} and $5.7605396106949937618\ldots$ for \inst{eg_disc_s}, and $5.6421005743314580627\ldots$ for the part of \inst{eg_disc2_s} with $x_7\in[24,27]$, all binary64 numbers above the displayed bounds.
+The last holds under a side condition on its LP multipliers: that replay ran before a guard was added that rejects LP multiplier vectors whose objective weights do not have a positive sum, so it assumes that no such vector occurred.
+LP duality makes these weights sum to 1, and the guarded rerun of the fast mode on that part saw a smallest sum of 0.9999999999999998, so we expect the condition to hold, but the replay did not log it.
+The fast mode covers all parts but serves only as a cross-check, because its error analysis is not in paper form and it uses a library power function.
+For parts 0 and 2--7 of \inst{eg_disc2_s}, a separately written outward-rounded interval certifier without library functions also re-certified 10{,}404 leaves (the 300 with the smallest margins, 1{,}000 random leaves and the 200 with the smallest lower bounds of each part; 117{,}214 pieces; no failure).
+
+\begin{table}[ht]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\caption{Certificates by part of the domain.
+``All'' means every leaf of the part.
+Trust bases: leaf re-certifier with audit, \cref{thm:eg-trust}; interval mode, \cref{hyp:fp-ieee} and its code; fast mode, an unpublished error analysis and a library power function (cross-check only).
+$^\dagger$Under the side condition on the LP multipliers stated in the text.}
+\label{tab:eg-matrix}
+\begin{tabular}{@{}lrllll@{}}
+\toprule
+part & leaves & re-certifier & interval mode & fast mode & interval sample\\
+\midrule
+\inst{eg_int_s} & 33{,}385 & all & complete & complete & ---\\
+\inst{eg_disc_s}, $x_4\in[7,11]$ & 46{,}223 & all & complete & complete & ---\\
+\inst{eg_disc_s}, $x_4\in[12,15]$ & 40{,}573 & all & complete & complete & ---\\
+\inst{eg_disc2_s}, $x_7\in[24,27]$ & 135{,}317 & all & complete$^\dagger$ & complete & ---\\
+\inst{eg_disc2_s}, other 7 parts & 979{,}044 & all & --- & complete & 10{,}404 leaves\\
+\bottomrule
+\end{tabular}
+\end{table}

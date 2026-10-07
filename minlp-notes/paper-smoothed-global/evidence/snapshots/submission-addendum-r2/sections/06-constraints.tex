@@ -1,0 +1,834 @@
+\section{Feasible sets beyond boxes}\label{sec:con}
+
+The proof of \cref{thm:sp:main} used four properties of a mixed box.
+\begin{enumerate}[label=(P\arabic*)]
+\item\label{it:con:fixed} For every bag, the set of feasible values of the
+coordinates outside the bag does not depend on the bag's values. The
+conditional value $V_\beta$ of \eqref{eq:sp:V} is then a minimum over a fixed
+set, independent of the bag's own noise, with the curvature of the objective.
+\item\label{it:con:round} Every feasible point of a candidate cell can be
+rounded, with its mean preserved and a second-order error, to feasible
+corners that lie in the same candidate cells of every bag.
+\item\label{it:con:close} Sound first-order tests identify the active
+constraints near an optimizer, after which a certified strongly convex patch
+contains every optimizer.
+\item\label{it:con:law} The point-growth and margin events have finite-law
+tails, and an exact fallback exists on the same domain.
+\end{enumerate}
+Arbitrary sparse affine constraints do not have these properties, and the
+method cannot be extended to them without further structure:
+\cref{thm:lim:constraints} shows that bounded-width affine equalities with
+objective noise can encode \textsc{Subset Sum}, and \cref{ex:lim:coupled}
+shows that even a single totally unimodular inequality destroys the
+coordinatewise count of \cref{lem:sp:compare}. This section proves the
+method for four structured classes. Each supplies these four proof steps or
+replaces one of them by a proved substitute. Graph constraints and
+affine-state recurrences satisfy \ref{it:con:fixed} after a reduction to a
+box of retained or free coordinates, and products of simplices satisfy it
+because every bag contains whole blocks. Order constraints do not satisfy
+\ref{it:con:fixed}: the feasible values outside a bag depend on the bag's
+values. There, a transport of feasible points supplies the semiconcave upper
+bound on the conditional value that \ref{it:con:fixed} gives for boxes
+(\cref{lem:con:transport}). \Cref{tab:con:summary} lists the classes.
+
+\begin{table}[t]
+\centering
+\caption{Feasible-domain extensions. All use the ambient model with law
+$U_{\sigma,M}$ on every original coordinate, $\log_2M\le\poly(I)$, exact
+output on every draw, and the exact output of \cref{thm:count:fallback} on
+rare draws. The
+expected work is $C_0^{p'}\Theta^{p'}\poly(I)$, where $p'$ is the bag size
+used by the algorithm; for order constraints it is the bound
+\eqref{eq:con:orderbound}.}
+\label{tab:con:summary}
+\footnotesize
+\begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{0.2\textwidth}l@{}}
+\toprule
+Result & Feasible set and structural premise & Curvature bound & Factor $\Theta$\\
+\midrule
+\cref{thm:con:graph}(E) & graph of an explicit polynomial map of bounded
+depth over a mixed box; $p'\le p\max\{1,k^{D_{\rm g}}\}$ & retained, after
+substitution & $4+(1+n/2)Lw_{\max}/(2\sigma)$\\
+\cref{thm:con:graph}(I) & graph of monotone scalar equations with global
+brackets; $p'\le p\max\{1,k\}$ & retained, after substitution &
+$4+(1+n)Lw_{\max}/(2\sigma)$\\
+\cref{thm:con:actuator} & affine-state recurrence with polynomial
+actuators, any horizon; $p'=p$ & reduced, uniform in state noise &
+$4+(1+n/2)Lw_{\max}/(2\sigma)$\\
+\cref{thm:con:simplex} & disjoint unit simplices and integer intervals,
+whole-block bags; $p'=p$ & block Hessian & $4+(2+n/2)L\max\{1,w_{\max}\}/(2\sigma)$\\
+\cref{thm:con:order} & order constraints on continuous and binary
+coordinates & full Hessian & $2+3n_c\bar L/(4\sigma)$, power $p_c$\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Two reductions below are conditional applications of \cref{thm:sp:main} to
+a family of objectives indexed by part of the noise. The constants of its
+schedule must then be chosen uniformly over the family, before any noise is
+drawn; choosing them after observing part of the noise would make the law
+depend on the draw. The following lemma records what this requires.
+
+\begin{lemma}[Uniform schedules]\label{lem:con:uniform}
+Let $X$ be a mixed box with $n\ge1$ coordinates and a tree decomposition of
+bag size $p$, and let $\mathcal H\subseteq\R^m$ be a box. For every rational
+$\eta\in\mathcal H$ let $G_\eta$ be an explicit rational polynomial of degree
+at most $d'$ on $X$ whose monomial support lies in a fixed set computed from
+the base instance and whose factor scopes lie in the bags. Suppose that there
+are polynomials $P_1,P_2$, whose degrees depend only on fixed format
+constants such as degrees and depths, such that for every $b\ge1$ and every
+rational $\eta\in\mathcal H$ with entries of bit length at most $b$, the
+coefficients of $G_\eta$ have bit length at most $P_1(I+b)$ and $G_\eta$ is
+computed from the base instance and $\eta$ in at most $P_2(I+b)$ bit
+operations. Suppose also that
+\begin{enumerate}[label=(\alph*)]
+\item rationals $L>0$, $\kappa_2$ and $\kappa_3$, computed from the base
+instance, satisfy \eqref{eq:sp:curv} and \eqref{eq:sp:kappa} for every
+$G_\eta$, $\eta\in\mathcal H$, and
+\item a deterministic algorithm solves every problem
+$\min_X(G_\eta+\gamma^{\mathsf T}x)$ with rational $\eta\in\mathcal H$ and
+$\gamma\in\Q^n$ exactly, and refines its output to precision $2^{-q}$,
+within $B\poly(I+b+q)$ bit operations when the entries of $\eta$ and
+$\gamma$ have bit length at most $b$; here $B\ge2$ depends only on the base
+instance and $\log B\le\poly(I)$.
+\end{enumerate}
+Compute the schedule of \cref{def:sp:schedule} from $L$, $\kappa_2$,
+$\kappa_3$, $W$, this $B$, and the constants $C_{\rm tail}$ and
+$K=\max\{1,n_c3^{n_c}N_Z\max\{1,d'-1\}^{n_c}\}$ of \cref{lem:sp:tails} for
+degree $d'$, and let $b$ be the largest bit length of an atom of the
+resulting law $U_{\sigma,M}$. Let $\eta$ be a random rational point of
+$\mathcal H$ whose entries have bit length at most $b$, with an arbitrary
+law, and let $\gamma$ be independent of $\eta$ with law
+$U_{\sigma,M}^{\otimes n}$. Then the algorithm of \cref{def:sp:algorithm},
+with the fallback~(b), applied to $G_\eta+\gamma^{\mathsf T}x$ is correct
+on every draw, runs its fallback with probability at most $1/(2B)$, and has
+expected work at most $C_0^p[4+(1+n/2)Lw_{\max}/(2\sigma)]^p\poly(I+b)$,
+where the degree of the polynomial factor depends on $d'$, $P_1$ and $P_2$.
+Since $b\le\poly(I)$, this is $C_0^p[4+(1+n/2)Lw_{\max}/(2\sigma)]^p\poly(I)$.
+\end{lemma}
+
+\begin{proof}
+Every statement of \cref{sec:sp} about one objective uses only the validity
+of $L$, $\kappa_2$ and $\kappa_3$ for that objective, the tail constants,
+the fallback, and the bit length of the objective's coefficients, which
+enters the cost of each arithmetic operation polynomially. The constant
+$C_{\rm tail}$ of \cref{lem:count:finite-tails} depends on the number of
+variables, the degree and the number of atoms of the domain formula, and
+$K$ on $n_c$, $N_Z$ and $d'$; neither depends on the coefficients of
+$G_\eta$. All schedule quantities are therefore fixed before $\eta$ and
+$\gamma$ are drawn, and $b=O(\log_2M+\operatorname{size}\sigma)$ is
+polynomial in $I$. Conditionally on $\eta$, the coefficients $\gamma$ are
+independent with law $U_{\sigma,M}$, so \cref{lem:sp:tails},
+\cref{prop:sp:count}, \cref{lem:sp:rare} and the proof of \cref{thm:sp:main}
+apply to $G_\eta$ with the same schedule, after the cost $P_2(I+b)$ of
+computing $G_\eta$ and with factor values of bit length polynomial in
+$P_1(I+b)$. Averaging over $\eta$ gives the claim.
+\end{proof}
+
+In the applications below, the fallback~(b) is \cref{thm:count:fallback}
+applied to the \emph{original} constrained problem: an explicit polynomial
+on a compact semialgebraic domain (\cref{def:count:semialg}) tilted by the
+ambient noise on all coordinates. Its minimizers correspond to those of the
+reduced problem, and its factor $B$ is fixed by the base instance, while the
+sampled coefficients enter only through $b$.
+
+\subsection{Global graph parameterizations}\label{sec:con:graph}
+
+Some coupled equality constraints can be eliminated by a global chart that
+keeps a set of \emph{retained} coordinates ranging over a mixed box. The
+retained coordinates remain ambient coordinates with their own independent
+noise. Conditioning on the noise of the eliminated coordinates then leaves
+exactly the setting of \cref{sec:sp}.
+
+\begin{definition}[Graph instance]\label{def:con:graph}
+A graph instance consists of rational data as follows.
+\begin{enumerate}[label=(\roman*)]
+\item Retained coordinates $x$ in a mixed box $X\subseteq\R^n$ as in
+\cref{def:sp:instance}\,(i), with $n\ge1$, and dependent coordinates
+$y\in\R^m$ given by a chart $y=\psi(x)$ of one of two kinds.
+\begin{enumerate}[label=(\Alph*)]
+\item[(E)] \emph{Explicit}: $y_j=P_j(x,y_1,\dots,y_{j-1})$, $j=1,\dots,m$,
+where each $P_j$ is an explicit rational polynomial of degree at most $e$
+in at most $k$ of the variables (its \emph{parents}), and every chain of
+dependencies has length at most $D_{\rm g}$; $e$ and $D_{\rm g}$ are fixed.
+\item[(I)] \emph{Implicit}: $q_j(x_{S_j},y_j)=0$ and $y_j\in V_j=[\ell'_j,u'_j]$,
+$j=1,\dots,m$, where $q_j$ is an explicit rational polynomial of degree at
+most $e$, $\abs{S_j}\le k$, and rationals $\mu_j>0$ are given with
+\begin{equation}\label{eq:con:bracket}
+ \partial_yq_j(x,y)\ge\mu_j,\qquad q_j(x,\ell'_j)\le0\le q_j(x,u'_j)
+ \qquad(x\in\widehat X_{S_j},\ y\in V_j).
+\end{equation}
+\end{enumerate}
+The feasible set is $\mathfrak X=\{(x,\psi(x)):x\in X\}$; there are no other
+constraints. Bounds on dependent coordinates in case (E) must be implied by
+the chart, and in case (I) they only select the branch.
+\item An objective $F_0(x,y)$ that is a sum of explicit rational polynomial
+factors of degree at most $d$.
+\item A tree decomposition of bag size $p$ of the ambient variables whose
+bags contain every objective scope and every constraint scope, that is,
+$\{y_j\}$ with its parents in case (E) and $S_j\cup\{y_j\}$ in case (I).
+\item A noise half-width $\sigma>0$ and a rational $L>0$ such that
+\begin{equation}\label{eq:con:curv}
+ \partial_{ii}G_\eta(x)\le L,\qquad
+ G_\eta(x)=F_0(x,\psi(x))+\eta^{\mathsf T}\psi(x),
+\end{equation}
+for all $x\in\widehat X$, all $i\in[n]$, and all $\eta\in[-\sigma,\sigma]^m$.
+\end{enumerate}
+The noise is ambient: $\gamma\in\Q^n$ and $\eta\in\Q^m$ have independent
+coordinates with law $U_{\sigma,M}$, and the sampled objective is
+$F_{\gamma,\eta}(x,y)=F_0(x,y)+\gamma^{\mathsf T}x+\eta^{\mathsf T}y$.
+\end{definition}
+
+In case (I), \eqref{eq:con:bracket} gives every $x\in\widehat X$ exactly one
+root $\psi_j(x_{S_j})\in V_j$ (\cref{lem:con:chart}); the brackets and the
+derivative floor must hold on the whole real hull, including between
+integer labels, because the algorithm evaluates the chart at such points.
+Brackets at individual query points would not establish uniqueness,
+smoothness, or the validity of rounding between grid points. A dependent
+coordinate whose chart has no retained argument is a constant. It is
+substituted only when it is rational, that is, given by a constant
+polynomial in case (E) or by a one-point interval $V_j$ in case (I). Other
+constant roots, such as the root of $y^2=2$ in $[1,2]$, stay in the chart
+and in the original constrained problem used by the fallback, so that no
+algebraic constant enters the rational data. If preprocessing fixes every
+retained coordinate, the feasible set is one point; the algorithm returns
+it directly, in case (I) as the fixed retained values together with the
+chart, which determines the dependent roots.
+
+\paragraph{Status of the premises.} In case (E), $\psi$ is an explicit
+polynomial map obtained by substitution, and \eqref{eq:con:curv} is
+verified by monomial bounds that hold uniformly for $\abs{\eta_j}\le\sigma$,
+or promised if sharper. In case (I), \eqref{eq:con:bracket} and
+\eqref{eq:con:curv} are promised, or certified with their verification cost
+added to the work; arbitrary polynomial positivity is not tested.
+Curvature is measured after substitution. An ambient diagonal bound does
+not suffice (\cref{ex:con:graph-curv}), and the dependent noise $\eta$ can
+contribute to it.
+
+\begin{lemma}[Expanded decomposition]\label{lem:con:expand}
+For a dependent coordinate $y_j$ let $\Lambda(y_j)$ be the set of retained
+coordinates on which it depends: its retained ancestors in case (E) and
+$S_j$ in case (I); let $\Lambda(x_i)=\{x_i\}$. Replacing every bag $\beta$ by
+$\beta'=\bigcup_{v\in\beta}\Lambda(v)$ gives a tree decomposition, on the same
+tree, of the retained coordinates. Its bags contain the scope of every
+reduced factor $f_a(x,\psi(x))$ and of every term $\eta_j\psi_j(x)$, and its
+bag size is $p'\le p\max\{1,k^{D_{\rm g}}\}$ in case (E) and
+$p'\le p\max\{1,k\}$ in case (I).
+\end{lemma}
+
+The proof is in \cref{app:con:graph}. The equality scopes must lie in the
+supplied bags: a decomposition of the objective alone does not give running
+intersection after substitution.
+
+\begin{theorem}[Sparse optimization over global graphs]\label{thm:con:graph}
+Fix $d$, $e$ and, in case (E), $D_{\rm g}$. For graph instances there is an
+algorithm and a power of two $M$, computed from the base instance with
+$\log_2M\le\poly(I)$, such that for the ambient model with law $U_{\sigma,M}$
+on all $n+m$ coordinates the following hold.
+\begin{enumerate}[label=(\roman*)]
+\item On every draw the algorithm returns an exact global optimizer of
+$F_{\gamma,\eta}$ on $\mathfrak X$. On ordinary draws the output is a
+\emph{charted patch output} (\cref{def:con:charted}) of length $\poly(I)$
+with its global proof record. On the remaining draws, of probability at most
+$1/(2B)$, it is the exact output of \cref{thm:count:fallback} for
+$F_{\gamma,\eta}$ on the compact semialgebraic set $\mathfrak X$, computed on
+the same draw.
+\item The expected bit work is at most
+\[
+ \text{(E)}\ \ C_0^{p'}\Bigl[4+\frac{(1+n/2)Lw_{\max}}{2\sigma}\Bigr]^{p'}\poly(I),
+ \qquad
+ \text{(I)}\ \ C_0^{p'}\Bigl[4+\frac{(1+n)Lw_{\max}}{2\sigma}\Bigr]^{p'}\poly(I),
+\]
+with $p'$ from \cref{lem:con:expand}; the global proof record obeys the same
+bounds in expectation.
+\item A $q$-bit evaluation returns a rational retained point $\tilde x\in X$
+within distance $2^{-q}$ of the retained part $\hat x$ of the optimizer and
+a rational interval $[a_q,u_q]$ of width at most $2^{-q}$ with
+$a_q\le f^*\le F_{\gamma,\eta}(\tilde x,\psi(\tilde x))\le u_q$, where
+$f^*=\min_{\mathfrak X}F_{\gamma,\eta}$.
+In case (E) the lift $(\tilde x,\psi(\tilde x))$ is rational, satisfies every
+graph equation, and lies within distance $2^{-q}$ of the optimizer. In case
+(I) the lift $(\tilde x,\psi(\tilde x))$ is an exactly feasible point given
+by rational retained coordinates and isolating brackets of its dependent
+roots, and a rational point within distance $2^{-q}$ of the optimizer is
+also returned; this rational point need not satisfy the graph equations. The
+cost is $\poly(I+q)$ on ordinary draws and $B\poly(I+q)$ on fallback draws,
+and its expectation is $\poly(I+q)$.
+\end{enumerate}
+No growth, uniqueness or strict-complementarity premise is used.
+\end{theorem}
+
+The exponents of the polynomials depend on the fixed degrees. The bound is
+fixed-width polynomial in the expanded bag size $p'$; it is not a
+fixed-parameter bound. Case (I) loses the factor $1+n/2$ to $1+n$ because its
+costs are algebraic and are computed with certified error
+(\cref{lem:con:approx}). The two cases are not comparable: (E) allows chains of
+dependent coordinates of bounded depth and gives rational feasible points,
+whereas (I) allows charts that are not polynomial but only one layer of
+dependent coordinates. Even one cubic equation can force irrational dependent
+coordinates at rational retained points, so no rational feasible point
+need exist in case (I).
+
+\begin{definition}[Charted patch output]\label{def:con:charted}
+For a graph instance and a draw $(\gamma,\eta)$, a charted patch output
+(\cref{def:model:outputs}\ref{it:model:charted}) is a
+patch output $(S,\bar x_S,P,g_0)$ in the sense of \cref{sec:sp:setting} for
+the reduced objective $G_\eta+\gamma^{\mathsf T}x$ on $X$, verified with
+\eqref{eq:sp:patch}, together with the chart: the polynomials $P_j$ in case
+(E); the equations $q_j$, the intervals $V_j$ and the bounds $\mu_j$ in case
+(I). It denotes the point $(\hat x,\psi(\hat x))$, where $\hat x=(\bar x_S,
+\hat y)$ and $\hat y$ is the unique minimizer of $G_\eta(\bar x_S,\cdot)+
+\gamma^{\mathsf T}(\bar x_S,\cdot)$ on $P$. Equivalently, $\hat x$ is the
+unique solution of the box KKT system of this reduced problem, and in case
+(I) the dependent coordinates are the unique roots of $q_j(\hat x_{S_j},y_j)=0$
+in $V_j$, with graph multipliers
+$\lambda_j=-(\partial_{y_j}F_0+\eta_j)/\partial_yq_j$ at that point.
+\end{definition}
+
+The descriptor determines one point because the reduced objective is
+strongly convex on $P$, and the global proof record shows that this point is
+the global optimizer. No positive definiteness of the ambient Hessian is
+claimed or needed.
+
+\paragraph{The explicit case.}
+By \cref{lem:con:expand}, the reduced objective $G_\eta+\gamma^{\mathsf T}x$
+is an explicit polynomial of degree at most $de^{D_{\rm g}}$ on $X$ whose
+factor scopes lie in the bags $\beta'$. Substitution of a dependent-noise
+vector $\eta$ with entries of bit length $b$ produces coefficients of bit
+length polynomial in $I+b$, in time polynomial in $I+b$, with exponents that
+depend only on $d$, $e$ and $D_{\rm g}$; repeated products of supplied
+coefficients can make these lengths exceed $I+b$, but only by a fixed
+polynomial. The pair $(x,\psi(x))\mapsto x$ is a bijection from
+$\mathfrak X$ onto $X$ that preserves objective values, so the sampled problem
+is equivalent to minimizing $G_\eta+\gamma^{\mathsf T}x$ on $X$. Conditionally
+on $\eta$, the coefficients $\gamma$ are independent with law $U_{\sigma,M}$.
+\Cref{lem:con:uniform} therefore applies, with $L$ from
+\eqref{eq:con:curv}, $\kappa_2,\kappa_3$ from monomial bounds uniform in
+$\abs{\eta_j}\le\sigma$, degree $d'=de^{D_{\rm g}}$, and the fallback of
+\cref{thm:count:fallback} on $\mathfrak X$, whose domain formula consists of the
+mixed box and the polynomial equations $y_j=P_j$. The rest of the proof is in
+\cref{app:con:graph}.
+
+\paragraph{The implicit case.}
+Here the reduced objective is algebraic but not polynomial, and three
+ingredients replace exact rational arithmetic: a chart oracle
+(\cref{lem:con:chart}), a dynamic program on certified lower costs
+(\cref{lem:con:approx}), and closure tests with certified derivative errors.
+The tails use the original polynomial graph, and so does the fallback.
+
+\begin{lemma}[Chart]\label{lem:con:chart}
+In case (I), for every $x\in\widehat X$ each equation has exactly one root
+$\psi_j(x_{S_j})\in V_j$, and $\psi_j$ is infinitely differentiable on
+$\widehat X_{S_j}$, with local smooth extensions at its boundary. If
+$A_j\ge1$ bounds all partial derivatives of $q_j$ of orders one to three on
+$\widehat X_{S_j}\times V_j$, then every partial derivative of $\psi_j$ of
+order $\nu\in\{1,2,3\}$ is bounded on $\widehat X_{S_j}$ by
+\[
+ \Pi_{1,j}=\frac{A_j}{\mu_j},\quad
+ \Pi_{2,j}=\frac{A_j(1+\Pi_{1,j})^2}{\mu_j},\quad
+ \Pi_{3,j}=\frac{A_j[(1+\Pi_{1,j})^3+3(1+\Pi_{1,j})\Pi_{2,j}]}{\mu_j}.
+\]
+At a rational $x\in\widehat X$, rational brackets of width $\epsilon$ for all
+roots, and rational enclosures of width $\epsilon$ of $G_\eta(x)$,
+$\nabla G_\eta(x)$ and $\nabla^2G_\eta(x)$, are computed in time polynomial in
+$I$, the length of $x$ and $\eta$, and $\log(1/\epsilon)$.
+\end{lemma}
+
+The derivative bounds have polynomial encoding length; through the chain
+rule they give rationals $\kappa_2,\kappa_3$ satisfying \eqref{eq:sp:kappa}
+for every $G_\eta$, $\abs{\eta_j}\le\sigma$, and the chart Lipschitz bound
+\begin{equation}\label{eq:con:Kpsi}
+ \norm{(x,\psi(x))-(x',\psi(x'))}_2\le K_\psi\norm{x-x'}_2,
+ \qquad K_\psi=1+\sum_j\abs{S_j}\Pi_{1,j}
+\end{equation}
+on $\widehat X$. The proof of \cref{lem:con:chart} is in \cref{app:con:graph}.
+
+\begin{lemma}[Certified lower costs]\label{lem:con:approx}
+In case (I), at level $j$ compute for every row of every bag a rational lower
+cost $\underline\phi_\beta$ with
+$\underline\phi_\beta\le\phi_\beta\le\underline\phi_\beta+\delta_j$, where
+$\phi_\beta$ is the sum of the reduced terms assigned to $\beta$ and
+$\delta_j=E_j/N_{\mathfrak B}$ with $N_{\mathfrak B}$ the number of bags. Run
+the dynamic program on the lower costs, update the incumbent with
+$U_j=\min\{U_{j-1},\underline m_j+E_j\}$, where $\underline m_j$ is the
+lower-cost minimum, initialize $U_{-1}=+\infty$, and store the feasible
+implicit lift associated with the chosen upper bound. Update this bound
+and point before pruning. Retain a cell when $\underline q_C-E_j\le U_j$, with
+$\underline q_C$ the least lower-cost min-marginal over its corners. Then on
+every draw all global optimizers are retained, every point removed at level
+$j$ has value above $U_j\ge f^*$, and every retained cell has a corner
+$v=y_\beta$ of an allowed grid point $y$ with
+$G_\eta(y)+\gamma^{\mathsf T}y\le f^*+4E_j$.
+\end{lemma}
+
+The proof (\cref{app:con:graph}) is that of \cref{prop:sp:prune} with the
+error $D_j=N_{\mathfrak B}\delta_j\le E_j$ of the summed lower costs. The
+witness tolerance $4E_j$ replaces $2E_j$; \cref{lem:sp:compare} then gives
+intervals of length $La_i+8E_j/a_i\le(1+n)La_i$, which explains the factor in
+case (I). Exact comparisons of algebraic values are never made: the dynamic
+program is exact rational arithmetic on certified rational costs, and
+different bags may use different brackets of the same root without affecting
+global consistency.
+
+The closure test of \cref{def:sp:closure} is used with certified
+derivatives. In step~(3), a rational $\hat g$ with
+$\norm{\hat g-\nabla(G_\eta+\gamma^{\mathsf T}x)(c)}_\infty\le\epsilon_g$
+replaces the exact gradient, and a continuous coordinate is recorded at its
+lower bound when $\hat g_i-\kappa_2r-\epsilon_g>0$ and at its upper bound
+when $\hat g_i+\kappa_2r+\epsilon_g<0$. In step~(5), a rational symmetric
+$\hat H$ with
+$\norm{\hat H-\nabla^2_{\bar S\bar S}G_\eta(\bar x_S,c^P)}_2\le\epsilon_H$
+replaces the exact Hessian; it is obtained from enclosures of width at most
+$\epsilon_H/n$ of the entries by taking midpoints and symmetrizing, since a
+symmetric error matrix with entries at most $\epsilon_H/n$ in absolute value
+has spectral norm at most $\epsilon_H$. The test is
+$\hat H-(\kappa_3r^P+\epsilon_H+g_0)I\succ0$. With
+$\epsilon_g=\tau/8$ and $\epsilon_H=g_0/8$, these tests are sound on every
+draw and succeed under the hypotheses of \cref{prop:sp:closure-stop}
+(\cref{app:con:graph}).
+
+\begin{example}[Two necessary premises]\label{ex:con:graph-curv}
+\emph{Curvature after substitution.} Under the equality $y=x$, the ambient
+polynomial $F_0(x,y)=Hxy+\varepsilon(x^2+y^2)$ has both ambient diagonal
+second derivatives equal to $2\varepsilon$, while its pullback
+$(H+2\varepsilon)x^2$ has second derivative $2H+4\varepsilon$. The chart is
+linear and well conditioned, yet the ambient cross derivative becomes
+retained curvature. \emph{Retained ambient coordinates.} Under the
+parameterization $(x_1,x_2)=(t_1+t_2,t_1+2t_2)$, $t\in[0,1]^2$, which has
+determinant one and a bounded inverse, independent ambient coefficients pull
+back to $c_1=\gamma_1+\gamma_2$ and $c_2=\gamma_1+2\gamma_2$. Under the grid
+law, the event $c_2=3\sigma$ forces $\gamma_1=\gamma_2=\sigma$, so $c_1=2\sigma$
+is conditionally deterministic: a singleton receives conditional probability
+one instead of at most $1/M$, and the conditional count of
+\cref{lem:sp:compare} fails. This does not show that the parallelogram is
+hard; it shows that a bounded inverse alone does not preserve the noise model.
+\end{example}
+
+\begin{example}[A connected chain of products]\label{ex:con:chain}
+Let $x\in[0,1]^n$, where some coordinates may be binary, and impose
+$y_i=x_ix_{i+1}$ for $i<n$, with
+$F_0=\sum_{i<n}(y_i-a_i)^2+\lambda\sum_ix_i^2$, $\lambda\ge0$. The constraints
+form a connected chain of triangles $\{x_i,x_{i+1},y_i\}$, not a product of
+separate blocks. Substitution gives a quartic with path bags
+$\{x_i,x_{i+1}\}$, and $\partial_{ii}G_\eta=2x_{i-1}^2+2x_{i+1}^2+2\lambda\le
+4+2\lambda$ for all targets $a_i$ and all $\eta$, since the dependent noise
+terms $\eta_ix_ix_{i+1}$ have zero pure second derivatives. Thus
+$L=4+2\lambda$, independently of $n$, and case (E) applies with $p'=2$.
+\end{example}
+
+\subsection{Affine-state recurrences with polynomial actuators}\label{sec:con:actuator}
+
+Bounded-depth substitution does not cover dynamics over a long horizon,
+because the states depend on all earlier controls. For affine state
+dependence and affine state costs, an adjoint recursion eliminates the
+states while adding only unary terms.
+
+\begin{definition}[Actuator instance]\label{def:con:actuator}
+For a horizon $N\ge1$ and $k=0,\dots,N-1$, the states and controls satisfy
+\begin{equation}\label{eq:con:dyn}
+ s_{k+1}=a_ks_k+\chi_k(u_k),\qquad\abs{a_k}\le a<1,
+\end{equation}
+with rational $a_k$ and $a$, explicit rational univariate polynomials $\chi_k$
+of degree at most $d$, nonempty closed rational state intervals $I_k$,
+$k=0,\dots,N$, and control domains $U_k$ that are closed rational intervals
+or native integer intervals. Box invariance holds:
+\begin{equation}\label{eq:con:invariant}
+ a_kI_k+\chi_k(\operatorname{hull}U_k)\subseteq I_{k+1}\qquad(k<N).
+\end{equation}
+There are no other constraints. The free variables are
+$z=(s_0,u_0,\dots,u_{N-1})$; a fixed initial state is allowed. The objective
+is $F_0=q(z)+\sum_{k=1}^Nc_ks_k$, where $q$ is a sum of explicit rational
+polynomial factors of degree at most $d$ whose scopes lie in the bags of a
+supplied tree decomposition of the free variables with bag size $p$. The
+noise is ambient on all original coordinates, states and controls.
+\end{definition}
+
+Condition \eqref{eq:con:invariant} is verified in polynomial time at fixed
+degree, by comparing the rational interval endpoints with the extreme values
+of $\chi_k$ at the endpoints of $\operatorname{hull}U_k$ and at the real roots
+of $\chi_k'$, using univariate root isolation. It makes the state intervals
+redundant: every free point has exactly one feasible trajectory. If
+preprocessing fixes every free variable, that is, the initial state is
+fixed and every control domain is a single point, the unique feasible
+trajectory is rational and the algorithm returns it with its sampled value
+directly.
+
+Condition on the state coefficients $\eta=(\gamma_{s_1},\dots,\gamma_{s_N})$
+and define the adjoints $\lambda_N=c_N+\eta_N$ and
+$\lambda_k=c_k+\eta_k+a_k\lambda_{k+1}$ for $k=N-1,\dots,1$. Substituting
+\eqref{eq:con:dyn} backward from $k=N$ gives the identity
+\begin{equation}\label{eq:con:adjoint}
+ \sum_{k=1}^N(c_k+\eta_k)s_k=a_0\lambda_1s_0+\sum_{k=0}^{N-1}\lambda_{k+1}\chi_k(u_k)
+\end{equation}
+on every trajectory. The sampled problem is therefore equivalent to
+minimizing
+\[
+ Q_\eta(z)+\xi^{\mathsf T}z,\qquad
+ Q_\eta(z)=q(z)+a_0\lambda_1s_0+\sum_{k=0}^{N-1}\lambda_{k+1}\chi_k(u_k),
+\]
+over the free box, where $\xi=(\gamma_{s_0},\gamma_{u_0},\dots,\gamma_{u_{N-1}})$
+are independent with law $U_{\sigma,M}$ conditionally on $\eta$. The added
+terms are unary, so $Q_\eta$ has the same degree and the same tree
+decomposition as $q$, for every horizon. With $C_s\ge\max_k\abs{c_k}$,
+induction gives $\abs{\lambda_k}\le\Lambda:=(C_s+\sigma)/(1-a)$ for every
+conditioned draw. Let $L_q$ be a rational upper bound on the pure second
+derivatives $\partial_{ii}q$ on the free hull; it may be negative. If
+$G_\nu\ge\max_k\sup_{\operatorname{hull}U_k}\abs{\chi_k^{(\nu)}}$, then
+\begin{equation}\label{eq:con:Lact}
+ L=\max\{1,\ L_q+\Lambda G_2\}
+\end{equation}
+is positive and bounds the coordinate curvature of every $Q_\eta$, because
+the added terms contribute at most $\abs{\lambda_{k+1}}\abs{\chi_k''}\le
+\Lambda G_2$ to $\partial_{u_ku_k}Q_\eta$ and nothing to
+$\partial_{s_0s_0}Q_\eta$. Analogous bounds with $\Lambda G_2$ and
+$\Lambda G_3$ give uniform $\kappa_2$ and $\kappa_3$. The adjoints are
+computed by $N$ affine steps, so their denominators divide products of the
+denominators of the $a_k$, $c_k$ and $\eta_k$, and their bit lengths are
+bounded by sums of the lengths of these numbers plus the length of
+$\Lambda$; the coefficients of $Q_\eta$ therefore have
+bit length polynomial in $I+b$, as \cref{lem:con:uniform} requires.
+
+\begin{theorem}[Affine-state recurrences with polynomial actuators]\label{thm:con:actuator}
+Fix $d$. For actuator instances, with $L$ as in \eqref{eq:con:Lact} or any
+uniform valid bound, there is an algorithm and a power of two $M$, computed
+from the base instance with $\log_2M\le\poly_d(I)$, such that for the ambient
+model with law $U_{\sigma,M}$ the following hold, where $n$ is the number of
+free variables after substituting fixed ones. The all-fixed branch
+returns its rational trajectory directly; the displayed width bound
+concerns the remaining nonempty free box.
+\begin{enumerate}[label=(\roman*)]
+\item On every draw the algorithm returns an exact global optimizer, as a
+patch output in the free variables together with the recurrence
+\eqref{eq:con:dyn}, or, with probability at most $1/(2B)$, as the exact
+output of \cref{thm:count:fallback} for the sampled objective on the set of
+feasible trajectories, described by \eqref{eq:con:dyn} and the variable
+bounds.
+\item The expected bit work is at most
+$C_0^p[4+(1+n/2)Lw_{\max}/(2\sigma)]^p\poly_d(I)$.
+\item A $q$-bit evaluation returns a rational free point and its exactly
+feasible rational trajectory, within distance $2^{-q}$ of the optimal
+trajectory, and a rational interval of width $2^{-q}$ containing the optimal
+value, in expected bit work $\poly_d(I+q)$.
+\end{enumerate}
+\end{theorem}
+
+The proof is in \cref{app:con:actuator}. The bound holds for every horizon,
+because the reduced decomposition is the free-variable decomposition. The
+restrictions are substantive. Nonlinear state dependence or nonlinear state
+costs raise the degree or couple many controls under elimination; for
+instance $s_{k+1}=s_k/2+u_k^2/4$ with terminal cost $s_N^2$ produces the
+monomial $u_i^2u_l^2$ for every pair of controls. Additional path or terminal
+constraints destroy the free product domain. The next example shows why the
+equalities cannot simply be kept as constraints in the sparse algorithm.
+
+\begin{example}[Predecessor fibers]\label{ex:con:dyn}
+Let $s_1=u_0^2$ and $s_2=u_1^2$ with $s_0,s_1,s_2\in[0,1]$ and
+$u_0,u_1\in[-1,1]$, linear objective $\gamma^{\mathsf T}(s,u)$, and bags
+$\{s_0,u_0,s_1\}$ and $\{s_1,u_1,s_2\}$. Conditioning on the coefficients
+outside the second bag, its conditional value at $(s_1,u_1,s_2)=(t,0,0)$ is
+$\min\{0,\gamma_{s_0}\}+\gamma_{s_1}t-\abs{\gamma_{u_0}}\sqrt t$, because
+$u_0=\pm\sqrt t$. Its second difference at $0,h,2h$ is
+$\abs{\gamma_{u_0}}(2-\sqrt2)\sqrt h$, which is not $O(h^2)$. Under the grid
+law $\gamma_{u_0}\ne0$ on every draw, since $M$ is even. No finite
+coordinate curvature bound holds for this conditional value, so the count of
+\cref{lem:sp:compare} does not apply, although the dynamics are box invariant
+and smooth. The elimination of \eqref{eq:con:adjoint} avoids predecessor
+fibers altogether.
+\end{example}
+
+\begin{example}[A stateful nonlinear actuator]\label{ex:con:actuator}
+On $[-1,1]$, the transition $s_{k+1}=\frac14s_k+\frac14u_k+\frac18u_k^2$ maps
+$[-1,1]\times[-1,1]$ into $[-\frac38,\frac58]$, so \eqref{eq:con:invariant}
+holds. Continuous or integer controls in $[-1,1]$, affine state costs, and
+any coupled nonconvex control cost $\sum_\beta q_\beta(s_0,u_\beta)$ with the
+supplied decomposition satisfy \cref{def:con:actuator}.
+\end{example}
+
+\subsection{Products of simplices}\label{sec:con:simplex}
+
+Resource constraints inside disjoint blocks are not eliminated by a chart: a
+stick-breaking map from a box onto a simplex makes the ambient linear noise
+nonlinear. Instead, feasible rounding and the count are adapted to the faces
+of the simplices.
+
+\begin{definition}[Simplex instance]\label{def:con:simplex}
+The continuous coordinates are partitioned into blocks $b$; each block is an
+\emph{inequality block} with feasible set $\Delta_b=\{x_b\ge0,\
+\sum_{i\in b}x_i\le1\}$, or an \emph{equality block} with
+$\Delta_b^==\{x_b\ge0,\ \sum_{i\in b}x_i=1\}$ and $\abs b\ge2$. The remaining
+coordinates are native integer intervals as in \cref{def:sp:instance}, and
+there is at least one coordinate. The
+objective $F_0$ is a sum of explicit factors of degree at most $d$, and a
+supplied tree decomposition contains every factor scope and \emph{whole
+blocks}: a bag containing a coordinate of $b$ contains all of $b$. Its
+largest number of scalar coordinates is $p$. A rational $L>0$ satisfies
+\begin{equation}\label{eq:con:blockcurv}
+ \nabla^2_{bb}F_0\preceq LI\ \text{for every block }b,\qquad
+ \partial_{ii}F_0\le L\ \text{for every integer coordinate }i,
+\end{equation}
+on the continuous hull of the domain. The noise is ambient on all
+coordinates. Let $w_{\max}$ be the largest integer width, or $1$ if there is
+none, and $W=n_c+\sum_{i\in I_Z}w_i$.
+\end{definition}
+
+The bound \eqref{eq:con:blockcurv} on the block Hessian is stronger than a
+bound on its diagonal entries, and it is needed: rounding within a block is
+correlated. It is verified, for example, by the row-sum bound
+$\max_{i\in b}\sum_{k\in b}\sup\abs{\partial_{ik}F_0}$, or promised. The
+derivative bounds $\kappa_2,\kappa_3$ of \eqref{eq:sp:kappa} are taken on the
+enclosing coordinate box $[0,1]^{n_c}\times\widehat X_Z$, not only on the
+product of simplices, because the closure tests evaluate derivatives at
+midpoints of coordinate hulls, which can lie outside a simplex. Whole-block
+bags are essential: they make the domain outside a bag independent of the
+bag's values. A model with simplex constraints in the scalar primal graph
+satisfies this after enlarging bags by at most the largest block size; a
+single resource constraint over all variables gives no width advantage.
+
+\begin{theorem}[Products of simplices]\label{thm:con:simplex}
+Fix $d$. For simplex instances there is an algorithm and a power of two $M$,
+computed from the base instance with $\log_2M\le\poly_d(I)$, such that for
+the ambient model with law $U_{\sigma,M}$:
+\begin{enumerate}[label=(\roman*)]
+\item on every draw the algorithm returns an exact global optimizer: on
+ordinary draws a relative patch output of length $\poly_d(I)$ (fixed integer
+labels, fixed coordinates, recorded tight budgets, a rational relative
+polytope $P$, and a verified modulus $g_0$ with
+$v^{\mathsf T}\nabla^2F_\gamma v\ge g_0\norm v_2^2$ on $P$ for all directions
+$v$ of its affine hull), or a rational point, with its global proof record;
+on the remaining draws, of probability at most $1/(2B)$, the exact output of
+\cref{thm:count:fallback} on the same domain;
+\item the expected bit work is at most
+$C_0^p[4+(2+n/2)L\max\{1,w_{\max}\}/(2\sigma)]^p\poly_d(I)$;
+\item a $q$-bit evaluation, with an exactly feasible rational point, costs
+$\poly_d(I+q)$ on ordinary draws and has expectation $\poly_d(I+q)$.
+\end{enumerate}
+\end{theorem}
+
+The proof is in \cref{app:con:simplex}. We describe its four ingredients.
+
+\emph{Cells and rounding.} The mesh $h_j=s2^{-j}$ of \cref{sec:sp:cells} is
+shared with the integer coordinates, so it can exceed one. While $h_j\ge1$,
+each block has one cell, its simplex, whose corners are the vertices of the
+simplex. For $h=h_j=1/m<1$ the cells of a block are the nonempty sets
+$C=\Delta_b\cap\prod_{i\in b}[hk_i,h(k_i+1)]$ with $k_i\in\{0,\dots,m-1\}$,
+or the same with $\Delta^=_b$, and the corners of $C$ are its points in
+$(h\Z)^b$. After scaling, $C$ is the unit cube intersected with
+$\sum_iz_i\le m-\sum_ik_i$ (or equality), whose right-hand side is an
+integer, so every vertex of $C$ is a cube corner
+(\cref{lem:con:simplex-round}). Every point of a cell is therefore a convex
+combination of its corners, which gives mean-preserving feasible rounding
+with $\E\norm{Y_b-x_b}^2\le\abs bh_j^2/4$; coordinates on grid hyperplanes
+stay fixed, so all candidate lists are preserved. Rounding blocks
+independently and using \eqref{eq:con:blockcurv} gives the allowance
+$E_j=nLh_j^2/8$, and \cref{prop:sp:prune} holds verbatim.
+
+\emph{Count by faces.} Classify a block grid point $v_b$ by its smallest face
+of the simplex: its positive support $\mathsf S$ and whether its budget is
+tight. On a slack face the directions $e_i$, $i\in\mathsf S$, are feasible
+in both signs; on a tight face, with the least index $\iota\in\mathsf S$ as
+anchor, the directions $e_i-e_\iota$, $i\in\mathsf S\setminus\{\iota\}$, are.
+Conditioning also on the anchor coefficients, each direction confines one
+remaining independent coefficient to an interval of length at most
+$Lh\norm d^2+4E_j/h\le(2+n/2)Lh$. A face of dimension $r$ has at most $h^{-r}$
+relative-interior grid points, which cancels the probability $h^r$
+(\cref{lem:con:simplex-count}). The face classification, not a coordinate
+classification, is what makes the count independent of $h$.
+
+\emph{Closure on original faces.} For an inequality block, a positive partial
+derivative throughout the hull forces $x_i=0$; a negative one forces the
+budget to be tight; and a positive difference $\partial_iF-\partial_lF$
+forces $x_i=0$. For an equality block only the last test is valid: decreasing
+one coordinate alone is infeasible, and a strictly convex objective can have
+positive partial derivatives at an interior minimizer of a probability
+simplex. The margins concern \emph{active inequalities} only: zero
+coordinates, and tight budgets of inequality blocks. The budget of an
+equality block is imposed structurally; its multiplier is unrestricted in
+sign and no margin is required of it. For $F_0=0$ on $x_1+x_2=1$, $x\ge0$,
+the multiplier of the budget in the sign convention of
+\cref{lem:con:simplex-close} is $-\min\{\gamma_1,\gamma_2\}$, which is
+negative whenever both coefficients are positive, although the point growth
+is positive whenever $\gamma_1\ne\gamma_2$; a margin requirement on it would
+fail with probability close to $1/4$. At an optimizer whose active
+inequalities have multipliers larger than $\tau$, the tests detect every
+active inequality without a lower bound on positive coordinates: in an
+inequality block with a tight budget, the derivative of a positive
+coordinate is minus the budget multiplier, and in every block with a tight
+or equality budget, the multiplier of a zero coordinate is its derivative
+difference from a positive coordinate, in which the budget multiplier
+cancels. The patch test is
+$Z^{\mathsf T}\nabla^2F_\gamma(c^P)Z-(\kappa_3r^P+g_0)Z^{\mathsf T}Z\succ0$ for a
+rational tangent basis $Z$ of the patch, a rational point $c^P$ of it, and the
+largest hull width $r^P$; subtracting a multiple of $Z^{\mathsf T}Z$ rather
+than of $I$ keeps the curvature in the metric of the original coordinates
+(\cref{lem:con:simplex-close}).
+
+\emph{Margins.} The face stationarity equations depend only on tangent noise,
+the differences $\gamma_i-\gamma_\iota$, and the multiplier of each active
+inequality depends with slope $\pm1$ on one further original coefficient.
+The transformed coefficients are not independent under the grid law, and
+the proof does not treat them as independent: it counts transformed tuples,
+with at most $2M-1$ values per difference (\cref{lem:con:simplex-tail}).
+
+\subsection{Order constraints with continuous and binary coordinates}\label{sec:con:order}
+
+Order constraints $x_i\le x_l$ may couple the whole instance; they are not
+confined to blocks, so \ref{it:con:fixed} fails. Instead, the conditional
+value is controlled by transporting feasible points, and the active
+constraints are identified by linear programming.
+
+\begin{definition}[Order instance]\label{def:con:order}
+Let $[n]=I_C\cup I_Z$, $n_c=\abs{I_C}\ge1$, $n_z=\abs{I_Z}$, and let $E$ be a
+set of $m$ directed edges on $[n]$; cycles are allowed. The feasible set is
+\[
+ X=\{x\in[0,1]^n:\ x_i\le x_l\text{ for }(i,l)\in E,\ x_i\in\{0,1\}
+ \text{ for }i\in I_Z\}.
+\]
+The objective $F_0$ is a sum of explicit factors of degree at most $d$, and
+a supplied tree decomposition contains every factor scope and every edge.
+Let $p$ be its bag size and $p_c$ the largest number of continuous
+coordinates in a bag. A rational $\bar L\ge1$ satisfies
+$\nabla^2F_0\preceq\bar LI$ on $[0,1]^n$. The noise is ambient on all
+coordinates.
+\end{definition}
+
+The zero vector is feasible. If $n_c=0$, ordinary finite-state dynamic
+programming over binary bag rows solves the instance exactly for every
+$\gamma$ in $2^{O(p)}\poly_d(I)$ bit work, and no noise is needed. The full
+Hessian bound $\bar L$ is needed because feasible rounding of ordered
+coordinates is correlated; it is verified by a row-sum bound or promised.
+
+\begin{theorem}[Order constraints]\label{thm:con:order}
+Fix $d$. For order instances with $n_c\ge1$ there is an algorithm and a
+power of two $M$, computed from the base instance with
+$\log_2M\le\poly_d(I)$, such that for the ambient model with law
+$U_{\sigma,M}$:
+\begin{enumerate}[label=(\roman*)]
+\item on every draw the algorithm returns an exact global optimizer: on
+ordinary draws a binary assignment together with a relative patch output on
+the continuous slice, consisting of fixed coordinates, a block structure
+$x_{I_C}=Dy+\bar x$ with disjoint zero-one columns, a rational box and the
+remaining order inequalities in $y$, and a modulus $g_0$ with verified
+$\nabla^2_yF_\gamma(Dy+\bar x)\succeq g_0D^{\mathsf T}D$ on the patch, or a
+rational point if no block remains; on the
+remaining draws, of probability at most $1/(2B)$, the algebraic fallback
+output;
+\item the expected bit work is at most
+\begin{equation}\label{eq:con:orderbound}
+ C_0^p\,p_c!\,(p_c+1)\Bigl[2+\frac{3n_c\bar L}{4\sigma}\Bigr]^{p_c}\poly_d(I);
+\end{equation}
+\item a $q$-bit evaluation, with an exactly feasible rational point, costs
+$\poly_d(I+q)$ on ordinary draws and has expectation $\poly_d(I+q)$.
+\end{enumerate}
+\end{theorem}
+
+The number of binary coordinates is unrestricted, and they do not enter the
+bracket. For $n_z=0$ the bound is
+$C_0^p\,p!\,(p+1)[2+3n\bar L/(4\sigma)]^p\poly_d(I)$. The factorial is a
+function of $p$ alone; the bound is fixed-width polynomial, not
+fixed-parameter, because the bracket contains $n_c$. Only binary integer
+coordinates are covered: transporting points with arbitrary integer levels
+would need fixed interior knots and a different count. The proof is in
+\cref{app:con:order}; its ingredients are as follows.
+
+\emph{Rounding.} Continuous coordinates use dyadic cells of width
+$h_j=2^{-j}$, and binary coordinates the cell $\{0,1\}$ at level $0$ and
+singletons afterwards. Rounding all continuous coordinates by one common
+threshold, $Y_i=h(\lfloor x_i/h\rfloor+\ind\{U<\operatorname{frac}(x_i/h)\})$
+with $U$ uniform on $[0,1]$, is a nondecreasing map for each value of $U$.
+It therefore preserves every order constraint and every binary value, fixes
+grid nodes, and stays in every candidate cell. It is mean preserving with
+$\E\norm{Y-x}^2\le n_ch^2/4$, and the full Hessian bound gives the allowance
+$E_j=n_c\bar Lh_j^2/8$. The threshold is a proof device; the algorithm does
+not sample it. A similar mean-preserving coupling of ordered coordinates by
+one quantile appears in isotonic optimization \citep{bach2018-efficient-algorithms-for-non-convex}.
+
+\emph{Transport and count.} Fix a bag, a binary bag row, and the noise
+outside the continuous bag coordinates. For a feasible continuous bag tuple
+$v$ in the relative interior of a face of a standard order simplex
+$\{0\le v_{\pi(1)}\le\dots\le v_{\pi(c)}\le1\}$, take a conditional minimizer
+and apply to all its coordinates the nondecreasing piecewise-affine map that
+moves the distinct interior values of $v$ to those of a target $w$ in the
+same closed face while fixing $0$ and $1$. The result is feasible, keeps every
+binary value, has bag part $w$, and is affine in $w$; along the edge
+directions of the face every coordinate moves at rate in $[0,1]$, so the
+transported objective is an upper support for the conditional value with
+directional curvature at most $n_c\bar L$ (\cref{lem:con:transport}). The
+transported fiber need not equal the true fiber, and the projected mixed
+domain need not be convex; an upper support is what the comparison needs.
+Counting relative-interior grid points of the faces of the $p_c!$ order
+simplices, as in \cref{lem:sp:compare}, gives the bracket of
+\eqref{eq:con:orderbound} (\cref{prop:con:order-count}).
+
+\emph{Closure by linear programming.} When every binary hull is a singleton,
+all optimizers lie in one continuous slice, a polytope with zero-one
+vertices. With $g$ the gradient at the hull midpoint and $\delta=\kappa_2r$
+a bound on its error, a proposed equality $x_i=x_l$ is certified when the
+least value of $g^{\mathsf T}x$ on the slice face $\{x_i=0,x_l=1\}$ exceeds
+the least value on the slice by more than $n_c\delta$; bound equalities use the
+faces $\{x_i=1\}$ and $\{x_i=0\}$. These are rational linear programs. At
+every optimizer the true slice gradient exposes a face containing it, and if
+the equality failed some zero-one vertex of that face would lie in the
+opposite face, which bounds the computed gap by $n_c\delta$
+(\cref{lem:con:lpgap}). The certified equalities merge coordinates into
+blocks, and all other order inequalities are kept in the patch, so no lower
+bound on inactive slacks is needed.
+
+\begin{example}[Binary labels must be fixed before exposure]\label{ex:con:premature}
+On $0\le x\le z\le1$ with $z$ binary, the objective
+$(x-\frac12)^2+10z^2-11z$ has the unique mixed optimizer $(\frac12,1)$ with
+value $-1$ and point-growth modulus one. Its full gradient there is $(0,9)$.
+Over the continuous relaxation, the least value of $9z$ is $0$, while on the
+face $\{x=0,z=1\}$ opposite to the equality $x=z$ it is $9$. The relaxed test
+would certify $x=z$, which is false. After $z=1$ is fixed, the slice gradient
+is zero and no equality is certified. The algorithm therefore applies the
+linear-programming test only after all binary hulls are singletons.
+\end{example}
+
+\subsection{What is not covered}\label{sec:con:scope}
+
+General totally unimodular constraints on the searched coordinates are not
+covered by the smoothed guarantees of this paper. This differs from
+\cref{thm:int:tu}, where a totally unimodular system constrains only the
+integer recourse of a small perturbed core. An unpublished companion manuscript
+\citep{companion-decomposition-aware} treats them deterministically with a
+coupling algorithm. For fixed-degree polynomial objectives it returns
+approximation certificates without a growth premise, with table sizes that
+then depend on the accuracy. For rational quadratic objectives its exact
+version terminates without a growth or uniqueness premise, and a set-growth
+condition bounds its number of levels. In both cases the stated
+accuracy-independent operation bounds also need set growth and a bound $r$
+on the number of distinct values that each coordinate takes over the
+optimal set, which is a separate premise. These deterministic bounds do not by themselves give expected
+work bounds under the noise; \cref{sec:sp:width} discusses the limits of
+integrating the available growth tail. For
+$P=\{x\in[0,1]^n:Ax\le b\}$ with $A$ integral and totally unimodular and $b$
+integral, aligned feasible rounding holds: after scaling a cell of width
+$h=2^{-j}$, the cell polytope $\{z\in[0,1]^n:Az\le b/h-Ak\}$ has an integral
+right-hand side and hence integral vertices
+\citep{hoffman1956-integral-boundary-points-of-convex}, so every feasible cell point is a mean of feasible
+corners, and a full Hessian bound $\bar L$ gives the allowance
+$n\bar Lh^2/8$. With every constraint inside a bag, the pruning of
+\cref{prop:sp:prune} is then sound. This deterministic rounding,
+allowance and filtering layer specializes results of the companion
+manuscript \citep{companion-decomposition-aware}. What is missing is a count of retained
+cells whose constants are controlled by the input: \cref{ex:lim:coupled}
+shows that coordinate comparisons fail for a single totally unimodular
+inequality, and the arguments of this paper provide neither such a count
+nor closure and tail estimates for general totally unimodular systems. Order
+constraints are the totally unimodular case in which the transport count,
+the linear-programming closure and the tails are all complete. Overlapping resource constraints, affine
+images of simplices, general integer ranges in order systems, extra
+constraints that cut a graph chart, and nonlinear state recurrences are also
+outside the theorems of this section.
+
+\paragraph{Relation to earlier work.} The geometric ingredients are
+classical: order polytopes have zero-one vertices and are triangulated by
+order simplices \citep{stanley1986-two-poset-polytopes}; isotonic optimization uses the
+common-quantile coupling \citep{bach2018-efficient-algorithms-for-non-convex}; totally unimodular
+systems have integral vertices \citep{hoffman1956-integral-boundary-points-of-convex}; and implicit
+elimination of states inside validated global search for dynamic models is
+established \citep{wilhelm2019-global-optimization-of-stiff-dynamical}. The new element is again the
+composition: an expected near-optimal row count under one finite
+independent-noise law for each domain class, sound closure tests adapted to
+the domain, and an exact same-draw fallback with a polynomial-time
+evaluable output.

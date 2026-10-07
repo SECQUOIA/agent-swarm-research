@@ -84,7 +84,7 @@ from the classical rank-elimination mechanism.
 Commands executed:
 
 ```sh
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python \
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python \
   code/network_simplex_review/verify_observed_rank.py
 ```
 
@@ -94,7 +94,7 @@ coefficients, and both reconstruction directions. This pre-existing independent
 script uses no production formulation code.
 
 ```sh
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python verification/stage02-exact.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python verification/stage02-exact.py
 latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex
 ```
 

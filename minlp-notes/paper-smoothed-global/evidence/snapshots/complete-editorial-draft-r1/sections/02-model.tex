@@ -1,0 +1,545 @@
+\section{Model, noise laws, and output contracts}\label{sec:model}
+
+This section fixes the input model, the perturbation laws, the meaning of
+an exact smoothed algorithm, and the output formats. Later sections state
+their theorems in these terms. The section ends with two elementary facts
+that apply to all results: a certified bound for the original objective, and
+an example showing why a finite law forces some exact treatment of ties.
+
+\subsection{Instances and input length}\label{sec:model:input}
+
+All data are rational and encoded in binary. A \emph{base instance}
+consists of an objective $F_0$, a feasible set $X\subseteq\R^n$, a noise
+scale $\sigma>0$, and the structural data required by the relevant theorem:
+a quadratic convexifier, a tree decomposition, a core, curvature bounds, or
+certificates. Its \emph{base length} $I$ is the total binary length of these
+data. It is measured before any noise is drawn; the bit lengths of sampled
+coefficients are accounted for separately.
+
+\paragraph{Objectives.}
+A quadratic objective is $F_0(x)=\frac12x^{\mathsf T}Ax+b^{\mathsf T}x+c$
+with a symmetric rational matrix $A$. A polynomial objective of total degree
+at most $d$ is given by an explicit list of monomials, each a rational
+coefficient together with the list of its variables and their positive
+exponents, or as a sum of factors, each such a list on a stated set of
+variables (its \emph{scope}). This sparse encoding charges a monomial for the
+variables it contains, not for the whole dimension. In every polynomial theorem
+$d$ is a fixed constant, and $\poly_d(\cdot)$ denotes a polynomial whose
+exponent depends on $d$ only. Objectives are never given as arithmetic
+circuits. Circuits can be exponentially more compact than monomial lists,
+and they change the complexity of evaluation and of exact output;
+\cref{sec:lim:points} uses this difference.
+
+\paragraph{Domains.}
+A \emph{mixed box} is $X=\prod_{i=1}^nX_i$, where each $X_i$ is either a
+continuous interval $[\ell_i,u_i]$ or a \emph{native integer} interval
+$[\ell_i,u_i]\cap\Z$. Native integer bounds are encoded in binary, so the
+number of labels $u_i-\ell_i+1$ can be exponential in $I$. Integer bounds
+are rounded inward, empty domains are rejected, and fixed coordinates are
+substituted before any algorithm starts. After this preprocessing every
+remaining coordinate has width $w_i=u_i-\ell_i>0$, and the
+\emph{continuous hull} of $X$ is $\prod_i[\ell_i,u_i]$. We write $n_c$ and
+$n_z$ for the numbers of continuous and native integer coordinates. A
+\emph{mixed polytope} is $P\cap(\Z^{n_z}\times\R^{n_c})$ for a bounded
+rational polyhedron $P$ given by linear inequalities. Products of simplices,
+order polytopes, explicit and implicit graph constraints, integer flows, and
+totally unimodular systems are defined where they are used.
+
+\paragraph{Structural and numerical parameters.}
+The structural parameters are the negative inertia $k=n_-(A)$ of a quadratic
+objective, the bag size $p$ (treewidth plus one) of a supplied tree
+decomposition whose bags contain all factor scopes, the size $k$ of a
+supplied continuous core, and, in the integer theorems, the integer
+dimension. The numerical parameters are curvature and width quantities
+compared with $\sigma$. Examples are an upper bound $L$ on coordinate second
+derivatives, $\nu=\max\{0,-\lambda_{\min}(A)\}$, a convexifier scale
+$\alpha$, and coordinate widths $w_i$. Each theorem states on which set a
+curvature bound must hold. A numerical parameter enters a bound through its
+magnitude, not through its encoding length.
+
+\paragraph{Status of premises.}
+Each premise of a theorem has one of three statuses. It is \emph{verified}
+if the algorithm decides it within the stated work bound; examples are exact
+definiteness tests of rational matrices and a curvature bound computed from
+monomial coefficients. It is \emph{certified} if the input contains a proof
+of it: the proof's encoding length is part of $I$, and the work of checking
+it is part of the stated work bound. It is \emph{promised} if the algorithm
+uses it without checking. A theorem says, for each promise, whether
+correctness depends on it or only the complexity analysis does. A false
+promise of the first kind can produce a wrong output; a false promise of the
+second kind leaves every output correct and can only invalidate the stated
+work bound.
+
+\subsection{Linear perturbations and finite laws}\label{sec:model:noise}
+
+Every result perturbs only the linear part of the objective. The
+\emph{sampled objective} is
+\begin{equation}\label{eq:model:sampled}
+ F_\gamma(x)=F_0(x)+\gamma^{\mathsf T}x,
+\end{equation}
+for a random vector $\gamma\in\Q^n$ drawn once. The feasible set, the
+nonlinear coefficients, and all structural data are not perturbed.
+
+\begin{definition}[Grid law]\label{def:model:grid}
+For a rational $\sigma>0$ and a power of two $M\ge2$, let
+\[
+ \Lambda_{\sigma,M}=\Bigl\{-\sigma+\frac{2\sigma j}{M-1}:j=0,1,\ldots,M-1\Bigr\}
+\]
+be the $M$ equally spaced points of $[-\sigma,\sigma]$, including both
+endpoints, and let $U_{\sigma,M}$ be the uniform distribution on
+$\Lambda_{\sigma,M}$.
+\end{definition}
+
+A draw from $U_{\sigma,M}$ uses exactly $\log_2M$ fair random bits, and every
+atom has binary length $O(\log M+\operatorname{size}(\sigma))$. Because $M-1$
+is odd, $0$ is not an atom. The atoms are equally spaced at distance
+$2\sigma/(M-1)$, so a closed interval of length $\lambda$ contains at most
+$\lambda(M-1)/(2\sigma)+1$ of them. Hence
+\begin{equation}\label{eq:model:interval}
+ U_{\sigma,M}(J)\le\frac{\lambda}{2\sigma}+\frac1M
+ \qquad\text{for every closed interval $J$ of length $\lambda$.}
+\end{equation}
+The first term is the bound for the continuous uniform law on
+$[-\sigma,\sigma]$. The second is an \emph{atomic term}; it does not
+decrease with $\lambda$, and every finite-law estimate in this paper carries
+a term of this kind.
+
+\begin{definition}[Perturbation models]\label{def:model:perturbation}
+Let $\mathcal D$ be a finite rational law on $\Q$. The following models
+specify $\gamma$ in \eqref{eq:model:sampled}.
+\begin{enumerate}[label=(\roman*)]
+\item \emph{Ambient}: $\gamma_1,\ldots,\gamma_n$ are independent with law
+$\mathcal D$.
+\item \emph{Core-only}: for a supplied core $C\subseteq[n]$, the coefficients
+$\gamma_i$, $i\in C$, are independent with law $\mathcal D$, and
+$\gamma_i=0$ for $i\notin C$.
+\item \emph{Aligned}: for a supplied rational matrix $T\in\Q^{k\times n}$,
+$\gamma=T^{\mathsf T}\xi$, where $\xi_1,\ldots,\xi_k$ are independent with
+law $\mathcal D$.
+\end{enumerate}
+\end{definition}
+
+The models coincide in special cases: core-only noise with $C=[n]$, and
+aligned noise with $T=I$, are ambient noise. In general they differ, and a
+guarantee proved for one model does not transfer automatically to another.
+Aligned coefficients are dependent in the original coordinates and lie in
+the row space of $T$. Core-only noise leaves every residual cost unchanged,
+so ties and flat directions among residual variables can persist on every
+draw.
+
+Two marginal laws are used. The first is the grid law $U_{\sigma,M}$. The
+second is a \emph{Gaussian-like} finite rational law $\mathcal G_{b,\sigma}$,
+whose Kolmogorov distance to the normal law $N(0,\sigma^2)$ is at most
+$2^{-b}$ and which is produced by a bounded rejection sampler from
+polynomially many fair bits (\cref{sec:count:laws}). We call $\sigma$ the
+\emph{noise scale}: it is the half-width of the grid law and the standard
+deviation of the normal proxy. The support of $\mathcal G_{b,\sigma}$ is
+bounded, but its radius, of order $b\sigma$, is larger than $\sigma$. The
+exact normal law is used only as a proof device; it is not an input model,
+because its samples are not finite rational data.
+
+\paragraph{Base-chosen laws.}
+In every theorem except the strong-noise theorem, the law is computed
+deterministically from the base instance before sampling: the integer $M$,
+or the accuracy $b$ of the Gaussian-like law, is a function of the base data.
+As stated, the law therefore depends on the instance. The strong-noise theorem
+(\cref{thm:int:strong-field}) holds for every grid size $M$, and its work
+bound depends on $M$ explicitly. The theorems assert their bounds for this
+constructed law. They do not assert the same bounds for every finite law
+with noise scale $\sigma$, for a coarse grid chosen independently of the
+instance, or for an arbitrary approximation of a Gaussian. The reason is the
+atomic term in \eqref{eq:model:interval}: the law must be fine enough that
+atoms on exceptional sets have small total probability, and ``fine enough''
+is measured against base-only quantities, such as the cost of an exact
+fallback or the spacing of a value lattice. In the results with polynomial
+sampling precision the logarithms of these quantities are bounded by
+polynomials in the input length alone, so the law can also be chosen from
+the input length rather than from the individual instance
+(\cref{prop:model:uniform}).
+
+\paragraph{Sampling precision.}
+Write $b=\log_2M$ for the number of random bits per perturbed coordinate of a
+grid law. A theorem has \emph{polynomial sampling precision} if
+$b\le\poly(I)$, so that the sampled instance has length
+$I+n\cdot\poly(I)$. A few results for nonlinear flows and totally
+unimodular systems need \emph{parameter-dependent sampling precision}
+$b\le f(k)\poly(I)$; this enlarges the sampled instance, and the stated work
+bounds account for it.
+
+\begin{proposition}[Resolution depending only on the input length]\label{prop:model:uniform}
+Fix one of the theorems of \cref{sec:qp,sec:sp,sec:con,sec:rec,sec:int}
+with polynomial sampling precision, together with its fixed format
+constants, such as the degree and the dependency depth of graph constraints,
+and its oracle implementation. There are effective nondecreasing
+polynomials $P$, $A$, and $D$, depending only on these choices, such that the
+theorem remains valid, with the same output contract and the same
+structural and numerical factors in its expected work bound up to a change
+of its polynomial factor, when its law is replaced as follows for every
+valid base instance of length at most $I$:
+\begin{enumerate}[label=(\alph*)]
+\item a grid law by $U_{\sigma,M(I)}$ with $M(I)=2^{P(I)}$; in the lattice
+theorem (\cref{thm:int:lowrank}) the level cap is reset to $\log_2M(I)$;
+\item a Gaussian-like law by $\mathcal G_{b(I),\sigma}$ with
+$b(I)=A(I)+D(I)t(I)$ and $t(I)=\lceil4\log_2(A(I)+D(I)+21)\rceil$, the
+auxiliary box and the level cap being recomputed for this support.
+\end{enumerate}
+For the core-only flow and totally unimodular theorems with arbitrary core
+faces (\cref{thm:int:flow-boundary,thm:int:tu}) the same holds for instances
+whose core size is at most a supplied $K$, with $M(I,K)=2^{\lceil
+F(K)P(I)\rceil}$ for an effective nondecreasing $F$, and with $F(K)$ in the
+sampling, output, and work bounds. The strong-noise theorem holds for every
+$M$; its probabilities $q_i$ must be computed for the chosen $M$, and its
+sufficient regime is preserved by every larger power of two.
+\end{proposition}
+
+\begin{proof}
+(a) In the proofs with grid laws the law enters only through interval
+masses at most $\lambda/(2\sigma)+1/M$ (\cref{eq:model:interval}),
+replacement errors proportional to $1/M$ (\cref{lem:count:transfer}), and
+lower bounds on $M$ such as $M\ge2^J$ or $M\ge C/\rho$. All of these remain
+true when $M$ increases, and the support $[-\sigma,\sigma]$ does not change.
+Each theorem chooses the least power of two above finitely many base-only
+quantities. Their logarithms are bounded by effective polynomials in the
+base length: the fallback factor and the tail constants have logarithms
+polynomial in $I$ by \cref{thm:count:fallback,lem:count:finite-tails},
+because the numbers of variables and atoms and the degrees are bounded by
+fixed polynomials in $I$; and the stopping depth is defined by rational
+inequalities whose data have polynomial encoding length. The last point uses
+the domains of these theorems, which are boxes, rational polytopes, and
+graph constraints of fixed depth, on which widths and derivative bounds
+have polynomial encoding length; it would fail for general compact
+semialgebraic domains, such as $1\le x_0\le2$, $x_i=x_{i-1}^2$, whose last
+width is $2^{2^N}-1$. A polynomial $P$ dominating all these logarithms gives
+$M(I)$ at least the resolution chosen for every instance of length at most
+$I$. The fallback keeps its base factor, and its polynomial factor in the
+sampled bit length is now polynomial in $I$. In the lattice theorem the cap
+$J=\log_2M$ enters through a curvature error of order $M^{-2}$ compared with
+the lattice spacing $1/[D_0(M-1)]$, and this comparison improves as $M$
+grows.
+
+(b) A larger accuracy enlarges the support radius $(b+20)\sigma$, so the
+auxiliary box and the cap must be recomputed together. In the support and
+precision loop of \cref{app:qp:main}, a trial support radius larger by a
+factor $2^t$ raises the cap by at most $2t$, so the required accuracy is at
+most $A(I)+D(I)t$ for effective polynomials $A,D\ge1$. With
+$H=A(I)+D(I)+21$, the choice of $t(I)$ gives $t(I)\le4\log_2H+1$, so
+$b(I)+20\le H+4H\log_2H\le H+4H^2\le H^4\le2^{t(I)}$: the support fits the
+trial radius, and $b(I)$ is at least the required accuracy.
+
+For the flow and totally unimodular theorems with arbitrary faces, the cap
+and the resolution satisfy $J,\log_2M\le F_d(k)P_d(I)$ with an effective
+nondecreasing $F_d$, which gives the stated choice for $k\le K$. For the
+strong-noise theorem, the grids of sizes $M$ and $2M$ are not nested, so $q_i$
+is not monotone in $M$ and must be recomputed; under its sufficient regime,
+$a_iq_i\le a_i(R_i/(2\sigma)+1/M)\le1/(8\Delta_+)$ for every
+$M\ge16\Delta_+\max_ia_i$.
+\end{proof}
+
+The resolution $M(I)$ standardizes the scalar law, which is still rescaled
+by the supplied $\sigma$ and applied to the coordinates that the theorem
+perturbs; it is not one probability measure for all instances. Taking
+$K=I$ in the flow case gives a law depending only on $I$, but its sampling
+cost need not stay within $f_d(k)\poly_d(I)$ for the actual core size $k$.
+
+\paragraph{Small and strong noise.}
+In most results $\sigma$ is a free parameter, and the bounds degrade as
+$\sigma$ decreases; these are statements about small perturbations of an
+arbitrary instance. The random-component results of \cref{sec:int} instead
+require noise that dominates the variation of every coordinate derivative.
+There $\sigma$ is large compared with the curvature of the instance, and the
+results describe instances whose linear part is strongly random rather than
+slightly perturbed.
+
+\subsection{Exact smoothed algorithms}\label{sec:model:algorithms}
+
+Computation is measured in bit operations of a deterministic Turing
+machine. Oracle calls, where a theorem allows them, are charged at their
+stated cost.
+
+\begin{definition}[Exact smoothed algorithm]\label{def:model:algorithm}
+Fix a class of base instances, an output format, a perturbation model, and a
+rule assigning to each base instance $\Pi$ a finite rational law
+$\mathcal D_\Pi$ for the perturbation. An \emph{exact smoothed algorithm with
+expected work $W$} is a deterministic algorithm $\mathcal A$ with the
+following properties.
+\begin{enumerate}[label=(\roman*)]
+\item\label{it:model:every} For every base instance $\Pi$ and every $\gamma$
+in the support of $\mathcal D_\Pi$, $\mathcal A(\Pi,\gamma)$ halts and
+returns an exact global optimizer and the optimal value of $F_\gamma$ on $X$,
+in the stated format.
+\item\label{it:model:once} The perturbation is drawn once. The algorithm
+does not resample, discard, or condition on any event of the draw.
+\item\label{it:model:expect} The bit work of computing $\mathcal D_\Pi$,
+sampling, and running $\mathcal A(\Pi,\gamma)$ has expectation at most
+$W(\Pi)$ over $\gamma\sim\mathcal D_\Pi$.
+\end{enumerate}
+\end{definition}
+
+The randomness defines the instance to be solved; the algorithm itself is
+deterministic given the draw. Property~\ref{it:model:every} includes draws
+with tied or positive-dimensional optimal sets and draws on which a fast
+route fails. Property~\ref{it:model:once} excludes the shortcut of redrawing
+until a draw is generic, which would change the law of the solved instance
+and with it the meaning of the expectation. By Markov's inequality, an
+expected bound $W$ implies work at most $tW$ with probability at least
+$1-1/t$; it is not a worst-case bound, and on rare draws the work can be
+exponential in $I$.
+
+\paragraph{How ties are handled.}
+A finite law gives ties and other degenerate draws positive probability
+(\cref{sec:model:atom}), so an exact smoothed algorithm needs a way to
+solve them. Most results use a fast route that refines a search and closes
+it with an exact certificate, together with an exact \emph{fallback}: a
+deterministic algorithm that solves every sampled instance with bit work at
+most $B\cdot\poly(I+b)$, where the factor $B$ depends only on the base
+instance and $\log B\le\poly(I)$. The fallback runs on the same draw when
+the fast route has not finished by a stopping depth computed from base data.
+If this happens with probability at most $1/B$, the fallback contributes
+only a polynomial term to the expected work
+(\cref{lem:count:rare-fallback}). The quantities are chosen in a fixed order:
+first $B$, then the thresholds that define exceptional events, then the
+stopping depth, and finally the law. Two results need no rare fallback. The
+lattice theorem for low-rank integer problems (\cref{thm:int:lowrank}) stops
+exactly once the certified gap falls below the spacing of the lattice of
+attainable objective values. The strong-noise component theorem
+(\cref{thm:int:strong-field}) solves every random component exactly on every
+draw.
+
+\paragraph{Expectations of adaptive searches.}
+The fast routes refine cells adaptively, and which cells are visited
+depends on the draw. Expected counts are therefore never computed as if the
+retained cells were independent of the noise. Every visited cell is charged
+to a node of a deterministic grid fixed before sampling, and the expected
+number of nodes that satisfy a necessary near-optimality condition is
+bounded node by node (\cref{thm:count:cells}).
+
+\subsection{Output contracts}\label{sec:model:outputs}
+
+Exact output for $F_\gamma$ takes one of the following forms. Each theorem
+states which form it returns on ordinary draws and on fallback draws.
+
+\begin{definition}[Output formats]\label{def:model:outputs}
+\leavevmode
+\begin{enumerate}[label=(\alph*)]
+\item\label{it:model:rational} \emph{Rational output}: a feasible
+$x^*\in\Q^n$ with $F_\gamma(x^*)=\min_XF_\gamma$, and this value.
+\item\label{it:model:implicit} \emph{Implicit patch output}: a set $S$ of
+coordinates with fixed rational values $z_S$ (native integer labels and
+original continuous bounds), a rational box $Q$ in the remaining
+coordinates such that $(z_S,y)\in X$ for every $y\in Q$, and a rational
+$g_0>0$ with a verified proof that
+$\nabla^2_{yy}F_\gamma(z_S,y)\succeq g_0I$ on $Q$, together with the claim
+that the unique minimizer $\hat y$ of $F_\gamma(z_S,\cdot)$ on $Q$ gives a
+global optimizer $\hat x=(z_S,\hat y)$ of $F_\gamma$ on $X$. Products of
+simplices and order polytopes use a rational relative polytope in place of
+$Q$.
+\item\label{it:model:charted} \emph{Charted output}: for feasible sets that
+are graphs of maps from free to dependent coordinates, an implicit patch
+output for the reduced objective in the free coordinates, together with a
+certified chart that determines every dependent coordinate from the free
+ones. The chart is either an explicit polynomial map, or a list of scalar
+equations, each with a rational bracket on which a certified positive
+derivative bound guarantees a unique root. The optimizer is the lift of the
+unique reduced patch minimizer through the chart.
+\item\label{it:model:algebraic} \emph{Algebraic output}: a real algebraic
+number $\theta$, given by a nonzero integer polynomial and an isolating
+interval with rational endpoints, and rational polynomial maps that give
+every continuous coordinate of one optimizer and the optimal value as
+functions of $\theta$, with integer coordinates listed explicitly.
+\item\label{it:model:component} \emph{Component output}: a partition of the
+unfixed coordinates into components, an algebraic output for each
+component, rational values for the remaining coordinates, and the optimal
+value written as a rational constant plus the sum of the component values.
+\end{enumerate}
+\end{definition}
+
+Several distinctions are essential.
+
+\emph{Descriptor versus proof.} Implicit patch and charted outputs are
+compact descriptors of polynomial length. A descriptor denotes a unique
+point because the restricted objective is strongly convex on the patch;
+that point is a global optimizer because of a separate \emph{global proof
+record}, which contains the pruning trace and the certificate checks. The
+descriptor alone does not prove global optimality. The proof record can be
+large on an individual draw; its expected size obeys the same bound as the
+expected work.
+
+\emph{Evaluation.} Given a descriptor and an integer $q\ge0$, a
+\emph{$q$-bit evaluation} returns a rational point within distance $2^{-q}$
+of the optimizer and a rational interval of width at most $2^{-q}$ that
+contains the optimal value. For patch outputs this costs $\poly_d(I+q)$ bit
+operations: convex optimization in the bit model gives value accuracy, and
+the verified modulus $g_0$ converts value accuracy into distance. On box,
+polytope, and explicit-graph domains the evaluation also returns a feasible
+rational point with a certified objective gap. An implicit graph need not
+contain any rational feasible point: the equation $y^2=2$ with $y\in[1,2]$
+is an example. For charted outputs on implicit graphs, an exactly feasible
+point consists of rational free coordinates together with the algebraic
+dependent coordinates that the chart assigns to them; rational
+approximations of all coordinates need not be feasible. Evaluation does not
+decide exact comparisons of the optimal value with a rational threshold,
+and it does not identify the exact active set.
+
+\emph{Algebraic sizes.} An algebraic output fixes one optimizer: all its
+coordinates are functions of one root $\theta$, so coordinates of different
+optimizers cannot be mixed. Its defining polynomial need not be minimal.
+Algebraic outputs from fallback draws can have size exponential in $I$, with
+polynomial expected contribution. A component output does not include a
+defining polynomial of the total value, whose degree can grow exponentially
+with the number of components, and it does not provide exact sign or
+equality tests for sums of unrelated algebraic numbers. Rational
+enclosures of the total value are obtained by refining each component.
+
+\emph{Selection.} Unless a theorem says so, the returned optimizer is the
+one the algorithm happens to certify. No canonical selection rule, such as
+the lexicographically least or minimum-norm optimizer, is promised.
+
+\subsection{Fixed-parameter and fixed-width bounds}\label{sec:model:parameters}
+
+A bound is \emph{fixed-parameter} in a parameter $\kappa$ if it has the form
+$f(\kappa)\cdot\poly(I)$, where the exponent of the polynomial does not
+depend on $\kappa$. The low-negative-inertia, core, and integer-dimension
+results are of this form, with numerical ratios such as
+$\nu\diam(X)/\sigma$ or $L/\sigma$ included in $\kappa$. A bound is
+\emph{fixed-width polynomial} if it is polynomial for each fixed value of a
+parameter $p$ but its degree grows with $p$, for instance
+$[nLw_{\max}/\sigma]^{O(p)}\poly(I)$. The sparse results are of this kind,
+and they are not fixed-parameter bounds in the width. The limitation is
+genuine for the method used: \cref{thm:lim:width} exhibits instances on
+which its retained state count is $(\Omega(n/p))^{p/2}$ on every draw.
+
+A bound that is polynomial in a numerical ratio is polynomial in its
+magnitude, which can be exponential in its encoding length. The phrase
+\emph{expected polynomial time} is used only when the relevant ratios are
+polynomially bounded in $I$.
+
+\subsection{The original objective}\label{sec:model:original}
+
+The theorems optimize the sampled objective $F_\gamma$. An exact optimizer
+of $F_\gamma$ need not optimize $F_0$, and nothing is claimed about its
+distance from the optimal set of $F_0$. The following elementary bound states
+what a sampled solution certifies for the original problem. For compact $X$
+and $\gamma\in\R^n$, let
+\[
+ \omega_X(\gamma)=\max_{x\in X}\gamma^{\mathsf T}x-\min_{x\in X}\gamma^{\mathsf T}x
+\]
+be the width of $X$ in the direction $\gamma$.
+
+\begin{proposition}[Certified original-objective regret]\label{prop:model:regret}
+Let $X$ be compact, let $F_0$ be continuous, and let $y\in X$ and $a\in\R$
+satisfy
+\[
+ a\le\min_XF_\gamma\le F_\gamma(y)\le a+\delta.
+\]
+Then the interval with endpoints
+\[
+ a-\max_{x\in X}\gamma^{\mathsf T}x\qquad\text{and}\qquad F_0(y)
+\]
+contains $\min_XF_0$, and its length is at most $\delta+\omega_X(\gamma)$. In
+particular $F_0(y)-\min_XF_0\le\delta+\omega_X(\gamma)$.
+\end{proposition}
+
+\begin{proof}
+For every $x\in X$, $F_0(x)=F_\gamma(x)-\gamma^{\mathsf T}x\ge
+a-\max_X\gamma^{\mathsf T}x$, which gives the lower endpoint. The upper
+endpoint is the value of the feasible point $y$. Finally,
+\[
+ F_0(y)=F_\gamma(y)-\gamma^{\mathsf T}y\le a+\delta-\min_X\gamma^{\mathsf T}x
+ =\Bigl(a-\max_X\gamma^{\mathsf T}x\Bigr)+\delta+\omega_X(\gamma).\qedhere
+\]
+\end{proof}
+
+For an exact sampled optimizer $\hat x$ one may take $y=\hat x$, $\delta=0$,
+and $a=\min_XF_\gamma$. The endpoints are then real numbers in the format of
+the output; for implicit, charted, algebraic, and component outputs they
+are generally irrational. Rational certified endpoints come from a
+$q$-bit evaluation: a feasible point $y$ with a rational upper value, and a
+rational lower bound $a$, whose distance from each other is the evaluation
+error, which is added to $\delta$. The point $y$ must be exactly feasible.
+On implicit graphs it consists of rational free coordinates and their exact
+algebraic lift, and $F_0(y)$ is replaced by the upper end of a certified
+rational enclosure; a coordinatewise rational approximation of the lift may
+be infeasible and cannot be used.
+
+If every perturbed coefficient satisfies $\abs{\gamma_i}\le\bar\sigma$, then
+$\omega_X(\gamma)\le\bar\sigma\sum_iw_i$ on a mixed box, where the sum is
+over the perturbed coordinates; under core-only noise on a unit core box this
+is $k\bar\sigma$. For aligned noise $\omega_X(\gamma)\le\bar\sigma
+\sum_{i=1}^k\omega_X(T_{i\cdot})$, where $T_{i\cdot}$ is the $i$th row of
+$T$. Here $\bar\sigma$ is the largest magnitude in the support of the
+marginal law: $\bar\sigma=\sigma$ for grid laws, and $\bar\sigma$ is the
+support radius, of order $b\sigma$, for Gaussian-like laws. On a box,
+$\max_X\gamma^{\mathsf T}x$ is an endpoint calculation; on a polytope it is a
+linear program. On a mixed polytope one may maximize over its continuous
+relaxation, which keeps the lower endpoint valid and replaces $\omega_X$ by
+the width of the relaxation.
+
+For the small-noise results, choose the noise scale so that the support
+width satisfies $\bar\sigma\sum_iw_i\le\varepsilon/2$, and evaluate to
+accuracy $\varepsilon/2$. This gives, on every draw, an exactly feasible
+point and a certificate that its original objective value is within
+$\varepsilon$ of $\min_XF_0$. For grid laws one takes
+$\sigma=\varepsilon/(2\sum_iw_i)$. For Gaussian-like laws the support radius
+$\bar\sigma$ is of order $b\sigma$, and the accuracy $b$ is computed from the
+base data, including the encoding of $\sigma$, with $b$ bounded by a
+polynomial in the base length. Taking $\sigma=2^{-t}$ for the least integer
+$t$ with $\bar\sigma\sum_iw_i\le\varepsilon/2$ therefore gives $t$ polynomial
+in the length $I_0$ of the other base data and in
+$\log(\sum_iw_i/\varepsilon)$, and
+$1/\sigma\le(\sum_iw_i/\varepsilon)\poly(I_0+\log(\sum_iw_i/\varepsilon))$.
+Substituting $\sigma$ into a theorem's bound multiplies its numerical ratios
+by a factor of order $\sum_iw_i/\varepsilon$; for \cref{thm:sp:main} with
+the grid law, for example, the bound becomes
+$C_0^p[4+(1+n/2)Lw_{\max}\sum_iw_i/\varepsilon]^p\poly_d(I)$. The work is
+therefore polynomial in $1/\varepsilon$ when the other numerical parameters
+are fixed, and polynomial in $I$ and $1/\varepsilon$ only when curvature
+bounds, widths, and the other numerical factors are polynomially bounded;
+binary-encoded parameters can be exponentially large. We do not claim that
+this improves on dedicated approximation algorithms. The strong-noise results give no such
+consequence, because their noise cannot be made small. None of the results
+yields exact optimization of $F_0$: their bounds grow as $\sigma$ decreases.
+This is consistent with the worst-case hardness of the unperturbed problems
+discussed in \cref{sec:intro,sec:lim}.
+
+\subsection{Why a finite law forces an exact treatment of ties}\label{sec:model:atom}
+
+Under a continuous noise law, ties among optimizers and other degenerate
+configurations typically have probability zero. Under a finite law they can
+have positive probability that no refinement of the search removes. The
+following example is the smallest instance of this phenomenon.
+
+\begin{example}[A tie with probability $1/M$]\label{ex:model:tie}
+Let $X=[0,1]^2$, $F_0(x)=2x_1x_2-x_1-x_2$, and let $\gamma_1,\gamma_2$ be
+independent with law $U_{\sigma,M}$, where $0<\sigma\le1/4$. The event
+$\gamma_1=\gamma_2$ has probability exactly $M\cdot M^{-2}=1/M$.
+
+On this event, put $s=1-\gamma_1\in[3/4,5/4]$. The minimum value of
+$F_\gamma$ is $-s$, and
+\[
+ F_\gamma(x)+s=s(1-x_1-x_2)+2x_1x_2 .
+\]
+If $x_1+x_2\le1$, both terms are nonnegative, and they vanish together only
+at $(1,0)$ and $(0,1)$. If $x_1+x_2>1$, then $x_1x_2>0$, and
+$(1-x_1)(1-x_2)\ge0$ gives $x_1+x_2-1\le x_1x_2$, so
+$F_\gamma(x)+s\ge(2-s)x_1x_2>0$. Hence $F_\gamma$ has exactly the two
+global minimizers $(1,0)$ and $(0,1)$ on every draw of this event.
+
+Consequently no certificate that exhibits a strongly convex patch containing
+every global optimizer can succeed on this event, at any refinement depth:
+a strictly convex function has at most one minimizer on a convex set. The
+point-growth modulus is zero, so any tail bound of the form
+$\Pr\{g_*<\varepsilon\}\le c\varepsilon+\beta$ for the grid law must have
+$\beta\ge1/M$ for all $\varepsilon>0$. An algorithm that is correct on every
+draw must solve this event by other means. The closure-based results do so
+with their same-draw fallback, whose expected contribution on this event is
+at most $M^{-1}$ times its cost; choosing $M$ large compared with the
+base-only factor $B$ keeps this contribution polynomial. Under any
+absolutely continuous law for $(\gamma_1,\gamma_2)$ the tie has probability
+zero, which is why continuous-noise analyses can ignore it.
+\end{example}
+
+The example shows why the probability estimates of the later sections have
+the form ``continuous bound plus atomic term'', and why the grid size $M$ is
+chosen only after the fallback factor and the stopping depth are known.
+\Cref{ex:count:atom} shows the companion effect on counts: a fixed atom can
+keep the number of retained cells growing with the refinement level.

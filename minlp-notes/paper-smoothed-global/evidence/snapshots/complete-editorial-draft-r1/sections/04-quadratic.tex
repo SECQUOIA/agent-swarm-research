@@ -1,0 +1,862 @@
+\section{Few negative directions: quadratic and mixed-integer quadratic problems}\label{sec:qp}
+
+This section treats the first structural route, in which the nonconvexity of
+the objective is confined to a small number $k$ of directions. For a
+quadratic objective on a bounded polytope or mixed polytope, $k$ is the
+negative inertia of the Hessian. A rational factorization
+$A=P-\alpha T^{\mathsf T} T$ with $P\succeq0$ moves the nonconvex part to an
+auxiliary space $\R^k$, where the search of Section~\ref{sec:count} runs. The
+remaining recourse is a convex quadratic program, a convex mixed-integer
+quadratic program, or a separable scalar problem, and it is solved exactly at
+every query.
+
+The principal result is Theorem~\ref{thm:qp:gauss}. Under a finite
+Gaussian-like law on all original linear coefficients, selected from the
+base data, it computes an exact optimizer of the sampled quadratic or
+mixed-integer quadratic program on every draw. Its expected bit work is
+$f(n_z,k,1+\nu\diam(\mathcal P)/\sigma)\,(I+1)^{C}$ with an absolute
+exponent $C$, where $n_z$ is the number of integer variables, $\nu$ the
+largest negative curvature, and $\mathcal P$ the polyhedral relaxation. The
+other results are variants that differ in the perturbation law or the
+recourse structure: noise aligned with the negative directions
+(Theorem~\ref{thm:qp:aligned}), uniform noise on all coefficients, whose
+bound contains a power of the dimension that grows with $k$
+(Theorem~\ref{thm:qp:uniform}), at most two negative directions with a bound
+linear in a numerical ratio (Theorem~\ref{thm:qp:two}), and separable mixed
+recourse with arbitrarily many integer variables
+(Theorems~\ref{thm:qp:sep} and~\ref{thm:qp:sep-gauss}).
+Table~\ref{tab:qp:regimes} summarizes them. Every result concerns the exact
+optimum of the sampled objective. Proofs are in Appendix~\ref{app:qp}.
+
+\subsection{Instances, exact primitives, and factorizations}\label{sec:qp:model}
+
+\begin{definition}[Quadratic instances]\label{def:qp:instance}
+A \emph{base instance} consists of a symmetric matrix $A\in\Q^{n\times n}$,
+a vector $b\in\Q^n$, a matrix $D\in\Q^{r\times n}$ and a vector $e\in\Q^r$
+such that $\mathcal P=\{x:Dx\le e\}$ is nonempty and bounded, a number
+$n_z\in\{0,\dots,n\}$ of integer variables, and a rational noise width
+$\sigma>0$. The feasible set is
+$X=\mathcal P\cap(\Z^{n_z}\times\R^{n-n_z})$, and the objective is
+$F(x)=\frac12x^{\mathsf T} Ax+b^{\mathsf T} x$. Lower-dimensional polytopes and redundant
+rows are allowed. Let $n_-(A)$ be the number of negative eigenvalues of $A$,
+counted with multiplicity, and put $\nu=\max\{0,-\lambda_{\min}(A)\}$. A
+\emph{perturbation} adds a linear term: \emph{ambient} noise gives
+$F_\gamma(x)=F(x)+\gamma^{\mathsf T} x$ with $\gamma\in\R^n$, and noise
+\emph{aligned} with a factor $T\in\Q^{k\times n}$ gives
+$F(x)+\xi^{\mathsf T} Tx$ with $\xi\in\R^k$. We write $f^*$ for the minimum of the
+sampled objective over $X$.
+\end{definition}
+
+Aligned noise perturbs the original coefficients by $T^{\mathsf T}\xi$. These
+coefficients are correlated and lie in a $k$-dimensional subspace, so aligned
+noise is not independent noise on the original coefficients. Both models are
+treated because they lead to different bounds.
+
+\begin{proposition}[Exact convex primitives]\label{prop:qp:primitives}
+\begin{enumerate}[label=(\alph*)]
+\item A convex quadratic program $\min\{\frac12x^{\mathsf T} Px+p^{\mathsf T} x:Dx\le e\}$
+ with $P\succeq0$ and rational data of bit length $L_{\rm in}$ is solved
+ exactly in $\poly(L_{\rm in})$ bit operations: infeasibility and
+ unboundedness are detected, and otherwise the optimal value and a rational
+ optimal solution are returned
+ \cite{kozlov1980-the-polynomial-solvability-of-convex}.
+\item A convex quadratic program with $n_z$ integer variables and the other
+ data as in (a) is solved exactly, with the same outputs, in
+ $f(n_z)L_{\rm in}^{c_0}$ bit operations for a function $f$ and an absolute
+ constant $c_0$ \cite[Theorem~3]{pia2025-convex-quadratic-sets-and-the}.
+\item Rational linear programs are solved exactly in polynomial time; in
+ particular a vertex of a nonempty rational polytope can be found
+ \cite{grotschel1988-geometric-algorithms-and-combinatorial-optimization}.
+\end{enumerate}
+\end{proposition}
+
+When the algorithm of (b) returns an optimal solution, we fix its integer
+part, which lies in the box of linear-programming bounds and therefore has
+polynomial bit length, and re-solve the continuous slice by (a). This
+\emph{polishing} returns an optimal solution of polynomial bit length, so
+that the possibly large factor $f(n_z)$ never enters the size of later
+instances. The factor $f(n_z)$ is absent when $n_z=0$.
+
+\begin{definition}[Convexifying factorization]\label{def:qp:factor}
+A \emph{convexifying factorization} of $A$ is a rational number $\alpha>0$
+and a rational matrix $T\in\Q^{k\times n}$ with $P=A+\alpha T^{\mathsf T} T\succeq0$.
+It has \emph{frame constant} $c_{\rm fr}\in(0,1]$ if
+$c_{\rm fr}I_k\preceq TT^{\mathsf T}\preceq I_k$. The number $k$ of rows satisfies
+$k\ge n_-(A)$, with equality for the factorization of
+Lemma~\ref{lem:qp:normalize}; in theorems with a supplied factorization, $k$
+denotes its number of rows.
+\end{definition}
+
+Positive semidefiniteness of $P$ and a supplied frame constant are verified
+exactly by symmetric elimination, so a supplied factorization is a checked
+certificate rather than a promise. No relation between $\ker P$ and $\ker T$
+is required.
+
+\begin{lemma}[Intrinsic rational normalization]\label{lem:qp:normalize}
+There is a deterministic algorithm, polynomial in the bit length of $A$, that
+either certifies $A\succeq0$, or computes rational $\beta$ with
+$\nu\le\beta<2\nu$ and a rational matrix $T\in\Q^{k\times n}$, with
+$k=n_-(A)$, such that
+\[
+ A+2\beta\,T^{\mathsf T} T\succeq0,
+ \qquad
+ \tfrac{63}{64}I_k\preceq TT^{\mathsf T}\preceq I_k,
+\]
+and the rows of $T$ lie in the range of $A$. Thus $\alpha=2\beta$ gives a
+convexifying factorization with $2\nu\le\alpha<4\nu$ and frame constant
+$63/64$. It uses no real eigenvectors, no bound on $\nu$, and no lower bound
+on nonzero eigenvalues as input.
+\end{lemma}
+
+The construction combines exact rational Jacobi rotations, which give an
+orthogonal near-diagonalization \cite{pia2026-rational-jacobi-rotations-and-the},
+with an exact projection onto the range of $A$. The projection is essential.
+For $A=\diag(-1,0)$ and a unit vector $t=(\cos\theta,\sin\theta)$ with
+$\sin\theta\ne0$, the determinant of $A+2tt^{\mathsf T}$ is $-2\sin^2\theta<0$, so an
+approximate negative eigenvector with a component in $\ker A$ does not give a
+convexifier, however small that component is.
+
+\subsection{The auxiliary value function}\label{sec:qp:aux}
+
+Let $X\subset\R^n$ be nonempty and compact, let $F:X\to\R$ be continuous,
+let $T\in\R^{k\times n}$, and let $\Lambda=\diag(\lambda_1,\dots,\lambda_k)$
+be positive definite; in all results except Theorem~\ref{thm:qp:sep-gauss},
+$\Lambda=\alpha I$. For a \emph{residual} $\zeta\in\R^n$ and a \emph{factor
+coefficient} $\xi\in\R^k$ define
+\[
+ W_\zeta(a)=\min_{x\in X}\Bigl[F(x)+\zeta^{\mathsf T} x+\tfrac12(a-Tx)^{\mathsf T}\Lambda(a-Tx)\Bigr],
+ \qquad
+ V(a)=W_\zeta(a)+\xi^{\mathsf T} a,
+\]
+and put $\gamma=T^{\mathsf T}\xi+\zeta$. A point attaining the minimum defining
+$W_\zeta(a)$ is an \emph{attaining witness} at $a$. For a quadratic $F$ with a
+convexifying factorization and $\Lambda=\alpha I$, the inner problem has the
+convex objective $\frac12x^{\mathsf T} Px+(b+\zeta-\alpha T^{\mathsf T} a)^{\mathsf T} x$ up to a
+constant, so $W_\zeta(a)$ is one convex QP or convex MIQP.
+
+\begin{lemma}[Auxiliary value function]\label{lem:qp:aux}
+In this setting:
+\begin{enumerate}[label=(\alph*)]
+\item \emph{(Square completion.)} For every $a$,
+ \[
+  V(a)=\min_{x\in X}\Bigl[F_\gamma(x)+\tfrac12(a-Tx+\Lambda^{-1}\xi)^{\mathsf T}\Lambda(a-Tx+\Lambda^{-1}\xi)\Bigr]
+  -\tfrac12\xi^{\mathsf T}\Lambda^{-1}\xi .
+ \]
+ Consequently $V^*=\inf_{\R^k}V=f^*-\frac12\xi^{\mathsf T}\Lambda^{-1}\xi$, attained at
+ $Tx^*-\Lambda^{-1}\xi$ for every minimizer $x^*$ of $F_\gamma$, and every
+ attaining witness $x_a$ at any $a$ satisfies $F_\gamma(x_a)-f^*\le V(a)-V^*$.
+\item \emph{(Upper curvature.)} $W_\zeta(a)-\frac12a^{\mathsf T}\Lambda a$ is concave,
+ so $W_\zeta$ and $V$ have upper coordinate curvature at most
+ $(\lambda_1,\dots,\lambda_k)$.
+\item \emph{(Every attaining witness gives a small active vector.)} For
+ every $a$ and every attaining witness $x_a$, the vector
+ $g=\Lambda(a-Tx_a)+\xi$ satisfies
+ \[
+  V(z)\le V(a)+g^{\mathsf T}(z-a)+\tfrac12(z-a)^{\mathsf T}\Lambda(z-a)\quad(z\in\R^k),
+  \qquad
+  g^{\mathsf T}\Lambda^{-1}g\le2\bigl(V(a)-V^*\bigr).
+ \]
+\item \emph{(A fixed box.)} If $\ell_i\le(Tx)_i\le u_i$ for all $x\in X$ and
+ $|\xi_i|\le s_i$, then
+ $\mathcal A=\prod_i[\ell_i-s_i/\lambda_i,\,u_i+s_i/\lambda_i]$ contains a
+ global minimizer of $V$, and $\min_{\mathcal A}V=V^*$.
+\end{enumerate}
+\end{lemma}
+
+Part (c) is the inequality that replaces differentiability of $W_\zeta$
+throughout this section. It holds for \emph{every} attaining witness,
+including witnesses at integer ties, on flat optimal faces, and at points
+where $W_\zeta$ is not differentiable. No derivative of $W_\zeta$ and no
+selection of a favorable subgradient is needed. For ambient noise and a
+factor of full row rank, the decomposition is
+\[
+ \Psi=(TT^{\mathsf T})^{-1}T,\qquad \xi=\Psi\gamma,\qquad
+ \zeta=\Pi_T\gamma,\qquad \Pi_T=I-T^{\mathsf T}\Psi,
+\]
+so that $\gamma=T^{\mathsf T}\xi+\zeta$ and $T\zeta=0$. The coordinates of $\xi$ are
+in general dependent, and $\xi$ and $\zeta$ are dependent under uniform
+noise; Section~\ref{sec:qp:ambient} shows why this matters.
+
+\subsection{The inverse-growth route for at most two negative directions}\label{sec:qp:growth}
+
+When the sampled problem has positive point growth, the auxiliary problem
+inherits growth, and a search without closure terminates exactly by rational
+reconstruction. This deterministic result is combined with the growth tail.
+
+\begin{theorem}[Growth-conditioned exact algorithm]\label{thm:qp:conditioned}
+There is a deterministic algorithm for continuous instances ($n_z=0$) with
+$k=n_-(A)\ge1$ and rational data of bit length $L_{\rm in}$ with the
+following properties.
+\begin{enumerate}[label=(\alph*)]
+\item Every output is an exact rational global minimizer together with the
+ exact optimal value; this holds on every instance.
+\item If the minimizer $x^*$ is unique and $F(x)-F(x^*)\ge g\norm{x-x^*}^2$ on
+ $X$ for some $g>0$, the algorithm halts. With $\kappa=2+4\nu/g$, it
+ processes at most $4^k(2\sqrt{k\kappa}+2)^k$ cells per refinement level,
+ stops after at most $J_g\le\poly(L_{\rm in})+\log_2(1+\kappa)$ levels, and
+ uses at most $c_k(1+\sqrt\kappa)^k(J_g+1)\poly(L_{\rm in}+J_g)$ bit
+ operations, where $c_k$ depends only on $k$.
+\item For $k\le2$ and $Z=\max\{1,\nu/g\}$ the bound in (b) is at most
+ $\poly(L_{\rm in})\,Z^{k/2}(1+\log Z)^{d_0}$, where $d_0$ and the polynomial
+ are absolute.
+\end{enumerate}
+The algorithm needs neither $g$ nor $\nu$.
+\end{theorem}
+
+The algorithm normalizes $A$ by Lemma~\ref{lem:qp:normalize}, runs the
+corrected-corner search of Definition~\ref{def:count:search} on $W_0$ over the
+box of ranges of $Tx$, and attempts two rational reconstructions at every
+level: of the optimal value from the certified interval of
+Theorem~\ref{thm:count:cells}(v), and of the common auxiliary minimizer $Tx^*$
+from the best corner. It accepts only a feasible witness whose value equals
+the reconstructed optimal value, so a premature reconstruction is harmless.
+Growth enters only the termination bound: by Lemma~\ref{lem:qp:aux} and the
+triangle inequality, $W_0(a)-f^*\ge g_W\norm{a-Tx^*}^2$ with
+$\alpha/g_W\le\kappa$, and the retained cells lie in a ball of radius
+$h_j\sqrt{k\kappa}/2$ around $Tx^*$.
+
+To use Theorem~\ref{thm:qp:conditioned} under a finite law, the growth tail
+must be transferred to that law with an atom term that does not depend on the
+threshold.
+
+\begin{lemma}[Explicit growth sections for quadratics]\label{lem:qp:growth-sections}
+Let $F$ be quadratic and let $X=\mathcal P\cap(\Z^{n_z}\times\R^{n-n_z})$ as in
+Definition~\ref{def:qp:instance}, and let $\mathsf F=Z\cdot2^r$, where $Z$ is
+the number of integer points in the box of linear-programming bounds of the
+integer variables ($Z=1$ if $n_z=0$). For every $\varepsilon>0$, every
+coordinate $i$, and all fixed values of the other coefficients, the set of
+values of $\gamma_i$ for which $g_*(\gamma)<\varepsilon$ is a union of at most
+$8(\mathsf F+1)^2$ intervals. Consequently, with $S=\sum_iw_i$ the sum of the
+coordinate widths of $X$,
+\[
+ \Prob\{g_*<\varepsilon\}\le\frac{S\varepsilon}\sigma+\frac{16n(\mathsf F+1)^2}M
+ \quad\text{and}\quad
+ \Prob\{g_*<\varepsilon\}\le\sqrt{\tfrac2\pi}\,\frac{S\varepsilon}\sigma+16n(\mathsf F+1)^22^{-b}
+\]
+for independent coordinates with law $U_{\sigma,M}$ and
+$\mathcal G_{b,\sigma}$, respectively, for every $\varepsilon>0$.
+\end{lemma}
+
+\begin{theorem}[Expected exact work for at most two negative directions]\label{thm:qp:two}
+Let the base instance be continuous ($n_z=0$) with $k=n_-(A)\le2$, let
+$S$ be the sum of the coordinate widths of $\mathcal P$, and put
+$B=\max\{2,2^r\}$ and $\mathsf D=8(2^r+1)^2$.
+\begin{enumerate}[label=(\alph*)]
+\item Let $M$ be the least power of two with $M\ge2n\mathsf DB$, so
+ $\log_2M=O(r+\log(n+1))$, and let $\gamma_1,\dots,\gamma_n$ be independent
+ with law $U_{\sigma,M}$. There is an algorithm that returns an exact
+ rational minimizer of $F_\gamma$ and the exact optimal value on every draw,
+ with expected bit work at most $(I+1)^{C}(1+\nu S/\sigma)$ for an absolute
+ constant $C$.
+\item The same holds for independent coordinates with law
+ $\mathcal G_{b,\sigma}$ when $2^b\ge2n\mathsf DB$.
+\end{enumerate}
+The algorithm needs neither $\nu$, $S$, nor the growth of the sampled
+instance. For $k=0$ one exact convex QP solve suffices.
+\end{theorem}
+
+The algorithm interleaves, bit operation by bit operation, the algorithm of
+Theorem~\ref{thm:qp:conditioned} and the exact fallback of
+Lemma~\ref{lem:qp:face} on the same draw, and stops when either finishes. The
+fallback costs at most $B\poly(L_{\rm in})$ on every draw. With
+$p=k/2$ and $Z=\max\{1,\nu/g_*\}$ ($Z=\infty$ when $g_*=0$), the work is at
+most $\poly(L_{\rm in})\min\{B,Z^p(1+\log Z)^{d_0}\}\le
+\poly(L_{\rm in})(1+p^{-1}\log B)^{d_0}\min\{B,Z^p\}$. The growth tail with a
+residual $\beta\le1/B$ gives $\Prob\{Z>t\}\le r_0/t+\beta$ for $t\ge1$, where
+$r_0=\nu S/\sigma$, and therefore
+\[
+ \E\min\{B,Z^p\}\le1+r_0\int_1^Bt^{-1/p}\,dt+\beta B
+ \le\begin{cases}2+r_0,&k=1,\\ 2+r_0\log B,&k=2.\end{cases}
+\]
+All atoms and all draws with $g_*=0$ are included in the term $\beta B$.
+
+\begin{remark}[Why the moment argument stops at two directions]\label{rem:qp:moments}
+For $k\ge3$ the same integral is
+$r_0(B^{1-2/k}-1)/(1-2/k)$, which is exponential in $r$. This is a limitation
+of the argument, not a lower bound for any algorithm. It cannot be repaired by
+a sharper tail. Let $X=[-w_0/2,w_0/2]\times Y$ and $F(x_0,y)=G(y)$, where $G$
+is a quadratic with $k$ negative eigenvalues of magnitude at most $\nu$ on a
+polytope $Y$. For a continuous uniform perturbation, moving $x_0$ to the other
+endpoint shows $g_*\le|\gamma_0|/w_0$. Hence
+$\Prob\{Z>t\}\ge\nu w_0/(\sigma t)$ for $t\ge\nu w_0/\sigma$, and
+$\E\min\{B,Z^{k/2}\}\ge(\nu w_0/\sigma)\int_{\nu w_0/\sigma}^Bt^{-2/k}\,dt$,
+which is of order $(\nu w_0/\sigma)B^{1-2/k}$ for $k\ge3$. The inverse-growth
+power $Z^{k/2}$ is therefore not integrable to a polynomial bound beyond two
+negative directions, even though the tail of
+Theorem~\ref{thm:count:growth-tail} is sharp. The closure method below does
+not integrate an inverse growth power and has no such restriction. The two
+results are not comparable: Theorem~\ref{thm:qp:two} is linear in
+$\nu S/\sigma$, while the closure bounds are of degree $k$ in
+$\nu\diam(\mathcal P)/\sigma$ and use different laws.
+\end{remark}
+
+\subsection{Exact closure of cells}\label{sec:qp:closure}
+
+\begin{lemma}[Smallest-face candidates and the quadratic fallback]\label{lem:qp:face}
+Let $G(x)=\frac12x^{\mathsf T} Hx+p^{\mathsf T} x$ be a rational quadratic, with $H$
+symmetric of any inertia, and let $\mathcal Q=\{x:Dx\le e\}$ be a nonempty
+bounded rational polytope.
+\begin{enumerate}[label=(\alph*)]
+\item There are a global minimizer $\hat x$ of $G$ on $\mathcal Q$ and a set
+ $S$ of linearly independent rows active at $\hat x$ such that
+ $K_S=\bigl(\begin{smallmatrix}H&D_S^{\mathsf T}\\D_S&0\end{smallmatrix}\bigr)$ is
+ nonsingular and $\hat x$ is the $x$-part of $K_S^{-1}(-p;e_S)$.
+\item Enumerating all row subsets, solving the nonsingular systems, keeping
+ the feasible solutions, and returning one of least value finds an exact
+ rational global minimizer in $2^r\poly(L_{\rm in})$ bit operations, on every
+ instance. Multiplier signs and definiteness tests are unnecessary.
+\item For a mixed polytope, enumerating the $Z$ integer points of the box of
+ linear-programming bounds and applying (b) to every nonempty slice is exact
+ in $B\poly(L_{\rm in})$ bit operations with $B=\max\{2,Z2^r\}$.
+\item For a box in $\R^k$, the $3^k$ faces (each coordinate at its lower
+ bound, at its upper bound, or free) suffice in (b).
+\end{enumerate}
+In particular, every rational QP and MIQP on a bounded mixed polytope has a
+rational global minimizer, and an optimal value, of polynomial bit length.
+\end{lemma}
+
+The proof chooses a global minimizer on a face of smallest dimension. Its
+tangent Hessian is positive semidefinite; a null tangent direction would keep
+the objective constant up to the boundary of the face and produce a minimizer
+on a smaller face. This argument handles singular Hessians, continua of
+minimizers, and lower-dimensional polytopes, but it is specific to quadratics.
+
+Let a base instance and a convexifying factorization be fixed, with
+$\Lambda=\alpha I$. A \emph{label} is the integer part $z$ of a point of $X$,
+and the \emph{slice} of $z$ is the set of continuous parts $x_c$ with
+$(z,x_c)\in X$. Write $W_\zeta^z$ for the function $W_\zeta$ with $X$
+replaced by the points of label $z$, so that $W_\zeta=\min_zW_\zeta^z$.
+
+\begin{lemma}[Critical pieces of the convex recourse]\label{lem:qp:pieces}
+For every label $z$ and every rational query $(a,\zeta)$, polynomial-time
+rational computations after one exact solve of the slice problem return a
+set $S$ of linearly independent rows of the slice constraints, active at an
+optimal slice point, such that the following hold.
+\begin{enumerate}[label=(\alph*)]
+\item The stationarity system of the slice with active rows $S$ is
+ nonsingular. Its solution is affine in $(a',\zeta')$:
+ $x_{z,S}(a',\zeta')=X_Sa'+Y_S\zeta'+x^0_{z,S}$, with multipliers
+ $\lambda_{z,S}(a',\zeta')$ affine as well.
+\item The \emph{region}
+ $\mathcal R_{z,S}(\zeta')=\{a':x_{z,S}(a',\zeta')\text{ feasible},\
+ \lambda_{z,S}(a',\zeta')\ge0\}$ contains $a$. It is defined by at most $r+n$
+ affine inequalities whose normals do not depend on $\zeta'$ and whose
+ offsets are affine in $\zeta'$. For every $a'\in\mathcal R_{z,S}(\zeta')$,
+ the point $x_{z,S}(a',\zeta')$ attains $W^z_{\zeta'}(a')$.
+\item The quadratic
+ $q_{z,S}(a',\zeta')=F(x_{z,S})+\zeta'^{\mathsf T} x_{z,S}+\frac\alpha2\norm{a'-Tx_{z,S}}^2$
+ equals $W^z_{\zeta'}$ on the region and satisfies the identity
+ $\nabla_{a'}q_{z,S}(a',\zeta')=\alpha\bigl(a'-Tx_{z,S}(a',\zeta')\bigr)$ for
+ all $(a',\zeta')$. Its Hessian $H_S=\alpha(I-TX_S)$ does not depend on
+ $\zeta'$, $z$, $b$, or $e$, and $\norm{H_S}\le\Theta$, where
+ $\Theta=\alpha(1+kn\tau_TU_0)$, $\tau_T=\max_{il}|T_{il}|$, and
+ $U_0=(2n)!\,C_0^{2n}$ with $C_0$ the largest absolute value of the integers
+ obtained by clearing a common denominator of the entries of $P$, $D$, and
+ $\alpha T^{\mathsf T}$.
+\end{enumerate}
+There are at most $R=Z\cdot2^r$ possible pairs $(z,S)$. The region
+description does not require full dimension, an irredundant description, or
+a relation between $\ker P$ and $\ker T$.
+\end{lemma}
+
+The gradient identity in (c) is algebraic. It holds on all of $\R^k$, even
+when the region has empty interior; it is not obtained by differentiating
+$W_\zeta$ along the region. At the query, $x_{z,S}(a,\zeta)$ is an attaining
+witness of $W^z_\zeta(a)$, so Lemma~\ref{lem:qp:aux}(c) applies to the
+vector $\nabla q_{z,S}(a,\zeta)+\xi$ whenever $z$ is a winning label. The bound
+$\Theta$ uses only the matrices of the response to $a'$. The sampled
+coefficients enter only offsets, so $\Theta$ is fixed before sampling. Its
+numerical size is large, but it enters the algorithm only through its
+logarithm.
+
+For a continuous instance a region certifies the value of $W_\zeta$ on a
+whole cell. For integer variables it certifies only the value of one label,
+and a second certificate is needed.
+
+\begin{lemma}[Best-other-label gaps]\label{lem:qp:gap}
+Let $[\ell_i,u_i]$ be the range of $(Tx)_i$ over $\mathcal P$, and put
+$\bar w=\max\{1,\sum_i(u_i-\ell_i)\}$. At a query $v$, let $z_*$ be a winning
+label and put $\Delta(v)=\min_{z\ne z_*}W^z_\zeta(v)-W_\zeta(v)$, with
+$\Delta(v)=+\infty$ if no other label is feasible.
+\begin{enumerate}[label=(\alph*)]
+\item $\Delta(v)$ and a witness of the best other label are computed by $2n_z$
+ additional exact convex MIQP solves, each with one extra inequality
+ $x_i\le z_{*,i}-1$ or $x_i\ge z_{*,i}+1$.
+\item Let $C$ be a cell with corner $v$ and side lengths at most $h$. If
+ $C\subseteq\mathcal R_{z_*,S}(\zeta)$ and $\Delta(v)\ge\theta_{\rm gap}h$
+ with $\theta_{\rm gap}=\alpha k\bar w$, then $W_\zeta=q_{z_*,S}(\cdot,\zeta)$
+ on $C$, and $x_{z_*,S}(a,\zeta)$ attains $W_\zeta(a)$ for every $a\in C$.
+\item If $V(v)-V^*\le2E$ with $E\le k\alpha h^2/8$ and $h\le1$, and the gap
+ condition of (b) fails, then two different labels have feasible points with
+ $F_\gamma\le f^*+C_{\rm gap}h$, where $C_{\rm gap}=k\alpha/4+\theta_{\rm gap}$.
+\end{enumerate}
+\end{lemma}
+
+Equality in the gap test is allowed: another label may tie inside the cell
+without changing the certified value or the feasible witness. Equal winning
+labels at all corners do not suffice (Example~\ref{ex:qp:corner-labels}).
+
+\begin{lemma}[Integer-label isolation]\label{lem:qp:isolation}
+Let $\mathcal Z$ be a nonempty finite set of integer vectors in
+$\prod_{i=1}^{n_z}[L_i,U_i]$, let $h:\mathcal Z\to\R$ be arbitrary, and let
+$\gamma\in\R^{n_z}$ have independent coordinates with interval concentrations
+$\pi_i$. Let $\Delta$ be the difference between the two smallest values of
+$h(z)+\gamma^{\mathsf T} z$ at distinct labels ($\Delta=+\infty$ if
+$|\mathcal Z|=1$). Then for every $\varepsilon\ge0$
+\[
+ \Prob\{\Delta\le\varepsilon\}\le\sum_{i=1}^{n_z}(U_i-L_i)\,\pi_i(2\varepsilon).
+\]
+\end{lemma}
+
+In the application, $h(z)$ is the optimal value of the slice of $z$ with its
+continuous noise, conditioned on that noise, so the continuous recourse may
+be arbitrary. The widths $U_i-L_i$ can be exponentially large, but they enter
+the algorithms only through logarithms. Isolation of the best discrete
+solution under random objective coefficients is classical
+\cite{beier2006-typical-properties-of-winners-and,roglin2007-smoothed-analysis-of-integer-programming};
+the lemma is the version used here, with finite laws and arbitrary label
+costs.
+
+\begin{definition}[Closure search]\label{def:qp:closure-search}
+Let a base instance, a convexifying factorization, a residual $\zeta$, a
+factor coefficient $\xi$, a box $\mathcal A$ as in Lemma~\ref{lem:qp:aux}(d),
+and a level cap $J$ be given. Run the corrected-corner search of
+Definition~\ref{def:count:search} on $V$ over $\mathcal A$ with isotropic
+meshes and curvature $\alpha$. At every corner $v$ of a processed cell,
+compute $W_\zeta(v)$ exactly with a polished attaining witness, a winning
+label $z_v$, a piece $(z_v,S_v)$ of Lemma~\ref{lem:qp:pieces}, and, if
+$n_z\ge1$, the gap $\Delta(v)$ of Lemma~\ref{lem:qp:gap}. A processed cell
+$C$ of level $j$ is \emph{closed} if for some corner $v$ all corners of $C$
+lie in $\mathcal R_{z_v,S_v}(\zeta)$ and, when $n_z\ge1$,
+$\Delta(v)\ge\theta_{\rm gap}h_j$. A closed cell is minimized exactly as the
+quadratic $q_{z_v,S_v}(\cdot,\zeta)+\xi^{\mathsf T} a$ on $C$ by
+Lemma~\ref{lem:qp:face}(d), and the minimizer's affine witness is stored. If
+no unclosed cell is retained at some level $j\le J$, return the witness of the
+incumbent. Otherwise, after level $J$, run the exact fallback of
+Lemma~\ref{lem:qp:face}(c) on the same sampled objective.
+\end{definition}
+
+By Lemmas~\ref{lem:qp:pieces} and~\ref{lem:qp:gap}(b), every closure step is
+exact, so Theorem~\ref{thm:count:cells} applies to $V$ on $\mathcal A$. When
+the search stops before the fallback, its incumbent attains $V^*$, and by
+Lemma~\ref{lem:qp:aux}(a) the stored witness is a global minimizer of the
+sampled objective. The output is therefore exact on every draw, with a
+rational minimizer and value of polynomial bit length. The search trace,
+consisting of closed cells with their pieces and discarded cells with their
+corner bounds, is a verifiable global certificate; for $n_z\ge1$ its
+verification includes rerunning the exact mixed-integer solves.
+
+The probabilistic analysis rests on one deterministic fact: a retained
+unclosed cell forces the noise close to one of finitely many hyperplanes that
+are fixed before sampling.
+
+\begin{lemma}[Unresolved cells force fixed tubes]\label{lem:qp:tube}
+There is a family of at most $K=R(r+n+1)$ affine functionals
+$\ell_\kappa(\xi,\zeta)=u_\kappa^{\mathsf T}\xi+w_\kappa^{\mathsf T}\zeta+c_\kappa$ with
+$\norm{u_\kappa}=1$, determined by the base data and the factorization, with
+the following property. Suppose that a cell of level $j$ is retained and not
+closed, that its corner $v$ satisfies $V(v)-V^*\le2E_j$, that $z_v$ wins at
+$v$, and that some corner of the cell lies outside
+$\mathcal R_{z_v,S_v}(\zeta)$. Then
+$|\ell_\kappa(\xi,\zeta)|\le\sqrt k(\alpha+\Theta)h_j$ for some $\kappa$. If
+$T$ has full row rank and $\norm T\le1$, then
+$\ell_\kappa(\Psi\gamma,\Pi_T\gamma)=L_\kappa^{\mathsf T}\gamma+c_\kappa$ with a
+fixed vector $L_\kappa$ of norm at least $1$.
+\end{lemma}
+
+If the piece matrix $H_S$ is invertible, the region boundary crossed inside
+the cell is mapped by the affine map $a\mapsto-\nabla_aq_{z,S}(a,\zeta)$ to a
+hyperplane in the space of $\xi$; by Lemma~\ref{lem:qp:aux}(c), $\xi$ lies
+close to the image of $v$. If $H_S$ is singular, the whole image of that
+map lies in a hyperplane. The normals are fixed, and only the offsets depend on
+$\zeta$, affinely. A region row with zero normal cannot be violated in a cell
+that contains the query, so no exceptional case arises. The family is a proof
+device; the algorithm never constructs it.
+
+\begin{example}[An atom that requires the fallback]\label{ex:qp:atom}
+Let $X=[0,1]^2$, $F(x,y)=xy-(x-y)/2$, $T=(1/2,-1/2)$, $\alpha=4$, and
+$\sigma=1$, so $P=I$. Under aligned noise the endpoint draw $\xi=1$, which
+belongs to every grid $U_{1,M}$, gives the sampled objective $xy$.
+A direct computation gives $V(a)=-1/8$ for all $a\in[-3/4,1/4]$, with two
+critical pieces, $\{x=1/2+2a,\ y=0\}$ for $a\ge-1/4$ and
+$\{x=0,\ y=-1/2-2a\}$ for $a\le-1/4$. The fixed box is $[-3/4,3/4]$, and the
+switch $a=-1/4$ lies at relative position $1/3$, which is never a dyadic grid
+node. The cell containing $-1/4$ is therefore never closed, and its corners are
+globally optimal, so it is retained at every level. The draw has probability
+$1/M$ and is solved by the fallback. Closure alone does not make the
+algorithm terminate on this draw; the fallback is necessary.
+\end{example}
+
+\subsection{Main theorems}\label{sec:qp:main}
+
+In the next three theorems, $[\ell_i,u_i]$ is the range of $(Tx)_i$ over
+$\mathcal P$, computed by linear programming. All sampling parameters are
+computed from the base data before the draw, and all have bit length
+polynomial in $I$. The algorithm of each theorem is the closure search of
+Definition~\ref{def:qp:closure-search} with a fallback on the same draw; it
+never rejects or resamples a draw.
+
+\begin{theorem}[Gaussian-like noise on all coefficients]\label{thm:qp:gauss}
+Let a base instance with $A\not\succeq0$ be given, and let $(\alpha,T)$, with
+$k$ rows, be either the factorization of Lemma~\ref{lem:qp:normalize}
+($k=n_-(A)$, $c_{\rm fr}=63/64$) or a supplied convexifying factorization with
+frame constant $c_{\rm fr}$. There
+is an algorithm that computes from the base data, in time polynomial in $I$,
+an integer $b\le\poly(I)$; draws $\gamma_1,\dots,\gamma_n$ independently from
+$\mathcal G_{b,\sigma}$; and returns, on every draw, a rational global
+minimizer of $F_\gamma$ on $X$ and the optimal value, or reports $X=\emptyset$.
+Its expected number of bit operations is at most
+$f(n_z)\,C_0^k(1+\mathcal H_{\rm G})(I+1)^{C_1}$, where $C_0,C_1$ are absolute
+constants, $f$ is the function of Proposition~\ref{prop:qp:primitives}(b)
+($f\equiv1$ if $n_z=0$), and
+\[
+ \mathcal H_{\rm G}=\prod_{i=1}^k\Bigl[2+c_{\rm fr}^{-1/2}(4k+6)
+ +\frac{(1+2k)\alpha(u_i-\ell_i)}{\sigma\sqrt{2\pi}}\Bigr].
+\]
+For the factorization of Lemma~\ref{lem:qp:normalize},
+$\mathcal H_{\rm G}\le\bigl[9+5k+2(1+2k)\nu\diam(\mathcal P)/\sigma\bigr]^k$,
+so the expected work is at most
+$f_1\bigl(n_z,k,1+\nu\diam(\mathcal P)/\sigma\bigr)(I+1)^{C_1}$ with
+$k=n_-(A)$. If $A\succeq0$, one exact solve by
+Proposition~\ref{prop:qp:primitives} suffices.
+\end{theorem}
+
+The theorem assumes neither growth, nor a unique minimizer, nor genericity,
+nor strict complementarity, nor full-dimensional feasibility, nor a supplied
+global certificate. The ratio $\nu\diam(\mathcal P)/\sigma$ enters through its
+numerical value; a short binary encoding does not make a large ratio
+harmless. The exponent $C_1$ does not depend on $k$ or $n_z$, so the bound is
+fixed-parameter in $(n_z,k)$ and the numerical ratio. The law
+$\mathcal G_{b,\sigma}$ is a finite rational law whose accuracy $b$ depends on
+the base instance; it is not an exact Gaussian, and the theorem does not
+cover other approximations of a Gaussian.
+
+\begin{theorem}[Uniform noise on all coefficients]\label{thm:qp:uniform}
+Let a base instance with $A\not\succeq0$ be given, and let $(\alpha,T)$ be a
+convexifying factorization with $k$ rows, $T$ of full row rank, and
+$\norm T\le1$, for example that of Lemma~\ref{lem:qp:normalize}. Put
+$w_i=u_i-\ell_i+2\sigma\norm{\Psi_{i,:}}_1/\alpha$. There is an algorithm that
+computes from the base data a power of two $M$ with $\log M\le\poly(I)$, draws
+$\gamma_1,\dots,\gamma_n$ independently from $U_{\sigma,M}$, and
+returns an exact minimizer and the optimal value on every draw, with expected
+bit work at most $f(n_z)\,C_0^k(1+\mathcal H_{\rm amb})(I+1)^{C_1}$, where
+\[
+ \mathcal H_{\rm amb}=\prod_{i=1}^k\Bigl[2+\frac{(1+2k)\alpha\sqrt n\,w_i}{2\sigma}\Bigr].
+\]
+For the factorization of Lemma~\ref{lem:qp:normalize},
+$\mathcal H_{\rm amb}\le\bigl[2+(1+2k)\bigl(2n+2\nu\sqrt n\diam(\mathcal P)/\sigma\bigr)\bigr]^k$.
+\end{theorem}
+
+This bound is polynomial for each fixed $k$ when the displayed ratios are
+polynomially bounded. It is not a fixed-parameter bound: the power of $n$
+grows with $k$. Section~\ref{sec:qp:ambient} shows that this power is a real
+property of the counts used in the proof.
+
+\begin{theorem}[Noise aligned with the factor]\label{thm:qp:aligned}
+Let a continuous base instance ($n_z=0$) and an arbitrary convexifying
+factorization $(\alpha,T)$ with $k\ge1$ rows be given, and put
+$w_i=u_i-\ell_i+2\sigma/\alpha$. There is an algorithm that computes from the
+base data a power of two $M$ with $\log M\le\poly(I)$, draws
+$\xi_1,\dots,\xi_k$ independently from $U_{\sigma,M}$, and returns an
+exact minimizer of $F(x)+\xi^{\mathsf T} Tx$ and the optimal value on every draw,
+with expected bit work at most $C_0^k(1+\mathcal H_{\rm al})(I+1)^{C_1}$, where
+\[
+ \mathcal H_{\rm al}=\prod_{i=1}^k\Bigl[3+\frac{(1+2k)\alpha w_i}{2\sigma}\Bigr].
+\]
+\end{theorem}
+
+The aligned bound is fixed-parameter in $k$ and the ratios
+$\alpha(u_i-\ell_i)/\sigma$. Its law perturbs only the $k$ factor
+coefficients. Mixed-integer instances are excluded because aligned noise does
+not perturb the integer coefficients independently, so the label-gap failures
+of Lemma~\ref{lem:qp:gap}(c) are not controlled.
+
+\begin{remark}[The original objective]\label{rem:qp:regret}
+By Proposition~\ref{prop:model:regret}, an exact minimizer $\hat x$ of
+$F_\gamma$ satisfies $F(\hat x)-\min_XF\le\max_{x,y\in X}\gamma^{\mathsf T}(x-y)$,
+which is at most $\bar\sigma\sum_iw_i$ when every coefficient is bounded
+by $\bar\sigma$; for $\mathcal G_{b,\sigma}$, $\bar\sigma=(b+20)\sigma$.
+Under aligned noise the bound is $\bar\sigma\sum_i(u_i-\ell_i)$. Because the
+work bounds grow as $\sigma$ decreases, these results do not recover the
+unperturbed optimizer, and they claim no improvement of worst-case
+approximation bounds for the unperturbed problem.
+\end{remark}
+
+\subsection{Aligned, uniform, and Gaussian-like noise}\label{sec:qp:ambient}
+
+The three laws lead to different counts because of the conditional law of
+the factor coefficients given the residual. Every local event of the search,
+\[
+ E_v:\qquad V(v)\le V(v\pm h_{ij}e_i)+2E_j\quad(i\in Q_v),
+\]
+confines each $\xi_i$ with $i\in Q_v$ to an interval of length at most
+$(1+2k)\alpha h_{ij}$ whose position depends on $\zeta$
+(Lemma~\ref{lem:count:interval} applied to $W_\zeta$). Under aligned noise
+$\zeta=0$ and the factor coefficients are independent, so
+Corollary~\ref{cor:count:levels} applies directly. Under uniform ambient
+noise, $\xi=\Psi\gamma$ is dependent on $\zeta=\Pi_T\gamma$, and the
+residual-dependent intervals must be handled by a volume estimate.
+
+\begin{lemma}[Dependent fiber volume]\label{lem:qp:volume}
+Let $\gamma$ be uniform on $[-\sigma,\sigma]^n$, let $T\in\R^{k\times n}$ have
+full row rank and $\norm T\le1$, and let $Q\subseteq\{1,\dots,k\}$ have $t$
+elements. For each $i\in Q$ let $I_i(\zeta)$ be an interval of length at most
+$\ell_i$ depending measurably on $\zeta=\Pi_T\gamma$. Then
+\[
+ \Prob\{\xi_i\in I_i(\zeta)\ (i\in Q)\}
+ \le\frac{\prod_{i\in Q}\ell_i}{(2\sigma)^t}\sum_{|K|=t}|\det T_{Q,K}|
+ \le\prod_{i\in Q}\frac{\sqrt n\,\ell_i}{2\sigma}.
+\]
+\end{lemma}
+
+The factor $\sqrt n$ is attained even for perfectly conditioned factors.
+
+\begin{proposition}[Sharpness of the fiber estimate]\label{prop:qp:fiber-sharp}
+Let $n=m^2$, $T=m^{-1}(1,\dots,1)$, and $\gamma$ uniform on
+$[-\sigma,\sigma]^n$. Then $TT^{\mathsf T}=1$, $\operatorname{Var}\xi=\sigma^2/3$,
+and for the interval $I(\zeta)$ of length $\ell\le2\sigma m$ centered at the
+midpoint of the conditional support of $\xi$,
+$\Prob\{\xi\in I(\zeta)\}=1-(1-\ell/(2\sigma m))^n$, whose ratio to $\ell$
+tends to $\sqrt n/(2\sigma)$ as $\ell\to0$. For $k$ disjoint blocks of this
+form the ratio of the joint probability to $\prod_i\ell_i/(2\sigma)$ tends
+to $(n/k)^{k/2}$.
+\end{proposition}
+
+A dimension-free variance of $\xi$ does not imply dimension-free
+concentration on intervals that may depend on the residual. The loss is not
+confined to arbitrary intervals: it occurs for the counts of actual quadratic
+instances.
+
+\begin{proposition}[The uniform-noise counts grow with the dimension]\label{prop:qp:ambient-barrier}
+For every $k\ge1$ and every even $m\ge256$ there is a rational continuous
+instance with $N=km^2$ variables, $O(N)$ inequalities, $n_-(A)=k$, and a
+convexifying factorization with $\alpha=1$, $TT^{\mathsf T}=I_k$, and $\alpha<4\nu$,
+whose ranges satisfy $u_i-\ell_i=8$, such that under independent uniform
+noise on all coefficients, either continuous on $[-1,1]$ or $U_{1,M}$
+with $M\ge32$, the following hold for the meshes on the box of
+Theorem~\ref{thm:qp:uniform}. At some level the expected number of nodes
+satisfying the local event is at least $128^{-k}(N/k)^{k/2}$, and at some
+level the expected number of $2E_j$-nearly optimal nodes is at least
+$64^{-k}(N/k)^{k/4}$.
+\end{proposition}
+
+The proposition is the case $\alpha=1$ of Theorem~\ref{thm:lim:ambient}, which
+is proved in Appendix~\ref{app:lim:ambient} for a slightly more general
+family. Consequently no bound of the form $f(k,\mathsf R)N^{C}$ with an
+absolute exponent $C$ holds for either count, where $\mathsf R$ records the projected
+widths, the frame constant, and the curvature-to-noise ratios. The proposition
+limits the counting argument, not the closure algorithm, which may close the
+few quadratic pieces of these instances early. The ambient diameter of these
+instances grows with $m$, so the proposition does not exclude a bound
+parameterized by the full diameter.
+
+Gaussian noise removes both losses. For $\gamma\sim N(0,\sigma^2I_n)$, the
+projections $\xi=\Psi\gamma$ and $\zeta=\Pi_T\gamma$ are jointly Gaussian and
+uncorrelated, hence independent, and
+$\operatorname{Cov}\xi=\sigma^2(TT^{\mathsf T})^{-1}$. Conditioning on $\zeta$ does not
+change the law of $\xi$, whose density obeys a product bound that depends only
+on the frame constant. In addition, Lemma~\ref{lem:qp:aux}(c) locates the
+allowed values of $\xi_i$: combined with the two neighbor comparisons it
+gives $|\xi_i+\alpha(v_i-(Tx_v)_i)|\le(1+2k)\alpha h_{ij}/2$, so
+$\xi_i\in\alpha[\ell_i-v_i,u_i-v_i]+[-(1+2k)\alpha h_{ij}/2,(1+2k)\alpha h_{ij}/2]$,
+an interval determined by $v$ and the projected range rather than by the
+enlarged search box.
+
+\begin{lemma}[Gaussian-weighted local counts]\label{lem:qp:gauss-count}
+Let $\gamma\sim N(0,\sigma^2I_n)$, let $T$ have frame constant $c_{\rm fr}$,
+let $\Lambda=\diag(\lambda_i)$, let $[\ell_i,u_i]$ contain the range of
+$(Tx)_i$ over $X$, and use balanced nested meshes on any fixed box with the
+constant $C_k$ of Definition~\ref{def:count:mesh} for the curvature vector
+$(\lambda_1,\dots,\lambda_k)$. At every level $j$,
+\[
+ \sum_{v\in G_j}\Prob(E_v)\le\prod_{i=1}^k\Bigl[2+c_{\rm fr}^{-1/2}(2C_k+4)
+ +\frac{C_k\lambda_i(u_i-\ell_i)}{\sigma\sqrt{2\pi}}\Bigr].
+\]
+The bound does not depend on the location or the size of the box.
+\end{lemma}
+
+The finite law $\mathcal G_{b,\sigma}$ has none of these independence
+properties. Its local-event probabilities are obtained from the Gaussian
+proxy by Lemma~\ref{lem:count:transfer}, using a uniform bound on the
+number of intervals in every coordinate section of a local event
+(Lemma~\ref{lem:qp:sections}); its tube probabilities are transferred in the
+same way.
+
+\subsection{Separable mixed recourse with rational breakpoints}\label{sec:qp:separable}
+
+When the convex part is separable and the domain is a product, the recourse
+decomposes into scalar problems. Integer winners are then certified globally
+by neighbor inequalities, and the number of integer variables no longer
+enters the complexity.
+
+\begin{definition}[Separable instances]\label{def:qp:sep}
+The domain is $X=\prod_{j=1}^nX_j$, where $X_j=[\ell_j,u_j]$ with
+$\ell_j<u_j$ (continuous) or $X_j=\Z\cap[\ell_j,u_j]$ with at least two
+points (integer); integer endpoints are rounded inward, empty domains are
+rejected, and fixed coordinates are removed beforehand, their contributions
+being absorbed into the remaining data. Each $\varphi_j$ is a continuous
+convex function on $[\ell_j,u_j]$ given by rational breakpoints
+$\ell_j=\kappa_{j0}<\dots<\kappa_{js_j}=u_j$ and rational quadratics
+$\psi_{jm}(t)=\frac12\pi_{jm}t^2+\beta_{jm}t$ (plus constants) with
+$\pi_{jm}\ge0$ on $[\kappa_{j,m-1},\kappa_{jm}]$. The objective is
+\[
+ F(x)=\sum_{j=1}^n\varphi_j(x_j)-\frac\alpha2\norm{Tx}^2,
+ \qquad\alpha>0,\quad T\in\Q^{k\times n}.
+\]
+The bit length $I$ counts all pieces, breakpoints, and binary endpoints.
+Continuity, the curvature signs, and the order of the one-sided derivatives at
+the breakpoints are checked exactly.
+\end{definition}
+
+Rational breakpoints are essential. The function $\max\{0,x^2-2\}$ on $[0,2]$
+has rational quadratic pieces, but $\max\{0,x^2-2\}-x$ has its unique minimizer
+at the irrational breakpoint $\sqrt2$. The parameters $k$ and $\alpha$ are
+those of the supplied concave term, not the negative inertia or curvature of
+the whole objective, and the product domain excludes coupling constraints.
+
+\begin{lemma}[Scalar recourse]\label{lem:qp:scalar}
+For $\lambda\in\R$ consider $\min_{t\in X_j}[\varphi_j(t)-\lambda t]$.
+\begin{enumerate}[label=(\alph*)]
+\item If $X_j$ is integer, put $\delta_j(t)=\varphi_j(t+1)-\varphi_j(t)$, which
+ is nondecreasing. A point $t\in X_j$ is optimal if and only if
+ $\delta_j(t-1)\le\lambda\le\delta_j(t)$, where a condition involving a point
+ outside $X_j$ is omitted. An optimal $t$ is found by binary search with
+ $O(\log(u_j-\ell_j+2))$ evaluations of $\varphi_j$.
+\item If $X_j$ is continuous, the following at most $2s_j+1$ states cover all
+ $\lambda\in\R$, and each certifies global optimality on its closed interval
+ of $\lambda$: for a piece with $\pi_{jm}>0$, the free state
+ $t=(\lambda-\beta_{jm})/\pi_{jm}$ for $\lambda$ between the derivatives of
+ $\psi_{jm}$ at $\kappa_{j,m-1}$ and $\kappa_{jm}$; and for every breakpoint
+ $\kappa_{jm}$, the constant state $t=\kappa_{jm}$ for $\lambda$ between the
+ left and right derivatives of $\varphi_j$ at $\kappa_{jm}$, with $-\infty$
+ and $+\infty$ replacing the missing derivatives at $\ell_j$ and $u_j$.
+\end{enumerate}
+\end{lemma}
+
+With $\lambda_j(a,\zeta)=\alpha t_j^{\mathsf T} a-\zeta_j$, where $t_j$ is column $j$
+of $T$, the inner problem defining $W_\zeta(a)$ equals
+$\frac\alpha2\norm a^2+\sum_j\min_{x_j\in X_j}[\varphi_j(x_j)-\lambda_j(a,\zeta)x_j]$.
+A choice of one state per coordinate gives a piece in the sense of
+Lemma~\ref{lem:qp:pieces}, with a region described by at most $2n$
+inequalities with normals $\pm\alpha t_j^{\mathsf T}$ and offsets affine in $\zeta$,
+on which the piece's response attains $W_\zeta$ itself. There are at most
+$R_{\rm sep}=\prod_{j\text{ integer}}N_j\prod_{j\text{ continuous}}(2s_j+1)$
+pieces, where $N_j=|X_j|$. A piece has Hessian
+$\alpha I-\alpha^2\sum_{j\text{ free}}t_jt_j^{\mathsf T}/\pi_j$, bounded in norm by
+$\Theta_{\rm sep}=\alpha+\alpha^2\sum_{j\text{ continuous}}r_j^+\norm{t_j}^2$,
+where $r_j^+$ is the largest reciprocal of a positive listed curvature of
+$\varphi_j$ (zero if none). Since every region certifies the global value, no
+gap test is needed. The exact fallback enumerates integer assignments and
+continuous pieces and minimizes the resulting quadratics on the boxes of
+pieces by Lemma~\ref{lem:qp:face}(d); its multiplier is
+$B_{\rm sep}=\max\{2,\prod_{j\text{ integer}}N_j\prod_{j\text{ continuous}}3s_j\}$.
+All these counts have logarithms polynomial in $I$.
+
+\begin{theorem}[Separable recourse: aligned and uniform noise]\label{thm:qp:sep}
+Let a separable instance with $k\ge1$ be given, and let $[\ell_i,u_i]$ be the
+range of $(Tx)_i$ over $X$.
+\begin{enumerate}[label=(\alph*)]
+\item Under $\xi_1,\dots,\xi_k$ drawn independently from $U_{\sigma,M}$,
+ with $M$ computed from the base data, there is an algorithm that returns an
+ exact rational minimizer of $F(x)+\xi^{\mathsf T} Tx$ and the optimal value on every
+ draw, with expected bit work at most $C_0^k(1+\mathcal H_{\rm al})(I+1)^{C_1}$,
+ where $\mathcal H_{\rm al}$ is as in Theorem~\ref{thm:qp:aligned}.
+\item If $T$ has full row rank and $\norm T\le1$, the same holds under
+ $\gamma_1,\dots,\gamma_n$ drawn independently from $U_{\sigma,M}$,
+ with the bound of Theorem~\ref{thm:qp:uniform} without the factor $f(n_z)$.
+\end{enumerate}
+The number of integer variables is not a parameter.
+\end{theorem}
+
+A general spectral normalization of the separable objective would destroy
+the separability of the convex part. A normalization that only rotates and
+rescales the rows of the supplied factor preserves it exactly, at the price
+of an anisotropic auxiliary metric.
+
+\begin{lemma}[Anisotropic row normalization]\label{lem:qp:aniso}
+Let $T\in\Q^{k\times n}$ have full row rank and put $\beta=\alpha\norm T^2$.
+In polynomial time one computes an exactly orthogonal rational $Q$ and dyadic
+numbers $d_1,\dots,d_k>0$ such that $U=\diag(d_i)^{-1}QT$ and
+$\Lambda=\diag(\alpha d_i^2)$ satisfy
+\[
+ U^{\mathsf T}\Lambda U=\alpha T^{\mathsf T} T,\qquad
+ \tfrac1{16}I_k\preceq UU^{\mathsf T}\preceq I_k,\qquad
+ \max_i\lambda_i<8\beta .
+\]
+\end{lemma}
+
+The identity $U^{\mathsf T}\Lambda U=\alpha T^{\mathsf T} T$ is exact. The approximation in
+the Jacobi rotations is used only to bound the frame; it is neither discarded
+nor moved into the convex part. Small singular values of $T$ affect only the
+bit lengths of the transformed data.
+
+\begin{theorem}[Separable recourse: Gaussian-like noise]\label{thm:qp:sep-gauss}
+Let a separable instance with $k\ge1$ and $T$ of full row rank after
+preprocessing be given; no norm or conditioning promise on $T$ is needed. Let
+$U$ and $\Lambda$ be as in Lemma~\ref{lem:qp:aniso} and let $[\ell_i,u_i]$ be
+the range of $(Ux)_i$ over $X$. There is an algorithm that computes from the
+base data an integer $b\le\poly(I)$, draws $\gamma_1,\dots,\gamma_n$
+independently from $\mathcal G_{b,\sigma}$, and returns an exact rational
+minimizer of $F_\gamma$ and the optimal value on every draw, with expected bit
+work at most $C_0^k(1+\mathcal H_\Lambda)(I+1)^{C_1}$, where, with
+$C_k=1+8k$,
+\[
+ \mathcal H_\Lambda=\prod_{i=1}^k\Bigl[2+4(2C_k+4)+\frac{C_k\lambda_i(u_i-\ell_i)}{\sigma\sqrt{2\pi}}\Bigr]
+ \le\Bigl[8C_k+18+\frac{8C_k\beta\diam(X)}{\sigma\sqrt{2\pi}}\Bigr]^k .
+\]
+Thus the expected work is $f(k,1+\beta\diam(X)/\sigma)(I+1)^{C_1}$ with an
+absolute exponent and no parameter for the number of integer variables.
+\end{theorem}
+
+The search uses meshes balanced by the curvatures: dyadic scales $\rho_i$
+with $1\le\lambda_i\rho_i^2<4$ give $c_{\rm bal}<4$ in
+Definition~\ref{def:count:mesh}, so that no ratio of largest to smallest
+curvature enters the count. The parameter $\beta$ is the curvature of the
+supplied concave term; it can be much larger than the negative curvature of
+the whole objective. The theorem does not identify a minimum-rank
+representation or remove dependent rows of $T$.
+
+\begin{example}[Equal corner winners do not certify a label]\label{ex:qp:corner-labels}
+Let $z\in[0,1]$ be continuous and $y\in\{0,1\}$ integer, and let
+$F(z,y)=\frac12zy+\frac78y^2-\frac{15}{16}y$, $\alpha=1$, $T=(1,1/2)$. Then
+$P=\bigl(\begin{smallmatrix}1&1\\1&2\end{smallmatrix}\bigr)\succ0$. On
+$a\in[0,1]$ the label $y=0$ has slice value $0$ and the label $y=1$ has slice
+value $a^2/2-a/2+1/16$. The label $y=0$ wins strictly at both endpoints, and
+its slice formula is valid on the whole cell, but $y=1$ wins at $a=1/2$. The
+gap test of Lemma~\ref{lem:qp:gap} refuses this cell; a test based on equal
+corner labels would accept it and return a wrong value. Rescaling to
+$\alpha=4$, $T=(1/2,1/4)$, and the cell $[0,1/2]$ gives the same example with
+$\norm T<1$.
+\end{example}
+
+\subsection{Summary of the regimes}\label{sec:qp:summary}
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{@{}lXXX@{}}
+\toprule
+Result & Law (fixed before sampling) & Recourse and domain & Expected bit work \\
+\midrule
+Thm.~\ref{thm:qp:two} & $U_{\sigma,M}$ or $\mathcal G_{b,\sigma}$ on all $n$ coefficients & continuous polytope, $k\le2$ & $\poly(I)(1+\nu S/\sigma)$; linear in the ratio \\
+Thm.~\ref{thm:qp:aligned} & $U_{\sigma,M}$ on the $k$ factor coefficients & continuous polytope & $C^k(1+\mathcal H_{\rm al})\poly(I)$; fixed-parameter in $k$ \\
+Thm.~\ref{thm:qp:uniform} & $U_{\sigma,M}$ on all $n$ coefficients & mixed polytope & $f(n_z)C^k(1+\mathcal H_{\rm amb})\poly(I)$; a power of $n$ growing with $k$ \\
+Thm.~\ref{thm:qp:gauss} & $\mathcal G_{b,\sigma}$ on all $n$ coefficients & mixed polytope & $f_1(n_z,k,1+\nu\diam(\mathcal P)/\sigma)\poly(I)$ \\
+Thm.~\ref{thm:qp:sep} & aligned or uniform & separable, product domain & as Thms.~\ref{thm:qp:aligned}, \ref{thm:qp:uniform}, no $n_z$ \\
+Thm.~\ref{thm:qp:sep-gauss} & $\mathcal G_{b,\sigma}$ on all $n$ coefficients & separable, product domain & $f(k,1+\beta\diam(X)/\sigma)\poly(I)$, no $n_z$ \\
+\bottomrule
+\end{tabularx}
+\caption{Exact algorithms for sampled problems with few negative directions.
+All are correct on every draw and output rational minimizers and values of
+polynomial bit length. In the uniform-noise row, the power of $n$ is a property
+of the counting surrogate (Proposition~\ref{prop:qp:ambient-barrier}). For the
+intrinsic factorization, $\alpha<4\nu$.}
+\label{tab:qp:regimes}
+\end{table}
+
+The polynomial exponents are absolute in all rows. The Gaussian-like theorem
+is the strongest general statement. The aligned theorem is the simplest and
+needs no normalization, but its noise is low-dimensional. The two-direction
+theorem has a different and, for $k\le2$, possibly sharper numerical
+dependence. The separable theorems trade a restricted convex part for an
+unrestricted number of integer variables.

@@ -54,7 +54,7 @@ Reviewed 2026-09-07. I read all four new manuscript files, both verification scr
 
 ## Executed checks and source review
 
-Both supplied scripts passed with `/home/sgusev/miniconda3/envs/qipm/bin/python`, with no dependency installation. The rational script checked all exact margins and radical/series enclosures. The numerical script checked all 120 orders in each of 80 five-channel instances, sharpness convergence to Gamma=1.2748644298632108, and 401 scalar speed/error values. Its numerical nature is appropriately stated.
+Both supplied scripts passed with `/workspace/local-home/miniconda3/envs/qipm/bin/python`, with no dependency installation. The rational script checked all exact margins and radical/series enclosures. The numerical script checked all 120 orders in each of 80 five-channel instances, sharpness convergence to Gamma=1.2748644298632108, and 401 scalar speed/error values. Its numerical nature is appropriately stated.
 
 I additionally implemented a dyadic instance using exact Fraction sums and integer square-root ceilings, with r=512. Using stable scalar formulas and independent quadrature/root solving gave `s_epsilon-T=-0.00678403786423587`, endpoint distance `5798.766283293374`, central arc `8898.384502638977`, and ratio `1.5345306342619476`. A conservative cutoff J=63, below the exact floor(r^(2/3))=64, had minimum early gap `2.7725887222395613`. Across 2,000 random label pairs (seed 9915), the progress-increment upper bound had positive surplus, minimum approximately `0.00235450`. This is a diagnostic check, not a proof of the universal jump bound.
 

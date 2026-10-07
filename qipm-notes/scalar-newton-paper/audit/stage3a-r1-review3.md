@@ -45,4 +45,4 @@ Read the relevant primary local text and used `conda run -n qipm --live-stream p
 
 ## Diagnostic
 
-`/home/sgusev/miniconda3/envs/qipm/bin/python notes/scalar-newton-paper/scripts/verify_cyclic.py` passes the cyclic-history, public metadata, tilt, decrement, tree and completion checks. The proof review above does not rely solely on these finite numerical examples.
+`/workspace/local-home/miniconda3/envs/qipm/bin/python notes/scalar-newton-paper/scripts/verify_cyclic.py` passes the cyclic-history, public metadata, tilt, decrement, tree and completion checks. The proof review above does not rely solely on these finite numerical examples.

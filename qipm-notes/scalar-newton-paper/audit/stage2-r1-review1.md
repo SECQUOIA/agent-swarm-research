@@ -24,4 +24,4 @@ Verdict: **no major mathematical issue found**. Three minor statement/clarity is
 
 ## Validation and scope
 
-Ran `/home/sgusev/miniconda3/envs/qipm/bin/python scalar-newton-paper/checks/check_lower_identities.py`: all 25 witness Jacobi realizations and 25 constant paths passed. These are diagnostic checks rather than proofs. The source attribution is appropriately qualified; the staged prose does not claim invention of reciprocal approximation, the Montanaro–Shao engine, or the composition theorem. The remaining full joint product is expressly not asserted. Deliberately absent later stages were not treated as findings.
+Ran `/workspace/local-home/miniconda3/envs/qipm/bin/python scalar-newton-paper/checks/check_lower_identities.py`: all 25 witness Jacobi realizations and 25 constant paths passed. These are diagnostic checks rather than proofs. The source attribution is appropriately qualified; the staged prose does not claim invention of reciprocal approximation, the Montanaro–Shao engine, or the composition theorem. The remaining full joint product is expressly not asserted. Deliberately absent later stages were not treated as findings.

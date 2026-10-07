@@ -1,0 +1,273 @@
+% Plan: development/outline.md, section 6, item I. Internal script names
+% may appear here, in neutral form.
+% Sources: R/publication/reproduction/README.md and commands.json (commands,
+% recorded wall times), R/publication/integration/runtime-evidence-r1.json,
+% the family dossiers and critiques, development/reviews/*.md,
+% development/eg-audit/out/{run_audit,compare}.log (per-instance sums of the
+% audited eg run: eg_int_s 465 s, eg_disc_s 1,456 s, eg_disc2_s 14,782 s),
+% R/publication/reproduction/water-audit/logs/, R/publication/reproduction/
+% network/logs/ann.*.time, development/reviews/round1/kan-guard/ (guarded KAN
+% replay) and development/reviews/round1/sol-numbers.md (rocket and GAMS/OSIL
+% reruns). Expected outputs point to the generated tables and to
+% data/numbers.json. Tiers follow the rule of Section 10 (recorded wall time
+% per instance, summed over its parts). Round-1 revision (G7-12): status per
+% register row, trust labels defined here, archive layout, setup sequence.
+% The stored-model table is generated (tables/tab-sem-hashes.tex).
+\section{Reproduction guide and claim register}\label{app:repro}
+
+The files and scripts that replay each result are named here; the main text avoids these names.
+As \cref{sec:semantics-protocol} states, AI agents working under the authors' direction wrote the implementations and ran the checks; that section defines ``separately written''.
+Paths are relative to the root of the archive (\archiveDOI), which keeps the layout of our working tree, including working folder names such as \nolinkurl{open-instances-wave3/} or \nolinkurl{dossiers/}: \nolinkurl{$R} denotes its folder \nolinkurl{research-20260929/} and \nolinkurl{$P} its folder \nolinkurl{paper-open-minlplib/}.
+\Cref{tab:repro-register} lists the replay entry points; times are recorded wall times on a shared machine, and \cref{sec:repro} defines the tiers by these times.
+
+\subsection{Setup}\label{app:repro-setup}
+
+The guide \nolinkurl{$P/artifact/README.md} describes the files of the artifact, the environment, the long replays and the earlier reproduction package in \nolinkurl{$R/publication/reproduction/}.
+The checkers need Python~3.13.11 and the package versions pinned in \nolinkurl{$R/publication/reproduction/requirements.txt}; the \inst{dtoc5} checker also needs the GMP library, and the solver campaign needs GAMS~54.3.1 and solver licences.
+Several scripts write into their own \nolinkurl{logs/} folders and some replace stored evidence, so every command runs in a disposable copy \nolinkurl{$WORK} of the archive, with at most four single-threaded processes at a time.
+A session starts as follows; the unpacked archive \nolinkurl{$ARCHIVE} is only read.
+\begin{verbatim}
+ARCHIVE=/path/to/unpacked/archive          # read only
+WORK=$(mktemp -d /tmp/minlp-work-XXXXXX)   # disposable: rm -rf "$WORK"
+cp -r "$ARCHIVE"/. "$WORK"/ && cd "$WORK"
+export HOME="$WORK/home" XDG_CACHE_HOME="$WORK/home/.cache"
+export TMPDIR="$WORK/tmp" PIP_NO_CACHE_DIR=1 PYTHONDONTWRITEBYTECODE=1
+R="$WORK/research-20260929"; P="$WORK/paper-open-minlplib"
+export MINLP_REPO_ROOT="$WORK" EG_AUDIT_R="$R" MINLPLIB_OSIL_ROOT="$WORK/osil"
+export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
+export NUMEXPR_NUM_THREADS=1
+mkdir -p "$TMPDIR" "$MINLPLIB_OSIL_ROOT" "$HOME/.cache/minlplib/minlplib"
+cp "$R"/publication/minlplib-status/pages/models/osil/*.osil \
+   "$MINLPLIB_OSIL_ROOT"
+ln -s "$MINLPLIB_OSIL_ROOT" "$HOME/.cache/minlplib/minlplib/osil"
+python3 "$P/artifact/check_claims.py" --repo-root "$WORK"
+python3 -m venv "$WORK/venv" && . "$WORK/venv/bin/activate"
+python -m pip install -r "$R/publication/reproduction/requirements.txt"
+python "$P/artifact/prepare_paper_inputs.py"
+cd /tmp && python "$P/data/make_tables.py"
+\end{verbatim}
+The archive holds the 69 model files of the paper (\cref{tab:sem-hashes,tab:audit-inputs}) in the folder copied above.
+The relocated review scripts read them from \nolinkurl{MINLPLIB_OSIL_ROOT}, the other research scripts from \nolinkurl{~/.cache/minlplib/minlplib/osil/}, which, with \nolinkurl{HOME} inside the copy, is a link to the same folder.
+Nothing is then written outside \nolinkurl{$WORK} and the folders \nolinkurl{/tmp/minlp-artifact-*} of the short-check runner, except by two archived drivers: the driver \nolinkurl{run_replays.py} of the guarded KAN replay expects its tree in \nolinkurl{/tmp/kan-guard} and six cores, and the campaign driver names the GAMS installation of the original machine.
+The README gives a replay of the guarded KAN searches inside \nolinkurl{$WORK}, one instance per process.
+The validator runs first because \nolinkurl{make_tables.py} rewrites the number file and \nolinkurl{check.log} with the date of the run.
+\nolinkurl{prepare_paper_inputs.py} runs the archived \nolinkurl{prepare_inputs.py}, which restores the inputs that version control ignores (listed points and archived instance pages) and checks the SHA-256 of every input and model; it exits with status~0 if the 69 models are present with their recorded hashes and the only missing models are the 26 others of the manifest, none used by the paper, and it never downloads.
+\nolinkurl{make_tables.py} (standard library only, about 5\,s) checks every bound, primal, gap and derived margin display that it generates against its exact value in rational arithmetic, writes the number file \nolinkurl{$P/data/numbers.json} and \nolinkurl{$P/data/check.log}, which lists every check and the SHA-256 of every file read, and exits with status~1 if a check fails (\cref{app:displays}).
+This recipe and the short checks below were run as written in a fresh copy (log \nolinkurl{$P/artifact/logs/recipe-test.log}); the long replays of \cref{tab:repro-register} were not repeated under it.
+
+\paragraph{Trust labels.}
+The last column of \cref{tab:repro-register} names the components of the trust base (\cref{sec:semantics-trust}) that a result needs:
+\trust{int}, Python integer and rational arithmetic and integer square roots;
+\trust{fp}, \cref{hyp:fp-ieee};
+\trust{mp}, mpmath~1.3.0 interval arithmetic for the named primitives;
+\trust{read}, the reading of \cref{def:sem-model} by the family's readers (\cref{sec:semantics-protocol});
+\trust{code}, the correctness of the named checking programs (inspected and rerun, not formally verified);
+\trust{thm}, the classical theorems used (mean value, intermediate value, Brouwer and Sturm theorems, the Lindemann--Weierstrass theorem, series remainder bounds).
+Every row uses \trust{read}, \trust{code} and \trust{thm}.
+
+\paragraph{Claim index and short checks.}
+The file \nolinkurl{$P/artifact/claims.json}, the machine-readable form of the claim register, has 65 entries, one for each of the 27 rows of \cref{tab:repro-register} and one for each of the 38 reported values of \cref{tab:claims,tab:claims-campaign}, with the displayed values, the SHA-256 of every input, code and output file and the status of each instance (the README lists all fields).
+The validator \nolinkurl{$P/artifact/check_claims.py} uses only the Python standard library; it recomputes every hash and checks the paths, the labels, the displayed values and status labels of every instance, and that \cref{tab:repro-register} and \nolinkurl{RUNS.md} list the same rows.
+On the final sources of this version it reported 5,632 SHA-256 references to 1,918 distinct files, all valid (log \nolinkurl{$P/artifact/logs/check_claims.log}); it fails on any hash that is out of date.
+It validates the sources and the evidence (hashes of inputs, code and outputs, paths and labels); it does not identify the PDF files, whose SHA-256 hashes \nolinkurl{$P/artifact/RELEASE.md} records.
+The runner \nolinkurl{$P/artifact/run_short_checks.py} copies what it needs into a new folder under \nolinkurl{/tmp} and runs 15 short checks there (\inst{lnts}, \inst{dtoc5}, the three \texttt{r3} KAN searches, the \inst{eg} auditor tests and review scripts); all 15 pass, with every stored field reproduced except elapsed time and CPU affinity (log \nolinkurl{$P/artifact/logs/short-checks.json}), and \nolinkurl{--eg-int} adds the regeneration and audit of the \inst{eg_int_s} tree (324\,s; 33,385 leaves; no violation).
+\nolinkurl{$P/artifact/path-edits.json} lists the edits that made the review scripts, the audit and \nolinkurl{gibbs_cert.py} read their input roots from the variables above; none changes a numerical formula.
+
+\subsection{Stored models}\label{app:repro-models}
+
+The stored models of \cref{def:sem-model} are the OSIL files of \cref{tab:sem-hashes}; the archive records the full hashes, and \nolinkurl{prepare_inputs.py} rejects any file whose hash differs.
+
+\input{tables/tab-sem-hashes}
+% tab:trust-full is input here, before the register longtable, so that it prints
+% before Table S38 (a float deferred past the start of a longtable prints after it).
+\input{tables/tab-trust-full}
+
+\paragraph{Expression nodes.}
+Besides \texttt{variable}, \texttt{number} (all files but \inst{ann_cumene_tanh}), \texttt{sum}, \texttt{product} and \texttt{negate}, the nodes of \cref{def:sem-model} occur as follows:
+\texttt{divide} in \inst{ex6_2_5}, \inst{pindyck}, \inst{hvycrash} and the KAN instances;
+\texttt{square} in \inst{lukvle10}, \inst{chain}, \inst{pricing050}, \inst{powerflow0030p}, \inst{powerflow0039p} and \inst{eg};
+\texttt{sqrt} in \inst{chain};
+\texttt{power} in \inst{lukvle10}, \inst{etamac}, \inst{pindyck}, \inst{pricing050} and \inst{waterno2};
+\texttt{exp} in \inst{pricing050}, \inst{eg} and the KAN instances;
+\texttt{ln} in \inst{ex6_2_5}, \inst{ex6_2_7} and \inst{etamac};
+\texttt{sin} and \texttt{cos} in \inst{lnts}, \inst{powerflow0030p} and \inst{powerflow0039p}, and \texttt{cos} also in \inst{hvycrash};
+\texttt{tanh} in \inst{ann_cumene_tanh}.
+
+\paragraph{GAMS and OSIL forms.}
+For \cref{tab:sem-gams}: the GAMS files keep the objective variable that the OSIL files usually substitute out (\inst{dtoc5} has 100,000 GAMS and 99,999 OSIL variables).
+The evaluations at random points used 50- or 60-digit arithmetic; for \inst{lnts50}--\inst{lnts400}, \inst{lukvle10}, \inst{chain50}--\inst{chain400}, \inst{ann_cumene_tanh} and the KAN instances, the GAMS files were first converted by GAMS, and their variables, types and bounds were compared exactly.
+The exact comparisons checked every row, objective coefficient and bound of the GAMS text for \inst{dtoc5} and \inst{optcdeg2}; the constants and rows for \inst{camshape100}--\inst{camshape800}; the rows term by term for the three \inst{powerflow} models; the OSIL decoder against a separately written GAMS reader for the three \inst{eg} models; and, for \inst{waterno2_06}--\inst{waterno2_24}, the rows as polynomials together with the bounds, types and objective, a check that detected both of its negative controls.
+
+\paragraph{Data reading by family.}
+The binary64 reading (\cref{app:semantics-codes}) occurs only in early first-implementation scripts, where it is harmless: the \inst{lnts} certificate uses only binary64-exact data (its angle bound $\pm1.5707963267949$ is not used), \inst{lukvle10} has only integer data, \inst{dtoc5} enters $h=1/50000$ exactly, the \inst{camshape} strings are recovered exactly from their binary64 values by a shortest round trip, and the \inst{optcdeg2} script uses string literals.
+The fast mode of the \inst{eg} search, a cross-check only (\cref{app:eg}), uses a rounded reading.
+The number of distinct decimal strings that \reading{c} changes (\cref{app:semantics-binary64}) is 0 in \inst{lukvle10}, 2 in each \inst{lnts} and \inst{chain} file, between 3 and 10 in \inst{dtoc5}, \inst{optcdeg2}, \inst{catmix}, \inst{camshape} and \inst{hvycrash}, and from 37 (\inst{pindyck}) to 3,332 (\inst{eg_disc2_s}) in the other files.
+The KAN and \inst{ann_cumene_tanh} files contain about 1,000 to 2,400 strings with 16 or 17 significant digits each, and \inst{powerflow0039r} contains 24; these strings are printed binary64 numbers.
+\Cref{tab:trust-full} gives the data reading of each certificate family together with its trust base and primal construction.
+
+\subsection{Claim register}\label{app:repro-register}
+
+\Cref{tab:repro-register} maps each result to its checkers, recorded time, replay tier, evidence level, status and trust-base terms.
+\nolinkurl{$P/artifact/RUNS.md} gives for every row of \cref{tab:repro-register} the full checker paths, arguments, expected outputs and run records, and \nolinkurl{$P/artifact/HISTORY.md} lists earlier and superseded certificates and displays, including strings in older records that must not be read as bounds.
+Where an expected output reads ``as in \cref{tab:closures}'', the checker's exact output, rounded as stated in \cref{sec:semantics-display}, gives the table entry, and \nolinkurl{make_tables.py} checks this.
+The input models are those of \cref{tab:sem-hashes}.
+
+{\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{2.4cm}>{\raggedright\arraybackslash}p{7.6cm}>{\raggedright\arraybackslash}p{2.0cm}>{\raggedright\arraybackslash}p{3.3cm}@{}}
+\caption{Claim register. ``2nd'': the other implementation and what it certifies; for \inst{optcdeg2}, \inst{lukvle10}, \inst{catmix}, \inst{etamac}, \inst{pindyck} and the \inst{emfl} enclosures it is the first implementation, for \inst{ex6_2_5}, \inst{ex6_2_7} and \inst{pricing050} a third code. Time: recorded wall time. Last column: tier (\cref{sec:repro}) of the replay of the displayed result by the checkers named first; evidence level; status (\cref{sec:semantics-protocol}; \emph{weaker second} and \emph{partial second} as in \cref{tab:trust}); trust-base terms besides \trust{read}, \trust{code} and \trust{thm}.}\label{tab:repro-register}\\
+\toprule
+result & checkers & time & tier; level; status; trust \\
+\midrule
+\endfirsthead
+\multicolumn{4}{@{}l}{\cref{tab:repro-register}, continued}\\
+\toprule
+result & checkers & time & tier; level; status; trust \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\Cref{thm:lnts-opt}, \inst{lnts50}--\inst{lnts400} &
+\nolinkurl{verify.py}; 2nd: \nolinkurl{lnts_exact_opt.py} (same optima) &
+seconds &
+1; \evid{hand}+\evid{stored}; verified; \trust{int} \\
+\Cref{thm:dtoc5-bracket}, \inst{dtoc5} &
+\nolinkurl{review.py}; 2nd: \nolinkurl{dtoc5_checks.py} (same display) &
+17\,s; 3\,s &
+1; \evid{hand}+\evid{stored}; verified; \trust{int} \\
+\Cref{thm:optcdeg2-bound}, \inst{optcdeg2} &
+\nolinkurl{v_states.py}, \nolinkurl{v_qcal_exact.py}; 2nd: \nolinkurl{optcdeg2_qcal_certify.py} (weaker). Primal: \nolinkurl{optcdeg2_primal_int.py}, \nolinkurl{v_primal.py} &
+6\,s + 19\,s; 8\,s &
+1; \evid{stored}; weaker second; \trust{int} (2nd primal: \trust{mp}) \\
+\Cref{thm:lukvle10-bracket}, \inst{lukvle10} &
+\nolinkurl{v_lukvle10_prep.py}, \nolinkurl{v_lukvle10_bnb.py}; 2nd: \nolinkurl{lukvle10_bound.py} (weaker). Primal: \nolinkurl{lukvle10_enclose.py}, \nolinkurl{lukvle10_crosscheck.py} &
+5\,min; 6\,min &
+1; \evid{rerun}; weaker second; \trust{mp} (dual), \trust{int} (primal) \\
+\Cref{thm:chain-bound}, \inst{chain50}--\inst{chain400} &
+\nolinkurl{chain_bound.py}; 2nd: \nolinkurl{v_chain_bnb.py} (same bound). Primal: \nolinkurl{build_points.py}, \nolinkurl{verify_points.py} &
+12--29\,s; 72--195\,s &
+1; \evid{rerun}; verified; \trust{mp} (dual), \trust{int} (primal) \\
+\Cref{thm:catmix-bound}, \inst{catmix100}--\inst{catmix800} &
+\nolinkurl{v_catmix_dp.py}, \nolinkurl{recheck_dp.py}; 2nd: \nolinkurl{catmix_bound.py} (weaker). Primal: \nolinkurl{exact_catmix.py}, \nolinkurl{policy_exact.py} &
+20--46\,min; 17--77\,min &
+2 (2nd: 3 for \inst{catmix800}); \evid{rerun} (dual), \evid{stored} (primal); weaker second; \trust{fp} \\
+\Cref{thm:waterno2-bounds}, \inst{waterno2_06} &
+\nolinkurl{verify_cs.py}; 2nd: \nolinkurl{ind_verify_cs.py}; pair bounds: \nolinkurl{vrebound_cs.py} &
+13\,s; 11\,s; pairs about 60 CPU-h &
+3 (path check: 1); \evid{rerun}; verified; \trust{fp}, \trust{int} \\
+\Cref{thm:waterno2-bounds}, \inst{waterno2_09}--\inst{waterno2_24} &
+\nolinkurl{run_period.py} (63 periods), \nolinkurl{vsum2.py}; regeneration by the first code: \nolinkurl{certify.py}. Primal: \nolinkurl{water_exact.py}, \nolinkurl{check_water_point.py} &
+35--212\,min (7.4\,h in all) &
+2 (09, 12), 3 (18, 24); \evid{rerun}; verified; \trust{fp}, \trust{int} \\
+\Cref{thm:camshape-opt}, \inst{camshape100}--\inst{camshape800} &
+\nolinkurl{v_camshape.py}; 2nd: \nolinkurl{check_exact.py}; third: \nolinkurl{mine.py} (directed rounding) &
+8\,s; 6\,min; under 2\,s &
+1; \evid{hand}+\evid{stored}; verified; \trust{int} \\
+\Cref{thm:ex62-bounds}, \inst{ex6_2_5}, \inst{ex6_2_7} &
+\nolinkurl{gibbs_kkt.py}, \nolinkurl{gibbs_bb.py}, \nolinkurl{gibbs_bound.py}; 2nd: \nolinkurl{gibbs_cert.py} (stronger). Primal: \nolinkurl{ex62_check.py} &
+258\,s, 77\,s; 198\,s, 63\,s &
+1; \evid{rerun}; verified; \trust{mp} (dual), \trust{int} (primal) \\
+\Cref{thm:pricing-bound}, \inst{pricing050} &
+\nolinkurl{v_pricing050.py}; 2nd: \nolinkurl{r2/pricing_check.py} (same bound). Primal: the earlier \nolinkurl{pricing_check.py} and \nolinkurl{r2/pricing_check.py} &
+28\,s; 3\,s &
+1; \evid{stored}; verified; \trust{mp} \\
+\Cref{thm:etamac-bound}, \inst{etamac} &
+\nolinkurl{v_etamac.py}; 2nd: \nolinkurl{etamac.py} (weaker). Primal: \nolinkurl{etamac_point.py} &
+22\,s; 27\,s &
+1; \evid{stored}; weaker second; \trust{mp} \\
+\Cref{thm:pindyck-bound}, \inst{pindyck} &
+\nolinkurl{own_ranges.py}, \nolinkurl{own_concavity.py}, \nolinkurl{verify_own_leaves.py}, \nolinkurl{final_bound.py}, \nolinkurl{primal_check.py}; 2nd: \nolinkurl{pindyck_global.py} (weaker); \nolinkurl{pindyck_sc.py} &
+322\,s; 19\,s; under 1\,s &
+1; \evid{stored}; weaker second; \trust{fp}, \trust{mp} \\
+\Cref{thm:pf-0030p}, \inst{powerflow0030p} &
+\nolinkurl{run_root.py}. Primal: \nolinkurl{certify.py}, \nolinkurl{verify.py} &
+4\,s &
+1; \evid{stored}; verified; \trust{int} \\
+\Cref{thm:pf-0039}, \inst{powerflow0039p}, \inst{powerflow0039r} &
+\nolinkurl{verify_exact.py}, \nolinkurl{verify_bb3.py}; 2nd: the leaf checks in \nolinkurl{powerflow0039-review-checks/} &
+78\,s, 24\,s; 2\,s &
+1; \evid{stored}; verified; \trust{int} \\
+\Cref{prop:hvycrash-identity}, \inst{hvycrash} &
+\nolinkurl{hvycrash.py}; 2nd: \nolinkurl{v_hvycrash.py}; \nolinkurl{hvy_check.py} &
+under 1\,s each &
+1; \evid{hand}; proved; \trust{int}, \trust{mp} (witness) \\
+\Cref{thm:eg-bounds}, \inst{eg_int_s}, \inst{eg_disc_s}, \inst{eg_disc2_s} &
+\nolinkurl{run_audit.py}, \nolinkurl{compare_audit.py} (leaf re-certification under the accuracy auditor); \nolinkurl{summarize.py}; coverage: \nolinkurl{own_cover.py}; search: \nolinkurl{egbb.py}. Primal: \nolinkurl{eg_dyadic_check.py}, \nolinkurl{exp_test.py}, \nolinkurl{verify_primal.py} &
+16,703\,s over 44 jobs &
+1, 2, 3 (by instance); \evid{rerun} (leaf partition stored); verified (\inst{eg_disc2_s}: partial second); \trust{fp}, accuracy auditor (\cref{thm:eg-trust}) \\
+\Cref{thm:ann-bound}, \inst{ann_cumene_tanh} &
+\nolinkurl{replay.py}, \nolinkurl{leaves.py}, \nolinkurl{verify_boxes.py}. Primal: \nolinkurl{nn_exact.py} &
+33\,min, 1.6\,h; 1.2\,h (2 processes) &
+3; \evid{rerun}; proved (the second code copied an idiom of the first); \trust{fp} \\
+\Cref{prop:kan-infeasible}, six KAN instances &
+\nolinkurl{kan_infeas_cert.py}; 2nd: \nolinkurl{kan_infeas_edge.py}, \nolinkurl{kan_infeas_edge_class.py} &
+0.6--1.7\,s; about 1\,s &
+1; \evid{hand}+\evid{stored}; verified; \trust{int} \\
+\Cref{thm:kan-enclosure}, six KAN instances &
+\nolinkurl{run_kan.py}; 2nd: the guarded \nolinkurl{kan_bnb_rigexp.py} through \nolinkurl{run_replays.py}; \nolinkurl{check_constants.py}. Points of $\RP$: \nolinkurl{nn_exact.py} &
+22\,s--18\,min; 23\,s--20\,min &
+1 (\texttt{r3}), 2 (\texttt{r5}); \evid{rerun}; verified (shared exponential and interval core); \trust{fp} \\
+\Cref{sec:points}, \cref{tab:points} &
+per family in the point folders \nolinkurl{lnts}, \nolinkurl{dtoc5-lukvle10}, \nolinkurl{chain}, \nolinkurl{powerflow}, \nolinkurl{water-ann-kan}, with separate checks; others as in the rows above &
+seconds to minutes &
+1; \evid{stored}; verified (\inst{etamac}: proved); \trust{int} (\trust{mp} for four points) \\
+\Cref{prop:audit-refute}, \cref{tab:audit-pairs} &
+\nolinkurl{audit.py}, \nolinkurl{verify_one.py}, \nolinkurl{cert_linear.py}, \nolinkurl{cert_ndnetgen.py}, \nolinkurl{cert_topopt.py}; 2nd: \nolinkurl{bound-audit-verification/}, \nolinkurl{bound-audit-recheck/} &
+seconds per point; topopt about 3\,min &
+1; \evid{hand}+\evid{stored} (\inst{topopt-cantilever_60x40_50}: \evid{rerun}); verified; \trust{int}; Krawczyk pairs also \trust{fp}, \trust{mp} \\
+\Cref{prop:spring-opt,prop:emfl-enclosure}; \inst{rocket100}--\inst{rocket400} &
+\nolinkurl{spring_global.py}; \inst{emfl}: \nolinkurl{emfl_bounds.py}, 2nd: \nolinkurl{cert_socp.py} (wider enclosures); \inst{rocket}: \nolinkurl{v_lindo.py}, 2nd: \nolinkurl{rocket_kraw.py} &
+2--13\,s; 3--26\,s per \inst{emfl} instance &
+1; \evid{hand}+\evid{stored} (\inst{emfl}: \evid{rerun}); verified (\inst{emfl} enclosures: weaker second); \trust{int} (\inst{rocket}: \cref{app:audit}) \\
+\Cref{prop:scip-witnesses,prop:scip-reproducers,lem:scip-cube} &
+\nolinkurl{exact_check.py}, \nolinkurl{spec_check.py}, \nolinkurl{indep_check.py}, \nolinkurl{gams_check.py}; SCIP's check: \nolinkurl{checksol_witness.py}; \nolinkurl{binary64_analysis.py}; reproducers \nolinkurl{fm336_v1010.cip}, \nolinkurl{tiny2.cip} &
+seconds; SCIP runs need the listed builds &
+1; \evid{stored}; verified; \trust{int} \\
+\Cref{prop:baron-camshape,prop:qplib-copies,prop:kan-scip,prop:camino-eg,prop:minotaur-optcdeg2}, \cref{tab:claims} &
+exact comparison in \nolinkurl{make_tables.py}; campaign points: \nolinkurl{point_checks.json} &
+seconds; QPLIB copy optima under 2\,s and about 15\,min (two parsers) &
+1; \evid{stored}; proved; \trust{int} \\
+\Cref{tab:solvers,tab:claims-campaign} &
+run logs, \nolinkurl{results_table.csv}; a rerun needs GAMS~54.3.1 and licences &
+129 one-hour runs &
+--; --; floating-point output; -- \\
+Generated certified displays (\cref{app:displays}) &
+\nolinkurl{make_tables.py} &
+about 5\,s &
+1; \evid{stored}; proved; \trust{int} \\
+\end{longtable}
+}
+
+\subsection{Replay versus regeneration}\label{app:repro-regen}
+
+\Cref{sec:repro} defines replay and regeneration; for \inst{lnts50}--\inst{lnts400}, \inst{dtoc5}, \inst{camshape} and \inst{hvycrash} there is no search, so replay is the whole check.
+
+\paragraph{waterno2.}
+The first code regenerates the period certificates: it derives each period's target from time-limited SCIP runs and certifies it with its branch and bound.
+A clean-copy run reproduced the values and node counts of \inst{waterno2_06}, \inst{waterno2_09} and \inst{waterno2_12} exactly.
+For \inst{waterno2_18} (periods $t=1$ and $t=7$) and \inst{waterno2_24} (period $t=14$), SCIP returned other incumbents, feasible within its tolerance of $10^{-6}$ and below the stored period bounds by about \sci{4.0}{-4}, \sci{3}{-5} and \sci{8.5}{-4}; the regenerated bounds, $4790.820086$ and $6576.150434$ (rounded down), are valid and slightly weaker than the reported $4790.820715$ and $6576.151388$.
+Since both branch-and-bound codes certified the stored bounds, these incumbents are not exactly feasible (\cref{lem:sem-enclosure}(b)).
+The reported values rest on the original run and on the separately written branch and bound with exact rational node bounds, both at the stored targets, and a clean-copy replay at these targets certified all 63 periods of \inst{waterno2_09}--\inst{waterno2_24} again.
+
+\paragraph{optcdeg2 and powerflow.}
+Regenerating the \inst{optcdeg2} split may give a different valid bound; the replay uses the stored split data.
+Regeneration gives other multipliers and a weaker bound for \inst{powerflow0030p}, whose archived certificate replays exactly and gives the displayed value; a new SDP solve overwrites the stored certificate.
+Regenerating the \inst{powerflow0039p} and \inst{powerflow0039r} leaf certificates (316\,s and 463\,s) gave identical final bounds.
+
+\paragraph{ann\_cumene\_tanh.}
+The certificate comes from two time-limited runs (1,800\,s and 5,400\,s).
+Machine load changes the final frontier of a run stopped by a wall-clock limit, so the certificate is replayed by saved node counts, not regenerated.
+The region lists of the second code's verification were not kept; the replay regenerates them, and the unsplit leaf boxes can be verified directly from the stored frontier.
+
+\paragraph{eg.}
+The audited run regenerated the recorded trees of \inst{eg_int_s} and \inst{eg_disc_s}, whose recording logs agree line by line with those of the original runs apart from timings; for \inst{eg_disc2_s} it re-certified the stored leaves, with per-leaf results identical byte for byte to those of the original run (\cref{app:egrounding-run}).
+Coverage of every part is proved by an exact check that needs no tree.
+
+\paragraph{KAN.}
+A separate agent session reran the second code on the three \texttt{r3} models and reproduced every stored field except elapsed time; it checked the stored outputs of the three \texttt{r5} searches for consistency only.
+A later replay of all six searches with the guarded quadratic bound routine reproduced every archived bound bit for bit, with no guard trigger (\cref{app:annkan-kan-enclosure}); the register row of \cref{thm:kan-enclosure} names its files, and the README gives the commands that stage and rerun this replay one instance at a time and compare each result with the archived one.
+
+\paragraph{catmix, chain and the audit.}
+The per-stage chord values of the \inst{catmix} certificates are not stored, so a check reruns the dynamic program (20 to 46 minutes per instance); the \inst{chain} end-value searches are short and rerun in full.
+The \inst{topopt-cantilever_60x40_50} existence certificate of the audit does not store its basis, so it is regenerated, not replayed; the regenerated point also satisfies its row of \cref{tab:audit-pairs} (\cref{app:audit-existence}).
+The \inst{emfl} certificates store the enclosures, not the rational dual vectors; a rerun checks new vectors exactly and may give slightly different, equally valid endpoints (\cref{app:audit-emfl}).

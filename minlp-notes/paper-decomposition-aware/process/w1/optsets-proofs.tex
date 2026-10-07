@@ -1,0 +1,952 @@
+% optsets-proofs.tex -- nonunique optimal sets and exact boundary output.
+% Fragment without preamble.  Uses main-text labels: lem:round, prop:filter,
+% eq:mesh, eq:messages, eq:dpwork, lem:contraction, lem:localize,
+% eq:witnessradius, eq:stagegap, lem:states, eq:statecap, eq:logabsorb,
+% thm:approx, sec:rate, sec:model, sec:polynomial, thm:generalfinite.
+% New bibliography keys (see report): QiuYildirim2023, JeyakumarRubinovWu2006.
+
+\subsection{Nonunique optimal sets}\label{sec:optsets}
+
+The point-growth analysis of Section~\ref{sec:rate} localizes every retained
+coordinate near one optimizer. When the optimal set is not a single point,
+its coordinate projections can fill whole intervals, and that localization
+fails. This section answers three questions. Which compact descriptions of
+the whole optimal set can be computed with the decomposition? Why can no
+algorithm that uses only function values give accuracy-independent work under
+growth toward a set? And for which class can an unknown optimal set be found
+exactly, with the growth constant unknown?
+
+\paragraph{Conventions.}
+In this section
+\[
+F(x)=\tfrac12x^{\mathsf T}Hx+b^{\mathsf T}x+c
+\]
+with rational symmetric $H$, rational $b,c$, and $X=\prod_iX_i$ as in
+Section~\ref{sec:model}, preprocessed so that $l_i<u_i$ for every $i$. Write
+$\hat X=\prod_i[l_i,u_i]$ for the continuous hull, $S=\arg\min_XF$ and
+$\OPT=\min_XF$. The interaction graph has an edge $\{i,j\}$ when $H_{ij}\ne0$.
+The supplied tree decomposition $(T,(B_t))$ covers it, and each monomial is
+assigned to one bag that contains its variables. A number $g>0$ is a
+\emph{set-growth constant} if
+\begin{equation}\label{eq:setgrowth}
+F(x)-\OPT\ge g\dist(x,S)^2\qquad(x\in X),
+\end{equation}
+and then $\kappa=\max\{1,L/g\}$. For a quadratic, every rational
+$L\ge\max_i\max\{H_{ii},0\}$ with $L>0$ is a valid coordinate-curvature bound.
+For a bounded continuous box, some set-growth constant always exists: apply
+the error bound of Luo and Sturm \cite[Theorem~3.3]{LuoSturm2000} to the
+quadratic $F-\OPT$ on the polytope $X$. Its size is not controlled, and
+nothing below computes or certifies it. $\mathrm{Id}$ denotes an identity
+matrix.
+
+\subsubsection{Coordinatewise concave quadratics: every optimizer at once}
+
+Write $E_i=\{l_i,u_i\}$ and $E(B)=\prod_{i\in B}E_i$. For $x\in\hat X$ and
+$v_i\in E_i$ put
+\[
+e_i(v_i;x_i)=\begin{cases}u_i-x_i,&v_i=l_i,\\ x_i-l_i,&v_i=u_i,\end{cases}
+\qquad
+\pi_t(v;x)=\prod_{i\in B_t}\frac{e_i(v_i;x_i)}{u_i-l_i}\quad(v\in E(B_t)).
+\]
+Thus $\pi_t(\cdot;x)$ is the law of $Y_{B_t}$ when every coordinate of $x$
+is rounded independently to an endpoint with mean $x_i$. Root $T$ at $t_0$,
+let $\mathrm{ch}(t)$ be the children of $t$, and write
+$B_t^{\uparrow}=B_t\cap B_{\mathrm{pa}(t)}$, with $B_{t_0}^{\uparrow}=\emptyset$.
+Let $\phi_t$ be the sum of the monomials assigned to $t$.
+
+\begin{lemma}[Endpoint Bellman residual identity]\label{lem:endpointid}
+Assume $H_{ii}\le0$ for every $i$. Compute, in post-order and with all
+arguments ranging over endpoint labels,
+\begin{align*}
+M_t(v_{B_t^\uparrow})&=\min_{v_{B_t\setminus B_t^\uparrow}}
+\Bigl[\phi_t(v_{B_t})+\sum_{t'\in\mathrm{ch}(t)}M_{t'}(v_{B_{t'}^\uparrow})\Bigr],\\
+r_t(v_{B_t})&=\phi_t(v_{B_t})+\sum_{t'\in\mathrm{ch}(t)}M_{t'}(v_{B_{t'}^\uparrow})
+-M_t(v_{B_t^\uparrow})\ \ge0 .
+\end{align*}
+Then the scalar $M_{t_0}$ equals $\OPT$, it is attained at an endpoint
+assignment, and for every $x\in\hat X$
+\begin{equation}\label{eq:endpointid}
+F(x)-\OPT=\sum_{t}\sum_{v\in E(B_t)}r_t(v)\,\pi_t(v;x)
++\frac12\sum_{i=1}^n(-H_{ii})(x_i-l_i)(u_i-x_i).
+\end{equation}
+All tables and residuals are computed in
+$O\bigl(p\,2^p(N+|\mathcal A|)\bigr)$ table operations on rationals of
+bit length polynomial in $I$.
+\end{lemma}
+
+\begin{proof}
+Since $B_{t'}^{\uparrow}\subseteq B_t$ for a child $t'$, the bracket is a
+function of $v_{B_t}$, and $r_t\ge0$ because $M_t$ is its minimum over the
+labels of $B_t\setminus B_t^\uparrow$.
+
+\emph{Telescoping.} Let $v\in E([n])$. Every nonroot table $M_t$ occurs in
+$\sum_tr_t(v_{B_t})$ once with a plus sign, in the residual of its parent, and
+once with a minus sign. Hence $\sum_tr_t(v_{B_t})=\sum_t\phi_t(v_{B_t})-M_{t_0}
+=F(v)-M_{t_0}$.
+
+\emph{Expectation.} Fix $x\in\hat X$ and let $Y$ be the independent endpoint
+rounding with $\Pr(Y_i=v_i)=e_i(v_i;x_i)/(u_i-l_i)$. Then $\E Y_i=x_i$,
+$\operatorname{Var}Y_i=(x_i-l_i)(u_i-x_i)$, $\E Y_iY_j=x_ix_j$ for $i\ne j$,
+and $\E Y_i^2=x_i^2+\operatorname{Var}Y_i$. Therefore
+$\E F(Y)=F(x)+\frac12\sum_iH_{ii}(x_i-l_i)(u_i-x_i)$, while
+$\E r_t(Y_{B_t})=\sum_vr_t(v)\pi_t(v;x)$. Taking expectations in the
+telescoping identity gives \eqref{eq:endpointid} with $M_{t_0}$ in place
+of $\OPT$.
+
+\emph{Value.} Every term on the right of \eqref{eq:endpointid} is
+nonnegative on $\hat X$, so $F\ge M_{t_0}$ on $\hat X\supseteq X$. Trace back:
+choose labels of $B_{t_0}$ attaining $M_{t_0}$; for each child $t'$ of a
+processed bag $t$, choose the labels of $B_{t'}\setminus B_{t'}^\uparrow$
+attaining $M_{t'}(v_{B_{t'}^\uparrow})$. By running intersection, a variable
+belongs to $B_t\setminus B_t^\uparrow$ exactly for the bag $t$ nearest the
+root among those containing it, and to $B_{t}^{\uparrow}$ for every other bag
+containing it. Hence every variable receives exactly one label, and the
+resulting endpoint assignment $v^*$ has all residuals zero. By telescoping
+$F(v^*)=M_{t_0}$. Both endpoints of every $X_i$ are feasible, so $v^*\in X$
+and $\OPT=M_{t_0}$.
+
+\emph{Checking.} The proof uses only the nonnegativity of the residuals and
+one endpoint assignment with zero residuals. A checker therefore needs the
+tables $M_t$ and that assignment, not the minimization that produced them; any
+tables with these two properties give \eqref{eq:endpointid}.
+
+\emph{Cost.} A bag table has at most $2^p$ entries, and children are combined
+by addition. By induction on the tree, every message entry is the sum of the
+assigned monomials over the subtree at one endpoint assignment. Its bit length
+is therefore bounded by the bit length of a common denominator of all endpoint
+monomial values plus $\log_2$ of the number of monomials times their maximum
+magnitude, both polynomial in $I$.
+\end{proof}
+
+\begin{theorem}[All optimizers of a coordinatewise concave quadratic]\label{thm:endpointset}
+Under the hypothesis of Lemma~\ref{lem:endpointid}, a point $x\in X$ is a
+global optimizer if and only if
+\begin{enumerate}
+\item[(a)] $x_i\in\{l_i,u_i\}$ for every $i$ with $H_{ii}<0$, and
+\item[(b)] $\prod_{i\in B_t}e_i(v_i;x_i)=0$ for every bag $t$ and every
+$v\in E(B_t)$ with $r_t(v)>0$.
+\end{enumerate}
+These are at most $n+N2^p$ factored polynomial equations of degree at most
+$p$, together with the original bounds and integrality. They are computed and
+checked in $2^{O(p)}\poly(I)$ bit operations, without a growth assumption and
+without enumerating interior integer labels or optimal components.
+\end{theorem}
+
+\begin{proof}
+By \eqref{eq:endpointid}, $x$ is optimal exactly when every nonnegative term
+vanishes. The diagonal terms vanish if and only if (a) holds, and
+$\pi_t(v;x)=0$ exactly when one factor $e_i(v_i;x_i)$ is zero.
+\end{proof}
+
+Condition (b) is a support condition, not a condition on coordinate
+projections. For $F=x+y-2xy=x(1-y)+y(1-x)$ on $[0,1]^2$, both optimal
+corners $(0,0)$ and $(1,1)$ use every endpoint of every coordinate, yet the
+two positive residuals give $x(1-y)=0$ and $y(1-x)=0$, which exclude every
+other point. A sum of $m$ disjoint copies has $2^m$ isolated optimizers and
+a description with $2m$ equations.
+
+The equations have a finite combinatorial form. For $x\in\hat X$ define its
+\emph{face pattern} $\sigma(x)\in\{\mathsf L,\mathsf U,\ast\}^n$ by
+$\sigma_i=\mathsf L$ if $x_i=l_i$, $\sigma_i=\mathsf U$ if $x_i=u_i$, and
+$\sigma_i=\ast$ otherwise. For a pattern $\tau$ on $B\subseteq[n]$ let
+$\operatorname{cube}(\tau)\subseteq E(B)$ consist of the $v$ with $v_i=l_i$
+where $\tau_i=\mathsf L$ and $v_i=u_i$ where $\tau_i=\mathsf U$. Then
+$\pi_t(v;x)>0$ if and only if $v\in\operatorname{cube}(\sigma(x)_{B_t})$.
+Let $\mathcal P_i=\{\mathsf L,\mathsf U\}$, with $\ast$ added when $H_{ii}=0$
+and $X_i$ has a point strictly between $l_i$ and $u_i$. Call
+$\sigma\in\prod_i\mathcal P_i$ \emph{admissible} if, for every bag,
+$\operatorname{cube}(\sigma_{B_t})\subseteq Z_t:=\{v\in E(B_t):r_t(v)=0\}$.
+
+\begin{corollary}[Optimal faces form a tree-structured constraint problem]\label{cor:facecsp}
+Under the hypothesis of Lemma~\ref{lem:endpointid}:
+\begin{enumerate}
+\item[(i)] $x\in X$ is optimal if and only if $\sigma(x)\in\prod_i\mathcal P_i$
+and $\sigma(x)$ is admissible.
+\item[(ii)] Replacing any $\ast$ of an admissible pattern by $\mathsf L$ or
+$\mathsf U$ keeps it admissible, and
+$S=\bigcup_{\sigma\text{ admissible}}\bigl(X\cap\bar F(\sigma)\bigr)$, where
+$\bar F(\sigma)=\{x:x_i=l_i\text{ if }\sigma_i=\mathsf L,\ x_i=u_i\text{ if }
+\sigma_i=\mathsf U\}$ is a closed face of $\hat X$. Distinct admissible
+patterns give disjoint nonempty sets $\{x\in X:\sigma(x)=\sigma\}$.
+\item[(iii)] Admissible patterns are the solutions of a constraint problem on
+the same tree decomposition, with at most three labels per variable and bag
+relations
+$\mathcal A_t=\{\tau\in\prod_{i\in B_t}\mathcal P_i:\operatorname{cube}(\tau)
+\subseteq Z_t\}$. Consequently, in $2^{O(p)}(N+n)\poly(I)$ bit operations
+one can decide whether the optimizer is unique, compute the dimension of $S$,
+count the admissible patterns, count $|S|$ when $S$ is finite, compute
+$\dist(y,S)^2$ and a nearest optimizer for a rational $y$, and minimize a
+linear function over $S$.
+\end{enumerate}
+\end{corollary}
+
+\begin{proof}
+(i) Condition (a) of Theorem~\ref{thm:endpointset} says $\sigma_i(x)\ne\ast$
+when $H_{ii}<0$; and $\sigma_i(x)=\ast$ is possible only if $X_i$ has an
+interior point. Condition (b) says that every $v$ with $\pi_t(v;x)>0$ has
+$r_t(v)=0$, that is, $\operatorname{cube}(\sigma(x)_{B_t})\subseteq Z_t$.
+
+(ii) Replacing $\ast$ by an endpoint shrinks every cube. If $\sigma$ is
+admissible and $x\in X\cap\bar F(\sigma)$, then $\sigma(x)$ is obtained from
+$\sigma$ by replacing some $\ast$ entries by endpoints, so $x$ is optimal by
+(i). Conversely $x\in S$ lies in $\bar F(\sigma(x))$. A pattern $\sigma$
+determines the set $\{x\in X:\sigma(x)=\sigma\}$, which is nonempty by the
+definition of $\mathcal P_i$.
+
+(iii) Each $\mathcal A_t$ is computed by testing at most $3^p$ patterns
+against at most $2^p$ residual entries. A constraint problem whose relations
+live on the bags of a tree decomposition is solved by nonserial dynamic
+programming over $(T,(B_t))$ in the min-sum, max-sum and sum-product
+semirings, with $O(p\,3^p)$ operations per bag \cite{Dechter1999}; each unary
+cost is charged once, at the bag nearest the root that contains its variable.
+The optimizer is unique if and only if exactly one pattern is admissible and
+it has no $\ast$, by the disjointness in (ii). The dimension of $S$ is the
+maximum number of $\ast$ entries on continuous coordinates. When $S$ is finite,
+$|S|=\sum_\sigma\prod_{i:\sigma_i=\ast}|X_i\cap(l_i,u_i)|$. By (ii),
+$\dist(y,S)^2=\min_\sigma\sum_ic_i(\sigma_i)$ over admissible $\sigma$, with
+$c_i(\mathsf L)=(y_i-l_i)^2$, $c_i(\mathsf U)=(y_i-u_i)^2$ and
+$c_i(\ast)=\dist(y_i,X_i)^2$. A linear objective attains its minimum over each
+closed face at an endpoint pattern, so it is minimized by the same
+recursion over $\{\mathsf L,\mathsf U\}$ labels. All numbers are rationals of
+polynomial bit length.
+\end{proof}
+
+\begin{remark}[Two-label integer coordinates and multilinear objectives]\label{rem:endpointext}
+If $X_i=\{l_i,l_i+1\}$, replacing $\frac12H_{ii}x_i^2$ by
+$\frac12H_{ii}\bigl((2l_i+1)x_i-l_i(l_i+1)\bigr)$ does not change $F$ on $X$.
+Hence the sign hypothesis is needed only for coordinates with at least three
+feasible values; all binary quadratic programs are covered. The proofs also
+apply verbatim to $F=\sum_af_a+\sum_i\psi_i(x_i)$ in which each $f_a$ is
+affine in each of its variables separately and each $\psi_i$ is concave on
+$[l_i,u_i]$. Then $\E f_a(Y)=f_a(x)$, and the diagonal term of
+\eqref{eq:endpointid} becomes $\psi_i(x_i)$ minus its chord at $x_i$. That
+difference vanishes at an interior point exactly when $\psi_i$ is affine on
+$[l_i,u_i]$, which replaces the condition $H_{ii}<0$ in (a).
+\end{remark}
+
+Endpoint optimality for nonpositive diagonals is classical; Del Pia and
+Khajavirad use it to separate binary-valued from genuinely continuous
+variables \cite{DelPiaKhajavirad2026}. Min-sum messages and nonnegative tree
+reparameterizations are also standard \cite{Dechter1999,WainwrightJaakkolaWillsky2005}.
+The identity \eqref{eq:endpointid} records what these ingredients give for
+the entire optimal set. Corollary~\ref{cor:facecsp} shows that the
+decomposition also controls the geometry of $S$, not only the optimal value.
+
+\subsubsection{The diagonal Lagrangian certificate}
+
+From here to the end of the section all coordinates are continuous. A point
+$\bar x\in X$ is a \emph{box KKT point} if $\partial_iF(\bar x)\ge0$ when
+$\bar x_i=l_i$, $\partial_iF(\bar x)\le0$ when $\bar x_i=u_i$, and
+$\partial_iF(\bar x)=0$ otherwise. For such a point put
+\[
+\lambda_i(\bar x)=\frac{2\,|\partial_iF(\bar x)|}{u_i-l_i},\qquad
+\Lambda(\bar x)=\operatorname{diag}(\lambda_1(\bar x),\ldots,\lambda_n(\bar x)).
+\]
+For $\lambda\in\R^n_{\ge0}$ define the Lagrangian dual function
+\[
+\psi(\lambda)=\inf_{x\in\R^n}\Bigl[F(x)-\frac12\sum_i\lambda_i(x_i-l_i)(u_i-x_i)\Bigr].
+\]
+
+\begin{lemma}[Diagonal certificate, full optimal set and invariance]\label{lem:diagcert}
+\begin{enumerate}
+\item[(i)] For every box KKT point $\bar x$ and every $x\in\R^n$,
+\begin{equation}\label{eq:diagid}
+F(x)-F(\bar x)=\frac12(x-\bar x)^{\mathsf T}\bigl(H+\Lambda(\bar x)\bigr)(x-\bar x)
++\frac12\sum_i\lambda_i(\bar x)(x_i-l_i)(u_i-x_i).
+\end{equation}
+\item[(ii)] If $H+\Lambda(\bar x)\succeq0$, then $\bar x\in S$ and
+\begin{equation}\label{eq:diagset}
+S=\bigl\{x\in X:\ (H+\Lambda(\bar x))(x-\bar x)=0,\ \
+\lambda_i(\bar x)(x_i-l_i)(u_i-x_i)=0\ \text{for all }i\bigr\}.
+\end{equation}
+\item[(iii)] $\psi(\lambda)\le\OPT$ for every $\lambda\ge0$, and the
+following are equivalent: (a) $H+\Lambda(\bar x)\succeq0$ for some
+$\bar x\in S$; (b) $H+\Lambda(\bar x)\succeq0$ for every $\bar x\in S$;
+(c) $\psi(\lambda)=\OPT$ for some $\lambda\ge0$. When they hold, the vector
+$\lambda(\bar x)$ is the same for every $\bar x\in S$, and it is the unique
+maximizer of $\psi$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+(i) Both sides are quadratic polynomials in $x$ that vanish at $\bar x$.
+Their Hessians are $H$ and $H+\Lambda-\Lambda=H$. The $i$th partial
+derivative of the right side at $\bar x$ is
+$\frac12\lambda_i(\bar x)(u_i+l_i-2\bar x_i)$. This equals
+$|\partial_iF(\bar x)|=\partial_iF(\bar x)$ when $\bar x_i=l_i$, equals
+$-|\partial_iF(\bar x)|=\partial_iF(\bar x)$ when $\bar x_i=u_i$, and is
+$0=\partial_iF(\bar x)$ at an interior coordinate. Two quadratics with equal
+value, gradient and Hessian at one point coincide.
+
+(ii) On $X$ both terms on the right of \eqref{eq:diagid} are nonnegative,
+so $\bar x$ is optimal, and $x\in X$ is optimal exactly when both vanish. A
+positive semidefinite quadratic form vanishes exactly on the kernel of its
+matrix.
+
+(iii) For $x\in X$ the bracket in $\psi$ is at most $F(x)$, so
+$\psi(\lambda)\le\OPT$. If (a) holds at $\bar x$, then by (i) the bracket with
+$\lambda=\lambda(\bar x)$ equals $F(\bar x)+\frac12(x-\bar x)^{\mathsf T}(H+\Lambda)(x-\bar x)$,
+whose infimum over $\R^n$ is $F(\bar x)=\OPT$; this gives (c). Suppose (c)
+holds for some $\lambda$, and let $\bar x\in S$ be arbitrary. Write
+$\mathcal L(x)$ for the bracket. Then
+$\OPT=\psi(\lambda)\le\mathcal L(\bar x)\le F(\bar x)=\OPT$. Hence
+$\lambda_i(\bar x_i-l_i)(u_i-\bar x_i)=0$ for all $i$, and $\bar x$ minimizes
+the quadratic $\mathcal L$ over $\R^n$. So
+$\nabla^2\mathcal L=H+\operatorname{diag}(\lambda)\succeq0$ and
+$0=\partial_i\mathcal L(\bar x)=\partial_iF(\bar x)+\lambda_i\bigl(\bar x_i-\tfrac{l_i+u_i}2\bigr)$.
+At an interior coordinate complementarity gives $\lambda_i=0$. At
+$\bar x_i=l_i$ the stationarity equation gives
+$\lambda_i=2\partial_iF(\bar x)/(u_i-l_i)=\lambda_i(\bar x)$, and similarly at
+$\bar x_i=u_i$. Thus $\lambda=\lambda(\bar x)$ and
+$H+\Lambda(\bar x)\succeq0$. Since $\bar x\in S$ was arbitrary, this proves (b)
+and the uniqueness and invariance statements. Finally (b) implies (a)
+because $S\ne\emptyset$.
+\end{proof}
+
+\begin{remark}\label{rem:shor}
+Call the instances satisfying (a)--(c) the \emph{diagonal certificate class}
+$\mathcal C$. Convex box QPs belong to it, since $\Lambda(\bar x)\succeq0$. It also contains indefinite instances with tilted and
+disconnected optimal sets. For example $F=(x-y+t/2)^2+\frac18t(1-t)$ on
+$[0,1]^3$ has diagonal $(2,2,\frac14)$, the two optimal segments
+$\{(v,v,0)\}$ and $\{(v,v+\frac12,1):0\le v\le\frac12\}$, the multiplier
+$\Lambda=\operatorname{diag}(0,0,\frac14)$ at every optimizer, and
+$H+\Lambda=2(1,-1,\tfrac12)^{\mathsf T}(1,-1,\tfrac12)\succeq0$. The function
+$\psi$ is the Lagrangian dual for the constraints
+$(x_i-l_i)(u_i-x_i)\ge0$, so condition (c) says that this dual, equivalently
+the basic Shor semidefinite relaxation, is exact. Sufficient global
+optimality conditions of this box-multiplier form are classical
+\cite{JeyakumarRubinovWu2006,LiWuQuan2015}, and stronger relaxations with
+complete exactness characterizations are studied in \cite{QiuYildirim2023}.
+Lemma~\ref{lem:diagcert} is therefore not a new certificate. What we use is
+its invariance: whichever optimizer a search finds, the same rational test
+accepts it.
+\end{remark}
+
+\subsubsection{Function values cannot replace a certificate under set growth}
+
+\begin{proposition}[Value-oracle barrier for unknown set growth]\label{prop:oraclebarrier}
+Fix $k\ge1$, $X=[0,1]^k$ and the coordinate-curvature bound $L=1$. Consider a
+deterministic algorithm that queries exact values, gradients and Hessians of
+an unknown $C^2$ function $f$ at adaptively chosen points and outputs either a
+rational interval of width at most $\varepsilon$ containing $\min_Xf$, or a
+point $\hat x$ with $f(\hat x)-\min_Xf\le\varepsilon$. Suppose it is correct
+for every $C^2$ function with $\partial_{ii}f\le1$ on $X$ for all $i$ that
+satisfies \eqref{eq:setgrowth} for some $g>0$. Then on $f\equiv0$, for which
+$\kappa=1$, it makes at least $\bigl(1/(2\sqrt{6\varepsilon})-1\bigr)^k-1$
+queries.
+\end{proposition}
+
+\begin{proof}
+For $c\in X$ and $0<w\le1$ let
+$f_{c,w}(x)=-\frac{w^2}6\bigl(1-|x-c|^2/w^2\bigr)^3$ when $|x-c|\le w$ and
+$f_{c,w}(x)=0$ otherwise. In the variable $z=(x-c)/w$ with $\rho=|z|^2$,
+\[
+\partial_if_{c,w}=w\,z_i(1-\rho)^2,\qquad
+\partial_{ij}f_{c,w}=\delta_{ij}(1-\rho)^2-4z_iz_j(1-\rho).
+\]
+Value, gradient and Hessian vanish on $\rho=1$, so $f_{c,w}$ is $C^2$, and
+$\partial_{ii}f_{c,w}=(1-\rho)(1-\rho-4z_i^2)\le1$. The minimizer $c$ is
+unique with value $-w^2/6$. Inside the ball,
+$f_{c,w}+\frac{w^2}6=\frac{w^2}6\bigl(1-(1-\rho)^3\bigr)\ge\frac{w^2}6\rho
+=\frac{|x-c|^2}6$, because $1-(1-\rho)^3-\rho=\rho(1-\rho)(2-\rho)\ge0$.
+Outside it the gap is $w^2/6\ge\frac{w^2}{6k}|x-c|^2$. Hence
+\eqref{eq:setgrowth} holds with $g=w^2/(6k)$. The zero function satisfies it
+with $g=1$ and $S=X$.
+
+Run the algorithm on $f\equiv0$; let $q$ be its number of queries and add
+the output point, if any, to the query points. Suppose
+$q<\bigl(1/(2\sqrt{6\varepsilon})-1\bigr)^k-1$, and let
+$M=\lfloor(q+1)^{1/k}\rfloor+1$. Then $M^k>q+1$ and $M<1/(2\sqrt{6\varepsilon})$.
+Divide $X$ into $M^k$ closed subcubes of side $1/M$. The interior of one of
+them contains none of the at most $q+1$ points. Let $c$ be its center and
+choose $w$ with $\sqrt{6\varepsilon}<w<1/(2M)$. The closed ball of radius $w$
+lies in the open subcube, so every oracle answer for $f_{c,w}$ at the
+recorded points equals the answer for $0$. By determinism the algorithm
+produces the same transcript and output on $f_{c,w}$. An interval of width at
+most $\varepsilon$ containing $0$ does not contain $-w^2/6<-\varepsilon$. An
+output point outside the ball has gap $w^2/6>\varepsilon$ for $f_{c,w}$.
+Either way the algorithm is wrong on an admissible function.
+\end{proof}
+
+The filtered-grid algorithm of Section~\ref{sec:rate} uses only exact values
+and the curvature bound, yet needs no accuracy-dependent number of states under
+point growth. Proposition~\ref{prop:oraclebarrier} shows that no algorithm in
+that information model can do the same under growth toward an unknown set,
+even with $k=p=1$ and $\kappa=1$. The barrier concerns information, not the
+input class: the alternatives are not quadratics. It is the classical
+hidden-bump argument of information-based complexity, adapted to set growth.
+An algorithm for explicit quadratics must therefore exploit the coefficients,
+for example through a certificate such as Lemma~\ref{lem:diagcert}.
+
+\subsubsection{A proximal grid under a trusted growth guess}
+
+The following generator finds a point near $S$ when a guessed ratio
+$K\ge1$ satisfies $K\ge L/g$. Its work is bounded for every guess, but its
+conclusion is not checkable, so it is used only to propose candidates.
+
+Given a rational $K\ge1$, let $\mu\ge2$ be the least integer with
+$4^{-\mu}K\le1/8$, and put
+\[
+\theta=2^{-\mu},\qquad\eta=\frac{L\theta^2}4,\qquad
+\varrho=2\bigl\lceil\sqrt{Kn}\,\bigr\rceil,\qquad
+K_\theta=100\,\theta^{-1}\lceil\log_2(n+2)\rceil .
+\]
+Then $\theta\le1/4$, $\theta^2K\le1/8$ and $\theta^{-1}\le6\sqrt K$.
+A \emph{proximal stage} with center $c\in X$ and mesh $h>0$ does the
+following. Form the fresh box $B=X\cap\prod_i[c_i-\varrho h,c_i+\varrho h]$,
+rounding integer endpoints inward. Build in each $B_i$ the outward geometric
+grid $G_i$ from $c_i$ of Section~\ref{sec:rate}, with step $h+\theta t$
+(continuous) or $\max\{1,\lfloor h+\theta t\rfloor\}$ (integer) at distance
+$t$, clipped at the endpoints of $B_i$. With the corrections $d_i$ and $D$ of
+\eqref{eq:correction} on these grids, minimize
+\[
+P(y)=F(y)-D(y)+\eta\norm{y-c}^2\qquad\Bigl(y\in\prod_iG_i\Bigr)
+\]
+by the junction-tree recursion \eqref{eq:messages}; correction and proximal
+terms are unary, so the decomposition is unchanged. The output is a
+minimizer $y^+$. The \emph{proximal iteration with guess $K$} starts at the
+lower endpoint vector $c^0=l$, uses $h_j=s2^{-j}$, outputs $y^j$ at stage $j$,
+and sets $c^{j+1}=y^j$. Every center is feasible, and every box is built from
+$X$ rather than from the previous box.
+
+\begin{lemma}[Proximal stage]\label{lem:proximal}
+\begin{enumerate}
+\item[(i)] For every guess, every grid has at most $K_\theta$ nodes.
+\item[(ii)] Let $g$ satisfy \eqref{eq:setgrowth} with $L/g\le K$. If
+$\dist(c,S)^2\le4Knh^2$, then
+\[
+F(y^+)-\OPT\le\tfrac{99}{256}Lnh^2,\qquad
+\dist(y^+,S)^2\le\tfrac{99}{256}Knh^2 .
+\]
+\item[(iii)] Under the hypothesis of (ii) on $g$, the proximal iteration
+satisfies $\dist(y^j,S)^2\le\frac{99}{256}Knh_j^2$ for every $j\ge0$.
+\item[(iv)] Stage $j$ costs $O\bigl(p(N+|\mathcal A|)K_\theta^p\bigr)$ table
+operations on rationals of bit length $\poly(I+j+\mu K_\theta)$, for every
+guess.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+(i) Each endpoint of $B_i$ is within $\varrho h$ of $c_i$. As in the proof of
+Lemma~\ref{lem:states}, one side of a continuous grid has at most
+$1+\lceil\ln(1+\theta\varrho)/\ln(1+\theta)\rceil$ nodes, and one side of an
+integer grid at most $1+\lceil\ln(1+\theta\varrho h/H)/\ln(1+\theta/3)\rceil$
+with $H=\max\{h,1\}\ge h$. Now
+$\theta\varrho\le2\theta\sqrt{Kn}+2\theta\le\sqrt{n/2}+\frac12$, and
+$\frac32+\sqrt{n/2}\le n+2$. Using $\ln(1+\theta)\ge\ln(1+\theta/3)\ge\theta/4$
+and $\ln(n+2)\le\log_2(n+2)$, each side has at most
+$2+4\theta^{-1}\log_2(n+2)$ nodes. With the center, $|G_i|\le5+8\theta^{-1}
+\lceil\log_2(n+2)\rceil\le10\,\theta^{-1}\lceil\log_2(n+2)\rceil\le K_\theta$,
+since $\theta^{-1}\ge4$.
+
+(ii) Let $s^*\in S$ be nearest to $c$ (it exists since $S$ is compact) and
+$E=\norm{s^*-c}^2\le4Knh^2$. Each $|s^*_i-c_i|\le2\sqrt{Kn}\,h\le\varrho h$,
+and integer coordinates of $s^*$ are integers, so $s^*\in B$. Let $Y$ be the
+independent mean-preserving rounding of $s^*$ to its enclosing grid
+intervals. Lemma~\ref{lem:round} on the box $B$ gives
+$\E[F(Y)-D(Y)]\le F(s^*)=\OPT$. Independence gives
+$\E\norm{Y-c}^2=E+\sum_i\operatorname{Var}Y_i$. If $s^*_i$ is not a node, its
+enclosing interval was generated from its inner endpoint, at distance at most
+$|s^*_i-c_i|$ from $c_i$, so its length is at most $h+\theta|s^*_i-c_i|$;
+an integer coordinate inside a unit interval is impossible, and clipping only
+shortens. Hence
+$\operatorname{Var}Y_i\le\frac14(h+\theta|s^*_i-c_i|)^2\le\frac12(h^2+\theta^2|s^*_i-c_i|^2)$
+and $\sum_i\operatorname{Var}Y_i\le\frac12(nh^2+\theta^2E)$. Since a minimum
+is at most an expectation,
+\[
+P(y^+)\le\OPT+\eta\Bigl[\bigl(1+\tfrac{\theta^2}2\bigr)E+\tfrac{nh^2}2\Bigr].
+\]
+By \eqref{eq:mesh}, $w_i(v)\le h+\theta|v-c_i|$ for every node, so
+$d_i(v)\le\frac L4h^2+\eta|v-c_i|^2$ and
+$D(y^+)\le\frac L4nh^2+\eta\norm{y^+-c}^2$. Therefore
+\begin{align*}
+F(y^+)-\OPT&=P(y^+)-\OPT+D(y^+)-\eta\norm{y^+-c}^2\\
+&\le\frac{Lnh^2}4\Bigl[1+4K\theta^2\bigl(1+\tfrac{\theta^2}2\bigr)+\tfrac{\theta^2}2\Bigr]
+\le\frac{Lnh^2}4\cdot\frac{99}{64},
+\end{align*}
+using $E\le4Knh^2$, $4K\theta^2\le\frac12$ and $\theta^2\le\frac1{16}$.
+Growth gives $\dist(y^+,S)^2\le(F(y^+)-\OPT)/g\le\frac{99}{256}(L/g)nh^2\le
+\frac{99}{256}Knh^2$.
+
+(iii) Initially $\dist(l,S)^2\le ns^2\le4Knh_0^2$. If
+$\dist(y^j,S)^2\le\frac{99}{256}Knh_j^2$, then
+$\dist(c^{j+1},S)^2\le Knh_j^2/2=2Knh_{j+1}^2\le4Knh_{j+1}^2$. Apply (ii).
+
+(iv) Let $\omega_0$ be a common denominator of $H,b,c,L$ and the endpoints.
+By induction, every stage-$j$ grid coordinate has a denominator dividing
+$\omega_02^{j+\mu K_\theta}$: the center comes from stage $j-1$; the new
+endpoints $c_i\pm\varrho h_j$ have denominators dividing $\omega_02^j$; an
+unclipped continuous offset is
+$h_j\bigl[(2^\mu+1)^k-2^{\mu k}\bigr]/2^{\mu(k-1)}$ with $k\le K_\theta$;
+integer steps are integral; clipping selects an endpoint of $B_i$. Values of
+$F$, corrections and the proximal term then have a common denominator
+dividing $8\omega_0^22^{2\mu+2}\bigl(\omega_02^{j+\mu K_\theta}\bigr)^2$, and
+bounded magnitudes because all points stay in $\hat X$. Messages are sums of
+such values. The table count is \eqref{eq:dpwork} with $K_\theta$ labels.
+\end{proof}
+
+\begin{remark}[A false guess]\label{rem:falseguess}
+Without $L/g\le K$ the iteration may converge to a nonglobal point. For
+$F=x^2+y^2-3xy+\frac{63}{128}(x+y)$ on $[0,1]^2$, put $t=x+y$; then
+$F\ge t^2-\frac54t^2+\frac{63}{128}t$, a concave function of $t\in[0,2]$, so
+$(1,1)$ is the unique optimizer with $\OPT=-\frac1{64}$. The origin is a box
+KKT point with $F=0$. Exact computation shows that the iteration with
+$K\in\{1,2,4\}$ returns the origin at every stage $j\le33$, which covers the
+budgets $J_K$ of Theorem~\ref{thm:diagdiscovery}. Lemma~\ref{lem:diagcert}
+rejects it: $H+\Lambda=\bigl(\begin{smallmatrix}191/64&-3\\-3&191/64\end{smallmatrix}\bigr)$
+has eigenvalue $-\frac1{64}$. At $(1,1)$ the matrix has diagonal $\frac{193}{64}$
+and is positive definite.
+\end{remark}
+
+\subsubsection{Stationary-face recovery}
+
+This lemma is the recovery step inside the proof of
+Theorem~\ref{thm:generalfinite}, stated separately because it is used twice.
+Let $\omega$ be the least positive integer for which $\omega H$, $\omega b$
+and $\omega l,\omega u$ are integral, and put
+\[
+C_H=\max\{1,\max_{ij}|\omega H_{ij}|\},\qquad\Delta=(nC_H)^n,\qquad
+R=\omega\Delta,\qquad\tau=\frac1{4nR}.
+\]
+These numbers have bit length polynomial in $I$. For $y\in X$, the
+\emph{selected face} fixes every integer coordinate to $y_i$, fixes a
+continuous coordinate to $l_i$ if $y_i-l_i\le\tau$ and to $u_i$ if
+$u_i-y_i\le\tau$, and leaves the other continuous coordinates free; let $J$ be
+the free set and
+\[
+\Pi(y)=\{x\in\hat X:\ \text{selected coordinates fixed},\ \ \partial_jF(x)=0\ (j\in J)\}.
+\]
+
+\begin{lemma}[Stationary-face recovery]\label{lem:recovery}
+Every vertex of a polytope defined by fixing coordinates to rational values
+of denominator dividing $\omega$, the bounds of $\hat X$, and stationarity
+equations $\partial_jF(x)=0$ has a common coordinate denominator at most $R$.
+If $y\in X$ and $\dist(y,S)\le\tau/2$, then $\Pi(y)$ is nonempty and every
+point of $\Pi(y)$ is a global optimizer.
+\end{lemma}
+
+\begin{proof}
+In $z=\omega x$, a fixing or bound row is a unit row with integral right side,
+and a stationarity row reads $(\omega H)_{j\cdot}z=-\omega^2b_j$, with integral
+entries of magnitude at most $C_H$. A vertex solves $n$ linearly independent
+such rows $Az=\beta$. Expanding $\det A$ along its unit rows leaves a
+$k\times k$ minor of $\omega H$ with $k\le n$, of magnitude at most
+$k!\,C_H^k\le\Delta$. By Cramer's rule $z$ has common denominator $|\det A|$,
+so $x=z/\omega$ has one at most $\omega\Delta=R$.
+
+Let $s^*\in S$ be nearest to $y$. Since $\norm{y-s^*}\le\tau/2<1$, the integer
+coordinates agree. Every positive width is at least $1/\omega>2\tau$, so no
+coordinate is selected at both bounds. Let $A^*$ be the continuous coordinates
+at a bound in $s^*$ and $J_0$ the others. Each $i\in A^*$ has $y_i$ within
+$\tau/2$ of the same bound, so it is selected there; hence $J\subseteq J_0$.
+Let
+\[
+P=\{x\in\hat X:\ x_i=s^*_i\ (i\text{ integer or }i\in A^*),\ \ \partial_jF(x)=0\ (j\in J_0)\}.
+\]
+Optimality of $s^*$ with two-sided feasible moves in $J_0$ gives $s^*\in P$.
+For $x\in P$ the difference $d=x-s^*$ is supported on $J_0$ and
+$H_{J_0J_0}d_{J_0}=\nabla_{J_0}F(x)-\nabla_{J_0}F(s^*)=0$, so
+$F(x)-F(s^*)=\nabla F(s^*)^{\mathsf T}d+\frac12d^{\mathsf T}Hd=0$: every point
+of $P$ is optimal. Let $q(x)$ be the sum of the slacks $x_i-l_i$ or $u_i-x_i$
+of the coordinates in $J_0\setminus J$ to their selected bounds. At $s^*$ each
+such slack is at most $\tau+\tau/2$, so $q(s^*)\le\frac32n\tau=\frac3{8R}$. The
+linear function $q$ attains its minimum over the nonempty polytope $P$ at a
+vertex. There $\omega q$ is an integral combination of the coordinates of
+$z=\omega x$, which have a common denominator at most $\Delta$, plus an
+integer; so a positive minimum would be at least $1/(\omega\Delta)=1/R$. Hence some $s'\in P$ has $q(s')=0$; it lies in $\Pi(y)$ because
+$J\subseteq J_0$. For any $x\in\Pi(y)$, $d=x-s'$ is supported on $J$ and
+$H_{JJ}d_J=0$, so $F(x)=F(s')+\nabla_JF(s')^{\mathsf T}d_J+\frac12d_J^{\mathsf T}H_{JJ}d_J=\OPT$.
+\end{proof}
+
+\subsubsection{Exact discovery for the certificate class with unknown growth}
+
+\begin{theorem}[Unknown-growth discovery of a certified optimal set]\label{thm:diagdiscovery}
+Let $X$ be a continuous box. Consider the following procedure. For
+$K=1,2,4,\ldots$: let $J_K$ be the least $j\ge0$ with $4^j\tau^2\ge4Kns^2$;
+run the proximal iteration with guess $K$ for stages $0,\ldots,J_K$, and let
+$y=y^{J_K}$. If $\Pi(y)$ is nonempty, compute a vertex $\bar x$ of it by
+exact linear programming. If $\bar x$ is a box KKT point and
+$H+\Lambda(\bar x)\succeq0$, output $\bar x$, $\OPT=F(\bar x)$, $\Lambda(\bar x)$
+and the description \eqref{eq:diagset}; otherwise continue with $2K$.
+\begin{enumerate}
+\item[(a)] Every output is correct, with no assumption on the instance.
+\item[(b)] If $F\in\mathcal C$ and $g>0$ is any set-growth constant, the
+procedure stops no later than the first guess $K\ge L/g$, so with $K\le2\kappa$.
+\item[(c)] Its running time is $f(p,\kappa)\poly(I)$ bit operations with an
+absolute polynomial exponent, and the output has bit length $\poly(I)$.
+\end{enumerate}
+Neither $S$, nor $g$, nor a bound on $\kappa$ is supplied.
+\end{theorem}
+
+\begin{proof}
+(a) Acceptance requires exactly the hypotheses of
+Lemma~\ref{lem:diagcert}(ii), checked in rational arithmetic; the positive
+semidefiniteness test is symmetric Gaussian elimination that rejects a
+negative pivot and a zero pivot with a nonzero off-diagonal entry in its row.
+
+(b) If $K\ge L/g$, Lemma~\ref{lem:proximal}(iii) gives
+$\dist(y,S)^2\le\frac{99}{256}Kns^24^{-J_K}<\tau^2/4$. By
+Lemma~\ref{lem:recovery}, $\Pi(y)$ is nonempty and its vertex $\bar x$ is
+optimal, hence a box KKT point. By Lemma~\ref{lem:diagcert}(iii), (a) implies
+(b), so $H+\Lambda(\bar x)\succeq0$ and the test accepts, whichever optimal
+component $\bar x$ belongs to.
+
+(c) At most $1+\log_2(2\kappa)$ guesses run. For each,
+$J_K+1=O(\log(Kns^2/\tau^2))=\poly(I)+O(\log K)$, and by
+Lemma~\ref{lem:proximal}(i),(iv) a stage costs
+$O(p(N+|\mathcal A|)K_\theta^p)$ operations on numbers of bit length
+$\poly(I+J_K+\mu K_\theta)$, where $\theta^{-1}\le6\sqrt K$ and $\mu=O(\log K)$.
+As in Theorem~\ref{thm:approx}, \eqref{eq:logabsorb} absorbs
+$\lceil\log_2(n+2)\rceil^p$ into $(C_0p)^p(n+2)$, and every factor depending
+only on $p$ and $K\le2\kappa$ enters $f$. Selection uses original data, so
+$\Pi(y)$ has input-size description; exact linear programming returns a vertex
+in polynomial time, and the vertex has denominators at most $R$ by
+Lemma~\ref{lem:recovery}. The KKT and semidefiniteness tests are polynomial.
+\end{proof}
+
+On $\mathcal C$ the procedure always terminates, because a set-growth
+constant always exists \cite[Theorem~3.3]{LuoSturm2000}; $\kappa$ governs only
+the running time. Outside $\mathcal C$ it may run forever, so an
+implementation needs a work limit, and an unsuccessful guess certifies
+nothing about membership. For fixed $p$ the bound is polynomial in $\kappa$
+and $I$: the table size is $O\bigl((600\sqrt K)^p(C_0p)^p(n+2)\bigr)$, and the
+bit lengths are polynomial in $I$ and $\sqrt K\log K$.
+
+\begin{proposition}[Discovery within $\mathcal C$ is hard without the growth parameter]\label{prop:sshard}
+For integers $a_1,\ldots,a_m$ and $T$ with $|T|\le A=\sum_i|a_i|$, let
+$\sigma_0=0$ and
+\[
+F(x,\sigma)=\sum_{i=1}^m(\sigma_i-\sigma_{i-1}-a_ix_i)^2+(\sigma_m-T)^2
++\sum_{i=1}^mx_i(1-x_i)
+\]
+on $x\in[0,1]^m$, $\sigma\in[-A,A]^m$. The bags $\{\sigma_1,x_1\}$ and
+$\{\sigma_{i-1},\sigma_i,x_i\}$ $(2\le i\le m)$ form a path decomposition of
+size at most $3$. If some $\hat x\in\{0,1\}^m$ has $\sum_ia_i\hat x_i=T$, then
+$F\in\mathcal C$, $\OPT=0$, and $S$ consists exactly of the points
+$(\hat x,\hat\sigma)$ with $\hat x$ such a solution and $\hat\sigma$ its
+partial sums. Otherwise $\OPT>0$. Consequently, unless $\mathrm P=\mathrm{NP}$,
+no polynomial-time algorithm returns an exact optimizer for every instance of
+$\mathcal C$ with bag size three, even though $\OPT=0$ is known in advance for
+these instances, and the ratio $\kappa$ of these instances is not bounded by
+any polynomial in their input length.
+\end{proposition}
+
+\begin{proof}
+$F\ge0$ on the box, and $F=0$ exactly when all squares and all products
+$x_i(1-x_i)$ vanish, that is, for binary $x$ with partial sums $\sigma$ and
+$\sigma_m=T$; the partial sums lie in $[-A,A]$. If no solution exists, $F>0$
+on the compact box. In the feasible case let $\hat z=(\hat x,\hat\sigma)$ be
+optimal. The sum of
+squares equals $\frac12(z-\hat z)^{\mathsf T}M(z-\hat z)$ with $M\succeq0$,
+because each square is of an affine function vanishing at $\hat z$. Also
+$\sum_ix_i(1-x_i)=\frac12\sum_i2(x_i-0)(1-x_i)$. So
+$F(z)-F(\hat z)=\frac12(z-\hat z)^{\mathsf T}M(z-\hat z)+\frac12\sum_i2x_i(1-x_i)$.
+At $\hat z$ the gradient is $1-2\hat x_i=\pm1$ in $x_i$ and $0$ in
+$\sigma$, so $\hat z$ is a box KKT point with $\lambda_i(\hat z)=2$ on $x$ and
+$0$ on $\sigma$, and $H+\Lambda(\hat z)=M\succeq0$. Thus $F\in\mathcal C$.
+Subset Sum with binary-encoded integers is NP-complete. An algorithm as in the
+statement, stopped at its polynomial time bound and followed by a check of its
+output, would decide it. By the remark after Theorem~\ref{thm:diagdiscovery},
+the same would follow if $\kappa$ were polynomially bounded on these instances.
+\end{proof}
+
+The optimal value of an instance of $\mathcal C$ equals $\max\psi$, the value
+of a convex relaxation. Proposition~\ref{prop:sshard} shows that the
+difficulty is in locating an optimizer, and that a parameter such as $\kappa$
+is needed for an efficient exact search. Corollary~\ref{cor:facecsp} has no
+counterpart here. With $T=0$ and integers $a_i$ of both signs, the origin is an
+optimizer of an instance of $\mathcal C$, and it is the unique optimizer
+exactly when no nonempty subset of the $a_i$ sums to zero, which is an
+NP-complete question. So even with one optimizer and the full description
+\eqref{eq:diagset} in hand, deciding uniqueness is hard.
+
+% ---------------------------------------------------------------------------
+\section{Exact implicit output for polynomial boundary optima}\label{app:boundary}
+
+This appendix makes precise what exact output means for the explicit
+polynomials of Section~\ref{sec:polynomial} when the optimizer can be
+irrational and lie on the boundary. Throughout, $F$ is an explicit rational
+polynomial of fixed degree $d\ge2$ with factor scopes in the bags, on a mixed
+box $X$, with a verified curvature bound $L$. Let $\mathcal C_{\rm c}$ be the
+continuous coordinates. Fix rationals $C_2,C_3\ge1$ with
+\[
+\sum_{j\in\mathcal C_{\rm c}}\sup_{\hat X}|\partial_{ij}F|\le C_2,\qquad
+\sum_{j,k\in\mathcal C_{\rm c}}\sup_{\hat X}|\partial_{ijk}F|\le C_3
+\qquad(i\in\mathcal C_{\rm c}).
+\]
+Monomialwise interval bounds give such numbers with bit length $\poly(I)$
+at fixed $d$.
+
+\paragraph{Three sound tests.}
+The pruned-grid trials of Section~\ref{sec:rate} are run with one extra filter.
+
+\begin{lemma}[Integer-label filter]\label{lem:labelfilter}
+(i) Suppose at some stage every grid interval of an integer coordinate $i$
+has length one. Then deleting the labels $v$ with $m_i(v)>U$ and taking the
+hull of the remaining labels removes no point with objective at most $U$, and
+keeps the incumbent and the corrected-grid minimizer; the filtering-history
+argument of Proposition~\ref{prop:filter} remains valid.
+(ii) Assume a unique optimizer $x^*$, point growth \eqref{eq:growth}, and
+$\theta^2\le1/(8\kappa)$. At the first stage with
+$h_j\le1/(10\sqrt{n\kappa})$, every integer coordinate is fixed to $x^*_i$.
+\end{lemma}
+
+\begin{proof}
+(i) Every interval adjacent to $v$ is a unit interval, so $d_i(v)=0$. For
+feasible $x$ with $x_i=v$, round the other coordinates as in
+Lemma~\ref{lem:round}; coordinate $i$ stays at $v$. Then
+$F(x)\ge\E Q(Y)\ge m_i(v)$. Hence a deleted label carries no point with
+value at most $U$, in particular no optimizer and not the incumbent. The
+corrected-grid minimizer $y$ survives because $m_i(y_i)\le Q(y)=\beta\le\OPT\le U$.
+
+(ii) If $j=0$ then $s<1$ and no integer coordinate is left. Otherwise, by
+Lemma~\ref{lem:localize} at stage $j-1$, the current integer domain lies
+within $1+10\sqrt{n\kappa}\,h_j\le2$ of the center. All steps
+$\max\{1,\lfloor h_j+\theta t\rfloor\}$ with $t\le2$ equal one, so (i) applies.
+A retained label $v$ has a grid assignment $z$ with $z_i=v$ and
+$Q(z)\le U_j$; the derivation of \eqref{eq:witnessradius} applies to it and
+gives $\norm{z-x^*}^2\le\frac{22}{15}\kappa nh_j^2<1$, so $v=x^*_i$.
+The extra filter keeps $x^*$ and $y_j$, so Lemmas~\ref{lem:contraction}
+and~\ref{lem:localize} still apply.
+\end{proof}
+
+\begin{lemma}[Monotone face reduction]\label{lem:monotone}
+Let $B$ be a product box with fixed integer coordinates, $i$ a free
+continuous coordinate whose original bound $l_i$ is an endpoint of $B_i$, and
+suppose $\partial_iF\ge0$ on $B$. Then $\min_BF=\min_{B\cap\{x_i=l_i\}}F$, and
+if $\partial_iF>0$ on $B$, every minimizer over $B$ has $x_i=l_i$. The same
+holds for $u_i$ with $\partial_iF\le0$. With $c$ the midpoint and $r$ the
+largest half-width of the free continuous coordinates of $B$,
+$\partial_iF(c)-C_2r>0$ certifies $\partial_iF>0$ on $B$, and
+$\partial_iF(c)+C_2r<0$ certifies $\partial_iF<0$.
+\end{lemma}
+
+\begin{proof}
+Replacing $x_i$ by $l_i$ keeps a point of $B$ in $B$ and, by the mean value
+theorem along the segment, does not increase $F$, and decreases it under a
+strict sign unless $x_i=l_i$. For the test,
+$|\partial_iF(x)-\partial_iF(c)|\le\sum_j\sup|\partial_{ij}F|\,|x_j-c_j|\le C_2r$.
+\end{proof}
+
+Any other sound sign enclosure may be used as well, for example Bernstein
+coefficient bounds of each factor derivative on its own scope, which have at
+most $d^p$ coefficients. Such monotonicity tests are standard
+\cite{ArayaTrombettoniNeveu2010}; the termination proof below uses only the
+midpoint test.
+
+\begin{lemma}[Uniform convexity patch]\label{lem:patch}
+Let $B$ be a box with fixed integer coordinates and some fixed continuous
+coordinates, $J$ its free coordinates, $c$ its midpoint and $r$ the largest
+free half-width. If $H_{JJ}(c)-(C_3r+\sigma)\mathrm{Id}\succ0$ for some
+$\sigma>0$, then $F$ restricted to $B$ is strongly convex in $x_J$ and has a
+unique minimizer over $B$.
+\end{lemma}
+
+\begin{proof}
+Each entry satisfies $|H_{jk}(x)-H_{jk}(c)|\le r\sum_l\sup|\partial_{jkl}F|$,
+so every row sum of $|H_{JJ}(x)-H_{JJ}(c)|$ is at most $C_3r$. The spectral
+norm of a symmetric matrix is at most its largest absolute row sum. Hence
+$H_{JJ}(x)\succ\sigma\mathrm{Id}$ on $B$.
+\end{proof}
+
+\paragraph{The procedure.}
+Trial $\mu\ge2$ runs the capped pruned-grid algorithm with $\theta=2^{-\mu}$,
+the cap \eqref{eq:statecap}, and the filter of Lemma~\ref{lem:labelfilter},
+for stages $j=0,1,2,\ldots$ without a stage limit, aborting if the cap would be
+exceeded. After a stage it succeeds if the certified gap is zero (the
+incumbent is then an exact rational optimizer). Otherwise, if every integer
+coordinate of the retained box is a singleton, it copies the retained box,
+fixes the integer coordinates, applies sound reductions of
+Lemma~\ref{lem:monotone} until none applies, and succeeds if no free
+coordinate remains or if the test of Lemma~\ref{lem:patch} holds with
+$\sigma_\mu=L/4^{\mu+1}$. The copy never influences later pruning. The
+procedure runs phases $q=2,3,\ldots$; in phase $q$ it restarts trial $\mu$ for
+each $2\le\mu\le q$ and stops it after $2^{q-\mu}$ bit operations, stopping at
+the first success.
+
+\begin{theorem}[Exact implicit boundary output with a complementarity margin]\label{thm:boundary}
+(a) On success, the output is a fixed integer assignment, a set of continuous
+coordinates fixed at original bounds, and a rational box for the remaining
+coordinates on which $F$ is strongly convex; the unique minimizer $\hat x$ of
+$F$ over this face box is a global optimizer of the original problem. If no
+coordinate is free, $\hat x$ is an explicit rational optimizer. This holds
+with no assumption on the instance.
+
+(b) Suppose $F$ has a unique optimizer $x^*$ with point growth
+\eqref{eq:growth}, and every continuous coordinate with $x^*_i\in\{l_i,u_i\}$
+is strictly complementary: its inward derivative, $\partial_iF(x^*)$ at a
+lower bound or $-\partial_iF(x^*)$ at an upper bound, is positive. Let
+$\gamma$ be the smallest such inward derivative and
+$B_\gamma=\lceil\log_2\max\{2,C_2/\gamma\}\rceil$ ($B_\gamma=1$ if there is
+no active continuous coordinate). Then the procedure succeeds after
+$f_d(p,\kappa)\poly(I+B_\gamma)$ bit operations. Neither $x^*$, $g$, nor
+$\gamma$ is supplied.
+\end{theorem}
+
+\begin{proof}
+(a) The retained box contains every optimizer
+(Proposition~\ref{prop:filter} and Lemma~\ref{lem:labelfilter}), so after
+fixing its singleton integer coordinates its minimum is $\OPT$. Each
+reduction preserves the minimum over the current box
+(Lemma~\ref{lem:monotone}). On the final face box $F$ has minimum $\OPT$ and,
+by Lemma~\ref{lem:patch}, a unique minimizer, which is therefore globally
+optimal. A zero certified gap makes the incumbent optimal.
+
+(b) Let $\mu_*$ be the least $\mu\ge2$ with $4^\mu\ge8\kappa$, so that
+$4^{\mu_*}\le32\kappa$ and trial $\mu_*$ satisfies the hypotheses of
+Lemmas~\ref{lem:contraction}--\ref{lem:states}; it never reaches its cap. Let
+$j_*$ be the least stage with
+\[
+h_j\le\frac1{10\sqrt{n\kappa}},\qquad
+5\sqrt{n\kappa}\,h_j\le\frac\gamma{4C_2},\qquad
+5\sqrt{n\kappa}\,h_j\le\frac L{8\cdot4^{\mu_*}C_3},
+\]
+omitting the first condition without integer coordinates and the second
+without active continuous coordinates. Then
+$j_*=\poly(I)+O(\log\kappa+B_\gamma)$, since $\log s$, $\log C_2$, $\log C_3$
+and $\log(1/L)$ are polynomial in $I$. We show that trial $\mu_*$ succeeds by
+stage $j_*$.
+
+At stage $j_*$ the integer coordinates are fixed to $x^*$
+(Lemma~\ref{lem:labelfilter}) and every continuous retained interval has
+half-width $r\le5\sqrt{n\kappa}\,h_{j_*}$ (Lemma~\ref{lem:localize}). A sound
+reduction never removes $x^*$: if the reduction to the bound $\beta_k$ of
+coordinate $k$ is justified on a box $B\ni x^*$, then clamping $x^*_k$ to
+$\beta_k$ gives a point of $B$ with value at most $\OPT$, which by uniqueness is
+$x^*$; so $x^*_k=\beta_k$ and coordinate $k$ is active. Hence the current
+face box always contains $x^*$, agrees with it on fixed coordinates, and has
+$\norm{c-x^*}_\infty\le r$. For an active $i$ at $l_i$ that is not yet fixed,
+$l_i$ is an endpoint of the current interval and
+$\partial_iF(c)-C_2r\ge\gamma-2C_2r\ge\gamma/2>0$, so the midpoint test
+fixes it; the upper case is symmetric. When no reduction applies, the free
+set $J$ consists exactly of the continuous coordinates that are interior at
+$x^*$. If $J=\emptyset$ the trial succeeds. Otherwise $x^*\pm tv\in X$ for
+$v\in\R^J$ and small $t$, so \eqref{eq:growth} and Taylor's formula give
+$\nabla_JF(x^*)=0$ and $H_{JJ}(x^*)\succeq2g\,\mathrm{Id}$. By the row-sum
+bound, $H_{JJ}(c)\succeq(2g-C_3r)\mathrm{Id}$, and
+\[
+H_{JJ}(c)-(C_3r+\sigma_{\mu_*})\mathrm{Id}\succeq(2g-2C_3r-\sigma_{\mu_*})\mathrm{Id}
+\succ0,
+\]
+because $2C_3r\le L/(4\cdot4^{\mu_*})\le g/32$ and
+$\sigma_{\mu_*}=L/(4\cdot4^{\mu_*})\le g/32$. Exact symmetric elimination
+detects this.
+
+Through stage $j_*$, trial $\mu_*$ performs the table work of
+\eqref{eq:dpwork} with the cap \eqref{eq:statecap} on numbers of bit length
+$\poly(I+j_*+\mu_*K)$ at fixed $d$ (Section~\ref{sec:polynomial}), plus at most
+$n^2$ sign tests and one elimination per stage. This is
+$A_*=f_d(p,\kappa)\poly(I+B_\gamma)$ bit operations. Phase $q$ allots
+$\sum_{\mu=2}^q2^{q-\mu}<2^{q-1}$ operations, and trial $\mu_*$ completes in
+phase $q_*=\mu_*+\lceil\log_2A_*\rceil$. The total is at most
+$2^{q_*}\le2\cdot2^{\mu_*}A_*=O(\sqrt\kappa\,A_*)$, plus clock overhead
+polylogarithmic in this bound.
+\end{proof}
+
+The output is an exact implicit description, not a rational coordinate claim:
+for $(x^2-\frac12)^2+y+xy^2$ on $[0,1]^2$ the face is $y=0$ and the optimizer
+is $(1/\sqrt2,0)$. Weak reductions preserve the minimum but not necessarily
+every optimizer, so without uniqueness the certificate proves global
+optimality of $\hat x$, not uniqueness in $X$. Trials must be dovetailed: a
+trial with $4^\mu<8\kappa$ may run forever without exceeding its cap, and
+increasing $\mu$ once per unsuccessful stage would make the grading depend on
+$\gamma$.
+
+The margin term and strict complementarity are both needed for certificates
+of this form, as the next two examples show.
+
+\begin{proposition}[The margin cost is intrinsic to rectangular sign certificates]\label{prop:margin}
+For $n\ge1$ let $X=[0,\frac12]^{n+2}$ with variables $x_0,\ldots,x_n,y$, and
+\[
+r_0=x_0-\tfrac14,\quad r_i=x_i-\tfrac14x_{i-1}^2,\quad
+h=x_n-\tfrac18x_{n-1}^2,\quad
+G_n=\sum_{i=0}^nr_i^2+y^2+3yh.
+\]
+Then $G_n$ has degree four, a path decomposition with bags of size at most
+three, $L=\frac{35}{16}$, the unique optimizer $(a,0)$ with
+$a_i=2^{-(4\cdot2^i-2)}$, $\OPT=0$, point growth with $g=\frac9{64}$
+($\kappa=\frac{140}9$), and strict complementarity at $y$ with
+$\gamma=\frac32a_n$. Every success of the procedure on $G_n$ produces a
+rational number with reduced denominator at least $2^{4\cdot2^n-2}$.
+Consequently a successful trial $\mu$ reaches a stage $j$ with
+$j+\mu K\ge4\cdot2^n-2-\log_2\omega_0$, where $K$ is its cap and $\omega_0$ a
+common denominator of the data.
+\end{proposition}
+
+\begin{proof}
+The recursion $a_0=\frac14$, $a_i=\frac14a_{i-1}^2$ gives the stated $a_i$,
+all in $(0,\frac12)$, and $r(a)=0$. With $e=x-a$, $r_0=e_0$ and
+$r_i=e_i-\beta_ie_{i-1}$ with $\beta_i=(x_{i-1}+a_{i-1})/4\in[0,\frac14]$, so
+$\norm r\ge\frac34\norm e$ and $F_n=\sum_ir_i^2\ge\frac9{16}\norm{x-a}^2$.
+Since $h=\frac12(x_n+r_n)$,
+\[
+G_n=\tfrac14(F_n+y^2)+\tfrac34(F_n-r_n^2)+\tfrac34(r_n+y)^2+\tfrac32yx_n ,
+\]
+and every term is nonnegative on $X$. Thus
+$G_n\ge\frac9{64}(\norm{x-a}^2+y^2)$, with equality to zero only at $(a,0)$.
+The diagonal second derivatives are $2+\frac34x_i^2-x_{i+1}\le\frac{35}{16}$
+for $i<n-1$, the same minus $\frac34y$ for $i=n-1$, and $2$ for $x_n$ and
+$y$. The bags are $\{x_{i-1},x_i\}$ and $\{x_{n-1},x_n,y\}$. Finally
+$\partial_yG_n(a,0)=3h(a)=3(a_n-\frac12a_n)$.
+
+Consider a success. A zero-gap success outputs the unique optimizer, whose
+coordinate $a_n=2^{-(4\cdot2^n-2)}$ has the stated denominator. Otherwise
+the integer part is empty, and by the argument in the proof of
+Theorem~\ref{thm:boundary}(b) no sound reduction fixes an $x$-coordinate,
+because all are interior at the unique optimizer. If $y$ is not fixed, the
+patch test needs $H_{JJ}\succ0$ at $(a,0)$, which lies in the face box; but
+the principal minor on $\{x_n,y\}$ is
+$\det\bigl(\begin{smallmatrix}2&3\\3&2\end{smallmatrix}\bigr)=-5$. So $y$ is
+fixed, and not at its upper bound, since that would need
+$\partial_yG_n\le0$ at $(a,0)$. So it is fixed by a sound certificate of
+$\partial_yG_n\ge0$ on a retained box
+$B=\prod_i[\alpha_i,\beta_i]\times[0,\beta_y]$ that contains $(a,0)$. At its
+point with $y=0$, $x_n=\alpha_n$ and $x_{n-1}=\beta_{n-1}$,
+$\partial_yG_n=3(\alpha_n-\beta_{n-1}^2/8)$, so
+$\alpha_n\ge\beta_{n-1}^2/8\ge a_{n-1}^2/8=a_n/2>0$; also $\alpha_n\le a_n$.
+A rational in $(0,2^{-(4\cdot2^n-2)}]$ has reduced denominator at least
+$2^{4\cdot2^n-2}$. Box endpoints and grid nodes of stage $j$ in trial $\mu$
+have denominators dividing $\omega_02^{j+\mu K}$, which proves the last claim.
+\end{proof}
+
+Here $I=O(n\log n)$ while every successful certificate of the above form
+needs exponentially many bits in $n$, at fixed $d$, $p$ and $\kappa$. Thus
+the $B_\gamma$ term of Theorem~\ref{thm:boundary} cannot be removed without
+a different kind of certificate, for instance one that keeps the correlation
+between $x_{n-1}$ and $x_n$, such as the displayed identity.
+
+\begin{proposition}[Weak complementarity defeats sign and patch tests]\label{prop:weakcompl}
+On $X=[\frac12,1]\times[0,1]^2$ let $u=x^2-\frac12$ and
+\[
+W=u^2+w_1^2+w_2^2+3w_1w_2+u(w_1-w_2)
+=\tfrac12(u^2+w_1^2+w_2^2)+\tfrac12(u+w_1-w_2)^2+4w_1w_2 .
+\]
+Then $W$ has degree four and one bag of size three; its unique optimizer is
+$x^*=(1/\sqrt2,0,0)$ with $\OPT=0$; point growth holds with $g=\frac12$ and
+$L=12$ ($\kappa=24$); and $\nabla_wW(x^*)=0$, so both active coordinates are
+weakly complementary. For every rational box $B\subseteq X$ containing $x^*$,
+none of $\partial_xW$, $\partial_{w_1}W$, $\partial_{w_2}W$ has constant sign on
+$B$, and $\nabla^2W(x^*)$ is not positive semidefinite. Hence no trial of the
+procedure ever succeeds on $W$.
+\end{proposition}
+
+\begin{proof}
+The identity is direct expansion. On $X$ it gives $W\ge\frac12(u^2+\norm w^2)$,
+and $u^2=(x-x^*_1)^2(x+x^*_1)^2\ge(x-x^*_1)^2$ because $x+x^*_1>1$. So
+$W\ge\frac12\norm{(x,w)-x^*}^2$, with zero only at $x^*$. Also
+$\partial_x^2W=12x^2-2+2(w_1-w_2)\le12$ and $\partial_{w_i}^2W=2$. The
+$x$-interval of $B$ contains the irrational $x^*_1$ in its interior. On the
+segment $w=0$ inside $B$, $\partial_xW=4xu$, $\partial_{w_1}W=u$ and
+$\partial_{w_2}W=-u$, and $u$ changes sign at $x^*_1$. So no coordinate can be
+fixed by a sound test, and the patch test on all three coordinates would
+need $\nabla^2W(x^*)\succ0$; but $v=(0,1,-1)$ gives
+$v^{\mathsf T}\nabla^2W(x^*)v=2+2-6=-2$. A zero certified gap is impossible
+because $x^*$ is irrational.
+\end{proof}
+
+The identity in Proposition~\ref{prop:weakcompl} is itself a short global
+certificate that $\OPT=0$ and that $S=\{x^2=\frac12,\ w=0\}$. Certificates
+that keep such correlations, rather than certify signs over independent
+coordinate rectangles, are the natural route to exact output under point
+growth alone; no general construction of them with parameterized size is
+known.

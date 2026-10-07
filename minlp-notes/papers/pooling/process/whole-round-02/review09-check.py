@@ -1,7 +1,7 @@
 """Exact symbolic check of Section 5's ambient residual equations.
 
 Run from the repository root:
-    /home/sgusev/miniconda3/envs/minlp-notes/bin/python \
+    python \
         papers/pooling/process/whole-round-02/review09-check.py
 
 This checks three fully symbolic ambient coordinates. It supplements the

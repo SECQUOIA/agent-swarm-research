@@ -3,7 +3,7 @@
 Working directory: `code/minlp_solver_lab`.
 
 ```sh
-OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 PATH=/home/sgusev/miniconda3/envs/solvers/bin:$PATH .venv/bin/python -m unittest lbesh.tests.test_publication_contracts lbesh.tests.test_independent_solver_review -v
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 PATH=/workspace/local-home/miniconda3/envs/solvers/bin:$PATH .venv/bin/python -m unittest lbesh.tests.test_publication_contracts lbesh.tests.test_independent_solver_review -v
 ```
 
 Passed: all 25 tests, no skips. Adding the installed Ipopt executable to PATH exercised the real reduced-NLP/exponential analytic checks that skipped during the earlier readiness assessment. Tests cover the known log(2) optimum across all eight separator/formulation/tree combinations, original nonlinear objectives and maximization, fixed/rounded integer variables, logic, inactive/constant alternatives, bound orientation, invalid candidates, callback/nonfinite failures, unsupported structures, and no-NLP linear regressions. A deliberate inconsistent-bound fixture emitted Pyomo's expected warning; all assertions passed.

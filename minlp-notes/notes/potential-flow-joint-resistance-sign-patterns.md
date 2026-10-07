@@ -110,4 +110,4 @@ The candidate is not yet a theorem. Independent review should check the sign in 
 
 [`code/potential_flow_mpd/joint_resistance_checks.py`](../code/potential_flow_mpd/joint_resistance_checks.py) passed 48 independent nonlinear finite-difference checks of the resistance derivative formula (maximum error `7.87e-10`) and 2,000 exact rational long-path checks of physical-sign and resistance-state runs. The largest observed counts were seven physical sign runs and six resistance-state runs, within the coarse proof bounds 15 and 17. It also verifies a zero-flow example in which changing that edge's resistance preserves all physical variables while changing the adjoint; the proof's instruction to recompute KKT data is necessary.
 
-Run with `/home/sgusev/miniconda3/envs/minlp-notes/bin/python code/potential_flow_mpd/joint_resistance_checks.py`. These checks establish neither global correctness nor novelty of the unreviewed candidate.
+Run with `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python code/potential_flow_mpd/joint_resistance_checks.py`. These checks establish neither global correctness nor novelty of the unreviewed candidate.

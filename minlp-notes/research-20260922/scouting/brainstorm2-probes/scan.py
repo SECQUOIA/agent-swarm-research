@@ -1,8 +1,11 @@
+from pathlib import Path as _CleanupPath
+_NOTES_ROOT = _CleanupPath(__file__).resolve().parent.joinpath('../../..').resolve()
+
 import sys, csv, math, collections, os
-sys.path.insert(0,'/home/sgusev/repo/minlp-notes/research-20260922/scouting/minlplib-open-data')
+sys.path.insert(0,(str(_NOTES_ROOT) + '/research-20260922/scouting/minlplib-open-data'))
 from osil import read, V
-D='/home/sgusev/.cache/minlplib/minlplib/osil/'
-rows=list(csv.DictReader(open('/home/sgusev/repo/minlp-notes/research-20260922/scouting/minlplib-open-data/open.csv')))
+D=(str(_CleanupPath.home()) + '/.cache/minlplib/minlplib/osil/')
+rows=list(csv.DictReader(open((str(_NOTES_ROOT) + '/research-20260922/scouting/minlplib-open-data/open.csv'))))
 def bil_terms(R):
     """yield (i,j) bilinear var products and univariate atoms from a row"""
     out=[(i,j) for i,j,c in R['quad'] if i!=j]

@@ -54,7 +54,7 @@ Material manuscript dependencies inspected include the passive-state and primiti
 
 Actual implementation inspection covered all of `envelope_rational_certificates.py`, `envelope_bregman_bounds.py`, `goal_flow_certificate.py`, `certified_envelope.py`, `certified_envelope_benchmarks.py`, and the relevant numerical solver routines in `envelope_socp_checks.py` and `series_parallel_envelope_checks.py`. I also inspected the four retained independent check scripts and `verification/check_s6a_certificates.py`.
 
-Independent execution used `/home/sgusev/miniconda3/envs/minlp-notes/bin/python`. Fifteen runs completed with return code zero. Full commands, stdout, and stderr are in `/tmp/s6a-r5-o1gbjuzk/runs.json`; these are temporary reviewer evidence, not new distributed artifacts. The command groups were:
+Independent execution used `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python`. Fifteen runs completed with return code zero. Full commands, stdout, and stderr are in `/tmp/s6a-r5-o1gbjuzk/runs.json`; these are temporary reviewer evidence, not new distributed artifacts. The command groups were:
 
 - Each of `check_envelope_certificate_review.py`, `check_envelope_bregman_review.py`, `check_goal_flow_certificate_review.py`, `check_certified_envelope_review.py`, and `goal_flow_certificate.py`, once normally and once with `-S -O`.
 - `paper-potential-flow/verification/check_s6a_certificates.py --numerical`, and its exact branch with `-S -O`.

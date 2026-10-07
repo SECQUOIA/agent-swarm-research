@@ -2,7 +2,7 @@
 
 No major or minor issues found.
 
-I read all five requested files end to end: `12a-resource-ledgers.tex` (381 lines), `12b-work-contracts.tex` (208 lines), `12c-newton-comparisons.tex` (822 lines), `12d-query-output.tex` (515 lines), and `12e-active-compilers.tex` (535 lines). I followed the supplied global instructions and `/home/sgusev/repo/qipm/AGENTS.md`. I did not read other review reports, root checks, the assessment, or the correction-author report. I made no manuscript edits and used no delegated agents.
+I read all five requested files end to end: `12a-resource-ledgers.tex` (381 lines), `12b-work-contracts.tex` (208 lines), `12c-newton-comparisons.tex` (822 lines), `12d-query-output.tex` (515 lines), and `12e-active-compilers.tex` (535 lines). I followed the supplied global instructions and `/workspace/qipm/AGENTS.md`. I did not read other review reports, root checks, the assessment, or the correction-author report. I made no manuscript edits and used no delegated agents.
 
 The fresh-update additions are mathematically supported under their stated contracts:
 
@@ -16,7 +16,7 @@ I independently checked the sharp off-center PSD result in `12c:141–291`. The 
 
 The remainder of the review covered the integer capacity and dimension ledgers, packing and free-coordinate optimizers, nullity envelopes, Hölder constants and aspect ratios, the common-certificate work composition, explicit path serialization, sparse augmented systems and graph counts, query-to-output reductions, precision laws, essential-factor witnesses, fixed-objective decoders, and matched-gap entropy lengths. I checked the relevant earlier definitions and proofs for selected ranks, boundary order, grouped and packed intrinsic parameters, exposed-minor movement, primal–dual movement, and shared spectral and entropy cones. The distinctions between ambient resources, restricted metrics, intrinsic parameters, query access, and output requirements remain intact.
 
-Independent calculations used `/home/sgusev/miniconda3/envs/qipm/bin/python`:
+Independent calculations used `/workspace/local-home/miniconda3/envs/qipm/bin/python`:
 
 - Integer dynamic programs checked the order and dimension claims for `R=2,…,40`, `n=1,…,1000`; exhaustive enumeration checked nullity envelopes for `R=2,…,8`, `L=1,…,4`.
 - One hundred feasible random PSD examples checked the quotient, allocation-aware matrix bounds, and eliminated gradient.

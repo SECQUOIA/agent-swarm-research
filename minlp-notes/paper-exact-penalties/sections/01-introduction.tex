@@ -1,133 +1,437 @@
-\section{Introduction}
-An exact norm penalty replaces a linking equality system by a finite
-charge for its violation without changing the optimal value. Existence alone does
-not say whether that coefficient can be stored or produced efficiently.
-Nor does an easily available sufficient coefficient make the smallest
-one easy to find. We study these two questions using ordinary binary
-encoding: \emph{representation} asks for the number of bits in a
-sufficient coefficient, whereas \emph{calibration} asks how closely one
-can approximate the least sufficient coefficient.
+\section{Introduction}\label{sec:intro}
+Many mixed-integer models keep most of their constraints in a set $X$
+and couple blocks, stages or scenarios through equalities $r(x)=0$.
+Examples are linking constraints between subsystems, coupling
+constraints in market models, copy constraints between a stage and its
+state, and nonanticipativity constraints. We call the constraints that
+define $X$ the \emph{native constraints} and the equalities $r(x)=0$
+the \emph{relaxed} (or \emph{linking}) \emph{equalities}. The vector $x$ collects the integer and
+continuous variables. The problem is
+\[
+ v=\min\{f(x):x\in X,\ r(x)=0\},
+\]
+and moving the relaxed equalities into the objective with a multiplier
+$\lambda\in\R^m$ and a norm penalty with coefficient $\rho\ge0$ gives
+\[
+ L_\rho(\lambda)=\min_{x\in X}\{f(x)+\lambda^Tr(x)+\rho\norm{r(x)}\},
+ \qquad
+ D_\rho=\sup_{\lambda\in\R^m}L_\rho(\lambda).
+\]
+Section~\ref{sec:geometry} states the setting precisely
+(compact $X$, continuous $f$ and $r$, a fixed norm). Weak duality gives
+$L_\rho(\lambda)\le D_\rho\le v$. For $\rho=0$, $D_0$ is the ordinary
+Lagrangian dual, which for mixed-integer problems can leave a gap
+$D_0<v$. The norm term, which gives the sharp augmented Lagrangian (not
+the squared term of the classical augmented Lagrangian), can close this
+gap with a finite coefficient. Such a coefficient is an
+\emph{exact penalty}.
 
-The main contribution is a quantitative account of what changes when
-convex quadratic constraints are added to the native mixed-integer set.
-Here \emph{native} refers to all constraints retained while a separate
-affine equality system is penalized. Our lower bound applies even
-after maximizing over all linking multipliers, so it cannot be removed
-by a better multiplier choice. Our upper bounds give equality of the
-full minimizer sets at multiplier zero, a stronger conclusion than
-equality of optimized dual values. Section~\ref{sec:geometry} states
-these distinctions precisely.
+Exact penalty functions were introduced by \citet{Eremin1966} and
+\citet{Zangwill1967}, and \citet{Burke1991} unified their theory.
+\citet{Rockafellar1974} showed that augmented Lagrangians remove duality
+gaps in nonconvex programming. \citet{RockafellarWets1998} and
+\citet{HuangYang2003} developed the connection between augmented
+Lagrangian duality and exact penalization. For mixed-integer problems,
+finite exact penalties are known for bounded pure integer programs,
+rational MILPs, convex MIQPs, convex objectives over polyhedral
+mixed-integer sets, and mixed-integer nonlinear problems under
+regularity conditions on the integer slices
+\citep{BolandEberhard2015,FeizollahiAhmedSun2017,GuAhmedDey2020,Bhardwaj2024,LefebvreSchmidt2025};
+Section~\ref{sec:related} states these results precisely.
 
-\paragraph{Main results and their significance.}
-Theorem~\ref{thm:lower} gives a compact convex-quadratic family with
-chain length $d$, one binary variable, a linear objective and $d+1$
-continuous variables whose
-least optimized-dual penalty is $2^{2^d-1}$. The data use a fixed finite
-set of rational coefficients and $O(d\log(d+1))$ bits, but every exact
-rational penalty needs at least $2^d$ numerator bits. Feasible integer
-slices have uniformly strict points, and fixed additive accuracy below
-the unit objective range does not remove the obstruction
-(Corollary~\ref{cor:accuracy}). Thus finite norm-penalty exactness for
-convex quadratic constraints does not extend the polynomial encoding
-guarantee known for linear native constraints. The obstruction concerns
-the penalty representation, not the difficulty of finding the original
-optimum, which is immediate in this family.
+We use the following terms; Definition~\ref{def:exactness} states them
+formally. A coefficient $\rho$ is \emph{value-exact} if $D_\rho=v$, that
+is, if the penalized dual with the best multiplier has the optimal value.
+It is \emph{exact at $\lambda$} if $L_\rho(\lambda)=v$ for that fixed
+multiplier. It is \emph{minimizer-exact at $\lambda$} if the minimizers of
+$f+\lambda^Tr+\rho\norm r$ over $X$ are exactly the optimal solutions of
+the original problem. Minimizer-exactness at $\lambda$ implies exactness
+at $\lambda$, which implies value-exactness; Section~\ref{sec:geometry}
+shows that the converses fail. The \emph{least penalty}
+$\rho_*=\inf\{\rho\ge0:D_\rho=v\}$ is, when finite, the smallest
+value-exact coefficient, with the multiplier optimized. The
+\emph{zero-multiplier threshold} $\rho_*(0)$ is, when finite, the
+smallest coefficient that is exact at $\lambda=0$. We call a coefficient
+\emph{sufficient} if it is value-exact, or exact at $\lambda=0$ when the
+zero-multiplier threshold is meant.
 
-Theorems~\ref{thm:generalupper} and~\ref{thm:fixedcount} supply positive
-bounds under explicit finite boxes and refined Slater on every
-equality-feasible slice. For input length $N$ and $n$ continuous
-variables, there exists a sufficient integer coefficient with
-$(N+1)2^{O(n)}$ bits for both the infinity and one-norm penalties.
-A second bound is $N^{O(k+1)}$ bits if at most $k$ native inequalities
-are nonlinear in the continuous variables, with no restriction on the
-number of affine rows or integer assignments. Within this model, these statements locate the
-obstruction in the growing nonlinear continuous structure: fixing
-$n$ or $k$ permits polynomial-time output of a conservative coefficient
-(Corollary~\ref{cor:printing}). They do not provide a practical small
-coefficient or an algorithm for solving the penalized subproblem.
+\paragraph{Why the size of the coefficient matters.}
+Exact norm penalties are used in decomposition methods, and each of them
+must choose the coefficient. In cutting-plane methods for multistage stochastic MILPs,
+augmented Lagrangian cuts with a norm as augmenting function give
+Lipschitz lower approximations of cost-to-go functions; they are tight
+for a suitable multiplier and large enough $\rho$, but arbitrarily
+large $\rho$ may be needed near discontinuities of the value function
+\citep{AhmedCabralCosta2022}.
+\citet{ZhangSun2022} penalize copy constraints between a state and its
+local copy, assume that this penalty reformulation is exact (their
+Assumption~2), and their iteration bounds depend on the penalty sizes. For Lipschitz
+regularization in stochastic dual dynamic programming, which penalizes
+such copy constraints by a norm, a recent survey calls the choice of a
+sufficiently large coefficient an open challenge in practice
+\citep{FullnerRebennack2025}.
+In $\ell_1$ augmented Lagrangian and ADMM decompositions of two-block
+MILPs, the penalty that guarantees an $\varepsilon$-accurate solution
+grows like $1/\varepsilon$, and such a large penalty slows the method
+\citep{SunSunYin2024}; in bundle methods for generalized augmented
+Lagrangian duals, adjusting the penalty parameter was the delicate part
+\citep{CordovaOliveiraSagastizabal2022}; and penalty alternating
+direction heuristics increase weighted $\ell_1$ penalties on copy
+constraints in an outer loop \citep{GeisslerMorsiScheweSchmidt2017}.
+In $\ell_1$ augmented Lagrangian pricing of nonconvex electricity
+markets, the coefficient is part of the price signal, and
+\citet{WangHesamzadehZhaoKronqvist2026} seek a valid coefficient as close
+to the least one as is computationally feasible. Large coefficients
+also cost precision: floating-point MIP solvers suffer from wide ranges
+of data magnitudes \citep{KlotzNewman2013}, and quantum annealers rescale
+QUBO coefficients to a fixed range, so a large penalty compresses the
+gaps between objective values \citep{KrpanPovhPucher2025}.
 
-The complementary results separate two further issues.
-Theorem~\ref{thm:polyfactor} rules out polynomial-time calibration within
-any fixed polynomial factor, unless $\mathrm P=\mathrm{NP}$, on a binary
-box with one equality, a linear objective, a known unique primal
-optimizer and a known sufficient coefficient of one. Both the
-optimized-multiplier and zero-multiplier thresholds have this hardness.
-Section~\ref{sec:perturbation} gives a different route to short
-coefficients: a sampled rational right-hand side, with probability at
-least $1-\epsilon$, is either infeasible or admits the explicit
-zero-multiplier infinity-norm coefficient $4mKM/(\sigma\epsilon)$.
-The slices are compact and convex, with continuous convex objectives and affine
-residuals. Here $m$ is the residual dimension, $K$ bounds the number of
-slices, $M$ is their common objective range, and $\sigma$ is the
-noise-cube radius. The finite-grid guarantee includes the sampling
-precision and coefficient encoding. It applies to the sampled problem;
-it does not guarantee preservation of the original optimizer or bound
-the expected numerical penalty.
+These uses raise two questions about a sufficient coefficient. We
+measure coefficients in ordinary binary encoding: a rational number is
+given by the binary representations of its numerator and its positive
+denominator.
+\begin{itemize}
+\item \emph{Representation.} How many bits does a sufficient coefficient
+ need, as a function of the encoding length of the instance?
+\item \emph{Calibration.} How closely can the least penalty $\rho_*$ be
+ approximated, from above, by an efficient algorithm?
+\end{itemize}
+Bit length and numerical size are different measures: a coefficient with
+polynomially many bits may still be exponentially large as a number. A
+coefficient whose bit length is superpolynomial cannot even be written
+down in polynomial time.
 
-\paragraph{Relation to prior work.}
-\citet{BolandEberhard2015} establish finite-penalty exactness for bounded
-pure integer programs under their augmentation assumptions;
-\citet{FeizollahiAhmedSun2017} establish norm-penalty exactness for
-rational MILPs.
-For a convex quadratic objective over a rational mixed-integer
-polyhedron, \citet[Theorem~11]{GuAhmedDey2020} prove polynomial binary
-encoding of an exact norm penalty.
-\citet[Theorems~3.1--3.3 of the inspected preprint]{Bhardwaj2024}
-give value-function proofs of existence and data-dependent penalty
-parameters for MILPs and MIQPs. For nonlinear convex objectives over
-polyhedral mixed-integer sets they also prove exactness, with an explicit
-bound under strong convexity and smoothness.
-For nonlinear native constraints,
-\citet[Theorem~14]{LefebvreSchmidt2025} prove finite exactness at each
-fixed multiplier under compactness, differentiable convex objectives,
-convex continuous slices and refined Slater on every equality-feasible
-slice. Their December 15, 2025 manuscript asks whether polynomial
-penalty encoding extends to quadratically constrained models and
-whether a smallest exact penalty can be computed in polynomial time.
-Our lower bound answers the first question negatively in growing
-continuous dimension; the binary-box reduction answers the second
-negatively in growing binary dimension, subject to
-$\mathrm P\ne\mathrm{NP}$.
+Both questions are posed in the conclusion of
+\citet{LefebvreSchmidt2025}. They note that an exact penalty of
+polynomial size is known only for MIQPs and ask whether this extends to
+classes such as quadratically constrained quadratic problems. They also
+observe that the coefficient computed by their polynomial-time method is
+``too large to be useful in practical applications'', and they ask
+whether the smallest penalty that closes the duality gap can be computed
+in polynomial time, conjecturing that it cannot. We answer the first
+question negatively for convex quadratic native constraints when both
+the continuous dimension and the number of nonlinear constraints grow,
+and positively when either is fixed, under explicit variable bounds and
+a Slater condition on the integer slices (Assumption~\ref{ass:model});
+for nonconvex quadratic constraints the question remains open
+(Section~\ref{sec:discussion}). We confirm the conjecture unless
+$\mathrm P=\mathrm{NP}$, even for approximation within any polynomial
+factor.
 
-The lower-bound mechanism has important precedents.
-\citet[Section~6 of the inspected preprint]{Bienstock2022} give quadratic
-large-coordinate and small-violation examples; their nonconvex
-Example~6.2 already implies large zero-multiplier norm penalties.
-\citet[Sections~2 and~4, Result~4]{Beck2023} use a bounded convex
-squaring chain with Slater regularity to show sensitivity of bilevel
-problems to feasibility errors. We do not claim the squaring chain or
-its small residuals as new. To the best of our knowledge, the new
-lower-bound statement is the exact optimized-dual threshold in
-Theorem~\ref{thm:lower} for a compact convex-quadratic model with one
-binary variable and uniform strict points, together with its
-fixed-accuracy consequence. Opposite-sign residuals are what make
-the bound hold for every multiplier.
+\subsection{Main results}
+Table~\ref{tab:results} summarizes the results. Throughout, $N$ is the
+encoding length of an instance, $n$ the number of continuous variables
+and $m$ the number of relaxed equalities.
 
-The upper bounds use established real-algebraic tools:
-component-radius bounds \citep{BasuRoy2010} and quantitative elimination
-\citep{BasuPollackRoy2006}. Few-quadratic methods already control
-algebraic complexity in the number of quadratic constraints
-\citep{GrigorievPasechnik2005,KammingaRudolph2025}.
-The contribution here is the resulting penalty encoding bounds,
-including the dependence on the number of \emph{nonlinear native}
-inequalities while allowing arbitrarily many affine rows.
-To the best of our knowledge, these bounds for the boxed convex-slice
-model of Section~\ref{sec:upper} are not established in the cited
-exact-penalty or few-quadratic results. The linear-constraint case and
-polynomial-time conservative output in that case are prior results,
-not new consequences claimed here; Section~\ref{sec:fixedcount} gives
-the detailed comparison.
+\begin{table}[!t]
+\centering
+\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.12\linewidth}
+ >{\raggedright\arraybackslash}p{0.35\linewidth}
+ >{\raggedright\arraybackslash}p{0.33\linewidth}
+ >{\raggedright\arraybackslash}p{0.12\linewidth}@{}}
+\toprule
+Result & Setting and hypotheses & Conclusion & Reference\\
+\midrule
+Lower bound &
+One binary and $n=d+1$ continuous variables; linear objective;
+$d-1$ convex quadratic native inequalities ($d\ge2$); coefficients from a
+fixed finite set; sparse encoding length $O(d\log(d+1))$; points with slack $1/8$
+on every integer slice &
+$\rho_*=2^{2^d-1}$, $\rho_*(0)=2^{2^d}$; every value-exact rational
+coefficient has at least $2^d$ numerator bits; a gap at most
+$\epsilon<1$ needs $2^d-O_\epsilon(1)$ bits &
+Thm.~\ref{thm:lower}, Cor.~\ref{cor:accuracy}\\
+\addlinespace
+Lower bound in $N$ &
+Same chain with seed $a_1\ge2^{-t}$, $t$ of order $N$ &
+least penalty with $\Omega(N2^n)$ bits &
+Rem.~\ref{rem:seed}\\
+\addlinespace
+Upper bound in $n$ &
+Assumption~\ref{ass:model}: degree-two data, convex in the continuous
+variables for each integer assignment; finite bounds; nonempty feasible
+set; refined Slater condition; affine relaxed equalities &
+an integer $\rho$ with $(N+1)2^{O(n)}$ bits, minimizer-exact at
+$\lambda=0$ for both $\norm\cdot_\infty$ and $\norm\cdot_1$ &
+Thm.~\ref{thm:generalupper}\\
+\addlinespace
+Upper bound in $k$ &
+Assumption~\ref{ass:model} with at most $k$ native inequalities nonlinear
+in the continuous variables; any number of affine rows &
+the same with $N^{O(k+1)}$ bits; for fixed $n$ or fixed $k$ such a
+coefficient can be printed in polynomial time &
+Thm.~\ref{thm:fixedcount}, Cor.~\ref{cor:printing}\\
+\addlinespace
+Calibration &
+Binary box, one equality, linear objective; known unique optimizer;
+$\rho=1$ is exact at $\lambda=0$ &
+unless $\mathrm P=\mathrm{NP}$, no polynomial-time algorithm finds
+$\widehat\rho$ with $\rho_*\le\widehat\rho\le p(N)\rho_*$, and likewise
+for $\rho_*(0)$; testing value-exactness of $\rho=1/3$ is
+coNP-complete &
+Thm.~\ref{thm:polyfactor}, Thm.~\ref{thm:coNP}\\
+\addlinespace
+Strong hardness &
+Stable-set native set; coefficients in $\{-1,0,1\}$ &
+$\rho_*=\alpha(G)$, so computing $\rho_*$ is strongly NP-hard &
+Prop.~\ref{prop:stableset}\\
+\addlinespace
+Perturbation &
+At most $K$ compact convex slices; continuous convex objectives with
+supplied range $M$; affine residuals; right-hand side sampled from a
+rational grid with at least $\lceil4mK/\epsilon\rceil$ points per
+coordinate in a cube of radius $\sigma$ &
+with probability at least $1-\epsilon$, the sampled problem is infeasible
+or $4mKM/(\sigma\epsilon)$ is exact at $\lambda=0$ for
+$\norm\cdot_\infty$; the order $K/\epsilon$ is necessary &
+Thm.~\ref{thm:gridsmoothing}, Sec.~\ref{sec:numerical-size}\\
+\bottomrule
+\end{tabular}
+\caption{Informal summary of the main results. $\rho_*$: least penalty
+(multiplier optimized); $\rho_*(0)$: zero-multiplier threshold;
+$p$: any fixed polynomial.}
+\label{tab:results}
+\end{table}
 
-Generic penalty-choice hardness, even with a known constrained optimum,
-also predates this paper \citep{Alessandroni2025}. The distinction in
-Theorem~\ref{thm:polyfactor} is the polynomial-factor conclusion for an
-always-positive norm-penalty threshold after unrestricted multiplier
-optimization, under the binary-box restrictions above. We are not aware
-of that restricted conclusion in the prior tuning results compared in
-Section~\ref{sec:calibration}. Finally, distance to convex boundaries is
-a classical conditioning device
-\citep{DunaganSpielmanTeng2011,BuergisserAmelunxen2012}. Our perturbation
-result is an explicit application to exact penalties on finitely many
-convex slices, with rational-grid and feasibility qualifications; we
-make no separate priority claim for the boundary-avoidance principle,
-the Gaussian tube estimate or the convex repair argument.
+\paragraph{A doubly exponential lower bound.}
+Theorem~\ref{thm:lower} gives, for each chain length $d$, an instance with
+one binary variable, $n=d+1$ continuous variables, a linear objective,
+one relaxed equality, and convex quadratic and affine native constraints
+with coefficients from a fixed finite set; its sparse encoding length is
+$O(d\log(d+1))$. Its least penalty is $2^{2^d-1}$, even after optimizing
+the multiplier, so every exact rational coefficient, in any of the three
+senses, needs at least $2^d$ numerator bits. This holds although every
+integer slice has points with slack at least $1/8$, and a fixed additive
+accuracy below the objective range does not help
+(Corollary~\ref{cor:accuracy}).
+
+The mechanism is simple. A chain of convex quadratic inequalities
+$a_{i+1}\ge a_i^2$ lets the improving integer assignment come within
+$\delta_d=2^{-2^d}$ of satisfying the relaxed equality, but never reach
+it. The other assignment has residuals of both signs at zero cost. A
+convex combination of its point with residual $-1$ and the improving
+point, weighted so that the residuals average to zero (a \emph{balanced
+mixture}, Section~\ref{sec:geometry}), cancels every multiplier, and its
+average penalized cost is negative unless $\rho\ge1/(2\delta_d)$. The numbers grow fast. For $d=5$, with six
+continuous variables, the improving assignment violates the relaxed
+equality by $\delta_5=2^{-32}\approx2.3\cdot10^{-10}$, below common
+feasibility tolerances, and the least penalty is $2^{31}$. For $d=10$ it
+is $2^{1023}$, the largest power of two in IEEE double precision; for
+$d=11$ it exceeds the double-precision range. Thus finite exactness with
+convex quadratic native constraints does not come with the polynomial
+encoding guarantee known for linear native constraints. The obstruction
+lies in the representation of the penalty, not in the original problem,
+whose optimal value is immediate.
+
+\paragraph{Encoding upper bounds.}
+For the positive results we fix the integer variables and look at the
+resulting \emph{slices} of the native set. A slice is
+\emph{equality-feasible} if it contains a point satisfying the relaxed
+equalities. The \emph{refined Slater condition} requires, for every
+equality-feasible slice, a point of the slice that satisfies the relaxed
+equalities and strictly satisfies every native inequality that is
+nonlinear in the continuous variables; inequalities affine in the
+continuous variables may hold with equality, and nothing is assumed on
+the other slices. Assumption~\ref{ass:model} asks for degree-two data
+that are convex in the continuous variables for each integer
+assignment, explicit finite bounds on all variables, affine relaxed
+equalities, a nonempty feasible set and the refined Slater condition.
+Under this assumption, Theorem~\ref{thm:generalupper} gives an integer
+coefficient with $(N+1)2^{O(n)}$ bits, and
+Theorem~\ref{thm:fixedcount} gives one with $N^{O(k+1)}$ bits when at
+most $k$ native inequalities are nonlinear in the continuous variables;
+the number of affine rows is arbitrary. In both cases one coefficient
+is minimizer-exact at multiplier zero for the infinity norm and the
+one-norm. By Remark~\ref{rem:seed}, the worst case of the first bound
+is $N2^{\Theta(n)}$ bits.
+
+Both proofs use Lemma~\ref{lem:slices}, which reduces exactness at
+multiplier zero to a multiplier bound on each equality-feasible slice
+and a lower bound on the residual of each equality-infeasible slice;
+effective bounds from real algebraic geometry control both uniformly
+over all integer assignments. Consequently, within the class of
+Assumption~\ref{ass:model}, coefficients with superpolynomially many
+bits require both a growing continuous dimension and a growing number
+of nonlinear native inequalities; the lower-bound instance has both.
+For fixed $n$, and separately for fixed $k$, a conservative coefficient
+can be printed in polynomial time (Corollary~\ref{cor:printing}). These
+are existence bounds: the coefficient may be numerically huge, the
+constants are not evaluated, and nothing is said about solving the
+penalized subproblem.
+
+\paragraph{Hardness of calibration.}
+Theorem~\ref{thm:polyfactor} considers pure binary linear programs with
+one equality: the native set is a binary box and the objective is
+linear. On these instances the unique optimal solution is known and
+$\rho=1$ is exact at multiplier zero. Even so, unless
+$\mathrm P=\mathrm{NP}$, no polynomial-time algorithm can output a
+sufficient coefficient within any polynomial factor of the least
+penalty, or of the zero-multiplier threshold; Section~\ref{sec:calibration}
+extends this to factors $2^{N^{1-\epsilon}}$ for every fixed
+$\epsilon\in(0,1)$. Deciding whether the
+coefficient $\rho=1/3$ is value-exact is coNP-complete
+(Theorem~\ref{thm:coNP}). The instances encode \textsc{Subset Sum}: when the target sum is
+attainable, some integer assignment that lowers the objective has a
+residual of magnitude $1$; otherwise every such assignment has a residual
+of magnitude at least $\kappa-1$, for a scaling integer $\kappa$ that we
+take exponentially large. The hardness is weak, since a pseudo-polynomial
+dynamic program computes $\rho_*$; a stable-set variant with
+coefficients in $\{-1,0,1\}$ makes exact computation strongly NP-hard
+(Proposition~\ref{prop:stableset}). The message is that a safe
+coefficient can be easy to find while a nearly least one is hard to
+certify.
+
+\paragraph{Right-hand-side perturbations.}
+Theorem~\ref{thm:gridsmoothing} considers at most $K$ compact convex
+slices with continuous convex objectives of range $M$ and affine
+residual maps. If the right-hand side is sampled from a rational grid
+with at least $\lceil4mK/\epsilon\rceil$ points per coordinate in a cube
+of radius $\sigma$, then with probability at least $1-\epsilon$ the
+sampled problem is infeasible or the infinity-norm coefficient
+$4mKM/(\sigma\epsilon)$ is exact at multiplier zero. If the number of grid points per coordinate is the smallest power of
+two that is at least $\lceil4mK/\epsilon\rceil$, the grid points and the
+coefficient have encoding length polynomial in the supplied rational
+data, in $m$ and in $\log K$ (Remark~\ref{rem:gridencoding}). The mechanism is that
+large penalties arise only when the right-hand side lies near the
+boundary of the set of residuals attainable on some slice; a random
+right-hand side avoids these boundaries with high probability, and a
+convex repair argument turns the distance into a coefficient. The
+guarantee concerns the perturbed problem, whose optimal integer
+assignment may differ from the original one. The coefficient is
+numerically of order $K$, which can be exponential in the number of
+integer variables, and Section~\ref{sec:numerical-size} shows that the
+order $K/\epsilon$ is necessary and that the expected least penalty can
+be infinite.
+
+\subsection{Related work}\label{sec:related}
+\paragraph{Exact penalties and augmented Lagrangian duality.}
+The dual of \citet{Rockafellar1974} maximizes jointly over the
+multipliers and the penalty parameter; we fix $\rho$, optimize
+$\lambda$, and ask for the least $\rho$ at which the optimized value is
+exact.\footnote{Theorem, section and example numbers of preprints and
+author manuscripts refer to the versions identified in the references.}
+Section~\ref{sec:geometry} relates the threshold $\rho_*(\lambda)$ to
+the exact penalty representations of the sharp Lagrangian in
+\citet[Chapter~11]{RockafellarWets1998}. In the study of global
+saddle points of augmented Lagrangians for continuous cone-constrained
+problems, \citet{Dolgopolik2018} uses the term ``least exact penalty
+parameter''; our least penalty $\rho_*$ is the analogous quantity for
+mixed-integer problems, taken after optimizing the multiplier.
+
+\paragraph{Exactness and encoding for mixed-integer problems.}
+\citet{BolandEberhard2015} prove finite-penalty exactness for bounded
+pure integer programs under their assumptions on the augmenting
+function, and \citet{FeizollahiAhmedSun2017} prove norm-penalty exactness
+for rational MILPs. \citet[Theorem~11]{GuAhmedDey2020} show that for a
+convex quadratic objective over a rational mixed-integer polyhedron some
+exact norm penalty has polynomial encoding length.
+\citet[Theorems~3.1--3.3]{Bhardwaj2024} give value-function proofs of
+existence with data-dependent penalty parameters for rational MILPs and
+for MIQPs with bounded integer variables. For convex objectives over
+polyhedral mixed-integer sets they prove exactness when the integer
+variables are bounded on the feasible set or when the objective and the
+continuous relaxation share no nonzero recession direction, and they
+give an explicit bound under strong convexity and smoothness.
+\citet[Theorem~14]{LefebvreSchmidt2025} prove that a finite penalty is
+exact at each fixed multiplier under compactness, a differentiable
+convex objective, convex slices and a Slater condition on every
+equality-feasible slice; the instance of Theorem~\ref{thm:lower}
+satisfies these assumptions. Their Theorem~15 computes, in polynomial
+time, an infinity-norm penalty that is exact at a given rational
+multiplier for MILPs with integer data, and their Table~1 remarks that
+the extension to convex MIQPs is easy. For native constraints linear in
+all variables and a jointly convex quadratic objective, polynomial
+encoding length of an exact penalty is therefore prior work
+\citep[Theorem~11]{GuAhmedDey2020}, and so is polynomial-time output of
+an exact coefficient for MILPs with integer data
+\citep[Theorem~15]{LefebvreSchmidt2025}. Appendix~\ref{app:attainment}
+discusses their Example~13: under their supremum-based Definition~1 it
+is value-exact at every penalty, but no multiplier attains the dual
+value.
+
+\paragraph{Squaring chains and bit complexity.}
+The squaring chain and its small residuals are classical;
+\citet[Example~6.1]{Bienstock2022} attribute it to Ramana and Khachiyan.
+Example~6.2 of the same paper, a nonconvex QCQP with a point of doubly
+exponentially small violation, already implies large zero-multiplier
+norm penalties. \citet[Sections~2 and~4, Result~4]{Beck2023} use a
+bounded convex squaring chain with Slater regularity to show that bilevel
+problems are sensitive to feasibility errors. To our knowledge, what is
+new in Theorem~\ref{thm:lower} is the exact threshold of the optimized dual for
+a compact convex-quadratic model with one binary variable and uniform
+strict points, together with its fixed-accuracy consequence. Residuals
+of opposite signs on the cost-free slice make the bound hold for every
+multiplier.
+
+\paragraph{Real-algebraic tools.}
+The upper bounds rest on established tools: radii of balls meeting the
+connected components of semialgebraic sets \citep{BasuRoy2010} and
+quantitative quantifier elimination \citep{BasuPollackRoy2006,Basu2014}.
+Algebraic bounds that depend on the number of quadratic constraints
+appear in \citet{GrigorievPasechnik2005} and \citet{KammingaRudolph2025};
+Section~\ref{sec:fixedcount} compares them with our argument. To our
+knowledge, what is new here are the resulting encoding bounds for exact
+penalties, including the dependence on the number of native inequalities
+that are nonlinear in the continuous variables while the number of
+affine rows is arbitrary.
+
+\paragraph{Hardness of choosing penalties.}
+Hardness of choosing penalties, even when the constrained optimum is
+known, predates this paper. \citet[Section~IV.A, Lemma~1]{Alessandroni2025}
+prove hardness of choosing penalties for exact QUBO reformulations. Their
+reduction imposes $x=0$ with a squared residual and a quadratic
+objective; on binary variables their penalty $M\sum_ix_i$ is reproduced
+by a linear multiplier with augmentation coefficient zero, so it does not
+give a positive optimized threshold. \citet[Section~2.2]{Mirkarimi2024}
+note that a universally successful, polynomially tuned linear Ising
+penalty for knapsack would imply $\mathrm P=\mathrm{NP}$, allowing that no
+linear penalty may work on some instances. On the family of
+Theorem~\ref{thm:polyfactor}, $D_0=-1<v$, so
+no purely linear (Lagrangian) penalty is ever exact and the norm term is
+essential. \citet[Definition~1 and Theorem~2]{Alessandroni2026} study
+probabilistic feasibility and objective guarantees when exact Gibbs
+sampling is used for approximate optimization. Safe conservative
+penalties are also known: \citet[Sections~5--6]{GusmeroliWiegele2022}
+obtain exact squared penalties for binary quadratic problems with
+integer-data linear equality constraints from objective bounds and
+residual separation ($\norm{Ax-b}^2\ge1$ by integrality). To our
+knowledge, what is new in Theorem~\ref{thm:polyfactor} is the polynomial-factor conclusion for a
+norm-penalty threshold that is always positive and is taken after
+unrestricted optimization of the multiplier, under the restrictions
+above: a binary box, one equality, a linear objective, a known unique
+optimizer and a known sufficient coefficient.
+
+\paragraph{Conditioning and perturbation.}
+Distance to the boundaries of convex sets is a classical conditioning
+device \citep{DunaganSpielmanTeng2011};
+\citet[Theorem~3.3 and Corollary~3.4]{BuergisserAmelunxen2012} bound
+the relative volume of boundary neighbourhoods of spherically convex
+sets within spherical caps.
+Theorem~\ref{thm:gridsmoothing} is an explicit application to exact
+penalties, with a rational grid, an encoding bound and the infeasibility
+alternative; its Gaussian variant (Proposition~\ref{prop:gaussian}) has
+the infeasibility alternative but no grid or encoding statement. Their ingredients are known: the boundary-avoidance
+principle, the convex repair argument and, for the Gaussian variant, the
+tube estimate \citep[Lemma~2.3.4]{DunaganSpielmanTeng2011}. The relation between convex exact
+penalties and multiplier bounds is classical
+\citep[Theorem~4.2]{FriedlanderTseng2007}, and Lipschitz value bounds
+across discrete choices appear in mixed-integer optimal control
+\citep[Theorem~3]{GugatHante2017}.
+
+\paragraph{Organization.}
+Section~\ref{sec:geometry} defines the exactness notions and the two
+thresholds and proves the balanced-mixture, one-equality and slice
+results. Section~\ref{sec:lower} proves the lower bound and discusses
+which features of the formulation it depends on.
+Sections~\ref{sec:upper} and~\ref{sec:fixedcount} prove the encoding
+upper bounds in the continuous dimension and in the number of nonlinear
+native inequalities. Section~\ref{sec:calibration} proves the
+calibration hardness, and Section~\ref{sec:perturbation} the perturbation
+results. Section~\ref{sec:discussion} discusses consequences, scope and
+open questions. Appendix~\ref{app:attainment} treats Example~13 of
+\citet{LefebvreSchmidt2025}, and Appendix~\ref{app:symmetric} gives a
+symmetric two-binary variant of the lower bound in which the optimized
+and zero-multiplier thresholds coincide.

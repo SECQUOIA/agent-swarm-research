@@ -1,0 +1,211 @@
+<!-- Written to disk by the root from the structured return value of agent 'author:primal-chain' (the harness blocks subagents from writing report files). Status: complete. -->
+
+# Exactly feasible primal points for chain50, chain100, chain200, chain400
+
+Date: 2026-10-01. Track: primal-chain. Status: complete for all four instances. The report is on disk and includes the complete method, assumptions and command list. Independent review r1 verified the numerical claims.
+
+## Result
+
+For each instance there is now a point that satisfies every row, variable bound and integrality requirement of the cached OSIL model exactly. The models have no integer variables. The coordinates are exact numbers in a quadratic field Q(√R) for an integer R. The feasibility check uses only exact rational arithmetic (Python integers and fractions.Fraction). The objective value is an exact element of the same field; the table encloses it to 40 decimal places.
+
+| instance | point files (in points/) | objective of the exact point (40 dp enclosure) | certified dual bound L (exact binary value) | gap f_hi − L | relative gap |
+|---|---|---|---|---|---|
+| chain50 | chain50_generator.json, chain50_box.json | [5.0722614939828723164454381769845467731843, …731844] | 5.07226149398286274561087338952347636222… | ≤ 9.58e-15 | ≤ 1.89e-15 |
+| chain100 | chain100_*.json | [5.0697846107387605574911913664186759056713, …056714] | 5.06978461073875052989023970440030097961… | ≤ 1.01e-14 | ≤ 1.98e-15 |
+| chain200 | chain200_*.json | [5.0689173417931710001847965010674364416891, …416892] | 5.06891734179316166830631118500605225563… | ≤ 9.34e-15 | ≤ 1.85e-15 |
+| chain400 | chain400_*.json | [5.0686216946040190143614896914450892607014, …607015] | 5.06862169460400924236864739214070141315… | ≤ 9.78e-15 | ≤ 1.93e-15 |
+
+- **Gap.** The gap is the upper end of the objective enclosure minus L, rounded up. The relative gap divides that difference by L. Because L < p, this is an upper bound on the project's relative-gap convention |p−d|/min(|p|,|d|), checked against MINLPLib metadata. It uses f_hi rather than the exact primal objective p.
+- **Where L comes from.** L is the wave-2 dual bound in open-instances-wave2/cops/logs/chainN_bound.json, field bnb.bound. That interval branch and bound proved bound ≥ a target stored as a binary double, so L is that double's exact value. This track did not recheck L. The independent COPS review re-certified it (reviews/cops-verification/verification-report.md, Section 1f).
+- **What this closes.** The optimal value of each instance lies in [L, f_hi], an interval of width at most 1.01e-14.
+
+The wave-2 gaps were 9.4e-15, 9.9e-15, 9.0e-15 and 1.0e-14. Those were measured against double-precision points with row violations up to 3.6e-16, and against the displayed decimal bounds. The new gaps are measured against exactly feasible points.
+
+### Note for integration: displayed dual bounds for chain50 and chain200
+
+The overly rounded decimals 5.072261493982863 (chain50) and 5.068917341793162 (chain200) were used in `open-instances-wave2/cops/report.md` (two tables), `reviews/cops-verification/verification-report.md` (a bullet list and a table), `reviews/closing-audit-a.md`, `publication/reviews/solver-campaign-review-r1.md` and `publication/solver-runs/report.prev.md` (chain200's value only in the first two). The reproduction documents also show these decimals with a caveat; they are outside this revision's edit scope. The main summary table shows the valid compact dual range "5.06862 … 5.07226", but its gap cell must change from ≤ 1.0e-14 to ≤ 1.01e-14.
+- **The displayed decimals are not proved.** These strings are the shortest decimal representations of the certified doubles, and both are larger than the certified values (by 2.54e-16 for chain50 and 3.32e-16 for chain200). Neither branch and bound proves the displayed decimal.
+- **Evidence.** The independent verifier's minimum leaf bounds are 5.07226149398286276 and 5.06891734179316167. Each is below the displayed string and above the double.
+- **Safe displays.** Truncating the exact binary values gives 5.0722614939828627 for chain50 and 5.0689173417931616 for chain200.
+- **chain100 and chain400 are fine.** Their displayed decimals (5.0697846107387505 and 5.068621694604009) are below the doubles, so they are valid as displayed. Measured against the displayed chain400 value, the gap is 1.01e-14 instead of 9.78e-15.
+
+This changes no conclusion. Integration should correct those older reports and use safe displays in the paper. Against the safe displays for chain50/100/200/400, gap upper bounds are 9.62e-15, 1.01e-14, 9.41e-15 and 1.01e-14; relative upper bounds are 1.90e-15, 1.99e-15, 1.86e-15 and 1.98e-15. The result table above instead uses exact binary64 L values. `logs/minor_review_check.log` checks both conventions with exact rational arithmetic.
+
+## Method
+
+### Model, as read from the OSIL file
+
+- **Variables.** x_0..x_N (OSIL indices 0..N) and u_0..u_N (indices N+1..2N+1). All are continuous and free, except x_0 = 1 and x_N = 3.
+- **Step size.** η = 1/(2N). The files give it as the decimals 1e-2, 5e-3, 2.5e-3 and 1.25e-3.
+- **Linear rows** (i = 0..N−1): x_{i+1} − x_i − η u_i − η u_{i+1} = 0.
+- **Length row:** η Σ_{i<N} (s_i + s_{i+1}) = 4, where s_i = √(u_i² + 1).
+- **Objective** (minimize): η Σ_{i<N} (s_i x_i + s_{i+1} x_{i+1}).
+
+### Reduction to two equations
+
+Let w_0 = w_N = 1 and w_i = 2 otherwise. Propagate x from x_0 = 1 through the linear rows. Then:
+- the bound x_N = 3 holds if and only if Σ w_i u_i = 4N;
+- the length row holds if and only if Σ w_i s_i = 8N.
+
+Put t_i = u_i + s_i > 0. Then 1/t_i = s_i − u_i, u_i = (t_i − 1/t_i)/2 and s_i = (t_i + 1/t_i)/2. So s_i = √(1+u_i²) holds exactly for any t_i > 0. The two conditions become linear in t and in 1/t:
+
+  Σ w_i t_i = 12N,   Σ w_i / t_i = 4N.
+
+### Construction (build_points.py)
+
+1. **Start point.** Start from the saved wave-2 double-precision point (open-instances-wave2/cops/logs/chainN_primal.txt) and compute t_i from it.
+2. **Free indices.** Leave two interior indices free: a = 1 (smallest t_i) and b = N−1 (largest t_i). At the start point their t values are about 0.083–0.088 and 34.5–36.4. The two values are far apart, so the 2×2 system below is well-conditioned.
+3. **Fixed values.** Round every other t_i to 20 decimal places. These decimals are stored in the generator file.
+4. **Solve for the free pair.** With α = (12N − Σ_{i∉{a,b}} w_i t_i)/2 and β = (4N − Σ_{i∉{a,b}} w_i/t_i)/2, the remaining conditions are t_a + t_b = α and 1/t_a + 1/t_b = β. So t_a and t_b are the two roots of T² − αT + α/β = 0, and t_a is the smaller root.
+5. **The field.** The discriminant α² − 4α/β = n/d (in lowest terms) is a positive rational, and its square root is √R/d with R = n·d. R has 1,928, 3,755, 7,323 and 14,507 decimal digits for N = 50, 100, 200 and 400, and it is not a perfect square. Every coordinate of the point therefore lies in Q(√R).
+6. **Exact arithmetic.** u and x then follow by exact arithmetic in Q(√R). Numbers are pairs of rationals (p, q) meaning p + q√R. The sign of p + q√R is decided exactly by comparing p² with q²R.
+7. **Box file.** The box file lists every OSIL variable as a 45-significant-digit decimal centre, with a common radius of 1e-40. The build checks exactly that each coordinate lies in its box.
+
+**Distance to the start point.** The exact point lies within 2.3e-16 (x) and 4.0e-15 (u) of the wave-2 double point.
+
+**Objective.** The objective of the exact point agrees with the wave-2 60-digit KKT value in all 25 stored digits. Rounding t to 20 decimals moves the point about 1e-17 from the KKT point. The KKT point is stationary, so the objective changes only at second order.
+
+**Why not a rational point.** A fully rational point needs rational u_i with Σ w_i √(1+u_i²) = 8N. Square roots of distinct squarefree integers are linearly independent over Q, and all weights are positive. So every s_i, and hence every t_i, would have to be rational. That means finding a rational point on the variety {Σ w t = 12N, Σ w/t = 4N}; with three free indices this variety is a genus-1 curve. We did not pursue this, because the quadratic-field point is already exact.
+
+### Check (verify_points.py, separate code)
+
+The check script shares no code with build_points.py. It has its own OSIL reader (xml.etree, with every constant kept as an exact Fraction) and its own Q(√R) arithmetic. It rebuilds the point from the generator file and evaluates everything from the OSIL expression trees:
+
+- **Variables.** All 2N+2 variables are continuous. There are exactly 4 finite bounds (x_0 = 1 and x_N = 3), and all hold exactly.
+- **Rows.** All N+1 rows equal their right-hand side exactly: 51/51, 101/101, 201/201 and 401/401.
+- **Square roots.** Each sqrt node is evaluated by finding the root inside Q(√R). A root is accepted only if its square equals the argument exactly and it is nonnegative; otherwise the check stops with an error. For i ∉ {a, b} the root is rational. For a and b it lies in Q(√R).
+- **Objective.** The exact objective p + q√R is enclosed using math.isqrt(R·10^120), which brackets √R to within 1e-60. The gap to L is computed exactly in rationals.
+- **Box file.** The exact point is checked to lie in every box (centre ± 1e-40).
+- **Interval re-evaluation.** All rows and the objective are re-evaluated over the whole box with mpmath iv at 60 digits. Every row enclosure contains its right-hand side, with residual width at most 2.1e-40. The objective enclosure contains the exact enclosure and gives the same gaps to three digits.
+
+**Negative controls** (chain50, logs/negative_control.log):
+- x_5 + 1e-30 makes rows 4 and 5 fail.
+- t_5 + 1e-20 changes u_5 but keeps s_5 rational; it makes rows 4, 5 and the length row fail.
+- u_5 + 1e-30 makes the exact square root leave the field, and the check stops with an error.
+
+### Cross-check with SCIP's own OSiL reader (scip_crosscheck.py; floating point, evidence only)
+
+pyscipopt 6.2.1 (SCIP 10) reads each OSIL file. Every variable is set to the double nearest its box centre, and SCIP's auxiliary objective variable nlobjvar is set to the exact objective rounded up.
+- checkSol with numerics/feastol = 1e-13 accepts all four points.
+- Two negative controls are rejected for every N: nlobjvar set 1e-11 below the objective, and u_5 moved by 1e-9.
+
+This shows, independently of our reader, that SCIP reads the variable order, rows and objective the same way.
+
+## What is proved, what is numerical, what is not checked
+
+**Proved by exact arithmetic (our code):** for each N, the point defined in chainN_generator.json is exactly feasible for ~/.cache/minlplib/minlplib/osil/chainN.osil, and its objective lies in the 40-digit interval in the table.
+- The proof assumes only Python integer arithmetic, Fraction and math.isqrt, plus the OSiL conventions: default variable bounds [0, ∞), default row bounds (−∞, ∞), and sqrt meaning the nonnegative root.
+- No floating-point value enters the proof. The double start point only selects which exact point is built.
+
+**Taken from earlier work:** the dual bounds L, certified in wave 2 and re-certified by the independent COPS review. Not rechecked here.
+
+**Interval and floating-point checks, not needed for the main claim:**
+- The box consistency check assumes mpmath iv rounds outward.
+- The SCIP check is floating point and counts as evidence only.
+
+**Independence:** the original author wrote both scripts, which share no code. Independent review r1 subsequently verified the exact-feasibility and objective claims; its checks are recorded in `../../reviews/primal-chain-review-r1.md`.
+
+**OSIL files checked** (full hashes in logs/osil_sha256.txt):
+
+| file | sha256 prefix |
+|---|---|
+| chain50.osil | f6b2b409… |
+| chain100.osil | 45cb3020… |
+| chain200.osil | 634acc62… |
+| chain400.osil | 7cd93486… |
+
+**Nothing failed in the final runs.** Three engineering errors were fixed along the way:
+1. Python's limit on converting integers longer than 4,300 digits to strings stopped the first chain200 build.
+2. The first box check converted mpmath interval endpoints at 53-bit precision.
+3. The first box check also dropped the endpoint sign.
+
+Errors 2 and 3 made the consistency step fail, never pass. After the fixes, everything was rebuilt and rechecked.
+
+## Files
+
+All files are in /workspace/minlp-notes/research-20260929/publication/primal/chain/.
+- **build_points.py:** the construction. It writes points/chainN_generator.json and points/chainN_box.json.
+  - The generator file holds the exact definition: N, a, b, the root choice, the 20-decimal t_i, and R as a decimal string.
+  - The box file holds a decimal centre for each OSIL variable, the radius 1e-40, and the exact objective enclosure.
+- **verify_points.py:** the separate exact check, the gap computation and the box consistency check. Output in logs/verify.log and logs/verify_stdout.log.
+- **scip_crosscheck.py:** the SCIP floating-point cross-check. Output in logs/scip_crosscheck.log.
+- **Other logs:** logs/build_N.log, logs/negative_control.log, logs/osil_sha256.txt, logs/points_sha256.txt.
+
+## Commands run
+
+Every command ran from the track folder as a single process with OMP_NUM_THREADS=1, one at a time.
+1. python3 build_points.py 50: succeeded.
+2. python3 build_points.py 100, then 200: chain100 succeeded; chain200 hit the integer-to-string limit. Fixed by adding sys.set_int_max_str_digits(0).
+3. python3 build_points.py 200 and python3 build_points.py 400: succeeded.
+4. python3 verify_points.py 50: the exact part passed, but the box consistency step failed because of the endpoint-conversion bugs. After fixing them, python3 verify_points.py 50 100 passed.
+5. python3 verify_points.py 50 100 200 400: passed.
+6. python3 scip_crosscheck.py 50 100 200 400: a first version without negative controls; all points were accepted.
+7. python3 scip_crosscheck.py 50 100 200 400: the final version with negative controls.
+8. Rebuild after changing the stored radius string to "1e-40": python3 build_points.py N for N = 50, 100, 200, 400. Times were 0.2 s, 0.9 s, 4.7 s and 29 s.
+9. Final checks on the rebuilt points: python3 verify_points.py 50 100 200 400 passed in 23.5 s, and python3 scip_crosscheck.py 50 100 200 400 gave the results reported above.
+10. A one-off negative-control script that imports verify_points (logs/negative_control.log).
+11. sha256sum of the four OSIL files and of points/*.
+
+Software: Python 3.13.11, mpmath 1.3.0, pyscipopt 6.2.1. No CI or project-wide checks were run, and nothing was committed.
+
+## Suggested summary edits (for the integration step)
+
+- **chain50–400 row.** The primal column can read "exactly feasible point (coordinates in Q(√R)), objective 5.0722614939828723164…/5.0697846107387605575…/5.0689173417931710002…/5.0686216946040190144…". The gap becomes ≤ 9.58e-15 / 1.01e-14 / 9.34e-15 / 9.78e-15.
+- **The paragraph after the closed-instances table.** Drop chain50–400 from the list of instances whose primal side is only tolerance-feasible.
+- **Dual-bound displays.** Correct the older reports named above to 5.0722614939828627 and 5.0689173417931616; keep the main summary's valid compact range.
+
+## Commands run (from the agent's structured return)
+
+- `OMP_NUM_THREADS=1 python3 build_points.py 50  -> ok`
+- `OMP_NUM_THREADS=1 python3 build_points.py 100 ; python3 build_points.py 200  -> chain100 ok; chain200 ValueError (int->str 4300-digit limit), fixed with sys.set_int_max_str_digits(0)`
+- `OMP_NUM_THREADS=1 python3 build_points.py 200 ; python3 build_points.py 400  -> ok`
+- `OMP_NUM_THREADS=1 python3 verify_points.py 50  -> exact part passed; box interval step failed (endpoint conversion bugs: 53-bit mpf conversion, lost sign), fixed`
+- `OMP_NUM_THREADS=1 python3 verify_points.py 50 100  -> passed`
+- `OMP_NUM_THREADS=1 python3 verify_points.py 50 100 200 400  -> passed`
+- `OMP_NUM_THREADS=1 python3 scip_crosscheck.py 50 100 200 400  (first version, no negative controls) -> all accepted`
+- `OMP_NUM_THREADS=1 python3 scip_crosscheck.py 50 100 200 400  (final, with negative controls) -> points accepted at feastol 1e-13, controls rejected`
+- `sed edit radius string to 1e-40; OMP_NUM_THREADS=1 python3 build_points.py N for N=50,100,200,400 -> ok (0.2/0.9/4.7/29 s; logs/build_N.log)`
+- `OMP_NUM_THREADS=1 python3 verify_points.py 50 100 200 400 (final) -> passed, 23.5 s (logs/verify.log)`
+- `OMP_NUM_THREADS=1 python3 scip_crosscheck.py 50 100 200 400 (final) -> logs/scip_crosscheck.log`
+- `python3 -B -c '<negative controls importing verify_points>' -> logs/negative_control.log (perturbations rejected as expected)`
+- `sha256sum chain{50,100,200,400}.osil > logs/osil_sha256.txt; sha256sum points/* > logs/points_sha256.txt`
+- `read-only exploration: grep/sed/cat of open-instances-summary.md, open-instances-wave2/cops/{report.md,chain_model.py,osilx.py,chain_bound.py,logs/chainN_bound.json,logs/chainN_primal.txt}, reviews/cops-verification/verification-report.md, OSIL file sections; pyscipopt readProblem probe of chain50.osil`
+
+## Remaining limitations
+
+The dual bounds L were taken from wave 2 and the independent COPS review; this track did not recheck them. The point is exact but not rational: its coordinates lie in Q(√R), with R up to 14,507 digits. A fully rational construction was not attempted. The integration note above identifies the older dual-display corrections; the main summary's compact range is valid.
+
+## Response to review
+
+Review: `../../reviews/primal-chain-review-r1.md`. Checked and resolved on 2026-10-03.
+
+| issue | resolution and evidence |
+|---|---|
+| 1. Location of overly rounded displays | Corrected the integration note; the compact main-summary range is valid. Checked the three older documents and the exact binary64 bounds. |
+| 2. Which dual the gaps use | Added all four gaps against safe decimal displays; the main result table explicitly uses exact binary64 bounds. Exact recomputation: `logs/minor_review_check.log`. |
+| 3. u-distance rounded down | Changed the conservative bound to 4.0e-15; stored chain200 build evidence has a distance about 3.943e-15. |
+| 4. Missing report and relative-gap wording | The full report is on disk, including its commands. Reworded the relative gap as an upper bound using the project convention; independent r1 review is cited. |
+
+Targeted check: `OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONDONTWRITEBYTECODE=1 python3 research-20260929/publication/primal/chain/minor_review_check.py > research-20260929/publication/primal/chain/logs/minor_review_check.log` (from the repository root). Results are in `logs/minor_review_check.log`. No main computation, solver campaign, project-wide verification or CI check was run for this revision.
+
+### Round 2: independent minor-fixes review (2026-10-03)
+
+Review: [minor-fixes-review-r1.md](../../reviews/minor-fixes-review-r1.md). Issue numbers below refer to that review.
+
+| issue | resolution |
+|---|---|
+| 4 | Added the exact summary gap correction to ≤ 1.01e-14. |
+| 11 | Completed the older-display location list and corrected the COPS document description. |
+
+Own exact checks and saved-source evidence: [check_r2.log](../../reviews/minor-fixes/check_r2.log). The full response is [response-r2.md](../../reviews/minor-fixes/response-r2.md); exact commands and results are in [commands.md](../../reviews/minor-fixes/commands.md). Integration edits remain pending in the main summary and audit report. No main computation or solver campaign was repeated.
+
+### Round 3: independent minor-fixes review (2026-10-03)
+
+Review: [minor-fixes-review-r2.md](../../reviews/minor-fixes-review-r2.md). Issue numbers below refer to that review.
+
+| issue | resolution and evidence |
+|---|---|
+| 3 | Corrected the authorized older chain dual displays and the chain50/chain200 COPS gaps to 9.7e-15/9.4e-15. Qualified the historical “as claimed” sentence. |
+| 10 | Clarified that only the first two listed older documents used the chain200 value. |
+
+Targeted checks and the full response: [response-r3.md](../../reviews/minor-fixes/response-r3.md), [check_r3.log](../../reviews/minor-fixes/check_r3.log) and [commands-r3.json](../../reviews/minor-fixes/commands-r3.json). Scientific scripts were run only in disposable copies. Scientific logs and point files in this track were preserved. No solver campaign or project-wide check was run.

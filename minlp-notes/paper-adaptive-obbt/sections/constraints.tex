@@ -1,0 +1,1106 @@
+\section{Coupled constraints, parametric supports, and feasible repair}\label{sec:constraints}
+
+The certificates of Sections~\ref{sec:certificates}--\ref{sec:residual}
+treat the relaxation construction abstractly. In a solver, each
+directional OBBT problem is a linear program whose rows couple original
+and auxiliary variables, and these programs are solved again after the
+incumbent improves or the box shrinks. This section answers three
+questions. What does information stored from earlier solves still prove
+after such a change? When can the comparison
+inequality~\eqref{eq:matrix-lipschitz} required by
+Theorem~\ref{thm:residual} be established although the optimal basis
+changes from round to round? How do nonlinear constraints enter a rate
+bound?
+
+The tools are linear programming duality, right-hand-side parametric
+linear programming~\cite{borrelli2003parametric}, and error bounds for
+constraint systems. None of these is new. The results below make precise which conclusions survive a change
+of the cutoff, a change of the box with frozen rows, and a change of the
+box with rebuilt McCormick rows, and which conclusions need a new
+verification. Three kinds of conclusion must be kept apart throughout. A
+dual vector bounds a support from above and therefore guarantees a
+reduction. A primal witness bounds a support from below and therefore
+limits the possible reduction. Only a verified basis region gives the
+exact value.
+
+\subsection{Directional support problems}\label{sec:supports-con}
+
+Sections~\ref{sec:supports-con}--\ref{sec:cover-con} consider lifted
+relaxations given by linear programs. On a box $B=[\ell,u]$ the relaxation
+is a polytope $R(B)\subseteq\R^n\times\R^m$ of lifted points $z=(x,y)$,
+where $x$ are the original and $y$ the auxiliary variables, and the
+relaxed objective $v$ is affine. Write $d=n+m$. The rows of $R(B)$ include
+the box rows $-x_i\le-\ell_i$ and $x_i\le u_i$. For a cutoff $U$, put
+$R_U(B)=\{z\in R(B):v(z)\le U\}$. As noted in
+Section~\ref{sec:foundations}, compactness of $R(B)$ makes $K_U(B)$ the
+projection of $R_U(B)$ onto $x$, so the endpoints of $T_U(B)$ are optimal
+values of $2n$ linear programs. Sections~\ref{sec:equality-con}
+and~\ref{sec:repair-con} return to the general relaxations of
+Section~\ref{sec:foundations}.
+
+Write $p=(-\ell,u)\in\R^{2n}$ and $B(p)$ for the corresponding box. For
+$i=1,\ldots,n$ let $c_i=-e_i$, and for $i=n+1,\ldots,2n$ let
+$c_i=e_{i-n}$, extended by zeros on the auxiliary coordinates. The exact
+Jacobi endpoint map is
+\begin{equation}\label{eq:endpoint-map-con}
+ F_U(p)_i=\max\{c_i^Tz:z\in R_U(B(p))\},\qquad i=1,\ldots,2n,
+\end{equation}
+so that $F_U(p)=(-\ell',u')$ when $T_U(B(p))=[\ell',u']$. The box rows give
+$F_U(p)\le p$. When the whole construction is valid and monotone, as
+assumed in Section~\ref{sec:foundations}, Lemma~\ref{lem:order} gives
+$F_U(p)\le F_U(q)$ whenever $p\le q$. All vector inequalities and absolute
+values are componentwise. Statements about $F_U$ concern Jacobi rounds;
+a sequential round rebuilds the relaxation between directions.
+
+Rows of three kinds react differently when the cutoff or the box changes.
+\begin{enumerate}
+\item \emph{Fixed rows} have coefficients and right-hand sides that do not
+ depend on $B$ or $U$, such as original linear constraints and globally
+ valid cuts.
+\item \emph{Box rows and the cutoff row} have fixed coefficients and
+ right-hand sides that are affine in $(p,U)$.
+\item \emph{Rebuilt rows} are recomputed from the current box. For an
+ auxiliary variable $y_k$ standing for a product $x_ix_j$ ($i=j$ allowed),
+ the McCormick
+ rows~\cite{mccormick1976-computability-of-global-solutions-to} are
+ \begin{equation}\label{eq:mccormick-rows-con}
+ \begin{aligned}
+  y_k&\ge\beta x_i+\alpha x_j-\alpha\beta
+   &&\text{for }(\alpha,\beta)\in\{(\ell_i,\ell_j),(u_i,u_j)\},\\
+  y_k&\le\beta x_i+\alpha x_j-\alpha\beta
+   &&\text{for }(\alpha,\beta)\in\{(\ell_i,u_j),(u_i,\ell_j)\}.
+ \end{aligned}
+ \end{equation}
+ Their coefficients on $x$ are box endpoints, their right-hand sides are
+ products of endpoints, and the coefficient of $y_k$ is $\pm1$. For $i=j$
+ the rows are the two endpoint tangents and the secant of $x_i^2$.
+\end{enumerate}
+When only the cutoff changes, the rebuilt rows do not change either, and
+the support problems form a linear program with a fixed matrix and a
+right-hand side that is affine in $U$. When the box changes, rebuilt rows
+change their coefficients. Sections~\ref{sec:dual-regions-con}
+and~\ref{sec:brackets-con} treat the fixed-matrix case, and
+Section~\ref{sec:rebuilt-con} treats rebuilt rows.
+
+Consider therefore the family
+\begin{equation}\label{eq:param-lp-con}
+ R(\theta)=\{z\in\R^d:Az\le b+E\theta\},\qquad
+ h_c(\theta)=\max\{c^Tz:z\in R(\theta)\},\qquad \theta\in\R^k,
+\end{equation}
+with $A\in\R^{m_A\times d}$, $b\in\R^{m_A}$, $E\in\R^{m_A\times k}$, and
+$h_c(\theta)=-\infty$ if $R(\theta)$ is empty. The parameter $\theta$ may
+contain the cutoff, box endpoints that enter only through box rows, or
+both. For certificates, all data are rational and every inequality is
+checked in exact arithmetic. A basis or dual vector returned by a
+floating-point solver is a proposal to be checked, not a proof. An exact
+certificate concerns the supplied linear program. Validity of its rows
+for the original problem and their node-local scope are separate premises.
+
+\subsection{Dual envelopes and exact basis regions}\label{sec:dual-regions-con}
+
+\begin{proposition}[Dual envelope]\label{prop:dual-envelope-con}
+Let $\Pi_c=\{\pi\in\R^{m_A}:\pi\ge0,\ A^T\pi=c\}$.
+\begin{enumerate}
+\item[(a)] For every $\pi\in\Pi_c$ and every $\theta$,
+ \begin{equation}\label{eq:dual-envelope-con}
+  h_c(\theta)\le\pi^T(b+E\theta).
+ \end{equation}
+ Consequently, for every finite nonempty $Y\subseteq\Pi_c$,
+ $h_c(\theta)\le\min_{\pi\in Y}\pi^T(b+E\theta)$.
+\item[(b)] Suppose $\Pi_c\ne\varnothing$, and let
+ $\Theta=\{\theta:R(\theta)\ne\varnothing\}$. Then $\Theta$ is a
+ polyhedron, and for every $\theta\in\Theta$, $h_c(\theta)$ equals the
+ minimum of $\pi^T(b+E\theta)$ over the finitely many vertices $\pi$ of
+ $\Pi_c$. In particular, $h_c$ is finite, concave, piecewise affine, and
+ continuous on $\Theta$.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+(a) If $R(\theta)$ is empty there is nothing to prove. For
+$z\in R(\theta)$, $c^Tz=\pi^TAz\le\pi^T(b+E\theta)$ because $\pi\ge0$.
+Maximize over $z$.
+
+(b) $\Theta$ is the projection of the polyhedron
+$\{(z,\theta):Az-E\theta\le b\}$ and is therefore a polyhedron. For
+$\theta\in\Theta$ the primal problem is feasible and its dual
+$\min\{\pi^T(b+E\theta):\pi\in\Pi_c\}$ is feasible, so linear programming
+duality gives equal finite optimal values, both attained. The polyhedron
+$\Pi_c$ lies in the nonnegative orthant, contains no line, and therefore
+has a vertex. A linear function that is bounded below on such a
+polyhedron attains its minimum at a vertex, and there are finitely many
+vertices. A minimum of finitely many affine functions is concave,
+piecewise affine, and continuous.
+\end{proof}
+
+Part~(a) uses neither optimality nor primal feasibility nor basis
+information at the new parameter. A stored dual vector therefore remains a
+valid upper bound however the optimal basis changes. In OBBT, an upper
+bound on $h_{c_i}$ that lies below the current endpoint $p_i$ is itself a
+valid tightened endpoint and requires no new solve. Storing dual
+information from OBBT solves and propagating it after later bound and
+cutoff changes is the principle of the Lagrangian variable bounds of
+Gleixner et
+al.~\cite{gleixner2017-three-enhancements-for-optimization-based}. The
+fixed matrix is the premise that makes~\eqref{eq:dual-envelope-con} valid
+at every parameter; Section~\ref{sec:rebuilt-con} shows that it fails for
+rebuilt rows.
+
+\begin{corollary}[Cutoff multiplier]\label{cor:cutoff-multiplier-con}
+Suppose only the cutoff row depends on the parameter: $\theta=U$ and
+$E$ is the unit vector of the cutoff row. Let $\pi\in\Pi_c$ be optimal at
+$U_0$, and let $\eta\ge0$ be its cutoff multiplier. For every $U$ with
+$R(U)\ne\varnothing$,
+\begin{equation}\label{eq:cutoff-reduction-con}
+ h_c(U)\le h_c(U_0)-\eta(U_0-U).
+\end{equation}
+If, in addition, $U\le U_0$ and $\pi'\in\Pi_c$ is optimal at $U$ with
+cutoff multiplier $\eta'$, then
+\[
+ \eta(U_0-U)\le h_c(U_0)-h_c(U)\le\eta'(U_0-U).
+\]
+\end{corollary}
+
+\begin{proof}
+Optimality gives $\pi^T(b+EU_0)=h_c(U_0)$, so
+$\pi^T(b+EU)=h_c(U_0)-\eta(U_0-U)$, and
+Proposition~\ref{prop:dual-envelope-con}(a)
+gives~\eqref{eq:cutoff-reduction-con}. Applying the same proposition at
+$U_0$ with $\pi'$ gives $h_c(U_0)\le\pi'^T(b+EU_0)=h_c(U)+\eta'(U_0-U)$.
+\end{proof}
+
+For a lower cutoff, $\eta(U_0-U)$ is therefore a \emph{guaranteed}
+reduction of the support, not an upper bound on the possible reduction.
+A zero multiplier guarantees nothing; it does not show that a later
+improvement of the incumbent is useless. The right-hand inequality uses a
+multiplier at the new cutoff, which is unknown until that problem is
+solved; it describes the reduction by the concavity of $h_c$ but does not
+predict it. If optimality at $U_0$ has not been verified, the affine
+bound remains valid, but subtracting it from a numerical value of
+$h_c(U_0)$ does not give a certified reduction.
+
+\begin{proposition}[Exact basis region]\label{prop:basis-region-con}
+Let $I$ be a set of $d$ row indices with $A_I$ nonsingular. Put
+\[
+ z_I(\theta)=A_I^{-1}(b_I+E_I\theta),\qquad
+ \pi_I=A_I^{-T}c,
+\]
+and extend $\pi_I$ by zeros to a vector $\pi\in\R^{m_A}$. If $\pi_I\ge0$,
+then on the closed polyhedron
+\[
+ C_I=\{\theta:Az_I(\theta)\le b+E\theta\}
+\]
+the point $z_I(\theta)$ is optimal and
+\begin{equation}\label{eq:basis-value-con}
+ h_c(\theta)=c^Tz_I(\theta)=\pi^T(b+E\theta)\qquad(\theta\in C_I).
+\end{equation}
+Thus $h_c$ coincides on $C_I$ with an affine function whose gradient is
+$E^T\pi$. Conversely, if every $R(\theta)$ with $\theta$ in a set
+$\mathcal P$ is a nonempty polytope, then the regions $C_I$ of all bases
+$I$ with $A_I^{-T}c\ge0$ cover $\mathcal P$.
+\end{proposition}
+
+\begin{proof}
+For $\theta\in C_I$ the point $z_I(\theta)$ is feasible by definition.
+The extended vector satisfies $\pi\ge0$ and $A^T\pi=A_I^T\pi_I=c$, and the
+rows in $I$ are tight, so
+$c^Tz_I(\theta)=\pi_I^TA_Iz_I(\theta)=\pi^T(b+E\theta)$.
+Proposition~\ref{prop:dual-envelope-con}(a) gives
+$h_c(\theta)\le\pi^T(b+E\theta)$, and feasibility gives the reverse
+inequality.
+
+For the converse, fix $\theta\in\mathcal P$. A linear objective attains its
+maximum over a nonempty polytope at a vertex $z^*$, and the rows active at
+$z^*$ span $\R^d$. Optimality gives $c=\sum_{j\in J}\pi_ja_j$ with
+$\pi\ge0$ and $J$ a set of active rows, where $a_j^T$ is row $j$ of $A$;
+choose such a representation with $|J|$ minimal. The rows in $J$ are
+linearly independent: a linear relation among them would allow moving the
+coefficients along it until one becomes zero while the others stay
+nonnegative. Extend $J$ by active rows to a set $I$ of $d$ linearly
+independent active rows and set the added coefficients to zero. Then $A_I$
+is nonsingular, $A_I^{-T}c$ is the chosen nonnegative coefficient vector,
+$z_I(\theta)=z^*$, and $\theta\in C_I$.
+\end{proof}
+
+The first part is the classical description of critical regions in
+right-hand-side parametric linear programming, where optimizers and optimal
+values are affine on each region~\cite{borrelli2003parametric}. Zero
+multipliers, ties between bases, and lower-dimensional regions are
+allowed. At a boundary shared by two regions the two affine formulas agree,
+but $h_c$ need not be differentiable there; the gradient refers to one
+affine piece. Rejecting a singular proposed basis rejects that proposal,
+not the relaxation. The polytope premise in the converse is needed. If $s$
+is an original variable and $t$ a free auxiliary variable, the set
+$\{(s,t):s=0\}$ has attained supports $\max s=\max(-s)=0$, but its two
+rows have rank one, so no basis of two rows exists. The polytope premise
+holds whenever every original and auxiliary variable has finite bounds, as
+in the McCormick relaxations considered here.
+
+A proposed region is verified as follows. If a parameter polytope is the
+convex hull of finitely many vertices, it is contained in $C_I$ if and only
+if every vertex satisfies the residual inequalities defining $C_I$,
+because $C_I$ is convex. For a scalar cutoff, write
+$z_I(U)=z^0+Uz^1$ with $z^0=A_I^{-1}b_I$ and $z^1=A_I^{-1}E_I$. Row $j$
+becomes
+\begin{equation}\label{eq:ranging-con}
+ (a_j^Tz^1-E_j)\,U\le b_j-a_j^Tz^0,
+\end{equation}
+one affine inequality in $U$. Intersecting them gives the exact basis
+interval; this is classical right-hand-side ranging. On that interval the
+support moves exactly by $\eta$ per unit of cutoff, where $\eta=c^Tz^1$ is
+the cutoff multiplier of $\pi$. Outside it the dual expression remains an
+upper bound, but the primal formula need not be feasible. All nonbasic
+residuals must be checked in the same exact arithmetic as the basis solve.
+Exact arithmetic on the basis alone does not certify a point in a model whose
+other rows are evaluated in floating point.
+
+\begin{example}[A zero multiplier before a useful tightening]\label{ex:cutoff-con}
+Minimize $x_2$ over $0\le x_1\le3$, $0\le x_2\le4$, and
+\[
+ x_1-x_2\le1,\qquad 4x_1-x_2\le7,\qquad x_1\le 5/2,
+\]
+with the cutoff $x_2\le U$, $0\le U\le4$. There are no auxiliary
+variables. Maximizing $x_1$ gives
+\begin{equation}\label{eq:cutoff-example-con}
+ h(U)=\min\{1+U,\ 7/4+U/4,\ 5/2\}
+ =\begin{cases}
+  1+U,&0\le U\le1,\\
+  7/4+U/4,&1\le U\le3,\\
+  5/2,&3\le U\le4.
+ \end{cases}
+\end{equation}
+On $[0,1]$ the basis consists of $x_1-x_2\le1$ and $x_2\le U$, with primal
+point $(1+U,U)$ and multipliers $(1,1)$; the row $4x_1-x_2\le7$ becomes
+$4+3U\le7$, so~\eqref{eq:ranging-con} gives exactly $[0,1]$. On $[1,3]$ the
+basis consists of $4x_1-x_2\le7$ and $x_2\le U$, with point $(7/4+U/4,U)$
+and multipliers $(1/4,1/4)$; the row $x_1-x_2\le1$ requires $U\ge1$ and the
+row $x_1\le5/2$ requires $U\le3$. On $[3,4]$ the basis consists of
+$x_1\le5/2$ and $x_2\le U$, with point $(5/2,U)$ and multipliers $(1,0)$;
+the row $4x_1-x_2\le7$ requires $U\ge3$, and $x_2\le4$ requires $U\le4$.
+The three verified intervals cover $[0,4]$, which
+proves~\eqref{eq:cutoff-example-con}, and the cutoff slopes are $1$,
+$1/4$, and $0$. The three dual vectors give the affine functions $1+U$,
+$7/4+U/4$, and $5/2$; their minimum equals $h$ on $[0,4]$, an instance of
+Proposition~\ref{prop:dual-envelope-con}(b).
+
+At $U_0=4$ the cutoff multiplier is zero, yet lowering the cutoff to $U=2$
+reduces the support from $5/2$ to $9/4$. At $U_0=2$ the old dual remains
+valid at $U=1/2$ and gives the bound $7/4+(1/2)/4=15/8$. The extrapolated
+primal point $(15/8,1/2)$ is infeasible, since $x_1-x_2=11/8>1$, and the
+actual support is $3/2$. The old multiplier guarantees a reduction of
+$3/8$, while the actual reduction is $3/4$.
+\end{example}
+
+The example is chosen to make these distinctions visible without numerical
+ambiguity; it is not a difficult instance.
+
+\subsection{Reconsidering a support after the incumbent improves}\label{sec:brackets-con}
+
+When the incumbent improves from $U_0$ to $U<U_0$ at a fixed box, every
+row except the cutoff is unchanged and $R(U)\subseteq R(U_0)$. Stored
+primal points and stored dual vectors then bracket each new support.
+
+\begin{proposition}[Primal--dual bracket]\label{prop:bracket-con}
+Fix the box and all rows except the cutoff, and write $R(U)$ for the
+relaxation with cutoff $U$. Let $c=c_i$ be a signed coordinate objective
+with current endpoint $p_i$. Let $W$ be a finite set of complete lifted
+points that satisfy every row except possibly the cutoff, and let
+$Y\subseteq\Pi_c$ be finite and nonempty. For a new cutoff $U$, put
+$W(U)=\{z\in W:v(z)\le U\}$. If $W(U)\ne\varnothing$, then
+\begin{equation}\label{eq:bracket-con}
+ \max_{z\in W(U)}c^Tz\;\le\;h_c(U)\;\le\;
+ \min\Bigl\{p_i,\ \min_{\pi\in Y}\pi^T(b+EU)\Bigr\},
+\end{equation}
+and consequently
+\[
+ \max\Bigl\{0,\ p_i-\min_{\pi\in Y}\pi^T(b+EU)\Bigr\}
+ \;\le\;p_i-h_c(U)\;\le\;p_i-\max_{z\in W(U)}c^Tz .
+\]
+\end{proposition}
+
+\begin{proof}
+Every point of $W(U)$ is feasible for the new support problem, which
+proves the left inequality. The box row gives $h_c(U)\le p_i$, and
+Proposition~\ref{prop:dual-envelope-con}(a) gives the dual bound.
+Subtracting from $p_i$ gives the second display.
+\end{proof}
+
+The left end of the second display is the reduction that can be applied
+immediately, without a solve. The right end limits what a new solve of
+this one support problem can achieve. If the two ends
+of~\eqref{eq:bracket-con} meet, the new support is known exactly. The
+bracket concerns one support problem on one frozen relaxation. It says
+nothing about the further tightening that rebuilding the relaxation on the
+new box may produce. Bounds on all later rounds require a protected box
+(Section~\ref{sec:certificates}) or a comparison matrix
+(Section~\ref{sec:cover-con}). Bounding the benefit of a whole round
+requires information for every direction, not for one favorable direction.
+
+A stored witness that attains the old support certifies that the support
+does not change while the cutoff stays at or above its objective value.
+The least such value is an exact threshold.
+
+\begin{proposition}[Exact no-change threshold]\label{prop:threshold-con}
+Fix the box and all rows except the cutoff, and let $R(U_0)$ be a nonempty
+polytope. Let $\mathcal F_0=\{z\in R(U_0):c^Tz=h_c(U_0)\}$ be the optimal
+face and
+\[
+ \underline U=\min\{v(z):z\in\mathcal F_0\}.
+\]
+For every $U\le U_0$ with $R(U)\ne\varnothing$, $h_c(U)=h_c(U_0)$ if and
+only if $U\ge\underline U$.
+\end{proposition}
+
+\begin{proof}
+If $U\ge\underline U$, a minimizer $z_0$ defining $\underline U$
+satisfies the new cutoff, so $h_c(U)\ge c^Tz_0=h_c(U_0)\ge h_c(U)$, the
+last inequality because $R(U)\subseteq R(U_0)$. If $U<\underline U$, let
+$z$ attain $h_c(U)$, which exists because $R(U)$ is a nonempty polytope.
+If $h_c(U)=h_c(U_0)$, then $z\in\mathcal F_0$ and
+$v(z)\le U<\underline U$, contradicting the definition of $\underline U$.
+Hence $h_c(U)<h_c(U_0)$.
+\end{proof}
+
+Computing $\underline U$ requires one additional linear program over the
+optimal face, or a lexicographic step after the support solve. Its cost
+must be charged like any other solve. A stored optimal witness with a
+larger objective value certifies the no-change interval only down to its
+own value; exclusion of such a witness does not show that the support
+moves, because another optimal point may remain. Exclusion of the
+least-objective witness does show this.
+Proposition~\ref{prop:threshold-con} is the single-direction,
+single-round counterpart of the face thresholds for protected boxes in
+Section~\ref{sec:cutoff-thresholds}.
+
+These results sort the directions after an incumbent improvement into
+three classes. If $U\ge\underline U$ for direction $i$, the new support
+equals the old one; when the current endpoint $p_i$ already equals that
+value, for example because the last round applied it, the direction cannot
+move in this round. If a stored dual vector gives a bound below $p_i$, that
+bound can be applied at once. Otherwise the
+bracket~\eqref{eq:bracket-con} is the only information available, and a
+budgeted solve is the way to learn more. The classes concern certified
+bounds on one support. Whether a solve is worth its cost is a separate
+question.
+
+\begin{example}[Example~\ref{ex:cutoff-con} continued]\label{ex:cutoff-bracket-con}
+At $U_0=4$ the optimal face is $\{(5/2,x_2):3\le x_2\le4\}$, because a
+point with $x_1=5/2$ needs $x_2\ge3$ by the row $4x_1-x_2\le7$. Thus
+$\underline U=3$, and Proposition~\ref{prop:threshold-con} shows that the
+support is unchanged exactly for $U\in[3,4]$. Lower the cutoff to $U=2$.
+The witness $(5/2,3)$ is excluded, so the support decreases. With the
+feasible anchor $(0,0)$, the convex combination
+$(2/3)(5/2,3)+(1/3)(0,0)=(5/3,2)$ is feasible at the new cutoff, and the
+dual vector stored at $U_0=4$ gives $5/2$. The bracket is $[5/3,5/2]$, and
+the true value $9/4$ lies inside it. A dual vector that is optimal at a
+cutoff in $(1,3)$ is unique and would tighten the upper end to
+$7/4+U/4=9/4$.
+\end{example}
+
+\subsection{Rebuilt McCormick rows}\label{sec:rebuilt-con}
+
+When the box shrinks and the McCormick rows~\eqref{eq:mccormick-rows-con}
+are rebuilt, the constraint matrix itself depends on $p$. Write
+\[
+ R(p)=\{z:A(p)z\le b(p)\},
+\]
+where the entries of $A(p)$ are affine in $p$ and those of $b(p)$ are
+quadratic in $p$. For products of original variables the coefficients of
+the auxiliary variables are constant. This subsection states exactly what
+remains valid. Lifted monotonicity, $R(B')\subseteq R(B)$ for
+$B'\subseteq B$ with a common objective (Section~\ref{sec:foundations}),
+holds for the reference family of McCormick rows and fixed linear rows
+(Lemma~\ref{lem:reference-family}).
+
+\begin{lemma}[Frozen rows]\label{lem:frozen-con}
+Assume lifted monotonicity. Fix $p_0$, let $A_0z\le b_0$ be the rows of
+$R(B(p_0))$, and for $p\le p_0$ define the frozen relaxation
+\[
+ \widetilde R(p)=\{z:A_0z\le b_0,\ x\in B(p)\}.
+\]
+\begin{enumerate}
+\item[(a)] $R(B(p))\subseteq\widetilde R(p)$. The frozen family has a fixed
+ matrix and a right-hand side affine in $p$, so every dual envelope of
+ Proposition~\ref{prop:dual-envelope-con} for the frozen family is a valid
+ upper bound for the rebuilt supports.
+\item[(b)] Let $p_1=F_U(p_0)$, and let $\widetilde F_U$ be the Jacobi map of
+ the frozen family at the same cutoff. Then $\widetilde F_U(p)=p_1$ for
+ every $p$ with $p_1\le p\le p_0$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+(a) Lifted monotonicity gives $R(B(p))\subseteq R(B(p_0))$, and the box
+rows of $R(B(p))$ give $x\in B(p)$. (b) The frozen cutoff set is
+$R_U(B(p_0))\cap\{x\in B(p)\}$. Every point of $R_U(B(p_0))$ has
+$x\in T_U(B(p_0))=B(p_1)\subseteq B(p)$, so this set equals
+$R_U(B(p_0))$, whose signed supports are $p_1$.
+\end{proof}
+
+Part~(a) is why dual information derived from globally valid rows can be
+reused at descendant nodes. Part~(b) shows the price: frozen-row OBBT stops
+after one round, and its comparison matrix on $[p_1,p_0]$ is zero. Any
+progress of iterated OBBT comes from rebuilding. A zero comparison matrix
+computed from frozen rows must not be used in~\eqref{eq:matrix-lipschitz}
+for the rebuilt map; Theorem~\ref{thm:residual} would then assert that
+no motion remains after the first round. Example~\ref{ex:switch-con} below
+gives a case where this assertion is false.
+
+Combining old multipliers with the \emph{rebuilt} rows is a different
+shortcut, and it is invalid because in general $A(p)^T\pi\ne c$.
+
+\begin{example}[Reusing a dual vector after the box shrinks]\label{ex:rebuilt-dual-con}
+Take the square relaxation of Example~\ref{ex:heron} with $r=1$: on
+$B=[0,u]$, $u\ge1$, the rows are $s\ge0$, $s\ge2ux-u^2$, and $s\le ux$,
+with the cutoff $s\le1$, and the upper support is
+$G(u)=(u^2+1)/(2u)$. At $u_0=2$ the optimal basis consists of the tangent
+row $4x-s\le4$ and the cutoff, with exact multipliers $\pi=(1/4,1/4)$,
+and $G(2)=5/4$. Rebuild on $[0,5/4]$.
+\begin{itemize}
+\item Old multipliers with rebuilt right-hand sides give
+ $\pi^Tb(5/4)=(1/4)(25/16)+1/4=41/64$. This is not a valid bound. The
+ point $(x,s)=(1,1)$ satisfies every rebuilt row and the cutoff, and $x=1$
+ is an original feasible point with objective $1=U$. The vector $\pi$ is
+ not dual feasible for the rebuilt matrix, because
+ $2\cdot(5/4)\cdot(1/4)\ne1$.
+\item The frozen rows of $[0,2]$ give the valid bound $5/4$ and no
+ tightening, as Lemma~\ref{lem:frozen-con}(b) predicts.
+\item The corrected bound of Proposition~\ref{prop:corrected-dual-con}
+ below gives $71/64$.
+\item The exact rebuilt support is $G(5/4)=41/40$.
+\end{itemize}
+\end{example}
+
+\begin{proposition}[A stored dual vector after a rebuild]\label{prop:corrected-dual-con}
+Let $\pi\ge0$, let $p$ be a parameter with $R(p)$ nonempty, and suppose
+every $z\in R(p)$ satisfies known bounds $z^L\le z\le z^U$. Put
+$q=c-A(p)^T\pi$. Then
+\begin{equation}\label{eq:corrected-dual-con}
+ h_c(p)\le\pi^Tb(p)+\sum_{j}\max\{q_jz^L_j,\ q_jz^U_j\},
+\end{equation}
+where terms with $q_j=0$ are zero even if the corresponding bound is
+infinite. If $\pi$ is dual feasible for an earlier parameter $p_0$, that
+is, $A(p_0)^T\pi=c$, and the change from $A(p_0)$ to $A(p)$ affects only
+columns of original variables, then $q=(A(p_0)-A(p))^T\pi$ vanishes on the
+auxiliary columns, and only the current box bounds of $x$ enter the sum.
+\end{proposition}
+
+\begin{proof}
+For $z\in R(p)$, since $\pi\ge0$,
+\[
+ c^Tz=\pi^TA(p)z+q^Tz\le\pi^Tb(p)+q^Tz
+ \le\pi^Tb(p)+\sum_j\max\{q_jz^L_j,\ q_jz^U_j\}.
+\]
+Maximize over $z$. The last statement follows from $c=A(p_0)^T\pi$.
+\end{proof}
+
+In Example~\ref{ex:rebuilt-dual-con}, $q=(1-2\cdot(5/4)/4,\,0)=(3/8,0)$
+and $x\le5/4$, so~\eqref{eq:corrected-dual-con} gives
+$41/64+(3/8)(5/4)=71/64$. The bound needs no solve and uses the rebuilt
+rows. As a function of the upper endpoint $u\in[1,2]$, the corrected
+bound with the multipliers from $u_0=2$ is $u-u^2/4+1/4$; for $u>2$ the
+residual changes sign and the correction uses the lower bound $0$ of $x$
+instead. Applying it repeatedly with
+these same multipliers produces valid endpoints $u_{k+1}=u_k-u_k^2/4+1/4$,
+which satisfy $u_{k+1}-1=(u_k-1)(3-u_k)/4$ and converge to the exact limit
+$1$ at a linear rate of at most $1/2$. Exact OBBT converges to the same
+limit quadratically. This is a property of the example; in general the
+correction term grows with the change of the coefficients, and the bound is
+useful only for moderate changes of the box.
+
+Inequality~\eqref{eq:corrected-dual-con} is the bound of
+Proposition~\ref{prop:dual-residual}, written for maximization and applied
+to an exact dual vector of a different matrix. For products of original
+variables, the auxiliary columns in~\eqref{eq:mccormick-rows-con} have
+fixed coefficients $\pm1$, so the correction needs only the current box.
+For composite factorable relaxations, products involving auxiliary
+variables have box-dependent auxiliary coefficients, and valid bounds on
+those auxiliary variables are also needed.
+
+Exact supports with rebuilt rows are again given by basis certificates,
+now with parameter-dependent matrices.
+
+\begin{proposition}[Basis certificate with rebuilt rows]\label{prop:rebuilt-basis-con}
+Let $A(\cdot)$ and $b(\cdot)$ be continuously differentiable on an open set
+$O\subseteq\R^k$, let $I$ be a set of $d$ row indices, and let
+$\Pi\subseteq O$ be closed with $A_I(\theta)$ nonsingular for every
+$\theta\in\Pi$. Put
+\[
+ z_I(\theta)=A_I(\theta)^{-1}b_I(\theta),\qquad
+ \pi_I(\theta)=A_I(\theta)^{-T}c,
+\]
+and extend $\pi_I(\theta)$ by zeros to $\pi(\theta)\in\R^{m_A}$. If
+$\pi_I(\theta)\ge0$ and $A(\theta)z_I(\theta)\le b(\theta)$ for every
+$\theta\in\Pi$, then:
+\begin{enumerate}
+\item[(a)] $h_c(\theta)=c^Tz_I(\theta)=\pi(\theta)^Tb(\theta)$ for every
+ $\theta\in\Pi$;
+\item[(b)] $h_I(\theta)=c^Tz_I(\theta)$ is continuously differentiable on
+ an open set containing $\Pi$, and
+ \begin{equation}\label{eq:lagrangian-derivative-con}
+  \partial_jh_I(\theta)=\pi(\theta)^T\bigl(\partial_jb(\theta)
+   -\partial_jA(\theta)\,z_I(\theta)\bigr).
+ \end{equation}
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+(a) At each fixed $\theta\in\Pi$ this is
+Proposition~\ref{prop:basis-region-con} for the matrix $A(\theta)$ and the
+right-hand side $b(\theta)$. (b) The set where $\det A_I\ne0$ is open and
+contains $\Pi$. On it, $A_I^{-1}$ is continuously differentiable by
+Cramer's rule, and so are $z_I$ and $h_I$. Differentiating
+$A_Iz_I=b_I$ gives
+$A_I\,\partial_jz_I=\partial_jb_I-(\partial_jA_I)z_I$, and therefore
+$\partial_jh_I=c^TA_I^{-1}(\partial_jb_I-(\partial_jA_I)z_I)
+=\pi_I^T(\partial_jb_I-(\partial_jA_I)z_I)$. Rows outside $I$ have zero
+multipliers.
+\end{proof}
+
+Formula~\eqref{eq:lagrangian-derivative-con} is the derivative of the
+Lagrangian $c^Tz+\pi^T(b(\theta)-A(\theta)z)$ with respect to $\theta$ at
+the primal--dual pair. For a fixed matrix it reduces to $E^T\pi$, the
+derivative of the certified affine value in~\eqref{eq:basis-value-con};
+at a boundary shared by two regions the support itself need not be
+differentiable. For the McCormick
+rows~\eqref{eq:mccormick-rows-con} it is explicit. Let $\sigma=b-Az$
+denote the slack of a row. For an underestimator row with corner
+$(\alpha,\beta)$,
+\[
+ \partial\sigma/\partial\alpha=\beta-x_j,\qquad
+ \partial\sigma/\partial\beta=\alpha-x_i,
+\]
+and for an overestimator row the signs are reversed. For a square, both
+corner entries are the same endpoint and the two contributions add; the
+tangent at an endpoint $e$ gives $\partial\sigma/\partial e=2(e-x)$, and
+the secant gives $\partial\sigma/\partial\ell=x-u$ and
+$\partial\sigma/\partial u=x-\ell$. Since $\ell_j\le x_j\le u_j$, each
+corner entry contributes at most the row's multiplier times the width of
+the partner variable, and a box row contributes its multiplier. Because
+$p=(-\ell,u)$, derivatives with respect to a lower endpoint change sign.
+On a verified region, the matrix of these partial derivatives of the $2n$
+supports is their sensitivity matrix. A comparison matrix must bound the
+sensitivity matrices of all regions that later rounds can enter.
+
+The maximal region on which a basis is optimal is no longer a polyhedron.
+It is described by rational inequalities in $\theta$. A certificate
+therefore verifies the conditions of
+Proposition~\ref{prop:rebuilt-basis-con} on a chosen closed polyhedron
+$\Pi$, such as an interval or a box of parameters. In one parameter this
+is exact univariate algebra. In several parameters it requires bounding
+rational functions over $\Pi$, for example by exact interval arithmetic on
+a subdivision, which is sufficient but can be conservative.
+
+One special case reduces to a fixed matrix. If the coefficient vector of a
+rebuilt row changes only by a positive factor, dividing by that factor gives
+a row with fixed coefficients and a parameter-dependent right-hand side.
+For example, the tangent inequality $2tx-t^2\le0$ obtained from $x^2\le0$
+is equivalent to $x\le t/2$ for every tangent point $t>0$. McCormick rows of
+products do not have this property in general, because the ratio between
+their $x$- and $y$-coefficients changes with the box.
+
+\subsection{A comparison matrix across active-set changes}\label{sec:cover-con}
+
+Theorem~\ref{thm:residual} needs the comparison
+inequality~\eqref{eq:matrix-lipschitz} on an invariant region. A
+derivative computed at the current basis does not supply it, because later
+rounds can enter regions with larger sensitivities. The next theorem
+derives a two-sided form of~\eqref{eq:matrix-lipschitz} from a finite cover
+by regions on each of which the support is smooth, as for verified basis
+regions with a fixed or a rebuilt matrix.
+
+\begin{theorem}[Comparison matrix from a complete region cover]\label{thm:cover-con}
+Let $\mathcal D\subseteq\R^k$ be closed and convex, and let
+$F:\mathcal D\to\R^{2n}$. For each $i\in\{1,\ldots,2n\}$ let
+$C_{i,1},\ldots,C_{i,N_i}$ be closed sets whose union contains $\mathcal D$,
+such that every line segment contained in $\mathcal D$ meets each
+$C_{i,s}$ in a finite union of closed intervals, single points allowed.
+Suppose that for each $(i,s)$ there is a function $h_{i,s}$, continuously
+differentiable on an open set containing $C_{i,s}\cap\mathcal D$, with
+$F_i=h_{i,s}$ on $C_{i,s}\cap\mathcal D$. If $M\ge0$ satisfies
+\[
+ |\partial_jh_{i,s}(\theta)|\le M_{ij}
+ \qquad(\theta\in C_{i,s}\cap\mathcal D,\ \text{all }i,s,j),
+\]
+then $|F(p)-F(q)|\le M|p-q|$ for all $p,q\in\mathcal D$. In particular,
+$F$ satisfies~\eqref{eq:matrix-lipschitz} on $\mathcal D$.
+\end{theorem}
+
+The proof is in Appendix~\ref{sec:parametric-proofs-cover}.
+
+No continuity of $F$ is assumed separately: on each piece of the partition
+$F_i$ coincides with one smooth function, and consecutive pieces share their
+endpoint values because they evaluate the same function $F_i$. For the
+Jacobi map~\eqref{eq:endpoint-map-con}, take $\theta=p$ and, for each
+direction $i$, regions on which a basis is verified. With a fixed matrix
+these are the polyhedra $C_I$ of Proposition~\ref{prop:basis-region-con},
+each meets a segment in one interval, and $M$ must bound $|E^T\pi|$
+entrywise for the dual vectors $\pi$ of all bases used. With rebuilt rows,
+take closed polyhedra $\Pi$ verified by
+Proposition~\ref{prop:rebuilt-basis-con}; then $M$ must
+bound~\eqref{eq:lagrangian-derivative-con} over each $\Pi\cap\mathcal D$.
+A region may also use any smooth function that agrees with $F_i$ on it;
+this handles parameters such as degenerate boxes, at which a basis matrix
+becomes singular but the support is known directly.
+
+Coverage of $\mathcal D$ by finitely many polyhedra is a separate
+obligation. In one parameter, sorted interval endpoints decide it. In
+general it can be decided by finitely many exact linear programs.
+
+\begin{proposition}[A finite coverage test]\label{prop:coverage-con}
+Let $\mathcal D\subset\R^k$ be a nonempty polytope, and let
+$C^r=\{\theta:H^r\theta\le g^r\}$, $r=1,\ldots,N_C$, be polyhedra, each
+given by at least one inequality. For every tuple
+$J=(j_1,\ldots,j_{N_C})$ that selects one inequality $j_r$ of each $C^r$,
+let
+\[
+ \tau_J=\max\bigl\{t:\ \theta\in\mathcal D,\ t\le1,\
+  t\le H^r_{j_r}\theta-g^r_{j_r}\ (r=1,\ldots,N_C)\bigr\}.
+\]
+Then $\mathcal D\subseteq\bigcup_rC^r$ if and only if $\tau_J\le0$ for
+every tuple $J$.
+\end{proposition}
+
+The proof is in Appendix~\ref{sec:parametric-proofs-coverage}.
+
+An exact dual feasible vector of value at most zero for each tuple
+certifies coverage, and a feasible point with $t>0$ exhibits an uncovered
+parameter. Shared boundaries give $\tau_J=0$ and are handled correctly.
+The number of tuples is the product of the numbers of inequalities, so the
+test is a finite verification, not an efficient discovery procedure.
+Checking only the vertices of $\mathcal D$ is not sufficient: on
+$[-1,1]^2$ the regions $\{\theta_1\le-1/2\}$ and $\{\theta_1\ge1/2\}$
+contain all four vertices but miss the strip $|\theta_1|<1/2$, and their one
+tuple gives $\tau_J=1/2$. The test applies to each support direction
+separately; a complete cover for one direction says nothing about another.
+
+\begin{corollary}[Input for the residual theorem]\label{cor:residual-input-con}
+Let $P$ be protected with threshold at most $U$, with endpoint vector
+$p_P\le p_0$. If, for each direction $i$, finitely many verified regions
+cover $[p_P,p_0]$ and $M$ satisfies the derivative bounds of
+Theorem~\ref{thm:cover-con}, then~\eqref{eq:matrix-lipschitz} holds on the
+invariant interval $[p_P,p_0]$, and Theorem~\ref{thm:residual}
+applies with every $e\ge0$ that satisfies~\eqref{eq:supersolution}.
+\end{corollary}
+
+\begin{proof}
+Lemma~\ref{lem:invariant-interval} shows that $[p_P,p_0]$ is invariant.
+It is closed and convex, so Theorem~\ref{thm:cover-con} applies.
+\end{proof}
+
+The supersolution inequality~\eqref{eq:supersolution} is then a finite
+exact check. If verified regions cover a convex set of pairs $(p,U)$,
+Theorem~\ref{thm:cover-con} applied with $\theta=(p,U)$ gives the stronger
+estimate $|F_U(p)-F_V(q)|\le M|p-q|+h|U-V|$ on that set. Because the cutoff
+row has fixed coefficients, $h_i$ is a bound on the cutoff multipliers of
+the bases used for direction $i$. Such an $h$ also serves in
+Proposition~\ref{prop:fixed-point-shift}, which needs it only at one fixed
+point.
+
+\begin{example}[A basis change along the trajectory]\label{ex:switch-con}
+Minimize $x^2$ subject to $x+x^2\le1$ and $0\le x\le4$. The minimizer is
+$x^*=0$ with $f^*=0$; take the cutoff $U=0$. On $B=[0,u]$, relax $s=x^2$
+by the McCormick rows $s\ge0$, $s\ge2ux-u^2$, $s\le ux$, and keep the
+coupling row $x+s\le1$ and the cutoff $s\le0$. The lower endpoint stays at
+$0$, since $(0,0)$ is feasible on every box. The cutoff and $s\ge0$ force
+$s=0$, so the tangent row gives $x\le u/2$ and the coupling row gives
+$x\le1$. Hence the upper support is
+\[
+ F(u)=\min\{u/2,\ 1\},\qquad 0\le u\le4 .
+\]
+For $0<u\le2$ the basis of the tangent row $2ux-s\le u^2$ and the cutoff
+has primal point $(u/2,0)$ and multipliers $(1/(2u),1/(2u))$; all other rows
+hold because $u/2\le1$. Formula~\eqref{eq:lagrangian-derivative-con} gives
+$\partial F/\partial u=(1/(2u))(2u-2\cdot u/2)=1/2$, which agrees with direct
+differentiation of $u/2$. At $u=0$ the box is $\{0\}$ and $F(0)=0$, so the
+smooth function $u/2$ represents $F$ on the closed region $[0,2]$. For
+$2\le u\le4$ the basis of $x+s\le1$ and $-s\le0$ has primal point $(1,0)$
+and multipliers $(1,1)$; the tangent row holds because $2u\le u^2$. Its
+rows do not depend on $u$, so the slope is $0$.
+
+The degenerate box $P=\{0\}$ is protected at cutoff $0$, with the lifted
+witness $(0,0)$, and Corollary~\ref{cor:residual-input-con} applies on
+$\{(0,u):0\le u\le4\}$, which the two regions cover. Every point of this
+interval has $\ell=0$, and the lower support is identically $0$. Hence
+$M=\operatorname{diag}(0,1/2)$ satisfies~\eqref{eq:matrix-lipschitz} on it.
+From $u_0=4$, the exact iterates are $4,1,1/2,1/4,\ldots$. The first
+residual is $d=(0,3)$, and $e=(0,6)$ satisfies~\eqref{eq:supersolution}.
+Theorem~\ref{thm:residual} bounds the total motion by $6$ and the
+motion after the first round by $Me=3$; the actual values are $4$ and $1$.
+
+The observed displacements $3$ and $1/2$ have ratio $1/6$. A geometric
+extrapolation with that ratio would bound the motion after the first round
+by $(1/2)/(1-1/6)=3/5$, but the actual motion is $1$: the first round used
+the coupling row, and later rounds use the tangent row with ratio $1/2$.
+This is a McCormick instance of the failure shown abstractly in
+Example~\ref{ex:ratio} and Proposition~\ref{prop:history}. The frozen rows
+of $[0,4]$ give the support $1$ for every $u\in[1,4]$, so their comparison
+matrix on that interval is zero. Used in Theorem~\ref{thm:residual},
+it would assert that no motion remains after the first round, whereas the
+rebuilt iterates continue to $0$.
+\end{example}
+
+Complete covers are practical when the parameter set is low-dimensional,
+for example a scalar cutoff or a few endpoints that actually move. The
+number of basis regions is bounded only by the number of bases, which grows
+combinatorially with the number of rows, and the coverage test of
+Proposition~\ref{prop:coverage-con} has a combinatorial number of tuples.
+Theorem~\ref{thm:cover-con} is therefore a verifiable sufficient condition,
+not an inexpensive general method.
+
+\subsection{An affine equality changes the rate}\label{sec:equality-con}
+
+Assumption~\ref{ass:tangent} requires finite relaxation values on the
+comparison boxes. A projected relaxation that keeps an equality constraint
+exactly is infinite off the feasible affine set, so the constrained case
+needs a restricted tangent construction, as observed in
+Proposition~\ref{prop:restricted-tangent-con}. The following example
+computes the restricted map exactly.
+
+Consider $f(x,y)=(x-y)^2=x^2+y^2-2xy$ on boxes $[-r,r]^2$. Keep the squares
+exact and replace $xy$ by its McCormick overestimator
+$\min\{r^2+r(x-y),\,r^2-r(x-y)\}=r^2-r|x-y|$. The relaxed objective is
+\[
+ \phi_r(x,y)=x^2+y^2-2r^2+2r|x-y|.
+\]
+Without further constraints, the points $(r,r)$ and $(-r,-r)$ have
+$\phi_r=0$ and are true minimizers, so at cutoff $0$ every box face is
+retained and OBBT stalls.
+
+\begin{proposition}[Exact map with an affine equality]\label{prop:equality-con}
+Impose the equality $y=-x$ exactly in the relaxation, and let $U\ge0$.
+A Jacobi round maps $[-r,r]^2$ to $[-G_U(r),G_U(r)]^2$, where
+\[
+ G_U(r)=\min\bigl\{r,\ \sqrt{2r^2+U/2}-r\bigr\}.
+\]
+Put $a=\sqrt U/2$ and $r_{k+1}=G_U(r_k)$.
+\begin{enumerate}
+\item[(a)] If $U=0$, then $r_{k+1}=(\sqrt2-1)r_k$.
+\item[(b)] If $U>0$ and $r_0>a$, then $r_k$ decreases strictly to $a$, and
+ \[
+  r_{k+1}-a=\frac{(r_k-a)^2}{\sqrt{2r_k^2+2a^2}+r_k+a}
+  \le\min\Bigl\{\frac{r_k-a}{2},\ \frac{(r_k-a)^2}{4a}\Bigr\}.
+ \]
+\item[(c)] If $U>0$ and $r_0\le a$, then $r_k=r_0$ for all $k$.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+On the equality put $(x,y)=(t,-t)$. Then
+$\phi_r(t,-t)=2t^2+4r|t|-2r^2$, and the cutoff
+$2|t|^2+4r|t|-2r^2\le U$ holds exactly when
+$|t|\le\sqrt{2r^2+U/2}-r$, the nonnegative root. The box adds $|t|\le r$.
+Both coordinates range over $[-G_U(r),G_U(r)]$, which proves the formula
+for the map. For $U=0$ the root is $(\sqrt2-1)r$.
+
+For $U>0$ we have $U/2=2a^2$. Put $X=2r^2+2a^2$. Since
+$X-(r+a)^2=(r-a)^2\ge0$, we get $\sqrt X\ge r+a$ and
+\[
+ \sqrt X-r-a=\frac{X-(r+a)^2}{\sqrt X+r+a}=\frac{(r-a)^2}{\sqrt X+r+a}.
+\]
+The root is smaller than $r$ exactly when $X<4r^2$, that is, when $r>a$.
+Hence for $r>a$ the map equals the root, lies in $(a,r)$, and satisfies
+the displayed identity. The denominator is at least $2(r+a)$, which is at
+least both $2(r-a)$ and $4a$; this gives the two bounds, and with them
+strict decrease to $a$. If $r\le a$, the root is at least $r$, so the box
+is fixed.
+\end{proof}
+
+For $U>0$ and every starting radius $r_0$, the limiting radius is
+$\min\{r_0,a\}$. This is the radius of the original cutoff set within the
+initial box: on $y=-x$ the objective is $4x^2$, and $4x^2\le U$ exactly
+when $|x|\le a$. OBBT therefore converges to the box hull of the original
+cutoff set. When $r_0>a$ it does not reach it in finitely many rounds, since
+$r_{k+1}-a>0$ whenever $r_k>a$, but the error decreases quadratically,
+whereas in the unconstrained
+two-variable example the error at a positive cutoff decreases only
+linearly (Proposition~\ref{prop:two-variable-cutoff-floor}(d)). At zero cutoff the
+contraction factor is $\sqrt2-1$. Eliminating the equality before relaxing
+gives the convex objective $4x^2$, whose exact relaxation reaches radius
+$\min\{r,a\}$ in one round. The rate is a property of the formulation and
+the relaxation, not of the constrained problem alone.
+
+Proposition~\ref{prop:restricted-tangent-con} in
+Section~\ref{sec:local-rates-contraction} gives the general restricted tangent
+contraction result. Nonlinear equalities require control of their curvature
+and of the relaxation remainder, as in the feasible-repair analysis below.
+
+\subsection{Nonlinear constraints through a feasible repair}\label{sec:repair-con}
+
+For nonlinear constraints, a width bound can be obtained without guessing
+which constraints will be active at the next support solutions. Each
+relaxed point is moved to a nearby original feasible point, and feasible
+quadratic growth then bounds its distance to the minimizer. This transfers
+a growth condition on feasible points to infeasible relaxed points through
+a constraint error bound, as in exact-penalty arguments. The OBBT content
+is the explicit list of uniform constants and their consequence for the
+iteration.
+
+Let $S=X\cap B_0$ be the original feasible set, including any
+integrality, and let $x^*\in S$ be a global minimizer with value $f^*$. Let
+$\mathfrak B^*\subseteq\mathfrak B$ be a set of boxes such that
+$x^*\in B$ and $\phi_B(x^*)\le f^*$ for every $B\in\mathfrak B^*$, and fix
+$U=f^*+\epsilon$ with $\epsilon\ge0$. Let $\nu\ge0$ be a residual
+function, defined on the boxes of $\mathfrak B^*$ and zero on $S$, such as
+the maximum violation of the original constraints. Assume constants
+$\tau,\beta,\kappa,L\ge0$, $\mu>0$, and $\alpha\in(0,1]$ such that every
+$B\in\mathfrak B^*$ and every $x\in K_U(B)$ satisfy
+\begin{align}
+ \phi_B(x)&\ge f(x)-\tau w(B)^2,\qquad \nu(x)\le\beta w(B)^2,
+ \label{eq:repair-error-con}
+\end{align}
+and $x$ has a \emph{feasible repair} $y\in S$ with
+\begin{align}
+ \norm{x-y}_\infty&\le\kappa\,\nu(x)^\alpha,\label{eq:repair-distance-con}\\
+ f(y)&\le f(x)+L\norm{x-y}_\infty,\label{eq:repair-lipschitz-con}\\
+ f(y)&\ge f^*+\mu\norm{y-x^*}_\infty^2.\label{eq:repair-growth-con}
+\end{align}
+
+Inequality~\eqref{eq:repair-distance-con} is a H\"older error bound for the
+constraint system at $x$. For a polyhedral feasible set
+$S=\{x:Gx\le g\}$ and $\nu(x)=\max_j(G_jx-g_j)_+$, Hoffman's
+theorem~\cite{hoffman1952-on-approximate-solutions-of-systems} gives such
+a bound with $\alpha=1$ and a constant $\kappa$ that depends only on $G$.
+Inequality~\eqref{eq:repair-lipschitz-con} holds if $\norm{\nabla f}_1\le L$
+on a convex set containing $x$ and $y$; only the one-sided estimate on the
+repair pair is needed. Inequality~\eqref{eq:repair-growth-con} is feasible
+quadratic growth. The repair need not lie in $B$. If every box of
+$\mathfrak B^*$ has width at most $\bar w$, every repair lies within
+$\rho=\bar w+\kappa(\beta\bar w^2)^\alpha$ of $x^*$, so it suffices that the
+Lipschitz and growth estimates hold on that neighborhood. These are
+assumptions about every relaxed point that satisfies the cutoff, including
+points that violate the original constraints. A small KKT residual at a
+support optimizer does not establish them. Without constraints one may take
+$\nu\equiv0$ and $y=x$; then~\eqref{eq:repair-error-con}
+and~\eqref{eq:repair-growth-con} combine to the hypothesis
+$\phi_B(x)\ge f^*+\mu\norm{x-x^*}_\infty^2-\tau w(B)^2$ of
+Proposition~\ref{prop:quadratic-growth}, and the next theorem reduces to it.
+
+\begin{theorem}[Width bound from a feasible repair]\label{thm:repair-con}
+For every $B\in\mathfrak B^*$, with $w=w(B)$ and $r=\kappa(\beta w^2)^\alpha$,
+\begin{equation}\label{eq:repair-width-con}
+ w(T_U(B))\le2r+2\sqrt{\frac{\epsilon+\tau w^2+Lr}{\mu}}.
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+Validity at $x^*$ gives $x^*\in K_U(B)$, so the set is nonempty. Let
+$x\in K_U(B)$ with repair $y$. By~\eqref{eq:repair-error-con},
+$f(x)\le\phi_B(x)+\tau w^2\le f^*+\epsilon+\tau w^2$ and
+$\nu(x)\le\beta w^2$, so~\eqref{eq:repair-distance-con} gives
+$\norm{x-y}_\infty\le r$. Then~\eqref{eq:repair-lipschitz-con} gives
+$f(y)\le f^*+\epsilon+\tau w^2+Lr$, and~\eqref{eq:repair-growth-con} gives
+$\norm{y-x^*}_\infty\le\sqrt{(\epsilon+\tau w^2+Lr)/\mu}$. By the triangle
+inequality every point of $K_U(B)$ lies within $r$ plus this radius of
+$x^*$ in every coordinate, so each coordinate range of $T_U(B)$ is at most
+twice that amount.
+\end{proof}
+
+\begin{corollary}[Linear repair]\label{cor:repair-rate-con}
+Let $\alpha=1$, put $K=\kappa\beta$ and
+$\lambda_0=2\sqrt{(\tau+LK)/\mu}$. For every $B\in\mathfrak B^*$,
+\begin{equation}\label{eq:repair-step-con}
+ w(T_U(B))\le\bigl(\lambda_0+2Kw(B)\bigr)w(B)+2\sqrt{\epsilon/\mu}.
+\end{equation}
+Suppose $\mathfrak B^*$ contains every subbox of $B_0$ that contains $x^*$
+and has width at most $\bar w$, and $\lambda=\lambda_0+2K\bar w<1$. Then
+Jacobi iterates $B_{k+1}=T_U(B_k)$ starting from such a box $B_0'$ satisfy
+\begin{equation}\label{eq:repair-iterates-con}
+ w(B_k)\le\lambda^kw(B_0')+2\sqrt{\epsilon/\mu}\,\frac{1-\lambda^k}{1-\lambda},
+ \qquad
+ \limsup_{k\to\infty}w(B_k)\le\frac{2\sqrt{\epsilon/\mu}}{1-\lambda}.
+\end{equation}
+The same bounds hold for any update that replaces $B_k$ by a box containing
+$x^*$ and contained in $T_U(B_k)$, such as a complete sequential round
+(Lemma~\ref{lem:sequential}(b)).
+\end{corollary}
+
+\begin{proof}
+With $r=Kw^2$, inequality~\eqref{eq:repair-width-con} and
+$\sqrt{s+t}\le\sqrt s+\sqrt t$ give~\eqref{eq:repair-step-con}. The
+iterates are nested, contain $x^*$ by validity, and therefore remain in
+$\mathfrak B^*$ with width at most $\bar w$; so
+$w(B_{k+1})\le\lambda w(B_k)+2\sqrt{\epsilon/\mu}$. Induction proves the
+first bound in~\eqref{eq:repair-iterates-con}, and letting $k\to\infty$
+proves the second. The final statement uses only the containment in
+$T_U(B_k)$.
+\end{proof}
+
+At zero cutoff slack the widths contract by at least the factor $\lambda$
+in every round, for every box shape in $\mathfrak B^*$, whichever
+constraints are active at the support solutions. At positive slack the
+limit bound is an upper bound, not an exact floor. The corollary is a
+statement of \emph{guaranteed progress}: whenever
+$w(B_k)>2\sqrt{\epsilon/\mu}/(1-\lambda)$, the next round reduces the width
+by at least $(1-\lambda)w(B_k)-2\sqrt{\epsilon/\mu}>0$. It is therefore
+complementary to the protected boxes of Section~\ref{sec:certificates} and
+to Theorem~\ref{thm:residual}, which bound the remaining benefit from
+above. The two are consistent: a protected box $P\in\mathfrak B^*$
+satisfies $w(P)=w(T_U(P))\le\lambda w(P)+2\sqrt{\epsilon/\mu}$, so its
+width is at most $2\sqrt{\epsilon/\mu}/(1-\lambda)$, and at zero slack
+$P=\{x^*\}$. The constants are analytic premises. They involve $x^*$ and
+$f^*$ and are not computed by any procedure in
+Section~\ref{sec:algorithms}.
+
+For $\alpha<1$ write $r=\kappa\beta^\alpha w^{2\alpha}$. At zero slack and
+$L\kappa\beta>0$, the bound~\eqref{eq:repair-width-con} contains the term
+$2\sqrt{L\kappa\beta^\alpha/\mu}\,w^\alpha$, whose ratio to $w$ is unbounded
+as $w\downarrow0$, so this argument does not certify linear contraction. It
+does not prove a stall either. A local repair constant $L_B=O(w^{2-2\alpha})$
+would make the square-root term $O(w)$, but the term $2r$ is $O(w)$ only if
+$\alpha\ge1/2$; for $\alpha<1/2$ the argument needs a stronger repair estimate.
+
+\begin{example}[A nonlinear equality with explicit constants]\label{ex:graph-con}
+Let
+\[
+ S=\{(x,y):y=x^2\}\cap\bigl([-1/4,1/4]\times[0,1/16]\bigr),\qquad
+ f(x,y)=x^2+y^2-xy/16 .
+\]
+Both $x$ and $y$ are original variables. For boxes
+$B=[\ell,u]\times[0,\bar y]$ with $-1/4\le\ell\le0\le u\le1/4$ and
+$0\le\bar y\le1/16$, use the box rows, the graph relaxation
+\[
+ x^2\le y\le(\ell+u)x-\ell u,
+\]
+and the relaxed objective
+\[
+ \phi_B(x,y)=x^2+y^2-\tfrac1{16}m_B(x,y),\qquad
+ m_B(x,y)=\min\{uy,\ \ell y+\bar y(x-\ell)\},
+\]
+where $m_B$ is the McCormick overestimator of $xy$ on $B$. Then $\phi_B$ is
+convex, as the maximum of two convex quadratics, and the relaxed feasible
+set is convex.
+
+\emph{Minimizer.} On $S$, $f(x,x^2)=x^2(1-x/16+x^2)\ge(63/64)x^2$, because
+$x\le1/4$. Since $|x|\le1/4$ implies $x^2\le|x|$, this equals
+$(63/64)\norm{(x,x^2)}_\infty^2$. Hence $(0,0)$ is the unique minimizer,
+$f^*=0$, and~\eqref{eq:repair-growth-con} holds on $S$ with $\mu=63/64$.
+
+\emph{Validity and monotonicity.} For $x\in[\ell,u]$,
+$(\ell+u)x-\ell u-x^2=(x-\ell)(u-x)\ge0$, so the secant is valid, and
+$m_B-xy=\min\{(u-x)y,\ (x-\ell)(\bar y-y)\}\ge0$ on $B$, so $\phi_B\le f$
+on $S\cap B$. For a nested box $B'=[\ell',u']\times[0,\bar y']\subseteq B$,
+the factors $x-\ell'\le x-\ell$ and $u'-x\le u-x$ show that the new secant
+is no higher on $B'$. Also $u'y\le uy$, and
+\[
+ \ell'y+\bar y'(x-\ell')\le\ell'y+\bar y(x-\ell')\le\ell y+\bar y(x-\ell),
+\]
+using $x\ge\ell'$ and $\bar y'\le\bar y$ for the first inequality and
+$(\ell'-\ell)(y-\bar y)\le0$ for the second. Thus $m_{B'}\le m_B$ and
+$\phi_{B'}\ge\phi_B$ on $B'$, and the relaxed feasible set shrinks: the
+whole construction is monotone. The origin is relaxed feasible and every
+relaxed point has $y\ge0$, so OBBT keeps the lower $y$-bound at $0$, and all
+iterates stay in this family of boxes and contain the origin.
+
+\emph{Residual, repair, and objective error.} Let $\nu(x,y)=|y-x^2|$. Every
+relaxed point has the repair $(x,x^2)\in S$, at distance
+$\delta=y-x^2$ in the infinity norm, and
+\[
+ 0\le\delta\le(x-\ell)(u-x)=\tfrac{(u-\ell)^2}4-\bigl(x-\tfrac{\ell+u}2\bigr)^2
+ \le\tfrac14w(B)^2 .
+\]
+So $\beta=1/4$, $\kappa=1$, and $\alpha=1$. With $s_1=u-x$, $s_2=x-\ell$,
+$t_1=y$, and $t_2=\bar y-y$, all nonnegative on $B$, the
+arithmetic--geometric mean inequality gives
+$m_B-xy=\min\{s_1t_1,s_2t_2\}\le\sqrt{s_1s_2t_1t_2}\le(u-\ell)\bar y/4
+\le w(B)^2/4$, so $f-\phi_B\le w(B)^2/64$ and $\tau=1/64$. Finally,
+\[
+ f(x,x^2)-f(x,y)=\delta\Bigl(\frac x{16}-2x^2-\delta\Bigr)
+ =\delta\Bigl(\frac1{2048}-2\bigl(x-\tfrac1{64}\bigr)^2-\delta\Bigr)
+ \le\frac{\delta}{2048},
+\]
+so~\eqref{eq:repair-lipschitz-con} holds with $L=1/2048$.
+
+\emph{Rate.} With $K=1/4$, $\lambda_0^2=4(\tau+LK)/\mu=43/672<(13/48)^2$.
+Every admitted box has $w(B)\le1/2$, so~\eqref{eq:repair-step-con} gives,
+for all admitted boxes,
+\[
+ w(T_U(B))\le\Bigl(\lambda_0+\frac{w(B)}2\Bigr)w(B)
+  +2\sqrt{\frac{64\epsilon}{63}},
+\]
+with factor at most $13/48+1/4=25/48$ for every admitted box and at most
+$13/48+1/16=1/3$ once $w(B)\le1/8$. At zero cutoff,
+Corollary~\ref{cor:repair-rate-con} certifies the contraction factor
+$25/48$ per round from any admitted starting box, and the factor $1/3$ once
+the width is at most $1/8$.
+\end{example}
+
+The example certifies a uniform rate across all box shapes without
+choosing an active constraint: at a support solution either the graph
+epigraph or the secant may be active, and the repair treats every relaxed
+point alike. The constants are sufficient, not exact rates. The constraint
+need not be relaxed exactly. If $x^2\le y$ is replaced by its endpoint
+tangents $y\ge2\ell x-\ell^2$ and $y\ge2ux-u^2$, the construction remains
+monotone, because on a smaller interval $[\ell',u']$ the new tangents
+dominate the old ones: $(2\ell'x-\ell'^2)-(2\ell x-\ell^2)
+=(\ell'-\ell)(2x-\ell'-\ell)\ge(\ell'-\ell)^2$ for $x\ge\ell'$, and
+symmetrically at the upper endpoint. Relaxed points may now lie below the
+graph, but still $|y-x^2|\le w(B)^2/4$. For $\delta<0$ the same
+identity gives $f(x,x^2)-f(x,y)=|\delta|(2x^2-|\delta|-x/16)\le(9/64)|\delta|$,
+so $L=9/64$, $\lambda_0^2=13/63<1/4$, and the contraction factor is at most
+$3/4$ for every admitted box. The objective squares, however, are kept
+exact. If they are also replaced by endpoint tangents, the generic bound on
+the error of each square is $w(B)^2/4$; with $\tau\ge1/4$ the constant
+$\lambda_0$ exceeds $1$, so this sufficient estimate certifies no
+contraction. That does not show that the resulting OBBT operator fails to
+contract. The tangent-map analysis of Section~\ref{sec:local-rates} is the
+appropriate tool for such finite linear relaxations.
+
+\begin{table}[tbp]
+\centering
+\small
+\caption{Stored information for constrained support problems and the scope
+of its conclusions.}\label{tab:scope-con}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.23\textwidth}%
+>{\raggedright\arraybackslash}p{0.22\textwidth}%
+>{\raggedright\arraybackslash}p{0.24\textwidth}%
+>{\raggedright\arraybackslash}p{0.23\textwidth}@{}}
+\toprule
+Information & Remains valid after & Conclusion & Additional verification\\
+\midrule
+Dual vector, fixed matrix (Prop.~\ref{prop:dual-envelope-con}) &
+ any change of the right-hand-side parameter &
+ upper bound on the support; guaranteed reduction &
+ exact dual feasibility\\
+Optimal dual with cutoff multiplier $\eta$ (Cor.~\ref{cor:cutoff-multiplier-con}) &
+ a lower cutoff, same box &
+ reduction at least $\eta(U_0-U)$ &
+ exact optimality at $U_0$\\
+Basis region (Prop.~\ref{prop:basis-region-con}) &
+ parameters in the region &
+ exact affine support &
+ all primal residuals on the region\\
+Retained witness (Prop.~\ref{prop:bracket-con}) &
+ a cutoff at least its objective, same box and rows &
+ lower bound; limits the possible reduction &
+ recheck all rows after any other change\\
+Least-objective optimal witness (Prop.~\ref{prop:threshold-con}) &
+ a lower cutoff, same box &
+ exact no-change threshold $\underline U$ &
+ one additional solve\\
+Frozen-row dual (Lem.~\ref{lem:frozen-con}) &
+ a smaller box with rebuilt rows &
+ valid bound, but no progress after one round &
+ lifted monotonicity\\
+Corrected stored dual (Prop.~\ref{prop:corrected-dual-con}) &
+ a smaller box with rebuilt rows &
+ valid upper bound &
+ bounds on columns with changed coefficients\\
+Complete region cover (Thm.~\ref{thm:cover-con}) &
+ all parameters in $\mathcal D$ &
+ comparison matrix for Theorem~\ref{thm:residual} &
+ coverage test, derivative bounds, invariance\\
+Repair constants (Thm.~\ref{thm:repair-con}) &
+ all boxes of $\mathfrak B^*$ &
+ width recurrence; guaranteed progress &
+ uniform error, repair, and growth bounds\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Summary}\label{sec:summary-con}
+
+Table~\ref{tab:scope-con} lists the information discussed in this section,
+the changes after which it remains valid, and what it proves. Observed
+progress is not on the list, for the reasons given in
+Section~\ref{sec:histories-con}.

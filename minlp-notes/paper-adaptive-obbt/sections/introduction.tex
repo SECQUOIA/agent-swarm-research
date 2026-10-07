@@ -1,0 +1,205 @@
+\section{Introduction}\label{sec:introduction}
+
+Optimization-based bound tightening (OBBT) improves the bounds of a variable
+by minimizing and maximizing it over a convex relaxation of the feasible
+set, usually together with an objective cutoff given by the incumbent value.
+Tighter bounds strengthen every relaxation that depends on them, such as the
+McCormick envelopes of products, and can therefore shrink a branch-and-bound
+tree. A round costs up to $2n$ auxiliary optimization problems for $n$
+variables, and after a round the relaxation can be rebuilt on the smaller box
+and the round repeated. Solvers ration this work: they run OBBT mainly at the
+root, skip directions that a known relaxation point already shows cannot
+improve, order the problems to reuse warm starts, impose work limits, and
+derive reusable bound inequalities from the dual
+solutions~\cite{gleixner2017-three-enhancements-for-optimization-based,scip2026obbt}.
+Learned variants choose which variables to tighten in each
+round~\cite{cengil2025learning} or which domain-reduction configuration to
+use on an instance~\cite{gomezcasares2025domain}.
+
+Whenever OBBT is available, three decisions remain: whether to start it at a
+node, when to stop repeating it, and when a change of the search state, such
+as a better incumbent or a smaller node box, justifies running it again. Each
+decision needs some knowledge of what further tightening can still achieve.
+This paper studies that question for a specified relaxation family. We ask
+what limits further OBBT, how the limit and the speed at which it is
+approached depend on the cutoff and on the relaxation, and which of these
+limits can be certified by finite computations.
+
+The starting point is the order structure of the operator $T_U$ that maps a
+box to the smallest box containing all of its points whose relaxed objective
+is at most the cutoff $U$. For a valid relaxation family that is monotone
+under box restriction, there are three limits on further tightening
+(Section~\ref{sec:foundations}):
+\begin{enumerate}[label=(\roman*)]
+\item the box hull of the original feasible points with objective at most
+  $U$, which no valid tightening removes and which shrinks with a better
+  cutoff when the problem domain is held fixed;
+\item the fixed boxes of $T_U$, which no number of further rounds of the same
+  relaxation family removes and only a smaller cutoff, a stronger
+  relaxation, or branching can shrink;
+\item the rate at which the iterates approach their limit, which determines
+  how many rounds are needed to reach a given movement tolerance.
+\end{enumerate}
+The first is a property of the problem, the second of the relaxation, and the
+third of the iteration. The paper develops each of them.
+
+\paragraph{Local rates and stalling.} Near a minimizer $x^*$ we rescale the
+relaxation to boxes $x^*+tD(d)$ of a fixed shape $d$ and let $t\to0$
+(Section~\ref{sec:local-rates}). The limit is a second-order tangent model
+$Q(d,\xi)$ that depends on the shape of the box and on the position $\xi$ in
+it. It defines an order-preserving, positively homogeneous map $\Phi$ on box
+shapes whose upper Collatz--Wielandt factor $r^*$ bounds the local linear
+rate: if $r^*<1$, then for every $\lambda\in(r^*,1)$ the iterates from a
+sufficiently small box around $x^*$ contract by the factor $\lambda$ per
+round, in a suitable gauge, until their width is $O(\sqrt\epsilon)$, where
+$\epsilon=U-f^*$ is the cutoff slack, and the relaxation gap that remains is
+$O(\epsilon)$. If points with negative tangent value attain all faces of a
+shape, boxes of that shape around $x^*$ are fixed at every sufficiently
+small scale and every cutoff $U\ge f^*$, so OBBT stalls there. For
+quadratic objectives with McCormick relaxations the tangent model is exact.
+This gives closed forms: the rate $(\sqrt{2a^2+4\abs a}-\abs a)/2$ for
+$x^2+y^2+axy$ with $0<\abs a<2$, a continuum of eigenvector boxes, the exact
+limit and remaining gap at a positive cutoff slack, row conditions for
+stalling and for contraction, and a strongly convex family that stalls
+exactly when $a(n-1)(n-2)\ge2$. For
+composite McCormick relaxations of factorable functions with twice
+continuously differentiable univariate factors, we prove a second-order
+expansion that computes $Q$ by a recursion over the factors. At minimizers
+on the boundary of the box with strict complementarity, the free coordinates
+obey the bounds of the interior theory, and the active widths of the limit
+are $O(\epsilon)$.
+These conditions are sufficient, not exhaustive: we give a valid monotone
+family that converges sublinearly and whose limit has width of order
+$\epsilon^{1/3}$.
+
+\paragraph{Finite certificates.} A finite set of relaxation points whose box
+hull is a box $P$, and which are feasible in the relaxation rebuilt on $P$,
+proves that $P$ is fixed (Section~\ref{sec:certificates}). It therefore
+bounds the total movement of every endpoint under all later rounds and
+directional updates, at every cutoff not below the largest relaxation value
+of the points, as long as the box being tightened contains $P$. Established feasibility filtering, which
+checks the points only in the current relaxation, bounds a single frozen
+round. We give exact cutoff thresholds and the adaptation of cached witness
+pools to a new cutoff (Section~\ref{sec:cutoff}), objective ceilings, the
+scope of the certificates under integer rounding, cuts, and branching, and
+the difference between checking a certificate and finding one. When the
+iterates converge only asymptotically, the residual of one exact round and a
+verified uniform sensitivity matrix bound the remaining movement
+(Section~\ref{sec:residual}).
+
+\paragraph{Constraints.} Fixed-matrix LP duality and exact basis regions
+bound how the coordinate supports respond to a cutoff change across
+active-set changes; a complete cover by basis regions supplies the uniform
+sensitivity matrix that the residual certificates need; and a
+feasible-repair argument transfers relaxation and constraint errors into a
+contraction bound for nonlinear constraints, with explicit constants in a
+worked example (Section~\ref{sec:constraints}).
+
+\paragraph{Algorithms, accounting, and evidence.} An exact reference procedure
+commits a round only after verifying a primal--dual optimality proof for
+every endpoint, and reports a fixed box only when the finite certificate
+holds. A numerical policy
+inside SCIP applies dual bounds evaluated with directed rounding, screens
+directions with points of the current relaxation, stops unproductive pilots,
+and reconsiders tightening after the incumbent improves
+(Section~\ref{sec:algorithms}). A cost ledger bounds optional work on the
+enhanced execution but cannot bound its run time relative to an unchanged
+baseline (Section~\ref{sec:effort}). Section~\ref{sec:experiments} reports
+the computational evidence.
+
+The rate theory and the certificates answer different questions and
+complement each other. The rate theory identifies which limit dominates near
+a minimizer and how it scales with the cutoff, but its hypotheses involve
+$x^*$, $f^*$, and tangent data that a solver does not know. The certificates
+are computable once their witnesses or sensitivity data are available. A
+certificate for the current box proves exact fixedness; a certificate for
+an inner box bounds the remaining movement and can justify stopping at a
+specified tolerance. Neither requires positive width: a singleton is also
+a fixed box if its point belongs to its own cutoff relaxation. The rate
+theory describes which fixed boxes can occur locally. In the stall regime,
+positive-width fixed boxes exist at every sufficiently small scale and
+finitely many witnesses certify them. In the strictly contracting regime,
+under the closedness property of Section~\ref{sec:foundations}, the limit is
+a fixed box of width $O(\sqrt\epsilon)$ and at most $2n$ witnesses certify
+it. At $\epsilon=0$ the only nearby fixed box is $\{x^*\}$. If an iterate
+reaches it, a finite certificate proves termination. If convergence is only
+asymptotic, the singleton of an optimal incumbent in the current box is
+still protected (Corollary~\ref{cor:original-points}); it bounds the
+remaining movement, and the bound is exact if the iterates converge to that point
+(Example~\ref{ex:sharp-halving}). Otherwise a bound on the remaining
+movement, such as a residual certificate, justifies a tolerance stop. The
+upper bounds of order $\sqrt\epsilon$ on the width of the limit and of
+order $\epsilon$ on the remaining gap motivate reconsidering OBBT after the
+incumbent improves; in the two-variable model the limit itself shrinks at
+exactly these orders. A stored certificate also
+states exactly when its own proof expires: when the cutoff falls below the
+face threshold of its pool. The certified box can remain fixed below that
+threshold, down to an exact box threshold computed by at most $2n$ face
+optimizations (Section~\ref{sec:cutoff}).
+
+The computational evidence limits what these guarantees imply. In a
+prospective comparison of 120 runs on twenty models with two seeds each, an
+adaptive policy used $20.9\%$ fewer auxiliary LPs than a fixed-order policy
+but spent more time in its propagator, and neither added policy produced an
+additional solve or a demonstrated speedup over native SCIP within ten
+seconds. An earlier study of iterated OBBT as an external presolve on 339
+MINLPLib instances found that the tightened boxes reduced node counts, but
+the savings in the final solve did not offset the cost of OBBT. The
+measured policy used only current-round screening, not the all-future
+certificates, so the experiments say nothing about the computational value
+of those certificates. They show that the number of auxiliary LPs is not a
+cost measure, and Section~\ref{sec:effort} shows why a bound on width or on
+the remaining tightening cannot by itself bound search time. The certificates
+give finite stopping guarantees for a specified tightening operator; whether
+acting on them saves time is a separate question that requires evidence of
+its own.
+
+\paragraph{Attribution.} The order properties of the operator, the
+persistence of fixed boxes, and the existence of a greatest fixed box are
+elementary consequences of monotonicity; the last is an instance of
+Tarski's fixed-point theorem~\cite{tarski1955fixpoint}. The limits of
+iterated domain reduction and their order independence were studied by
+Caprara and
+Locatelli~\cite{caprara2010-global-optimization-problems-and-domain}, and
+Caprara, Locatelli, and Monaci gave examples in which iterated reduction
+does not move any
+bound~\cite{caprara2016-theoretical-and-computational-results-about}. The
+scalar contraction bounds follow the mechanism of marginals-based range
+reduction~\cite{ryoo1995-global-optimization-of-nonconvex-nlps}, and their
+strict contraction condition has the same numerical threshold as known
+nonstrict conditions that exclude clustering in branch and
+bound~\cite{wechsung2014-the-cluster-problem-revisited,kannan2017-the-cluster-problem-in-constrained}.
+Repeated OBBT is also used in adaptive partitioning and power-flow
+optimization~\cite{nagarajan2019-an-adaptive-multivariate-partitioning-algorithm,sundar2023-optimization-based-bound-tightening-using}.
+Convergence-order analysis of McCormick and McCormick--Taylor relaxations is
+established~\cite{bompadre2012-convergence-rate-of-mccormick-relaxations,najman2016-convergence-analysis-of-multivariate-mccormick-relaxations,bompadre2013-convergence-analysis-of-taylor-models}.
+Feasibility filtering, dual reuse, and incumbent-triggered reevaluation of
+stored bounds exist in prior work and in
+SCIP~\cite{gleixner2017-three-enhancements-for-optimization-based,scip2026obbt}.
+LP duality, parametric LP, and contraction principles are classical. Our
+contribution consists of the OBBT-specific formulations: the tangent model
+and tangent map with their contraction and stall theorems, the
+relaxation-specific exact rates and stall conditions, the explicit
+shape-dependent second-order expansion of composite McCormick relaxations,
+the finite certificate formulations together with their scope, and a
+prospective evaluation of an adaptive scheduling policy that uses only
+current-round screening and heuristic triggers, not the all-future
+certificates. The local results concern the
+shape and position dependent tangent map of a specified relaxation family;
+they do not assert priority for iterated domain reduction, adaptive OBBT,
+or convergence-order analysis in general.
+
+\paragraph{Organization.} Section~\ref{sec:related} reviews related work.
+Section~\ref{sec:foundations} defines the operator and its limits, and
+Section~\ref{sec:local-rates} develops the local theory.
+Sections~\ref{sec:certificates}, \ref{sec:cutoff}, and~\ref{sec:residual}
+develop the certificates, and Section~\ref{sec:constraints} treats
+constraints. Sections~\ref{sec:algorithms} to~\ref{sec:experiments} describe
+the implementations, the cost accounting, and the computational evidence,
+and Section~\ref{sec:discussion} discusses the consequences for starting,
+stopping, and repeating OBBT. Appendices~\ref{sec:local-proofs}
+and~\ref{sec:parametric-proofs} contain longer proofs,
+Appendix~\ref{sec:numerical-validation} gives the numerical bound validation,
+Appendix~\ref{sec:scheduling} gives scheduling guarantees that keep the
+baseline solver unchanged, and Appendix~\ref{sec:precursor-details}
+describes the precursor study.

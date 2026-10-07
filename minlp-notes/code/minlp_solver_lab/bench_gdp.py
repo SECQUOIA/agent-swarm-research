@@ -10,7 +10,7 @@ import argparse, json, os, subprocess, sys, time, itertools, traceback
 os.environ.setdefault("OMP_NUM_THREADS", "1")
 os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
 os.environ.setdefault("MKL_NUM_THREADS", "1")
-os.environ["PATH"] = "/home/sgusev/miniconda3/envs/solvers/bin:" + os.environ["PATH"]
+# Solver executables are discovered through the caller's PATH.
 
 GAMS_SOLVERS = ["shot", "dicopt", "sbb", "baron", "scip", "gurobi", "antigone", "knitro"]
 METHODS = (["lbesh-hull-multi", "lbesh-hull-single", "lbesh-hull-single-uc", "lbesh-bigm-single", "lbesh-bigm-multi",

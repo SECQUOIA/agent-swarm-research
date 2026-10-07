@@ -174,8 +174,8 @@ Neither imports repository hull or oracle implementations.
 Commands actually run:
 
 ```sh
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python paper-network-simplex/verification/reviewer2/stage04-round01/check_k4.py
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python paper-network-simplex/verification/reviewer2/stage04-round01/check_rank_recovery.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python paper-network-simplex/verification/reviewer2/stage04-round01/check_k4.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python paper-network-simplex/verification/reviewer2/stage04-round01/check_rank_recovery.py
 ```
 
 ## Review limitations

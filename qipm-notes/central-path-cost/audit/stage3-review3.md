@@ -50,7 +50,7 @@ The script docstring at `scripts/verify_scalar_certificate.py:2` correctly refer
 
 ## Independent verification
 
-Used `/home/sgusev/miniconda3/envs/qipm/bin/python` throughout; installed nothing.
+Used `/workspace/local-home/miniconda3/envs/qipm/bin/python` throughout; installed nothing.
 
 - `verify_barrier_dependence.py` passed: 96 independently solved centers, metric/parameter/a' and theta bounds, finite-difference tangents, three central-arc comparisons, and the numerical relaxed-envelope stationary point. Maximum reported relative tangent error was about 1.23e-9. The computed maximizer/value were 0.6501143834529713 and 1.831856422983876, supporting the expressly numerical decimals.
 - `verify_scalar_certificate.py` passed the old c_star bound and all added rational logarithm, Y-series, and radical checks localizing **every** maximizer. The h_1/h_k monotonicity regions and the stationary equation were also checked analytically. No uniqueness of c_star's maximizer is assumed or inferred.

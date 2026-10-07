@@ -1,7 +1,10 @@
 """Check the rebuilt spp network against a MINLPLib solution file: the solution must be feasible
 for the rebuilt nonconvex pq model and reproduce the objective value."""
+from pathlib import Path as _CleanupPath
+_NOTES_ROOT = _CleanupPath(__file__).resolve().parent.joinpath('../../..').resolve()
+
 import sys
-sys.path.insert(0, "/home/sgusev/repo/minlp-notes/research-20260922/scouting/minlplib-open-data")
+sys.path.insert(0, (str(_NOTES_ROOT) + '/research-20260922/scouting/minlplib-open-data'))
 import osil, spp, instance as I
 import gurobipy as gp
 

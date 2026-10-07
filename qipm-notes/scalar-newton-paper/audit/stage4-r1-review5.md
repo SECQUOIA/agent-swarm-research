@@ -120,7 +120,7 @@ reflected in the integration.
   and ran `conda run -n qipm --live-stream make -B`. It succeeded, producing
   a 59-page PDF with no warnings, undefined references/citations, or
   overfull/underfull boxes in its final log.
-- `make check PYTHON=/home/sgusev/miniconda3/envs/qipm/bin/python` passed all
+- `make check PYTHON=/workspace/local-home/miniconda3/envs/qipm/bin/python` passed all
   five diagnostic scripts.
 - README and Makefile commands match the delivered layout. The package
   includes its bibliography and `main.bbl`, diagnostics, and build

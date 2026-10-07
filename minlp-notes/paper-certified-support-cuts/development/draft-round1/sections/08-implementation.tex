@@ -1,0 +1,144 @@
+\section{Implementation in SCIP}\label{sec:implementation}
+
+We implemented the cuts as a separator for SCIP~10.0.2 \citep{SCIP10},
+written in Python on top of PySCIPOpt~6.2.1 \citep{PySCIPOpt}, with exact
+arithmetic in Python fractions and SymPy, ball arithmetic in Arb through
+python-flint, and HiGHS for the direction LPs. The separator adds global
+cuts at the root node. It does not change SCIP's constraint handlers,
+presolve, propagation or branching, and every native nonlinear
+constraint stays in the model. Figure~\ref{fig:pipeline} shows the data flow. This section describes the parts on which
+validity depends; Appendix~\ref{app:software} lists the work limits.
+
+\input{figures/pipeline}
+
+\subsection{A faithful model}\label{sec:faithful}
+
+A cut certificate refers to the model that the solver solves. Two
+ordinary steps of model loading can change that model without notice. We
+guard against both in every mode, including the native baseline, so that
+all modes solve the same model.
+
+\paragraph{Arithmetic.}
+Every finite binary64 number in the source file is interpreted as its
+exact rational value. Assembling a native expression can still change
+values: in $(0.1x)^2$ the source coefficient is the exact square of the
+binary64 number $0.1$, whereas a coefficient computed in floating point is
+that square rounded again, and a constraint constructor may move a
+constant to the other side with a rounded subtraction. After assembly,
+the builder reads back the expression submitted to SCIP and compares its
+exact value with the source expression by symbolic subtraction and
+expansion, with no tolerance. If they differ, it rebuilds the expression
+as an explicit expression graph with separate constant nodes and compares
+again; a remaining difference rejects the model. Constants are kept inside
+the expression, so the constructor cannot round them into the row sides,
+which are passed unchanged. This is translation validation
+\citep{PnueliSiegelSingerman1998,Necula2000} of the model import, in the
+spirit of \citet[Section~20]{Neumaier2004} and \citet{SchichlNeumaier2005},
+who observed that modeling systems introduce uncontrolled rounding. Its
+boundary is the expression submitted to SCIP; SCIP's later
+simplification, presolve and floating-point LP are outside it.
+
+\paragraph{Domains.}
+Simplification can silently enlarge a domain: $0\cdot\log x$, $x/x$,
+$(\sqrt x)^2$ and $(\log x)^0$ are each defined only for $x>0$ or $x\ne0$.
+The builder visits every node of the source expression before
+simplification and proves each domain requirement from bounds and from
+affine rows; for example, $x-y=1$ proves that $\log(x-y)$ is defined, with
+no bounds on $x$ and $y$. Requirements that cannot be proved are enforced
+by exact existential constraints in a new variable $u$:
+\[
+d\ne0\iff\exists u:\ du=1,\qquad d>0\iff\exists u\ge0:\ du=1,\qquad d\ge0\ \text{is imposed directly.}
+\]
+The first is the device of \citet{Rabinowitsch1930}; together they describe
+strict domains exactly, without a positive tolerance such as the one used
+in common benchmark setups \citep{BestuzhevaEtAl2025}. A variable power
+$b(x)^{e(x)}$ is admitted as $\exp(e(x)\log b(x))$ only when $b(x)>0$ is
+proved \citep[compare][]{BelottiEtAl2009}; otherwise the model is rejected,
+because imposing $b>0$ could remove points at which the power is defined
+for other reasons.
+
+\paragraph{Bounds.}
+Support domains need finite bounds. Original affine rows imply bounds
+that may be missing from the declared box: for a row
+$\sum_ia_ix_i\le b$ with $a_j\ne0$,
+$a_jx_j\le b-\sum_{i\ne j}\min\{a_i\ell_i,a_iu_i\}$. Any finite sequence of
+such steps, with integer rounding for integer variables, yields bounds
+that hold at every feasible point. Each step is recorded with its source
+row, and replay repeats the sequence. The bounds are used only as
+premises of certificates; the model keeps its declared bounds.
+
+\subsection{Blocks, directions and activation}\label{sec:blocks}
+
+Discovery runs at the first separator call, so a model solved during
+presolve pays nothing. It writes each finite side of each original row,
+including the objective epigraph row, exactly as a nonlinear remainder
+plus an affine part. A side is admissible if its remainder involves one
+to four variables with finite proven bounds and is either univariate or
+a polynomial of total degree at most eight. Blocks are the variable sets
+of single sides and greedy unions of overlapping sides, with at most four
+variables, six nonlinear sides and sixteen affine domain rows; at most 32
+blocks are kept. Unsupported remainders are declined as a whole, and a
+remainder is never altered. Affine rows that involve only block variables,
+together with the proven bounds, form the support domain $D$.
+
+At an LP solution the separator first tries, for each block, the support
+of each single source side. It then solves up to three LPs that separate
+the current point from the convex hull of sampled graph points after
+coordinate scaling. Samples are grid points of the box, plus the exact
+vertices of the domain polytope and their centroid when the enumeration
+budget allows. The proposal fixes $a$ and the multipliers $\lambda$; their
+binary64 values are then interpreted exactly and certified. Quadratic
+blocks are certified with Theorem~\ref{thm:polytope} when the number of row
+subsets is at most 2{,}000, which for four variables allows up to seven
+affine domain rows; otherwise the star oracle of Theorem~\ref{thm:star},
+the Bernstein bound or the ball-arithmetic bound is tried, and if none
+applies the block yields no cut. When an exact support computation returns
+a minimizer that the samples missed, the minimizer is added and the
+proposal LP is solved again.
+
+Two modes add cuts. Mode \code{all} attempts every admitted block. Mode
+\code{auto} admits only quadratic blocks that contain a side not proved
+convex and that have either an affine domain row that is not a bound or
+at least two distinct nonlinear rows; it requires a larger violation and
+stops trying a block after two failed certifications. Both modes cap the
+number of callbacks, cuts and support calls (Appendix~\ref{app:software})
+and give all separator work a cumulative allowance of
+$\min\{1\,\mathrm s,\,0.05\,T\}$ for a total budget $T$, checked between
+operations; a single symbolic operation can overrun it. A cut is added only
+if its violation divided by $\max\{1,\norm{\hat c}_1\}$ exceeds $10^{-5}$ in
+\code{all} and $5\cdot10^{-4}$ in \code{auto}. Mode \code{baseline} uses the
+same model builder and adds nothing.
+
+\subsection{Certificates and replay}\label{sec:replay}
+
+Each cut is accepted through the same sequence: certify the support bound
+for the actual binary64 direction; eliminate the nonlinear rows exactly
+(Proposition~\ref{prop:aggregate}); merge coefficients; apply the
+correction of Proposition~\ref{prop:export}; read back the row that SCIP
+created, with its columns, coefficients, constant, sides and scope; and
+compare it with the certified row after mapping original to transformed
+variables. Any difference, such as a coefficient rounded by SCIP or a
+variable removed by presolve, rejects the cut.
+
+The record of a cut contains the serialized source model, the signed
+source rows and multipliers, the proven bounds with their derivations,
+the support domain, the direction, the support certificate (the complete
+candidate enumeration, the star partition or the subdivision with its
+bounds), the eliminated row, the rounding correction and the stored SCIP
+row. Replay runs in a fresh process. It verifies the hashes of the
+archived sources and model, rebuilds the bounds, the native model metadata
+and every signed source side from the archived model with its own affine
+splitter, repeats the exact support calculation for the recorded binary64
+direction on the rebuilt features and domain, recomputes elimination and
+rounding, and compares the result with the stored row. Fourteen
+deliberately corrupted records check that replay rejects altered inputs.
+
+Replay re-executes the exact support routines; it does not share the
+numerical direction search, the LP solver or SCIP. The trusted base
+consists of Python's rational arithmetic, SymPy's expansion and polynomial
+conversion, Arb, the OSiL reader's conversion of decimal tokens to
+binary64, PySCIPOpt's accessors for submitted expressions and stored rows,
+and the replay code. None of these is formally verified. The certificates
+say nothing about SCIP's presolve, its LP bounds, its branching or its
+final optimality claim; SCIP's exact mode, which does certify complete
+solves, is limited to MILP \citep{SCIP10}.

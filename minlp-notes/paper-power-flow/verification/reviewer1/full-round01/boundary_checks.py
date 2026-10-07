@@ -1,9 +1,12 @@
 """Reviewer-only exact checks of degenerate networks and general graph lifts."""
+from pathlib import Path as _CleanupPath
+_NOTES_ROOT = _CleanupPath(__file__).resolve().parent.joinpath('../../../..').resolve()
+
 from pathlib import Path
 from fractions import Fraction as F
 from itertools import combinations, product
 import sys,json
-s=Path('/home/sgusev/repo/minlp-notes/paper-power-flow/process/snapshots/full-round01')
+s=Path((str(_NOTES_ROOT) + '/paper-power-flow/process/snapshots/full-round01'))
 sys.path.insert(0,str(s/'checks'))
 import check_resistive_exact as r
 import check_developments_exact as d

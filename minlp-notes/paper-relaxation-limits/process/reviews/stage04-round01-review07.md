@@ -62,7 +62,7 @@ The following are analytic reconstructions, separate from the finite checker.
 
 6. **Escape and attribution.** The clique polynomial is multiaffine and equals `(s-k)(s-k-1)` at a Boolean vertex with s ones. It is therefore nonnegative on the full continuous cube. Equality products give total matrix sum K squared; the cut bounds the trace by `k+1/4`, giving penalty at least 1/4. The separate linear-program minimum is attained at the same optimizer, so the perturbed/increasing objectives and each relative block are also exact at the root. PSD is unnecessary for this deduction. These coupled cuts and reusable component certificates are properly outside the stated local-oracle/global-cover model. The text does not claim inherent optimization hardness or identify this family with the earlier positive multilinear examples.
 
-An independent supplemental checker is saved at `verification/reviewer07/stage04-round01/check_review07.py`, with output `check_review07.json`. Running it with `/home/sgusev/miniconda3/envs/minlp-notes/bin/python` passed:
+An independent supplemental checker is saved at `verification/reviewer07/stage04-round01/check_review07.py`, with output `check_review07.json`. Running it with `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python` passed:
 
 - 20 symbolic Gram-entry polynomial identities through d=5;
 - 77 exact midpoint tree counts and 462 exact small-tolerance endpoint evaluations;

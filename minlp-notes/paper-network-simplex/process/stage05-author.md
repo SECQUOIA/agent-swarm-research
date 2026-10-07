@@ -146,7 +146,7 @@ no padding references or unsupported priority claims were added.
 
 ## Verification executed
 
-All commands used `/home/sgusev/miniconda3/envs/minlp-notes/bin/python`.
+All commands used `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python`.
 The new scripts import no existing repository oracle implementation.
 
 1. `python paper-network-simplex/verification/stage05-padding.py`:

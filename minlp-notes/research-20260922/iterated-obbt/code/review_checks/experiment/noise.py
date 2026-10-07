@@ -1,5 +1,8 @@
+from pathlib import Path as _CleanupPath
+_NOTES_ROOT = _CleanupPath(__file__).resolve().parent.joinpath('../../../../..').resolve()
+
 import json, numpy as np
-RES='/home/sgusev/repo/minlp-notes/research-20260922/iterated-obbt/results'
+RES=(str(_NOTES_ROOT) + '/research-20260922/iterated-obbt/results')
 F={}
 for l in open(RES+'/final.jsonl'):
     r=json.loads(l); F[r['key']]=r

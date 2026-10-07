@@ -71,7 +71,7 @@ The separately reviewed [rank-three reduction](potential-flow-discrete-arc-capac
 
 [`series_parallel_arc_hulls_checks.py`](../code/potential_flow_mpd/series_parallel_arc_hulls_checks.py) uses `K_{2,3}` and `K_{2,4}` blocks with dangling branches, covering block ranks two and three. It passed 2,160 comparisons of adjacent-terminal adjoint current signs across independently varied positive electrical resistances. It also passed 60 physical arc-flow parameter finite differences, explicitly including the distinct own-edge factor `j_a-1`; the largest derivative discrepancy was `5.50e-11`. The physical checks use a small positive quadratic-law smoothing term. These tests support the sign and derivative mechanisms, while the graph theorem and exact algorithm require the written proofs and source audit.
 
-Run with `/home/sgusev/miniconda3/envs/minlp-notes/bin/python code/potential_flow_mpd/series_parallel_arc_hulls_checks.py`.
+Run with `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python code/potential_flow_mpd/series_parallel_arc_hulls_checks.py`.
 
 ## Independent verification
 

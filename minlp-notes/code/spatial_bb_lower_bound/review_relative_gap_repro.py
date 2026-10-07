@@ -25,7 +25,7 @@ Per case:
 - normalization, first moments in [0,1], and the penalty bound
   sum_i (L[x_i]-L[x_i^2]) <= sum_b |R_b|/(2 q0), exactly.
 
-Run: /home/sgusev/miniconda3/envs/minlp-notes/bin/python review_relative_gap_repro.py
+Run: python review_relative_gap_repro.py
 """
 from fractions import Fraction as Q
 from itertools import combinations_with_replacement

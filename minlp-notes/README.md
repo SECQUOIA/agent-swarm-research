@@ -5,6 +5,470 @@ engineering. Mathematical review and novelty assessment are recorded separately.
 “Independently reviewed” means checked by another research agent, not peer-reviewed
 by a journal. An unsuccessful literature search does not establish novelty.
 
+Code, protocols, compact results and verification instructions are tracked in
+Git. Large raw traces, checkpoints and support-cut campaign records are preserved
+separately, with checksums and restoration instructions in the
+[evidence archive index](artifacts/README.md). Raw evidence remains available for
+full replay; compact support-cut records allow table checks without downloading
+the raw campaigns.
+
+The [constructive separator-certificate manuscript](paper-separator-certificates/README.md)
+gives a self-contained construction on arbitrary tree decompositions under
+global quadratic growth, with certified inexact solves, exact rational
+polynomial implementations, and a contracting nonlinear dynamics extension.
+Its anonymous [PDF](paper-separator-certificates/main.pdf) and
+[submission sources](paper-separator-certificates/submission-source.zip) are
+available, with proof reviews, explicit complexity limits, and a qualified
+literature comparison.
+
+The [quadratic box-hull manuscript](paper-box-quadratic-hulls/README.md)
+combines exact separating certificates, a compact family of three-variable
+inequalities, an analytic edge-contact classification, and the sharp boundary
+for finite semidefinite lifts. It also gives sparse graph obstructions and
+small-component formulations. Its anonymous [PDF](paper-box-quadratic-hulls/main.pdf),
+[submission sources](paper-box-quadratic-hulls/submission-source.zip), and
+[computational companion](paper-box-quadratic-hulls/companion/README.md) are
+available. Full family completeness and the all-positive path and star cases
+remain explicit open questions.
+
+The [hypermetric and binary quadratic separation manuscript](paper-binary-separation/README.md)
+gives complete proofs of strong NP-completeness for unrestricted hypermetric
+separation and related binary inequality families, including metric and strict
+semidefinite promises, together with rank and threshold algorithms and the
+gap-zero classification. Its anonymous [PDF](paper-binary-separation/main.pdf)
+and [submission sources](paper-binary-separation/submission-source.zip) are
+available, with independent proof reviews and a qualified literature audit.
+
+The [arithmetic-complexity report](research-20261003-arithmetic/README.md)
+develops topic 2 into one document covering values, optimizer points, exact
+comparisons, and certificate representations. It adds global point oracles
+on unbounded polyhedra, full residual-convex cubic recourse without joint
+convexification, exact comparison in nonlinear dimension, structured box
+and flow extensions, and compact circuit Grams. Proofs, independent reviews,
+primary-source comparisons, and exact reference checkers are included. The
+unrestricted polyhedral exact-comparison question remains explicitly open.
+
+The [iterated and adaptive OBBT manuscript](paper-adaptive-obbt/README.md)
+combines the September local-rate theory and October certificate developments
+in an anonymous journal paper with complete proofs, corrected statements,
+independent mathematical reviews, a literature audit, and an archived
+reproducibility companion. Its [PDF](paper-adaptive-obbt/main.pdf) and
+[submission sources](paper-adaptive-obbt/submission-source.zip) are available.
+
+The earlier [adaptive OBBT study](research-20261003-adaptive-obbt/README.md) develops
+finite certificates for remaining tightening benefit, an exact reference driver,
+constrained and nonlinear extensions, and a local SCIP policy. Its prospective
+120-run comparison found fewer auxiliary LPs but no additional solves or net
+speed benefit; native SCIP remains the recommended default. The
+[completion assessment](research-20261003-adaptive-obbt/CLOSEOUT.md) distinguishes
+the developed results from open questions about cheap certificate discovery and
+general allocation of solver effort.
+
+The [joint-convexification study](research-20261003-convexification/README.md)
+adds original-variable SCIP cuts, exact quadratic support over general small
+rational polytopes, complete positive-tolerance separation for polynomial
+graphs, and broader source-model preservation. Its integrated report includes
+proofs, implementation contracts, independent reviews, and a new prospective
+experiment. All three modes solved the same 25 of 30 new holdout models;
+native SCIP remains the recommended default. A separate matched validation
+records repairs for large-model discovery and budget enforcement.
+
+The [earlier joint-convexification continuation](research-20261002-convexification/README.md)
+retains the constrained-star support algorithm, the obstruction to composing
+overlapping pair hulls, and its original unfavorable 316-run experiment. The
+current report incorporates those mathematical foundations and keeps the two
+experimental records distinct. Cut certificates do not certify a complete
+numerical SCIP solve.
+
+The [decomposition continuation](research-20261002-decomposition/README.md)
+resumes topic 1 at the user's request. It brings the sparse global
+optimization results into one technical report, adds a rational solver
+with independently replayable certificates, and develops reviewed
+extensions for recourse, coupled constraints, and nonunique optima.
+Its result map distinguishes proved classes, implemented methods,
+benchmark evidence, and the remaining general questions.
+
+The earlier [October 2 continuation](research-20261002/README.md) was paused at the
+user's request after finishing its current ideas and extensions. The
+[closeout](research-20261002/CLOSEOUT.md) records the strongest completed
+results, prior comparisons, verification, and unresolved limits.
+
+The final reviewed [global-convex polynomial theorem](research-20261002/new-direction/globally-convex-polynomial-point-oracle.md)
+gives deterministic `poly_D(I+q)` approximation of a fixed minimum-norm
+optimizer on a bounded rational polytope, for fixed-degree rational
+polynomials convex on all of Euclidean space. Its computable error
+constant has polynomial bit length. A reviewed core-completion corollary
+extends full-point output to nonconvex objectives with a supplied global
+core quadratic convexifier under one finite core-noise law. The
+[affine-power class](research-20261002/new-direction/affine-power-core-point-oracle.md)
+provides an explicit verifiable higher-degree example. These are theoretical
+output guarantees; publication priority and practical speedup remain unproved.
+
+The continuation's
+new [sparse polynomial theorem](research-20261002/new-direction/smoothed-sparse-polynomial.md)
+gives reviewed expected exact optimization for fixed-degree polynomial
+objectives on mixed boxes under one specified finite law of independent
+linear perturbations. It permits arbitrary integer dimension and needs
+no supplied growth bound. At fixed interaction width, expected work is
+polynomial under the stated curvature/width/noise scales. Exact output
+is usually a verified strongly convex subproblem with certified evaluation
+to any requested precision; an exact algebraic fallback handles every
+exceptional draw. The compact subproblem has polynomial size, while the
+full global proof record has an expected-size bound. The result concerns
+the sampled objective; priority and practical performance remain open.
+
+A reviewed [graph-constraint corollary](research-20261002/new-direction/smoothed-polynomial-graph-constraints.md)
+covers overlapping polynomial equalities with a sparse global parameterization
+and independently perturbed free coordinates. A complementary
+[state-count lower bound](research-20261002/new-direction/global-error-cell-barrier.md)
+shows that the current pruning rule cannot give an FPT bound in width:
+connected quartic instances force at least `(5n/(6p))^(p/2)` retained cells
+on every draw. This is a limitation of that algorithm, not optimization
+hardness; stronger conditional recourse remains a research target.
+The reviewed [simplex extension](research-20261002/new-direction/simplex-block-smoothed-extension.md)
+also permits disjoint resource or probability-simplex blocks coupled through
+the polynomial objective, alongside native-integer intervals. Feasible
+block rounding and face-based noise counts preserve expected exact implicit
+optimization at fixed width; whole-block bags and block curvature bounds
+are required.
+
+A reviewed [conditional-recourse theorem](research-20261002/new-direction/smoothed-box-stable-recourse.md)
+gives expected exact `f(k,L/sigma) poly(I)` optimization for unit-box QP
+when fixing a supplied `k`-coordinate core leaves exact polynomial-time
+recourse under further coordinate restrictions. Deletion to a forest is
+a concrete case, even with a nonconvex residual problem. The new closure
+test excludes distant residual solutions before solving a convex patch.
+This uses a stronger structural parameter than treewidth alone.
+
+The reviewed [nonlinear recourse theorem](research-20261002/new-direction/smoothed-polynomial-box-recourse.md)
+extends this mechanism to certified approximate conditional values. Fixing
+a small continuous core may leave an arbitrary dense convex polynomial
+residual problem. Expected work is `f(k,L/sigma) poly_d(I)` under one
+finite ambient-noise law, with exact implicit output on every draw.
+Residual strong convexity is unnecessary. A checked degree-five family
+has one core coordinate but requires unbounded rank for any fixed PSD
+quadratic convexification. The [assessment](research-20261002/new-direction/polynomial-box-recourse-significance.md)
+explains the structural gain, classical antecedents, and remaining solver
+work. Convexity certificates and polynomial-time recourse on every
+residual subbox are substantive premises.
+
+A reviewed [native-integer recourse theorem](research-20261002/new-direction/smoothed-native-integer-recourse.md)
+now gives ordinary exact algebraic output for a small continuous core
+coupled to a fixed tractable integer feasible set. Convex-cost integer
+flows and separable convex TU systems provide classical exact oracles.
+Expected work is `f_d(k,L/sigma) poly(I)`; integer dimension, graph width,
+and numerical capacities are outside the parameter factor. The core may
+change costs, but not residual feasibility. A certificate excludes all
+competing integer labels, then an exact small-core solve finishes.
+
+A reviewed [flow extension](research-20261002/new-direction/smoothed-boundary-core-flow.md)
+needs noise only on the continuous core, including when it is optimal
+on a boundary face. Tightened arc intervals represent all tied optimal
+flows, and derivative tests over that set certify the core face. Expected
+work is fixed-parameter in the core size and curvature-to-noise ratio;
+the sampling precision also has a parameter-dependent bound.
+For [bilinear core–flow coupling](research-20261002/new-direction/smoothed-bilinear-core-flow.md),
+the reviewed bound sharpens to
+`[8^k(3+(1+k/2)L/(2sigma))^k+c_d^k] poly_d(I)` with polynomial
+sampling precision. Here `L` comes only from the core objective.
+The reviewed [TU extension](research-20261002/new-direction/smoothed-core-tu-recourse.md)
+gives the same bounds for fixed totally unimodular equalities or
+inequalities on bounded native integers. A compact dual certificate
+replaces flow potentials; explicit bounded slacks handle inequalities.
+
+The reviewed [core-only-noise theorem](research-20261002/new-direction/core-only-noise-boundary-recourse.md)
+removes residual perturbations for continuous recourse with a verified
+uniform strong-convexity modulus. Residual active faces may change and
+their multipliers may vanish. Algebraic tube bounds and a curvature
+argument justify exact convex closure without identifying those faces
+in advance. Its count retains the original core curvature rather than
+the potentially much larger curvature of a quadratic convexification.
+
+A reviewed [regularization obstruction](research-20261002/new-direction/regularization-point-precision-obstruction.md)
+explains why simply letting that residual modulus tend to zero is
+insufficient. A convex quartic with bounded coefficients needs exponentially
+many regularization-parameter bits in its dimension for constant point
+accuracy. Its original optimization problem is easy by a structural
+reduction; the result limits this extraction method, not convex optimization.
+
+A stronger reviewed [point-output reduction](research-20261002/new-direction/convex-point-radical-comparison.md)
+shows that constant-accuracy recovery of any optimizer of a convex
+quartic can decide Square Root Sum, even at treewidth two. This is a
+conditional arithmetic-complexity implication, not NP-hardness. It
+clarifies why an efficient value oracle alone cannot justify an efficient
+optimizer-coordinate oracle for general convex residuals.
+The reviewed [arithmetic-circuit extension](research-20261002/new-direction/posslp-convex-point-extraction.md)
+gives the corresponding implication for PosSLP using convex quartics
+of unrestricted interaction width.
+
+A reviewed [value-oracle theorem](research-20261002/new-direction/all-scale-core-value-oracle.md)
+handles a supplied nonconvex core of any size with merely convex
+residuals. One fixed finite core-noise draw supports every requested
+objective accuracy `2^-q`, with expected work
+`f_d(k)(1+L/sigma)^k poly_d(I+q)`. Each answer includes a feasible rational
+point and a certified global value interval. A geometric count over all
+refinement scales removes the earlier two-variable restriction. It gives
+no residual optimizer-distance guarantee. The
+[prior comparison](research-20261002/prior-art/all-scale-core-value-oracle-prior.md)
+credits established convex-analysis and smoothed-optimization ingredients;
+publication priority remains unresolved.
+
+The reviewed [core-coordinate extension](research-20261002/new-direction/core-only-noise-core-oracle.md)
+also approximates one fixed globally optimal core at the same expected
+cost. A certified retained-region diameter controls core error; residual
+coordinates carry only the objective-gap guarantee.
+
+The reviewed [coupled-polytope extension](research-20261002/new-direction/coupled-polytope-core-value-oracle.md)
+permits arbitrary bounded rational linear constraints when a supplied
+core quadratic correction makes the objective convex. Its value and
+selected-core guarantees retain expected
+`f_d(k)(1+alpha/sigma)^k poly_d(I+q)` work. The correction `alpha` can
+be much larger than the product-box theorem's original curvature `L`.
+For quadratics, a reviewed [rational reconstruction corollary](research-20261002/new-direction/qp-core-cauchy-reconstruction.md)
+turns these Cauchy guarantees into exact rational optimizer and value
+output; the earlier aligned-QP theorem already provides a related
+exact capability under its own parameterization.
+
+Two reviewed point results sharpen this output distinction. For a
+globally convex polynomial, the [selected-coordinate theorem](research-20261002/new-direction/joint-convex-core-point-oracle.md)
+gives ordinary expected `poly_d(I+q)` work under one fixed finite law
+of noise on the requested coordinates. Unperturbed coordinates have
+no distance guarantee. For a rational polynomial of degree at most
+three convex on a bounded rational box, the
+[deterministic cubic theorem](research-20261002/new-direction/convex-cubic-point-oracle.md)
+approximates its fixed minimum-norm optimizer in `poly(I+q)` bit time
+without perturbation or strong convexity. Its reviewed
+[polytope extension](research-20261002/new-direction/convex-cubic-polytope-point-oracle.md)
+allows arbitrary bounded rational linear constraints. This gives a
+positive degree-three counterpart to the quartic reductions above.
+The [source comparison](research-20261002/prior-art/convex-cubic-point-oracle-prior.md)
+distinguishes effective point bounds from classical value oracles;
+no priority or practical-speedup claim is established.
+
+The reviewed [cubic completion theorem](research-20261002/new-direction/cubic-core-full-point-oracle.md)
+also returns a fixed full optimizer to any requested precision for a
+possibly nonconvex cubic with a supplied core quadratic convexifier.
+It preserves the coupled theorem's expected bound and perturbs only
+the core. A convex surrogate and an effective regularization schedule
+recover the unperturbed residual coordinates. The output remains a
+Cauchy name, without exact active-set or expanded algebraic guarantees.
+
+The reviewed [implicit-graph extension](research-20261002/new-direction/smoothed-implicit-graph-constraints.md)
+handles locally coupled polynomial equalities with one globally bracketed
+monotone dependent root over every retained mixed-box point. Certified
+approximate DP avoids exact algebraic-value comparisons while preserving
+exact feasible implicit output. A separate
+[order-polytope theorem](research-20261002/new-direction/smoothed-sparse-order-polynomial.md)
+covers continuous variables with overlapping order inequalities. It uses
+feasible correlated rounding and LP certificates of active equalities.
+Both give expected polynomial work at fixed interaction width under their
+stated numerical and structural assumptions.
+The reviewed [mixed order extension](research-20261002/new-direction/smoothed-mixed-order-polynomial.md)
+also permits arbitrarily many binary variables, including implications
+and continuous activation bounds. Binary-preserving transport supplies
+the count, and binary labels are fixed before continuous face tests.
+The input-size exponent depends on continuous coordinates per bag; the
+result remains fixed-width polynomial, with a full Hessian bound.
+
+The current constrained-MIQP result gives reviewed expected exact
+`f(m,k,1+nu diam(P)/sigma) poly(I)` work under a specified independent
+rational Gaussian-like coefficient law; see the
+[complete theorem](research-20261002/new-direction/smoothed-gaussian-miqp.md).
+Here `m` is integer dimension and `k` is negative inertia. Every sampled
+draw is solved correctly. A separate
+[sparse mixed theorem](research-20261002/new-direction/sparse-bag-cell-smoothed-miqp.md)
+gives expected polynomial work at fixed treewidth with arbitrary integer
+dimension and negative inertia. Both retain explicit numerical scale assumptions and concern the
+sampled objective. Novelty and competitive solver performance remain open.
+
+The reviewed deterministic
+[filtered coordinate-grid algorithm](research-20261002/new-direction/pruned-coordinate-grid.md)
+solves rational mixed-integer box quadratics exactly in
+`f(p,kappa) poly(I)` bit operations, parameterized by bag size and upper
+coordinate curvature relative to global quadratic growth. The polynomial
+input exponent is absolute. Exact min-marginals filter coordinate domains,
+removing the earlier occurrence parameter and accuracy-dependent exponent.
+The growth constant need not be supplied; certificate validity is
+independent of that assumption. Practical performance remains untested.
+The reviewed [geometric copositivity certificate](research-20261002/new-direction/geometric-copositive-certificate.md)
+also discovers and verifies a positive growth margin for sparse homogeneous
+quadratics on the nonnegative orthant, in `f(p,L/g) poly(I)` work. Its
+finite DP certificate needs no supplied margin or requested accuracy.
+It applies to an explicit [connected family](research-20261002/new-direction/fan-preordering-growth-obstruction.md)
+with treewidth two and bounded conditioning that admits no exact
+unmultiplied box-preordering certificate at any degree. This separates
+specific certificate families; it is not a general hardness claim.
+The fan's failure of PSD-plus-nonnegative decomposition is classical;
+the displayed rational construction checks its growth and certificate
+consequences explicitly.
+The reviewed [mixed-box shell certificate](research-20261002/new-direction/mixed-shell-certificate.md)
+extends direct verification to any proposed rational mixed-box QP solution.
+It certifies both unique global optimality and a physical Euclidean growth
+margin, without receiving a growth bound. Discovery and verification cost
+`f(p,max(1,L/g)) poly(I)`; the returned margin preserves this conditioning
+up to a constant. This verifies a candidate rather than finding one.
+Its reviewed [coordinate-fiber extension](research-20261002/new-direction/geometric-product-face-certificate.md)
+can certify an entire supplied optimal set of the form `{v} x Y`, including
+mixed free coordinates, without enumerating their assignments. General
+unknown optimal sets remain outside this certificate.
+The reviewed [polynomial extension](research-20261002/new-direction/nonlinear-shell-certificate.md)
+certifies supplied rational candidates for mixed-box objectives given by
+explicit bounded-degree polynomial factors. It combines outer shell bounds
+with a checked local Taylor remainder. Its conditioned FPT guarantee needs
+positive quadratic growth and a verified coordinate-curvature bound;
+uniqueness alone is insufficient for polynomial objectives.
+The same reviewed [polynomial grid algorithm](research-20261002/new-direction/polynomial-pruned-grid-extension.md)
+also finds a candidate: it gives certified mixed-box approximation with
+logarithmic precision cost, and exact optimization when all variables are
+native integers. A further [convex-patch theorem](research-20261002/new-direction/implicit-convex-patch-certificate.md)
+represents an unknown continuous optimum by a verified strongly convex
+subproblem, with certified arbitrary-precision evaluation. That exact
+implicit output additionally requires a comparable positive lower bound
+on the continuous Hessian at the optimum, automatic for interior optima
+but substantive at boundary optima. The construction and output size are
+`f_d(p,kappa) poly(I)`; expanded algebraic coordinates are not promised.
+A complementary [negative-inertia theorem](research-20261002/new-direction/negative-inertia-qp.md)
+gives exact QP over any bounded rational polytope, parameterized by the
+number of negative Hessian eigenvalues and the magnitude of the most
+negative eigenvalue relative to growth. It uses exact convex recourse and has no
+sparsity requirement. Its [mixed-polytope extension](research-20261002/new-direction/negative-inertia-miqp.md)
+adds integer dimension as a parameter. A separate
+[proximal-grid extension](research-20261002/new-direction/proximal-exact-recovery.md)
+handles arbitrary optimal sets on mixed boxes, with the important restriction
+that a valid growth bound must be supplied. A reviewed
+[linear-perturbation theorem](research-20261002/new-direction/smoothed-linear-growth.md)
+provides quantitative growth with high probability, including a rational
+sampling scheme. Its algorithmic consequences concern perturbed inputs
+and high-probability work, not expected runtime.
+The sharper [proximal-tail theorem](research-20261002/new-direction/proximal-growth-tail.md)
+now supports a reviewed [expected exact-work result](research-20261002/new-direction/expected-smoothed-qp.md):
+with at most two negative Hessian eigenvalues, a specified polynomial-bit
+linear perturbation law gives expected work
+`poly(I) (1 + nu sum_i w_i / sigma)`. An exact fallback handles every
+draw, including ties; the input is never resampled. This solves the
+perturbed objective and requires numerical control of the displayed ratio.
+Under noise in the negative-factor coordinates, the reviewed
+[exact cell-closure theorem](research-20261002/new-direction/smoothed-exact-cell-closure.md)
+extends expected exact work to arbitrary negative inertia, without a growth
+assumption. It uses one fixed rational sampling law and recognizes quadratic
+regions of the convex recourse value function. That noise is generally
+correlated in original coordinates, so the two perturbation models remain
+distinct.
+The reviewed [ambient-noise extension](research-20261002/new-direction/smoothed-ambient-cell-closure.md)
+now covers independent perturbations in every original linear coefficient
+for any fixed negative inertia. It returns an exact solution on every draw
+and has expected polynomial bit work under the stated numerical bounds.
+Its dimension dependence is `n^{O(k)}`, so it does not provide the aligned
+model's fixed-parameter bound. Classical parametric-QP reductions and
+critical-region methods are credited; the proposed advance is the expected
+exact-work analysis under the specified finite noise laws.
+The reviewed [Gaussian-like noise theorem](research-20261002/new-direction/smoothed-gaussian-cell-closure.md)
+now gives expected `f(k,nu diam(X)/sigma) poly(I)` exact work with
+independent original coefficients. Its explicitly sampled finite rational
+law approximates a Gaussian; it is not a real-Gaussian input model.
+A weighted cell count removes the dimension powers in the uniform-noise
+bound. The reviewed [constrained MIQP extension](research-20261002/new-direction/smoothed-miqp-cell-closure.md)
+handles general bounded mixed polytopes under uniform rational noise,
+using integer dimension as an additional parameter. A best-competing-label
+gap certifies that one continuous formula remains valid across a cell.
+Its reviewed [Gaussian-like composition](research-20261002/new-direction/smoothed-gaussian-miqp.md)
+gives expected exact `f(m,k,1+nu diam(P)/sigma) poly(I)` work on general
+bounded mixed polytopes, with an absolute input exponent. The specified
+finite independent noise law is fixed before sampling, and every draw is
+solved correctly.
+For [separable mixed recourse](research-20261002/new-direction/smoothed-mixed-separable-closure.md),
+convex piecewise-quadratic costs on product boxes permit arbitrarily many
+integer coordinates; neighboring scalar choices give that certificate
+directly. Rational coefficients and rational piece breakpoints are required.
+Its reviewed [anisotropic Gaussian extension](research-20261002/new-direction/anisotropic-gaussian-separable-closure.md)
+gives expected exact `f(k,1+beta diam(X)/sigma) poly(I)` work without
+a numerical conditioning assumption on the supplied full-row-rank factor.
+Here `beta` measures that supplied concave term; it is not the negative
+curvature of the complete objective. Arbitrary integer dimension remains
+allowed, and correctness holds for every draw of the specified finite law.
+The reviewed [sparse smoothed-QP theorem](research-20261002/new-direction/sparse-bag-cell-smoothed-qp.md)
+instead allows arbitrary negative inertia on continuous boxes. Sparse bag
+tables, optimizer-preserving pruning, and exact convex-face closure give
+expected polynomial work at fixed treewidth under specified independent
+rational noise and numerical scale bounds. Its input exponent depends on
+width; it does not require growth or variable-occurrence bounds.
+Its reviewed [mixed extension](research-20261002/new-direction/sparse-bag-cell-smoothed-miqp.md)
+adds unrestricted integer dimension. At unit resolution, integer cells
+become singleton values; closure first fixes every integer coordinate,
+then certifies the remaining continuous face. Integer widths remain in
+the numerical runtime bound.
+A reviewed [nonlinear integer theorem](research-20261002/new-direction/smoothed-integer-low-rank.md)
+gives expected exact optimization for separable convex quartics with low-rank
+concave coupling on integer boxes under a fixed rational factor-noise law.
+It permits arbitrarily many integer variables and large encoded ranges,
+with explicit numerical range/noise dependence, and needs neither a growth
+bound nor a fallback. Simpler binary and explicit-label baselines are credited.
+A complementary [feedback vertex set theorem](research-20261002/new-direction/fan-exploration.md)
+removes occurrence dependence when fixing a small coordinate set leaves a
+forest. It requires growth only in those coordinates and permits nonunique
+recourse. It uses the existing exact forest-QP algorithm.
+The independently reviewed [geometric-grid algorithm](research-20261002/geometric-dp/theorem.md)
+gives certified global optimization on sparse mixed-integer boxes with
+polylogarithmic accuracy dependence, under explicit upper-curvature and
+global quadratic-growth assumptions. It permits branching decompositions
+and boundary minima, compresses large integer domains, and eventually gives
+exact integer certificates. [Extensions](research-20261002/geometric-dp/extensions.md)
+cover certified approximate tables, polynomial-factor bit complexity,
+private recourse, and fully enumerated discrete states. A separate
+[finite-certificate counterexample](research-20261002/tree-localization/counterexample.md)
+disproves unrestricted per-bag localization on uniformly conditioned
+branching trees. The reviewed
+[continuous regridding algorithm](research-20261002/regridded-certificates/note.md)
+recovers smaller certificates by controlling aggregate error, with
+[certified inexact oracles](research-20261002/regridded-certificates/inexact-oracles.md).
+Reviewed extensions cover nonunique optimal sets through coordinate
+projections and [stable nonlinear dynamics](research-20261002/new-direction/nonlinear-dynamics.md)
+through convex graph strips, feasible repair, and adjoint slopes. A
+[bit-complexity extension](research-20261002/new-direction/nonlinear-dynamics-bit.md)
+uses rational local LPs and compressed feasible trajectories.
+Novelty and solver performance remain unestablished; the
+[research record](research-20261002/PROGRESS.md) distinguishes proofs,
+targeted checks, and pending work.
+
+The [September 29 continuation](research-20260929/README.md) studies how
+problem structure changes the cost of global optimization; its
+[synthesis](research-20260929/SYNTHESIS.md) separates proved results from
+evidence. Single-tree spatial branch-and-bound with termwise relaxations
+needs exponentially many leaves on path-structured problems even at a unique
+nondegenerate minimizer (at least `0.57 (5/3)^n` with termwise McCormick),
+while decomposition-aware certificates with Lagrangian slopes need
+`O(|T| C^{w+1} log(|T|/eps))` work under quadratic growth, so treewidth
+replaces dimension (on path decompositions with a zero-gradient, for
+example interior, minimizer, an algorithm that does not know the minimizer
+finds certificates of the same size form); the
+separation is a statement about fixed termwise
+relaxations, and a function-class view of separator consistency (for one
+separator, an exact identity: the gap is twice the distance to the band of
+exact splits) explains when affine splits suffice. SCIP 10's node counts
+grow about fivefold per two added variables on such chains, while a chain
+dynamic-programming prototype handles 8192 variables. Instance-specific
+certificates, each independently verified (one partly by sampling), closed 31 MINLPLib instances
+listed as open for the models as written (including camshape, chain,
+catmix, dtoc5, lnts, optcdeg2, powerflow0030p/0039p/0039r, pindyck,
+hvycrash, etamac, pricing050, two Gibbs-energy problems and the three eg_*
+Gaussian-surrogate problems; 13 of them
+against primal points that are feasible only to row violations of 1e-20 to
+8e-12), certified the intended relaxation of six KAN instances whose models
+are exactly infeasible, raised the waterno2 dual bounds by factors of
+1.6–6.2 (waterno2_06 then to within 1.67% by branching on its level
+separators with cell-dependent slopes), and brought ann_cumene_tanh to within 0.194% of its best known
+point. A validity audit of all MINLPLib listed bounds proved 19 solver
+dual bounds on 15 instances invalid (8 of them at tolerance scale), and
+SCIP 10.0.2 returned wrong optimal values on waterno2 subproblems. A theory
+of discrete calibrations describes the certificates of the transcribed
+control instances and gives a window law at bang-bang switches; whether a
+short window around a switch suffices is decided by the sign of one
+data-determined curvature, and singular arcs are treated as well. The
+[closing record](research-20260929/closing-research-results.md) collects
+results and limits. A secondary line characterizes node counts through real
+log canonical thresholds. The mechanisms of the certificates are classical;
+novelty claims are qualified in each note.
+
 The [second September 28 continuation](research-20260928b/README.md) is
 complete at the user's requested scope; its
 [closing record](research-20260928b/closing-research-results.md) collects

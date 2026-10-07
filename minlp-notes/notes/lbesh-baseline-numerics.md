@@ -127,7 +127,7 @@ Fresh independent review is required before the root launches, for example:
 
 ```sh
 cd code/minlp_solver_lab
-PATH=/home/sgusev/miniconda3/envs/solvers/bin:$PATH uv run --frozen --no-sync \
+PATH=/workspace/local-home/miniconda3/envs/solvers/bin:$PATH uv run --frozen --no-sync \
   python lbesh_gurobi_sensitivity.py --parallel 1 --order-seed 20260926 \
   --out results/lbesh_development/gurobi_trig_sensitivity_v1.jsonl
 ```
@@ -296,7 +296,7 @@ Execution still awaits the root's solver-slot allocation:
 
 ```sh
 cd code/minlp_solver_lab
-PATH=/home/sgusev/miniconda3/envs/solvers/bin:$PATH uv run --frozen --no-sync \
+PATH=/workspace/local-home/miniconda3/envs/solvers/bin:$PATH uv run --frozen --no-sync \
   python lbesh_legacy_initialization.py --parallel 1 --order-seed 20260927 \
   --out results/lbesh_development/legacy_initialization_v1.jsonl
 ```

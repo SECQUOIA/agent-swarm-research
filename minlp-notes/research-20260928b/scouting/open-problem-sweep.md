@@ -42,7 +42,7 @@ were not re-read here.
 |---|---|---|---|---|---|---|---|
 | 1 | Complexity of separating split inequalities for integer QP | de Meijer–Piccialli–Sotirov–Sudoso, [arXiv:2603.28979](https://arxiv.org/abs/2603.28979) §4 p.11 (✓); Burer–Letchford conjecture, restated by [Buchheim–Traversi](https://optimization-online.org/2013/07/3953/) pp.3, 8 (✓) | Open in literature; **NP-hardness proved in first pass here (§3.1)** | 3 | 5 | 5 | None |
 | 2 | Dey–Kocuk Conjecture 2: pairwise 3×3 blocks match full PSD | [arXiv:2510.16595](https://arxiv.org/abs/2510.16595) §4.2.1 p.21, Concl. p.24 (✓) | Open; Conj. 1 resolved by [2605.15970](https://arxiv.org/abs/2605.15970) Prop 5.7 | 2 | 4 | 5 | Row hulls cite the paper; conjecture not pursued locally |
-| 3 | Del Pia–Khajavirad Statements 1–4: treewidth hardness and extension complexity at bounded rank | [arXiv:2410.23045](https://arxiv.org/abs/2410.23045) end of §2.1 p.11, §2.2 pp.13–14 (✓) | Open, "even if … the rank is a constant" | 3 | 3 | 4 | Adjacent to local multilinear work (hulls, not lower bounds) |
+| 3 | Del Pia–Khajavirad Statements 1–4: treewidth hardness and extension complexity at bounded rank | [arXiv:2410.23045](https://arxiv.org/abs/2410.23045) end of §2.1 p.11, §2.2 pp.13–14 (✓) | Open even at constant rank | 3 | 3 | 4 | Adjacent to local multilinear work (hulls, not lower bounds) |
 | 4 | Bounded IQP at inertia (1,1,n−2); noncopositivity with fixed negative index ≥ 2 | Ari–Hildebrand, [arXiv:2604.04851v2](https://arxiv.org/abs/2604.04851) §9 (✓) | Open | 3 | 3 | 4 | **Owned by `fixed-dimension-frontier`** |
 | 5 | When continuous multipliers strengthen RLT (Hof–Walter Q12–15) | [arXiv:2511.13805](https://arxiv.org/abs/2511.13805) §6 (✓, local) | Open | 3 | 3 | 4 | None |
 | 6 | Quadratic lift hull of a 2-D box with bounds on the product xy | Anstreicher–Burer–Park 2021 §5, restated in Zhang–Ouyang–Yang [arXiv:2608.16836](https://arxiv.org/abs/2608.16836) p.2 | Partially resolved: quadrant and a [1/2,2]² piece in 2608.16836 and [2608.26639](https://arxiv.org/abs/2608.26639) | 3 | 3 | 4 | Adjacent to McCormick (covered) |
@@ -100,23 +100,21 @@ Lower-priority open items, recorded briefly:
 
 ### 0.1 Exact statements of the ranked problems
 
-Each entry gives the source wording, a precise restatement, and the
-resolution check.
+Each entry summarizes the cited question, gives the relevant mathematical
+conditions, and records the resolution check. Source prose is paraphrased.
 
-1. **Split separation.** Source wording (2603.28979 p.11): "The main
-   obstacle in applying these cuts is identifying the violated ones.
-   Moreover, it is unclear whether the separation of split inequalities
-   is an NP-hard problem or not." Buchheim–Traversi (OO 2013/07/3953,
-   p.3): "we do not know whether split inequalities can be separated in
-   polynomial time, but we agree with the conjecture of Burer and
-   Letchford [8] that this separation problem is NP-hard."
+1. **Split separation.** The paper 2603.28979 (p.11) identifies detection
+   of violated cuts as the practical obstacle and leaves the complexity
+   of split separation unresolved. Buchheim–Traversi (OO 2013/07/3953,
+   p.3) likewise report no polynomial-time separation algorithm and
+   endorse Burer–Letchford's conjecture of NP-hardness [8].
    - *Restatement.* Given a rational symmetric Y indexed 0..n with
      Y₀₀ = 1, decide whether some v ∈ ℤⁿ⁺¹ has
      ⟨v(v+e₀)ᵀ, Y⟩ = vᵀYv + vᵀYe₀ < 0.
    - *Check.* The 2026 paper still calls it unclear. Buchheim–Traversi's
      Theorem 5 handles only non-PSD Y. No resolution was found.
-2. **Dey–Kocuk Conjecture 2.** Source wording: "Conjecture 2. We have
-   S^κ_{P,R,s3} = S^κ_{P,R,S}."
+2. **Dey–Kocuk Conjecture 2.** The conjectured equality is
+   S^κ_{P,R,s3} = S^κ_{P,R,S}.
    - *Restatement.* Take G = Δⁿ and κ > 1. PRs3 requires X ≥ 0, Xe = x,
      the linking constraints (5), and
      [[X_ii, X_ij, x_i], [X_ij, X_jj, x_j], [x_i, x_j, 1]] ⪰ 0 for all
@@ -125,24 +123,24 @@ resolution check.
    - *Check.* Blekherman–Dey–Dunbar–Kocuk (2605.15970) prove Conjecture 1
      (PRS exact at κ = 2) and do not mention Conjecture 2.
 3. **Del Pia–Khajavirad Statements.**
-   - *Statement 2 (verbatim).* "Let {G_k} be a polynomial-time
-     enumerable family of hypergraphs with tw(G_k) = k for all k, and
-     with rank r(k) that is upper bounded by a log-poly function in k.
-     Let f be an algorithm that solves any instance Λ_k of Problem BMO on
-     hypergraph G_k, in time T(k)·poly(‖Λ_k‖). Then, assuming NP ⊄ BPP,
-     T(k) grows super-polynomially in k."
+   - *Statement 2 (paraphrased).* Consider a family {G_k} that can be
+     enumerated in polynomial time, with tw(G_k) = k for every k and
+     rank r(k) bounded by a log-poly function of k. If an algorithm f
+     solves every Problem BMO instance Λ_k on G_k within
+     T(k)·poly(‖Λ_k‖), the assumption NP ⊄ BPP would force T(k)
+     to grow faster than any polynomial in k.
    - *Statement 1* is the same for signed hypergraphs (Problem PBO).
    - *Statements 3–4* claim xc(PBP(H)) and xc(MP(G)) are at least
      2^{Ω(tw^δ + log n)} under log-poly rank.
    - The paper adds that even at constant rank, Statements 1 and 2
      remain open.
-4. **Rank-2 indefinite IQP.** Source wording: "What is the parameterized
-   complexity of bounded IQP at inertia (1,1,n−2), and of noncopositivity
-   with a fixed negative index at least two?"
+4. **Rank-2 indefinite IQP.** The questions concern parameterized
+   complexity for bounded IQP with inertia (1,1,n−2), and for
+   noncopositivity when the negative index is fixed and at least two.
    - *Restatement.* Is min{(aᵀx)(bᵀx) + cᵀx : x ∈ P ∩ ℤⁿ}, with P a
      polytope, FPT or W[1]-hard in n?
-5. **Hof–Walter Question 12.** Source wording: "For which polyhedra
-   P ⊆ ℝ^N and B ⊊ N is R̃_B(P) ⊊ R_B(P)?" Here R̃_B also multiplies by
+5. **Hof–Walter Question 12.** Characterize the choices of polyhedron
+   P ⊆ ℝ^N and B ⊊ N for which R̃_B(P) ⊊ R_B(P). Here R̃_B also multiplies by
    continuous variables and their complements.
    - Q13 asks when RLT dominates the disjunctive hull of a complete
      assignment disjunction.
@@ -150,39 +148,38 @@ resolution check.
    - Q15 asks which disjunctions level-k RLT implies.
 6. **Box with product bounds.** Describe
    conv{(x, y, x², xy, y²) : l ≤ (x,y) ≤ u, l_z ≤ xy ≤ u_z}.
-7. **Balls.** Source wording: "there is no known explicit, tractable,
-   exact convex representation for m ≥ 3." For fixed m ≥ 3, give an
+7. **Balls.** The cited work reports no explicit tractable convex
+   representation that is exact for m ≥ 3. For fixed m ≥ 3, give an
    explicit polynomial-size exact convex (for example disjunctive SDP)
    description of conv{(x, xxᵀ) : ‖x − c_i‖ ≤ ρ_i, i ≤ m}.
-8. **Second-order conditions.** Source wording: "We intend to
-   investigate whether such a construction could be extended to general
-   quadratic programs and whether the resulting relaxation remains
-   equivalent to the original semidefinite relaxation." Question: is
+8. **Second-order conditions.** The authors propose examining the
+   construction for general quadratic programs and testing whether
+   it retains equivalence to the original SDP relaxation. Question: is
    there a QP with a finite SDP-RLT bound that strictly increases when
    relaxed second-order necessary conditions are added?
-9. **CUT⁴∞.** Source wording: "Conjecture 1. The second semidefinite
-   lifting is exact for CUT4∞, i.e., L(B₁) = CUT4∞."
-10. **Discontinuous PLF sBB.** Source wording: "we currently do not have
-    a branching rule that gives asymptotic convergence when the PLF is
-    non-l.s.c."
-11. **xy pieces.** Source wording: "while we conjecture that the
-    introduced function g_n represents the most efficient CPWL
-    approximation of the unit bilinear term … a formal mathematical proof
-    of its optimality remains to be established."
+9. **CUT⁴∞.** Conjecture 1 asserts exactness of the second semidefinite
+   lifting for CUT4∞: L(B₁) = CUT4∞.
+10. **Discontinuous PLF sBB.** The authors report that their available
+    branching rules do not establish asymptotic convergence for a
+    non-l.s.c. PLF.
+11. **xy pieces.** The authors conjecture that their function g_n is
+    optimal in efficiency among CPWL approximations of the unit bilinear
+    term, but leave that optimality claim unproved.
     - g_n has error 1/(16n²) and 2n(n+1) convex pieces.
     - A sub-sweep sketched an area lemma: a convex region K on which
       |xy − ℓ| ≤ ε for an affine ℓ has area at most 8ε. This gives a
       lower bound of 2n² pieces. The sketch is unreviewed, and the lemma
       may be classical (Pottmann et al. 2000; Atariah–Rote–Wintraecken).
-12. **Conjecture 47.** Source wording: "Conjecture 47. Lemma 46 holds as
-    an if and only if." See §2.4.
-13. **Konno's cut.** Source wording: "Without imposing such conditions,
-    even the convergence of Konno's cut is unknown."
-14. **α-MCMGP.** "We conjecture that, in general, the α-MCMGP is NP-hard."
+12. **Conjecture 47.** The conjecture asserts that the condition in
+    Lemma 46 is necessary as well as sufficient. See §2.4.
+13. **Konno's cut.** The cited work leaves convergence unresolved when
+    its stated conditions are omitted.
+14. **α-MCMGP.** The proposed complexity classification is NP-hardness
+    of α-MCMGP in general.
     The problem is the minimum number of 3-dimensional rotated
     second-order cones needed to represent x ≤ z^α. This is the
-    sub-sweep's quote; this scout's local grep found only the
-    further-research paragraph.
+    sub-sweep's reported conjecture; this scout's local grep found only
+    the further-research paragraph.
 
 Items 15–32 are stated in the table in enough detail to be located; the
 sub-sweep records behind them hold the verbatim quotes.
@@ -357,7 +354,7 @@ PRS in their tests, which limits its direct solver value.
 
 ### 2.3 Del Pia–Khajavirad Statements 1–4 at constant rank (rank 3)
 
-The authors state these as open "even if … the rank is a constant". The
+The authors leave these statements open even at constant rank. The
 four citing papers found by the sub-sweep are all positive tractability
 results.
 
@@ -528,8 +525,8 @@ interior with β_i < 0, which suggests pairing that index with each other
 index. For κ ≠ 2, the linking constraints (5) couple y_j and X_jj
 through power cones; a proof would compare projections, not SDP values.
 
-**Main risk.** Low significance. The authors call PRs3 "simply too
-expensive" relative to PRS. A proof may add structural understanding of
+**Main risk.** Low significance. The authors regard PRs3 as prohibitively
+costly compared with PRS. A proof may add structural understanding of
 conv(S²) without changing solver practice.
 
 ### 3.3 Rank 3: Del Pia–Khajavirad Statements at constant rank

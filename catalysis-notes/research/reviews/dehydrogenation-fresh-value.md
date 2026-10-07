@@ -111,7 +111,7 @@ These are reported catalyst tests, not full process comparisons. The authors' in
 
 ## Source recovery and sole-worker handoff
 
-All recovered originals below were sent to `/root/literature` for sequential `$lit` **Add identified literature** promotion. Skill: `/home/sgusev/repo/skills/literature/SKILL.md`; project: `/home/sgusev/repo/catalisys-notes`; KB: `/home/sgusev/repo/catalisys-notes/literature`. This reviewer did not edit the KB or run its check.
+All recovered originals below were sent to `/root/literature` for sequential `$lit` **Add identified literature** promotion. Skill: `/workspace/skills/literature/SKILL.md`; project: `/workspace/catalisys-notes`; KB: `/workspace/catalisys-notes/literature`. This reviewer did not edit the KB or run its check.
 
 - Wu exact SI: `/tmp/pdh-fresh-review/wu-supp/ANIE-64-e202506704-s001.pdf`, 1,412,218 bytes; source [Europe PMC supplementary-files endpoint](https://www.ebi.ac.uk/europepmc/webservices/rest/PMC12304820/supplementaryFiles). Retrieved through `lit.py get`; exact identity also checked against article XML. Text: `/tmp/pdh-fresh-review/wu-si.txt`. Methods, S2, S12–S14 and Table S1 read; original S2, S13, S14 and methods visually inspected.
 - Malizia exact SI: `/tmp/pdh-fresh-review/malizia-si.pdf`, 3,977,424 bytes; [ACS Figshare original](https://ndownloader.figshare.com/files/53862703), article 28835692. Relevant methods and oxygen-storage/regeneration sections read. This is selective scientific reading, not a claim to have checked every SI figure.

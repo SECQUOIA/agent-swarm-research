@@ -55,7 +55,7 @@ Checked the logic of the three elasticity exclusions, the monotonic map $E=Y(v)/
 
 ## Execution, literature, and build
 
-Read and ran `verify_barrier_dependence.py` and the extended `verify_scalar_certificate.py` under `/home/sgusev/miniconda3/envs/qipm/bin/python`; both passed. The former remains numerical evidence, while the latter proves the displayed finite rational arithmetic bounds.
+Read and ran `verify_barrier_dependence.py` and the extended `verify_scalar_certificate.py` under `/workspace/local-home/miniconda3/envs/qipm/bin/python`; both passed. The former remains numerical evidence, while the latter proves the displayed finite rational arithmetic bounds.
 
 Additional independently written checks, rather than only rerunning supplied code:
 

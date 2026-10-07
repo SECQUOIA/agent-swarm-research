@@ -1,0 +1,882 @@
+% Fragment: certified convex recourse, value-factor curvature, recognition of
+% affine responses, and the negative-curvature target.
+% No preamble.  Uses \R \Z \E \norm \dist \poly \OPT (= F^*) and the labels
+% lem:round, prop:filter, lem:contraction, lem:localize, lem:states,
+% thm:approx, thm:exact of the main text.
+
+\section{Certified convex recourse}\label{sec:cr}
+
+Large positive curvature often sits in variables that enter the objective
+convexly once the remaining variables are fixed. This section eliminates such
+variables exactly, as convex value factors, and shows that the
+corrected-grid algorithm then depends on the upper coordinate curvature of
+the \emph{reduced} objective. One curvature lemma covers three cases: the
+direct bound, globally affine responses, and piecewise-affine responses.
+The section ends with the limits of this route.
+
+\subsection{Model}
+
+\begin{definition}[Convex recourse model]\label{def:cr-model}
+The variables split into retained variables $z\in Z=\prod_{i\in\mathcal R}Z_i$,
+where each $Z_i$ is $[l_i,u_i]$ or $[l_i,u_i]\cap\Z$ as in the main model, and
+private blocks $y_t\in Y_t$, $t=1,\ldots,T$, where
+$Y_t=\{y\in\R^{n_t}:G_ty\le\gamma_t\}$ is a nonempty bounded rational polytope.
+Private variables are continuous. Write $\widehat Z$ for the continuous hull of
+$Z$. Each block attaches to an ordered set $S_t\subseteq\mathcal R$ of
+$k_t$ retained coordinates; for $i\in S_t$ let $j(t,i)$ be its position in
+$S_t$. The objective is
+\begin{equation}\label{eq:cr-model}
+F(z,y)=q_0(z)+\sum_{t=1}^T f_t(y_t,z_{S_t}),\qquad
+f_t(y,v)=\tfrac12y^{\mathsf T}C_ty+y^{\mathsf T}K_tv+c_t^{\mathsf T}y,
+\end{equation}
+with rational data, $C_t\succeq0$, and a rational quadratic
+$q_0(z)=\sum_{a\in\mathcal A}f_a(z_{S_a})$ with Hessian $H_0$. All terms that
+involve retained variables only are placed in $q_0$; thus $(H_0)_{ii}$ is the
+diagonal entry of the full Hessian of $F$ at $z_i$. Fixed coordinates are
+substituted first, so every interval $[l_i,u_i]$ has positive length.
+A tree decomposition of the retained variables is supplied, with maximum bag
+size $p$ and $N$ nodes, such that every $S_a$ and every $S_t$ lies in a bag.
+\end{definition}
+
+The full Hessian of $F$ need not be positive semidefinite, and $C_t$ may be
+singular. Distinct private blocks interact only through $z$. Define the
+\emph{value factors} and the reduced objective
+\begin{equation}\label{eq:cr-value}
+\phi_t(v)=\min_{y\in Y_t}f_t(y,v)\quad(v\in\R^{k_t}),\qquad
+V(z)=q_0(z)+\sum_t\phi_t(z_{S_t}).
+\end{equation}
+Since the blocks are independent once $z$ is fixed,
+$V(z)=\min_yF(z,y)$ for every $z\in\widehat Z$, and $\min_ZV=\OPT:=\min F$.
+Every $z$ lifts to $(z,y(z))$ with $y_t(z)\in\arg\min_{Y_t}f_t(\cdot,z_{S_t})$
+and $F(z,y(z))=V(z)$.
+
+\subsection{Leaf certificates and the curvature of a value factor}
+
+Fix one block and drop the index $t$: $y\in\R^n$, $v\in\R^k$,
+$f(y,v)=\frac12y^{\mathsf T}Cy+y^{\mathsf T}Kv+c^{\mathsf T}y$,
+$Y=\{y:Gy\le\gamma\}$ with $m$ rows, and $\phi(v)=\min_{y\in Y}f(y,v)$.
+
+\begin{definition}[Leaf certificate]\label{def:leaf}
+Let $P\subseteq\R^k$ be a closed polytope with nonempty interior. A
+\emph{certificate on $P$} consists of affine maps $\bar y(v)=a+Bv$ and
+$\lambda(v)=\lambda_0+\Lambda v\in\R^m$ such that, for all $v\in P$,
+\begin{align}
+&G\bar y(v)\le\gamma,\qquad \lambda(v)\ge0,\label{eq:leaf-feas}\\
+&C\bar y(v)+Kv+c+G^{\mathsf T}\lambda(v)=0,\label{eq:leaf-stat}\\
+&\lambda_k(v)\bigl(\gamma_k-G_k\bar y(v)\bigr)=0\qquad(k=1,\ldots,m).\label{eq:leaf-comp}
+\end{align}
+A \emph{certificate on a box $\Pi\subseteq\R^k$} is a finite family of closed
+polytopes $P_1,\ldots,P_R\subseteq\Pi$ with nonempty interiors and union $\Pi$,
+each with a certificate. For a private box $Y=[l,u]$ the rows are
+$y\le u$ and $-y\le-l$, and $\lambda$ splits into upper and lower bound
+multipliers.
+\end{definition}
+
+A certificate is checked exactly in time polynomial in its encoding length.
+Stationarity~\eqref{eq:leaf-stat} is an identity between affine maps.
+Complementarity~\eqref{eq:leaf-comp} is a quadratic polynomial vanishing on a
+set with nonempty interior, which holds if and only if all its coefficients
+vanish. An affine inequality $\alpha+\beta^{\mathsf T}v\ge0$ on a nonempty
+polytope $\{v:Wv\le\omega\}$ holds if and only if some $\pi\ge0$ satisfies
+$W^{\mathsf T}\pi=-\beta$ and $\omega^{\mathsf T}\pi\le\alpha$: sufficiency is
+$\alpha+\beta^{\mathsf T}v=\alpha-\pi^{\mathsf T}Wv\ge\alpha-\pi^{\mathsf T}\omega\ge0$,
+and necessity is linear programming duality for
+$\min\{\beta^{\mathsf T}v:Wv\le\omega\}$. Such rational multipliers are part of
+the certificate. When the leaves are produced by a binary space partition
+(each internal node splits its polytope by one rational hyperplane into two
+closed halves with nonempty interiors), induction on the tree shows that the
+leaves cover the root. On a box, the range of $\alpha+\beta^{\mathsf T}v$ is
+also available in closed form from the signs of $\beta$.
+
+\begin{lemma}[Certificate identity and piece Hessian]\label{lem:leaf}
+Let $(\bar y,\lambda)$ be a certificate on $P$. Then:
+\begin{enumerate}
+\item[(a)] For $v\in P$ and $y\in\R^{n}$,
+\begin{equation}\label{eq:kkt-identity}
+f(y,v)-f(\bar y(v),v)=\tfrac12(y-\bar y(v))^{\mathsf T}C(y-\bar y(v))
++\lambda(v)^{\mathsf T}(\gamma-Gy).
+\end{equation}
+The right side is nonnegative for $y\in Y$. Hence $\phi=q_P$ on $P$, where
+$q_P(v)=f(\bar y(v),v)$.
+\item[(b)] Let $\mathcal K=\{k:\lambda_k\not\equiv0\}$. Then $G_kB=0$ for
+$k\in\mathcal K$, and
+\[
+\nabla^2q_P=B^{\mathsf T}CB+B^{\mathsf T}K+K^{\mathsf T}B=-B^{\mathsf T}CB\preceq0.
+\]
+\item[(c)] Put $\mathcal T=\{w:G_kw=0\ (k\in\mathcal K)\}$. For every
+coordinate $j$,
+\begin{equation}\label{eq:energy}
+(B^{\mathsf T}CB)_{jj}
+=-\min_{w\in\mathcal T}\bigl(w^{\mathsf T}Cw+2w^{\mathsf T}Ke_j\bigr).
+\end{equation}
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+(a) The function $f(\cdot,v)$ is quadratic with Hessian $C$, and
+by~\eqref{eq:leaf-stat} its gradient at $\bar y=\bar y(v)$ is
+$-G^{\mathsf T}\lambda$. Exact expansion gives
+\[
+f(y,v)-f(\bar y,v)=\lambda^{\mathsf T}(G\bar y-Gy)+\tfrac12(y-\bar y)^{\mathsf T}C(y-\bar y),
+\]
+and $\lambda^{\mathsf T}(G\bar y-Gy)=\lambda^{\mathsf T}(\gamma-Gy)-\lambda^{\mathsf T}(\gamma-G\bar y)
+=\lambda^{\mathsf T}(\gamma-Gy)$ by~\eqref{eq:leaf-comp}. For $y\in Y$ both
+terms on the right of~\eqref{eq:kkt-identity} are nonnegative, since
+$C\succeq0$ and $\lambda(v)\ge0$. Equality holds at $y=\bar y(v)\in Y$.
+
+(b) For each $k$, the polynomial $\lambda_k(v)(\gamma_k-G_k a-G_kBv)$ vanishes
+on $P$, which has nonempty interior, so it is the zero polynomial. The
+polynomial ring is an integral domain; for $k\in\mathcal K$ the first factor
+is a nonzero polynomial, so the second is zero and $G_kB=0$. The $v$-linear
+part of~\eqref{eq:leaf-stat} reads $CB+K+G^{\mathsf T}\Lambda=0$, and row $k$
+of $\Lambda$ vanishes for $k\notin\mathcal K$. Hence
+\[
+B^{\mathsf T}(CB+K)=-\sum_{k\in\mathcal K}(G_kB)^{\mathsf T}\Lambda_k=0,
+\]
+so $B^{\mathsf T}K=-B^{\mathsf T}CB$, which is symmetric; therefore also
+$K^{\mathsf T}B=-B^{\mathsf T}CB$. Substituting $y=a+Bv$ in $f$ gives
+$\nabla^2q_P=B^{\mathsf T}CB+B^{\mathsf T}K+K^{\mathsf T}B=-B^{\mathsf T}CB$.
+
+(c) The function $\Phi(w)=w^{\mathsf T}Cw+2w^{\mathsf T}Ke_j$ is convex. By (b),
+$Be_j\in\mathcal T$, and for $w\in\mathcal T$,
+\[
+\tfrac12\nabla\Phi(Be_j)^{\mathsf T}w=(CBe_j+Ke_j)^{\mathsf T}w
+=-\sum_{k\in\mathcal K}(\Lambda_ke_j)(G_kw)=0.
+\]
+A convex function whose gradient at a point of a linear subspace is
+orthogonal to that subspace attains its minimum over the subspace there. Thus
+$\min_{\mathcal T}\Phi=\Phi(Be_j)=(B^{\mathsf T}CB)_{jj}+2(B^{\mathsf T}K)_{jj}
+=-(B^{\mathsf T}CB)_{jj}$.
+\end{proof}
+
+Formula~\eqref{eq:energy} says that a piece cancels direct curvature exactly
+by the energy that the private response spends to follow a unit change of
+$v_j$, using only directions that keep every constraint with a nonzero
+multiplier active. If all private coordinates coupled to $v_j$ are held at
+bounds with nonzero multipliers, the piece cancels nothing.
+
+\begin{proposition}[Coordinate curvature of a value factor]\label{prop:vf-curv}
+\begin{enumerate}
+\item[(a)] $\phi$ is finite and concave on $\R^k$.
+\item[(b)] Let $(P_r,\bar y_r=a_r+B_rv,\lambda_r)_{r=1}^R$ be a certificate on a
+box $\Pi$, and put
+\[
+\sigma_j=\min_r\,(B_r^{\mathsf T}CB_r)_{jj}\ \ge0.
+\]
+For every $v\in\Pi$ and every interval $I$ with $v+Ie_j\subseteq\Pi$, the
+function $t\mapsto\phi(v+te_j)+\sigma_jt^2/2$ is concave on $I$.
+\item[(c)] If a number $\sigma'$ has the property in (b), then
+$\sigma'\le\sigma_j$. In particular $\sigma_j$ is the same for every
+certificate on $\Pi$.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+(a) For fixed $y$, $f(y,v)$ is affine in $v$. Thus $\phi$ is a pointwise
+minimum of affine functions over the compact nonempty set $Y$, hence finite
+and concave.
+
+(b) Let $I=[\alpha,\beta]$ with $\alpha<\beta$; a point interval is trivial.
+For each $r$, $J_r=\{t\in I:v+te_j\in P_r\}$ is a closed interval, possibly
+empty or a point, and $\bigcup_rJ_r=I$. The union of the nondegenerate $J_r$
+is closed, and its complement in $I$ is relatively open and contained in the
+finite union of the degenerate $J_r$. A nonempty relatively open subset of a
+nondegenerate interval is infinite, so the nondegenerate $J_r$ cover $I$. Let
+$\alpha=t_0<\cdots<t_s=\beta$ list $\alpha$, $\beta$ and all endpoints of
+nondegenerate $J_r$. The midpoint of $[t_{q-1},t_q]$ lies in some nondegenerate
+$J_r$; because no endpoint of $J_r$ lies strictly between $t_{q-1}$ and $t_q$,
+we get $[t_{q-1},t_q]\subseteq J_r$. By Lemma~\ref{lem:leaf}, on this subinterval
+$\phi(v+te_j)=q_{P_r}(v+te_j)$, a quadratic in $t$ with second derivative
+$-(B_r^{\mathsf T}CB_r)_{jj}\le-\sigma_j$. Hence
+$\psi(t)=\phi(v+te_j)+\sigma_jt^2/2$ is concave on each $[t_{q-1},t_q]$. It is
+continuous on $I$, because the concave function $\phi$ is continuous on $\R^k$.
+At an interior breakpoint, $\psi'_+(t_q)-\psi'_-(t_q)$ equals the jump of the
+one-sided derivatives of the concave function $t\mapsto\phi(v+te_j)$, which is
+nonpositive; the smooth term $\sigma_jt^2/2$ has no jump. Therefore the right
+derivative of $\psi$ is nonincreasing on $[\alpha,\beta)$. Since $\psi$ is
+continuous and piecewise $C^1$, $\psi(t)=\psi(\alpha)+\int_\alpha^t\psi'_+$, so
+$\psi$ is concave.
+
+(c) Take any $r$ and an interior point $v_0$ of $P_r$. For small $|t|$,
+$\phi(v_0+te_j)=q_{P_r}(v_0+te_j)$, whose second derivative is
+$-(B_r^{\mathsf T}CB_r)_{jj}$. Concavity of $\phi(v_0+te_j)+\sigma't^2/2$ forces
+$\sigma'\le(B_r^{\mathsf T}CB_r)_{jj}$. Minimizing over $r$ gives
+$\sigma'\le\sigma_j$. Applying this to two certificates shows that each
+$\sigma_j$ is at most the other.
+\end{proof}
+
+Part~(a) alone certifies $\sigma_j=0$ for every block; this is the direct
+bound. Part~(c) shows that a piecewise certificate loses nothing: the
+cancellation it certifies is the largest one possible for coordinatewise
+semiconcavity of this factor.
+
+\begin{proposition}[Finite certificates exist]\label{prop:cert-exist}
+Let $Y=[l,u]$ with $l<u$, and let $\Pi\subseteq\R^k$ be a rational box with
+nonempty interior. Then $\phi$ has a certificate on $\Pi$ whose polytopes are
+the leaves of a rational binary space partition.
+\end{proposition}
+
+\begin{proof}
+For a pattern $\sigma\in\{\mathrm L,\mathrm F,\mathrm U\}^n$ let $\Omega_\sigma$
+be the set of $(v,y,\lambda^{\mathrm{low}},\lambda^{\mathrm{up}})$ with $v\in\Pi$,
+$l\le y\le u$, $\lambda^{\mathrm{low}},\lambda^{\mathrm{up}}\ge0$,
+$Cy+Kv+c=\lambda^{\mathrm{low}}-\lambda^{\mathrm{up}}$, and, coordinatewise,
+$y_i=l_i,\lambda^{\mathrm{up}}_i=0$ if $\sigma_i=\mathrm L$;
+$\lambda^{\mathrm{low}}_i=\lambda^{\mathrm{up}}_i=0$ if $\sigma_i=\mathrm F$;
+$y_i=u_i,\lambda^{\mathrm{low}}_i=0$ if $\sigma_i=\mathrm U$. Each $\Omega_\sigma$
+is a rational polyhedron, and every point of it satisfies the KKT conditions,
+including complementarity. Its projection $Q_\sigma$ to the $v$ coordinates
+is a rational polytope. Every $v\in\Pi$ has an optimal $y$ and, since the
+constraints are linear, KKT multipliers; these fit some pattern. Thus the
+$Q_\sigma$ cover $\Pi$. The union of the full-dimensional $Q_\sigma$ is closed
+and contains $\Pi$ minus finitely many lower-dimensional polytopes, a dense
+subset of $\Pi$; hence it equals $\Pi$.
+
+Triangulate each full-dimensional $Q_\sigma$ into $k$-simplices with rational
+vertices. At each vertex $w$ of a simplex $\Delta$, choose a rational point
+$(w,y_w,\lambda_w)\in\Omega_\sigma$. On $\Delta$ define $(\bar y,\lambda)$ by
+affine interpolation of these vertex values in barycentric coordinates. For
+$v\in\Delta$ the point $(v,\bar y(v),\lambda(v))$ is a convex combination of
+points of the convex set $\Omega_\sigma$, so it lies in $\Omega_\sigma$. Hence
+$(\bar y,\lambda)$ is a certificate on $\Delta$.
+
+Let $\mathcal H$ be the finite set of hyperplanes spanned by facets of all
+these simplices. Starting from $\Pi$, split every current leaf whose interior
+meets a hyperplane of $\mathcal H$ by that hyperplane, until no leaf interior
+meets any of them. Both halves of every split have nonempty interior. Let $L$
+be a final leaf. Its interior is connected and misses every simplex boundary,
+so for each simplex $\Delta$ either $\operatorname{int}L\subseteq\operatorname{int}\Delta$
+or $\operatorname{int}L\cap\Delta=\emptyset$. The full-dimensional simplices
+cover $\Pi$, so the first case occurs for some $\Delta$, and $L\subseteq\Delta$.
+Restricting the certificate of $\Delta$ to $L$ completes the proof.
+\end{proof}
+
+The same argument applies to a polytope $Y$, with patterns given by subsets
+of active rows. The construction can be exponential; no bound on the number
+of leaves is claimed. By Proposition~\ref{prop:vf-curv}(c), however, the
+best cancellation is always certifiable by some finite certificate.
+
+\subsection{The recourse theorem}
+
+\begin{lemma}[Growth transfer]\label{lem:cr-growth}
+Suppose $F(z,y)-\OPT\ge g\bigl(\norm{z-z^*}^2+\sum_t\norm{y_t-y_t^*}^2\bigr)$ on
+the feasible set, with $g>0$. Then $(z^*,y^*)$ is the unique minimizer, $z^*$
+is the unique minimizer of $V$, and for every $z\in Z$ and every choice of
+optimal responses $y(z)$,
+\[
+V(z)-\OPT\ge g\Bigl(\norm{z-z^*}^2+\sum_t\norm{y_t(z)-y_t^*}^2\Bigr)
+\ge g\norm{z-z^*}^2.
+\]
+If block $t$ has a single certificate $\bar y_t=a_t+B_tv$ on the whole
+attachment box, then $y_t^*=\bar y_t(z^*_{S_t})$, and summing over such blocks
+gives the metric $I+\sum_tE_t^{\mathsf T}B_t^{\mathsf T}B_tE_t\succeq I$, where
+$E_tz=z_{S_t}$.
+\end{lemma}
+
+\begin{proof}
+Growth with $g>0$ makes the minimizer unique. Evaluate it at $(z,y(z))$ and use
+$F(z,y(z))=V(z)$. A minimizer $z'$ of $V$ lifts to a minimizer of $F$, so
+$z'=z^*$. With an affine certificate, $(z^*,\bar y(z^*_{S}))$ has value
+$V(z^*)=\OPT$, so uniqueness gives $y_t^*=\bar y_t(z^*_{S_t})$ and
+$\bar y_t(z_{S_t})-y_t^*=B_tE_t(z-z^*)$.
+\end{proof}
+
+The following two lemmas replace the quadratic-denominator argument in the
+proof of Theorem~\ref{thm:approx} and the box height bound of
+Lemma~\ref{lem:height}.
+
+\begin{lemma}[Exact tables with value factors]\label{lem:cr-bits}
+Let every grid coordinate at a stage have bit length at most $b$. Then each
+value $\phi_t(z_{S_t})$ at a grid assignment is a rational of bit length
+$\poly(S+b)$ and is computable in that time, where $S$ is the encoding length
+of the data. Every message entry, calibrated table entry and coordinate
+min-marginal is a sum of at most $m_0=|\mathcal A|+T+|\mathcal R|$ such values
+and corrections, hence has bit length at most $m_0\poly(S+b)$.
+\end{lemma}
+
+\begin{proof}
+A convex quadratic program with rational data is solvable exactly in
+polynomial time, and its optimal value is a rational of polynomial size
+\cite{KozlovTarasovKhachiyan1980}. If a certificate is supplied, the value is
+instead $q_{P_r}(v)$ for a leaf containing $v$, found by descending the
+partition tree. In the message recurrence and in the calibrated tables, every
+entry equals the value of a sum of factor values and unary corrections at one
+assignment, with each factor and each correction appearing at most once. A
+sum of $m_0$ rationals with numerators and denominators at most $2^{\beta}$
+has denominator at most $2^{m_0\beta}$ and numerator at most
+$m_0 2^{m_0\beta}$. Comparisons and additions on such numbers are polynomial in
+their length. No common denominator across different active sets is needed.
+\end{proof}
+
+\begin{lemma}[Height of a unique optimizer over a polytope]\label{lem:cr-height}
+Let $P=\{x\in\R^n:Gx\le\gamma\}$ be a nonempty bounded polyhedron with
+integral $G,\gamma$, and let $f(x)=(\frac12x^{\mathsf T}Hx+h^{\mathsf T}x)/D_f$ with
+integral symmetric $H$, integral $h$ and a positive integer $D_f$. Put
+$\beta=\max\{1,\max|H_{ij}|,\max|G_{kj}|\}$ and
+$\Lambda_0=(2n\beta^2)^n$. If $f$ has a unique minimizer $x^*$ on $P$, then
+$x^*=w/q$ with $w\in\Z^n$ and an integer $1\le q\le\Lambda_0$, and $f(x^*)$ has
+denominator at most $2D_f\Lambda_0^2$.
+\end{lemma}
+
+\begin{proof}
+Let $\mathcal E$ be the rows active at $x^*$ and
+$\mathcal T=\{d:G_{\mathcal E}d=0\}$. For $d\in\mathcal T$ and small
+$\epsilon>0$, both $x^*\pm\epsilon d$ lie in $P$. Optimality gives
+$\nabla f(x^*)^{\mathsf T}d=0$ and $d^{\mathsf T}Hd\ge0$. If
+$d^{\mathsf T}Hd=0$ for some $d\in\mathcal T\setminus\{0\}$, then
+$f(x^*+\epsilon d)=f(x^*)$, contradicting uniqueness. So $H$ is positive
+definite on $\mathcal T$. Choose a maximal linearly independent set
+$\mathcal E'\subseteq\mathcal E$ of $r\le n$ rows. Since
+$\nabla f(x^*)\perp\mathcal T$, there is $\mu$ with
+$Hx^*+h+G_{\mathcal E'}^{\mathsf T}\mu=0$, and $G_{\mathcal E'}x^*=\gamma_{\mathcal E'}$.
+The saddle matrix
+$\left(\begin{smallmatrix}H&G_{\mathcal E'}^{\mathsf T}\\G_{\mathcal E'}&0\end{smallmatrix}\right)$
+is nonsingular: if $Hx+G_{\mathcal E'}^{\mathsf T}\mu=0$ and $G_{\mathcal E'}x=0$,
+then $x\in\mathcal T$ and $x^{\mathsf T}Hx=0$, so $x=0$ and then $\mu=0$. Its
+entries are integers of absolute value at most $\beta$ and its order is at most
+$2n$, so Hadamard's inequality bounds its determinant by
+$(\sqrt{2n}\beta)^{2n}=\Lambda_0$. Cramer's rule gives the common denominator
+$q$, and $f(x^*)=(w^{\mathsf T}Hw+2qh^{\mathsf T}w)/(2q^2D_f)$.
+\end{proof}
+
+\begin{theorem}[Certified convex recourse]\label{thm:cr}
+In the model of Definition~\ref{def:cr-model}, let each block carry a
+certificate on the continuous hull of its attachment box, or none. Put
+$\sigma_t=0$ for a block without certificate and otherwise let $\sigma_t$ be
+the vector of Proposition~\ref{prop:vf-curv}(b). Define
+\begin{equation}\label{eq:cr-L}
+L_i=(H_0)_{ii}-\sum_{t:\,i\in S_t}\sigma_{t,j(t,i)},\qquad L=\max_iL_i,
+\end{equation}
+and let $S$ be the total encoding length of data, decomposition and
+certificates.
+\begin{enumerate}
+\item[(i)] For each $i$, $s\mapsto V(\ldots,s,\ldots)-L_is^2/2$ is concave on
+every coordinate-$i$ segment of $\widehat Z$. All certificates are checked in
+$\poly(S)$ time.
+\item[(ii)] If $L\le0$, endpoint dynamic programming with two labels per
+coordinate returns an exact optimizer of $F$ in $2^{O(p)}\poly(S)$ bit
+operations. No growth or uniqueness is needed.
+\item[(iii)] Suppose $L>0$ and $F$ has quadratic growth $g>0$ in all original
+variables. With $\kappa=\max\{1,L/g\}$, the corrected-grid algorithm applied to
+$V$ returns a feasible original point with a certified gap at most $2^{-q}$ in
+$f(p,\kappa)(S+q+1)^C$ bit operations, and an exact rational optimizer in
+$f_1(p,\kappa)(S+1)^{C_1}$ bit operations, with absolute $C,C_1$. Neither $g$
+nor $\kappa$ is an input, and every certified lower bound is valid without
+growth or uniqueness.
+\item[(iv)] $L_i\le(H_0)_{ii}$ for every $i$. Thus the parameter never exceeds
+the one obtained by treating all variables as retained.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+(i) The segment $z+se_i$ maps to the coordinate-$j(t,i)$ segment through
+$z_{S_t}$ for $t$ with $i\in S_t$, and leaves the other factors constant.
+Along it, $q_0$ has second derivative $(H_0)_{ii}$, and
+$\phi_t+\sigma_{t,j(t,i)}s^2/2$ is concave by Proposition~\ref{prop:vf-curv}.
+A sum of concave functions is concave. The checking cost was discussed after
+Definition~\ref{def:leaf}.
+
+(ii) If $L\le0$, $V$ is concave along every coordinate segment of
+$\widehat Z$. Replacing coordinates one at a time by a better endpoint does not
+increase $V$, so a vertex of $Z$ (integral after inward rounding) is optimal.
+Tree dynamic programming over the two endpoint labels, with factor values from
+Lemma~\ref{lem:cr-bits}, finds it. Private coordinates are recovered by one
+convex quadratic program per block. Every bag table has at most $2^p$ entries.
+
+(iii) The proofs of Lemmas~\ref{lem:round}, \ref{lem:contraction},
+\ref{lem:localize}, \ref{lem:states}, of Proposition~\ref{prop:filter}, and of
+the capped schedule use the objective only through upper coordinate
+curvature on the continuous hull, exact finite factor tables and, for the
+quantitative lemmas, global quadratic growth. By (i), $V$ has upper
+coordinate curvature $L$. Each $\phi_t$ is assigned to a bag containing $S_t$.
+By Lemma~\ref{lem:cr-growth}, $V$ has growth $g$ with the unique minimizer
+$z^*$. Hence all those statements hold for $V$ with $\kappa=\max\{1,L/g\}$.
+Every incumbent is a retained grid point $z$; its lift $(z,y(z))$ is feasible
+and has value $V(z)$. In the arithmetic part of Theorem~\ref{thm:approx},
+grid coordinates at stage $j$ of trial $\mu$ have bit length polynomial in
+$S+j+\mu K$, and Lemma~\ref{lem:cr-bits} bounds all table entries. There are at
+most $T K^p$ value-factor evaluations per stage. The bound $f(p,\kappa)(S+q+1)^C$
+follows exactly as in Theorem~\ref{thm:approx}.
+
+For exact output, fix the integer retained coordinates of $z^*$. The
+remaining problem is a quadratic over a bounded rational polytope, the product
+of the continuous retained box and the sets $Y_t$, and has the unique
+minimizer given by the continuous part of $(z^*,y^*)$. Scale its constraint
+rows and objective to integers. The numbers $\beta$ and $D_f$ of
+Lemma~\ref{lem:cr-height} depend only on the continuous Hessian block, the
+constraint matrix and the objective denominator, not on the fixed integer
+values. Lemma~\ref{lem:cr-height} therefore gives computable integers $R_0$
+and $V_0$ of polynomial bit length such that every coordinate of $z^*$ has
+denominator at most $R_0$ and $\OPT$ has denominator at most $V_0$. Run the
+approximation with $\epsilon=2^{-q}$ for $q=1,2,4,\ldots$. After each run, if
+$U-b<1/V_0^2$, the interval $[b,U]$ contains at most one rational of
+denominator at most $V_0$, because two such rationals differ by at least
+$1/V_0^2$; it contains $\OPT$, and continued fractions find it in polynomial
+time. Around each coordinate of the incumbent take the window of radius
+$1/(4R_0^2)$; it contains at most one rational of denominator at most $R_0$. If
+all coordinates reconstruct to a point $\tilde z\in Z$, solve the private
+programs at $\tilde z$ and accept if the lifted value equals the isolated
+$\OPT$. An accepted point is feasible with optimal value, hence optimal,
+independently of growth. Once
+$\epsilon\le\min\{1/(4V_0^2),\,g/(32R_0^4)\}$, growth puts the incumbent within
+$1/(\sqrt{32}R_0^2)<1/(4R_0^2)$ of $z^*$ in every coordinate, so acceptance
+occurs. Since $1/g\le\kappa/L$ and $\log(1/L)\le\poly(S)$, this happens with
+$q\le\poly(S)+O(\log\kappa)$, and doubling overshoots by a factor at most two.
+
+(iv) $\sigma_t\ge0$ by Proposition~\ref{prop:vf-curv}. By
+Lemma~\ref{lem:cr-growth} the growth of $V$ is at least $g$.
+\end{proof}
+
+\begin{remark}[Three instances]\label{rem:cr-instances}
+With no certificates, $L_i=(H_0)_{ii}$: changing active sets are handled
+exactly, but direct stiffness is not cancelled. For $M(y-z)^2$ with
+$y\in[0,1]$ and $z\in[0,1]$, $(H_0)_{zz}=2M$. A certificate with one leaf is
+a globally affine response. Then $\phi_t=q_t$ is an explicit quadratic with
+Hessian $-B_t^{\mathsf T}C_tB_t$, which can be merged into $q_0$; the reduced
+problem is again an explicit rational box quadratic. For $M(y-z)^2$ the
+response $y=z$ gives $\sigma=2M$ and $L_z=0$. A certificate with several
+leaves is a piecewise-affine response. It certifies
+$\sigma_j=\min_r(B_r^{\mathsf T}CB_r)_{jj}$, the exact value by
+Proposition~\ref{prop:vf-curv}(c). Blocks of different kinds can be mixed. The
+local partitions are never overlaid; their product can have exponentially many
+cells. Parametric-QP critical regions are classical
+\cite{BemporadEtAl2002}; the contribution here is their curvature accounting
+inside the conditioned sparse algorithm.
+\end{remark}
+
+\begin{corollary}[Affine condensation]\label{cor:cr-affine}
+Suppose every block has a one-leaf certificate on its attachment box and the
+retained coordinates are continuous. Let
+$M=I+\sum_tE_t^{\mathsf T}B_t^{\mathsf T}B_tE_t$ and let
+$H_{\mathrm{red}}=H_0-\sum_tE_t^{\mathsf T}B_t^{\mathsf T}C_tB_tE_t$ be the reduced
+Hessian. Let $\nu=\max\{0,-\lambda_{\min}(\nabla^2F)\}$.
+\begin{enumerate}
+\item[(a)] $V(z)-\OPT\ge g(z-z^*)^{\mathsf T}M(z-z^*)$ and
+$H_{\mathrm{red}}\succeq-\nu M$.
+\item[(b)] If $D$ is a positive diagonal matrix with $M\succeq D$, choose dyadic
+$r_i>0$ with $1\le r_i^2D_{ii}<4$ and substitute $z=\operatorname{diag}(r)w$.
+The new box is rational, the graph is unchanged, the growth constant in $w$ is
+at least $g$, and the upper coordinate curvature in $w$ is at most
+$4\max_i(H_{\mathrm{red}})_{ii}/D_{ii}$.
+\end{enumerate}
+\end{corollary}
+
+\begin{proof}
+(a) The first inequality is Lemma~\ref{lem:cr-growth}. With $J$ the derivative
+of $z\mapsto(z,\bar y(z))$, $H_{\mathrm{red}}=J^{\mathsf T}\nabla^2F\,J$ and
+$J^{\mathsf T}J=M$, so $H_{\mathrm{red}}\succeq-\nu J^{\mathsf T}J$. (b) Growth in
+$w$ is at least
+$g\sum_ir_i^2D_{ii}(w_i-w_i^*)^2\ge g\norm{w-w^*}^2$, and the diagonal entry
+in $w$ is $r_i^2(H_{\mathrm{red}})_{ii}<4(H_{\mathrm{red}})_{ii}/D_{ii}$ when it is
+positive.
+\end{proof}
+
+Rescaling an integer coordinate changes its lattice, so part~(b) is stated for
+continuous coordinates. The inequality in (a) bounds negative curvature only;
+it gives no upper bound on $(H_{\mathrm{red}})_{ii}$.
+
+\begin{corollary}[A negative-curvature regime]\label{cor:cr-nu}
+In Theorem~\ref{thm:cr}(iii), if the full Hessian of $F$ has
+$\nu=\max\{0,-\lambda_{\min}\}>0$ and $L\le C_0\nu$, then
+$\kappa\le\max\{1,C_0\}\max\{1,\nu/g\}$. Membership in this regime can be
+checked: a rational $\beta$ with $\nu\le\beta<2\nu$ is computable in polynomial
+time.
+\end{corollary}
+
+\begin{proof}
+The bound on $\kappa$ is immediate. For $\beta$, write $H=\nabla^2F$ and let
+$D_0H$ be integral. First test $H\succeq0$ exactly; if it fails, $\nu>0$.
+Start from $\beta_0=\max_i\sum_j|H_{ij}|\ge\norm H\ge\nu$ and halve while
+$H+(\beta/2)I\succeq0$. The final $\beta$ satisfies $H+\beta I\succeq0$ and
+$H+(\beta/2)I\not\succeq0$, that is $\nu\le\beta<2\nu$. If $d=\operatorname{rank}H$,
+the product of the nonzero eigenvalues is, up to sign, a coefficient of the
+characteristic polynomial with denominator dividing $D_0^d$, so its absolute
+value is at least $D_0^{-d}$. Each nonzero eigenvalue is at most $\beta_0$ in
+absolute value, so $\nu\ge D_0^{-d}\beta_0^{1-d}$, and the number of halvings
+is $\poly(S)$. Each step is an exact symmetric elimination.
+\end{proof}
+
+The algorithm itself never uses $\nu$ or $\beta$; it computes $L$. The
+hypothesis $L\le C_0\nu$ is substantive: Proposition~\ref{prop:cr-limit} below
+shows that it can fail for every admissible choice of private blocks.
+
+\subsection{Recognizing a globally affine response}
+
+The affine instance needs no supplied map. Let $Y=[l,u]$ with $l<u$, let
+$\Pi=\{v:Wv\le\omega\}$ be a rational polytope with nonempty interior and a
+rational interior point $v_0$ (the midpoint of an attachment box), and let
+$f(y,v)=\frac12y^{\mathsf T}Cy+y^{\mathsf T}Kv+c^{\mathsf T}y$ with $C\succeq0$.
+An \emph{affine optimal selector} is an affine map $\bar y$ with
+$\bar y(v)\in\arg\min_{Y}f(\cdot,v)$ for every $v\in\Pi$.
+
+\begin{theorem}[Recognition of affine selectors]\label{thm:cr-recog}
+One exact convex quadratic program and one linear program decide whether an
+affine optimal selector exists. If one exists, they return a rational selector
+of polynomial size together with affine multipliers forming a one-leaf
+certificate on $\Pi$. Singular $C$ and nonunique responses are allowed.
+\end{theorem}
+
+\begin{proof}
+\emph{Common central gradient.} Let $\hat y$ be an optimizer at $v_0$ and
+$h_0=Kv_0+c$. For any optimizer $y'$ at $v_0$, the function
+$\tau\mapsto f(\hat y+\tau(y'-\hat y),v_0)$ is a convex quadratic that is
+constant on $[0,1]$, because the optimal set is convex. Its quadratic
+coefficient $(y'-\hat y)^{\mathsf T}C(y'-\hat y)$ vanishes, so $C(y'-\hat y)=0$
+since $C\succeq0$. All central optimizers therefore have the same gradient
+$g_0=C\hat y+h_0$; this is a classical property of convex programs
+\cite{Mangasarian1988}. Let $K_l=\{i:g_{0i}>0\}$, $K_u=\{i:g_{0i}<0\}$,
+$J=\{i:g_{0i}=0\}$. By the box KKT conditions, every central optimizer has
+$y_i=l_i$ for $i\in K_l$ and $y_i=u_i$ for $i\in K_u$.
+
+\emph{Necessity.} We use one fact: if an affine function is nonnegative on
+$\Pi$ and vanishes at an interior point, it vanishes identically. Let
+$\bar y$ be an affine optimal selector and write
+$\Gamma(v)=C\bar y(v)+Kv+c$, an affine map. Since $\bar y(v_0)$ is a central
+optimizer, $\Gamma(v_0)=g_0$. For $i\in K_l$, $\bar y_i-l_i\ge0$ on $\Pi$ and
+vanishes at $v_0$, so $\bar y_i\equiv l_i$; optimality at every $v$ then needs
+$\Gamma_i\ge0$ on $\Pi$. Symmetrically, $\bar y_i\equiv u_i$ and $\Gamma_i\le0$
+for $i\in K_u$. Let $j\in J$, so $\Gamma_j(v_0)=0$. If $\bar y_j\equiv l_j$,
+optimality needs $\Gamma_j\ge0$ on $\Pi$, so $\Gamma_j\equiv0$; the case
+$\bar y_j\equiv u_j$ is symmetric. Otherwise $\bar y_j$ is not identically at a
+bound, so by the fact above it attains no bound at an interior point. Then
+optimality gives $\Gamma_j=0$ on the interior of $\Pi$, hence
+$\Gamma_j\equiv0$. Thus every affine optimal selector satisfies
+\begin{equation}\label{eq:recog-system}
+\begin{array}{ll}
+\bar y_i\equiv l_i,\ \Gamma_i\ge0\text{ on }\Pi & (i\in K_l),\\
+\bar y_i\equiv u_i,\ \Gamma_i\le0\text{ on }\Pi & (i\in K_u),\\
+\Gamma_j\equiv0,\ l_j\le\bar y_j\le u_j\text{ on }\Pi & (j\in J).
+\end{array}
+\end{equation}
+
+\emph{Sufficiency.} If an affine $\bar y$ satisfies~\eqref{eq:recog-system},
+define lower multipliers $\Gamma_i$ on $K_l$ and upper multipliers $-\Gamma_i$ on
+$K_u$, and zero otherwise. These are affine and nonnegative on $\Pi$, and
+satisfy stationarity and complementarity identically. This is a certificate
+on $\Pi$; by Lemma~\ref{lem:leaf}(a), $\bar y(v)$ is optimal for every
+$v\in\Pi$.
+
+\emph{Linear program.} Write $\bar y(v)=a+Bv$. Then
+$\Gamma(v)=(Ca+c)+(CB+K)v$ has coefficients linear in $(a,B)$. Identities in
+\eqref{eq:recog-system} are linear equations. Each condition ``an affine
+function is nonnegative on $\Pi$'' is replaced by its Farkas certificate
+$\pi\ge0$, $W^{\mathsf T}\pi=-(\text{linear part})$,
+$\omega^{\mathsf T}\pi\le(\text{constant part})$, which is linear in $(a,B,\pi)$.
+For a box $\Pi=v_0+\prod_j[-\rho_j,\rho_j]$, auxiliary variables bounding
+$|B_{ij}|$ and $|(CB+K)_{ij}|$ give the exact ranges instead. The resulting
+system has polynomial size. It is feasible exactly when an affine optimal
+selector exists. Exact convex quadratic programming
+\cite{KozlovTarasovKhachiyan1980} and exact linear programming
+\cite{GrotschelLovaszSchrijver1988} run in polynomial time and return rational
+solutions of polynomial size. If $k=0$, any central optimizer is a constant
+selector.
+\end{proof}
+
+Fixing the active bounds of an arbitrary central optimizer is not enough when
+$C$ is singular. For $(y_1+y_2-z)^2$ with $y\in[0,1]^2$ and $z\in[0,2]$, the
+central optimizer $(0,1)$ would fix both coordinates, yet the common central
+gradient is zero and the theorem returns the selector $(z/2,z/2)$. For
+$(y-z)^2$ with $y\in[0,1]$ and $z\in[-1,2]$, the clipped response is not
+affine, and the linear program is infeasible. A negative answer rejects the
+affine class for this block, not the optimization problem; the block may
+still enter Theorem~\ref{thm:cr} with a piecewise certificate or with
+$\sigma=0$. Choosing a useful partition into private blocks is not addressed.
+
+\subsection{Examples}
+
+\begin{example}[Three pieces, cancellation $2M$]\label{ex:cr-fm}
+For $M\ge1$ let $z\in[0,3/4]$, $y\in[0,1]^2$, and
+$f_M=M(y_1+y_2-z)^2+(y_1-2z+\frac12)^2$. The retained-only part is
+$Mz^2+(2z-\frac12)^2$, so $(H_0)_{zz}=2M+8$, and
+$C=\left(\begin{smallmatrix}2M+2&2M\\2M&2M\end{smallmatrix}\right)\succ0$,
+$K=(-2M-4,-2M)^{\mathsf T}$, $c=(1,0)^{\mathsf T}$. The unique responses and
+values are
+\[
+\begin{array}{llll}
+z\in[0,\tfrac14]:& y=(0,z),& \min_yf_M=(\tfrac12-2z)^2,& B^{\mathsf T}CB=2M,\\
+z\in[\tfrac14,\tfrac12]:& y=(2z-\tfrac12,\tfrac12-z),& \min_yf_M=0,& B^{\mathsf T}CB=2M+8,\\
+z\in[\tfrac12,\tfrac34]:& y=(\tfrac{(M+2)z-1/2}{M+1},0),& \min_yf_M=\tfrac{M(z-1/2)^2}{M+1},
+& B^{\mathsf T}CB=\tfrac{2(M+2)^2}{M+1}.
+\end{array}
+\]
+On the three intervals the private gradients are $(1-4z,0)$, $(0,0)$ and
+$(0,2M(z-\frac12)/(M+1))$, all with the signs required at the active lower
+bounds; in the third interval $y_1\in[\frac12,1)$. These are certificates. By
+Proposition~\ref{prop:vf-curv}, $\sigma=2M$, and the certified curvature is
+$2M+8-2M=8$, while the direct bound is $2M+8$. The piece second derivatives
+$8,0,2M/(M+1)$ agree with $(H_0)_{zz}-B^{\mathsf T}CB$. The response is unique
+and changes slope, so no affine selector exists.
+\end{example}
+
+\begin{proposition}[A ladder with growing negative inertia]\label{prop:cr-ladder}
+For $m\ge1$, $M\ge1$, $a=\frac15$ and $\eta=\frac1{16}$, let
+$z_i\in[0,\frac34]$, $v_i\in[0,1]$, $y_{1i},y_{2i}\in[0,1]$ and
+\[
+F=\sum_{i=1}^m\Bigl[z_i^2+f_M(y_{1i},y_{2i},z_i)-v_i^2+3v_i-(z_i-a)v_i\Bigr]
++\eta\sum_{i=1}^{m-1}\Bigl[(z_{i+1}-z_i)^2+(v_{i+1}-v_i)^2\Bigr].
+\]
+Then $F$ has the unique minimizer $z_i=a$, $v_i=0$, $y_{1i}=0$, $y_{2i}=a$, with
+$\OPT=m/20$ and growth constant $g=1/12$. Its Hessian has exactly $m$
+negative eigenvalues and $2\le\nu\le\sqrt5$. With the private blocks
+$(y_{1i},y_{2i})$, the retained bags $\{z_i,v_i,z_{i+1},v_{i+1}\}$ have size at
+most four, and the certificates of Example~\ref{ex:cr-fm} give $L\le41/4$. The
+direct diagonal at $z_i$ is at least $2M+10$, while $g\le33/16$.
+\end{proposition}
+
+\begin{proof}
+Put $t=z-a$, $u=y_1$, $w=y_2-a$, $r=u+w-t$ and $s=u-2t$ for one index. Direct
+expansion gives
+\[
+z^2+f_M-\tfrac1{20}=t^2+Mr^2+s^2+\tfrac u5.
+\]
+Also $-v^2+3v-tv\ge v^2$, because $v(3-2v-t)\ge0$ for $v\in[0,1]$ and
+$t\le\frac{11}{20}$. Since $u\ge0$ and the path terms are nonnegative,
+\[
+F-\tfrac m{20}\ge\sum_i\bigl(t_i^2+Mr_i^2+s_i^2+v_i^2\bigr).
+\]
+From $u=s+2t$ and $w=r-s-t$, $u^2\le2s^2+8t^2$ and $w^2\le3(r^2+s^2+t^2)$, so
+$t^2+u^2+w^2\le12(t^2+r^2+s^2)\le12(t^2+Mr^2+s^2)$. Hence
+$F-\OPT\ge\frac1{12}\norm{x-x^*}^2$, and equality $F=\OPT$ forces
+$t=r=s=v=0$, $u=w=0$.
+
+The terms $z_i^2-v_i^2-(z_i-a)v_i$ contribute the block
+$\left(\begin{smallmatrix}2&-1\\-1&-2\end{smallmatrix}\right)$ on each pair
+$(z_i,v_i)$, with eigenvalues $\pm\sqrt5$. All other quadratic terms, namely
+the squares in $f_M$ and the path terms, are positive semidefinite. So
+$\lambda_{\min}\ge-\sqrt5$. The direction $v=m^{-1/2}(1,\ldots,1)$, all
+other coordinates zero, has Rayleigh quotient $-2$, so $\nu\ge2$. On the
+$m$-dimensional $v$-subspace the form is $-2I+2\eta L_{\mathrm{path}}$, and
+$2\eta\norm{L_{\mathrm{path}}}\le\frac12$, so it is negative definite; on the
+subspace $\{v=0\}$, of codimension $m$, the form is a sum of squares. Hence the
+negative inertia is exactly $m$.
+
+The retained diagonal at $z_i$ is
+$(H_0)_{z_iz_i}=2+(2M+8)+2\eta\deg_i$ with $\deg_i\le2$, and at $v_i$ it is
+$-2+2\eta\deg_i<0$. Each block has $\sigma=2M$ by Example~\ref{ex:cr-fm}, so
+$L_{z_i}\le10+4\eta=41/4$. Raising $v_1$ from $0$ to $1$ at the minimizer
+increases $F$ by at most $2+\eta$, which gives $g\le33/16$.
+\end{proof}
+
+Thus the certified ratio is $L/g\le123$ for all $m,M$, whereas the original
+coordinate ratio is at least $(2M+10)\cdot16/33$. Every instance also has the
+explicit nonnegative expansion above; the family separates parameters and is
+not offered as a hard benchmark.
+
+\begin{remark}[A one-leaf ladder]\label{rem:cr-oneleaf}
+With all variables in $[0,1]$, $a=\frac13$, $\eta=\frac1{16}$ and $M_0\ge1$, let
+\[
+F=\sum_{i=1}^m\Bigl[(u_i-a)^2-(u_i-a)v_i-v_i^2+3v_i+M_0(y_i-u_i)^2\Bigr]
++\eta\sum_{i=1}^{m-1}\Bigl[(u_{i+1}-u_i)^2+(v_{i+1}-v_i)^2\Bigr].
+\]
+The response $y_i=u_i$ with zero multipliers is a one-leaf certificate, so
+$\sigma=2M_0$ cancels the direct term $2M_0$, and $L\le2+4\eta=\frac94$. Since
+$-(u-a)v-v^2+3v\ge v^2$ for $u-a\le\frac23$, we get
+$F\ge\norm{u-a\mathbf 1}^2+\norm v^2+M_0\norm{y-u}^2$, and with
+$\norm{y-a\mathbf 1}^2\le2\norm{y-u}^2+2\norm{u-a\mathbf 1}^2$ this gives growth
+$\frac13$ at the unique minimizer $u=y=a\mathbf 1$, $v=0$. As in
+Proposition~\ref{prop:cr-ladder}, the form is negative definite on the
+$v$-subspace and positive semidefinite on $\{v=0\}$, so the negative inertia is
+exactly $m$, and $2\le\nu\le\sqrt5$. The direct diagonal at $u_i$ is at least
+$2M_0+2$.
+\end{remark}
+
+\subsection{Limits of global recourse curvature}
+
+Call a retained set $\mathcal R\subseteq\{1,\ldots,n\}$ \emph{admissible} if the
+principal Hessian block of the remaining coordinates is positive
+semidefinite, so that they form convex private blocks. For admissible
+$\mathcal R$ the reduced function $V_{\mathcal R}$ is intrinsic: it does not
+depend on how the private part is grouped or certified. Let
+$L_{\mathcal R}$ be the least $L$ for which~\eqref{eq:semiconcavity} holds for
+$V_{\mathcal R}$ in every retained coordinate, and $g_{\mathcal R}$ the largest
+growth constant of $V_{\mathcal R}$. By Proposition~\ref{prop:vf-curv}(c), no
+certificate yields a parameter below $L_{\mathcal R}/g_{\mathcal R}$.
+
+\begin{proposition}[Recourse cannot replace $L/g$ by $\nu/g$ in general]\label{prop:cr-limit}
+For $M\ge1$ let $x\in[0,2]$, $y\in[1,3]$ and
+\[
+F_M(x,y)=M(x-y)^2-\tfrac18(x+y-2)^2+2(y-1).
+\]
+Then $(1,1)$ is the unique minimizer, $\OPT=0$,
+$F_M(x,y)-\OPT\ge\frac18\bigl((x-1)^2+(y-1)^2\bigr)$, and $\nu=\frac12$; thus
+$\nu/g\le4$ with $g=\frac18$. Nevertheless, for every
+admissible retained set $\mathcal R$ and every positive diagonal rescaling of
+the retained coordinates,
+\[
+L_{\mathcal R}/g_{\mathcal R}\ \ge\ (4M-\tfrac12)/3\ \ge\ M.
+\]
+\end{proposition}
+
+\begin{proof}
+Put $\alpha=x-1\in[-1,1]$ and $\beta=y-1\in[0,2]$, so
+$F_M=M(\alpha-\beta)^2-\frac18(\alpha+\beta)^2+2\beta$. Using $M\ge1$ and
+$2\beta\ge\beta^2$ on $[0,2]$,
+\[
+F_M-\tfrac18(\alpha^2+\beta^2)\ge\tfrac34\alpha^2-\tfrac94\alpha\beta+\tfrac74\beta^2
+=\tfrac34\bigl(\alpha-\tfrac32\beta\bigr)^2+\tfrac1{16}\beta^2\ge0.
+\]
+This proves growth $\frac18$, uniqueness and $\OPT=0$. The Hessian
+$\left(\begin{smallmatrix}2M-1/4&-2M-1/4\\-2M-1/4&2M-1/4\end{smallmatrix}\right)$
+has eigenvalues $4M$ on $(1,-1)$ and $-\frac12$ on $(1,1)$; so $\nu=\frac12$,
+and $\{x,y\}$ is not a convex block. The admissible sets are $\{x,y\}$,
+$\{y\}$ and $\{x\}$. Note $F_M(2,2)=\frac32$.
+
+$\mathcal R=\{x,y\}$: $V=F_M$ has $L_{\mathcal R}=2M-\frac14$. Under
+$x=r_1x'$, $y=r_2y'$ the coordinate curvatures become $r_i^2(2M-\frac14)$, and
+the point $(2,2)$ shows $g'\le\frac32/(r_1^{-2}+r_2^{-2})\le\frac32\min_ir_i^2$.
+
+$\mathcal R=\{y\}$: $F_M$ is strictly convex in $x$, and
+$\partial_xF_M(2,y)=2M(2-y)-y/4\le0$ for $y\ge y_c=4M/(2M+\frac14)$, where
+$1<y_c<2$. So on $[y_c,3]$ the response is $x=2$ and
+$V(y)=F_M(2,y)$ has second derivative $2M-\frac14$. Hence
+$L_{\mathcal R}\ge2M-\frac14$, while $V(2)\le\frac32$ and $V(1)=0$ give
+$g_{\mathcal R}\le\frac32$.
+
+$\mathcal R=\{x\}$: $F_M$ is strictly convex in $y$, and
+$\partial_yF_M(x,1)=2-(2M+\frac14)(x-1)\ge0$ for
+$x\le x_c=1+2/(2M+\frac14)$, where $1<x_c\le2$. So on $[0,x_c]$ the response
+is $y=1$ and $V(x)=(M-\frac18)(x-1)^2$ has second derivative $2M-\frac14$.
+Again $V(2)\le\frac32$ gives $g_{\mathcal R}\le\frac32$.
+
+In one dimension a rescaling multiplies curvature and growth by the same
+factor. In all cases $L_{\mathcal R}/g_{\mathcal R}\ge(2M-\frac14)/\frac32$.
+\end{proof}
+
+Taking disjoint copies gives arbitrarily many variables with the same
+constants and bag size two. The instance is trivial to solve; the proposition
+limits the parameter of Theorem~\ref{thm:cr}, not the problem. The obstruction
+is the clipped piece: the private coordinate that cancels the stiffness hits a
+bound on a full-dimensional set of parameters. The piece need not be large.
+
+\begin{remark}[The certified cancellation is unstable]\label{rem:cr-unstable}
+For $f_\epsilon=M(y-u)^2+\epsilon y$ with $y,u\in[0,1]$, the response is
+$y=\max\{0,u-\epsilon/(2M)\}$. For $\epsilon=0$ it is $y=u$, so $\sigma=2M$.
+For every $\epsilon>0$ the piece $[0,\epsilon/(2M)]$ has response $y=0$, so
+$\sigma=0$ by Proposition~\ref{prop:vf-curv}(c), and the value has second
+derivative $2M$ there. The full Hessian, and hence $\nu$, does not depend on
+$\epsilon$. Adding $\epsilon\sum_iy_i$ to the ladder of
+Remark~\ref{rem:cr-oneleaf} therefore raises its certified curvature from
+$\frac94$ to $2M_0+\frac94$. The same happens near $z=0$ in
+Example~\ref{ex:cr-fm} if $\epsilon y_2$ is added: on a short interval both
+private coordinates sit at their lower bounds, and $\sigma=0$. The certified
+quantity is a maximum over pieces, however small the piece.
+\end{remark}
+
+The two nontrivial choices fail for different reasons. For
+$\mathcal R=\{x\}$ the stiff piece $[0,x_c]$ contains the minimizer, but there
+the growth is stiff as well, $V(x)=(M-\frac18)(x-1)^2$; on $[x_c,2]$ the
+response is interior and $V$ is concave. So on each piece the ratio of
+curvature to growth about $x^*$ is $O(1)$. For $\mathcal R=\{y\}$ the stiff
+piece $[y_c,3]$ lies where $V\ge V(y_c)=\frac32-O(1/M)$, so it contains no
+point within objective gap about $\frac32$ of the optimum. In both cases the
+large constant comes from a region that a localized analysis could treat
+separately. A bound in terms of $p$ and $\nu/g$ along this route would need
+curvature measured only where near-optimal points can lie. The corrections of
+Lemma~\ref{lem:round} may already use the curvature of the current box, but
+the first stages still see the stiff pieces, and no such analysis is given
+here.
+
+\subsection{The negative-curvature target}
+
+Let $X$ be a continuous box, $F(x)=\frac12x^{\mathsf T}Hx+b^{\mathsf T}x+c_0$, and
+$\nu=\max\{0,-\lambda_{\min}(H)\}$. The target is a parameter
+$\max\{1,\nu/g\}$ in place of $\kappa$, letting large positive curvature affect
+only the encoding length. The target is continuous: with integer variables,
+$\nu=0$ still contains convex integer quadratic programming.
+
+\begin{lemma}[Convex energy]\label{lem:cr-energy}
+Let $x^*$ minimize $F$ on $X$ with $F(x)-\OPT\ge g\norm{x-x^*}^2$. For every
+$c\ge0$ and $x\in X$, with $d=x-x^*$,
+\[
+F(x)-\OPT\ge\frac{g}{2g+c}\,d^{\mathsf T}(H+cI)d.
+\]
+For $c=2\nu$ the matrix $H+2\nu I\succeq\nu I$ has $H\preceq H+2\nu I$, so in its
+metric $F$ has upper curvature $1$ and growth $g/(2g+2\nu)$.
+\end{lemma}
+
+\begin{proof}
+First-order optimality on the convex set $X$ gives
+$\nabla F(x^*)^{\mathsf T}d\ge0$, so the exact expansion yields
+$F(x)-\OPT\ge\frac12d^{\mathsf T}Hd$. Combine it with growth using weights
+$2g/(2g+c)$ and $c/(2g+c)$.
+\end{proof}
+
+\begin{lemma}[Proximal envelope]\label{lem:cr-envelope}
+For $\lambda>0$ and $w\in\R^n$ let
+$E_\lambda(w)=\min_{x\in X}\{F(x)+\frac\lambda2\norm{x-w}^2\}$. Then
+$E_\lambda-\frac\lambda2\norm\cdot^2$ is concave, so $E_\lambda$ has upper
+curvature $\lambda$ in every direction. Under the growth hypothesis of
+Lemma~\ref{lem:cr-energy}, $E_\lambda(x^*)=\OPT$ and
+\[
+E_\lambda(w)-\OPT\ge\frac{g\lambda}{2g+\lambda}\norm{w-x^*}^2.
+\]
+If $\lambda>\nu$, every evaluation is a strongly convex quadratic program.
+\end{lemma}
+
+\begin{proof}
+$E_\lambda(w)-\frac\lambda2\norm w^2=\min_x\{F(x)+\frac\lambda2\norm x^2-\lambda x^{\mathsf T}w\}$
+is a minimum of affine functions of $w$. Next,
+$E_\lambda(w)-\OPT\ge\min_{x\in\R^n}\{g\norm{x-x^*}^2+\frac\lambda2\norm{x-w}^2\}
+=\frac{g\lambda}{2g+\lambda}\norm{w-x^*}^2$. Finally $\OPT\le E_\lambda(x^*)\le F(x^*)$.
+The last claim holds because $H+\lambda I\succ0$.
+\end{proof}
+
+With $\lambda=2\nu$ the envelope has ratio $2+2\nu/g$. Neither lemma gives a
+sparse algorithm. Whitening by $H+2\nu I$ destroys the product box, and
+independent rounding does not preserve the cancellations of the energy. On a
+fixed active set without bounds, the envelope Hessian is
+$\lambda H(H+\lambda I)^{-1}$, which is generally dense even for tridiagonal
+$H$.
+
+\begin{proposition}[Matched separator moments do not control the error]\label{prop:cr-moment}
+For rational $0<h\le\frac12$ let $(s,u_1,u_2,v)\in[0,1]^4$ and
+\[
+F_h=\underbrace{8\bigl(\tfrac sh-\tfrac{u_1+u_2}2\bigr)^2+\textstyle\sum_{i=1}^2u_i(1-u_i)
++\tfrac{u_1+u_2}{16}}_{f_1(s,u_1,u_2)}
++\underbrace{8\bigl(\tfrac sh-\tfrac14-\tfrac v2\bigr)^2+v(1-v)+\tfrac v{16}}_{f_2(s,v)}.
+\]
+Then $F_h$ has the unique minimizer $(h/8,0,0,0)$, $\OPT=\frac14$, growth
+constant $\frac1{22}$, and $\nu=2$. Let $\mu_1$ put masses
+$\frac18,\frac38,\frac38,\frac18$ at
+$(s,u_1,u_2)=(0,0,0),(\frac h2,1,0),(\frac h2,0,1),(h,1,1)$, and let $\mu_2$ put
+masses $\frac12,\frac12$ at $(s,v)=(\frac h4,0),(\frac{3h}4,1)$. The two
+laws of $s$ have equal moments of orders $1,2,3$, all atoms have $s\in[0,h]$
+and binary controls, and
+\[
+\E_{\mu_1}f_1+\E_{\mu_2}f_2=\tfrac3{32}=\OPT-\tfrac5{32}.
+\]
+Moreover a single positive semidefinite covariance matrix has both bag
+covariances as principal submatrices.
+\end{proposition}
+
+\begin{proof}
+With $\delta=s/h-\frac18-(u_1+u_2+v)/4$, direct expansion gives
+\[
+F_h-\tfrac14=16\delta^2+2\bigl[(1-v)u_1u_2+v(1-u_1)(1-u_2)\bigr]+\tfrac{u_1+u_2+v}{16},
+\]
+which is nonnegative on the box and vanishes only at $\delta=0$, $u=v=0$.
+Write $\omega=(u_1,u_2,v)$. Since each coordinate is in $[0,1]$,
+$F_h-\frac14\ge16\delta^2+\norm\omega^2/16$. Also
+$s-h/8=h(\delta+(u_1+u_2+v)/4)$, so with $h\le\frac12$,
+$(s-h/8)^2\le\frac12\delta^2+\frac3{32}\norm\omega^2$ and
+$\norm{x-x^*}^2\le\frac12\delta^2+\frac{35}{32}\norm\omega^2\le22(16\delta^2+\norm\omega^2/16)$.
+The Hessian is a positive semidefinite sum of squares minus $2$ on each
+control; the direction $(0,1,-1,0)$ leaves both squares unchanged, so
+$\lambda_{\min}=-2$. For the measures, with $\tau=s/h$, both laws of $\tau$ have
+moments $\frac12,\frac5{16},\frac7{32}$. At every atom both squares and all
+terms $u_i(1-u_i)$, $v(1-v)$ vanish, so the expectations equal
+$\E(u_1+u_2)/16+\E v/16=\frac1{16}+\frac1{32}$. For the covariance, take mean
+$(h/2,\frac12,\frac12,\frac12)$ and
+$\Sigma=\frac1{16}aa^{\mathsf T}+\frac3{16}bb^{\mathsf T}$ with
+$a=(h,1,1,2)^{\mathsf T}$, $b=(0,1,-1,0)^{\mathsf T}$; its restrictions to
+$\{s,u_1,u_2\}$ and $\{s,v\}$ equal the covariances of $\mu_1$ and $\mu_2$.
+\end{proof}
+
+For moments conditioned on one global cell of widths $w_i$, the relaxed value
+is at least $F(m)-\frac\nu2\operatorname{tr}\Sigma\ge F(m)-\frac\nu8\sum_iw_i^2$.
+Proposition~\ref{prop:cr-moment} shows that bag-local measures matching
+separator moments up to order three do not inherit this bound: on mesh $2h$
+every atom lies in a cell whose widths tend to zero, yet the gap stays
+$\frac5{32}$ at fixed $\nu/g=44$. The witness does not apply to adaptive
+filtering or to all moment hierarchies; matching the fourth moment of $s$
+already excludes it.

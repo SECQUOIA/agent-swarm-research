@@ -68,7 +68,7 @@ The amended appendix correctly applies the earlier elasticity inequalities with 
 
 ## Executed verification
 
-Used `/home/sgusev/miniconda3/envs/qipm/bin/python` without installing dependencies.
+Used `/workspace/local-home/miniconda3/envs/qipm/bin/python` without installing dependencies.
 
 - The amended exact Fraction certificate passed all old inequalities and every new logarithm, Y-series, radical, and localization bound.
 - The new radial script passed its 96 independently solved centers, gradient/Hessian/parameter checks, and implicit-velocity comparisons. Maximum finite-difference tangent error was `1.220053776769947e-09`. Its computed relaxed-envelope maximizer was `0.6501143834529713`, with value `1.831856422983876`.

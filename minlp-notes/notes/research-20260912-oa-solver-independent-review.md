@@ -79,7 +79,7 @@ from __future__ import annotations
 import hashlib, importlib.util, itertools, json, pathlib, sys, time
 import numpy as np
 
-base = pathlib.Path('/home/sgusev/repo/minlp-notes')
+base = pathlib.Path('/workspace/minlp-notes')
 source = base/'code/research_20260912/markov_design.py'
 raw = source.read_bytes()
 snapshot = pathlib.Path('/tmp/oa_review_markov_design.py'); snapshot.write_bytes(raw)
@@ -209,7 +209,7 @@ print(json.dumps({k:v for k,v in report.items() if k!='solves'},indent=2))
 ```python
 import itertools,json,pathlib,time
 import numpy as np
-base=pathlib.Path('/home/sgusev/repo/minlp-notes/code/research_20260912/results')
+base=pathlib.Path('/workspace/minlp-notes/code/research_20260912/results')
 reports={name:json.loads((base/name).read_text()) for name in ['initial_comparison.json','strengthened_comparison.json']}
 results={'cases':[], 'checks':0,'max_objective_residual':0.,'max_upper_underestimate':0.}
 started=time.perf_counter()
@@ -278,7 +278,7 @@ for r in rows:
 ```python
 import contextlib,importlib.util,io,json,pathlib,sys
 from dataclasses import dataclass
-base=pathlib.Path('/home/sgusev/repo/minlp-notes/code/research_20260912');sys.path.insert(0,str(base))
+base=pathlib.Path('/workspace/minlp-notes/code/research_20260912');sys.path.insert(0,str(base))
 spec=importlib.util.spec_from_file_location('review_comparison',base/'compare_solvers.py');m=importlib.util.module_from_spec(spec);sys.modules[spec.name]=m;spec.loader.exec_module(m)
 @dataclass
 class Result:
@@ -330,7 +330,7 @@ PYCODE
 ```python
 import contextlib,hashlib,importlib.util,io,json,pathlib,sys
 from dataclasses import dataclass
-base=pathlib.Path('/home/sgusev/repo/minlp-notes/code/research_20260912');sys.path.insert(0,str(base))
+base=pathlib.Path('/workspace/minlp-notes/code/research_20260912');sys.path.insert(0,str(base))
 source=base/'compare_solvers.py';raw=source.read_bytes()
 spec=importlib.util.spec_from_file_location('review_comparison_fixed',source);m=importlib.util.module_from_spec(spec);sys.modules[spec.name]=m;spec.loader.exec_module(m)
 @dataclass

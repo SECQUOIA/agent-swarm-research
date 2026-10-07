@@ -1,0 +1,233 @@
+\section{Details of the precursor study}\label{sec:precursor-details}
+
+This appendix records the design and the archived results of the external
+presolve study summarized in Section~\ref{sec:experiments-precursor}. The study
+is separate from the prospective comparison; its results are not pooled with
+those of Section~\ref{sec:experiments}.
+
+\subsection{Design}
+
+\emph{Reference solutions.} For 275 of the 339 instances the reference solution
+was a MINLPLib solution file whose objective matched the library's primal
+bound; for 63 it was the Gurobi solution with default settings, which had to be
+optimal, match the known value to $10^{-4}$, and be feasible to $10^{-5}$. One
+instance had no reference solution.
+
+\emph{Relaxation and OBBT.} The OBBT relaxation was an LP built with Gurobi,
+with integrality dropped: the four McCormick inequalities for each distinct
+bilinear term, five tangents at equally spaced points and the secant for each
+square (with $x_i^2$ replaced by $x_i$ for binary $x_i$), every original row with
+its quadratic terms replaced by the lifted variables, and the cutoff row. After
+a bound change the affected rows were rewritten in place and the LP was warm
+started; presolve was off. An LP reported infeasible produced no tightening; this
+occurred for two LPs. Each new bound was relaxed by $10^{-6}(1+|\beta|)$ for a
+bound $\beta$ and rounded for integer variables, and it was accepted only if it
+reduced the width by at least a relative $10^{-4}$. A round minimized and
+maximized every variable occurring in a nonlinear term. The main trajectories
+used sequential (Gauss--Seidel) updates and skipped a direction for the rest of a
+round when an earlier LP solution of that round already attained its bound.
+With sequential updates this filtering is a heuristic: a point from an earlier
+LP of the round may violate rows rewritten after later updates, so a skipped
+direction could still have tightened. It never produces an invalid bound.
+After each round the study recorded $\rho$, the total normalized width after the
+round divided by the total before, over the variables whose width shrank by at
+least $0.1\%$, where widths are normalized by the box obtained from feasibility-based
+tightening.
+
+\emph{Stopping rules.} \texttt{r1} and \texttt{r5} stop after one and five
+rounds; \texttt{fp} stops after a round in which no bound changed, after 50
+rounds, or after 400 seconds. Because of the margins, the filtering, and the
+improvement threshold, a round without change is a numerical stopping event,
+not an exact fixed-point certificate. The adaptive rules \texttt{ad0.5} and
+\texttt{ad0.8} stop after a round with $\rho>\theta$ for $\theta=0.5$ or $0.8$, after a round without change, or
+after 120 seconds of OBBT, and restrict rounds after the first to the variables
+that moved in the previous round and their bilinear partners. No time limit
+below 400 seconds applied to the first round, even for the adaptive rules, whose
+120-second cap was checked only between rounds.
+
+\emph{Pipelines and baselines.} A root-node run of the target solver (seed $0$,
+node limit one, 30 seconds) supplied the incumbent and the cutoff
+$U=\hat f+10^{-6}\max\{1,|\hat f|\}$. If this run proved optimality (Gurobi
+101 instances, SCIP 66), the pipeline ended there and was charged its time; if
+it found no incumbent (18 and 20 instances), $U=+\infty$. Otherwise OBBT ran with
+cutoff $U$, and the final solve started on the tightened box with the incumbent
+as a start solution, $U$ as a cutoff or objective limit, and a time limit of
+600 seconds minus the root and OBBT time. The control arm was identical but used
+the box from feasibility-based tightening. The baselines were the default
+solvers on the original model, and for Gurobi also its built-in aggressive OBBT
+setting (\texttt{OBBT=3}). A diagnostic arm, kept separate, used the known
+optimal value as cutoff, the box of the \texttt{fp} rule, no root run, and no
+start solution;
+it was run with seed $0$ on the instances that the solver's root run did not
+solve. Final solves with identical boxes were shared between rules, each rule
+being charged its own OBBT time.
+
+\emph{Metrics and timing.} A run counts as solved if optimality is proved within
+600 seconds of total time and the objective is within a relative $10^{-3}$ of the
+known value. Times are shifted geometric means with shift one second over
+instance--seed pairs, using the total time capped at 600 seconds; node ratios are
+shifted geometric means with shift ten over pairs solved by both arms. The
+McCormick LP gap closed by a box $B$ is
+$\min\{1,\max\{0,(L(B)-L_0)/(f^*-L_0)\}\}$, where $L$ is the bound of the OBBT
+relaxation on $B$, $L_0$ its bound on the box from feasibility-based tightening,
+and $f^*$ the optimal value; it is averaged over instances with
+$f^*-L_0>10^{-6}\max\{1,|f^*|\}$. All runs were wall-clock timed on a machine with
+18 cores and 36 hardware threads, with up to 24 concurrent single-thread jobs and
+load averages of about 23--25.
+
+\emph{Correction of two solved counts.} Two SCIP runs reported optimality with
+the value $-79.35$ instead of $-79.75$: \texttt{crudeoil\_lee1\_05} in the control
+arm and \texttt{crudeoil\_lee1\_09} in the \texttt{r5} pipeline, both with seed
+$1$. Both are numerical failures of the final solve; the corresponding boxes
+contain the reference solution. The solved counts in this appendix exclude
+them. All time, node, and final-solve summaries below are the archived
+originals: they use the recorded times of these two runs, 30.8 and 105.0
+seconds, and count both runs as solved when selecting pairs solved by both
+arms. With 678 pairs per arm, the two runs have little weight, but these
+summaries are not corrected reanalyses.
+
+\subsection{Solver-level results}
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}llrrrrr@{}}
+\toprule
+Solver & Arm & Solved & Time (s) & Time ratio & Node ratio & Root+OBBT (s)\\
+\midrule
+Gurobi & default & 640 & 2.37 & 1.00 & 1.00 & 0\\
+Gurobi & \texttt{OBBT=3} & 640 & 2.49 & 1.05 & 0.82 & 0\\
+Gurobi & control & 642 & 2.57 & 1.08 & 1.05 & 0.5\\
+Gurobi & \texttt{r1} & 637 & 3.11 & 1.31 & 0.99 & 14.2\\
+Gurobi & \texttt{r5} & 638 & 3.40 & 1.44 & 0.83 & 17.6\\
+Gurobi & \texttt{ad0.5} & 637 & 3.14 & 1.33 & 0.97 & 14.5\\
+Gurobi & \texttt{ad0.8} & 637 & 3.23 & 1.37 & 0.90 & 15.3\\
+Gurobi & \texttt{fp} & 637 & 4.08 & 1.73 & 0.77 & 30.8\\
+\addlinespace
+SCIP & default & 575 & 7.18 & 1.00 & 1.00 & 0\\
+SCIP & control & 573 & 8.30 & 1.16 & 1.11 & 3.8\\
+SCIP & \texttt{r1} & 570 & 8.67 & 1.21 & 1.05 & 16.2\\
+SCIP & \texttt{r5} & 563 & 8.84 & 1.23 & 0.85 & 19.7\\
+SCIP & \texttt{ad0.5} & 570 & 8.71 & 1.21 & 0.98 & 16.5\\
+SCIP & \texttt{ad0.8} & 571 & 8.69 & 1.21 & 0.88 & 17.1\\
+SCIP & \texttt{fp} & 561 & 9.50 & 1.32 & 0.73 & 31.4\\
+\addlinespace
+Gurobi & known-value \texttt{fp} & 217/220 & 9.26/4.50 & 2.06 & 0.70 & 48.5\\
+SCIP & known-value \texttt{fp} & 220/221 & 15.1/12.3 & 1.23 & 0.55 & 43.1\\
+\bottomrule
+\end{tabular}
+\caption{Precursor study, all 339 instances and two seeds (678 pairs). Ratios
+are relative to the default solver; the last column is the mean root and OBBT
+time per pair. The known-value diagnostic uses seed $0$ on 238 (Gurobi) and 273
+(SCIP) instances and is compared with the default on the same pairs; its time
+includes OBBT.}
+\label{tab:precursor-solver}
+\end{table}
+
+Table~\ref{tab:precursor-solver} gives the solver-level results. No pipeline
+solved more pairs than the default, and every pipeline was slower in shifted
+geometric mean. Gurobi's built-in OBBT reduced nodes to $0.82$ at a time ratio of
+$1.05$ without a restart. Even with the known optimal value as cutoff, the
+\texttt{fp} pipeline was slower than the default on the instances it was run on.
+On the 69 (Gurobi) and 122 (SCIP) instances that the default needed at least ten
+seconds for or did not solve in some seed, the archived summaries give the
+pipelines node ratios of
+0.99--1.02 and 1.06--1.27 and time ratios of 1.15--1.23 and 1.27--1.51. They
+solved 97--98 of these pairs against 100 for the default with Gurobi, and
+127--137 against 141 with SCIP.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}llrrrr@{}}
+\toprule
+Solver & Rule & Time ratio & Node ratio & Final-solve ratio & Solved (control)\\
+\midrule
+Gurobi & \texttt{r1} & 1.27 & 0.93 & 1.02 & 435 (440)\\
+Gurobi & \texttt{ad0.8} & 1.33 & 0.81 & 0.98 & 435 (440)\\
+Gurobi & \texttt{fp} & 1.79 & 0.65 & 0.98 & 435 (440)\\
+SCIP & \texttt{r1} & 1.05 & 0.96 & 1.02 & 438 (441)\\
+SCIP & \texttt{ad0.8} & 1.06 & 0.77 & 1.00 & 439 (441)\\
+SCIP & \texttt{fp} & 1.17 & 0.62 & 0.96 & 429 (441)\\
+\bottomrule
+\end{tabular}
+\caption{Effect of the tightened box: pipelines against the control on the
+instances where OBBT ran (238 for Gurobi, 273 for SCIP). The final-solve ratio
+excludes root and OBBT time and is taken over pairs solved by both arms.}
+\label{tab:precursor-control}
+\end{table}
+
+Table~\ref{tab:precursor-control} isolates the box. The pipelines and the
+control share the root run, the incumbent, and the cutoff, and differ only in the
+box. The tightened boxes reduced nodes, but the savings in the final solve did
+not offset the root and OBBT time in the total-time summaries. Split by the
+McCormick LP gap closed by the \texttt{fp} box, the pairs solved by both arms
+show where the node reductions occur. With Gurobi, 112 pairs with closure at
+least $0.5$ had node ratio $0.18$ and final-solve ratio $0.87$, at a mean control time of 4.9 seconds; 98 pairs with
+positive closure below $0.5$ had $0.77$ and $0.95$ (24 seconds); and 219 pairs
+without closure had $0.96$ and $1.00$ (27 seconds). With SCIP the corresponding
+values were 142 pairs with $0.20$ and $0.65$ (1.2 seconds), 76 pairs with $0.83$
+and $1.02$ (50 seconds), and 198 pairs with $0.97$ and $1.00$ (61 seconds). The
+largest mean node reductions occurred in the groups whose mean control time was
+only a few seconds.
+
+\subsection{OBBT-level results}
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}lrrrrrrr@{}}
+\toprule
+Cutoff & Instances & 1 & 2 & 3 & 5 & 10 & \texttt{fp}\\
+\midrule
+Known optimal value & 305 & 0.236 & 0.274 & 0.296 & 0.322 & 0.338 & 0.346\\
+Gurobi root incumbent & 235 & 0.147 & 0.181 & 0.203 & 0.231 & 0.247 & 0.250\\
+SCIP root incumbent & 267 & 0.176 & 0.213 & 0.237 & 0.260 & 0.278 & 0.287\\
+\bottomrule
+\end{tabular}
+\caption{Mean McCormick LP gap closed after the given number of sequential
+rounds and with the rule \texttt{fp}; trajectories that stopped earlier keep
+their final value. Shifted geometric means of cumulative OBBT time were 1.1,
+1.4, and 1.1 seconds after one round and 2.2, 2.9, and 2.1 seconds with
+\texttt{fp}.}
+\label{tab:precursor-rounds}
+\end{table}
+
+Table~\ref{tab:precursor-rounds} shows diminishing returns from additional
+rounds. The median closure was zero for every rule. With the known optimal
+value as cutoff, the first round changed at least one bound on 239 of the 339
+instances. Of the 104 \texttt{fp} trajectories that ended within their first
+round, 97 completed that round without a bound change and seven were
+interrupted by the 400-second cap. A further 22 trajectories changed a bound in
+the first round and then completed a second round with no accepted change; one
+more recorded no change in a second round that the cap interrupted. OBBT time
+was heavy-tailed: the median was 0.04 seconds for one round and 0.23 seconds for
+\texttt{fp}, but 36 instances needed more than 10 seconds for the first round
+and 14 more than 120 seconds, and 18 \texttt{fp} trajectories reached the
+400-second cap.
+
+Among the 149 trajectories with at least four rounds in which a variable moved,
+the median of $\rho$ over rounds 3--10 exceeded $0.95$ on 79 and was at most $0.5$
+on 34. This sample excludes every trajectory that converged quickly, so it does
+not show that slow contraction is typical. With a cutoff equal to the optimal
+value up to $10^{-6}$, it also cannot separate a stalled limit from slow
+approach to a cutoff-dependent floor.
+
+The adaptive rule \texttt{ad0.8} stopped after the first round on $46$--$54\%$
+of instances, depending on the cutoff source. Restricting later rounds to moved
+variables and their bilinear partners saved only $3\%$ of the LPs (105,878
+against 109,107), because these neighborhoods covered almost all nonlinear
+variables. Feasibility filtering reduced the LPs of the first round from 87,443
+to 25,712 and their time from 7,834 to 5,277 seconds, while the mean closure
+changed from $0.239$ to $0.236$. Until the \texttt{fp} rule stopped them,
+simultaneous (Jacobi) rounds used 300,710 LPs and 12,053 seconds, against
+289,941 LPs and 12,031 seconds for sequential rounds; both had a median of four
+rounds and a mean closure of $0.346$.
+
+These filtering and Jacobi--sequential comparison totals are taken from
+the archived report; part of their calculation code is absent from the
+saved analysis script.
+
+Every one of the 4,573 tightened boxes that belonged to an instance with a
+reference solution contained it numerically, with tolerance $10^{-6}(1+|x_j|)$
+in each coordinate. Three SCIP runs failed with an LP solver error and count as unsolved.

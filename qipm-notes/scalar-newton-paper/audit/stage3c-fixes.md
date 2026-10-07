@@ -49,7 +49,7 @@ and Stage 4 was not started.
 ## Validation
 
 - Ran `checks/check_structured_identities.py` with
-  `/home/sgusev/miniconda3/envs/qipm/bin/python`: all 152 numerical
+  `/workspace/local-home/miniconda3/envs/qipm/bin/python`: all 152 numerical
   identities and comparison checks passed.
 - Ran `make clean` and then `make -B` in the paper directory through
   `conda run -n qipm --live-stream`.

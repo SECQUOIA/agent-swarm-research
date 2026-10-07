@@ -104,9 +104,9 @@ The [current Ag investigation](../programs/ag-selective-oxygen-use.md) is also b
 
 No knowledge-base files were edited. The following were sent together to the existing sole `/root/literature` agent for sequential `$lit` “Add identified literature,” including metadata-only records if lawful full text remains unavailable.
 
-- Skill: `/home/sgusev/repo/skills/literature/SKILL.md`.
-- Project: `/home/sgusev/repo/catalisys-notes`.
-- Knowledge base: `/home/sgusev/repo/catalisys-notes/literature`.
+- Skill: `/workspace/skills/literature/SKILL.md`.
+- Project: `/workspace/catalisys-notes`.
+- Knowledge base: `/workspace/catalisys-notes/literature`.
 
 1. **10.1021/acscatal.1c03174**, Negahdar et al. Already queued by the stronger-practical-program audit; additional available full text supplied: `/tmp/negahdar2021.pdf`, extracted `/tmp/negahdar2021.txt`, lawful White Rose URL above. Reason: competing Cu/nitrate assignment, with explicit structural and vibrational limits.
 2. **10.1016/j.cattod.2017.04.016**, Ruggeri et al., *Novel method of ammonium nitrate quantification in SCR catalysts*, Catal. Today 307 (2018), 48–54. Reason: essential inventory-measurement prior art. Publisher abstract/introduction read at https://www.sciencedirect.com/science/article/pii/S0920586117302468 ; institutional record https://re.public.polimi.it/handle/11311/1037471 lists a restricted AAM. Full text not retrieved here; preserve the unresolved request if retrieval fails.

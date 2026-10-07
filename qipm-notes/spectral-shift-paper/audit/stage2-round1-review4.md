@@ -37,7 +37,7 @@ The [proof of Motlagh–Wiebe Theorem 4](https://arxiv.org/pdf/2308.01501) conta
 I ran the diagnostic script with the required qipm interpreter, directing all outputs outside the manuscript:
 
 ```text
-/home/sgusev/miniconda3/envs/qipm/bin/python spectral-shift-paper/scripts/joint_accuracy_diagnostics.py --output /tmp/qipm-review4-stage2-diagnostics
+/workspace/local-home/miniconda3/envs/qipm/bin/python spectral-shift-paper/scripts/joint_accuracy_diagnostics.py --output /tmp/qipm-review4-stage2-diagnostics
 ```
 
 It completed successfully. The r=1 threshold was 0.021131013144337452; the exact/asymptotic ratio at r=32 was about 1.008362. The three sampled maximum normalized errors were 1, and the leakage/slack ratios were approximately 6.85e-25, 1.94e-46, and 3.33e-74, matching the author audit. The script correctly labels these as floating-point diagnostics and does not use the mesh as a feasibility proof. Its signed-error evaluation avoids subtracting two quantities close to one.

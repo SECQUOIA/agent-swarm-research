@@ -1,3 +1,6 @@
+from pathlib import Path as _CleanupPath
+_NOTES_ROOT = _CleanupPath(__file__).resolve().parent.joinpath('../../../..').resolve()
+
 from fractions import Fraction as Q
 from itertools import combinations, product
 from math import comb
@@ -75,7 +78,7 @@ counts['integer_matching_gadgets']=120
 # Execute precisely the frozen printed programs, as an independent extraction replay.
 snap=ROOT.parents[2]/'process/snapshots/whole-round01'
 # Resolve repository root without depending on the replay scripts' output paths.
-snap=Path('/home/sgusev/repo/minlp-notes/paper-relaxation-limits/process/snapshots/whole-round01')
+snap=Path((str(_NOTES_ROOT) + '/paper-relaxation-limits/process/snapshots/whole-round01'))
 import re
 for name in ['appendix-finite-signings.tex','appendix-cubic-certificates.tex']:
  code='\n'.join(re.findall(r'\\begin\{verbatim\}(.*?)\\end\{verbatim\}',(snap/'sections'/name).read_text(),re.S))

@@ -106,7 +106,7 @@ I wrote and ran `verification/reviewer03/stage06-round01/check_structural.py`; r
 Run command:
 
 ```text
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python paper-relaxation-limits/verification/reviewer03/stage06-round01/check_structural.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python paper-relaxation-limits/verification/reviewer03/stage06-round01/check_structural.py
 ```
 
 These finite checks are attempts to falsify the universal statements; they do not prove them. No numerical optimization solver was used in these checks.

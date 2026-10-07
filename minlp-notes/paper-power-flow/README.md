@@ -24,7 +24,9 @@ Run these commands from this directory, using a LaTeX distribution with
 latexmk -pdf -interaction=nonstopmode -halt-on-error -outdir=build main.tex
 ```
 
-The result is `build/main.pdf`. The complete source consists of `main.tex`,
+The result is [the manuscript PDF](build/main.pdf), rebuilt from the current
+sources for this public repository on 2026-10-06. The complete source consists
+of `main.tex`,
 `macros.tex`, `references.bib`, `sections/`, and `appendices/`; no external
 repository files or images are needed. Author metadata is left blank.
 
@@ -69,8 +71,9 @@ feasible or infeasible instances analytically.
 
 `submission.zip` contains only the manuscript sources, bibliography, four
 checkers, and an earlier copy of this README. It can be extracted and built independently.
-A build writes the compiled PDF to `build/main.pdf`, which Git ignores; the
-repository tracks no compiled PDF of this manuscript.
+The current manuscript PDF is included separately at `build/main.pdf`; other
+build products are ignored. Rebuilding it does not refresh the historical
+submission archive or establish review of the later revisions.
 
 The archive and the review records in `process/` cover the 2026-09-07
 version (commit `2a05c164`). The manuscript sources were revised afterwards

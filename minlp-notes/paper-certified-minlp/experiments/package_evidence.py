@@ -14,6 +14,17 @@ import tarfile
 
 
 def records(p):return [json.loads(s)for s in p.read_text().splitlines()if s.strip()]
+def recorded_artifact_path(value, lab, paper):
+    """Bind stored public artifact paths to the supplied lab and paper trees."""
+    path=Path(value)
+    for exported,actual in (('/workspace/minlp-notes/code/minlp_solver_lab',lab),
+                            ('/workspace/minlp-notes/paper-certified-minlp',paper)):
+        try:
+            relative=path.relative_to(exported)
+        except ValueError:
+            continue
+        return actual/relative
+    return path
 def sha(p):
     h=hashlib.sha256()
     with p.open('rb')as f:
@@ -111,7 +122,7 @@ def main():
             for key in('lemma','master','proof'):
                 item=r['artifacts'][key]
                 if item.get('missing'):continue
-                source=Path(item['path']);relative='lab/'+str(source.relative_to(lab))
+                source=recorded_artifact_path(item['path'],lab,paper);relative='lab/'+str(source.relative_to(lab))
                 bulk[relative]=source;expected[relative]=item['sha256']
     inventory=[]
     for run in campaigns:
@@ -138,13 +149,13 @@ def main():
             for key in('lemma','master','proof'):
                 item=r.get('artifacts',{}).get(key,{})
                 if item.get('sha256'):
-                    source=Path(item['path']).resolve();relative=prefix+str(source.relative_to(run))
+                    source=recorded_artifact_path(item['path'],lab,paper).resolve();relative=prefix+str(source.relative_to(run))
                     expected[relative]=item['sha256']
         for source in(run/'replay-artifacts').rglob('*'):
             if source.is_symlink():bulk[prefix+str(source.relative_to(run))]=source
     for record in records(reporting/'replay.jsonl'):
         for key in('lemma','master','proof'):
-            item=record['artifacts'][key];relative=str(Path(item['path']).resolve().relative_to(paper))
+            item=record['artifacts'][key];relative=str(recorded_artifact_path(item['path'],lab,paper).resolve().relative_to(paper))
             assert relative in bulk
             expected[relative]=item['sha256']
     dump(core/'fresh-artifact-inventory.json',inventory)

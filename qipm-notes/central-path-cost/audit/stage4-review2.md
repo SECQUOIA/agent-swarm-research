@@ -78,7 +78,7 @@ The barrier-height lower bound, exact central route length, and uniform `0<epsil
 
 ## Independent verification
 
-Ran `scripts/verify_primal_dual_formulations.py` under `/home/sgusev/miniconda3/envs/qipm/bin/python`, without installing packages. Every diagnostic passed: full KKT/progress checks, exact dyadic data at four ranks, arbitrary-fiber minors, affine packed Hessians, integer envelopes, four tree shapes, and root Schur inequalities.
+Ran `scripts/verify_primal_dual_formulations.py` under `/workspace/local-home/miniconda3/envs/qipm/bin/python`, without installing packages. Every diagnostic passed: full KKT/progress checks, exact dyadic data at four ranks, arbitrary-fiber minors, affine packed Hessians, integer envelopes, four tree shapes, and root Schur inequalities.
 
 Added independent checks in a temporary inline Python process, without editing files:
 

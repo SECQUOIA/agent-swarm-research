@@ -1,0 +1,300 @@
+--- R4/sections/01-introduction.tex
++++ successor/sections/01-introduction.tex
+@@ -486,8 +486,21 @@
+ 
+ \emph{Decomposition-aware global optimization: certified coordinate grids,
+ conditional recourse, and structural limits}~\citep{companion-decomposition-aware}
+-develops deterministic curvature-corrected grids, conditional-recourse
+-filtering, boundary output, and the star obstruction. For its box quadratic
++develops deterministic curvature-corrected coordinate grids, dynamic
++programming of min-marginals on a tree decomposition, conditional-recourse
++filtering, and boundary output. It contains deterministic antecedents of
++several results re-proved here. Its value-function lemma shows that a
++recourse problem with a fixed feasible set inherits the upper coordinate
++curvature of the objective (\cref{lem:rec:value}(b)). Its core search with
++an exact conditional oracle gives the retention, value-interval and witness
++guarantees of \cref{prop:rec:search}(a)--(c). Its certified bag filter gives
++parts~(a) and~(b) of \cref{prop:sp:conditional,prop:lim:conditional}.
++Its two star min-marginal families contain \cref{ex:rec:star} and the
++positive definite variant discussed after it. It also gives a coupling algorithm for totally unimodular constraints, with
++certified approximation for fixed-degree polynomial objectives and exact
++output for rational quadratic ones; its accuracy-independent operation
++bounds need set growth and finitely many optimal coordinate projections
++(\cref{sec:con:scope}). For its box quadratic
+ class, let $L_i=\max\{0,\sup_{\widehat X}\partial_{ii}F\}$ and
+ $\norm d_L^2=\sum_iL_id_i^2$. Weighted growth
+ $F(x)-\min F\ge\gamma_*\norm{x-x^*}_L^2$ gives
+@@ -508,8 +521,10 @@
+ deterministic approximation boundary, not a smoothed lower bound or a
+ matching $p/2$ exponent result. The limits of integrating the
+ growth-dependent work under noise are discussed in \cref{sec:sp:width}.
+-Our sparse theorem bounds expected counts without a supplied growth modulus
+-and closes exactly on every draw.
++We re-prove the deterministic parts we use. What this paper adds is their
++composition under noise: expected counts under the finite law without a
++supplied growth modulus, finite-noise margin tails, sound closure tests, and
++an exact same-draw fallback and output.
+ For its fixed-degree polynomial factors, the companion also derives
+ a Hessian lower bound on the free coordinates at a point-growth optimizer
+ and returns a rational face box whose restricted objective is strongly
+
+--- R4/sections/02-model.tex
++++ successor/sections/02-model.tex
+@@ -121,6 +121,17 @@
+ law $\mathcal D$.
+ \end{enumerate}
+ \end{definition}
++
++\paragraph{Row-scaled aligned noise.}
++The low-rank lattice theorem (\cref{thm:int:lowrank}) uses one extension of
++the aligned model. There $\xi_1,\ldots,\xi_k$ are independent, $\xi_i$ has the
++grid law $U_{\sigma_i,M}$ with a specified rational scale $\sigma_i>0$ for row
++$i$, and all rows share one resolution $M$ chosen from the base instance.
++With equal scales this is model (iii) with $\mathcal D=U_{\sigma,M}$.
++Rescaling the rows of $T$ does not remove unequal scales, because $T$ also
++enters that theorem's objective. The common resolution is essential there:
++it fixes the spacing of the lattice of attainable objective values. Every
++theorem asserts its bounds only for the law it states.
+ 
+ The models coincide in special cases: core-only noise with $C=[n]$, and
+ aligned noise with $T=I$, are ambient noise. In general they differ, and a
+@@ -184,7 +195,9 @@
+ valid base instance of length at most $I$:
+ \begin{enumerate}[label=(\alph*)]
+ \item a grid law by $U_{\sigma,M(I)}$ with $M(I)=2^{P(I)}$; in the lattice
+-theorem (\cref{thm:int:lowrank}) the level cap is reset to $\log_2M(I)$;
++theorem (\cref{thm:int:lowrank}) the law of row $i$ is replaced by
++$U_{\sigma_i,M(I)}$, keeping each specified scale $\sigma_i$ and one common
++$M(I)$ for all rows, and the level cap is reset to $\log_2M(I)$;
+ \item a Gaussian-like law by $\mathcal G_{b(I),\sigma}$ with
+ $b(I)=A(I)+D(I)t(I)$ and $t(I)=\lceil4\log_2(A(I)+D(I)+21)\rceil$, the
+ auxiliary box and the level cap being recomputed for this support.
+@@ -216,7 +229,8 @@
+ \end{proof}
+ 
+ The resolution $M(I)$ standardizes the scalar law, which is still rescaled
+-by the supplied $\sigma$ and applied to the coordinates that the theorem
++by the supplied $\sigma$, or by the specified row scales $\sigma_i$ in the
++lattice theorem, and applied to the coordinates that the theorem
+ perturbs; it is not one probability measure for all instances. Taking
+ $K=I$ in the flow case gives a law depending only on $I$, but its sampling
+ cost need not stay within $f_d(k)\poly_d(I)$ for the actual core size $k$.
+@@ -396,9 +410,14 @@
+ 
+ A bound is \emph{fixed-parameter} in a parameter $\kappa$ if it has the form
+ $f(\kappa)\cdot\poly(I)$, where the exponent of the polynomial does not
+-depend on $\kappa$. The low-negative-inertia, core, and integer-dimension
+-results are of this form, with numerical ratios such as
+-$\nu\diam(X)/\sigma$ or $L/\sigma$ included in $\kappa$. A bound is
++depend on $\kappa$. The low-negative-inertia results under aligned or
++Gaussian-like noise, and the core and integer-dimension results, are of this
++form jointly in the structural parameters and the numerical ratios, such as
++$\nu\diam(X)/\sigma$ or $L/\sigma$, included in $\kappa$. The
++low-negative-inertia result under uniform ambient noise
++(\cref{thm:qp:uniform}) is not: its bound contains a power of the dimension
++$n$ that grows with $k$. It is polynomial for fixed structure when the ratios
++are polynomially bounded, but not fixed-parameter in the structure. A bound is
+ \emph{fixed-width polynomial} if it is polynomial for each fixed value of a
+ parameter $p$ but its degree grows with $p$, for instance
+ $[nLw_{\max}/\sigma]^{O(p)}\poly(I)$. The sparse results are of this kind,
+
+--- R4/sections/04-quadratic.tex
++++ successor/sections/04-quadratic.tex
+@@ -635,8 +635,12 @@
+ \begin{remark}[The original objective]\label{rem:qp:regret}
+ By Proposition~\ref{prop:model:regret}, an exact minimizer $\hat x$ of
+ $F_\gamma$ satisfies $F(\hat x)-\min_XF\le\max_{x,y\in X}\gamma^{\mathsf T}(x-y)$,
+-which is at most $\bar\sigma\sum_iw_i$ when every coefficient is bounded
+-by $\bar\sigma$; for $\mathcal G_{b,\sigma}$, $\bar\sigma=(b+20)\sigma$.
++which is at most $\bar\sigma W_{\rm noise}$ when every coefficient is bounded
++by $\bar\sigma$; for $\mathcal G_{b,\sigma}$, $\bar\sigma=(b+20)\sigma$. Here
++$W_{\rm noise}=\sum_{j=1}^n(\max_Xx_j-\min_Xx_j)$ is the original-domain width
++of Section~\ref{sec:model:original}, not a sum of the auxiliary widths $w_i$;
++on a mixed polytope the coordinate widths of the continuous relaxation give an
++upper bound.
+ Under aligned noise the bound is $\bar\sigma\sum_i(u_i-\ell_i)$. Because the
+ work bounds grow as $\sigma$ decreases, these results do not recover the
+ unperturbed optimizer, and they claim no improvement of worst-case
+
+--- R4/sections/05-sparse.tex
++++ successor/sections/05-sparse.tex
+@@ -593,7 +593,10 @@
+ an oracle for $W_\beta$ replaces the grid min-marginals. It is a sufficient
+ interface, not an algorithm: an oracle that meets it must account for the
+ optimization over every coordinate outside the bag, and none is supplied
+-here for general sparse instances.
++here for general sparse instances. Parts~(a) and~(b) specialize the
++deterministic certified bag filter of an unpublished companion manuscript
++\citep{companion-decomposition-aware} and are re-proved here. Part~(c), the
++expected count under the finite law, is the extension made here.
+ 
+ \begin{proposition}[Conditional-recourse count]\label{prop:sp:conditional}
+ Consider a sparse mixed polynomial instance with the coordinate cells of
+@@ -686,10 +689,7 @@
+ its counts are the case of a single bag. Certified conditional values are
+ one sufficient way to remove the factor $n$. The barriers above do not show
+ that they are necessary for every algorithm whose bound is fixed-parameter
+-in the width. Parts~(a) and~(b) are a deterministic conditional-recourse
+-filter that also appears in an unpublished companion manuscript
+-\citep{companion-decomposition-aware}; part~(c), the expected count under
+-the finite law, is what the noise adds.
++in the width.
+ 
+ \paragraph{Deterministic bounds under a growth condition.}
+ The companion manuscript \citep{companion-decomposition-aware} develops
+
+--- R4/sections/06-constraints.tex
++++ successor/sections/06-constraints.tex
+@@ -786,7 +786,21 @@
+ 
+ \subsection{What is not covered}\label{sec:con:scope}
+ 
+-General totally unimodular constraints are not covered. For
++General totally unimodular constraints on the searched coordinates are not
++covered by the smoothed guarantees of this paper. This differs from
++\cref{thm:int:tu}, where a totally unimodular system constrains only the
++integer recourse of a small perturbed core. An unpublished companion manuscript
++\citep{companion-decomposition-aware} treats them deterministically with a
++coupling algorithm. For fixed-degree polynomial objectives it returns
++approximation certificates without a growth premise, with table sizes that
++then depend on the accuracy. For rational quadratic objectives its exact
++version terminates without a growth or uniqueness premise, and a set-growth
++condition bounds its number of levels. In both cases the stated
++accuracy-independent operation bounds also need set growth and a bound $r$
++on the number of distinct values that each coordinate takes over the
++optimal set, which is a separate premise. These deterministic bounds do not by themselves give expected
++work bounds under the noise; \cref{sec:sp:width} discusses the limits of
++integrating the available growth tail. For
+ $P=\{x\in[0,1]^n:Ax\le b\}$ with $A$ integral and totally unimodular and $b$
+ integral, aligned feasible rounding holds: after scaling a cell of width
+ $h=2^{-j}$, the cell polytope $\{z\in[0,1]^n:Az\le b/h-Ak\}$ has an integral
+@@ -794,7 +808,9 @@
+ \citep{hoffman1956-integral-boundary-points-of-convex}, so every feasible cell point is a mean of feasible
+ corners, and a full Hessian bound $\bar L$ gives the allowance
+ $n\bar Lh^2/8$. With every constraint inside a bag, the pruning of
+-\cref{prop:sp:prune} is then sound. What is missing is a count of retained
++\cref{prop:sp:prune} is then sound. This deterministic rounding,
++allowance and filtering layer specializes results of the companion
++manuscript \citep{companion-decomposition-aware}. What is missing is a count of retained
+ cells whose constants are controlled by the input: \cref{ex:lim:coupled}
+ shows that coordinate comparisons fail for a single totally unimodular
+ inequality, and the arguments of this paper provide neither such a count
+
+--- R4/sections/07-recourse.tex
++++ successor/sections/07-recourse.tex
+@@ -123,7 +123,11 @@
+ None of these statements uses convexity of the residual problem.
+ \end{lemma}
+ 
+-Part~(b) is the reason for fixed residual feasibility. It makes $V$ satisfy
++Part~(b) is the curvature part of the value-function lemma of an
++unpublished companion manuscript \citep{companion-decomposition-aware}, which
++also assumes a fixed recourse feasible set; we include its proof for
++completeness. This part is the reason for fixed residual feasibility. It
++makes $V$ satisfy
+ the curvature hypothesis of \cref{thm:count:local} in dimension $k$: for a
+ dyadic cell of side $h_j=2^{-j}$ in the core cube,
+ \begin{equation}\label{eq:rec:corner}
+@@ -171,9 +175,17 @@
+ $Lh^2/8$ for the single core coordinate, independently of $m$.
+ \end{example}
+ 
+-The proof (\cref{app:rec:examples}) also gives a uniformly positive definite
++This deterministic example is a member of the first star family of the
++companion manuscript \citep{companion-decomposition-aware}.
++\Cref{prop:lim:local} extends it to every draw of small noise and shows
++that no closure test succeeds at level $0$, so the search reaches the level
++at which the cell is deleted.
++
++The proof of \cref{ex:rec:star} (\cref{app:rec:examples}) also gives a uniformly positive definite
+ variant on a star with $m=d^2$ leaves, $d\ge8$, in which the variation of
+-$V_h-V$ between two adjacent core states is $(d-1)h^2$. Positive
++$V_h-V$ between two adjacent core states is $(d-1)h^2$. This variant is the
++case $h=\frac14$ of the companion's second, positive definite star family
++\citep{companion-decomposition-aware}. Positive
+ definiteness and bounded coloring number therefore do not make a bag-local
+ budget valid for grid min-marginals. These examples concern the retention
+ rule; they are not hardness results.
+@@ -238,7 +250,12 @@
+ curvature $L$ and does not depend on $\gamma_C$. With exact values the search
+ is a variant of the corrected-corner search of \cref{thm:count:cells} on the
+ core, with the incumbent taken over the current level. The proof is in
+-\cref{app:rec:search}.
++\cref{app:rec:search}. With an exact oracle, parts~(a)--(c) are the
++retention, value-interval and witness guarantees of the deterministic core
++search in the companion manuscript \citep{companion-decomposition-aware},
++whose separate query bound uses point growth. Here we also allow certified
++oracle errors and bound the expected number of queries without a growth
++premise.
+ 
+ \subsection{Global containment and closure certificates}\label{sec:rec:certificates}
+ 
+
+--- R4/sections/08-integer.tex
++++ successor/sections/08-integer.tex
+@@ -653,7 +653,8 @@
+ 
+ \subsection{Separable integer problems with a low-rank concave part}\label{sec:int:lowrank}
+ 
+-The last result uses aligned noise (\cref{def:model:perturbation}) and an exact
++The last result uses the row-scaled aligned extension described after
++\cref{def:model:perturbation} and an exact
+ argument of a different kind: the original objective values of the sampled
+ problem lie on a lattice whose spacing is controlled by the same grid that
+ controls the expected count. Let $X=\prod_{j=1}^nX_j$ with
+
+--- R4/sections/09-boundaries.tex
++++ successor/sections/09-boundaries.tex
+@@ -221,9 +221,12 @@
+ The natural repair is to replace $E_j$ by an allowance for the bag alone,
+ $\abs\beta Lh_j^2/8$. \Cref{ex:rec:star} shows that this is unsound for the
+ unperturbed star quadratic: the error comes from minimizing over the grid
+-outside the bag, and it varies with the bag's own coordinates. The failure
+-persists on every draw of small noise, so it is a failure of the smoothed
+-algorithm and not of one exceptional draw.
++outside the bag, and it varies with the bag's own coordinates. That
++deterministic example comes from an unpublished companion manuscript
++\citep{companion-decomposition-aware}. The next proposition adds two points:
++the failure persists on every draw of small noise, and no closure succeeds
++at level $0$, so the search reaches the failing level. It is thus a failure
++of the smoothed algorithm and not of one exceptional draw.
+ 
+ \begin{proposition}[A bag-local allowance is unsound on every draw]\label{prop:lim:local}
+ Let $m=32$ and let $F_0$ be the star quadratic of \cref{ex:rec:star} on
+@@ -292,7 +295,10 @@
+ values requires optimizing over all variables outside the bag. In the
+ notation of \cref{sec:sp:count}, let
+ $W_\beta(v)=V_\beta(v)+\gamma_\beta^{\mathsf T}v$ be the exact conditional
+-value of a bag tuple, a minimum over the original outside domain.
++value of a bag tuple, a minimum over the original outside domain. Parts~(a)
++and~(b) below restate deterministic guarantees of the companion's certified
++bag filter \citep{companion-decomposition-aware}; part~(c) is the
++finite-law count of \cref{prop:sp:conditional}(c).
+ 
+ \begin{corollary}[Certified conditional values remove the dimension factor]\label{prop:lim:conditional}
+ Let the modified search and certified conditional oracle of
+
+--- R4/appendices/F-integer.tex
++++ successor/appendices/F-integer.tex
+@@ -942,11 +942,16 @@
+ \end{lemma}
+ 
+ \begin{proof}
+-Let $\pi_{\min}\ge2^{-H_0}$ be the least nonzero $\abs{\pi_i}$. If $Z_p\ne\emptyset$ and
+-$p(x)>0$, some vertex has $p\le0$. Move from $x$ toward it one coordinate with
+-$\pi_i\ne0$ at a time; $p$ decreases at rate at least $\pi_{\min}$ per unit length and
+-reaches zero after an $\ell_1$ path of length at most $p(x)/\pi_{\min}$, which bounds the
+-Euclidean distance to $Z_p$. Negative values are symmetric. If $Z_p=\emptyset$, $p$
++Suppose first that $Z_p\ne\emptyset$. Then $\pi\ne0$, since otherwise $p$ would be a
++nonzero constant without zeros; let $\pi_{\min}\ge2^{-H_0}$ be the least nonzero
++$\abs{\pi_i}$. If $p(x)=0$ there is nothing to prove. If $p(x)>0$, define $v$ by $v_i=0$
++for $\pi_i>0$, $v_i=1$ for $\pi_i<0$, and $v_i=x_i$ for $\pi_i=0$. This point of the cube
++minimizes $p$ there, so $p(v)\le0$ because $Z_p\ne\emptyset$. Move from $x$ to $v$ one
++coordinate with $\pi_i\ne0$ at a time. The path stays in the cube, and along each leg
++$p$ decreases at rate $\abs{\pi_i}\ge\pi_{\min}$ per unit length. Hence $p$ reaches zero
++after an $\ell_1$ path of length at most $p(x)/\pi_{\min}$, and this length bounds the
++Euclidean distance from $x$ to $Z_p$. If $p(x)<0$, apply the same argument to $-p$,
++which has the same coefficients up to sign and the same zero set. If $Z_p=\emptyset$, $p$
+ has one sign on the cube and its least absolute value is attained at a vertex, where
+ it is a nonzero rational whose denominator divides a product of at most $q+1$
+ denominators.

@@ -1,6 +1,6 @@
 """Numerical diagnostics for Section 3; these checks are not mathematical proofs.
 
-Run with /home/sgusev/miniconda3/envs/qipm/bin/python scripts/verify_classical.py.
+Run with python scripts/verify_classical.py.
 """
 from __future__ import annotations
 

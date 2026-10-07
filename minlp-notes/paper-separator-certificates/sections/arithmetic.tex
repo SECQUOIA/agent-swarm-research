@@ -1,0 +1,498 @@
+\section{Exact rational realization and bit complexity}
+\label{sec:arithmetic}
+
+The construction in the preceding sections counts local operations.  For an
+explicit polynomial input, those operations can be performed exactly with
+rational arithmetic.  The endpoint rule used below is essential: the midpoint
+of a leaf is used to form its model, whereas a backtracked local minimizer is
+chosen at an endpoint.  Consequently, repeated regridding does not repeatedly
+multiply unrelated coordinate denominators.
+
+We assume that every original interval and the initial center have rational
+endpoints, and that the bag functions are given explicitly as sparse rational
+polynomials
+\begin{equation}
+ a_t(v)=\sum_{\alpha\in\mathcal A_t}c_{t,\alpha}v^\alpha,
+ \qquad c_{t,\alpha}\in\Q,
+ \qquad \abs{\alpha}:=\sum_i\alpha_i\le D.
+ \label{eq:arithmetic-polynomial}
+\end{equation}
+The total degree bound $D$ is fixed.  Let $S=\sum_t\abs{\mathcal A_t}$, and let
+$L$ be the binary input length, including the tree, variable incidences,
+polynomial coefficients and exponents, original intervals, initial center,
+and the rational target accuracy $\eps>0$.  A supplied rational smoothness
+bound is also included in $L$.  Rational numbers are represented by signed
+integer numerators and positive integer denominators.  Fixed coordinates have
+already been removed, as in the model section; the zero-dimensional case
+requires only one exact evaluation.  Thus we take $p\ge1$ below.
+Let $C_{\mathrm{den}}$ be the least common multiple of all polynomial
+coefficient denominators; it is $1$ when there are no nonzero coefficients.
+
+Bit work uses a random-access store of binary data, charging integer
+arithmetic, copying, comparisons, and address handling by their bit cost.
+The polynomial-time conclusions also hold under a standard Turing-machine
+simulation, with polynomial overhead.
+
+\subsection{A certified affine model}
+
+Put
+\[
+ R=\max\{1,\abs{\text{an original endpoint}}\},
+ \qquad H=\max\{1,\abs{c_{t,\alpha}}:t,\alpha\}.
+\]
+Both quantities are rational and can be computed by exact comparisons.  They
+bound coordinate and coefficient magnitudes, respectively.
+
+\begin{proposition}[A computable smoothness bound]
+\label{prop:arithmetic-hessian}
+For the polynomial input in \cref{eq:arithmetic-polynomial}, define
+\[
+ M_0=\max_t\sum_{\substack{\alpha\in\mathcal A_t\\\abs{\alpha}\ge2}}
+ \abs{c_{t,\alpha}}\abs{\alpha}(\abs{\alpha}-1)
+ R^{\abs{\alpha}-2}.
+\]
+Then $M_0$ is a nonnegative rational number, and
+$\norm{\nabla^2a_t(v)}_2\le M_0$ on every original bag box.  For fixed $D$,
+$M_0$ has $O_D(L)$ bits and is computable in polynomial bit time.  One may use
+$M=M_0$ or any supplied rational $M\ge M_0$; the latter inequality is
+checked exactly.
+\end{proposition}
+
+\begin{proof}
+For a monomial of degree $d\ge2$, differentiation twice and summation over all
+ordered coordinate pairs gives
+\[
+ \sum_{i,j}\abs{\partial_i\partial_j(c v^\alpha)}
+ \le \abs{c}R^{d-2}
+ \left(\sum_{i\ne j}\alpha_i\alpha_j+
+       \sum_i\alpha_i(\alpha_i-1)\right)
+ =\abs{c}d(d-1)R^{d-2}.
+\]
+The spectral norm of a matrix is at most the sum of the absolute values of
+its entries.  Applying the triangle inequality to the Hessian proves the
+claimed bound.  Terms of degree zero or one have zero Hessian.
+
+The binary length of $C_{\mathrm{den}}$ is at most the sum of the coefficient
+denominator lengths.  All terms in the displayed bound can be put over a
+denominator dividing $C_{\mathrm{den}}$ times a fixed
+power of the denominator of $R$.  Since $D$ is fixed, this denominator and
+the summed numerator have $O_D(L)$ bits.  Exact addition, comparison, and the
+computation of the required least common multiples therefore take polynomial
+bit time.  If desired, a positive $M_0$ can be rounded upward to a power of
+two, with a factor of less than two increase; $M_0=0$ is left unchanged.
+\end{proof}
+
+For a rational leaf $B$, let $m_B$ be its coordinatewise midpoint.  Use the
+affine model
+\begin{equation}
+ \ell_{t,B}(v)=a_t(m_B)+\inner{\nabla a_t(m_B)}{v-m_B}
+                  -\frac{Mp}{8}\width(B)^2.
+ \label{eq:arithmetic-taylor}
+\end{equation}
+This notation $\ell_{t,B}$ denotes a bag model, and is distinct from the
+separator affine function $l_{t,D}$ of the certificate definition.
+Taylor's formula and the Hessian bound give
+\[
+ \abs{a_t(v)-a_t(m_B)-\inner{\nabla a_t(m_B)}{v-m_B}}
+ \le \frac M2\norm{v-m_B}^2
+ \le\frac{Mp}{8}\width(B)^2.
+\]
+Consequently
+\[
+ 0\le a_t(v)-\ell_{t,B}(v)
+       \le\frac{Mp}{4}\width(B)^2,
+ \qquad v\in B.
+\]
+Thus \cref{eq:model-contract} holds with $A=Mp$.  The model is affine and
+hence convex.  All its coefficients are obtained by exact rational
+evaluation of the explicit polynomial and its derivatives.  A smaller
+externally supplied smoothness bound can also be used if it has a separate
+sound certificate.  The size and verification cost of that additional
+certificate must then be included; the bounds below use $M\ge M_0$.
+
+\begin{proposition}[Exact local minimization]
+\label{prop:arithmetic-endpoints}
+With the models in \cref{eq:arithmetic-taylor}, every local minimization in
+the dynamic program of \cref{prop:model-dp} is the minimization of an affine
+function on a rational box.  It can be solved exactly without a general
+optimization oracle.  A deterministic minimizer chooses the lower endpoint
+of each coordinate interval when its affine coefficient is nonnegative,
+and the upper endpoint when its coefficient is negative.
+\end{proposition}
+
+\begin{proof}
+The common separator slope $\lambda_t(c)$ is fixed before the stage.  For a
+child $u$ and parent leaf $B$, the prescribed minorant has the form
+\[
+ \psi_{u,B}(s)=\inner{\lambda_u(c)}s+b_{u,B},
+ \qquad
+ b_{u,B}=\min\{\beta_{u,E}: E\text{ touches }B_{S_u}\}.
+\]
+It is affine, and its intercept is at most the intercept of every touching
+child message.  The local objective consists of the bag model, these child
+minorants, and the subtraction of the own separator affine slope.  It is
+therefore affine.  Its domain is $B$ intersected with the cylinder over an
+own separator cell $D$.  An intersection of coordinate boxes is a coordinate
+box; its endpoints are maxima of lower endpoints and minima of upper
+endpoints.  Empty intersections are omitted.
+
+An affine function separates into the sum of one-coordinate affine
+functions.  Each is minimized by the stated endpoint rule, including the
+choice of the lower endpoint when the coefficient is zero.  Exact rational
+sign comparisons determine all choices.  Taking minima over the finite
+leaf and cell lists then gives the exact message intercepts and the root
+lower bound.  Ties in those finite minima may be resolved by list order.
+\end{proof}
+
+This proposition also supplies exact local certificate inequalities: the
+minimum on each nonempty leaf--cell intersection is evaluated at the stated
+corner.  An arbitrary rational minimizer in a zero-slope direction would
+still be mathematically valid, but would provide no bound on its denominator.
+We use the deterministic endpoint rule throughout the arithmetic realization.
+
+\subsection{Denominators and finite message sizes}
+
+Let $Q$ be the least common multiple of the denominators of the original
+endpoints, initial center, and $s_0$.  The last inclusion is redundant when
+$s_0$ is the largest difference of two original endpoints, but makes the
+invariant explicit.  Write $M=n_M/q_M$ with $q_M>0$, taking $q_M=1$ when
+$M=0$.  Use a fixed integer grading exponent $\mu$ and
+$\theta=2^{-\mu}$ with $\mu\ge1$ as in \cref{lem:regridding-shell}.
+
+\begin{lemma}[Coordinate denominators]
+\label{lem:arithmetic-denominators}
+At stage $j$, every leaf endpoint, own separator cell endpoint, endpoint of
+a local intersection, and reconstructed center coordinate has denominator
+dividing $Q2^{j+\mu}$.  Every leaf midpoint has denominator dividing
+$W_j=Q2^{j+\mu+1}$.  Their numerator and denominator lengths are
+$O(L+j+\mu)$.
+\end{lemma}
+
+\begin{proof}
+The initial center and original endpoints have denominators dividing $Q$.
+For the induction step, the central partition endpoints are the current
+center coordinate and its shifts by $h_j=s_0 2^{-j}$.  A shell at level
+$\ell\le j$ starts at a shift by $-2^\ell h_j$ and has step
+$2^{-\mu}2^{\ell-1}h_j$.  Hence every untruncated endpoint has the form
+\[
+ c_i+s_0 t\,2^{-(j+\mu)},\qquad t\in\mathbb Z.
+\]
+If $c_i=x_i^{j-1}$ has denominator dividing $Q2^{j-1+\mu}$, this new
+endpoint has denominator dividing $Q2^{j+\mu}$.  Clipping to an original
+interval selects an original endpoint when clipping is active.  Projections
+and local intersections likewise select endpoints already present in the
+stage.  They preserve the same divisibility.
+
+By \cref{prop:arithmetic-endpoints}, each backtracked local minimizer consists
+of such endpoints.  Reconstruction takes a coordinate from its top
+occurrence bag, so it also selects one of these endpoints and closes the
+induction.  A midpoint introduces at most one additional factor of two.
+Midpoints are used only for model evaluation and are not substituted for
+the reconstructed center.  Finally, all these points lie in the original
+box and have magnitude at most $R$.  Since $\log_2 Q$ and $\log_2 R$ are
+$O(L)$, the numerator bounds follow as well as the denominator bounds.
+The initial stage obeys the same stated bounds, even though it need not
+introduce the factor $2^\mu$.
+\end{proof}
+
+Define $d=\max\{D,2\}$ and the stage denominator
+\begin{equation}
+ Z_j=8q_M C_{\mathrm{den}} W_j^d.
+ \label{eq:arithmetic-denominator}
+\end{equation}
+Here and below a denominator ``divides $Z_j$'' concerns the reduced rational
+number; the implementation can store its integer numerator over the common
+denominator $Z_j$ instead of repeatedly forming products of denominators.
+
+\begin{lemma}[Common denominator and magnitude bound]
+\label{lem:arithmetic-size}
+Every model coefficient, common separator slope, finite message intercept,
+child-minorant intercept, local minimum, root lower bound, and evaluated
+incumbent objective at stage $j$ has denominator dividing $Z_j$.  Put
+\[
+ \mathcal H=(S+1)HR^D,
+ \qquad
+ V=(1+2D+3NpkD)\mathcal H+NMpR^2.
+\]
+The absolute values of finite message intercepts and objective values are
+bounded by $V$, and all scalar quantities used in their calculation have
+\begin{equation}
+ b_j=O_D(L+j+\mu)
+ \label{eq:arithmetic-scalar-bits}
+\end{equation}
+bits.  In particular, summation through a subtree does not cause exponential
+growth of numerator or denominator lengths.
+\end{lemma}
+
+\begin{proof}
+A midpoint coordinate has denominator dividing $W_j$.  Evaluation of a
+degree-$D$ polynomial has denominator dividing $C_{\mathrm{den}}W_j^D$.
+A derivative has denominator dividing $C_{\mathrm{den}}W_j^{D-1}$ when
+$D\ge1$, and is zero when $D=0$.
+Multiplication of a derivative by a midpoint or an endpoint returns a
+denominator dividing $C_{\mathrm{den}}W_j^D$.  The model's constant correction has
+denominator dividing $8q_M(Q2^{j+\mu})^2$.  Each of these denominators
+divides $Z_j$.  The same argument applies to derivative evaluations at the
+stage center used in $\lambda_t(c)$.
+
+All remaining dynamic-programming operations are addition, subtraction,
+endpoint evaluation, and selection of a finite minimum.  Products of a
+separator slope with an endpoint have the same polynomial-evaluation
+denominator just considered.  Induction over the tree therefore proves
+divisibility by the single $Z_j$ for all finite entries.  An empty-domain
+value is a symbolic $+\infty$ and requires no rational representation.
+
+For completeness, the magnitude bound follows from the unfolded
+configuration, rather than from repeated loose bounds on child messages.
+The sum of absolute polynomial values at bag midpoints is at most
+$\mathcal H$, and the sum of absolute gradient--displacement terms is at
+most $D\mathcal H$.  A bag correction has magnitude at most $MpR^2/2$.
+For any coordinate, a common separator slope sums derivatives from at most
+$k$ bags, so its magnitude is at most $kD\mathcal H/R$.  A difference
+between two coordinate copies has magnitude at most $2R$.  Thus the
+separator terms in \cref{eq:model-config} have total absolute value at most
+$2NpkD\mathcal H$.  The analogous expansion for a message intercept has
+one additional, unpaired own-separator term, of magnitude at most
+$pkD\mathcal H$.  The displayed $V$ bounds these quantities and the finite
+minima over them.  It also bounds the individual polynomial and affine
+quantities needed to form these entries.
+
+Now $\log_2 Z_j=O_D(L+j+\mu)$.  The logarithm of $1+V$ is $O_D(L)$:
+$N,p,k,S$ are bounded by the explicit input size, while $H,R$, and the
+supplied or computed $M$ have $O_D(L)$ bits.  Representing a scalar over
+$Z_j$ therefore needs $O_D(L+j+\mu)$ bits.  A sum of contributions from
+$N$ bags adds only the logarithm of the corresponding magnitude factor;
+it does not multiply their common denominators.
+\end{proof}
+
+\subsection{Bit work and certificate representation}
+
+Put $m=4/\theta$, the scalar shell count used in
+\cref{thm:regridding-main,prop:regridding-incidence}.  We retain its dependence
+on the numerical grading $\theta$ explicitly.  Stage $j$ has at most
+$m^p(j+1)$ leaves per bag.  The incidence construction of
+\cref{prop:regridding-incidence} gives at most
+$N3^q m^p(j+1)^2$ nonempty leaf--own-cell pairs, where $q\le p$.
+We count polynomial terms as part of the input, rather than treating their
+evaluation as one oracle call.  The work bound below uses the coarser
+factor $3^p$ in place of $3^q$.
+
+\begin{theorem}[Bit realization of a sufficiently graded run]
+\label{thm:arithmetic-bit}
+Use the affine models in \cref{eq:arithmetic-taylor} and the deterministic
+endpoint rule.  Suppose the quadratic-growth assumption holds with some
+$g>0$, and choose a dyadic grading satisfying
+\cref{eq:regridding-theta}.  In the constants of
+\cref{eq:regridding-constants}, set
+\[
+ \begin{aligned}
+ A&=Mp, & C_0&=k(k-1)p,
+ & B_0&=\frac{MC_0}{2}+\frac{Mp}{4},\\
+ \eta&=\frac g{20},
+ & C&=12B_0+\frac{6kC_0M^2}{\eta},
+ & B&=\max\left\{p,\frac{2C}{g}\right\}.
+ \end{aligned}
+\]
+Put
+\[
+ J=\max\left\{0,
+ \ceil{\log_2\left(s_0\sqrt{\frac{gBN}{\eps}}\right)}\right\}.
+\]
+The certificate test $F(x)-\LB\le\eps$ succeeds by stage $J$.  There is an
+exact rational implementation whose total bit work through that stage is
+\begin{equation}
+ \operatorname{poly}_D(L)+
+ O_D\!\left(
+ p(N+S)3^p m^p(J+1)^3\,\mathfrak b_J^2
+ \right),
+ \qquad
+ \mathfrak b_J=O_D\!\left(L+J+\mu+p\log(m+1)+\log(J+2)\right).
+ \label{eq:arithmetic-work}
+\end{equation}
+The logarithmic terms in $\mathfrak b_J$ also allow for table identifiers
+and counters.  Scalar rational values alone obey the smaller bound
+\cref{eq:arithmetic-scalar-bits}.
+\end{theorem}
+
+\begin{proof}
+The analytic certificate and error bounds apply because
+$\ell_{t,B}$ satisfies the model contract with $A=Mp$, and all local
+minima are exact.  By \cref{thm:regridding-main,eq:regridding-distance}, stage
+$j$ has certificate gap at most $gBNh_j^2$.  The chosen $J$ makes this at
+most $\eps$.  Actual incumbent values and the certificate test are evaluated
+exactly, so no additional rounding allowance is required.
+
+Polynomial and gradient evaluation at all leaf midpoints uses
+$O_D(Sm^p(j+1)+pNm^p(j+1))$ scalar operations: each explicit monomial has
+at most $D$ factors counted with multiplicity.  Common slopes at the stage
+center are computed from the sparse derivatives and the tree.  The local
+affine corner evaluation and the coordinate comparisons for each nonempty
+pair require $O_D(p)$ further operations.  Touching-cell minima and the
+remaining message operations use the incidence lists.  Thus a conservative
+stage bound is
+\[
+ O_D\bigl(p(N+S)3^p m^p(j+1)^2\bigr).
+\]
+This includes the explicit term count and does not assume an uncharged
+polynomial-evaluation oracle.
+
+For arithmetic, write stage coordinates over $Q2^{j+\mu}$, midpoints over
+$W_j$, and scalar costs over $Z_j$.  Monomial numerators are obtained by
+integer multiplication and exact scaling to these denominators.  No
+coordinate division or optimization-dependent denominator is introduced.
+The common-denominator representation also makes a message addition an
+integer addition and a message comparison an integer comparison.  Exact
+integer division, when used for scaling, and multiplication can be performed
+in $O(\mathfrak b_J^2)$ bit operations by elementary algorithms.  The
+coordinate tuples and list identifiers have polynomially bounded length
+included in $\mathfrak b_J$; their coordinatewise comparisons are charged
+to the factor $p$ in the stage bound. Table addresses fit in
+$\mathfrak b_J$ bits. Balanced dictionaries keyed by grid-index tuples
+give $O(p\mathfrak b_J^2)$ bit work per incidence lookup, also covered
+by this bound. Preprocessing the input denominators
+and the Hessian bound takes $\operatorname{poly}_D(L)$ bit operations.
+Finally, summing $(j+1)^2$ for $0\le j\le J$ gives
+$O((J+1)^3)$ and proves \cref{eq:arithmetic-work}.
+\end{proof}
+
+The numerical parameters in this theorem are not hidden inside a polynomial
+in the input length.  In particular, $m$ depends on the sufficient grading,
+which depends on $M/g$, $p$, and $k$, and the number of local records has the
+factor $m^p$.  The constants in $J$ likewise retain their stated dependence
+on $g,M,N,p,k,s_0$, and $\eps$.  For example,
+$F(x_1,x_2)=x_1^2+2^{-b}x_2^2$ on $[-1,1]^2$ has a rational input of
+$O(b)$ bits, Hessian bound $M=2$, and quadratic-growth constant $g=2^{-b}$.
+The ratio $M/g$ is exponential in $b$.  The theorem is a bit realization
+of the conditional numerical work bound; it does not assert polynomial time
+in $L$ when that conditioning or the bag dimension is unrestricted.
+
+\begin{proposition}[A compact exact certificate]
+\label{prop:arithmetic-certificate}
+The certificate of a sufficiently graded stage $J$, together with its
+incumbent, has a rational serialization of
+\[
+ O_D\bigl(L+pNm^p(J+1)b_J\bigr)
+\]
+bits.  Given this serialization and the original input, all local certificate
+inequalities and the final gap can be verified by exact rational operations
+with the same per-stage type of bound as in
+\cref{eq:arithmetic-work}.
+\end{proposition}
+
+\begin{proof}
+Store the stage index $J$, center and grading, leaf endpoint tuples, own
+separator cell endpoint tuples and intercepts, the shared slope
+$\lambda_t(c)$ for each nonroot bag, the intercept $b_{u,B}$ for each
+parent-leaf--child edge, the root lower bound, and the retained incumbent.
+The affine bag model is reconstructed from the midpoint formula, so
+its coefficients need not be repeated in the serialization.  Child
+minorants use their already stored shared slopes.  Likewise, local corner
+minima and proofs for every leaf--cell pair need not be stored: a verifier
+recomputes them.
+
+There are at most $Nm^p(J+1)$ leaves and no more own separator cells under
+the construction of \cref{lem:regridding-shell}.  Moreover,
+\[
+ \sum_t\abs{\operatorname{ch}(t)}\abs{\mathcal L_t}
+ \le (N-1)m^p(J+1).
+\]
+Thus the endpoint, slope, intercept, and incumbent data comprise
+$O(pNm^p(J+1))$ scalar entries.  Each has $O_D(b_J)$ bits by
+\cref{lem:arithmetic-denominators,lem:arithmetic-size}.  List references may
+be encoded as coordinate-index tuples and fit in the same total bound.
+Including the original input once gives the stated serialization size.
+
+A verifier first computes $M_0$, checks $M\ge M_0$ and that the stored
+stage center belongs to $X$, then checks the generated partitions,
+midpoint models, and shared slopes. For each child
+and parent leaf it checks the minorant
+intercept against every touching own cell.  It then evaluates the local
+affine minimum at the deterministic corner of every nonempty own-cell
+intersection and checks the corresponding certificate inequality.  The
+incidence bound controls the number of these checks.  Finally, it checks
+that every incumbent coordinate belongs to its original interval, and
+evaluates the incumbent objective, the root lower bound, and their
+difference exactly.  Validity then follows from
+\cref{prop:model-validity}; the verifier
+does not need a certificate of the quadratic-growth constant $g$.
+\end{proof}
+
+\subsection{An unknown growth constant}
+
+The positive number $g$ may be a promise used in the convergence analysis
+rather than part of the rational input.  The stopping test does not use it:
+every correctly formed certificate gives $\LB\le f^*$, and an actual
+incumbent gives $F(x)\ge f^*$.  The inequality $F(x)-\LB\le\eps$ therefore
+certifies the required accuracy for every grading, including a grading too
+coarse for the convergence proof.  The smoothness bound is different: it
+is needed for model validity itself and is computed or certified before
+any run is accepted.
+
+\begin{proposition}[Operation-budget search without a supplied $g$]
+\label{prop:arithmetic-search}
+For the rational polynomial input, suppose the quadratic-growth assumption
+holds for some unknown $g>0$.  Run the dyadic grading candidates by the
+following deterministic schedule.  In round $r=1,2,\ldots$, start each
+candidate $1\le\mu\le r$ from the original center, and give it at most $2^r$
+counted bit operations, including final serialization; accept the first
+candidate that passes the exact certificate-gap test and finishes writing
+its certificate within its budget.
+
+For any sufficient candidate $\mu_*$, let $T_*$ be a bound of the form
+\cref{eq:arithmetic-work} for its run through the corresponding $J$, enlarged
+if necessary so that $T_*\ge\max\{2,2^{\mu_*}\}$.  The search terminates,
+returns a certified $\eps$-accurate incumbent, and uses
+$O(T_*\log T_*)$ total bit work.  It does not need a stage cap or an estimate
+of $g$.
+\end{proposition}
+
+\begin{proof}
+Each candidate uses the already valid smoothness bound and exact local
+arithmetic.  Therefore any successful gap test is sound, independently of
+whether that candidate satisfies the sufficient grading inequalities.
+The existence of a positive $g$ guarantees a finite sufficient integer
+$\mu_*$ because all inequalities in \cref{eq:regridding-theta} hold when
+$\theta$ is sufficiently small.  Let
+$R_* = \ceil{\log_2 T_*}$.  The enlargement of $T_*$ ensures
+$\mu_*\le R_*$.  Round $R_*$ includes that candidate and supplies at least
+$T_*$ bit operations, so it completes its successful run unless an earlier
+candidate has already succeeded.
+
+The sufficient-run bound covers serialization: its cost is at most the
+output length in \cref{prop:arithmetic-certificate}, which is bounded by
+\cref{eq:arithmetic-work}. The schedule restarts candidates and hence
+requires no stored suspended states. Charging the bounded runs to their
+operation budgets gives
+\[
+ \sum_{r=1}^{R_*}r2^r
+ =(R_*-1)2^{R_*+1}+2
+ \le 4T_*\ceil{\log_2 T_*}.
+\]
+These limits are elementary-step limits for the fixed exact-arithmetic
+algorithm.  A binary countdown enforces a trial budget: over $2^r$
+decrements, its total digit changes and head movements are $O(2^r)$,
+since the successive digit positions are changed at most
+$2^r,2^{r-1},\ldots,1$ times, respectively.  A maintained end marker detects
+exhaustion without scanning the full counter at every step.  Initializing
+the counter costs $O(r)$ per trial, and round enumeration is likewise
+covered by the displayed sum.  Hence scheduling adds only a constant
+factor, rather than another logarithmic factor.  Stopping an unsuccessful trial
+does not assert any mathematical conclusion about it.  The input
+preprocessing is done once and is already included in $T_*$.
+\end{proof}
+
+The logarithmic factor is an upper bound for this particular simple search,
+not a lower bound on all ways of handling unknown parameters.  The first
+successful candidate may use a different grading and a different stage
+from $\mu_*,J$.  Its accuracy follows from its own certificate test, and
+the preceding proposition bounds its work by the search budget.  The compact
+size bound for a prescribed sufficiently graded stage should therefore not
+be transferred to that first successful output without its actual grading
+and stage.  A serialization of the actual output is always bounded by the
+operations used to produce it, in addition to the input it references.
+
+Finally, guessing a smoothness bound and applying the same stopping rule is
+not justified: an insufficient smoothness bound can make a purported lower
+bound invalid.  The explicit polynomial Hessian bound removes this issue.
+The search varies only the grading; every candidate uses valid models from
+the outset.

@@ -1,0 +1,162 @@
+\section{Validation of floating-point bounds}\label{sec:numerical-validation}
+
+This appendix gives the row correction and dual-bound evaluation used by the
+numerical propagator of Section~\ref{sec:algorithms-policy}. Each stored
+floating-point number is treated as the exact dyadic rational it represents.
+The LP variables have a finite box of bounds.
+
+\begin{proposition}[Outward row correction]\label{prop:row-correction}
+Let $a^\top z\le\beta$ be valid for a set $S$ contained in the box
+$Z=[\underline z,\overline z]$. For any vector $\tilde a$, every $z\in S$
+satisfies $\tilde a^\top z\le\tilde\beta$ whenever
+\begin{equation}\label{eq:row-correction}
+ \tilde\beta\ \ge\ \beta+\sum_j
+ \max\bigl\{(\tilde a_j-a_j)\underline z_j,\,
+            (\tilde a_j-a_j)\overline z_j\bigr\}.
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+For $z\in S$,
+$\tilde a^\top z=a^\top z+\sum_j(\tilde a_j-a_j)z_j\le\beta+
+\sum_j\max_{\underline z_j\le s\le\overline z_j}(\tilde a_j-a_j)s$, and a linear
+function of $s$ attains its maximum over an interval at an endpoint.
+\end{proof}
+
+The implementation takes $\tilde a_j$ to be the floating-point number nearest
+to $a_j$, evaluates the right-hand side of~\eqref{eq:row-correction} in exact
+rational arithmetic over the LP's variable bounds, and rounds it upward to a
+floating-point $\tilde\beta$. The coefficients of the original rows, of the
+McCormick rows, and of the tangents are floating-point numbers already, while
+the secant slope $\ell_i+u_i$ may need correction; right-hand sides such as
+$\ell_i\ell_j$ and $p^2$ stay exact until the final upward rounding.
+Proposition~\ref{prop:row-correction} applies to each product row with $S$
+the set of exact lifts $(x,(x_ix_j))$ of the points $x\in B$, and to each
+original row and the cutoff row with $S$ the set of exact lifts of the
+points of $B$ that satisfy that row. Both sets lie in the LP's variable box
+by construction.
+
+The LP solver returns approximate inequality multipliers. They need not be
+dual feasible. The following bound uses any nonpositive multipliers and absorbs
+the dual residual through the variable box. Bounds of this kind, evaluated
+with directed rounding, are an established way to obtain safe LP bounds
+from approximate dual solutions~\cite{neumaier2004-safe-bounds-in-linear-and};
+we state the form we use. It is the
+minimization form of
+Proposition~\ref{prop:corrected-dual-con}, which applies the same idea to a
+stored dual vector after the rows have changed; here the rows are current and
+the multipliers inexact.
+
+\begin{proposition}[Dual bound with a residual term]\label{prop:dual-residual}
+Consider $\mu=\min\{d^\top z:Az\le b,\ z\in Z\}$ with a finite box
+$Z=[\underline z,\overline z]$, and $\mu=+\infty$ if the LP is infeasible.
+For every $y\le0$, with $r=d-A^\top y$,
+\begin{equation}\label{eq:dual-residual}
+ \mu\ \ge\ y^\top b+\sum_j\min\{r_j\underline z_j,\,r_j\overline z_j\}.
+\end{equation}
+The right-hand side is the LP dual function at $y$, with the multipliers of
+the variable bounds eliminated; its maximum over $y\le0$ equals $\mu$ when the
+LP is feasible.
+\end{proposition}
+
+\begin{proof}
+If the LP is infeasible, there is nothing to prove.
+For feasible $z$, $y\le0$ and $Az\le b$ give $y^\top Az\ge y^\top b$, so
+$d^\top z=y^\top Az+r^\top z\ge y^\top b+r^\top z$. Minimizing $r^\top z$
+separately over each interval gives~\eqref{eq:dual-residual}. For the second
+statement, the LP dual of $\mu$ has multipliers $y\le0$ for $Az\le b$ and
+$\alpha,\gamma\ge0$ for $z\ge\underline z$ and $-z\ge-\overline z$, with
+$d=A^\top y+\alpha-\gamma$ and objective
+$y^\top b+\underline z^\top\alpha-\overline z^\top\gamma$. For fixed $y$,
+the best choice is $\alpha_j=\max\{r_j,0\}$ and $\gamma_j=\max\{-r_j,0\}$, which
+gives the right-hand side of~\eqref{eq:dual-residual} because
+$\underline z_j\le\overline z_j$. LP strong duality completes the proof.
+\end{proof}
+
+The implementation clips the returned multipliers to $y=\min\{\tilde y,0\}$ and
+evaluates~\eqref{eq:dual-residual} with directed rounding; it rejects
+multipliers that are not finite. Because the proposition holds for every
+$y\le0$, the validity of the result depends neither on the accuracy of the
+multipliers nor on the solver's sign convention for them: poor or wrongly
+signed multipliers only weaken the bound.
+
+Let $\bar F$ be the set of binary64 numbers together with $\pm\infty$, and
+let $\Omega$ be its largest finite element. For $t\in\bar F$, let
+$\operatorname{pred}(t)$ and $\operatorname{succ}(t)$ be the next smaller and
+the next larger element of $\bar F$, the IEEE~754 operations nextDown and
+nextUp, with $\operatorname{pred}(-\infty)=-\infty$ and
+$\operatorname{succ}(+\infty)=+\infty$. Thus
+$\operatorname{pred}(+\infty)=\Omega$ and $\operatorname{succ}(-\infty)=-\Omega$,
+and both maps are nondecreasing. For an addition, subtraction, or
+multiplication of elements of $\bar F$ whose exact result $s$ is defined in
+the extended reals, write $\operatorname{fl}(s)$ for the computed result. We
+assume that rounding is \emph{faithful}: $\operatorname{fl}(s)=s$ if
+$s\in\bar F$, and otherwise $\operatorname{fl}(s)$ is one of the two
+consecutive elements of $\bar F$ that enclose $s$.
+
+\begin{lemma}[One-step enclosure]\label{lem:enclosure}
+Under faithful rounding,
+$\operatorname{pred}(\operatorname{fl}(s))\le s\le
+\operatorname{succ}(\operatorname{fl}(s))$ for every exact result $s$.
+\end{lemma}
+
+\begin{proof}
+If $\operatorname{fl}(s)=s$, the claim holds because
+$\operatorname{pred}(t)\le t\le\operatorname{succ}(t)$ for every $t\in\bar F$.
+Otherwise let $s^-<s<s^+$ be the consecutive elements of $\bar F$ that
+enclose $s$. If $\operatorname{fl}(s)=s^-$, then
+$\operatorname{pred}(s^-)\le s^-<s<s^+=\operatorname{succ}(s^-)$; the case
+$\operatorname{fl}(s)=s^+$ is symmetric.
+\end{proof}
+
+With gradual underflow, every IEEE~754 rounding direction is faithful,
+including overflow to $\pm\infty$ or to $\pm\Omega$. The argument therefore
+also covers a host solver that leaves a directed rounding mode active.
+Flush-to-zero and denormals-are-zero modes are not faithful, and the
+argument assumes that they are disabled.
+
+The evaluation computes three enclosures, each preserved by
+Lemma~\ref{lem:enclosure}; the first two are accumulated in one sweep over
+the rows with $y_r\ne0$.
+\begin{enumerate}
+\item A lower bound $\sigma$ of $y^\top b$: starting from $\sigma=0$, add
+$\operatorname{pred}(\operatorname{fl}(y_rb_r))$ for every row with
+$y_r\ne0$ and apply $\operatorname{pred}$ to every rounded sum.
+\item An interval $[\underline r_j,\overline r_j]$ containing $r_j$: start
+from $d_j$, and for each nonzero $a_{rj}$ with $y_r\ne0$, let
+$t=\operatorname{fl}(a_{rj}y_r)$ and update
+$\underline r_j\leftarrow\operatorname{pred}(\operatorname{fl}(\underline r_j-\operatorname{succ}(t)))$
+and
+$\overline r_j\leftarrow\operatorname{succ}(\operatorname{fl}(\overline r_j-\operatorname{pred}(t)))$.
+\item The bound $\tilde\mu$: starting from $\sigma$, add, for each $j$,
+$\operatorname{pred}$ of the smallest of the four rounded products of
+$\{\underline r_j,\overline r_j\}$ and $\{\underline z_j,\overline z_j\}$,
+again applying $\operatorname{pred}$ to every rounded sum.
+\end{enumerate}
+Overflow cannot produce an undefined operation in the first two steps. The
+lower bounds $\sigma$ and $\underline r_j$ start finite and are afterwards
+results of $\operatorname{pred}$, so they are never $+\infty$, and neither
+is the term $\operatorname{pred}(\operatorname{fl}(y_rb_r))$ added to
+$\sigma$; the term $\operatorname{succ}(t)$ subtracted from $\underline r_j$
+is never $-\infty$. Symmetrically, $\overline r_j$ is never $-\infty$, and
+$\operatorname{pred}(t)$ is never $+\infty$. No sum or difference therefore
+has the form $\infty-\infty$. An infinite intermediate
+value is $-\infty$ in a lower bound or $+\infty$ in an upper bound, which
+remains valid. The third step rejects the computation if any of its products
+or the final value is not finite; an accepted result thus uses finite
+$\underline r_j$ and $\overline r_j$. For each $j$, let $p_j$ be the smallest
+of the four exact vertex products. The smallest rounded product is at most
+$\operatorname{fl}(p_j)$, and $\operatorname{pred}$ is nondecreasing, so the
+term added for $j$ is at most $\operatorname{pred}(\operatorname{fl}(p_j))\le p_j$.
+Since the bilinear function $\rho s$ attains its minimum over a rectangle at
+a vertex, an accepted result satisfies
+\[
+ \tilde\mu\ \le\ y^\top b+\sum_j
+ \min_{\rho\in[\underline r_j,\overline r_j],\,s\in[\underline z_j,\overline z_j]}\rho s
+ \ \le\ y^\top b+\sum_j\min\{r_j\underline z_j,r_j\overline z_j\}\ \le\ \mu .
+\]
+These arguments assume IEEE binary64 arithmetic with gradual underflow.
+They establish a bound for the stored floating-point LP.
+Together with Proposition~\ref{prop:row-correction}, that LP is a relaxation of
+the exact product graph of the stored model on $B$. They do not relate the
+stored binary model to a decimal or symbolic model upstream of its import.

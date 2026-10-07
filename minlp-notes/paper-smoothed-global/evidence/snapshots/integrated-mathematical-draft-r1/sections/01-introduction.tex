@@ -1,0 +1,524 @@
+\section{Introduction}\label{sec:intro}
+
+Global optimization asks for a provably optimal solution of a nonconvex
+problem, not a locally optimal or approximately optimal one. For quadratic
+and polynomial objectives with continuous and integer variables this is hard
+in the worst case, even under strong structural restrictions. Minimizing a
+quadratic function with a single negative eigenvalue over a polytope is
+NP-hard~\citep{pardalos1991-quadratic-programming-with-one}, and box-constrained quadratic
+programming remains strongly NP-hard when its interaction graph has
+treewidth two~\citep{pia2026-treewidth-and-the-complexity-of}. An exact
+method must also handle degenerate configurations: ties between distant
+solutions, flat optimal faces, and optimal values very close to a decision
+threshold. The analysis below treats each of them explicitly. Spatial
+branch-and-bound solvers handle many instances well, but they have no
+polynomial guarantee.
+
+Smoothed analysis~\citep{spielman2004-smoothed-analysis-of-algorithms-why} measures the cost of an algorithm
+on a worst-case instance after a small random perturbation of its data. For
+discrete optimization with a linear objective, polynomial smoothed
+complexity is closely tied to pseudo-polynomial
+solvability~\citep{beier2006-typical-properties-of-winners-and,roglin2007-smoothed-analysis-of-integer-programming}.
+For continuous problems, a linear tilt removes degeneracy qualitatively: for
+semialgebraic problems under a constraint qualification, generic tilts give
+a unique minimizer with quadratic
+growth~\citep{lee2017-generic-properties-for-semialgebraic-programs}. Such
+statements give no probability bounds, and an exact algorithm in the bit
+model needs more. It needs quantitative probability bounds, a finite rational law
+that a Turing machine can sample, and an exact way to finish the draws that
+remain degenerate, which under a finite law have positive probability.
+
+This paper studies exact global optimization under one random linear
+perturbation. A rational base instance with objective $F_0$ and feasible set
+$X$ is given. A vector $\gamma$ is drawn once from a finite rational law that
+is computed from the base instance before sampling, and the task is an exact
+global minimizer of the sampled objective
+\[
+ F_\gamma(x)=F_0(x)+\gamma^{\mathsf T}x\qquad\text{on }X .
+\]
+We ask for algorithms that are correct on every draw, never resample, and
+have expected bit complexity polynomial in the input length for fixed
+structural parameters, with explicit dependence on numerical ratios between
+curvature, widths, and the noise scale $\sigma$. \Cref{sec:model} makes this
+model precise.
+
+\subsection{Main results}\label{sec:intro:results}
+
+The results follow four structural routes. They use different structure,
+and partly different noise models. \Cref{tab:intro:results} lists the main
+theorems.
+
+\emph{Few negative curvature directions} (\cref{sec:qp}). For a rational
+quadratic program on a bounded polytope whose Hessian has $k$ negative
+eigenvalues, the nonconvexity lies in a $k$-dimensional factor. The
+algorithm searches $k$ auxiliary coordinates that carry the negative
+curvature and solves a convex quadratic program at each query. Under an
+independent Gaussian-like finite law on every original coefficient, the
+expected bit work is $f(n_z,k,1+\nu\diam(\mathcal P)/\sigma)\poly(I)$ with an
+absolute exponent, also for bounded mixed-integer programs with $n_z$
+integer variables; here $\nu$ is the largest negative curvature and
+$\mathcal P$ the polyhedral relaxation (\cref{thm:qp:gauss}). Noise aligned
+with the negative directions gives a similar fixed-parameter bound for
+continuous problems (\cref{thm:qp:aligned}). Under independent uniform noise
+on every coefficient the bound is polynomial for each fixed $k$ but contains
+a power of the dimension that grows with $k$ (\cref{thm:qp:uniform}), and
+\cref{thm:lim:ambient} shows that the counted quantities really depend on
+the dimension. For $k\le2$ a different argument gives a bound linear in a
+numerical ratio (\cref{thm:qp:two}). Convex piecewise-quadratic unaries with
+rational breakpoints minus a supplied concave term of rank $k$ allow
+arbitrarily many integer variables
+(\cref{thm:qp:sep,thm:qp:sep-gauss}); on integer boxes with separable convex
+polynomial terms, a lattice of attainable objective values gives exactness
+without any fallback (\cref{thm:int:lowrank}).
+
+\emph{Sparse interactions} (\cref{sec:sp,sec:con}). For a fixed-degree
+polynomial on a mixed box whose monomials fit the bags of a supplied tree
+decomposition with at most $p$ coordinates per bag, the expected bit work is
+\[
+ C_0^p\Bigl[4+\frac{(1+n/2)Lw_{\max}}{2\sigma}\Bigr]^p\poly_d(I)
+\]
+under independent uniform noise on all coordinates, where $L$ bounds the
+coordinate second derivatives and $w_{\max}$ the coordinate widths
+(\cref{thm:sp:main}). The integer dimension and the negative inertia are
+unrestricted, and no growth or nondegeneracy assumption is made. The bound is
+polynomial for each fixed $p$, but it is not fixed-parameter in $p$, and
+\cref{thm:lim:width} shows that its factor $n^{\Omega(p)}$ is necessary for
+the retention rule used. The method extends to equality constraints given by
+explicit polynomial maps or monotone implicit equations, to affine state
+recurrences with polynomial actuators, to products of simplices, and to
+order constraints $x_i\le x_j$ with binary variables
+(\cref{thm:con:graph,thm:con:actuator,thm:con:simplex,thm:con:order}). For
+arbitrary sparse affine constraints no such result holds unless
+$\mathrm{NP}\subseteq\mathrm{ZPP}$ (\cref{thm:lim:constraints}).
+
+\emph{A small core with tractable recourse} (\cref{sec:rec,sec:int}).
+Suppose that fixing $k$ continuous core coordinates leaves a residual
+problem that an oracle solves exactly, or with certified error, on every
+residual subbox: a convex quadratic or polynomial problem, a quadratic
+program whose residual interaction graph is a forest, or a native-integer
+problem with an exact oracle under bound tightening. Then the expected bit
+work of the core search is at most $8^k[3+(1+k)L/(2\sigma)]^k$ times a
+polynomial in the input length that includes the oracle cost, where $L$
+bounds the curvature of the core coordinates only; integer recourse adds an
+exact solve of a small polynomial problem of cost $c_d^k$ times a polynomial
+(\cref{thm:rec:qp,thm:rec:poly,thm:int:native}). The number of residual
+variables, their coupling, and their curvature enter only through the input
+length. Under noise on all coordinates, residual convexity suffices. Under
+noise on the core alone, our continuous point theorem uses a certified uniform
+strong-convexity modulus of continuous recourse (\cref{thm:rec:core-only}),
+or, for separable convex integer flows and totally unimodular recourse, a
+certificate that describes all tied optimal flows at once
+(\cref{thm:int:face,thm:int:flow-boundary,thm:int:tu}).
+These are sufficient conditions. The companion results described below
+also provide point oracles for residual-convex cubics and supplied
+convexifiers; general arithmetic obstructions start at degree four
+(\cref{sec:lim:points}).
+
+\emph{Strong noise} (\cref{thm:int:strong-field}). Without any width or core
+parameter, if the noise scale dominates the variation of every coordinate
+derivative, weighted by the size of the coordinate's domain and the degree
+of the interaction graph, then most coordinates are pinned at a bound by the
+sign of their derivative, and the others form small random components of
+the interaction graph. Each component is solved exactly by a fixed-degree
+algebraic procedure (\cref{thm:int:solver}). Here the noise is large, not
+small, and the result describes strongly random linear parts rather than
+slight perturbations. The sufficient scale \eqref{eq:int:sf-regime} is
+conservative: for nonquadratic continuous components it contains the large
+effective solver base $c_d$, whereas the quadratic case uses the smaller
+weight $a_i=3$.
+
+\begin{table}[tbp]
+\centering
+\footnotesize
+\caption{Main bounds, exact on every draw of one finite law. Here $k$ is
+negative inertia, factor rank, or core size; $p$ is bag size; $b$ is sampled
+bits per coefficient, or Gaussian accuracy;
+$Q_{\rm ex}=[3+(1+k/2)L/(2\sigma)]^k$ and
+$Q_{\rm ap}=[3+(1+k)L/(2\sigma)]^k$. FPT parameters include numerical
+ratios. Usual outputs are listed; rare fallback outputs can be exponentially
+long.}
+\label{tab:intro:results}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.12\textwidth}
+>{\raggedright\arraybackslash}p{0.19\textwidth}
+>{\raggedright\arraybackslash}p{0.1\textwidth}
+>{\raggedright\arraybackslash}p{0.12\textwidth}
+>{\raggedright\arraybackslash}X
+>{\raggedright\arraybackslash}p{0.14\textwidth}@{}}
+\toprule
+Result & Structure & Noise & $b$ & Expected bit work & Output\\
+\midrule
+\multicolumn{6}{@{}l}{\emph{Few negative directions}}\\
+\Cref{thm:qp:gauss} & QP on a mixed polytope & Gaussian-like & $\poly(I)$ &
+$f(n_z,k,1+\nu\diam(\mathcal P)/\sigma)\poly(I)$ & rational\\
+\Cref{thm:qp:aligned} & QP on a polytope & aligned & $\poly(I)$ &
+$C_0^k(1+\mathcal H_{\rm al})\poly(I)$, FPT in $k$ and factor ratios & rational\\
+\Cref{thm:qp:uniform} & QP on a mixed polytope & uniform & $\poly(I)$ &
+polynomial for fixed $k,n_z$ and numerical scales; power of $n$ grows with $k$ & rational\\
+\Cref{thm:qp:two} & QP on a polytope, $k\le2$ & uniform or Gaussian-like &
+$\poly(I)$ & $\poly(I)(1+\nu S/\sigma)$ & rational\\
+\Cref{thm:qp:sep,thm:qp:sep-gauss} & convex piecewise-quadratic unaries,
+rational knots, minus rank-$k$
+concave, any $n_z$ & aligned, uniform, Gaussian-like & $\poly(I)$ & law-dependent
+factors of the cited theorems; no factor for $n_z$ & rational\\
+\Cref{thm:int:lowrank} & integer box, convex piecewise-polynomial unaries
+minus rank-$k$ concave & aligned & $\poly(I)$ & $8^kH_{\rm rat}\poly(I)$, no
+fallback & rational\\
+\midrule
+\multicolumn{6}{@{}l}{\emph{Sparse interactions}}\\
+\Cref{thm:sp:main} & degree-$d$ polynomial on a mixed box, bag size $p$ &
+uniform & $\poly_d(I)$ & $C_0^p\Theta^p\poly_d(I)$ with
+$\Theta=4+(1+n/2)Lw_{\max}/(2\sigma)$ & implicit; rational for QP\\
+\Cref{thm:con:graph,thm:con:actuator,thm:con:simplex,thm:con:order} &
+graphs, actuator recurrences, simplices, orders with binaries & uniform &
+$\poly_d(I)$ & polynomial for fixed $p$ and displayed numerical scales & charted or implicit\\
+\midrule
+\multicolumn{6}{@{}l}{\emph{Small core with tractable recourse}}\\
+\Cref{thm:rec:qp} & quadratic, exact recourse on every subbox & uniform &
+$\poly(I)$ & $8^kQ_{\rm ex}\poly(I)$ & rational\\
+\Cref{thm:rec:poly} & certified recourse, e.g.\ convex residual & uniform &
+$\poly_d(I)$ & $8^kQ_{\rm ap}\poly_d(I)$ & implicit\\
+\Cref{thm:rec:core-only} & residual Hessian $\succeq\mu I$ & core only &
+$\poly_d(I)$ & $8^kQ_{\rm ap}\poly_d(I)$ & implicit\\
+\Cref{thm:int:native} & native-integer recourse, exact oracle & uniform &
+$\poly_d(I)$ & $[8^kQ_{\rm ex}+c_d^k]\poly_d(I)$ & label $+$ algebraic, size
+$c_d^k\poly_d(I)$\\
+\Cref{thm:int:flow-interior}, \cref{cor:int:bilinear} & convex integer flows,
+interior cores or bilinear coupling & core only & $\poly_d(I)$ &
+$[8^kQ_{\rm ex}+c_d^k]\poly_d(I)$ & label $+$ algebraic\\
+\Cref{thm:int:flow-boundary,thm:int:tu} & convex integer flows, totally
+unimodular systems & core only & $f_d(k)\poly_d(I)$ &
+$f_d(k)Q_{\rm ex}\poly_d(I)$ & label $+$ algebraic, size
+$f_d(k)\poly_d(I)$\\
+\midrule
+\multicolumn{6}{@{}l}{\emph{Strong noise}}\\
+\Cref{thm:int:strong-field} & degree-$d$ polynomial on a mixed box & strong
+uniform & any & $\poly_d(I+b)$ times a subcritical branching factor &
+components; rational for QP\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+In every route the output is an exact optimizer of the sampled instance. For
+quadratic objectives on rational polyhedral and box domains it is rational;
+an implicit graph lift can be irrational. For polynomial objectives the usual
+output is a compact implicit descriptor: fixed integer labels and active
+bounds, and a small box on which the objective is certified strongly convex,
+so that its unique minimizer there is the global optimizer. The descriptor
+supports evaluation of the optimizer and the optimal value to any requested
+precision in time polynomial in the precision. Results that finish with a
+small exact algebraic solve return all coordinates of the optimizer as
+functions of one real algebraic number. The strong-noise route returns one
+such representation per random component, with the optimal value as a sum
+of component values. Bilinear flow coupling and interior optimal cores need
+only polynomially many sampling bits (\cref{cor:int:bilinear,thm:int:flow-interior}).
+
+\subsection{One mechanism}\label{sec:intro:mechanism}
+
+The first three routes use one mechanism with four steps. Stating it once
+explains what each theorem needs from its structure.
+
+\emph{Curvature-corrected refinement preserves global optimizers.} Each route
+has a search space, namely auxiliary factor coordinates, bag tuples, or core
+coordinates, and a value function on it obtained by minimizing over the other
+variables. Minimizing over a fixed feasible set preserves an upper bound on
+coordinate curvature. Hence the minimum of the value function over a grid
+cell is at least its least corner value minus a correction proportional to
+the curvature bound and the squared mesh. Refining only the cells whose
+corrected bound does not exceed the incumbent never discards a global
+optimizer. This holds on every draw, including draws with ties.
+
+\emph{Independent linear noise bounds the expected number of retained
+states.} A retained cell has a corner whose value is within a fixed multiple
+of the sum of the correction and certified evaluation error of the optimum.
+Comparing such a corner with its two grid
+neighbors in one coordinate confines that coordinate's noise coefficient to
+an interval whose length is proportional to the curvature bound times the
+mesh. The interval does not depend on the other coefficients of the search
+space, so when these coefficients are independent the probabilities
+multiply. Summing over a deterministic grid gives an expected count that
+does not depend on the mesh. The count is taken over a grid fixed before
+sampling, so no independence between the noise and the adaptively retained
+cells is assumed. The direct product argument applies to sparse box bags,
+cores, and aligned noise; constrained-domain variants use their proved
+directional and transport bounds. Under uniform noise on all
+coefficients of the low-rank route they are not, because the factor
+coefficients depend on the residual noise; a conditional volume estimate
+(\cref{lem:qp:volume}) replaces independence there and costs a power of
+the dimension, and Gaussian-like noise restores independence in the
+continuous proxy.
+
+\emph{Exact closure finishes the sampled problem.} Refinement alone gives
+approximations. An exact answer comes from a certificate proving that a
+small exactly solvable problem contains a global optimizer: a region on
+which a parametric convex quadratic program has one formula, a strongly
+convex patch after fixing integer labels and active bounds, a gap that
+excludes every competing integer label, or a certificate that fixes the face
+of the core and the set of tied optimal flows. Each certificate is checked
+exactly and is sound on every draw.
+
+\emph{A base-selected finite law pays for an exact fallback on the same
+draw.} The certificate passes by a refinement depth computed from base data
+unless the draw lies in a rare exceptional set: small growth, a small
+gradient at an active bound, a near-tie between integer labels, or noise
+near one of finitely many fixed hyperplanes. The finite law is chosen fine
+enough that this set has probability at most the reciprocal of the cost
+factor of an exact fallback algorithm, which then runs on the same draw. The
+cost factor is fixed first, then the thresholds and the depth, and the law
+last, so that no precision depends on the sampled coefficients it is meant
+to control.
+
+The common invariant is a valid curvature-corrected bound together with a
+noise comparison whose deterministic part excludes the tested coefficient.
+Direct recourse obtains it by minimizing over a feasible set independent of
+the searched coordinates. Graph charts and order transport replace that
+literal premise with their proved curvature and feasible-comparison
+arguments. The boundaries in \cref{sec:lim} delimit these mechanisms. Two
+results finish differently: the integer lattice theorem
+(\cref{thm:int:lowrank}) stops exactly once a certified gap falls below the
+spacing of the attainable objective values, and the strong-noise theorem
+(\cref{thm:int:strong-field}) solves its random components exactly on every
+draw. Neither needs a rare fallback.
+
+\subsection{What the guarantees mean}\label{sec:intro:meaning}
+
+Several distinctions matter for reading the theorems.
+
+\emph{Parameters.} A fixed-parameter bound has the form $f(\kappa)\poly(I)$
+with an exponent independent of $\kappa$; the low-rank results under aligned
+or Gaussian-like noise and the core results are of this form, with the
+numerical ratio included in $\kappa$. The sparse results are polynomial for
+each fixed width but are not fixed-parameter in the width. A bound that is
+polynomial in a ratio such as $L/\sigma$ is polynomial in its magnitude.
+For fixed structure, polynomially bounded ratios give polynomial work, but
+$(1+L/\sigma)^{O(k)}\poly(I)$ with $L/\sigma=\poly(I)$ gives $I^{O(k)}$;
+it does not give FPT in $k$ alone.
+
+\emph{Every draw versus expectation.} Correctness holds on every draw,
+including ties and draws with a continuum of optimizers. Only the work bound
+is an expectation, over all draws; on rare draws the work can be exponential.
+
+\emph{The law.} The finite law is constructed from the base instance; its
+grid size or accuracy is chosen after a fallback cost factor and a stopping
+depth are known. The theorems do not cover an arbitrary finite law, a coarse
+grid chosen independently of the instance, or an arbitrary approximation of
+a Gaussian. Most results use polynomially many random bits per coefficient,
+and for them one resolution depending only on the input length suffices
+(\cref{prop:model:uniform}); the nonlinear integer-flow results with
+arbitrary core faces use a number of bits that depends on the core size.
+
+\emph{Outputs.} Rational outputs are explicit. Implicit outputs are compact
+descriptors whose global optimality is established by a separate proof
+record; the descriptor has polynomial length, the record has polynomial
+length only in expectation, and evaluation to $q$ bits costs time
+polynomial in $I+q$. Algebraic outputs from a fallback can be exponentially
+long on rare draws. No result promises expanded minimal polynomials of small
+degree, exact comparisons of sums of unrelated algebraic numbers, or a
+canonical choice among tied optimizers.
+
+\emph{The original objective.} All theorems optimize the sampled objective.
+\Cref{prop:model:regret} turns a sampled solution into a certified interval
+for the original optimum, of length at most the width of the realized
+perturbation over $X$, $\max_X\gamma^{\mathsf T}x-\min_X\gamma^{\mathsf T}x$,
+plus the evaluation error. Choosing the noise scale so that the largest
+possible such width is at most $\varepsilon/2$, which for Gaussian-like laws
+must account for their support radius (\cref{sec:model:original}), for routes valid at every positive scale, gives
+on every draw an exactly feasible point whose original objective value is
+certified to be within $\varepsilon$ of optimal. The expected work is
+polynomial in $1/\varepsilon$ when the structure and the other numerical
+parameters are fixed, and polynomial in $I$ and $1/\varepsilon$ only when
+those parameters are polynomially bounded. On implicit graphs the
+feasible point has rational free coordinates and an exact algebraic lift. We
+do not claim that this improves on dedicated approximation algorithms, and
+the strong-noise results give no such consequence. No result solves the unperturbed problem exactly,
+which is consistent with the worst-case hardness cited above.
+
+\subsection{Boundaries}\label{sec:intro:boundaries}
+
+\Cref{sec:lim} delimits the method by explicit families. For the sparse
+retention rule, connected quartic instances of treewidth $p-1$, with fixed
+curvature, widths, and noise scale, retain more than $(5n/(6p))^{p/2}$ cells
+on every draw, so the rule admits no bound $f(p)\poly(I)$
+(\cref{thm:lim:width}); replacing the global rounding allowance by a bag-local
+one deletes all optimizers (\cref{prop:lim:local}). Certified conditional
+values give one sound way to remove the ambient dimension from this count
+(\cref{prop:sp:conditional,prop:lim:conditional}). Under uniform ambient
+noise, perfectly conditioned low-rank instances have expected counts growing
+like $(N/k)^{k/4}$ (\cref{thm:lim:ambient}). Objective noise does not make
+arbitrary sparse affine constraints of treewidth three tractable unless
+$\mathrm{NP}\subseteq\mathrm{ZPP}$, because every exact sampled optimizer of
+a suitable family decides \textsc{Subset Sum} (\cref{thm:lim:constraints}).
+Under core-only noise with convex quartic
+residual problems, a constant-accuracy residual point evaluator with
+expected polynomial work would give Las Vegas algorithms for Square Root Sum
+and $\PosSLP$. The Square Root Sum implication already holds at treewidth
+two with bounded coefficients; the $\PosSLP$ construction has neither
+restriction (\cref{thm:lim:posslp}). Value accuracy with polynomially
+many bits does not localize residual points (\cref{prop:lim:value}). Single-flow
+certificates fail at boundary core optima on an event of probability
+$1/16$ (\cref{prop:lim:flow}). These are limitations of specified mechanisms
+or conditional implications, not unconditional lower bounds, and several of
+the instances are easy for other methods.
+
+\subsection{Relation to prior work}\label{sec:intro:prior}
+
+The ingredients of the mechanism are classical, and we use them as such:
+semiconcavity and corner rounding on grids, nonserial dynamic programming on
+tree decompositions~\citep{bertele1972-nonserial-dynamic-programming}, exact polynomial-time convex
+quadratic programming~\citep{kozlov1980-the-polynomial-solvability-of-convex}, convex optimization
+in the bit model~\citep{grotschel1988-geometric-algorithms-and-combinatorial-optimization}, exact convex
+mixed-integer quadratic programming in fixed integer
+dimension~\citep{pia2025-convex-quadratic-sets-and-the}, separable convex optimization over totally
+unimodular systems~\citep{hochbaum1990-convex-separable-optimization-is-not}, quantifier elimination
+with block-sensitive bounds~\citep{renegar1992-on-the-computational-complexity-and}
+and other effective real-algebraic
+methods~\citep{basu2006-algorithms-in-real-algebraic-geometry,basu2021-hausdorff-approximations-and-volume-of}, and isolation-type
+anticoncentration for perturbed linear
+objectives~\citep{beier2006-typical-properties-of-winners-and,roglin2007-smoothed-analysis-of-integer-programming}. Generic uniqueness
+and growth under linear tilts of semialgebraic problems are known
+qualitatively~\citep{lee2017-generic-properties-for-semialgebraic-programs}; \cref{sec:count} quantifies them for the
+finite laws used here.
+
+Among smoothed analyses of continuous global optimization,
+\citet{kelner2007-on-the-hardness-and-smoothed} give expected polynomial time for minimizing
+constant-rank quasi-concave functions over integral polytopes under a random
+rotation of the objective subspace, by bounding the vertices of a projected
+polytope. Our low-rank route perturbs the linear coefficients instead,
+allows indefinite quadratic objectives that are not quasi-concave, and
+returns exact rational optimizers. For problems with few negative
+eigenvalues, deterministic algorithms give approximations whose work grows
+polynomially in the inverse accuracy for fixed negative inertia~\citep{vavasis1992-approximation-algorithms-for-indefinite-quadratic}.
+Rational Jacobi rotations also yield approximation algorithms for
+mixed-integer quadratic programs with fixed integer dimension and negative
+inertia~\citep{pia2026-rational-jacobi-rotations-and-the}.
+For bounded treewidth, linear programming hierarchies give approximations of
+polynomial optimization problems in time polynomial for fixed
+width~\citep{bienstock2018-lp-formulations-for-polynomial-optimization}. The original-objective consequence of our
+results (\cref{sec:intro:meaning}) is of the same type and is not claimed to
+be better.
+
+Recent deterministic exact results address other structured classes.
+\citet{khajavirad2026-a-polynomial-time-solvable-class} solves sparse box
+polynomial problems under sign, hidden-binary, width, and component-curvature
+conditions; the quadratic result is in the rational bit model, whereas its
+higher-degree result uses a unit-cost algebraic RAM. Exact integer and
+mixed-integer quadratic algorithms of
+\citet{ari2026-curvature-batching-for-integer-and} have
+dimension- and magnitude-dependent bounds for integer data on polytopes.
+\citet{ari2026-bounded-integer-quadratic-programming-through} treats bounded
+pure integer QP, and \citet{wei2026-integer-quadratic-programming-in-fixed}
+gives polynomial time for pure integer QP in each fixed integer dimension.
+These premises and parameters differ from the arbitrary-dimensional
+continuous residual problems and finite-noise expected bit work studied
+here. Noise alone gives no general tractability principle:
+\citet{soltanalian2026-random-parameter-noise-does-not} rules out uniform
+expected polynomial bit time for exact ReLU verification under rounded,
+clipped Gaussian parameter noise, assuming $\mathrm{NP}\nsubseteq\mathrm{BPP}$.
+That result concerns network verification rather than the structured
+optimization classes of our theorems.
+
+Critical-region descriptions for parametric convex QP are established
+machinery~\citep{tndel2003-an-algorithm-for-multi-parametric}; their existence
+does not bound the number of regions polynomially. Likewise, classical
+finite-set isolation and Pareto-count analyses concern discrete feasible
+alternatives~\citep{mulmuley1987-matching-is-as-easy-as,beier2022-the-smoothed-number-of-pareto}.
+Our continuous growth estimates and transfers to a fixed atomic law are
+separate steps. Algebraic tube bounds control continuous volume; the finite
+law requires the additional grid-transfer argument.
+
+The results of this paper are specific certificates, bounds, and
+compositions built from these ingredients. For few negative directions they are
+closure by regions of a parametric convex program, with a fixed-hyperplane
+exceptional set, and the resulting fixed-parameter expected bounds under
+aligned and Gaussian-like noise and the dimension-dependent bound under
+uniform noise (\cref{sec:qp}). For sparse interactions they are exact
+closure on certified strongly convex patches after a global-error bag
+search, with fixed-width expected bounds, and the extensions to graph,
+recurrence, simplex, and order constraints (\cref{sec:sp,sec:con}). For small
+cores they are the excluded-region certificate for continuous recourse, the
+competing-label certificate for integer recourse, and the optimal-face
+certificate for core-only integer flows and totally unimodular systems
+(\cref{sec:rec,sec:int}). Further contributions are the strong-noise
+component composition (\cref{sec:int}) and the boundary results of
+\cref{sec:lim}. Exactness on every draw of a base-chosen finite law is
+carried through all of these results, but we do not regard the finite-law
+model itself, isolation-type anticoncentration, representations of
+algebraic points by one root, or connected-set counting as new.
+
+Three unpublished companion manuscripts have specific overlaps.
+\emph{Exact Arithmetic in Polynomial Optimization: Values, Optimizers, and
+Certificates}~\citep{companion-exact-arithmetic} supplies all-precision
+value and selected-core oracles for core-noise problems with convex
+residuals, including coupled-polytope versions and exact rational QP
+reconstruction. It also supplies full selected-point oracles for
+residual-convex cubics without a residual modulus or convexifier, and under
+a supplied convexifier when the transformed objective is cubic on the
+feasible polytope or is a fixed-degree polynomial convex on all of $\R^n$.
+Its cubic selector is the lexicographically least optimal core followed by
+the least-norm residual optimizer in that fiber. One base-selected law and
+one per-draw work factor $\Omega(\gamma)$ apply to all precision queries
+$q$ for this fixed point. These law and query properties already appear in
+the companion. Its outputs are Cauchy names for the selected point and value;
+our ordinary outputs are finite patch descriptors with a separate global
+proof record, and need not select the same canonical point. This is a
+representation distinction. For uniformly strongly convex residuals, the
+direct recourse count also preserves the original $L/\sigma$, whereas a
+derived Schur convexifier can require scale $M+M^2/\mu$
+(\cref{sec:lim:rank}).
+The finite-law transfer, section bounds, projected-growth argument, and
+lexicographic fallback overlap with our foundations. Its quartic point
+reductions, including their core-only-noise consequence, and regularization
+example are reproduced with proofs in
+\cref{thm:lim:posslp,prop:lim:value}. Thus quartic point obstructions do not
+exclude its positive cubic result.
+
+\emph{Decomposition-aware global optimization: certified coordinate grids,
+conditional recourse, and structural limits}~\citep{companion-decomposition-aware}
+develops deterministic curvature-corrected grids, conditional-recourse
+filtering, boundary output, and the star obstruction. For its box quadratic
+class, let $L_i=\max\{0,\sup_{\widehat X}\partial_{ii}F\}$ and
+$\norm d_L^2=\sum_iL_id_i^2$. Weighted growth
+$F(x)-\min F\ge\gamma_*\norm{x-x^*}_L^2$ gives
+$\bar\kappa=\max\{1,1/\gamma_*\}$; point growth with modulus $g$ gives
+$\kappa=\max\{1,\max_iL_i/g\}$ and $\bar\kappa\le\kappa$. The companion
+certifies $2^{-q}$ accuracy in $f(p,\bar\kappa)(I+q+1)^5$ bit work, with
+\[
+ f(p,t)=c_0(c_1p\sqrt t)^p\,t(1+\log_2t)^2,
+\]
+and gives exact output in $f_1(p,\kappa)(I+1)^{C_1}$ under point growth at
+a unique optimizer. Graded grids use
+$O(\sqrt{\bar\kappa}\log(n+2))$ nodes per coordinate; its sharp example
+for the filtered common uniform-grid method needs
+$\sqrt{(n-2)\kappa}+1$ in the stated stages. Under rETH its lower bound
+excludes a sublinear width exponent in the restricted product-time model
+$f(p)(\kappa I)^{o(p)}$ for unique-minimizer integer box QP with a supplied
+decomposition. It is a
+deterministic approximation boundary, not a smoothed lower bound or a
+matching $p/2$ exponent result. The limits of integrating the
+growth-dependent work under noise are discussed in \cref{sec:sp:width}.
+Our sparse theorem bounds expected counts without a supplied growth modulus
+and closes exactly on every draw.
+
+\emph{Sparse indicator quadratics: exact complexity and smoothed separator
+messages}~\citep{companion-sparse-indicator} treats positive-definite
+indicator quadratics and perturbs only binary indicator penalties by
+independent uniform-grid draws, with at least $2n$ labels per marginal. It
+returns exact answers and message dictionaries on a stated bounded boundary
+box on every draw, with fixed-width expected work polynomial in input length
+and the displayed numerical magnitudes. Removing those numerical factors
+would give $\mathrm{NP}\subseteq\mathrm{ZPP}$, even at its fixed matrix
+family and noise scale. These finite-noise, width, and dictionary ideas
+overlap. Our sparse route perturbs every original
+linear coefficient and treats continuous and native integer coordinates;
+its affine-feasibility boundary does not contradict that indicator model.
+The proofs needed here are included in this paper. The bounds are
+mathematical guarantees; practical performance is unestablished.
+
+\subsection{Organization}\label{sec:intro:organization}
+
+\Cref{sec:model} fixes the model and output contracts. \Cref{sec:count}
+develops the shared counting, tail, and fallback tools. \Cref{sec:qp} treats
+few negative directions, \cref{sec:sp,sec:con} sparse interactions,
+\cref{sec:rec,sec:int} small cores with continuous and integer recourse and
+the strong-noise route. \Cref{sec:lim} proves the boundary results, and
+\cref{sec:disc} discusses uses and open questions. Appendices contain the
+longer proofs.

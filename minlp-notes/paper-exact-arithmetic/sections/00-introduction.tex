@@ -1,0 +1,990 @@
+\section{Introduction}
+\label{sec:intro}
+
+Solvers for mixed-integer nonlinear programs repeatedly solve convex
+subproblems and act on the answers. The optimal value of a relaxation
+decides whether a node of the search tree can be pruned. The location of an
+optimizer guides branching and rounding, and whether a bound or constraint is
+active at that optimizer informs the choice of branching variables. A
+certificate of optimality is what an independent checker verifies. In
+floating-point arithmetic all of these quantities are approximations. Exact
+and proof-producing solvers need exact versions of them. For linear and
+convex quadratic subproblems the exact versions are available: a convex
+quadratic program has a rational optimizer of polynomial bit length, and it
+can be computed in polynomial time~\cite{KozlovTarasovKhachiyan1980}. From
+degree four on, a globally convex objective can have a unique optimizer that
+is irrational, and the different outputs come apart.
+
+This paper studies polynomial optimization problems with explicitly encoded
+rational data. Most results assume convexity of one of three kinds, stated in
+each theorem: global convexity or strong convexity of the objective,
+convexity on the feasible set only, or, in Section~\ref{sec:recourse},
+convexity in a subset of the variables. Appendix~\ref{app:further-arithmetic}
+also treats nonconvex quadratic constraints and cone constraints with
+explicit algebraic data. We ask which of the following
+outputs can be computed or represented efficiently, and what makes the
+others hard:
+\begin{enumerate}[label=(\roman*)]
+\item the optimal value to a requested precision $2^{-q}$;
+\item an optimizer to precision $2^{-q}$, preferably the same optimizer at
+  every precision;
+\item an exact decision about the optimizer, such as the sign of a given
+  polynomial at the optimizer, the comparison of the optimal value with a
+  rational threshold, or whether a constraint is active;
+\item an exact description of the optimizer, or of a certificate of its
+  optimality.
+\end{enumerate}
+Section~\ref{sec:models} defines these outputs, the input encodings, and the
+computational models. Throughout, $L$ denotes the total binary length of the
+input, $n$ the number of continuous variables, $k$ a structural parameter
+specified in each statement, $q$ the number of requested bits of precision,
+$f$ the objective, and $p$ the selected optimizer, which is the unique
+optimizer when the objective is strongly convex and the feasible set is
+convex.
+
+Output~(i) is well understood for globally convex polynomials. Slot,
+Steurer, and Wiedmer consider globally convex polynomials with rational
+coefficients written in binary and exponent vectors written in unary. On a
+nonempty rational polyhedron such a polynomial is either unbounded below or attains
+its minimum at a point of norm at most
+$2^{\poly(L)}$~\cite[Theorem~1.1]{SlotSteurerWiedmer2025}, and its optimal
+value, when finite, can be approximated to objective gap $2^{-q}$ in time
+polynomial in the input length and $q$~\cite[Corollary~1.2]{SlotSteurerWiedmer2025}. The norm bound does not
+bound the bit length of the coordinates of an optimizer, which can be
+irrational. In arXiv version 2511.03440v1 of November~5, 2025, two questions
+about convex quartics are marked open: whether every rational polyhedron that
+contains a point with $f(x)\le0$ also contains such a rational point of
+polynomial bit length, and the complexity of deciding exactly whether such a
+point exists. All comparisons with that paper below refer to this version.
+For outputs (iii) and~(iv) the arithmetic benchmark is the
+problem $\PosSLP$~\cite{AllenderEtAl2009}: given a division-free arithmetic
+circuit with constants $0$ and $1$, decide whether the integer it computes is
+positive. Such an integer can have exponentially many bits. $\PosSLP$ lies in
+the counting hierarchy~\cite[Theorem~1.4]{AllenderEtAl2009}, and the Square
+Root Sum problem is decidable in polynomial time with a $\PosSLP$
+oracle~\cite[Section~1.4]{AllenderEtAl2009}. Whether $\PosSLP$ is in P, or is
+NP-hard, is open~\cite{BuergisserJindal2024}. Exact feasibility of
+semidefinite programs is already at least as hard as
+$\PosSLP$~\cite{TarasovVyalyi2008}.
+
+The four outputs form a ladder: each step up needs an ingredient that the
+step below does not supply. Our results identify these ingredients and the
+classes of problems in which they are available or provably missing.
+\begin{itemize}
+\item \emph{From values to points.} An effective error bound is needed, that
+  is, a bound on the distance to the optimal set in terms of the objective
+  gap, with a constant computable from the input, together with a rule that
+  selects one optimizer. Global convexity supplies such a bound at every
+  degree, and convexity on a polytope supplies one for cubics. For quartics
+  that are convex only on a box, a single constant-accuracy point already
+  decides Square Root Sum or $\PosSLP$ (Section~\ref{sec:intro-points}).
+\item \emph{From points to exact decisions.} A separation bound for nonzero
+  values is needed, together with a compact way to reach the precision that
+  it demands. For explicit globally strongly convex objectives of unary
+  degree, every exact comparison at the minimizer reduces to one $\PosSLP$
+  instance, and already for certified quartics the order comparisons are
+  $\PosSLP$-hard (Section~\ref{sec:intro-exact}). Linear constraints add a
+  search for the active face, and integer variables add a discrete search
+  (Section~\ref{sec:intro-constraints}).
+\item \emph{From exact decisions to exact descriptions.} Separate degree,
+  height, and field arguments are needed, and the size of a description
+  depends on its format. Expanded rational coordinates, coefficient lists of
+  minimal polynomials, Gram matrices, and sum-of-squares certificates can be
+  exponentially long in the dimension for certified inputs of polynomial
+  size, while the exhibited families have short descriptions in compact
+  formats such as circuits (Sections~\ref{sec:intro-optimizers}
+  and~\ref{sec:intro-certificates}).
+\end{itemize}
+The central result is Theorem~\ref{thm:quartic-complete}: for explicit
+quartics with a checkable strict convexity certificate, exact order
+comparisons of the minimum value, and of a minimizer coordinate, with a
+rational threshold are $\PosSLP$-complete. Together with
+Theorem~\ref{thm:exact-upper}, it shows that for explicit globally strongly
+convex polynomials of unary degree, exact order comparisons at the minimizer
+are as hard as $\PosSLP$ and no harder; for equality only the upper bound is
+known. Table~\ref{tab:intro-results} summarizes the results, and
+Section~\ref{sec:intro-prior} separates them from prior work.
+
+\subsection{From values to points}
+\label{sec:intro-points}
+
+Global convexity gives an effective conversion from values to points.
+Theorem~\ref{thm:global-point} treats an explicitly sparse rational
+polynomial $f$ that is convex on $\R^n$, of degree at most $D$, and an
+arbitrary rational polyhedron $P$. In time polynomial in $L$ and $D$ one can
+decide whether $P$ is empty and whether $f$ is unbounded below on $P$.
+Otherwise the minimum $f_*$ is attained on a set $S$, and one can compute
+rationals $R$ and $\Gamma$ of bit length $\poly(L,D)$ such that the
+minimum-norm optimizer satisfies $\norm{p}\le R$ and
+\begin{equation}
+\label{eq:intro-error-bound}
+\dist(x,S)\le\Gamma\,\bigl(f(x)-f_*\bigr)^{1/D}
+\qquad(x\in P,\ f(x)-f_*\le1).
+\end{equation}
+Consequently this fixed optimizer can be approximated to precision $2^{-q}$
+in time $\poly(L,D,q)$. Nonunique optima, singular Hessians, and unbounded
+polyhedra are allowed. Global error bounds for convex polynomials are
+known~\cite{Li2010,Li2013,Yang2009,Ngai2015}, and we do not claim the form of
+the exponent as new. Our addition is a constant that is computable from the
+input and has polynomial bit length on arbitrary rational polyhedra,
+together with the fixed-selector output that it makes possible. With a
+supplied strong convexity modulus the conversion from values to points is
+immediate; the theorem matters when the objective has flat directions or
+several minimizers.
+
+Convexity on the feasible set alone suffices for cubics.
+Theorem~\ref{thm:cubic-point} treats a cubic that is convex on a bounded
+rational polytope, possibly of lower dimension, but not necessarily on
+$\R^n$. It proves \eqref{eq:intro-error-bound} with exponent $1/4$ and a
+constant of polynomial bit length, and approximates both the optimizer set
+and its minimum-norm point in time $\poly(L+q)$. A cubic that is convex on all
+of $\R^n$ is a quadratic, so the domain-convex case is the one that matters
+for degree three. The univariate cubic $t^3$ on $[0,1]$ shows that no exponent
+larger than $1/3$ is possible.
+
+For quartics, convexity on the feasible set is not enough.
+Section~\ref{sec:points} constructs rational quartics that are convex on a
+box and have a unique minimizer, for which a single approximation of the
+minimizer to accuracy $1/4$ decides the Square Root Sum problem or $\PosSLP$.
+For Square Root Sum the constructed quartics have all coefficients other than
+the constant term bounded by an absolute constant, and their interaction
+graphs, which join two variables when some monomial contains both, have
+treewidth at most two. A deterministic polynomial-time point algorithm for
+this class would therefore put the corresponding problem in P.
+Unconditionally, there are explicit box-convex quartics in $n+1$ variables,
+easy to solve by other means, for which every error bound of the form
+\eqref{eq:intro-error-bound} with exponent $\vartheta$ has a constant $\Gamma$
+with $\log_2\Gamma\ge\vartheta\,2^{n+2}$, and for which isotropic
+regularization approximates the optimizer to accuracy $1/2$ only with a
+parameter whose denominator has more than $2^{n+2}$ bits. These instances
+have input length $L=\Theta(n^2)$, so the two quantities are exponential in
+the dimension and of order $2^{\Omega(\sqrt L)}$: superpolynomial, but not
+exponential, in $L$. The same section separates finer output contracts. For a
+strongly convex cubic on a box, deciding whether a designated coordinate of
+the optimizer equals its lower bound is Square Root Sum-hard, although
+Theorem~\ref{thm:cubic-point} approximates the optimizer in polynomial time.
+There are also box-convex quartics for which some optimizer is easy to
+approximate, while approximating the minimum-norm optimizer to constant
+accuracy decides Square Root Sum.
+
+The point problem also changes when part of the objective is nonconvex.
+Section~\ref{sec:recourse} considers a cubic $F(v,z)$ on
+$[0,1]^k\times[0,1]^m$ that is convex in the residual variables $z$ for each
+value of the core variables $v$, but possibly nonconvex in $v$. Residual
+values at rational cores are easy to compute, but approximations to an
+optimal core do not determine the optimal residual: in the cubic
+$v^2(2-z)$ on the unit square, the minimum-norm residual optimizer is $0$ at
+$v=0$ and $1$ at every $v>0$. We perturb only the core, by a linear term
+$\gamma^{\mathsf T}v$ drawn once from the uniform law on a finite rational
+grid in $[-\sigma,\sigma]^k$. For every precision $q$, an evaluator returns
+the lexicographically first optimal core of the perturbed objective together
+with its minimum-norm residual optimizer, within $2^{-q}$, and every returned
+point is correct, whatever the draw. The expected work is
+$k^{O(k)}(1+\Lambda/\sigma)^k\poly(L+q)$, where
+$\partial^2F/\partial v_i^2\le\Lambda$ along each core coordinate on the
+product box, and one
+random factor governs all precisions. Beyond a certified approximation of the
+selected core, the proof certifies which core coordinates lie at their
+bounds, by comparing slightly tilted problems, certifies margins of the
+relevant minors by lattice basis reduction, and then completes the residual
+by regularization. For every fixed degree, the same section also shows the
+following. Certified values and the selected core are available under
+residual convexity on a product box, or under a supplied convexifier on a
+polytope that couples core and residual variables; a convexifier is a
+rational $\alpha\ge0$ such that adding $\frac\alpha2\norm v^2$ makes the
+objective convex there. A supplied convexifier also yields full points,
+provided that the convexified objective is convex on the polytope and has
+degree three, or is convex on all of $\R^{k+m}$. Quadratic objectives permit
+exact rational optimizer and value recovery, by a polynomial height bound
+and rational reconstruction (Corollary~\ref{cor:recourse-qp}). A positive
+semidefinite quadratic plus positive even powers of rational affine forms
+gives a checkable subclass of the global convexifier hypothesis
+(Corollary~\ref{cor:recourse-affine-power}). With $\alpha=0$, that is,
+for objectives that are jointly convex, the expected work in these results is
+polynomial, with no factor $k^{O(k)}$ and no numerical dependence on $\sigma$.
+For residual quartics no full-point guarantee of this form is expected:
+such a guarantee, applied after adding a dummy core to the box-convex quartic
+reductions above, would give a Las Vegas algorithm with expected polynomial
+running time for Square Root Sum and for $\PosSLP$
+(Remark~\ref{rem:recourse-quartic}).
+
+\subsection{From points to exact decisions}
+\label{sec:intro-exact}
+
+Exact decisions require arithmetic beyond approximation.
+Theorem~\ref{thm:exact-upper} treats explicit polynomials $f$ and $h$ of
+unary degree together with a rational $\mu>0$ such that
+$\nabla^2f\succeq\mu I$ on $\R^n$; the curvature bound is either a promise or
+derived from a checked certificate. For each relation
+${\bowtie}\in\{<,\le,=,\ne,\ge,>\}$, a deterministic polynomial-time algorithm,
+which makes no oracle calls, constructs one integer arithmetic circuit whose
+value is positive exactly when $h(p)\bowtie0$. No gap between $h(p)$ and zero
+is assumed. The construction obtains a starting point of polynomial bit
+length from convex value approximation, stores polynomially many exact
+Newton steps as a shared rational circuit, and uses real quantifier
+elimination to show that a nonzero value $h(p)$ has magnitude at least
+$2^{-2^{e(L)}}$ for a fixed polynomial $e$. The Newton iterates reach this
+precision because their error squares at each step. Shifted comparisons
+handle the six relations, and division is removed by tracking numerators
+and positive denominators. Section~\ref{sec:upper} proves the same reduction
+for observables at the unique zero of a globally strongly monotone polynomial
+map of unary degree whose Jacobian need not be symmetric. The gradients
+of certified quartics are such cubic maps, so order tests are
+$\PosSLP$-hard already for these gradient maps and complete for the
+certified cubic-map class. Equality retains only the upper bound. Cubic maps are
+the first nontrivial case, because a strongly monotone quadratic map is
+affine.
+
+The matching lower bound holds for explicitly certified quartics. A
+\emph{full Hessian Gram} for a quartic $f$ is a rational
+symmetric matrix $A$ with
+$v^{\mathsf T}\nabla^2f(x)v=(v,x\otimes v)^{\mathsf T}A(v,x\otimes v)$; when
+$A\succ0$ it certifies global strong convexity and can be verified in
+polynomial time (Section~\ref{sec:models}). Theorem~\ref{thm:quartic-complete}
+proves that, for explicit rational quartics supplied with a positive definite
+full Hessian Gram, strict and weak comparisons of the minimum value with a
+rational threshold, and of a coordinate of the minimizer with a rational
+threshold, are $\PosSLP$-complete under polynomial-time many-one reductions.
+For the value comparisons the hard instances have nonzero minima. In the same
+class, nonnegativity, membership in the cone of real sums of squares, and
+existence of a positive definite rational polynomial Gram matrix are
+$\PosSLP$-complete, and membership in the cone of rational sums of squares is
+$\PosSLP$-hard. Equality tests have the upper bound of
+Theorem~\ref{thm:exact-upper} and no matching lower bound.
+Section~\ref{sec:reductions} shows further that coordinate order comparisons
+remain $\PosSLP$-complete when the minimizer is rational and lies in
+$[-1,1]^n$, the minimum is known to be zero, and $n+1$ short rational square
+factors are supplied. Rationality of the minimizer is then a promise of the
+problem, not a property the reduction recognizes.
+
+In particular, deciding whether $f(x)\le0$ has a real solution, that is,
+whether $f_*\le0$, is $\PosSLP$-complete for certified quartics. The exact
+feasibility question for convex quartics that is marked open in the arXiv
+version of~\cite{SlotSteurerWiedmer2025} is therefore $\PosSLP$-hard, already
+without constraints. Corollary~\ref{cor:reductions-feasibility} gives
+the same hardness over a halfspace and over the unit cube, and for certified
+quartics on arbitrary rational polyhedra Section~\ref{sec:constraints} gives
+the upper bound $\mathrm{UP}^{\PosSLP}\cap\mathrm{coUP}^{\PosSLP}$. For convex
+quartics that are not strongly convex, no upper bound relative to $\PosSLP$ is
+known.
+
+The main tool of the lower bounds is Lemma~\ref{lem:quartic-realization}.
+Let rational quadratics $r_1,\ldots,r_m$ vanish at a point $a\in\R^n$ with
+well-conditioned gradients there, and let a rational quadratic $G$ vanish at
+$a$, have a positive definite quadratic part, and have a sufficiently small
+gradient at $a$. Then
+\[
+F=\Bigl(\frac{G}{t\nu}\Bigr)^2+\sum_{j=1}^m\Bigl(\frac{r_j}{\nu}\Bigr)^2
+\]
+is a rational sum of $m+1$ squares, has unique zero $a$, satisfies
+$\nabla^2F\succeq\frac32I$ on $\R^n$, and has a positive definite rational
+full Hessian Gram, for suitable rationals $t$ and $\nu$ determined by
+explicit quantitative bounds on the data. The Gram matrix is computed
+directly from the rational square factors: canonical Hessian Gram matrices of
+quadratic squares are exactly covariant under translation, so once the
+factors are fixed, the certificate requires no further approximation of the
+point $a$, which need not even be known. Squaring the residuals alone does not
+give convexity: $x^2+x^4+\varepsilon(y-x^2)^2$ has second derivative $-2$ in
+$x$ at $(0,1/\varepsilon)$. Section~\ref{sec:reductions} applies the lemma to
+two simulations of integer arithmetic. The first uses cube roots of numbers
+near one, in which an integer $V$ is encoded by the leading term $V\delta^d$
+of a tiny analytic signal. The second uses products of rational unit
+quaternions, which keeps every coordinate of the realized point rational.
+
+Section~\ref{sec:upper} also proves a compilation result that several
+constrained results use. Consider an integer circuit of size $S$ with Boolean
+inputs, gates $+$, $-$, $\times$, and threshold gates $v\mapsto[v>0]$, whose
+output is Boolean. In polynomial time it can be converted into a
+division-free integer circuit of size $O(S^2)$, without threshold gates,
+whose value is positive exactly when the original output is one. Each
+threshold gate is replaced by a rational approximation of the sign function:
+scaled maps $x\mapsto2\sigma x/(\sigma+x^2)$ first compress the range, and the
+inverse Newton iteration $x\mapsto2x/(1+x^2)$ then refines the sign. The
+exact gate values are integers of absolute value at most $2^{2^S}$, so
+distinct values are at least one apart, and a single error budget keeps every
+approximation within $1/4$ of its exact value; numerators with positive
+denominators remove the divisions. A padded interpreter for query
+descriptions extends the construction to every deterministic polynomial-time
+computation with a $\PosSLP$ oracle, which therefore reduces to one $\PosSLP$
+instance (Theorem~\ref{thm:posslp-closure}). We use this to state
+deterministic oracle algorithms as single-instance reductions. The
+construction compiles one output bit at a time and does not apply to
+nondeterministic or randomized oracle algorithms.
+
+\subsection{Constraints and integer variables}
+\label{sec:intro-constraints}
+
+With linear constraints the optimizer lies on an unknown face, and finding
+that face is a search problem separate from the arithmetic.
+Section~\ref{sec:constraints} treats globally strongly convex quartics on
+rational polyhedra and, where stated, strongly monotone cubic variational
+inequalities. For an arbitrary rational polyhedron, exact comparison of the
+value, a coordinate, or an explicit observable lies in
+$\mathrm{UP}^{\PosSLP}\cap\mathrm{coUP}^{\PosSLP}$: the full active set is
+a unique certificate, and the normal-cone condition is verified by a linear
+program whose objective is given by a circuit. Whether the comparison lies in
+$\mathrm P^{\PosSLP}$, equivalently whether one $\PosSLP$ instance suffices, is
+open. The section removes the search in four ways.
+\begin{itemize}
+\item For globally strongly convex objectives of unary degree, a supplied
+  lower bound on all nonzero optimal slacks lets ordinary approximation
+  recover the active set, after which one $\PosSLP$ instance decides each
+  relation (Proposition~\ref{prop:upper-slack-gap} in
+  Section~\ref{sec:upper}).
+\item If the cubic and quartic parts of $f$ depend on only $k$ linear forms,
+  exact comparison and recovery of the full active set take ordinary
+  deterministic time $F(k)L^C$, with $F(k)=2^{O(k)}$ and an absolute constant
+  $C$. The quadratic part, the number of constraints, and their rank are
+  unrestricted. The optimizer is returned as an affine image of the unique
+  stationary point of a strongly convex quartic in at most $k$ variables.
+\item For objectives of fixed degree on boxes whose Hessian interactions form
+  a forest, have nonpositive off-diagonal entries, or have a positive
+  definite comparison matrix, and on network-flow polyhedra with separable
+  objectives, exact constrained Newton steps can be executed with
+  polynomially many arithmetic operations. Combined with the compilation
+  theorem, each exact predicate about the optimizer, and each polynomial-size
+  Boolean combination of such predicates, reduces to one $\PosSLP$ instance
+  (Corollary~\ref{cor:structured-single-sign}). The full active set is
+  recovered by a polynomial list of such instances, prepared without
+  adaptivity.
+\item If the constraint normals have rank $r$, a Las Vegas algorithm with a
+  $\PosSLP$ oracle runs in expected time $(r+1)^{O(r)}L^C$.
+\end{itemize}
+
+Integer variables add a second search. Let the quartic objective be strongly
+convex in all variables jointly, and let $t$ variables be integer. An
+ordinary algorithm running in time $2^{O(t\log(t+1))}L^C$ lists candidate
+integer blocks that include every optimal block when the continuous fibers
+are unconstrained; there are at most $2^t$ optimal blocks. Exact selection
+among the candidates then uses $\PosSLP$ queries that can be prepared in
+advance. Under arbitrary mixed linear constraints the list takes ordinary
+time $a(t)L^C$ for a computable function $a$, and the methods above combine
+to give an ordinary algorithm in time $F(k+t)L^C$, or a Las Vegas algorithm
+in expected time $F(t,r)L^C$ with a $\PosSLP$ oracle. Thus discrete search
+needs only ordinary precision, and exact arithmetic is needed only to select
+among the candidates. This selection cannot be avoided: deciding the value of
+a single binary variable at the unique optimum remains $\PosSLP$-hard even
+when the optimal value is known, the optimizer is rational and bounded, and
+the continuous constraints have rank one.
+
+\subsection{Quadratic and algebraic arithmetic interfaces}
+\label{sec:intro-further-arithmetic}
+
+Quadratic constraints change the arithmetic even when they are convex.
+Appendix~\ref{app:qc} studies positive semidefinite quadratic constraints
+whose Hessians span a space of dimension $h$ (denoted $k$ in that appendix).
+The optimal value and a
+canonical optimizer lie in one number field of degree at most
+$\max_{0\le s\le\min(h,n)}2^s\binom ns$, and the degree bound is sharp.
+For fixed $h$, exact feasibility and common-field point recovery take
+ordinary polynomial time, but expanded minimal-polynomial output admits no
+bound $F(h)L^C$ with an absolute exponent $C$. The rational-witness boundary
+is also sharp: nonempty systems of Hessian span at most two have rational
+points of polynomial bit length, whereas three ellipsoids can intersect at a
+single irrational point. The appendix also treats one-field optimizer
+certificates, rational positive-aggregate infeasibility certificates, and
+linear and convex quadratic programs with rational matrices and affine data
+in an explicitly represented real number field. These results explain which
+parts of the higher-degree account already arise from quadratic constraints.
+
+Appendix~\ref{app:further-arithmetic} extends the description and input
+questions in two directions. For rational quadratic constraints that need
+not be convex, with Hessian span $h$, a feasible point has a common-field
+algebraic description of degree and total length $L^{O(h+1)}$. This
+feasibility bound follows from the quadratic-map sampling theorem of
+Grigoriev and Pasechnik~\cite[Theorem~1.2]{GrigorievPasechnik2005} and an
+elementary argument on the minimal face of the affine constraints. The
+appendix controls boxed optimal values, finite infima that need not be
+attained, and minimum-norm optimizers when attainment holds. It keeps affine
+constraints in the optimization formulas: an affine inequality that is
+inactive at an optimizer can still change the global optimal value when
+deleted.
+For fixed $h$, feasibility belongs to $\NP$, and the status, finite value,
+and an attained optimizer can be recovered in $\mathrm{FP}^{\NP}$.
+These are exact arithmetic guarantees, rather than ordinary polynomial-time
+algorithms for nonconvex optimization.
+
+The second extension allows cone data in one explicitly represented number
+field $K\subseteq\R$, with its real embedding specified. With fixed
+integer dimension $t$ and a fixed dimension $h$ for the span over $K$ of the
+continuous Hessians of the squared cone residuals, exact feasibility and
+witness recovery take ordinary polynomial time,
+without a supplied box or a Slater condition. The continuous witness is
+written in the joint field generated by $K$ and its coordinates. For a
+continuous system its minimum-norm point has absolute field degree and total
+description length $L^{O(h+1)}$; in the mixed-integer case the algorithm first
+finds an integer assignment and then applies this result to its exact
+continuous fiber. Known algebraic
+thresholds can therefore be used exactly in a later cone problem. The
+extension concerns explicit algebraic input, sign and rounding operations,
+and common-field output; its sampling and fixed-dimensional integer
+ingredients are prior methods.
+Exact second-order cone feasibility with unrestricted $h$ is
+$\PosSLP$-hard (Remark~\ref{rem:models-socp}); in those gate constructions
+$h$ can grow with the circuit size. The polynomial-time bound here fixes
+both $t$ and $h$.
+
+\subsection{Exact optimizers}
+\label{sec:intro-optimizers}
+
+Exact optimizers can be irrational even in very small, well-conditioned
+instances. With
+\[
+A=12599x^2-10000xy+7937y^2-15874x-12599y+20000,
+\]
+the integer quartic
+\[
+F(x,y)=A^2+10000\bigl[(x^2-y)^2+(y^2-2x)^2\bigr]
+\]
+satisfies $\nabla^2F\succeq4124\,I$ on $\R^2$, has a positive definite
+integer full Hessian Gram, and has the single zero $(2^{1/3},2^{2/3})$
+(Proposition~\ref{prop:algebraic-bivariate}). Hence the constraint $F\le0$ is
+satisfiable but has no rational solution. This answers negatively the
+rational-witness question for convex quartics that is marked open in the
+arXiv version of~\cite{SlotSteurerWiedmer2025}. It does not settle the
+complexity of the decision, since the point has a short algebraic
+description; Section~\ref{sec:intro-exact} shows that the decision is
+$\PosSLP$-hard. A univariate convex quartic with rational minimum has a
+rational minimizer~\cite[Lemma~C.3]{SlotSteurerWiedmer2025}, so two
+variables are needed.
+
+Theorem~\ref{thm:singleton-field} identifies which numbers occur. A real
+algebraic number is a coordinate of a point isolated by finitely many
+rational convex polynomial inequalities if and only if its minimal polynomial
+has exactly one real root; the same numbers are the coordinates of unique
+minimizers of rational convex polynomials on $\R^n$, and of single real zeros
+of rational polynomials. Conversely, each such irrational number is a
+coordinate of the unique zero of a single rational, strongly convex quartic
+that is a sum of squares and carries a positive definite rational full
+Hessian Gram; the quartic is constructed in polynomial time from the dense
+minimal polynomial. For the prescribed point of consecutive powers of the
+number, $(d+1)/2$ variables suffice and are necessary, where $d$ is the
+degree. The restriction to isolated points matters: minimizing $-x$ subject
+to $x^2\le2$ has the unique optimizer $\sqrt2$, whose minimal polynomial has
+two real roots.
+
+Certified strong convexity does not bound the algebraic degree.
+Section~\ref{sec:algebraic} constructs integer quartics in $n$ variables with
+$O(n^2)$ monomials, coefficients of $O(\log n)$ bits, $n+1$ integer square
+factors, and a positive definite integer full Hessian Gram, whose unique zero
+$p$ satisfies
+\[
+[\Q(p):\Q]=[\Q(p_1):\Q]=d_n=\frac{2^{n+1}-(-1)^{n+1}}{3}.
+\]
+The Hessian condition number at the zero is $O(n^2)$. After a rational
+translation, the minimal polynomial of the first coordinate has all $d_n+1$
+coefficients nonzero. Even with the full Hessian Gram counted, the input
+length is $L=O(n^4\log n)$, so dense and sparse coefficient lists of this
+minimal polynomial have length $2^{\Omega(n)}=2^{\Omega((L/\log L)^{1/4})}$:
+exponential in the dimension and superpolynomial, but not exponential, in
+$L$. Every coordinate of the zero is nevertheless an integer power of
+$2^{1/d_n}$ whose exponent has $O(n)$ bits, so one real root gate, whose
+index $d_n$ is written in binary, followed by $O(n)$ multiplications and
+divisions computes the whole optimizer. In the other direction, if a rational sum of
+squares of quadratics has a unique real zero with positive definite Hessian
+there, the degree of the field generated by the coordinates of the zero is
+odd and at most $2^n-1$. Global convexity improves the bound to $2^n-3$ for
+$n\ge3$ and $2^n-5$ for $n\ge4$, and the exact maxima for $n=2,3,4,5$ are
+$3,5,11,21$, attained by the construction above.
+Theorem~\ref{thm:sos-length} proves that a globally convex polynomial of
+degree exactly four that is a sum of squares and has a zero with positive
+definite Hessian needs at least $n+1$ squares, even with real coefficients;
+the bound is sharp and our constructions attain it. Auxiliary variables also
+matter: some algebraic numbers whose minimal polynomials have $O(b)$ bits
+require degree $2^{\Omega(b)}$ in every rational convex univariate
+realization, while two-variable quartics of polynomial size realize them.
+
+Exact rational optimizers and rational feasible points can be long.
+Theorem~\ref{thm:rational-height} gives strongly convex quartics in
+$2(k+1)$ variables, with short rational square factors and a full positive
+definite Hessian Gram, whose rational minimizer lies in a fixed box and has
+last coordinates with reduced denominator exactly $5^{2^k}$. A rescaled
+variant has a minimizer whose last denominators are divisible by $5^{2^k}$
+and a Hessian condition number at the minimizer that is polynomial in $k$;
+the two properties are proved for these two related families, not for one
+instance. Section~\ref{sec:heights} also gives certified quartics
+in $n$ variables whose zero sublevel set is compact with nonempty interior,
+yet every rational point of it needs $\Omega(n2^{n/2})$ denominator bits.
+These bounds are exponential in the dimension, hence superpolynomial in the
+input length, which is polynomial in $n$. They concern expanded rational
+output. The long rational minimizers above are values of polynomial-size
+circuits built by repeated squaring, and when the minimum of an instance of
+Theorem~\ref{thm:exact-upper} is negative, the Newton circuit of that theorem
+gives a strictly feasible point as a polynomial-size shared rational circuit
+(Section~\ref{sec:upper}). Expanded formats can also be long for
+well-conditioned instances. For quartics that are strongly convex on a box,
+with bounded curvature and a path as interaction graph,
+Section~\ref{sec:points} shows that the minimal polynomial of an optimizer
+coordinate can have a number of nonzero coefficients exponential in the
+dimension, and that every rational box certifying the optimizer inside the
+feasible box can need endpoints whose bit length is exponential in the
+dimension. With interaction graphs of treewidth two, the same holds for
+rational boxes on which the sign of an active multiplier is certified. In each
+of these families a short recurrence describes the optimizer exactly.
+
+\subsection{Exact certificates}
+\label{sec:intro-certificates}
+
+Certificates of optimality have their own arithmetic. Let $f$ be a quartic
+with a positive definite full Hessian Gram and positive minimum. A positive
+definite rational polynomial Gram matrix of total bit length
+$\poly(L)2^{O(n)}$ exists, and Section~\ref{sec:heights} shows that
+$\Omega(n2^{n/2})$ bits can be necessary, even though the same instances have
+short singular rational Gram matrices. Theorem~\ref{thm:circuit-gram}
+constructs, in deterministic polynomial time and without any sign oracle, a
+polynomial-size shared rational circuit for a Gram matrix of $f$ that is
+positive definite exactly when the minimum is positive. Deciding whether this
+matrix is positive definite is therefore equivalent to deciding whether the
+minimum is positive, which is $\PosSLP$-complete in this class. With a
+positive definite full Hessian Gram, the optimal order-two moment matrix is
+unique, and the field $\Q(p)$ generated by the coordinates of the minimizer is
+the least field over which a maximal-rank optimal Gram matrix, or a nonzero
+matrix exposing the face of optimal Gram matrices, can be written. For the
+rational minimizers of large height above, the optimal moment matrix, every
+maximal-rank rational optimal Gram matrix, and every nonzero rational exposing
+matrix have entries whose bit length is exponential in the dimension, while
+short optimal Gram matrices of lower rank remain.
+
+Rational certificates at the optimum can fail to exist.
+Section~\ref{sec:fields} gives a ternary integer quartic $F_\star$
+(Example~\ref{ex:fields-ternary}) with $\nabla^2F_\star\succeq I$, a positive
+definite rational full Hessian Gram, and minimum zero, for which a
+sum-of-squares decomposition, or a positive semidefinite Gram matrix, with
+entries in a real field $E$ exists exactly when $2^{1/5}\in E$. Three variables
+are the minimum under this certificate hypothesis, and $F_\star+\eta$ is a
+rational sum of squares for every rational $\eta>0$. For every prime $\ell\ge5$
+there is an analogous integer quartic in $(\ell+1)/2$ variables, with
+coefficients and Hessian Gram entries of $O(\log\ell)$ bits, whose least
+field is $\Q(2^{1/\ell})$; it is constructed in time polynomial in $\ell$. A
+family of quartics in $3k$ variables, of size polynomial in $k$, has least
+field $\Q(2^{1/5^k})$; in every algebraic certificate some individual
+coefficient has degree at least $5^k$. For this family, compact formats avoid
+the cost: the certificate coefficients are outputs of one polynomial-size
+circuit with $k$ real fifth-root gates, and adjoining the coordinates of the
+minimizer as auxiliary variables gives a polynomial-size rational certificate
+modulo rational quadratic equations that these coordinates satisfy.
+Section~\ref{sec:fields} also proves a sufficient condition for rational
+descent. Suppose that some rational globally convex quartic that is a rational
+sum of squares vanishes at a point $p$ with positive definite Hessian there,
+that the rational polynomials of degree at most two vanishing at $p$ span a
+space of dimension $n+1$, and that their pairwise products span the rational
+polynomials of degree at most four that vanish at $p$ together with their
+gradients. Then every rational globally convex quartic with minimum zero at
+$p$ and positive definite Hessian there is a rational sum of squares.
+For the cyclic points of Section~\ref{sec:algebraic}, the dimension and
+product-independence hypotheses hold for $n\ge4$. Whether the products
+exhaust the stationary quartics for all these points remains open.
+
+The format of a certificate changes what exists and how large it is.
+Section~\ref{sec:fields-certificates} shows that the explicit ternary quartic
+$F_\star$ has a short exact rational certificate as a sum of squares of
+rational functions with the common denominator $1+\norm{x}^2$, and that the
+same holds for the tower quartics, whose polynomial certificates need a
+coefficient of degree $5^k$, after a polynomial-size increase of a scale
+parameter; two is the least possible denominator degree. For a scaled family,
+every fixed power $(1+\norm{x}^2)^N$ fails as a multiplier for large scale.
+The least admissible power, which is finite, grows as
+$\Omega(\log L/\log\log L)$, while a multiplier adapted to the scale keeps the
+certificate of size $O(L)$. For a sum $f(x)+g(y,z)$ of strongly convex
+quartics in disjoint variables with zero minima, a short joint rational sum of
+squares can coexist with the absence of any rational certificate separated by
+blocks, and the separated least field can be $\Q(2^{1/5^k})$. After a
+certified quartic with a tiny positive minimum is added to the second block,
+separated rational certificates exist but need $\Omega(k2^k)$ bits.
+Theorem~\ref{thm:quadratic-graph} supplies the tool that makes the second
+block strongly convex: from a quartic with zero minimum and a positive
+definite full Hessian Gram, it constructs a polynomial-size certified strongly
+convex quartic whose unique zero is the optimizer together with all products
+of its coordinates.
+
+\subsection{Summary of results}
+\label{sec:intro-summary}
+
+Table~\ref{tab:intro-results} lists the main results by output. In the model
+column, ``ordinary'' means a deterministic algorithm in the bit model without
+an oracle. ``One instance'' means a polynomial-time many-one reduction to
+$\PosSLP$, and ``complete'' means that, in addition, $\PosSLP$ reduces to the
+problem. ``Conditional'' marks a reduction from Square Root Sum or $\PosSLP$
+to an approximation task.
+
+{\small
+\setlength{\tabcolsep}{4pt}
+\setlength{\LTcapwidth}{\textwidth}
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.17\textwidth}
+  >{\raggedright\arraybackslash}p{0.27\textwidth}
+  >{\raggedright\arraybackslash}p{0.35\textwidth}
+  >{\raggedright\arraybackslash}p{0.15\textwidth}@{}}
+\caption{Main results by output. Promised structure is part of the setting;
+$L$ is the input length, $D$ the degree, $q$ the requested precision,
+$\Lambda$ an upper bound on the coordinate second derivatives in the core, and
+$\sigma$ the tilt width.}
+\label{tab:intro-results}\\
+\toprule
+Output & Setting & Result and model & Where\\
+\midrule
+\endfirsthead
+\toprule
+Output & Setting & Result and model & Where\\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\multicolumn{4}{@{}l}{\emph{Values and points}}\\*
+Fixed optimizer & Globally convex, explicit sparse, degree $D$; rational
+polyhedron & Error exponent $1/D$, constant of $\poly(L,D)$ bits; time
+$\poly(L,D,q)$; ordinary & Thm.~\ref{thm:global-point}\\
+Fixed optimizer & Cubic, convex on a bounded rational polytope & Exponent
+$1/4$, constant of $\poly(L)$ bits; time $\poly(L+q)$; ordinary &
+Thm.~\ref{thm:cubic-point}\\
+Some optimizer, accuracy $1/4$ & Quartic convex on a box, unique optimizer &
+Decides Square Root Sum (treewidth at most two) or $\PosSLP$; conditional &
+Thm.~\ref{thm:points-quartic-lower}\\
+Active bound & Strongly convex cubic on a box & Decides Square Root Sum, while
+points are easy; conditional & Prop.~\ref{prop:points-active}\\
+Full selected optimizer & Residual-convex cubic on a product box, one random
+core tilt & Expected $k^{O(k)}(1+\Lambda/\sigma)^k\poly(L+q)$, correct for
+every draw & Thm.~\ref{thm:recourse-cubic}\\
+Values and fixed core & Fixed degree; residual convexity on a product box,
+or a supplied convexifier on a coupled polytope & One finite core-noise law;
+every draw correct; one expected-work factor for all precisions &
+Thm.~\ref{thm:recourse-core}\\
+Exact optimizer and value & Quadratic in these core-noise models & Rational
+output of polynomial length; expected parameterized work &
+Cor.~\ref{cor:recourse-qp}\\
+Full selected optimizer & Supplied convexifier; cubic on a polytope or
+globally convex after convexification & Expected parameterized work; ordinary
+polynomial expected work when jointly convex &
+Thm.~\ref{thm:recourse-convexified}, Cor.~\ref{cor:recourse-joint}\\
+\multicolumn{4}{@{}l}{\emph{Exact decisions}}\\*
+Sign or equality of $h(p)$ & Explicit $f$, $h$, unary degree,
+$\nabla^2f\succeq\mu I$ supplied & One instance per relation, no gap
+assumed & Thm.~\ref{thm:exact-upper}\\
+Same, at a zero of a map & Strongly monotone polynomial map, unary degree &
+One instance per relation; order tests complete for certified cubic maps,
+hard already for gradient maps; equality only upper &
+Thm.~\ref{thm:upper-monotone}\\
+Order tests of value and coordinates; nonnegativity; real SOS & Quartic with
+checked full Hessian Gram $A\succ0$ & Complete; rational SOS membership hard;
+equality only upper & Thm.~\ref{thm:quartic-complete}\\
+Coordinate order & As above, rational minimizer in $[-1,1]^n$, minimum known
+to be $0$ & Complete & Thm.~\ref{thm:rational-optimizer}\\
+Feasibility of $f\le0$ & Quartic with checked $A\succ0$, on a halfspace or
+the unit cube & $\PosSLP$-hard; in
+$\mathrm{UP}^{\PosSLP}\cap\mathrm{coUP}^{\PosSLP}$ &
+Cor.~\ref{cor:reductions-feasibility},
+Thm.~\ref{thm:constraints-unambiguous}\\
+Value, coordinate, observable & Strongly convex quartic on a rational
+polyhedron & $\mathrm{UP}^{\PosSLP}\cap\mathrm{coUP}^{\PosSLP}$ &
+Thm.~\ref{thm:constraints-unambiguous}\\
+Same & Strongly convex polynomial on a rational polyhedron, supplied gap for
+nonzero slacks & One instance per relation; active set by ordinary
+approximation & Prop.~\ref{prop:upper-slack-gap}\\
+Same, and active set & Nonlinear dimension $k$ & Ordinary $F(k)L^C$ &
+Thm.~\ref{thm:constraints-nonlinear}\\
+Any Boolean predicate & Fixed degree; forest, nonpositive off-diagonal, or
+comparison-matrix Hessian on a box; separable network flow & One instance &
+Cor.~\ref{cor:structured-single-sign}\\
+Value, coordinate, observable & Constraint rank $r$ & Las Vegas
+$(r+1)^{O(r)}L^C$ with $\PosSLP$ oracle & Thm.~\ref{thm:constraints-rank}\\
+Optimal integer blocks & $t$ integer variables & Ordinary candidate lists in
+FPT time; exact selection by $\PosSLP$ queries &
+Thms.~\ref{thm:constraints-candidates}, \ref{thm:constraints-mixed-candidates}\\
+One binary decision & Known optimal value, rational optimizer, rank one &
+$\PosSLP$-hard & Cor.~\ref{cor:constraints-binary}\\
+\multicolumn{4}{@{}l}{\emph{Exact optimizers}}\\*
+Possible coordinates & Points isolated by rational convex polynomial
+inequalities & Exactly the numbers with one real conjugate; one certified
+quartic realizes each, in polynomial time & Thm.~\ref{thm:singleton-field}\\
+Coordinate field degree & Certified convex rational SOS quartics, unique
+nondegenerate zero & Degree $d_n=(2^{n+1}-(-1)^{n+1})/3$ with $O(\log n)$-bit
+integer data; at most $2^n-5$ for $n\ge4$; exact maxima for $n\le5$ &
+Thms.~\ref{thm:algebraic-cyclic}, \ref{thm:algebraic-degree-bounds}\\
+Number of squares & Convex quartic SOS, nondegenerate zero & At least $n+1$
+real squares; sharp & Thm.~\ref{thm:sos-length}\\
+Rational minimizer & Certified quartics in $n$ variables & Last coordinates
+with denominator exactly $5^{2^{n/2-1}}$ & Thm.~\ref{thm:rational-height}\\
+Rational feasible points & Certified quartics in $n$ variables, sublevel set
+with interior & Every rational point needs $\Omega(n2^{n/2})$ bits &
+Thm.~\ref{thm:heights-witness}\\
+\multicolumn{4}{@{}l}{\emph{Exact certificates}}\\*
+Interior Gram matrix & Positive minimum, full Hessian Gram & $\poly(L)2^{O(n)}$
+bits suffice, $\Omega(n2^{n/2})$ can be needed; shared rational circuit in
+polynomial time & Thms.~\ref{thm:interior-gram}, \ref{thm:circuit-gram}\\
+Moment and exposing matrices & Full Hessian Gram & Unique moment optimum;
+least field $\Q(p)$; long entries for long rational minimizers &
+Thm.~\ref{thm:heights-moment}, Cor.~\ref{cor:heights-gram}\\
+SOS coefficient field & Certified quartics with minimum $0$ & Least field
+$\Q(2^{1/\ell})$ in $(\ell+1)/2$ variables; $\Q(2^{1/5^k})$ in $3k$ variables,
+with a coefficient of degree $\ge5^k$; polynomial-size root-circuit formats
+for this family & Thms.~\ref{thm:fields-prime}, \ref{thm:fields-tower},
+\ref{thm:fields-individual}, \ref{thm:fields-compact}\\
+Certificate format & Rational functions, radial multipliers, block
+separation & Quadratic common denominators suffice, also for the tower after
+a scale increase; growing radial order; separation fails or costs
+$\Omega(k2^k)$ bits & Cor.~\ref{cor:fields-tower-denominator},
+Thms.~\ref{thm:fields-radial}, \ref{thm:fields-radial-height},
+\ref{thm:fields-blocks}, \ref{thm:fields-blocks-height}\\
+\multicolumn{4}{@{}l}{\emph{Further arithmetic interfaces}}\\*
+Feasible point, finite infimum, attained optimizer & Rational quadratics,
+not necessarily convex; constraint Hessian span $h$ & Common-field algebraic
+descriptions of degree and total length $L^{O(h+1)}$; finite infima may be
+unattained; fixed-$h$ feasibility in $\NP$ and exact output in
+$\mathrm{FP}^{\NP}$ & Thms.~\ref{thm:ncq-feasible},
+\ref{thm:ncq-infimum}, \ref{thm:ncq-oracle}\\
+Cone feasibility and witnesses & Explicit common real number field; integer
+dimension $t$; continuous Hessians of squared cone residuals span $h$
+directions over that field &
+Ordinary polynomial time for fixed $t,h$; continuous point in a joint field
+with degree and total length $L^{O(h+1)}$ for continuous input; no box or
+Slater hypothesis &
+Thms.~\ref{thm:cone-feasibility}, \ref{thm:cone-witness}\\
+\end{longtable}
+}
+
+\subsection{Relation to prior work}
+\label{sec:intro-prior}
+
+\paragraph{Convex polynomial optimization and error bounds.}
+Slot, Steurer, and Wiedmer establish, for globally convex polynomials with
+exponents written in unary on rational polyhedra, the dichotomy between
+unboundedness and attainment together with a bound on the norm of an
+optimizer whose logarithm is polynomial in the input
+length~\cite[Theorem~1.1]{SlotSteurerWiedmer2025}, and polynomial-time value
+approximation~\cite[Corollary~1.2]{SlotSteurerWiedmer2025}.
+Section~\ref{sec:points} uses the same structural facts, which rest on their
+analysis and on a tangent quadratic bound from the proof of Lemma~5 of
+Ahmadi, Chaudhry, and Zhang~\cite{AhmadiChaudhryZhang2024}, and rederives
+attainment and the radius with explicit rational constants. Global error
+bounds for convex polynomials, also relative to polyhedral constraints, are
+studied in~\cite{Li2010,Li2013,Yang2009,Ngai2015}; the bounds
+of~\cite{Li2010,Li2013,Ngai2015} are H\"older-type estimates whose constants
+depend on the function. The addition of Theorem~\ref{thm:global-point} is
+the quantitative selector: an error-bound constant computed from the input,
+of polynomial bit length on arbitrary rational polyhedra, evaluation of
+sparse polynomials without expanding affine substitutions, and a
+regularization schedule that approximates one fixed optimizer at every
+precision. The form of the error exponent is not claimed as new. The
+distinction between approximating the residual of a solution and
+approximating the solution itself, and the hardness of the latter for
+equilibria, are due to Etessami and Yannakakis~\cite{EY2010};
+Section~\ref{sec:points} shows the same phenomenon for minimizers of
+polynomials that are convex on a box. Recognizing convexity is NP-hard for
+quartics on $\R^n$~\cite{AhmadiOlshevskyParriloTsitsiklis2013} and for cubics
+on a box~\cite{AhmadiHall2020}. Convexity is therefore a promise in our
+theorems, unless a certificate is supplied and checked.
+
+\paragraph{Exact arithmetic, Newton circuits, and $\PosSLP$.}
+Allender, B\"urgisser, Kjeldgaard-Pedersen, and
+Miltersen~\cite{AllenderEtAl2009} introduce $\PosSLP$ and show that
+polynomial-time constant-free real computation on Boolean inputs corresponds
+to $\mathrm P^{\PosSLP}$~\cite[Proposition~1.1]{AllenderEtAl2009}; divisions
+are removed there by computing numerators and denominators separately, and
+Newton iteration gives short circuits that approximate square
+roots~\cite[Section~1.4]{AllenderEtAl2009}. Etessami, Stewart, and
+Yannakakis~\cite[Appendix~C]{EtessamiStewartYannakakis2012} reduce threshold
+comparisons at least fixed points of probabilistic polynomial systems to one
+$\PosSLP$ instance, by storing polynomially many Newton steps in a circuit
+and combining them with an algebraic separation bound. Our upper reduction
+uses this architecture for a different class of inputs, globally strongly
+convex explicit polynomials and strongly monotone polynomial maps. The
+class-specific steps are a polynomial-bit starting point obtained from
+convex value approximation, a separation bound that holds even when the
+complex critical set of the objective has positive dimension, the treatment
+of equality, and the handling of supplied certificates. For the compilation
+theorem the nearest prior work is the oracle characterization of
+$\mathrm P^{\PosSLP}$ through constant-free real
+computation~\cite{AllenderEtAl2009,BuergisserJindal2024} and specific
+many-one reductions such as that of~\cite{EtessamiStewartYannakakis2012}.
+These works state adaptive (Turing) relationships or particular reductions,
+and the sign iteration and division elimination are classical numerical
+tools. Section~\ref{sec:upper} gives the explicit $O(S^2)$ compilation with
+its error budget and interpreter in full; we make no priority claim for it.
+B\"urgisser and Jindal~\cite{BuergisserJindal2024} study the hardness of
+$\PosSLP$ itself; no unconditional NP-hardness of $\PosSLP$ is known, so our
+$\PosSLP$-hardness results are not NP-hardness results.
+
+\paragraph{Exact conic optimization.}
+Tarasov and Vyalyi~\cite[Theorems~3 and~4]{TarasovVyalyi2008} reduce
+$\PosSLP$ to exact semidefinite feasibility. They compare the values of two
+circuits built from the constant $1$ by the operations $x+y$ and $x^2/2$,
+represent each value as the optimum of a semidefinite program, and use
+duality. Gate constraints on two-by-two matrices are rotated second-order
+cone constraints, and standard conic duality then gives the same hardness for
+exact second-order cone feasibility (Remark~\ref{rem:models-socp}). Hardness
+of exact convex optimization in general is therefore not new. Our lower
+bounds hold in a much smaller class: a single explicit quartic objective,
+globally strongly convex with a checkable strict certificate and without
+constraints, for which Theorem~\ref{thm:exact-upper} supplies the matching
+upper bound. Squaring the residuals of the gate equations does not preserve
+convexity, so this restriction requires the realization of
+Lemma~\ref{lem:quartic-realization}.
+
+\paragraph{Algebraic degree and irrational optimizers.}
+Nie and Ranestad~\cite{NieRanestad2009} compute the algebraic degree of
+generic polynomial optimization problems. Such counts concern generic data,
+and an optimizer of a particular instance can have much smaller degree.
+Irrational singletons defined by convex polynomials were known before. In the
+arXiv version of~\cite{SlotSteurerWiedmer2025}, Appendix~C gives a univariate
+convex sextic whose minimum zero is attained at a single irrational point.
+Bienstock, Del Pia, and
+Hildebrand~\cite[Example~2.1]{BienstockDelPiaHildebrand2023} give a cubic
+whose nonpositive sublevel set within a rational rectangle is the single point
+$(2^{1/3},2^{2/3})$; its Hessian is positive definite on that rectangle, so
+the cubic is convex there, but no cubic is convex on all of $\R^2$. Our
+degree results concern specific certified convex classes. They characterize
+which numbers occur, construct a certified strongly convex quartic for each
+of them from its dense minimal polynomial, bound the degree from above,
+determine the maxima in dimensions at most five, and exhibit degree
+exponential in the dimension with coefficients of logarithmic bit length.
+
+\paragraph{Rational sums of squares.}
+Scheiderer~\cite{Scheiderer2016} constructs rational forms that are sums of
+squares over $\R$ but not over $\Q$, shows that for every number field with a
+real embedding some rational form is a sum of squares over $\R$ but not over
+that field~\cite[Corollary~2.11]{Scheiderer2016}, and characterizes the
+nonnegative rational ternary quartic forms that are not sums of squares over
+$\Q$~\cite[Theorem~4.1]{Scheiderer2016}. Sums of squares descend from totally
+real number fields to $\Q$~\cite[Theorem~1.4]{Hillar2009},
+\cite[Theorem~1.2]{Scheiderer2016}; the least fields $\Q(2^{1/\ell})$ and
+$\Q(2^{1/5^k})$ in our examples are not totally real, so this descent does not
+apply to them. Laplagne~\cite[Section~3]{Laplagne2024} gives rational quartic
+forms that are sums of squares over $\Q(2^{1/3})$ but not over $\Q$, one of
+them positive away from the origin; convexity plays no role in those
+constructions. Chua, Plaumann, Sinn, and
+Vinzant~\cite{ChuaPlaumannSinnVinzant2017} record that rational positive
+semidefinite Gram matrices and rational sums of squares are equivalent, and
+that the analogous statement fails over general ordered fields. Peyrl and
+Parrilo~\cite{PeyrlParrilo2008} round interior numerical Gram matrices to
+exact rational certificates. A sum-of-squares-convex polynomial that is
+stationary at a zero is a real sum of squares, by integrating its Hessian
+certificate~\cite{HeltonNie2010,AhmadiParrilo2013,Lasserre2009}. Our field
+results add global strong convexity with a strict rational convexity
+certificate, attained minimum zero, exact least fields for both sums of
+squares and Gram matrices, field degree $5^k$ for inputs of size polynomial in
+$k$ together with a lower bound for individual coefficients and
+polynomial-size root-circuit certificates for that family, and a sufficient
+condition for rational descent.
+
+\paragraph{Size of certificates.}
+Algorithms that produce exact rational sum-of-squares certificates have bit
+bounds that depend on a supplied eigenvalue margin or on the existence of a
+rational certificate~\cite{PeyrlParrilo2008,SafeyElDinZhi2010,
+MagronSafeyElDin2021,DavisPapp2022,GaertnerMagronVallentin2026}, and bit
+complexity lower bounds are known for sum-of-squares proofs from
+constraints~\cite{RaghavendraWeitz2017}. Our size bounds concern unconstrained
+certificates for a single short certified quartic, and each is stated for a
+specific format: interior Gram matrices, maximal-rank optimal Gram matrices,
+exposing matrices, prescribed multipliers, or certificates separated by
+blocks. They identify certified instances where interior certificates are
+necessarily long and where rational certificates at the optimum do not
+exist. Kojima, Kim, and Waki~\cite{KojimaKimWaki2005} discuss real sums of
+squares respecting a block separation; our block results concern rational
+coefficients and their size.
+
+\paragraph{Constraints and integer variables.}
+The ingredients of Section~\ref{sec:constraints} include essential-variable
+extraction~\cite{Carlini2006}, approximation algorithms for objectives with a
+low-rank nonlinear part~\cite{MittalSchulz2013,KannanRademacher2009},
+quadratic convergence of exact proximal Newton
+steps~\cite{LeeSunSaunders2014}, exact algorithms for structured
+box-constrained and network-flow quadratic
+programs~\cite{PangHan2023,Vegh2016}, violator
+spaces~\cite{GaertnerMatousekRuestSkovron2008}, convex integer minimization
+in fixed dimension~\cite{HildebrandKoeppe2013}, integer feasibility
+algorithms that query separation oracles only at integer
+points~\cite{AriHildebrand2026,HildebrandGoess2024,Basu2023Integers}, and
+lattice basis reduction~\cite{LenstraLenstraLovasz1982}. Our additions there
+are the exact arithmetic interfaces that these methods need for algebraic
+optimizers and their compositions. For example, the integer-query theorems
+are not applied directly to the algebraic value of a continuous fiber;
+Section~\ref{sec:constraints} replaces them by its own approximate
+projected-gradient and integer-only cutting argument.
+
+\paragraph{Quadratic sampling and algebraic cone input.}
+The feasibility bound in Appendix~\ref{app:further-arithmetic} is a
+polyhedral consequence of Grigoriev and Pasechnik's
+component-sampling theorem~\cite[Theorem~1.2]{GrigorievPasechnik2005}.
+Its sampling architecture is prior work. The appendix gives separate
+proofs for finite infima and attained minimum-norm optimizers, using ordered
+regularization and perturbation limits and controlling one joint field for
+the selected limiting tuple. Its cone algorithm uses that arithmetic
+interface together with the integer-witness method of Khachiyan and
+Porkolab~\cite[Theorem~1.1]{KhachiyanPorkolab2000} and rational mixed-integer linear
+feasibility at fixed integer dimension~\cite[Section~5]{Lenstra1983}.
+The extension specifies one real embedding for explicit algebraic input,
+preserves exact feasibility through rational rounding and cone lifts, and
+returns continuous coordinates in a field containing the input field.
+These input, formula, sign, rounding, and output guarantees are distinct
+from the established sampling and integer algorithms on which they rely.
+
+\subsection{Scope of the claims}
+\label{sec:intro-scope}
+
+The hardness results for continuous convex polynomial families are reductions
+from $\PosSLP$ or Square Root Sum. They do not establish NP-hardness or
+unconditional running-time lower bounds. Appendix~\ref{app:further-arithmetic}
+also proves strong NP-hardness of nonconvex quadratic feasibility and
+attainment at a supplied zero infimum, even with one constraint-Hessian
+direction. Upper bounds relative to $\PosSLP$ are not
+ordinary polynomial-time algorithms, since the constructed circuits compute
+integers with exponentially many bits. $\PosSLP$ does not describe polynomial
+optimization in general: our upper bounds require explicit input of unary
+degree and a global strong convexity bound, or one of the constrained
+structures of Section~\ref{sec:constraints}. Three questions about exact
+decisions remain open: whether exact comparison for globally strongly convex
+quartics over arbitrary rational polyhedra lies in $\mathrm P^{\PosSLP}$,
+equivalently reduces to one $\PosSLP$ instance, rather than only in
+$\mathrm{UP}^{\PosSLP}\cap\mathrm{coUP}^{\PosSLP}$; whether exact comparison
+at minimizers of convex quartics that are not strongly convex has any upper
+bound relative to $\PosSLP$; and whether equality tests are $\PosSLP$-hard.
+Lower bounds on output size are stated for specific expanded formats and do
+not exclude compact descriptions. Most of them concern families whose input
+length is polynomial in the dimension and are exponential in the dimension,
+hence superpolynomial in the input length; none of these is claimed to be
+exponential in the input length. Promised properties, such as convexity,
+strong convexity, a unique real root, a rational optimizer, a zero minimum,
+or a slack gap, are not recognized by our algorithms unless a certificate is
+supplied and checked.
+
+\subsection{Organization}
+\label{sec:intro-organization}
+
+Section~\ref{sec:models} fixes encodings, promises and certificates, output
+contracts, and computational models, and proves a few elementary facts used
+throughout. Section~\ref{sec:points} studies value-to-point conversion.
+Sections~\ref{sec:upper} and~\ref{sec:reductions} prove the upper and lower
+bounds for exact decisions, and Section~\ref{sec:constraints} extends them to
+constraints and integer variables. Sections~\ref{sec:algebraic}
+and~\ref{sec:heights} study the algebraic degree and the bit length of exact
+optimizers and of interior, moment, and exposing matrices.
+Sections~\ref{sec:fields} and~\ref{sec:fields-certificates} study
+coefficient fields and formats of sum-of-squares certificates.
+Section~\ref{sec:recourse} treats cubic recourse with a nonconvex core.
+Section~\ref{sec:discussion} discusses consequences for exact optimization
+and open questions.
+
+The main sections state results, explain why they matter, and outline the
+proofs. The complete proofs for
+Sections~\ref{sec:points}--\ref{sec:recourse} are in
+Appendices~\ref{app:points}, \ref{app:upper}, \ref{app:reductions},
+\ref{app:constraints}, \ref{app:algebraic}, \ref{app:heights},
+\ref{app:fields}, \ref{app:fields-certificates}, and~\ref{app:recourse},
+respectively.
+Appendix~\ref{app:qc} compares the results with convex quadratically
+constrained problems, where the number of independent constraint Hessians
+controls the arithmetic. Appendix~\ref{app:boundaries} records examples that
+mark the limits of the methods: degenerate quartics, information-based
+precision limits, penalty representations, and facial reduction.
+Appendix~\ref{app:further-arithmetic} treats two settings outside the convex
+classes above: quadratic constraints with few independent Hessians, and
+cone constraints with bounded integer dimension over an explicitly
+represented real number field. It develops common-field witness, finite-value,
+attainment, and algebraic-input contracts, as summarized in
+Section~\ref{sec:intro-further-arithmetic}.
+
+Readers interested mainly in complexity can read Sections~\ref{sec:models},
+\ref{sec:upper}, \ref{sec:reductions}, and~\ref{sec:constraints}; readers
+interested in certificates, Sections~\ref{sec:models}
+and~\ref{sec:algebraic}--\ref{sec:fields-certificates}; and readers
+interested in solver design, Sections~\ref{sec:points}, \ref{sec:constraints},
+\ref{sec:recourse}, and~\ref{sec:discussion}.

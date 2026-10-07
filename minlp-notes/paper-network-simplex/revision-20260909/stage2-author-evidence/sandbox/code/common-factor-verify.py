@@ -3,7 +3,7 @@
 The partition uses exact rational breakpoints and coefficients. Stationary-point
 evaluation and the independent Gurobi comparison use floating point. This checks
 the simple fixed-total specialization, not the whole fixed-linking-row theorem.
-Run with /home/sgusev/miniconda3/envs/minlp-notes/bin/python.
+Run with python.
 """
 from fractions import Fraction as F
 from math import sqrt, inf

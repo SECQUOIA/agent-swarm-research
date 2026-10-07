@@ -102,7 +102,7 @@ From the repository root:
 
 ```bash
 python code/power_flow_existential_reals/check_winding_count_exact.py
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python code/pooling_existential_reals/check_bounded_exact.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python code/pooling_existential_reals/check_bounded_exact.py
 ```
 
 Earlier Gurobi gadget runs remain numerical checks recorded in the result

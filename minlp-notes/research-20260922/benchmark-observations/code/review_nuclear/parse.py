@@ -1,3 +1,5 @@
+from pathlib import Path as _CleanupPath
+
 import re, sys
 from fractions import Fraction as F
 import xml.etree.ElementTree as ET
@@ -20,7 +22,7 @@ def expand(elem):
                 b=int(v); d=int(inc); out += [b+d*i for i in range(m)]
     return out
 def load(name):
-    t=ET.parse(f'/home/sgusev/.cache/minlplib/minlplib/osil/{name}.osil').getroot()
+    t=ET.parse(f'{_CleanupPath.home()}/.cache/minlplib/minlplib/osil/{name}.osil').getroot()
     d=t.find(NS+'instanceData')
     V=[]
     for v in d.find(NS+'variables').findall(NS+'var'):

@@ -21,7 +21,7 @@ conda run -n qipm --live-stream make package
 Alternatively, the checks can use the absolute environment interpreter:
 
 ```sh
-make check PYTHON=/home/sgusev/miniconda3/envs/qipm/bin/python
+make check PYTHON=/workspace/local-home/miniconda3/envs/qipm/bin/python
 ```
 
 A clean rebuild is `conda run -n qipm --live-stream make -B`. The LaTeX

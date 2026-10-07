@@ -67,7 +67,7 @@ An independent citation-forward novelty search is documented in [notes/cia-novel
 
 ## Computation and cautions
 
-The existing `cia_tv.py` uses Gurobi and is runnable with `/home/sgusev/miniconda3/envs/minlp-notes/bin/python`; the system Python does not have Gurobi. The new certificate scripts use only the standard library and exact rational/integer arithmetic.
+The existing `cia_tv.py` uses Gurobi and is runnable with `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python`; the system Python does not have Gurobi. The new certificate scripts use only the standard library and exact rational/integer arithmetic.
 
 Exploratory full worst-case MILP values on unit grids:
 

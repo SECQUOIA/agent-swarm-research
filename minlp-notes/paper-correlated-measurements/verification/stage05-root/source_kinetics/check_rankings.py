@@ -64,7 +64,9 @@ def validate(args):
         assert Fraction(comparison['true_regret_at_gated_choice']) == regret
         assert Fraction(comparison['relative_true_regret']) == regret/a
     assert len(result['comparisons']) == 33
-    assert args.data.is_file() and hashlib.sha256(args.data.read_bytes()).hexdigest() == DATA_HASH
+    if not args.data.is_file():
+        raise FileNotFoundError("Prepare the pinned input with prepare_input.py, or pass --data; see README.md.")
+    assert hashlib.sha256(args.data.read_bytes()).hexdigest() == DATA_HASH
     with args.data.open(newline='') as stream:
         rows = list(csv.reader(stream))[1:]
     F24 = s.Matrix([[s.Rational(x) for x in row[1:]] for row in rows])

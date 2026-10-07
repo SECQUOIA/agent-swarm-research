@@ -1,0 +1,101 @@
+\subsection{Validity, and what certification prevents}\label{sec:validity}
+
+Every recorded cut of campaigns 3 to~5 passed replay: 7{,}498 cuts in the
+prospective parts of campaign~3, 30{,}998 in Part~3P, 104{,}771 in campaign~4
+and 131{,}222 in campaign~5, 274{,}489 records in total, of which 5{,}267 are cuts
+on MINLPLib models and the others cuts on the constructed families; the 1{,}135
+cuts of the informational rerun of Section~\ref{sec:star-bench} passed replay as
+well. The records contain 92{,}222 distinct exported rows. Rows recur because
+the separator runs only at the root, so that the root and full runs of a path
+instance record the same cuts, because the runs of Part~5C-b with the caps
+$32n$ and $64n$ nearly coincide, and because overlapping blocks of a star share
+source rows. In every part and cut mode, each of the fourteen
+corrupted records of Section~\ref{sec:replay} was rejected. Every incumbent
+returned in campaigns 3 to~5 passed the original-model check, with one
+exception in a run without certified cuts: in a Part~4D root run of
+SCIP-extra, the incumbent satisfied all constraints, but SCIP's reported
+objective value differed by 34\% from the value recomputed on the source model.
+
+The checks also changed what reached SCIP. The stored-row check (C4) rejected
+certified, violated rows in every part, because presolve had aggregated or
+fixed a block variable or because SCIP had dropped or rounded a coefficient
+(Section~\ref{sec:funnel}). Binary64 rounding changed at least one coefficient
+in 13.5\% of the exported rows on the MINLPLib models, in 92.9\% on the path
+family and in 51.5\% on the star family; the bound correction of Proposition~\ref{prop:export} was at most
+$8.5\cdot10^{-16}$ in absolute value and never destroyed a violation.
+
+\begin{table}[t]
+\centering\footnotesize
+\caption{What a constant without a certificate would have done. For the
+recorded binary64 direction of each cut with an exact certificate, U1 is the
+minimum over the separator's sample set, U2 the better of U1 and SLSQP local
+minimizations, and U3 the best bound of a numerical global solve by Gurobi with
+default tolerances. ``Wrong'' counts constants that exceed the exact support
+value by more than $10^{-6}\max\{1,\abs{\text{value}}\}$; ``cuts off'' counts
+the resulting rows that cut off an incumbent of the same model that passed the
+original-model check, and ``optimum'' those that cut off the known optimal
+solution, which is known only for the path family; a row cuts off a point if
+it is violated there by more than $10^{-6}\max\{1,\norm{\hat c}_1\}$. MINLPLib:
+all cuts of Parts~3A, 3B, 3P, 4B2 and~4D with an exact certificate. Path family: a random
+sample of 1{,}000 of the 138{,}000 cuts recorded in campaigns 3 and~4 (995
+distinct).}\label{tab:ablation}
+\begin{tabular}{@{}llrrr@{}}
+\toprule
+Cuts & Constant & Wrong (models) & Cuts off (models) & Optimum\\
+\midrule
+MINLPLib, 5{,}116 cuts, 47 models & U1 & 1{,}969 (12) & 405 (7) & \\
+ & U2 & 230 (4) & 132 (2) & \\
+ & U3 & 4 (1) & 0 & \\
+\midrule
+Path family, 1{,}000 cuts, 60 instances & U1 & 976 (60) & 506 (58) & 404\\
+ & U2 & 73 (37) & 27 (19) & 13\\
+ & U3 & 0 & 0 & 0\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+To measure what the certificate itself buys (Part~4U), we recomputed, for the
+recorded binary64 direction of each cut, the constant that an uncertified
+pipeline would use. U1 is the minimum over the separator's own sample set,
+which is what the direction LP sees. U2 is the better of U1 and local
+minimizations by SLSQP \citep{Kraft1988} from the three best samples, on the
+block box and the affine domain rows. Up to binary64 rounding, both are upper
+bounds on the true support value. The MINLPLib set comprises all cuts whose
+certified value is the exact support value; the 151 cuts certified by
+Bernstein or ball-arithmetic lower bounds, all on models of Part~3A (95 in
+Part~3A and 56 in its Part~3P root runs), are excluded, because a larger
+uncertified constant would not show an error. Table~\ref{tab:ablation}
+compares the constants with the certified values. On the MINLPLib models the
+sample minimum was wrong for 38\% of the cuts, and 405 of the resulting rows
+would have cut off a feasible point that SCIP had returned for the same model.
+Local minimization reduced the share of wrong constants to 4.5\%, but not all
+errors disappeared. On \code{nvs02}, SLSQP stopped at its starting point after
+one iteration, because the directional derivative along its first step was
+below its default tolerance; on \code{kall\_ellipsoids\_tc02b} it started at
+stationary points that are not local minima. On the path family, where the
+blocks are nonconvex by construction, the sample minimum was wrong for almost
+every cut, 40\% of the uncertified rows would have cut off the known optimal
+solution, and local minimization still left 7.3\% wrong constants, some of
+whose rows cut off the optimum, because SLSQP converged to non-global local
+minima. Every wrong constant is refuted by an explicit point: the certified
+minimizer is exactly feasible and attains a smaller value. With ten times the
+removal threshold the four ``cuts off'' counts become 389, 128, 503 and 27, and
+the lists of models do not change.
+
+A numerical global solve is a much better substitute on these small blocks
+(Part~5U). Gurobi's best bound with default tolerances exceeded the exact
+support value, by rounding-level amounts, for 45\% of the MINLPLib cuts, so even
+these constants would need a safe correction, and it was materially wrong for
+one distinct cut, recorded four times on \code{nvs02}. There Gurobi reported
+optimality with zero gap for a constant $1.8\cdot10^{-4}$ above the true
+minimum, because a slope of $-8.9\cdot10^{-7}$ in one variable fell inside its
+optimality tolerance, and over that variable's range of 200 this lost
+$1.8\cdot10^{-4}$. A safety shift of $10^{-6}$ would not
+have covered this error, although none of these rows cut off a recorded
+feasible point; Gurobi's objective value instead of its bound was materially
+wrong for three of the sampled path cuts. The certified rows themselves were
+violated at recorded incumbents only within the feasibility tolerance of these
+incumbents: for example, incumbents of \code{st\_e22} with objective value
+$-85.0000017$, which satisfy the constraints only up to a scaled violation of
+$10^{-8}$, violate the certified objective bound $t\ge-85$, the true optimum, by
+$1.7\cdot10^{-6}$.

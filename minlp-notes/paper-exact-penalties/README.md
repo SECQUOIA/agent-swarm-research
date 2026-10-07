@@ -15,8 +15,9 @@ python3 verification/check_calibration_perturbation.py
 
 `verification/check_lower_bound.py` evaluates exact envelopes on the stated projected
 interval endpoints, optimized dual formulas, multiplier-independent balanced
-witnesses, accuracy thresholds, strict points, and encoding counts. The
-projection itself is established by the manuscript proof. The script also
+witnesses, accuracy thresholds, strict points, and encoding counts,
+including the seed variant of Remark 3.5. The projection itself is
+established by the manuscript proof. The script also
 checks exponent arithmetic for the fractional-power example and the
 completed-square identity for the source example's continuous branch. It uses
 only Python's standard library. Finite checks support arithmetic and indexing;
@@ -25,6 +26,8 @@ local checks, not project-wide verification or CI results.
 
 `evidence/coverage.md` maps the repository's penalty developments to the
 manuscript and identifies related work with a different scope.
+`evidence/rewrite-review.md` records the October 2026 rewrite: its reviews,
+the corrections and additions it made, and the targeted checks run.
 
 The upper-bound check uses SymPy (validated with version 1.14.0). It checks
 the adjugate stationarity and numerator identities in a singular-Hessian
@@ -39,6 +42,8 @@ library. It independently enumerates balanced mixtures for small calibration
 instances and their fixed-zero-multiplier thresholds, checks centered and
 endpoint grids against rational box boundaries (including finer cases with
 upper bounds below one), and tests the atomic grid correction, deterministic
-margins, continuous and finite-grid tail identities, and infinite-threshold
-witnesses at the zero atom of a concrete rational grid. Its finite examples do not prove complexity
+margins, continuous and finite-grid tail identities, infinite-threshold
+witnesses at the zero atom of a concrete rational grid, and the
+grid feasibility-transfer bound behind the corrected conditioning recipe in
+Section 7.5, and the finite-grid quantile bound of Example 7.6. Its finite examples do not prove complexity
 reductions or the general geometric and Gaussian statements.

@@ -33,6 +33,6 @@ Verdict: **no major mathematical issue found**. Three minor contract qualificati
 
 ## Validation and scope
 
-Ran `/home/sgusev/miniconda3/envs/qipm/bin/python notes/scalar-newton-paper/scripts/verify_cyclic.py`: all cyclic history, public-metadata, tilt, decrement, tree and completion checks passed. These diagnostics supplement the analytic audit.
+Ran `/workspace/local-home/miniconda3/envs/qipm/bin/python notes/scalar-newton-paper/scripts/verify_cyclic.py`: all cyclic history, public-metadata, tilt, decrement, tree and completion checks passed. These diagnostics supplement the analytic audit.
 
 The precision/output/access limitations are materially present. No theorem claims a generic quantum IPM or transfers a block-encoding lower bound to an exact-entry oracle. The novelty paragraph is qualified and credits the source clocks and previous SQ optimization hardness. I found no invalid core result requiring removal or a new research theorem before proceeding.

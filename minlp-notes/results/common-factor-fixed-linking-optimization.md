@@ -110,7 +110,7 @@ On 2026-09-04, the script passed 200 seeded comparisons with Gurobi 13's indepen
 Command:
 
 ```
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python code/common-factor-verify.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python code/common-factor-verify.py
 ```
 
 Observed output:

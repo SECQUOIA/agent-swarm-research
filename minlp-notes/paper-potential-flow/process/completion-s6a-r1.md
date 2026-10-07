@@ -68,7 +68,7 @@ The four primary PDF hashes agree with the retained record: Bartels `597fef05a54
 
 **Independent execution and evidence.**
 
-Interpreter: `/home/sgusev/miniconda3/envs/minlp-notes/bin/python`. I read the four principal implementation modules, the numerical cone helper, benchmark producer, Section 11 diagnostic, and relevant check scripts. The isolated replay copied the code and saved witnesses before running scripts. Full commands, return codes, and outputs are retained in `/tmp/s6a-r1-12wdsamk/replay.json` and `numerical-replay.json`.
+Interpreter: `/workspace/local-home/miniconda3/envs/minlp-notes/bin/python`. I read the four principal implementation modules, the numerical cone helper, benchmark producer, Section 11 diagnostic, and relevant check scripts. The isolated replay copied the code and saved witnesses before running scripts. Full commands, return codes, and outputs are retained in `/tmp/s6a-r1-12wdsamk/replay.json` and `numerical-replay.json`.
 
 - Normal and `-S -O` runs of `check_envelope_certificate_review.py`: five known exact states, 800 root minimality comparisons, 16 file corruption rejections per run, and saved-file acceptance.
 - Both modes of `check_envelope_bregman_review.py`: 50 signed/zero-gap states, 339 malformed-bound rejections, and 60 conserved residual comparisons per run.

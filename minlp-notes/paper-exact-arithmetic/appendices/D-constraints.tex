@@ -1,0 +1,1541 @@
+\section{Proofs for Section~\ref{sec:constraints}}
+\label{app:constraints}
+
+This appendix proves the results of Section~\ref{sec:constraints}. We keep
+the notation of Section~\ref{sec:constraints-setting}. Rational numbers,
+vectors, and polynomials are encoded in binary, and $\bits(\cdot)$ denotes
+encoding length. A \emph{rational circuit} is a pair of integer circuits
+$(N,Q)$ over $\{0,1,+,-,\times\}$ with $Q>0$, denoting $N/Q$; sums,
+differences, and products add a constant number of gates, division by a
+nonzero $N_2/Q_2$ uses
+\[
+ \frac{N_1/Q_1}{N_2/Q_2}=\frac{N_1Q_2N_2}{Q_1N_2^2},
+\]
+and the sign of $N/Q$ is the sign of $N$ (Definition~\ref{def:models-circuits} and Lemma~\ref{lem:denominator-clearing}).
+Comparing two rational circuits costs at most two $\PosSLP$ queries. For
+their difference numerator $N$, equality holds exactly when both strict-sign
+tests $N>0$ and $-N>0$ return false.
+
+External results are used only through the following contracts. Each
+contract is stated where it is used.
+\begin{enumerate}[label=(E\arabic*)]
+\item Convex value optimization (Lemma~\ref{lem:convex-value}): for an
+explicit rational convex polynomial of fixed degree, a nonempty explicit
+rational polyhedron contained in a supplied rational box, and a rational
+$\varepsilon\in(0,1]$, an exactly feasible rational point with objective value
+at most the minimum plus $\varepsilon$ is computed in ordinary time polynomial
+in the input length and $\log(1/\varepsilon)$.
+\item Separation (Lemma~\ref{lem:separation}) and the exact unconstrained
+comparisons of Theorems~\ref{thm:exact-upper} and~\ref{thm:upper-monotone},
+including the uniform Newton circuit of Lemma~\ref{lem:newton-circuit} and
+the compilation Theorem~\ref{thm:posslp-closure}.
+\item Linear programming with an arithmetic count independent of objective
+and right-hand-side lengths
+\citep[Theorem~6.6.3]{GroetschelLovaszSchrijver1988}, exact convex quadratic
+programming \citep{KozlovTarasovKhachiyan1980}, exact separable quadratic
+flows \citep[Theorem~20]{Vegh2016}, Clarkson-type sampling for violator spaces
+\citep{GaertnerMatousekRuestSkovron2008}, integer feasibility with
+integer-point separation oracles \citep{AriHildebrand2026,HildebrandGoess2024,Basu2023Integers},
+and fixed-dimensional integer and mixed-integer linear feasibility
+\citep{HildebrandKoeppe2013,DelPia2023}.
+\end{enumerate}
+
+\subsection{Geometry, radii, and supports}
+\label{app:constraints-geometry}
+
+Two elementary consequences of strong convexity are used repeatedly. For
+completeness we derive them in the form needed; they are instances of
+Lemma~\ref{lem:models-strong-convexity}.
+
+\begin{lemma}[Radius and distance]
+\label{lem:constraints-radius}
+Let $\varphi$ be a twice differentiable function on $\R^N$ with
+$\nabla^2\varphi\succeq\mu I$.
+\begin{enumerate}[label=(\alph*)]
+\item Let $x_0\in\R^N$, put
+$A_0=\|\nabla\varphi(0)\|_1+|\varphi(x_0)-\varphi(0)|+1$ and
+$R_0=2+2A_0/\mu$. Then $\varphi(x)>\varphi(x_0)$ whenever $\|x\|\ge R_0$. In
+particular, every minimizer of $\varphi$ over a closed set containing $x_0$
+has norm less than $R_0$.
+\item If $\varphi$ is minimized over a closed convex set $K$ at $p$, then
+$\varphi(x)-\varphi(p)\ge\frac\mu2\|x-p\|^2$ for every $x\in K$.
+\end{enumerate}
+If $\varphi$ is an explicit rational polynomial of fixed degree and $x_0$ is
+rational, then $R_0$ is rational with bit length polynomial in
+$\bits(\varphi)+\bits(\mu)+\bits(x_0)$.
+\end{lemma}
+
+\begin{proof}
+(a) Write $\rho=\|x\|$ and $\Delta=\varphi(x_0)-\varphi(0)$. Strong convexity
+and $|\nabla\varphi(0)^{\mathsf T}x|\le\|\nabla\varphi(0)\|_1\rho$ give
+$\varphi(x)\ge\varphi(0)-\|\nabla\varphi(0)\|_1\rho+\frac\mu2\rho^2$. If
+$\rho\ge R_0$, then $\frac\mu2\rho-\|\nabla\varphi(0)\|_1\ge A_0-\|\nabla\varphi(0)\|_1=|\Delta|+1$,
+so $\varphi(x)-\varphi(x_0)\ge\rho(|\Delta|+1)-\Delta>0$ because $\rho\ge2$.
+(b) $\varphi(x)\ge\varphi(p)+\nabla\varphi(p)^{\mathsf T}(x-p)+\frac\mu2\|x-p\|^2$,
+and $\nabla\varphi(p)^{\mathsf T}(x-p)\ge0$ by optimality of $p$ on $K$.
+The size statement holds because $\varphi(0)$, $\varphi(x_0)$, and
+$\nabla\varphi(0)$ are fixed-degree evaluations.
+\end{proof}
+
+\begin{proof}[Proof of Lemma~\ref{lem:constraints-polyhedral}]
+(a) Fix $x_0\in P$ and $R_1>\|T(x_0)\|/\mu$, and let
+$K=P\cap\{x:\|x-x_0\|\le R_1\}$. The map $x\mapsto\Pi_K(x-T(x))$, where
+$\Pi_K$ is Euclidean projection, is a continuous self-map of the nonempty
+compact convex set $K$, so Brouwer's theorem gives a fixed point $\bar p$.
+The projection inequality at $\bar p$ reads $T(\bar p)^{\mathsf T}(x-\bar p)\ge0$
+for $x\in K$. If $\|\bar p-x_0\|=R_1$, then \eqref{eq:constraints-monotone}
+gives
+\[
+ T(\bar p)^{\mathsf T}(\bar p-x_0)\ge T(x_0)^{\mathsf T}(\bar p-x_0)+\mu R_1^2
+ \ge R_1(\mu R_1-\|T(x_0)\|)>0,
+\]
+contradicting the inequality at $x=x_0$. Hence $\|\bar p-x_0\|<R_1$. For any
+$x\in P$ and small $\varepsilon>0$, the point $\bar p+\varepsilon(x-\bar p)$
+lies in $K$, so $T(\bar p)^{\mathsf T}(x-\bar p)\ge0$; thus $\bar p$ solves
+$\mathrm{VI}(T,P)$. If $p,p'$ are two solutions, adding
+$T(p)^{\mathsf T}(p'-p)\ge0$ and $T(p')^{\mathsf T}(p-p')\ge0$ gives
+$(T(p)-T(p'))^{\mathsf T}(p-p')\le0$, and \eqref{eq:constraints-monotone}
+forces $p=p'$. For $T=\nabla f$, integrating
+\eqref{eq:constraints-curvature} along segments gives
+\eqref{eq:constraints-monotone}, and convexity shows that the solutions of
+$\mathrm{VI}(\nabla f,P)$ are exactly the minimizers of $f$ on $P$.
+
+(b) If $-T(x)=\sum_{i\in S(x)}\lambda_ia_i$ with $\lambda\ge0$, then for
+$y\in P$ we get $T(x)^{\mathsf T}(y-x)=-\sum_i\lambda_i(a_i^{\mathsf T}y-b_i)\ge0$.
+Conversely, let $x$ solve the variational inequality and let $d$ satisfy
+$a_i^{\mathsf T}d\le0$ for $i\in S(x)$. The rows outside $S(x)$ have positive
+slack at $x$, so $x+\varepsilon d\in P$ for small $\varepsilon>0$, and
+$T(x)^{\mathsf T}d\ge0$. By Farkas' lemma, $-T(x)$ is a nonnegative
+combination of $\{a_i:i\in S(x)\}$. Choose such a combination with the
+smallest number of positive coefficients, supported on $J$. If the rows
+$a_i$, $i\in J$, were dependent, a nonzero $\beta$ with
+$\sum_{i\in J}\beta_ia_i=0$ could be chosen with some $\beta_i>0$; subtracting
+$\vartheta\beta$ with $\vartheta=\min\{\lambda_i/\beta_i:\beta_i>0\}$ would
+remove a coefficient while keeping the others nonnegative. Hence the rows in
+$J$ are independent and $|J|\le\rank A$; if $T(x)=0$, then $J=\varnothing$.
+
+(c) Let $|J|=s$. Gaussian elimination with a fixed pivoting rule selects $s$
+columns $\mathcal B$ for which $A_{J,\mathcal B}$ is invertible; let
+$\mathcal N$ be the other columns. Setting $x_{\mathcal N}=y$ and
+$x_{\mathcal B}=A_{J,\mathcal B}^{-1}(b_J-A_{J,\mathcal N}y)$ parametrizes
+$\{x:A_Jx=b_J\}$ as $\bar x+Zy$, with $Z_{\mathcal N}=I$ and
+$Z_{\mathcal B}=-A_{J,\mathcal B}^{-1}A_{J,\mathcal N}$. Thus
+$Z^{\mathsf T}Z=I+Z_{\mathcal B}^{\mathsf T}Z_{\mathcal B}\succeq I$. After the
+rows of $A$ are scaled to integers, every entry of $\bar x$ and $Z$ is a ratio
+of minors of the scaled matrix $[A\ b]$, so Hadamard's inequality bounds all
+bit lengths by one polynomial in $L$, for every $J$. For $y,y'\in\R^{n-s}$,
+\[
+ (U_J(y)-U_J(y'))^{\mathsf T}(y-y')
+ =\bigl(T(\bar x+Zy)-T(\bar x+Zy')\bigr)^{\mathsf T}Z(y-y')
+ \ge\mu\|Z(y-y')\|^2\ge\mu\|y-y'\|^2 .
+\]
+Substituting an affine map into a polynomial of fixed degree creates
+polynomially many monomials with polynomially bounded coefficients. For
+$T=\nabla f$, the chain rule gives $\nabla g_J(y)=Z^{\mathsf T}\nabla f(\bar x+Zy)$
+and $\nabla^2g_J=Z^{\mathsf T}\nabla^2fZ\succeq\mu Z^{\mathsf T}Z\succeq\mu I$.
+
+(d) Since $A_Jp=b_J$ and $Z$ has full column rank, $p=\bar x+Zy_p$ for a
+unique $y_p$. Because $A_J(\bar x+Zy)=b_J$ for all $y$, we have $A_JZ=0$, so
+$Z^{\mathsf T}a_i=0$ for $i\in J$. As $T(p)$ lies in the span of these rows,
+$U_J(y_p)=Z^{\mathsf T}T(p)=0$. By (a) applied to $U_J$ on all of
+$\R^{n-s}$, the zero of $U_J$ is unique, so $y_p=y_J$. A support $J$ from (b)
+satisfies $A_Jp=b_J$ and $T(p)=-A_J^{\mathsf T}\lambda$. A row basis $J$ of
+$A_{S(p)}$ satisfies $A_Jp=b_J$, and
+$T(p)\in-\operatorname{cone}\{a_i:i\in S(p)\}\subseteq\Span\{a_i:i\in J\}$.
+\end{proof}
+
+The next lemma is the deterministic test behind the support certificate of
+Section~\ref{sec:constraints-general} and behind the violation primitive of
+Theorem~\ref{thm:constraints-rank}. For a set $G$ of rows write
+$P_G=\{x:a_i^{\mathsf T}x\le b_i\ (i\in G)\}$.
+
+\begin{lemma}[Support test]
+\label{lem:constraints-support-test}
+Let $G$ be a set of rows with $P_G\ne\varnothing$, let $p_G$ be the solution of
+$\mathrm{VI}(T,P_G)$, and let $J\subseteq G$ be a set of independent rows with
+chart $(\bar x,Z)$, zero $y_J$ of $U_J$, and $p_J=\bar x+Zy_J$. With
+$\lambda_J$ as in \eqref{eq:constraints-multipliers}, consider the tests
+\begin{equation}\label{eq:constraints-support-test}
+ b_i-a_i^{\mathsf T}p_J\ge0\ (i\in G),\qquad \lambda_J(y_J)\ge0,\qquad
+ T(p_J)+A_J^{\mathsf T}\lambda_J(y_J)=0 .
+\end{equation}
+If they hold, then $p_J=p_G$. Conversely, every support $J\subseteq G$ of
+$p_G$ given by Lemma~\ref{lem:constraints-polyhedral}(b) passes them. Each
+test is a sign condition on an explicit polynomial of degree at most three in
+$y$, with coefficient length polynomial in $L$, at the zero of $U_J$.
+Hence the tests are decided in polynomial time with a $\PosSLP$ oracle, by
+Theorem~\ref{thm:upper-monotone}, or by rational arithmetic if $|J|=n$.
+\end{lemma}
+
+\begin{proof}
+Suppose \eqref{eq:constraints-support-test} holds. Then $p_J\in P_G$,
+$a_i^{\mathsf T}p_J=b_i$ for $i\in J$, and $-T(p_J)=A_J^{\mathsf T}\lambda$ with
+$\lambda=\lambda_J(y_J)\ge0$. For $x\in P_G$,
+$T(p_J)^{\mathsf T}(x-p_J)=-\lambda^{\mathsf T}(A_Jx-b_J)\ge0$. Thus $p_J$
+solves $\mathrm{VI}(T,P_G)$, and $p_J=p_G$ by uniqueness. Conversely, if $J$
+is a support of $p_G$ with $T(p_G)=-A_J^{\mathsf T}\lambda$ and $\lambda\ge0$,
+then $p_J=p_G$ by Lemma~\ref{lem:constraints-polyhedral}(d), and
+$\lambda_J(y_J)=(A_JA_J^{\mathsf T})^{-1}A_JA_J^{\mathsf T}\lambda=\lambda$,
+so all tests hold. The matrix $(A_JA_J^{\mathsf T})^{-1}$ is rational of
+polynomial size because the rows of $J$ are independent; the tested
+expressions are affine or cubic in $y$ after substitution.
+\end{proof}
+
+Guessing $J$ and running these tests with $G=\{1,\ldots,m\}$, followed by a
+comparison of $h(p_J)$, proves the
+$\NP^{\PosSLP}\cap\mathrm{coNP}^{\PosSLP}$ bound mentioned in
+Remark~\ref{rem:constraints-unambiguous}.
+
+\subsection{Unambiguous certificates}
+\label{app:constraints-unambiguous}
+
+\paragraph{A linear program with a circuit objective.}
+We use the following linear-programming theorem, whose arithmetic count is
+independent of the objective and right-hand-side lengths.
+
+\begin{quote}
+\emph{Contract (E3a)}
+\citep[Theorem~6.6.3]{GroetschelLovaszSchrijver1988}. There is an algorithm
+that, given rational $D_0$, $e_0$, and $c$ such that
+$\{v:D_0v\le e_0\}$ is nonempty and bounded, returns a vertex minimizing
+$c^{\mathsf T}v$ over this polytope. Its operations on numbers are additions,
+subtractions, multiplications, divisions by nonzero numbers, and comparisons,
+and their number is bounded by a polynomial in $\bits(D_0)$, independently of
+$c$ and $e_0$. The integer roundings in its preprocessing of the objective are
+carried out by comparisons of numbers whose range is bounded in advance.
+\end{quote}
+
+\begin{lemma}[Linear programming with a circuit objective]
+\label{lem:constraints-circuit-lp}
+Let $Q_0=\{v\in\R^n:D_0v\le e_0\}$ be a nonempty bounded polytope with
+explicit rational data, and let $c$ be a vector of rational circuits. A vertex
+of $Q_0$ minimizing $c^{\mathsf T}v$ can be computed, with its coordinates
+printed as rationals in binary, in deterministic time polynomial in
+$\bits(D_0,e_0)$ and the circuit size, with a $\PosSLP$ oracle.
+\end{lemma}
+
+\begin{proof}
+Run the algorithm of contract (E3a) with every number held as a rational
+circuit. Binary rational constants are built from $0$ and $1$ by doubling and
+addition. Each arithmetic operation adds a constant number of shared gates,
+and each comparison is answered exactly by $\PosSLP$. The simulation therefore
+follows the execution of the algorithm on the rational input $c$, all
+divisions are by nonzero numbers, and the output is an optimal vertex
+$v_*$ represented by circuits. The number of gates and queries is polynomial.
+
+To print $v_*$, decide for each row $i$ whether $(D_0)_iv_*=(e_0)_i$, by two
+strict-sign queries. The rows that are tight at a vertex span $\R^n$:
+otherwise a nonzero $d$ orthogonal to all of them gives
+$v_*\pm\varepsilon d\in Q_0$ for small $\varepsilon>0$, because the other rows
+have positive slack, and $v_*$ would not be extreme. Choose $n$ independent
+tight rows by rational elimination on the explicit matrix $D_0$ and solve the
+corresponding square system. Its unique solution is $v_*$, and Cramer's rule
+bounds its bit length polynomially in $\bits(D_0,e_0)$. No circuit is
+expanded.
+\end{proof}
+
+\paragraph{The normal-cone test.}
+We use Lemma~\ref{lem:newton-circuit} in the following form. Let $U$ be an
+explicit cubic map on $\R^d$, $d\ge1$, satisfying
+\eqref{eq:constraints-monotone} with modulus $\mu$, with unique zero $y_*$,
+and let $M$ be an integer, written in unary, that is at least the encoding
+length of $(U,\mu)$. Part~(b) of that lemma, with $L'=M$, constructs in time
+polynomial in $M$ and without oracle calls a shared rational circuit $\hat y$
+such that every explicit polynomial $\eta$ of encoding length at most $M$
+satisfies
+\begin{equation}\label{eq:constraints-uniform-newton}
+ \eta(y_*)=0\ \text{or}\ |\eta(y_*)|\ge g_M,
+ \qquad\text{and}\qquad |\eta(\hat y)-\eta(y_*)|\le g_M/8,
+\end{equation}
+where $g_M=2^{-2^{e(M)}}$ has a circuit of $e(M)$ squarings of $1/2$. For
+gradient maps, part~(a) of the lemma gives the same conclusion with a warm
+start from convex value optimization.
+
+\begin{lemma}[Normal-cone test]
+\label{lem:constraints-cone-test}
+Let $U$ and $y_*$ be as above, let $\mathsf C(y)\in\Q[y]^n$ be an explicit
+vector of polynomials of degree at most three, and let
+$Q_0=\{v:D_0v\le e_0\}$ be a nonempty bounded rational polytope. Whether
+$\mathsf C(y_*)^{\mathsf T}v\ge0$ for all $v\in Q_0$ is decidable in
+deterministic polynomial time with a $\PosSLP$ oracle.
+\end{lemma}
+
+\begin{proof}
+Every vertex of $Q_0$ is the unique solution of $n$ independent rows of
+$D_0v=e_0$. After scaling rows to integers, Cramer's rule and Hadamard's
+inequality bound the coordinates of every vertex by a polynomial $\sigma$ in
+the input length $\Lambda_0$ of $(U,\mu,\mathsf C,D_0,e_0)$. Hence there is a
+polynomial $M=M(\Lambda_0)\ge\Lambda_0$, computed without knowing any vertex,
+that bounds the encoding length of every vertex observable
+$\eta_v(y)=v^{\mathsf T}\mathsf C(y)$. Construct $\hat y$ as in
+\eqref{eq:constraints-uniform-newton}, form the rational circuit vector
+$\hat c=\mathsf C(\hat y)$, and use Lemma~\ref{lem:constraints-circuit-lp} to
+print a vertex $w$ minimizing $\hat c^{\mathsf T}v$ over $Q_0$. Finally decide
+$\eta_w(y_*)\ge0$ exactly, by Theorem~\ref{thm:upper-monotone} or by testing
+the sign of $\eta_w(\hat y)+g_M/2$; answer accordingly.
+
+If $\mathsf C(y_*)^{\mathsf T}v\ge0$ on $Q_0$, then in particular
+$\eta_w(y_*)\ge0$. Otherwise the linear function
+$v\mapsto\mathsf C(y_*)^{\mathsf T}v$ is negative somewhere on the polytope,
+hence at some vertex $v_1$. Then $\eta_{v_1}(y_*)\le-g_M$ and
+$\hat c^{\mathsf T}v_1\le-7g_M/8$, so $\hat c^{\mathsf T}w\le-7g_M/8$. If
+$\eta_w(y_*)\ge0$, then $\hat c^{\mathsf T}w\ge-g_M/8$, which is
+impossible. Thus
+$\eta_w(y_*)<0$ and the test answers correctly. Ties among vertex values cause
+no difficulty.
+\end{proof}
+
+The linear program has a rational objective given by a circuit; it is never
+run with the algebraic vector $\mathsf C(y_*)$. The only algebraic quantity
+whose sign is decided is the explicit cubic $\eta_w$ at $y_*$, so the
+observable theorems are applied only to explicit polynomials.
+
+\begin{proof}[Proof of Theorem~\ref{thm:constraints-unambiguous}]
+We describe two nondeterministic oracle machines, $\mathsf M$ for the
+promise problem and $\overline{\mathsf M}$ for its complement. Both first
+perform the following deterministic steps. If a certificate is supplied and is
+invalid, $\mathsf M$ rejects and $\overline{\mathsf M}$ accepts. If
+$P=\varnothing$, decided by linear programming, $\mathsf M$ rejects and
+$\overline{\mathsf M}$ accepts. If $n=0$, everything is a rational
+computation. Otherwise both machines guess $S\subseteq\{1,\ldots,m\}$, one bit
+per row, and then deterministically:
+\begin{enumerate}[label=(\arabic*)]
+\item choose the row basis $J$ of $A_S$ obtained by scanning the rows of $S$
+in increasing order, and its chart $(\bar x,Z)$; let $y_J$ be the zero of
+$U_J$ and $p_S=\bar x+Zy_J$;
+\item reject unless $b_i-a_i^{\mathsf T}p_S=0$ for all $i\in S$ and
+$b_i-a_i^{\mathsf T}p_S>0$ for all $i\notin S$;
+\item reject unless \eqref{eq:constraints-cone-test} holds, decided by
+Lemma~\ref{lem:constraints-cone-test} with $\mathsf C(y)=T(\bar x+Zy)$ and
+$Q_0=Q_S$ (if $|J|=n$, by ordinary linear programming with the rational
+objective $T(\bar x)$);
+\item $\mathsf M$ accepts if $h(p_S)\bowtie0$, and $\overline{\mathsf M}$
+accepts otherwise.
+\end{enumerate}
+Each slack in step~(2) and the observable in step~(4) is an explicit
+polynomial in $y$ at the zero of $U_J$, which satisfies
+\eqref{eq:constraints-monotone} by Lemma~\ref{lem:constraints-polyhedral}(c),
+so Theorem~\ref{thm:upper-monotone} decides it. All steps take polynomial time
+with a $\PosSLP$ oracle.
+
+\emph{Soundness.} Suppose $S$ passes steps (2) and (3). Then $p_S\in P$ and
+$A_Sp_S=b_S$. For $x\in P$, the vector $x-p_S$ satisfies
+$A_S(x-p_S)\le0$, and $v=(x-p_S)/\max\{1,\|x-p_S\|_\infty\}$ lies in $Q_S$;
+hence $T(p_S)^{\mathsf T}(x-p_S)\ge0$. Thus $p_S$ solves $\mathrm{VI}(T,P)$
+and equals $p$. Step~(2) now says $S=S(p)$.
+
+\emph{Completeness.} For $S=S(p)$, Lemma~\ref{lem:constraints-polyhedral}(d)
+gives $p_S=p$, so step~(2) holds by the definition of $S(p)$. By
+Lemma~\ref{lem:constraints-polyhedral}(b), $-T(p)=\sum_{i\in S(p)}\lambda_ia_i$
+with $\lambda\ge0$, so $T(p)^{\mathsf T}v=-\sum_i\lambda_ia_i^{\mathsf T}v\ge0$
+for $v\in Q_S$, and step~(3) holds.
+
+Consequently exactly one guess reaches step~(4), and it uses $p_S=p$. On a
+yes-instance $\mathsf M$ has exactly one accepting computation and
+$\overline{\mathsf M}$ has none; on a no-instance the roles are exchanged.
+Inconsistent guessed equalities, redundant rows, zero rows, zero multipliers,
+and lower-dimensional polyhedra are all handled by the exact mask in
+step~(2).
+\end{proof}
+
+
+\subsection{Few nonlinear directions}
+\label{app:constraints-nonlinear}
+
+\begin{proof}[Proof of Lemma~\ref{lem:constraints-essential}]
+(a) For $v\in\R^n$,
+$D_v(f_3+f_4)=\sum_iv_i\,\partial_i(f_3+f_4)=\sum_\beta(Wv)_\beta x^\beta$.
+Since $D_vf_3$ and $D_vf_4$ are homogeneous of degrees two and three, both
+vanish identically exactly when $Wv=0$. Each monomial of $f_3+f_4$
+contributes at most four monomials to the partial derivatives, so $W$ has at
+most $4L$ nonzero rows, and its rank, a row basis $U$ of its row space, and
+$V=U^{\mathsf T}(UU^{\mathsf T})^{-1}$ are computed by rational elimination
+in polynomial time.
+
+(b) For $x\in\R^n$, the vector $e=x-VUx$ lies in $\ker U=K_f$. The derivative
+of $\vartheta\mapsto(f_3+f_4)(VUx+\vartheta e)$ is
+$D_e(f_3+f_4)(VUx+\vartheta e)=0$, so $(f_3+f_4)(x)=(f_3+f_4)(VUx)=\theta(Ux)$.
+
+(c) Let $x=Mx'+a$ with $M$ invertible and put $f'(x')=f(Mx'+a)$. Expanding
+$f_4(y+a)=f_4(y)+D_af_4(y)+(\text{terms of degree}\le2)$ and
+$f_3(y+a)=f_3(y)+(\text{terms of degree}\le2)$ shows that the homogeneous
+parts of $f'$ of degrees four and three are $f_4(Mx')$ and
+$f_3(Mx')+(D_af_4)(Mx')$. For $v'\in\R^n$ and $v=Mv'$, the derivatives in
+direction $v'$ are $(D_vf_4)(Mx')$ and $(D_vf_3+D_vD_af_4)(Mx')$. If
+$D_vf_4\equiv0$, then $D_vD_af_4=D_aD_vf_4\equiv0$. Hence $v'\in K_{f'}$ if and
+only if $D_vf_4\equiv0$ and $D_vf_3\equiv0$, that is, $K_{f'}=M^{-1}K_f$.
+\end{proof}
+
+The next lemma is the elimination on an arbitrary affine face. Its point is
+the uniform size bound: the same polynomial $T$ works for every set of rows,
+so the unknown active face of the optimizer can be used in proofs without
+being found.
+
+\begin{lemma}[Elimination of the quadratic directions]
+\label{lem:constraints-elimination}
+Let $f$ satisfy \eqref{eq:constraints-curvature} with nonlinear dimension $k$
+and $U,V,\theta$ as in Lemma~\ref{lem:constraints-essential}. Let $J$ be a set
+of independent rows with chart $(\bar x,Z)$, $Z\in\Q^{n\times d}$, and let
+$y_J$ be the unconstrained minimizer of $y\mapsto f(\bar x+Zy)$. Rational
+linear algebra computes $s=\rank(UZ)\le k$, $\bar c\in\Q^n$, and
+$D\in\Q^{n\times s}$ of full column rank such that, for
+$\varphi(u)=f(\bar c+Du)$:
+\begin{enumerate}[label=(\roman*)]
+\item $\nabla^2\varphi(u)\succeq\mu D^{\mathsf T}D\succ0$ for all $u\in\R^s$;
+for $s\ge1$, the rational number
+\[
+ \nu=\frac{\mu\det(D^{\mathsf T}D)}{\tr(D^{\mathsf T}D)^{s-1}}
+\]
+satisfies $\mu D^{\mathsf T}D\succeq\nu I$ (Lemma~\ref{lem:models-det-trace});
+\item $\bar x+Zy_J=\bar c+Du_*$, where $u_*$ is the unique zero of
+$\nabla\varphi$;
+\item for every observable $h$, the coefficients of $\bar c$, $D$, $\varphi$,
+and $\eta(u)=h(\bar c+Du)$, after clearing denominators, have bit length at most
+$T(L)$, where $T$ is a polynomial with an absolute exponent that depends on
+neither $J$ nor $k$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+Let $Y=UZ\in\Q^{k\times d}$. From the reduced row echelon form of $Y$, let
+$W_0\in\Q^{d\times(d-s)}$ be the standard basis of $\ker Y$ (one vector per
+nonpivot column) and let $T_0\in\Q^{d\times s}$ consist of the unit vectors of
+the pivot columns. In the coordinates ordered as pivot and nonpivot columns,
+$[T_0\ W_0]$ is block upper triangular with identity diagonal blocks, hence
+invertible, and $YT_0$ has rank $s$ because $Y[T_0\ W_0]=[YT_0\ 0]$.
+
+Write $y=T_0u+W_0w$ and $F(u,w)=f(\bar x+ZT_0u+ZW_0w)$. Since $UZW_0=0$,
+Lemma~\ref{lem:constraints-essential}(b) gives
+\[
+ F(u,w)=f_{\le2}(\bar x+ZT_0u+ZW_0w)+\theta(U\bar x+YT_0u).
+\]
+The second term does not depend on $w$, and the first has degree at most two.
+With $Q_2=\nabla^2f_{\le2}$, a constant rational matrix,
+\[
+ F(u,w)=\tfrac12w^{\mathsf T}Hw+w^{\mathsf T}(Gu+a)+F(u,0),
+\]
+where
+\[
+ H=(ZW_0)^{\mathsf T}Q_2ZW_0,\qquad G=(ZW_0)^{\mathsf T}Q_2ZT_0,\qquad
+ a=(ZW_0)^{\mathsf T}\nabla f_{\le2}(\bar x).
+\]
+The Hessian of $F$ in $w$ equals $(ZW_0)^{\mathsf T}\nabla^2f(x)ZW_0$, because
+the term $\theta(\cdot)$ does not depend on $w$; by
+\eqref{eq:constraints-curvature} it is at least
+$\mu(ZW_0)^{\mathsf T}ZW_0\succ0$, since $ZW_0$ has full column rank. Thus
+$H\succ0$, and for fixed $u$ the unique minimizer in $w$ is
+$w(u)=-H^{-1}(Gu+a)$. Put $\bar c=\bar x-ZW_0H^{-1}a$ and
+$D=ZT_0-ZW_0H^{-1}G$, so that $\bar x+ZT_0u+ZW_0w(u)=\bar c+Du$ and
+$\varphi(u)=\min_wF(u,w)$.
+
+Since $UZW_0=0$, we have $UD=YT_0$, which has rank $s$; so $D$ has full
+column rank, and (i) follows from
+$\nabla^2\varphi=D^{\mathsf T}\nabla^2f(\bar c+Du)D$. For (ii), write
+$y_J=T_0u_J+W_0w_J$. Minimizing first over $w$ shows $w_J=w(u_J)$ and that
+$u_J$ minimizes $\varphi$; by (i), $u_J$ is the unique zero $u_*$ of
+$\nabla\varphi$. For (iii), the construction is a fixed sequence of rational
+operations: the chart, the product $UZ$, an echelon form, the matrices $H$,
+$G$, $a$ and $H^{-1}$, and the substitution of the affine map $\bar c+Du$ into
+$f$ and $h$. Each step multiplies, inverts, or row-reduces matrices of
+dimension at most $n\le L$ whose entries have polynomially bounded bit length;
+by Cramer's rule and Hadamard's inequality each such step preserves a
+polynomial bound, and the number of steps is fixed, so one polynomial bound
+holds for every $J$. Substituting an affine map in $s\le n$ variables into a
+monomial of degree at most four gives at most $(n+1)^4$ terms, with additive
+growth of coefficient bit length. Clearing denominators by the product of all
+denominators keeps the bit length polynomial. None of these bounds depends on
+$k$ beyond $k\le n$.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:constraints-nonlinear}]
+\emph{A uniform gap.} Assume $P\ne\varnothing$ and let $J$ be a row basis of
+$A_{S(p)}$. By Lemma~\ref{lem:constraints-polyhedral}(d), $p=\bar x+Zy_J$
+with $y_J$ the unconstrained minimizer of $f(\bar x+Zy)$, so
+Lemma~\ref{lem:constraints-elimination} gives $p=\bar c+Du_*$ and
+$h(p)=\eta(u_*)$. The formula
+\[
+ \exists u\in\R^s:\quad \partial_1\varphi(u)=0\wedge\cdots\wedge
+ \partial_s\varphi(u)=0\wedge z-\eta(u)=0
+\]
+defines the singleton $\{h(p)\}$, because $u_*$ is the only real zero of
+$\nabla\varphi$. After clearing denominators it has $s\le k$ quantified
+variables and $s+1$ integer polynomials of degree at most four with
+coefficients of bit size at most $T(L)$. Lemma~\ref{lem:separation}, with
+$s$ quantified variables, degree $d=4$, and $\tau=T(L)$, gives
+$|h(p)|\ge2^{-2T(L)4^{c_0s}}$ when $h(p)\ne0$. With $G(k)=2\cdot4^{c_0k}$
+this yields
+\begin{equation}\label{eq:constraints-nonlinear-gap}
+ h(p)\ne0\quad\Longrightarrow\quad|h(p)|\ge\gamma:=2^{-\omega},\qquad
+ \omega=G(k)\,T(L).
+\end{equation}
+The bound is linear in $T(L)$, with a factor that depends only on $k$. If
+$s=0$, then $h(p)=\eta()$ is rational of bit length at most $T(L)$, and the
+same bound holds. The bound \eqref{eq:constraints-nonlinear-gap} holds for every
+observable of encoding length at most $L$, in particular for the slack
+observables $b_i-a_i^{\mathsf T}x$. The set $S(p)$ is used only to prove it.
+
+\emph{The algorithm.} Decide $P=\varnothing$ by linear programming; otherwise
+obtain a rational $x_0\in P$ of polynomial bit length. Compute $k$, $U$, $V$
+(Lemma~\ref{lem:constraints-essential}), the radius $R_0$ of
+Lemma~\ref{lem:constraints-radius}(a) for $f$ and $x_0$, so $\|p\|<R_0$, and
+$\omega=G(k)T(L)$. Let $C_h$ be the sum of the absolute values of the
+coefficients of $h$, and put
+\[
+ B=1+\max\Bigl\{4nC_h(R_0+1)^3,\ \max_i\|a_i\|_1\Bigr\},\qquad
+ \delta=\min\Bigl\{1,\frac{\gamma}{8B}\Bigr\},\qquad
+ \varepsilon=\min\Bigl\{1,\frac{\mu\delta^2}2\Bigr\}.
+\]
+On the ball $\|x\|\le R_0+1$, each partial derivative of a monomial
+$cx^\alpha$ of degree at most four is bounded by $4|c|(R_0+1)^3$, so $B$
+bounds $\|\nabla h\|$ and the gradients of all slack observables there.
+Contract (E1), applied to $f$ on $P\cap\{x:\|x\|_\infty\le R_0\}$, returns a
+rational $\hat x\in P$ with $f(\hat x)\le f(p)+\varepsilon$. Its running time
+is polynomial in $L$ and $\log(1/\varepsilon)=O(\omega+\bits(B)+\bits(\mu))$,
+hence at most $F_1(k)L^{C_1}$. By Lemma~\ref{lem:constraints-radius}(b),
+$\|\hat x-p\|\le\delta\le1$, so the segment from $p$ to $\hat x$ lies in the
+ball and $|h(\hat x)-h(p)|\le B\delta\le\gamma/8$. Return $0$ if
+$|h(\hat x)|<\gamma/2$ and the sign of $h(\hat x)$ otherwise. If $h(p)=0$, then
+$|h(\hat x)|\le\gamma/8$; if $h(p)\ne0$, then $|h(\hat x)|\ge7\gamma/8$ and the
+signs agree. The rational evaluations take time polynomial in $L$ and $\omega$.
+
+The same point $\hat x$ decides every slack, because $B$ also bounds their
+gradients; this yields $S(p)$. Finally compute a row basis $J$ of $A_{S(p)}$
+and apply Lemma~\ref{lem:constraints-elimination} to output $\bar c$, $D$, and
+$\varphi$. All steps take time $F(k)L^{C}$ with an absolute $C$: the only
+superpolynomial quantity is the number $\omega$ of accuracy bits, which enters
+polynomially.
+\end{proof}
+
+The algorithm prints $\omega=2\cdot4^{c_0k}T(L)$ bits. Since
+$\log(1/\varepsilon)=O(\omega+\poly(L))$ and every step is polynomial in $L$
+and $\omega$, one can take $F(k)=2^{O(k)}$.
+
+\subsection{Exact constrained Newton steps}
+\label{app:constraints-newton}
+
+\begin{proof}[Proof of Theorem~\ref{thm:constraints-transfer}]
+Let $(f,P)\in\mathcal C$, let $h$ be an observable of degree at most $D$, and
+let $L$ be the total input length. Decide $P\ne\varnothing$ by linear
+programming and assume $n\ge1$.
+
+\emph{Constants.} By linear programming compute a rational point
+$x_{00}\in P$, and let $R_0$ be the radius of
+Lemma~\ref{lem:constraints-radius}(a) for $f$ and $x_{00}$, so that
+$\|p\|<R_0$. Put $\varrho=R_0+1$,
+$\Omega=\{x:\|x\|_\infty\le\varrho\}$, and let $C_f$ and $C_h$ be the sums of
+the absolute values of the coefficients of $f$ and $h$, increased to at least
+one. Define
+\[
+ \Lambda=n^2D^3C_f\varrho^D,\qquad \kappa=\max\{1,\Lambda/(2\mu)\},\qquad
+ B_h=1+nDC_h\varrho^D .
+\]
+On $\Omega$, every third partial derivative of $f$ is bounded by
+$D^3C_f\varrho^D$. Hence each Hessian entry is
+$\sqrt n\,D^3C_f\varrho^D$-Lipschitz there, and the Frobenius norm shows that
+$\Lambda$ is a Lipschitz constant of $\nabla^2f$ on $\Omega$ in operator norm.
+Similarly $\|\nabla h\|\le B_h$ on $\Omega$. All these numbers are rational
+of polynomial bit length.
+
+\emph{Warm start and convergence.} Contract (E1), applied to $f$ on
+$P\cap\{x:\|x\|_\infty\le R_0\}$ with accuracy
+$\varepsilon_0=\min\{1,\mu/(8\kappa^2)\}$, returns a rational $x_0\in P$ with
+$f(x_0)\le f(p)+\varepsilon_0$, so $\|x_0-p\|\le1/(2\kappa)\le1/2$ by
+Lemma~\ref{lem:constraints-radius}(b). Let $x_{j+1}=N(x_j)$. Every iterate
+lies in $P$. If $\|x_j-p\|\le1/2$, then $x_j$ and $p$ lie in the convex set
+$\Omega$, and Lemma~\ref{lem:constraints-newton-step} gives
+$\|x_{j+1}-p\|\le\kappa\|x_j-p\|^2$. With $e_j=\kappa\|x_j-p\|$ we get
+$e_0\le1/2$ and $e_{j+1}\le e_j^2$, so by induction
+\begin{equation}\label{eq:constraints-newton-rate}
+ \|x_j-p\|\le\kappa^{-1}2^{-2^j}\le\tfrac12\qquad(j\ge0).
+\end{equation}
+
+\emph{Separation.} The formula in the free variable $z$
+\[
+ \exists x\in\R^n\ \exists\lambda\in\R^m:\
+ Ax\le b,\ \lambda\ge0,\ \nabla f(x)+A^{\mathsf T}\lambda=0,\
+ \lambda_i(b_i-a_i^{\mathsf T}x)=0\ (i\le m),\ z=h(x)
+\]
+defines $\{h(p)\}$. Indeed, Lemma~\ref{lem:constraints-polyhedral}(b) at $p$
+gives a multiplier supported on $S(p)$. Conversely, a solution $(x,\lambda)$
+has $x\in P$ and $-\nabla f(x)\in\operatorname{cone}\{a_i:i\in S(x)\}$ by
+complementarity, so $x$ solves $\mathrm{VI}(\nabla f,P)$ and equals $p$. The
+formula has $n+m$ quantified variables and polynomially many integer
+polynomials of degree at most $D$ with coefficients of polynomial bit length.
+Lemma~\ref{lem:separation}, with $s=n+m$ quantified variables, degree at
+most $\max\{D,2\}$, and coefficient bit size $\tau$ polynomial in $L$, gives
+$h(p)=0$ or $|h(p)|\ge2^{-2\tau\max\{D,2\}^{c_0(n+m)}}$. Hence there is a
+polynomial $e_D$, depending only on $D$, with $h(p)=0$ or
+$|h(p)|\ge\gamma:=2^{-2^{e_D(L)}}$; enlarge $e_D$ so that also
+$2^{e_D(L)}\ge\log_2B_h+3$. Then \eqref{eq:constraints-newton-rate} with
+$j_0=e_D(L)+1$ gives
+\[
+ |h(x_{j_0})-h(p)|\le B_h\,2^{-2\cdot2^{e_D(L)}}\le2^{-2^{e_D(L)}-3}=\gamma/8 .
+\]
+
+\emph{Circuit implementation.} The point $x_0$ is printed in binary and turned
+into rational circuits. For $j<j_0$, the entries of $H_j=\nabla^2f(x_j)$ and
+$c_j=\nabla f(x_j)-H_jx_j$ are computed from the circuits of $x_j$ with
+polynomially many gates, since the degree is fixed. The solver is then run on
+$(H_j,c_j)$ with every number held as a rational circuit and every comparison
+answered exactly by $\PosSLP$. Because the answers are exact, the simulated
+execution is the execution of the solver on the rational data $(H_j,c_j)$:
+every division is by a nonzero number and the output is $x_{j+1}=N(x_j)$. The
+number of operations per step is polynomial in $L$ and independent of the bit
+lengths of $(H_j,c_j)$, so after $j_0$ steps all circuits have polynomial size.
+Finally build $\gamma$ by $e_D(L)$ squarings of $1/2$, let $\hat\alpha=h(x_{j_0})$,
+and ask for the sign of the numerator of
+\[
+ \hat\alpha-\gamma/2,\qquad \hat\alpha+\gamma/2,\qquad\text{or}\qquad
+ \gamma^2/4-\hat\alpha^2,
+\]
+which is positive exactly when $h(p)>0$, $h(p)\ge0$, or $h(p)=0$,
+respectively; negations give the other relations. A zero value gives
+$|\hat\alpha|\le\gamma/8$, and a nonzero value gives
+$|\hat\alpha|\ge7\gamma/8$ with the same sign.
+
+All work is polynomial in $L$, so the predicate is in $\mathrm P^{\PosSLP}$.
+Applying the procedure to the slacks $b_i-a_i^{\mathsf T}x$ gives $S(p)$. If
+$f(p)<\tau$, then for $h=f-\tau$ we have $h(p)\le-\gamma$, hence
+$f(x_{j_0})-\tau\le-7\gamma/8<0$, and $x_{j_0}\in P$ is the claimed circuit
+point. The comparisons inside the solver depend on earlier answers, so the
+procedure is a Turing reduction.
+\end{proof}
+
+\subsubsection{Boxes}
+\label{app:constraints-boxes}
+
+\begin{lemma}[Inactive truncation]
+\label{lem:constraints-truncation}
+Let $f$ satisfy \eqref{eq:constraints-curvature}, let $P\ne\varnothing$ have
+minimizer $p$, and let $q\in P$ be rational. Put
+$R_1=1+2\|\nabla f(q)\|_1/\mu$ and
+$P'=P\cap\{x:|x_i-q_i|\le R_1\ (i\le n)\}$. Then $|p_i-q_i|<R_1$ for all
+$i$, so $p$ is the minimizer of $f$ on $P'$ and none of the added bounds is
+active at $p$. The bit length of $R_1$ is polynomial in $L+\bits(q)$.
+\end{lemma}
+
+\begin{proof}
+Since $f(p)\le f(q)$ and
+$f(p)\ge f(q)-\|\nabla f(q)\|\,\|p-q\|+\frac\mu2\|p-q\|^2$, we get
+$\|p-q\|\le2\|\nabla f(q)\|/\mu\le2\|\nabla f(q)\|_1/\mu<R_1$.
+\end{proof}
+
+For a box, $q$ is obtained by clipping $0$ to the finite bounds; for a flow
+polyhedron, by linear programming. In both cases $P'$ is again a box or a flow
+polyhedron, now with finite bounds, and the active bounds of $P'$ at $p$ are
+the active original bounds.
+
+\begin{lemma}[Admissible vector from the comparison matrix]
+\label{lem:constraints-admissible}
+Let $H$ be symmetric positive definite with $M(H)\succ0$. Put
+$d=M(H)^{-1}\mathbf 1$ and $v=\frac12(H+M(H))d$. Then $d>0$, $v\ge\mathbf 1$,
+and $H_{SS}^{-1}v_S>0$ entrywise for every nonempty $S\subseteq\{1,\ldots,n\}$.
+If all off-diagonal entries of $H$ are nonpositive, then $v=\mathbf 1$.
+\end{lemma}
+
+\begin{proof}
+\emph{Nonnegative inverse.} Let $B_0$ be positive definite with nonpositive
+off-diagonal entries, and let $B_0u=w\ge0$. Write $u=u_+-u_-$ with
+$u_\pm\ge0$ of disjoint supports. Then
+$0\le w^{\mathsf T}u_-=u_-^{\mathsf T}B_0u_+-u_-^{\mathsf T}B_0u_-$. The first
+term involves only off-diagonal entries, so it is nonpositive, and the second is
+positive unless $u_-=0$. Hence $u\ge0$. Applied to $B_0=M(H)$ and $w=\mathbf 1$,
+this gives $d\ge0$; if $d_i=0$, then $(M(H)d)_i=\sum_{j\ne i}M(H)_{ij}d_j\le0$,
+contradicting $(M(H)d)_i=1$. So $d>0$.
+
+\emph{Lower bound on $v$.} The identity $M(H)d=\mathbf 1$ reads
+$H_{ii}d_i=1+\sum_{j\ne i}|H_{ij}|d_j$. Therefore
+\[
+ v_i=H_{ii}d_i+\sum_{j\ne i,\,H_{ij}<0}H_{ij}d_j
+    =1+\sum_{j\ne i,\,H_{ij}>0}H_{ij}d_j\ge1 .
+\]
+If $H$ has nonpositive off-diagonal entries, the last sum is empty and
+$v=\mathbf 1$.
+
+\emph{Principal systems.} Fix a nonempty $S$ and consider the Jacobi map
+$\mathcal J$ on $\R^S$ given by
+$(\mathcal Jx)_i=\bigl(v_i-\sum_{j\in S\setminus\{i\}}H_{ij}x_j\bigr)/H_{ii}$.
+Its fixed points are the solutions of $H_{SS}x=v_S$. For $x\in[0,d_S]$, the
+numerator is smallest when $x_j=d_j$ for $H_{ij}>0$ and $x_j=0$ otherwise,
+and then equals $1+\sum_{j\notin S,\,H_{ij}>0}H_{ij}d_j\ge1$. It is largest
+when $x_j=d_j$ for $H_{ij}<0$ and $x_j=0$ otherwise, and then equals
+$H_{ii}d_i+\sum_{j\notin S,\,H_{ij}<0}H_{ij}d_j\le H_{ii}d_i$. Hence
+$\mathcal J$ maps $[0,d_S]$ into $[0,d_S]$, with every coordinate at least
+$1/H_{ii}>0$. For $x,x'\in\R^S$, with $\|x\|_d=\max_i|x_i|/d_i$,
+\[
+ \frac{|(\mathcal Jx-\mathcal Jx')_i|}{d_i}
+ \le\frac{\sum_{j\ne i}|H_{ij}|d_j}{H_{ii}d_i}\,\|x-x'\|_d
+ =\Bigl(1-\frac1{H_{ii}d_i}\Bigr)\|x-x'\|_d ,
+\]
+so $\mathcal J$ is a contraction. Its unique fixed point lies in $[0,d_S]$ and
+has positive coordinates; since $H_{SS}$ is invertible, the fixed point is
+$H_{SS}^{-1}v_S$.
+\end{proof}
+
+The iteration $\mathcal J$ appears only in the proof. An algorithm computes
+$M(H)$ by sign tests, $d$ by a positive definite solve, and $v$ by matrix
+arithmetic.
+
+\begin{lemma}[Parametric box quadratic programming]
+\label{lem:constraints-box-qp}
+Let $H\in\Q^{n\times n}$ be symmetric positive definite, $u\in\Q^n$ with
+$u>0$, $c\in\Q^n$, and let $v\in\Q^n$, $v>0$, satisfy $H_{SS}^{-1}v_S\ge0$
+for every nonempty $S$. The procedure below returns the minimizer of
+$\frac12x^{\mathsf T}Hx+c^{\mathsf T}x$ over $[0,u]$ after at most $2n$
+pivots. It uses $O(n^4)$ arithmetic operations and $O(n^2)$ comparisons, and
+it divides only by pivots of positive definite matrices and by numbers it has
+tested to be positive.
+\end{lemma}
+
+\emph{Procedure.} Maintain a partition $\{1,\ldots,n\}=\mathcal L\cup\mathcal
+F\cup\mathcal U$ and a parameter $\theta\ge0$; initially $\mathcal L$ is
+everything and $\theta=\max\{0,\max_i(-c_i/v_i)\}$. In each round compute,
+using $LDL^{\mathsf T}$ factorization of $H_{\mathcal F\mathcal F}$,
+\[
+ \alpha_{\mathcal F}=H_{\mathcal F\mathcal F}^{-1}(c_{\mathcal F}+H_{\mathcal F\mathcal U}u_{\mathcal U}),\qquad
+ \beta_{\mathcal F}=H_{\mathcal F\mathcal F}^{-1}v_{\mathcal F},
+\]
+and for $i\notin\mathcal F$,
+$\alpha_i=c_i+H_{i\mathcal U}u_{\mathcal U}-H_{i\mathcal F}\alpha_{\mathcal F}$
+and $\beta_i=v_i-H_{i\mathcal F}\beta_{\mathcal F}$. The \emph{event values}
+are $-\alpha_i/\beta_i$ for $i\in\mathcal L$ with $\beta_i>0$ and
+$-(u_i+\alpha_i)/\beta_i$ for $i\in\mathcal F$ with $\beta_i>0$. Let
+$\theta'$ be the maximum of $0$ and all event values. If $\theta'=0$, return
+the point $x$ with $x_{\mathcal L}=0$, $x_{\mathcal U}=u_{\mathcal U}$, and
+$x_{\mathcal F}=-\alpha_{\mathcal F}$. Otherwise move the smallest index whose
+event value equals $\theta'$ from $\mathcal L$ to $\mathcal F$ or from
+$\mathcal F$ to $\mathcal U$, set $\theta=\theta'$, and start a new round.
+
+\begin{proof}
+For a partition and a parameter $\theta$, let $x(\theta)$ be the point with
+$x_{\mathcal L}=0$, $x_{\mathcal U}=u_{\mathcal U}$, and
+$x_{\mathcal F}=-\alpha_{\mathcal F}-\theta\beta_{\mathcal F}$. It solves the
+free equations $(Hx+c+\theta v)_{\mathcal F}=0$, and for $i\notin\mathcal F$
+the gradient of $q_\theta(x)=\frac12x^{\mathsf T}Hx+(c+\theta v)^{\mathsf T}x$
+is $\partial_i(\theta)=\alpha_i+\theta\beta_i$. We prove that each round
+starts with the following invariant: $0\le x(\theta)\le u$,
+$\partial_i(\theta)\ge0$ for $i\in\mathcal L$, and $\partial_i(\theta)\le0$ for
+$i\in\mathcal U$. These are the Karush--Kuhn--Tucker conditions for
+minimizing $q_\theta$ over $[0,u]$. Initially $x=0$ and
+$\partial_i=c_i+\theta v_i\ge0$ by the choice of $\theta$.
+
+\emph{Signs of the slopes.} Admissibility gives $\beta_{\mathcal F}\ge0$. For
+$i\notin\mathcal F$ let $S=\mathcal F\cup\{i\}$ and $w=H_{SS}^{-1}v_S\ge0$.
+Eliminating $w_{\mathcal F}$ from $H_{SS}w=v_S$ gives
+$(H_{ii}-H_{i\mathcal F}H_{\mathcal F\mathcal F}^{-1}H_{\mathcal Fi})\,w_i=\beta_i$.
+The Schur complement on the left is positive, so $\beta_i\ge0$; for
+$\mathcal F=\varnothing$, $\beta_i=v_i>0$.
+
+\emph{One round.} As $\theta$ decreases with the partition fixed, the free
+coordinates $-\alpha_i-\theta\beta_i$ do not decrease, and the gradients
+$\alpha_i+\theta\beta_i$ outside $\mathcal F$ do not increase. Hence the
+invariant persists until a gradient in $\mathcal L$ reaches zero or a free
+coordinate reaches its upper bound. These are exactly the event values, and
+each of them is at most the current $\theta$, because the invariant holds at
+the current $\theta$; coordinates with zero slope never produce events. So the
+invariant holds on $[\theta',\theta]$. If $\theta'=0$, it holds at $\theta=0$,
+where $q_0$ is the original objective; the conditions are sufficient for
+optimality because the problem is convex, and the minimizer is unique because
+$H\succ0$.
+
+\emph{A pivot.} If $\theta'>0$ and the selected index $i$ is in $\mathcal L$,
+then $\partial_i(\theta')=0$ and $x_i=0$, so the current point satisfies the
+free equations for $\mathcal F\cup\{i\}$. These equations have a unique
+solution because $H_{\mathcal F\cup\{i\},\mathcal F\cup\{i\}}\succ0$, so the
+new partition represents the same point at $\theta'$, and the invariant holds.
+If $i\in\mathcal F$ with $x_i(\theta')=u_i$, the current point satisfies the
+free equations for $\mathcal F\setminus\{i\}$ with $x_i=u_i$, and
+$\partial_i(\theta')=0\le0$; again the invariant holds. Ties are processed one
+index at a time.
+
+An index moves only from $\mathcal L$ to $\mathcal F$ and from $\mathcal F$ to
+$\mathcal U$, so there are at most $2n$ pivots and at most $2n+1$ rounds. Each
+round uses $O(n^3)$ arithmetic operations; the $LDL^{\mathsf T}$ factorization
+of a positive definite matrix needs no comparisons and has positive pivots.
+Each round needs $O(n)$ comparisons to test $\beta_i>0$ and to find the
+maximum and the smallest maximizing index.
+\end{proof}
+
+\begin{proof}[Proof of Corollary~\ref{cor:constraints-boxes}]
+If some $\ell_i>u_i$, the box is empty. Substitute every fixed coordinate
+$\ell_i=u_i$. If every coordinate is fixed, then $P=\{\ell\}$ and $p=\ell$ is
+rational: evaluate $h(p)$ exactly, report every bound as active, and stop;
+neither the transfer theorem nor the procedure of
+Lemma~\ref{lem:constraints-box-qp} is called on an empty set of variables.
+Otherwise the Hessian of the reduced objective is a principal submatrix of
+$\nabla^2f$, so each of (i)--(iii) is inherited: principal submatrices of a
+comparison matrix are comparison matrices, and forests and sign patterns
+restrict. Apply Lemma~\ref{lem:constraints-truncation} to obtain a box with
+finite bounds $\ell<u$ and the same minimizer; its added bounds are inactive.
+Observables are substituted in the same way, and the active original bounds
+are decided by the slack observables.
+
+Conditions (i) and (ii) imply (iii). Under (ii), $M(H)=H$. Under (i), root each
+tree of the forest, set $\sigma_{\mathrm{root}}=1$, and for an edge from a
+parent $i$ to a child $j$ set $\sigma_j=-\operatorname{sgn}(H_{ij})\sigma_i$
+if $H_{ij}\ne0$ and $\sigma_j=\sigma_i$ otherwise. With
+$\Sigma=\diag(\sigma)$, every off-diagonal entry of $\Sigma H\Sigma$ is
+$-|H_{ij}|$, so $M(H)=\Sigma H\Sigma\succ0$.
+
+The Taylor-QP solver for the box translates $x=\ell+x'$, which replaces $c$ by
+$c+H\ell$ and the box by $[0,u-\ell]$, computes $M(H)$ with $n^2$ sign tests,
+$d$ and $v$ as in Lemma~\ref{lem:constraints-admissible} with $O(n^3)$
+operations, and runs the procedure of Lemma~\ref{lem:constraints-box-qp}.
+Under (iii) at the current point, Lemma~\ref{lem:constraints-admissible}
+makes $v$ admissible, so the solver is exact. It uses $O(n^4)$ operations and
+comparisons, independently of the bit lengths of $H$ and $c$, with a control
+computable in polynomial time. It is therefore an arithmetic Taylor-QP solver,
+and Theorem~\ref{thm:constraints-transfer} applies. Condition~(i) can be
+checked from the coefficients after the substitution: the reduced box is
+full-dimensional, and a polynomial that vanishes on a full-dimensional box
+vanishes identically.
+\end{proof}
+
+\subsubsection{Separable flows}
+\label{app:constraints-flows}
+
+We use the quadratic case of V\'egh's strongly polynomial algorithm through
+the following contract.
+
+\begin{quote}
+\emph{Contract (E3c)} \citep[Theorem~20 and Section~6.1]{Vegh2016}. There is
+an algorithm that, given a directed graph with $m'\ge1$ arcs and no isolated
+nodes, rational node demands, finite rational lower and upper arc capacities,
+and arc costs $a_es^2+c_es$ with rational $a_e\ge0$ and $c_e$, decides whether
+a feasible flow exists and, if so, returns an optimal flow. Its operations on
+numbers are additions, subtractions, multiplications, divisions, and
+comparisons; their number is $O(m'^4\log(m'+2))$ and does not depend on the
+numerical data. On rational data the returned flow is the exact optimum.
+\end{quote}
+
+An isolated node carries no arc, so its demand must be zero in every feasible
+flow. Isolated nodes are therefore deleted beforehand, with $O(\abs V)$
+comparisons, and a nonzero demand at one of them shows that no feasible flow
+exists.
+
+Implementations of minimum-cost flow algorithms often make the network
+strongly connected by artificial arcs of large linear cost. In the arithmetic
+model, any such cost is computed from the data by the algorithm's own
+operations. The following lemma gives, in addition, an explicit valid cost
+that is a rational function of the data, so that this step never inspects the
+bit length of a circuit.
+
+\begin{lemma}[Explicit artificial costs]
+\label{lem:constraints-artificial}
+Consider a network with $N_0$ nodes, demands summing to zero, arcs $e$ with
+capacity intervals $[0,U_e]$ (possibly $U_e=\infty$), and convex differentiable
+costs $C_e$, and suppose that it has an optimal flow $s^*$. Let $C_0\ge1$ satisfy
+$|C_e'(s^*_e)|\le C_0$ for all arcs. Add a node $\omega$ with zero demand and,
+for each node $v$, uncapacitated arcs $(v,\omega)$ and $(\omega,v)$ with
+linear cost $M_0s$, where $M_0>(N_0-1)C_0$. Then the optimal flows of the
+augmented network are exactly the optimal flows of the original network,
+extended by zero on the new arcs.
+\end{lemma}
+
+\begin{proof}
+With node potentials $\pi$, the reduced cost of an arc $e=(i,j)$ at a flow
+$s$ is $r_e=C_e'(s_e)-\pi_i+\pi_j$. A feasible flow is optimal if and only if
+some potential satisfies, for every arc with $U_e>0$, $r_e\ge0$ when $s_e=0$,
+$r_e=0$ when $0<s_e<U_e$, and $r_e\le0$ when $s_e=U_e$; an arc with $U_e=0$
+imposes no condition, because the multipliers of its two bounds absorb any
+reduced cost. This is the Karush--Kuhn--Tucker system of a convex problem
+with linear constraints. Such potentials exist at $s^*$. In the
+residual graph of $s^*$, which has an arc $i\to j$ of length $C_e'(s^*_e)$ when
+$s^*_e<U_e$ and an arc $j\to i$ of length $-C_e'(s^*_e)$ when $s^*_e>0$, these
+conditions say that $-\pi$ satisfies the triangle inequality, so there is no
+negative cycle. Hence shortest-path distances $\delta(v)$ from an extra source
+joined to every node by an arc of length zero are well defined, simple
+shortest paths have at most $N_0-1$ residual arcs, and
+$-(N_0-1)C_0\le\delta(v)\le0$. The potential $\pi=-\delta$ satisfies the
+optimality conditions and takes values in $[0,(N_0-1)C_0]$. Set
+$\pi_\omega=0$. The new arcs then have reduced costs $M_0-\pi_v>0$ and
+$M_0+\pi_v>0$ at zero flow, so $s^*$ extended by zero is optimal in the
+augmented network.
+
+Let $s'$ be any feasible augmented flow and let $r$ be the reduced costs at
+$s^*$ extended by zero. Convexity gives
+$\mathrm{cost}(s')\ge\mathrm{cost}(s^*)+\sum_a c'_a(s'_a-s^*_a)$, where
+$c'_a$ is $C_a'(s^*_a)$ or $M_0$. Since $s'$ and $s^*$ have the same demands,
+$\sum_a(\pi_i-\pi_j)(s'_a-s^*_a)=0$, so the sum equals
+$\sum_ar_a(s'_a-s^*_a)$. Each term is nonnegative: on an arc with $U_a>0$ by
+the sign conditions, and on an arc with $U_a=0$ because
+$s'_a=s^*_a=0$. Each new arc contributes $r_as'_a$ with $r_a>0$. Hence an
+augmented optimum carries no flow on the new arcs, and its restriction is
+optimal for the original network.
+\end{proof}
+
+For quadratic costs on finite capacity intervals, a valid $C_0$ is
+$1+\sum_e\bigl(|C_e'(\text{lower bound})|+|C_e'(\text{upper bound})|\bigr)$,
+because $C_e'$ is monotone. It is computed from circuit data with two sign
+tests per arc.
+
+\begin{proof}[Proof of Corollary~\ref{cor:constraints-flows}]
+Decide feasibility by linear programming and obtain a rational feasible flow
+$q$. Substitute every fixed arc ($\ell_e=u_e$) and adjust the demands. If no
+arc remains, the feasible flow is the rational point $p$ given by the fixed
+values: evaluate $h(p)$ exactly, report both bounds of every arc as active,
+and stop. Otherwise delete the isolated nodes; their adjusted demands are
+zero because $P\ne\varnothing$. Apply Lemma~\ref{lem:constraints-truncation}
+with $q$ to obtain finite capacities with the same minimizer and inactive
+added bounds; below, $\ell$ and $u$ denote these finite bounds. At a feasible
+$x$, the Taylor model is, up to a constant, the separable quadratic flow
+problem in the flow variable $y$ with arc costs $a_ey_e^2+c_ey_e$, where
+$a_e=\frac12f_e''(x_e)>0$ and $c_e=f_e'(x_e)-f_e''(x_e)x_e$ are rational
+circuits computed from those of $x$ with a constant number of gates per arc.
+The shift $s=y-\ell$ turns the capacity intervals into $[0,u_e-\ell_e]$,
+replaces the demands $b$ by $b-A_G\ell$, computed once by rational
+arithmetic, and replaces $c_e$ by $c_e+2a_e\ell_e$, with a constant number of
+gates per arc; it puts every subproblem in the form of
+Lemma~\ref{lem:constraints-artificial}.
+The algorithm of contract (E3c), run on the reduced graph, which has
+$m'\ge1$ arcs and no isolated nodes, simulated on rational circuits with
+$\PosSLP$ comparisons and, if needed, with the artificial cost of
+Lemma~\ref{lem:constraints-artificial}, is an arithmetic Taylor-QP solver, and
+Theorem~\ref{thm:constraints-transfer} applies. For $D\le4$, the promise
+$f_e''\ge\mu$ is checked as follows: a quadratic $\alpha s^2+\beta s+\gamma_0$
+is nonnegative on $\R$ exactly when $\alpha>0$ and $4\alpha\gamma_0\ge\beta^2$,
+or $\alpha=\beta=0\le\gamma_0$.
+\end{proof}
+
+\subsubsection{One sign instance}
+\label{app:constraints-single-sign}
+
+We use Theorem~\ref{thm:posslp-closure}(b): if a deterministic oracle Turing
+machine $\mathsf M$, whose oracle queries are encodings of integer circuits
+over $\{0,1,+,-,\times\}$, halts within $\pi_0(L)$ steps on every input of
+length $L$ and for all oracle answers, for a polynomial $\pi_0$, then there is
+a polynomial-time map $x\mapsto\Phi_x$ to integer circuits with $\Phi_x>0$ if
+and only if $\mathsf M$ with a $\PosSLP$ oracle accepts $x$.
+
+\begin{proof}[Proof of Corollary~\ref{cor:structured-single-sign}]
+Let $\mathsf M_0$ be the decision procedure of the proof of
+Theorem~\ref{thm:constraints-transfer} for $(h,\bowtie)$, with the
+preprocessing of Corollary~\ref{cor:constraints-boxes} or
+Corollary~\ref{cor:constraints-flows} when it applies. Its queries are
+numerators of rational circuits that it has written, hence encodings of
+integer circuits. On every promised input of length $L$ its running time is at
+most $\pi_1(L)$ for a fixed polynomial $\pi_1$: the ordinary steps (linear
+programming, the warm start, the constants) are polynomial in bit time, and
+the number of Newton steps, of solver operations per step, and of gates per
+operation are bounded by polynomials in $L$ that do not depend on the expanded
+values of any circuit. Each query has length at most the running time.
+
+Let $\mathsf M$ check that its input is a well-formed instance, run
+$\mathsf M_0$ for at most $\pi_1(L)$ steps, and reject if $\mathsf M_0$ has not
+halted. Then $\mathsf M$ halts within a polynomial number of steps on every
+input and agrees with $\mathsf M_0$ on promised inputs. On inputs that violate
+a promise, a division by a number that happens to be zero only produces a
+circuit with a zero denominator, which is still a syntactically valid query; the
+clock bounds the computation. Invalid supplied certificates and empty feasible
+sets are decided by ordinary steps before any query. The adaptive form of
+Theorem~\ref{thm:posslp-closure}(b) now gives the required circuit $\Phi$. For a
+polynomial-size Boolean combination of predicates, let one machine run the
+corresponding procedures one after the other and evaluate the combination; it
+satisfies the same hypotheses.
+\end{proof}
+
+The proof uses only that the decision procedure is deterministic and has a
+worst-case polynomial bound on time and query length. A procedure with these
+properties and a time bound $F(\kappa)L^C$ compiles into one circuit in time
+polynomial in $F(\kappa)L^C$, which is an FPT many-one reduction. The Las Vegas
+algorithm of Theorem~\ref{thm:constraints-rank} has only an expected time
+bound, and fixing its random bits does not yield a correct deterministic
+procedure; the guessed certificate of Theorem~\ref{thm:constraints-unambiguous}
+is likewise not removed by compilation.
+
+\subsection{Constraint rank}
+\label{app:constraints-rank}
+
+A \emph{violator space} \citep{GaertnerMatousekRuestSkovron2008} is a pair
+$(H,V)$ of a finite set $H$ and a map $V:2^H\to2^H$ such that
+$G\cap V(G)=\varnothing$ for all $G\subseteq H$ (consistency) and
+$V(G)=V(F)$ whenever $F\subseteq G\subseteq H$ and $G\cap V(F)=\varnothing$
+(locality). A \emph{basis} of $G$ is an inclusion-minimal $B\subseteq G$ with
+$V(B)=V(G)$, and the \emph{combinatorial dimension} is the largest size of a
+basis of any $G\subseteq H$.
+
+\begin{lemma}[A violator space of rank $r$]
+\label{lem:constraints-violator}
+Let $P\ne\varnothing$, let $H=\{1,\ldots,m\}$ index the rows of $A$, and for
+$G\subseteq H$ let $p_G$ be the solution of $\mathrm{VI}(T,P_G)$. Then
+$V(G)=\{i\in H:a_i^{\mathsf T}p_G>b_i\}$ defines a violator space. Every basis
+consists of linearly independent rows, so the combinatorial dimension is at
+most $r=\rank A$. If $B$ is a basis of $H$, then $p_B=p$.
+\end{lemma}
+
+\begin{proof}
+Every $P_G$ contains $P$, so $p_G$ exists and is unique by
+Lemma~\ref{lem:constraints-polyhedral}(a). Consistency holds because
+$p_G\in P_G$. For locality, $G\cap V(F)=\varnothing$ says that $p_F\in P_G$.
+Since $P_G\subseteq P_F$, the inequality $T(p_F)^{\mathsf T}(x-p_F)\ge0$ holds
+for all $x\in P_G$, so $p_F=p_G$ and $V(F)=V(G)$. No potential function or
+ordering of values is used.
+
+Let $B$ be a basis of some $G$. By Lemma~\ref{lem:constraints-polyhedral}(b),
+applied to $\mathrm{VI}(T,P_B)$, there is a set $J\subseteq B$ of independent
+rows with $a_i^{\mathsf T}p_B=b_i$ for $i\in J$ and
+$-T(p_B)=A_J^{\mathsf T}\lambda$, $\lambda\ge0$. For $x\in P_J$,
+$T(p_B)^{\mathsf T}(x-p_B)=-\lambda^{\mathsf T}(A_Jx-b_J)\ge0$, and
+$p_B\in P_B\subseteq P_J$. Hence $p_J=p_B$, so $V(J)=V(B)=V(G)$, and
+minimality of $B$ forces $J=B$. Finally, $V(H)=\varnothing$ because $p_H=p\in P$;
+so a basis $B$ of $H$ has $V(B)=\varnothing$, that is, $p_B\in P$. Its
+variational inequality holds on $P_B\supseteq P$, so $p_B=p$.
+\end{proof}
+
+The bound concerns every basis of every subset. A small active support at the
+final solution alone would not bound the combinatorial dimension.
+
+\begin{quote}
+\emph{Contract (E3d)} \citep[Theorem~27 and Sections~4.2--4.5]{GaertnerMatousekRuestSkovron2008}.
+Let $(H,V)$ be a violator space with $|H|=m$ and combinatorial dimension at
+most a given $\delta\ge1$. Clarkson's two randomized algorithms, as formulated
+for violator spaces, return a basis of $H$. They access $V$ only through the
+\emph{violation test}, which decides $i\in V(G)$ for given $G\subseteq H$ and
+$i\in H\setminus G$, and they perform an expected $O(\delta m+\delta^{O(\delta)})$
+violation tests. In every test $|G|\le\delta$: the tests ask whether an element
+violates a basis returned by a recursive call, or, inside the routine that
+finds a basis of a sample of $O(\delta^2)$ elements by examining its subsets
+$B$ with $|B|\le\delta$, whether an element violates $B$ or whether $b\in B$
+violates $B\setminus\{b\}$. The remaining operations are random sampling of a
+prescribed number of elements from a set or from a multiset given by integer
+multiplicities, doubling of multiplicities, and set bookkeeping. In each call
+of the reweighting algorithm the multiplicities are doubled $O(\delta\log m)$
+times.
+\end{quote}
+
+\begin{lemma}[Violation primitive]
+\label{lem:constraints-rank-primitive}
+In the setting of Lemma~\ref{lem:constraints-violator}, given $G$ with
+$|G|\le r$ and $i\notin G$, one decides $i\in V(G)$ in deterministic time
+$2^rL^{C_0}$ with a $\PosSLP$ oracle, where $C_0$ is an absolute constant.
+\end{lemma}
+
+\begin{proof}
+Enumerate the subsets $J\subseteq G$ with independent rows in a fixed order;
+there are at most $2^r$. For each, compute the chart and $U_J$ and run the
+tests \eqref{eq:constraints-support-test} with this $G$. By
+Lemma~\ref{lem:constraints-support-test}, a passing $J$ gives $p_J=p_G$, and
+some $J$ passes, namely a support of $p_G$, which lies in $G$. At the first
+passing $J$, decide $a_i^{\mathsf T}p_J-b_i>0$, an affine observable at the
+zero of $U_J$. Each $J$ costs polynomially many tests, each a $\PosSLP$
+instance of polynomial length (Theorem~\ref{thm:upper-monotone}).
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:constraints-rank}]
+Decide $P=\varnothing$ by linear programming and compute $r$. If $r=0$, then
+all rows are zero and feasibility gives $P=\R^n$; the solution is the zero of
+$T$, and Theorem~\ref{thm:upper-monotone} decides the predicate. Otherwise run
+Clarkson's algorithms of contract (E3d) with $\delta=r$ on the violator space
+of Lemma~\ref{lem:constraints-violator}, implementing every violation test by
+Lemma~\ref{lem:constraints-rank-primitive}. By contract (E3d), every test has a
+first argument of size at most $r$, so the primitive applies. The returned
+basis $B$ satisfies $p_B=p$ by Lemma~\ref{lem:constraints-violator}.
+Enumerating the independent subsets of $B$ and running the support test with
+$G=B$ yields $J$ and $(\bar x,Z,U_J)$ with $p=\bar x+Zy_J$. The predicate
+$h(p)\bowtie0$ is then decided by Theorem~\ref{thm:upper-monotone} applied to
+$U_J$ and $h(\bar x+Zy)$, or by rational arithmetic if $|J|=n$.
+
+\emph{Bit model of the sampling.} Each element of $H$ is a row index, so
+repeated inequalities are distinct elements. Multiplicities are stored as
+binary integers. Since each call of the reweighting algorithm doubles
+multiplicities $O(r\log m)$ times, every multiplicity, and their sum, has
+$O(r\log m)$ bits. To draw one labeled copy from a multiset with total weight
+$W$, draw a uniform integer in $\{1,\ldots,W\}$ by rejection from
+$\lceil\log_2W\rceil$ random bits, which needs an expected constant number of
+trials, and locate it by prefix sums; for sampling without replacement,
+decrement the copy count temporarily. Before the basis routine, duplicate
+copies are identified with their row index, since multiplicity affects
+sampling probabilities but not the polyhedron $P_G$. Between consecutive
+violation tests the algorithms perform a constant number of sampling rounds and
+set operations on at most $m$ elements. Hence the expected bit time outside
+the tests is polynomial in $L$ times one plus the expected number of tests.
+
+\emph{Expected time and correctness.} The expected number of tests is
+$O(rm+r^{O(r)})$ and each costs $2^rL^{C_0}$, with $m\le L$. The total expected
+time is therefore $(r+1)^{O(r)}L^{C}$ with an absolute $C$. Every query has
+length polynomial in $L$, independently of the random choices. The algorithms
+stop only with a basis of $H$, and every test is answered exactly, so every
+returned answer is correct; randomness affects only the running time.
+\end{proof}
+
+\subsection{Candidate lists with unconstrained fibers}
+\label{app:constraints-lists}
+
+We use the following integer feasibility theorem, which queries its oracle
+only at integer points.
+
+\begin{theorem}[Integer feasibility with integer-point separation;
+\citealp{AriHildebrand2026,HildebrandGoess2024,Basu2023Integers}]
+\label{thm:constraints-integer-query}
+There is a deterministic algorithm with the following property. Its input is
+an integer $t\ge1$ and an integer $R\ge2$, and it has access to an oracle for
+a closed convex set $S\subseteq[-R,R]^t$ that is queried only at integer
+points. On a query $z\in\Z^t$ the oracle either asserts $z\in S$, or returns
+$(\pi,\beta)\in\Q^t\times\Q$ with $\pi^{\mathsf T}x\le\beta$ for all $x\in S$
+and $\pi^{\mathsf T}z>\beta$. The algorithm either returns a point of
+$S\cap\Z^t$ or correctly reports $S\cap\Z^t=\varnothing$. If the oracle's
+answers on queries of bit length $\ell$ have length and computation time at
+most $\Phi(\ell)$, its running time is
+\[
+ 2^{O(t\log(t+1))}\poly\bigl(t,\ 1+\bits(R),\ \Phi(c_0t(1+\bits(R)))\bigr)
+\]
+for an absolute constant $c_0$ and a polynomial of absolute degree. Queries
+outside $[-R,R]^t$ may be answered by a violated box inequality.
+\end{theorem}
+
+This is \citet[Definition~3.4 and Theorem~3.5]{AriHildebrand2026}, who
+attribute it to \citet[Theorem~9 and Appendix~B]{HildebrandGoess2024} and
+\citet[Theorem~5.7 and Remark~5.11]{Basu2023Integers}. No inradius or
+full-dimensionality assumption on $S$ is required, empty and one-point sets
+are allowed, and the queries are made in the original integer coordinates.
+The algorithm is deterministic. Basu's remarks also contain the idea of
+optimizing without bisection on the objective by keeping visited candidates,
+which our lists use in a form that never needs objective values.
+
+For the initial integer point we use deterministic integer linear feasibility
+in fixed dimension: for an explicit rational polyhedron $Q\subseteq\R^t$, one
+can decide $Q\cap\Z^t=\varnothing$ or return a point of $Q\cap\Z^t$ in time
+$2^{O(t\log(t+1))}L^{O(1)}$, with output of bit length $2^{O(t)}L^{O(1)}$ and
+absolute exponents \citep[Theorem~1.1, specialized to linear constraints and a
+constant objective]{HildebrandKoeppe2013}.
+
+\begin{lemma}[Gradient cuts for unconstrained fibers]
+\label{lem:constraints-gradient-cut}
+Let $P=Q\times\R^n$ and $g(z)=\min_yf(z,y)$ for $z\in\R^t$. Then $g$ is
+differentiable and $\mu$-strongly convex on $\R^t$, with
+$\nabla g(z)=\nabla_zf(z,y(z))$, where $y(z)$ is the unique fiber minimizer.
+For an integer $R\ge1$ and $z\in\Z^t\cap[-R,R]^t$, a rational $c_z$ with
+$\|c_z-\nabla g(z)\|\le\mu/4$, and hence satisfying
+\eqref{eq:constraints-integer-cut}, is computed in ordinary time
+$(L+\bits(R)+\bits(z))^{C_1}$ for an absolute constant $C_1$.
+\end{lemma}
+
+\begin{proof}
+Each fiber $y\mapsto f(z,y)$ has Hessian at least $\mu I$, so $y(z)$ is
+unique, and the implicit function theorem applied to $\nabla_yf(z,y)=0$ makes
+$y(\cdot)$ smooth. Then $g(z)=f(z,y(z))$ and
+$\nabla g(z)=\nabla_zf(z,y(z))+Dy(z)^{\mathsf T}\nabla_yf(z,y(z))=\nabla_zf(z,y(z))$.
+For $z_1,z_2$ with fiber minimizers $y_1,y_2$ and $\vartheta\in[0,1]$,
+strong convexity of $f$ gives
+$g(\vartheta z_1+(1-\vartheta)z_2)\le\vartheta g(z_1)+(1-\vartheta)g(z_2)
+-\frac\mu2\vartheta(1-\vartheta)\|z_1-z_2\|^2$, after dropping the
+$y$-part of the squared distance. If $c_z$ satisfies the stated accuracy and
+$w\ne z$ is an integer point, then
+\[
+ g(w)-g(z)\ge c_z^{\mathsf T}(w-z)-\tfrac\mu4\|w-z\|+\tfrac\mu2\|w-z\|^2
+ \ge c_z^{\mathsf T}(w-z)+\tfrac\mu4\|w-z\|^2,
+\]
+because $\|w-z\|\ge1$.
+
+To compute $c_z$, let $m_0=t+n$, $C_f=\max\{1,\sum_\alpha|f_\alpha|\}$, and
+\[
+ D_1=4m_0C_f(1+R)^3,\quad S_1=1+R+D_1/\mu,\quad K_1=1+12m_0C_fS_1^2,\quad
+ \eta=\min\Bigl\{1,\frac{\mu}{4tK_1}\Bigr\}.
+\]
+Each partial derivative of $f$ at $(z,0)$ is at most $4C_f(1+R)^3$ in absolute
+value, so $\|\nabla_yf(z,0)\|\le D_1$, and strong monotonicity of
+$\nabla_yf(z,\cdot)$ gives $\|y(z)\|\le D_1/\mu$. On the set of points
+$(z,y)$ with $\|y-y(z)\|\le1$, every coordinate is at most $S_1$ in absolute
+value, every second partial derivative of $f$ is at most $12C_fS_1^2$, and the
+block $\nabla^2_{zy}f$ has operator norm less than $K_1$. If $n=0$, put
+$c_z=\nabla f(z)$. Otherwise contract (E1), applied to $y\mapsto f(z,y)$ on the
+box $\|y\|_\infty\le D_1/\mu+1$, returns a rational $\hat y$ with
+$f(z,\hat y)\le f(z,y(z))+\min\{1,\mu\eta^2/2\}$, hence $\|\hat y-y(z)\|\le\eta$.
+Put $c_z=\nabla_zf(z,\hat y)$. For each $i\le t$, the mean value theorem along
+the segment from $y(z)$ to $\hat y$ gives
+$|(c_z)_i-\partial_ig(z)|\le K_1\eta\le\mu/(4t)$, so
+$\|c_z-\nabla g(z)\|\le\sqrt t\,\mu/(4t)\le\mu/4$. All numbers involved have
+bit length polynomial in $L+\bits(R)+\bits(z)$, and the accuracy requested in
+(E1) has polynomially many bits.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:constraints-candidates}]
+If $t=0$, the only possible block is the empty vector, which is feasible
+exactly when $Q=\R^0$ satisfies its constraints. Let $t\ge1$. Use integer
+linear feasibility to certify $Q\cap\Z^t=\varnothing$ or to find
+$z_0\in Q\cap\Z^t$. Apply Lemma~\ref{lem:constraints-radius}(a) to $f$ on
+$\R^{t+n}$ and the point $(z_0,0)$; every optimal solution has
+$f\le f(z_0,0)$, so its norm is less than $R_0$. Let $R=\lceil R_0\rceil+1$
+and $P_0=Q\cap[-R,R]^t$, which contains $z_0$ and every optimal integer block.
+Since $\bits(z_0)\le2^{O(t)}L^{O(1)}$, also $\bits(R)\le2^{O(t)}L^{O(1)}$.
+
+Define a deterministic answer rule $\mathcal O$ for integer queries $z$. If
+$z\notin P_0$, return the first violated inequality of $P_0$ in a fixed order.
+Otherwise compute $c_z$ by Lemma~\ref{lem:constraints-gradient-cut}. If
+$c_z\ne0$, return $c_z^{\mathsf T}x\le c_z^{\mathsf T}z-\mu/4$. The answer
+depends only on the instance and on $z$. The list algorithm starts with
+$\mathcal Z=\{z_0\}$ and runs the algorithm of
+Theorem~\ref{thm:constraints-integer-query} with radius $R$, answering
+queries by $\mathcal O$ and adding every queried point of $P_0$ to
+$\mathcal Z$. If some query $z\in P_0$ has $c_z=0$, it stops at once and
+outputs $\mathcal Z$. Otherwise it outputs $\mathcal Z$ when the feasibility
+algorithm halts.
+
+\emph{Running time.} Let $\mathcal O_\varnothing$ agree with $\mathcal O$,
+except that at a query $z\in P_0$ with $c_z=0$ it returns $x_1\le z_1-1$.
+Every answer of $\mathcal O_\varnothing$ is an inequality violated by its
+query, and every inequality is valid on the empty set. So
+$\mathcal O_\varnothing$ is a valid oracle for $S=\varnothing$ that never
+asserts membership, and its answers on queries of length $\ell$ cost at most
+$\Phi(\ell)=(L+\bits(R)+\ell)^{C_1}$. Up to the possible early stop, the list
+algorithm performs the run of Theorem~\ref{thm:constraints-integer-query} with
+$\mathcal O_\varnothing$. That run halts, reporting emptiness, within
+$2^{O(t\log(t+1))}\poly(t,1+\bits(R),\Phi(c_0t(1+\bits(R))))
+=2^{O(t\log(t+1))}L^{C}$ steps, with $C$ absolute. The list and its total
+length are bounded by the same quantity.
+
+\emph{Every optimal block is listed.} If the algorithm stops early at $z$
+with $c_z=0$, then $z$ is the unique optimal block by
+Lemma~\ref{lem:constraints-integer-cut}, and it is listed. Otherwise suppose
+an optimal block $w$ is not in $\mathcal Z$. Define the oracle $\mathcal O_w$
+that asserts membership exactly at $w$ and answers every other query as
+$\mathcal O$ does. It is a valid oracle for $S=\{w\}\subseteq[-R,R]^t$:
+inequalities of $P_0$ are valid at $w\in P_0$, and at a query $z\in P_0$ with
+$z\ne w$ we have $g(w)\le g(z)$, so $c_z\ne0$ and the cut is valid at $w$ by
+Lemma~\ref{lem:constraints-integer-cut}. Its answer cost exceeds $\Phi$ only by
+a comparison with the stored $w$. The actual run never queried $w$, and the
+feasibility algorithm is deterministic, so the run with $\mathcal O_w$ asks
+the same queries, receives the same answers, and also reports
+$S\cap\Z^t=\varnothing$. This contradicts the correctness of the algorithm,
+since $S\cap\Z^t=\{w\}$.
+
+\emph{At most $2^t$ optimal blocks.} If $w_1\ne w_2$ are optimal blocks with
+$w_1\equiv w_2\pmod 2$, then $(w_1+w_2)/2\in Q\cap\Z^t$ and strict convexity
+of $g$ gives $g((w_1+w_2)/2)<\min g$. Hence distinct optimal blocks have
+distinct parity vectors. For $f(z,y)=\sum_{i\le t}(z_i-\frac12)^2+\|y\|^2$ and
+$Q=\R^t$, with $\mu=2$, the optimal blocks are exactly $\{0,1\}^t$.
+\end{proof}
+
+\begin{proof}[Proof of Corollary~\ref{cor:constraints-selection}]
+If $Q\cap\Z^t=\varnothing$, the predicates have fixed truth values under the
+convention $\min\varnothing=+\infty$. Otherwise the list $\mathcal Z$ contains
+every optimal block, so $\min=\min_{z\in\mathcal Z}g(z)$. Thus
+$\min\le\tau$ and $\min<\tau$ are disjunctions of the predicates
+$g(z)\le\tau$ and $g(z)<\tau$, and the other relations are Boolean
+combinations of these two. For $n\ge1$, the predicate $g(z)\bowtie'\tau$ is the
+observable $f(z,y)-\tau$ at the minimizer of the strongly convex quartic
+$y\mapsto f(z,y)$, so Theorem~\ref{thm:exact-upper} maps it to one $\PosSLP$
+instance; for $n=0$ it is a rational comparison and maps to a fixed circuit.
+All instances are built from $\mathcal Z$ without oracle calls, and the
+Boolean form, Theorem~\ref{thm:posslp-closure}(c), combines them into one
+instance. The total construction time is polynomial in the length of
+$\mathcal Z$ and $L$, hence $2^{O(t\log(t+1))}L^{C}$.
+
+For (b), compare every pair $z,z'\in\mathcal Z$ by
+Corollary~\ref{cor:upper-two-minima}: the observable $f(z,y)-f(z',y')$ at the
+minimizer of the strongly convex quartic $f(z,y)+f(z',y')$ on $\R^{2n}$, whose
+Hessian is block diagonal and at least $\mu I$, equals $g(z)-g(z')$. A listed block is optimal exactly when its value
+is at most every other listed value, because the list contains an optimal
+block. All queries are fixed before any answer is received. The continuous
+part of the optimum for an optimal block $z_*$ is $y(z_*)$, the unique real
+solution of $\nabla_yf(z_*,y)=0$.
+\end{proof}
+
+\begin{lemma}[Padding that keeps a full Hessian Gram]
+\label{lem:constraints-padding}
+Let $f\in\Q[x_1,\ldots,x_n]$ be a quartic with a positive definite rational
+full Hessian Gram $M$ on $(v,x\otimes v)$, of size $m_M=n+n^2$, and put
+$\mu_0=\det M/(\tr M)^{m_M-1}$. For $t\ge1$ and
+$\tau=1+8nt/\mu_0$, the quartic
+\[
+ P(x,z)=f(x)+\|z\|^2+\tau\|z\|^4+\|z\|^2\|x\|^2,\qquad z\in\R^t,
+\]
+has $\min\{P(x,z):x\in\R^n,\ z\in\Z^t\}=\min f$, attained exactly at
+$z=0$, and a positive definite rational full Hessian Gram on the joint basis
+$(v_x,v_z,x\otimes v_x,x\otimes v_z,z\otimes v_x,z\otimes v_z)$, computable in
+polynomial time.
+\end{lemma}
+
+\begin{proof}
+The added terms are nonnegative and vanish exactly when $z=0$, so the
+mixed-integer minimum is $\min f$, attained only with $z=0$. In the direction
+$(v_x,v_z)$, the second derivatives of the added terms are
+$2\|v_z\|^2$, $\tau(4\|z\otimes v_z\|^2+8(z^{\mathsf T}v_z)^2)$, and
+$2\|x\otimes v_z\|^2+2\|z\otimes v_x\|^2+8(x^{\mathsf T}v_x)(z^{\mathsf T}v_z)$.
+Keep $M$ on $(v_x,x\otimes v_x)$; put $2I$ on $v_z$, $x\otimes v_z$ and
+$z\otimes v_x$; put $4\tau I+8\tau\,\iota_t\iota_t^{\mathsf T}$ on $z\otimes v_z$,
+where $\iota_t$ is the vectorized identity, so that
+$\iota_t^{\mathsf T}(z\otimes v_z)=z^{\mathsf T}v_z$; and represent the
+remaining term by the off-diagonal block $4\iota_n\iota_t^{\mathsf T}$ between
+$x\otimes v_x$ and $z\otimes v_z$. For formal vectors $a$ in the
+$x\otimes v_x$ block and $c$ in the $z\otimes v_z$ block, the cross term is at
+most $8\sqrt{nt}\,\|a\|\|c\|\le\frac{\mu_0}2\|a\|^2+\frac{32nt}{\mu_0}\|c\|^2$
+in absolute value. Since $M\succeq\mu_0I$
+(Lemma~\ref{lem:models-det-trace}) and $4\tau-32nt/\mu_0=4$, the assembled
+matrix is at least $\min\{\mu_0/2,2\}I$ on the whole basis, not only on
+vectors of tensor form.
+\end{proof}
+
+\subsection{Mixed linear constraints}
+\label{app:constraints-mixed}
+
+Two further external results enter.
+
+\begin{quote}
+\emph{Contract (E3b)} \citep{KozlovTarasovKhachiyan1980}. A convex quadratic
+function with rational coefficients that attains its minimum on a nonempty
+explicit rational polyhedron has a rational minimizer that is computed exactly
+in polynomial time.
+
+\emph{Contract (E3e)} \citep[Theorem~3, applied with the zero
+objective]{DelPia2023}. Given explicit rational $A$, $B$, $d$ with $t$ columns
+of $A$, one decides in deterministic time $F_0(t)L^{C_0}$, with $F_0$
+computable and $C_0$ absolute, whether
+$\{(z,y):z\in\Z^t,\ Az+By\le d\}$ is empty, and otherwise returns a rational
+point of it.
+\end{quote}
+
+\begin{lemma}[Primal--dual cuts for constrained fibers]
+\label{lem:constraints-residual-cut}
+Let $P=\{(z,y):Az+By\le d\}$, let $z\in\Z^t$ have a nonempty fiber, let
+$\hat y$ be a rational point of the fiber and $\lambda\ge0$ a rational vector,
+and put
+\[
+ \sigma=d-Az-B\hat y\ge0,\quad
+ \rho=\nabla_yf(z,\hat y)+B^{\mathsf T}\lambda,\quad
+ E=\lambda^{\mathsf T}\sigma+\frac{\|\rho\|^2}{2\mu},\quad
+ c_z=\nabla_zf(z,\hat y)+A^{\mathsf T}\lambda .
+\]
+\begin{enumerate}[label=(\alph*)]
+\item For every feasible $w$, $g(w)-g(z)\ge c_z^{\mathsf T}(w-z)+\frac\mu2\|w-z\|^2-E$.
+In particular, if $E\le\mu/4$, then $c_z$ satisfies
+\eqref{eq:constraints-integer-cut}.
+\item If $n\ge1$ and $z\in[-R,R]^t$ for an integer $R\ge1$, then
+$\hat y$ and $\lambda$ with $E\le\mu/4$ are computed in ordinary time
+polynomial in $L+\bits(R)+\bits(z)$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+(a) Let $(w,v)\in P$, and put $\Delta_z=w-z$ and $\Delta_y=v-\hat y$. Joint
+strong convexity gives
+\[
+ f(w,v)\ge f(z,\hat y)+\nabla_zf^{\mathsf T}\Delta_z+\nabla_yf^{\mathsf T}\Delta_y
+ +\tfrac\mu2\bigl(\|\Delta_z\|^2+\|\Delta_y\|^2\bigr),
+\]
+with derivatives at $(z,\hat y)$. Feasibility of $(w,v)$ gives
+$A\Delta_z+B\Delta_y\le\sigma$, so
+$\lambda^{\mathsf T}\sigma-\lambda^{\mathsf T}A\Delta_z-\lambda^{\mathsf T}B\Delta_y\ge0$.
+Subtracting this quantity from the right side yields
+\[
+ f(w,v)\ge f(z,\hat y)+c_z^{\mathsf T}\Delta_z+\tfrac\mu2\|\Delta_z\|^2
+ -\lambda^{\mathsf T}\sigma+\rho^{\mathsf T}\Delta_y+\tfrac\mu2\|\Delta_y\|^2,
+\]
+and $\rho^{\mathsf T}\Delta_y+\frac\mu2\|\Delta_y\|^2\ge-\|\rho\|^2/(2\mu)$.
+Minimize over feasible $v$ and use $f(z,\hat y)\ge g(z)$. For integer $w\ne z$,
+$\frac\mu2\|w-z\|^2-\frac\mu4\ge\frac\mu4\|w-z\|^2$.
+
+(b) Write $h_z(y)=f(z,y)$ and let $y_z$ be its minimizer on the fiber
+$F_z=\{y:By\le d-Az\}$. Linear programming gives a rational $\bar y\in F_z$,
+and Lemma~\ref{lem:constraints-radius}(a), applied to $h_z$ and $\bar y$,
+gives an integer $Y$ with $\|y_z\|<Y$. With $m_0=t+n$ and $C_f$ as before, put
+\[
+ S=2+R+Y,\quad \beta_1=1+4m_0C_fS^3,\quad \beta_2=1+12m_0C_fS^2,\quad
+ \delta=\min\Bigl\{1,\frac{\mu}{16\beta_1},\frac{\mu}{4\beta_2}\Bigr\}.
+\]
+Then $\|\nabla h_z(y_z)\|\le\beta_1$, and $\|\nabla^2h_z(y)\|\le\beta_2$ when
+$\|y-y_z\|\le1$, because all coordinates involved are at most $S$ in absolute
+value. Contract (E1), applied to $h_z$ on $F_z\cap\{y:\|y\|_\infty\le Y\}$,
+gives a rational $\hat y\in F_z$ with
+$h_z(\hat y)\le h_z(y_z)+\min\{1,\mu\delta^2/2\}$, so
+$\|\hat y-y_z\|\le\delta$ by Lemma~\ref{lem:constraints-radius}(b).
+
+By Lemma~\ref{lem:constraints-polyhedral}(b), applied to $\nabla h_z$ on $F_z$,
+there is a real $\lambda_*\ge0$, supported on the rows active at $y_z$, with
+$\nabla h_z(y_z)+B^{\mathsf T}\lambda_*=0$. It need not be rational or
+unique, and the proof uses no bound on its norm. Complementary slackness and
+stationarity give the identity
+\[
+ \lambda_*^{\mathsf T}\sigma
+ =\lambda_*^{\mathsf T}(d-Az-By_z)+(B^{\mathsf T}\lambda_*)^{\mathsf T}(y_z-\hat y)
+ =\nabla h_z(y_z)^{\mathsf T}(\hat y-y_z),
+\]
+whose value lies in $[0,\beta_1\delta]$; it is nonnegative because $\hat y$ is
+feasible and $y_z$ is optimal on $F_z$. Also
+$\|\nabla h_z(\hat y)+B^{\mathsf T}\lambda_*\|=\|\nabla h_z(\hat y)-\nabla h_z(y_z)\|\le\beta_2\delta$.
+Hence the convex quadratic function
+\[
+ \mathcal E(\lambda)=\sigma^{\mathsf T}\lambda
+ +\frac{\|\nabla h_z(\hat y)+B^{\mathsf T}\lambda\|^2}{2\mu}
+\]
+satisfies
+$\inf_{\lambda\ge0}\mathcal E\le\mathcal E(\lambda_*)\le\beta_1\delta+\beta_2^2\delta^2/(2\mu)\le\frac\mu{16}+\frac\mu{32}$.
+
+The infimum is attained. The set
+$\mathcal K=\{(B^{\mathsf T}\lambda,\sigma^{\mathsf T}\lambda):\lambda\ge0\}$ is a
+finitely generated cone, hence closed, and its second coordinate is nonnegative.
+In these coordinates the objective is $\tau+\|\nabla h_z(\hat y)+u\|^2/(2\mu)$,
+whose sublevel set at the value of $\lambda=0$ is nonempty and compact within
+$\mathcal K$. A minimizer $(u,\tau)\in\mathcal K$ lifts to some $\lambda\ge0$.
+Contract (E3b) therefore returns an exact rational minimizer $\hat\lambda\ge0$,
+and $E=\mathcal E(\hat\lambda)\le3\mu/32<\mu/4$. All data of the two convex
+problems are rational of polynomial bit length, and the accuracy requested in
+(E1) has polynomially many bits; no bound on $\|\lambda_*\|$ enters.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:constraints-mixed-candidates}]
+Use contract (E3e) to certify infeasibility or to find a rational feasible
+$(z_0,y_0)$. If $t=0$, output the empty block. Otherwise apply
+Lemma~\ref{lem:constraints-radius}(a) to $f$ on $\R^{t+n}$ and $(z_0,y_0)$ to
+get $R$ with every optimal block in $[-R,R]^t$; $\bits(R)\le F_1(t)L^{C_1}$.
+Only the integer block is truncated; the fibers keep all their constraints.
+Let $\mathcal D=\{z\in[-R,R]^t:\ \exists y,\ Az+By\le d\}$, a compact convex
+set containing $z_0$ and every optimal block, on which $g$ is $\mu$-strongly
+convex by the argument of Lemma~\ref{lem:constraints-gradient-cut}.
+
+Answer an integer query $z$ as follows. If $z\notin[-R,R]^t$, return a
+violated box inequality. If the fiber of $z$ is empty, linear programming
+returns a rational $\alpha\ge0$ with $B^{\mathsf T}\alpha=0$ and
+$\alpha^{\mathsf T}(d-Az)<0$; return $\alpha^{\mathsf T}Ax\le\alpha^{\mathsf T}d$,
+which is violated by $z$ and valid on $\mathcal D$ because
+$\alpha^{\mathsf T}(Az'+By')\le\alpha^{\mathsf T}d$ and
+$\alpha^{\mathsf T}By'=0$. Otherwise record $z$, compute $c_z$ by
+Lemma~\ref{lem:constraints-residual-cut} (or $c_z=\nabla f(z)$ if $n=0$), stop
+if $c_z=0$, and return $c_z^{\mathsf T}x\le c_z^{\mathsf T}z-\mu/4$. These
+answers depend only on the instance and the query, and cost polynomial time in
+$L+\bits(R)+\bits(z)$.
+
+The running-time argument (target $\varnothing$), the completeness argument
+(target $\{w\}$ for an omitted optimal block $w$), and the early stop are
+exactly as in the proof of Theorem~\ref{thm:constraints-candidates}: domain and
+Farkas cuts are valid on $\mathcal D\ni w$, and residual cuts at $z\ne w$ are
+valid at $w$ by Lemma~\ref{lem:constraints-integer-cut}, because
+$g(w)\le g(z)$. The total time is $F_0(t)L^{C_0}$ plus
+$2^{O(t\log(t+1))}\poly(\bits(R),L)$, which is $F(t)L^{C}$. For the parity
+bound, if $(w_1,y_1)$ and $(w_2,y_2)$ are optimal with $w_1\ne w_2$ and
+$w_1\equiv w_2\pmod 2$, their midpoint is feasible, has an integer block, and
+has a strictly smaller objective value.
+\end{proof}
+
+\begin{proof}[Proof of Corollary~\ref{cor:constraints-nonlinear-mixed}]
+Let $\mathcal Z$ be the list of Theorem~\ref{thm:constraints-mixed-candidates},
+of total length at most $Q_L=F_1(t)L^{C_1}$. For $z\in\mathcal Z$, the fiber
+instance $(f(z,\cdot),\{y:By\le d-Az\},\mu)$ has length at most
+$(Q_L+L)^{C_2}$ with absolute $C_2$, because the degree is fixed. Its
+curvature is at least $\mu$, since $\nabla^2_{yy}f$ is a principal block of
+$\nabla^2f$. Write $f_3+f_4=\theta(U_zz+U_yy)$ with
+$U=[U_z\ U_y]$ from Lemma~\ref{lem:constraints-essential}. For fixed $z$, the
+homogeneous parts of degrees three and four in $y$ of $\theta(U_zz+U_yy)$ are
+polynomials in $U_yy$, and $f_{\le2}(z,y)$ has degree at most two in $y$.
+Hence the nonlinear kernel of $f(z,\cdot)$ contains $\ker U_y$, and its
+nonlinear dimension is at most $k$. For $z,z'\in\mathcal Z$, the product
+instance with objective $f(z,y)+f(z',y')$, feasible set $F_z\times F_{z'}$, and
+observable $f(z,y)-f(z',y')$ has curvature at least $\mu$ and nonlinear
+kernel containing $\ker U_y\times\ker U_y$, hence nonlinear dimension at most
+$2k$. Theorem~\ref{thm:constraints-nonlinear} compares $g(z)$ and $g(z')$ in
+time $F(2k)(Q_L+L)^{C_2C}$, and compares $g(z)$ with $\tau$ using
+$h=f(z,y)-\tau$. At most $|\mathcal Z|^2+|\mathcal Z|$ comparisons select every
+optimal block and decide the predicate, and
+Theorem~\ref{thm:constraints-nonlinear}(iii) represents the continuous part.
+The total time is $F'(k+t)L^{C'}$ with $F'(\kappa)$ the maximum of the
+parameter factors over $k+t=\kappa$.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:constraints-mixed-rank}]
+Compute the list $\mathcal Z$ of Theorem~\ref{thm:constraints-mixed-candidates},
+remove duplicates, and sort it lexicographically. Each fiber has constraint
+matrix $B$, of rank $r$, and curvature at least $\mu$. For $z,z'\in\mathcal Z$,
+the product instance of the previous proof has constraint matrix
+$\diag(B,B)$, of rank $2r$, so Theorem~\ref{thm:constraints-rank}, with
+$T=\nabla(f(z,y)+f(z',y'))$, decides $g(z)<g(z')$ in expected time
+$(2r+1)^{O(r)}(Q_L+L)^{C_3}$. Scan the sorted list, keeping the first block,
+and replace the current block only by a block of strictly smaller value. The
+result $z_*$ is the lexicographically smallest optimal block, because the list
+contains every optimal block and ties keep the earlier one. One more call of
+Theorem~\ref{thm:constraints-rank} on the fiber of $z_*$ returns a support $J$
+with chart $(\bar y,Z)$ and the explicit strongly monotone cubic map $U_J$ whose
+unique zero $u_*$ gives $y_*=\bar y+Zu_*$; the same call with
+$h=f(z_*,y)-\tau$ decides $\min\bowtie\tau$. Comparing every listed block with
+$z_*$ returns all optimal blocks.
+
+The number of calls is at most $2|\mathcal Z|+2$, a deterministic bound.
+Each call uses fresh random bits, and its expected running time, conditioned
+on everything computed before it, is at most
+$(2r+1)^{O(r)}(Q_L+L)^{C_3}$, because this bound holds for every input of
+that length. Linearity of expectation bounds the total expected time by
+$F(t,r)L^{C}$. Every call returns a correct answer, so every output is
+correct. Different runs may return different charts, but all represent the
+same point.
+\end{proof}
+
+\begin{proof}[Proof of Corollary~\ref{cor:constraints-mixed-unambiguous}]
+Both machines first compute, deterministically, feasibility and the list
+$\mathcal Z=\{z_1,\ldots,z_s\}$; infeasible instances are decided by the
+convention. They then guess sets $S_1,\ldots,S_s$ of rows, one bit per row and
+fiber, and verify each $S_i$ for the fiber of $z_i$ by steps (1)--(3) of the
+proof of Theorem~\ref{thm:constraints-unambiguous}, with $T=\nabla_yf(z_i,\cdot)$.
+By that proof, exactly one guess passes for every fiber, namely its active
+set, and it yields a chart $(\bar y_i,Z_i)$ such that the fiber minimizer is
+$\bar y_i+Z_iu_i$ with $u_i$ the unconstrained minimizer of
+$q_i(u)=f(z_i,\bar y_i+Z_iu)$, whose Hessian is at least $\mu I$. The predicate
+$\min\bowtie\tau$ is a Boolean combination of the predicates $q_i(u_i)\le\tau$
+and $q_i(u_i)<\tau$, each decided by Theorem~\ref{thm:exact-upper} (or by
+rational arithmetic for a zero-dimensional chart). One machine accepts when
+the combination is true, the other when it is false. Each machine has at most
+one accepting computation, and the guesses and verifications take time
+polynomial in the length of the list.
+\end{proof}
+
+\subsection{A hard binary decision}
+\label{app:constraints-binary}
+
+\begin{proof}[Proof of Corollary~\ref{cor:constraints-binary}]
+By Theorem~\ref{thm:rational-optimizer}, an integer straight-line program
+with output $V$ is mapped in polynomial time to a rational quartic $F$ on
+$\R^N$, an index $j$, $N+1$ rational quadratic square factors whose sum is
+$F$, and a positive definite rational full Hessian Gram $Q$, such that $F\ge0$
+has a unique zero $p\in\Q^N\cap[-1,1]^N$, $\nabla^2F\succeq\frac32I$,
+$p_j\ne0$, and $p_j>0$ exactly when $V>0$.
+
+In \eqref{eq:constraints-binary}, the integer $z$ is $0$ or $1$, and then
+$H=F(x)+\frac14\ge\frac14$, with equality only at $x=p$. The constraint
+$z-1\le x_j\le z$ allows $x_j\in[-1,0]$ for $z=0$ and $x_j\in[0,1]$ for
+$z=1$. Both fibers are nonempty ($x=0$), and since $0<|p_j|\le1$, exactly the
+fiber $z=\mathbf 1[p_j>0]$ contains $p$. Hence the optimal value is $1/4$,
+the unique optimal solution is $(p,\mathbf 1[p_j>0])$, and $z_*=1$ exactly
+when $V>0$. The Hessian of $H$ is $\diag(\nabla^2F,2)\succeq\frac32I$. The
+constraints $0\le z\le1$ have zero continuous part, and $z-1\le x_j\le z$
+have continuous normals $\pm e_j$, so the continuous constraint rank is one.
+The other coordinates of $x$ are unconstrained; the optimizer is bounded,
+although the feasible set is not.
+
+For the full Gram, let $\varrho=\det(Q)/\tr(Q)^{d_Q-1}$, where $d_Q=N+N^2$ is
+the size of $Q$, so $Q\succeq\varrho I$ (Lemma~\ref{lem:models-det-trace}),
+and let $\epsilon=\min\{\varrho/4,1/(100N)\}$. Put
+\[
+ \widehat H=H+\epsilon z(z-1)\|x\|^2+\tfrac14z^2(z-1)^2 .
+\]
+Both added terms vanish at $z\in\{0,1\}$, so every feasible objective value,
+the optimum, the optimizer, and the constraints are unchanged. Write
+$\vartheta=z-\frac12$, let $(v,s)$ be a direction in $(x,z)$, and let
+$w=(v,x\otimes v)$. Direct differentiation of
+$\widehat H=F+\vartheta^2+\epsilon(\vartheta^2-\frac14)\|x\|^2+\frac14(\vartheta^2-\frac14)^2$
+gives
+\[
+ D^2\widehat H[(v,s)]^2=w^{\mathsf T}Qw-\tfrac\epsilon2\|v\|^2+\tfrac74s^2
+ +2\epsilon\|\vartheta v\|^2+2\epsilon\|xs\|^2+8\epsilon(x^{\mathsf T}v)(\vartheta s)
+ +3(\vartheta s)^2 .
+\]
+In the basis $(w,s,\vartheta v,xs,\vartheta s)$, which contains every
+direction coordinate and every product of a coordinate of $(x,z)$ with a
+direction coordinate exactly once after the invertible rational change
+$\vartheta v=zv-\frac12v$, $\vartheta s=zs-\frac12s$, this is the quadratic form
+of the block matrix with diagonal blocks $Q-\frac\epsilon2E$, $\frac74$,
+$2\epsilon I$, $2\epsilon I$, $3$, and one off-diagonal block $4\epsilon d_0$
+between $w$ and $\vartheta s$. Here $E$ is the identity on the $v$-part of $w$
+and zero elsewhere, and $d_0$ is the vector with $d_0^{\mathsf T}w=x^{\mathsf T}v$,
+so $\|d_0\|^2=N$. Since $Q-\frac\epsilon2E\succeq\frac\varrho2I$, the Schur
+complement of the last entry is at least
+$3-32\epsilon^2N/\varrho\ge3-8\epsilon N\ge3-\frac2{25}>0$. Hence the matrix
+is positive definite, and so is its rational congruence in the original basis.
+All entries have polynomial bit length.
+\end{proof}
+
+The base objective $H$ has no positive definite full joint Hessian Gram: at
+$x=0$ in the direction $s$, its Hessian form is the constant $2s^2$, while a
+positive definite Gram on a basis containing $zs$ would force growth like
+$z^2s^2$. The correction restores the full Gram at the cost of the specific
+modulus $3/2$ and of the supplied objective square factors. The value gap
+between the two fibers is at least $\frac34p_j^2$, by strong convexity and the
+distance from $p$ to the wrong half-space, and at most $\frac{\Lambda_F}2p_j^2$
+with $\Lambda_F=\max_{[-1,1]^N}\|\nabla^2F\|$, by evaluating at $p-p_je_j$.

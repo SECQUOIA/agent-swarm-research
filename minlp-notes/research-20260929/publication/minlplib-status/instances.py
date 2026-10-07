@@ -1,0 +1,42 @@
+"""Instance lists for the MINLPLib status refresh (Part A) and the
+model-identity history (Part B)."""
+
+PAPER_CLOSED = """lnts50 lnts100 lnts200 lnts400 dtoc5 camshape100 camshape200 camshape400
+camshape800 lukvle10 optcdeg2 hvycrash ex6_2_7 ex6_2_5 etamac pricing050 chain50
+chain100 chain200 chain400 catmix100 catmix200 catmix400 catmix800 powerflow0030p
+powerflow0039p powerflow0039r pindyck eg_int_s eg_disc_s eg_disc2_s""".split()
+PAPER_KAN = """kan_r3_h1_n4 kan_r3_h1_n5 kan_r3_h1_n9 kan_r5_h1_n3 kan_r5_h1_n5
+kan_r5_h1_n8""".split()
+PAPER_IMPROVED = """waterno2_06 waterno2_09 waterno2_12 waterno2_18 waterno2_24
+ann_cumene_tanh""".split()
+PAPER = PAPER_CLOSED + PAPER_KAN + PAPER_IMPROVED
+
+# Audit findings (bound-audit/audit-report.md, Sections 1 and 4).
+AUDIT_I = """glider100 topopt-cantilever_60x40_50 methanol50 sssd20-04persp
+sssd22-08persp sssd25-04persp sssd25-08persp nuclear14 ghg_3veh
+nd_netgen-2000-3-4-b-a-ns_7 watercontamination0303 smallinvDAXr1b150-165
+smallinvDAXr2b150-165 smallinvDAXr1b200-220 smallinvDAXr2b200-220""".split()
+AUDIT_IR = "eniplac lop97icx spring stockcycle".split()
+AUDIT_EMFL = "emfl050_3_3 emfl050_5_5 emfl100_3_3 emfl100_5_5".split()
+ROCKET = "rocket100 rocket200 rocket400".split()  # earlier LINDO findings
+AUDIT = AUDIT_I + AUDIT_IR + AUDIT_EMFL + ROCKET
+
+ALL = PAPER + [n for n in AUDIT if n not in PAPER]
+
+GROUP = {}
+for n in PAPER_CLOSED:
+    GROUP[n] = "paper: closed"
+for n in PAPER_KAN:
+    GROUP[n] = "paper: KAN"
+for n in PAPER_IMPROVED:
+    GROUP[n] = "paper: improved"
+for n in AUDIT_I:
+    GROUP[n] = "audit: (i)"
+for n in AUDIT_IR:
+    GROUP[n] = "audit: (i-r)"
+for n in AUDIT_EMFL:
+    GROUP[n] = "audit: emfl (ii) proven"
+for n in ROCKET:
+    GROUP[n] = "earlier: rocket LINDO"
+
+assert len(ALL) == len(set(ALL)) == 69, len(ALL)

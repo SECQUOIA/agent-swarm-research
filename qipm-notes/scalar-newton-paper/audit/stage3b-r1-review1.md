@@ -37,6 +37,6 @@ Verdict: **no major issues found**. One minor normalization clarification is lis
 
 ## Validation
 
-Ran `/home/sgusev/miniconda3/envs/qipm/bin/python notes/scalar-newton-paper/checks/check_temporal_identities.py`: all temporal diagnostics passed. The diagnostics supplement the analytic checks; they are not the basis for accepting asymptotic lower bounds.
+Ran `/workspace/local-home/miniconda3/envs/qipm/bin/python notes/scalar-newton-paper/checks/check_temporal_identities.py`: all temporal diagnostics passed. The diagnostics supplement the analytic checks; they are not the basis for accepting asymptotic lower bounds.
 
 The sections' scope and attribution are appropriately qualified. I found no unsupported per-iteration multiplication, no transfer of joint Boolean recovery to arbitrary real outputs, and no free dynamic iterate-SQ assumption. After the minor scale clarification, these sections are ready to proceed.

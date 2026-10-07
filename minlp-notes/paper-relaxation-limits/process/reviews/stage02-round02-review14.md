@@ -13,7 +13,7 @@ Nine reviewed manuscript/checker files were checked against their frozen manifes
 **Independent verification.** The new checker and detailed results are at `verification/reviewer14/stage02-round02/check.py` and `verification/reviewer14/stage02-round02/results.json`. It ran successfully with:
 
 ```text
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python verification/reviewer14/stage02-round02/check.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python verification/reviewer14/stage02-round02/check.py
 ```
 
 The reviewer checker uses SymPy for exact symbolic algebra and SciPy only for the explicitly numerical supplement. The manuscript's printed finite checker uses the Python standard library alone.

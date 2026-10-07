@@ -1,5 +1,8 @@
+from pathlib import Path as _CleanupPath
+_NOTES_ROOT = _CleanupPath(__file__).resolve().parent.joinpath('../../../../..').resolve()
+
 import json, math, hashlib, os, numpy as np, pandas as pd
-RES='/home/sgusev/repo/minlp-notes/research-20260922/iterated-obbt/results'
+RES=(str(_NOTES_ROOT) + '/research-20260922/iterated-obbt/results')
 inst=pd.read_csv(RES+'/instances.csv'); inst=inst[inst.in_scope].set_index('name')
 FS=inst.fstar_min.to_dict()
 F={}

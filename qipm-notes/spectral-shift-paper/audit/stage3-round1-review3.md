@@ -113,7 +113,7 @@ or change generated manuscript artifacts.
 
 ## Independent numerical checks
 
-Used `/home/sgusev/miniconda3/envs/qipm/bin/python` with installed NumPy;
+Used `/workspace/local-home/miniconda3/envs/qipm/bin/python` with installed NumPy;
 no packages were installed. A separate diagnostic checked 27 instances
 with rho in `{1.1,2,20}`, delta in `{1e-2,1e-4,1e-6}`, and t at both
 endpoints and the midpoint. All satisfy the stated parameter restrictions.

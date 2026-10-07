@@ -42,7 +42,7 @@ An independent check compared the original four-flow endpoint-disjunctive LPs wi
 The exact code used in the completed inline run is saved as `/tmp/s03r02_signed_weighted_check.py`; captured output is `/tmp/s03r02_signed_weighted_check.log`. Equivalent reproduction command:
 
 ```sh
-/home/sgusev/miniconda3/envs/minlp-notes/bin/python /tmp/s03r02_signed_weighted_check.py
+/workspace/local-home/miniconda3/envs/minlp-notes/bin/python /tmp/s03r02_signed_weighted_check.py
 ```
 
 Compilation is assigned to root and was not repeated here. I did not independently reprove the underlying PCP gap theorem, perform a comprehensive publication-priority search, or validate every historical numerical script. Historical PASS labels were not used as mathematical evidence.

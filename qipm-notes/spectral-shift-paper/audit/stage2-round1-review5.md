@@ -70,7 +70,7 @@ I found no omitted substantive theorem or proof development in these three sourc
 Ran from the manuscript directory:
 
 ```sh
-/home/sgusev/miniconda3/envs/qipm/bin/python scripts/joint_accuracy_diagnostics.py --output /tmp/stage2-review5-diagnostics
+/workspace/local-home/miniconda3/envs/qipm/bin/python scripts/joint_accuracy_diagnostics.py --output /tmp/stage2-review5-diagnostics
 ```
 
 The reproduced `thresholds.csv`, `pinned_kernels.csv`, and `joint_diagnostics.png` are byte-for-byte identical to the stored artifacts. The script also produced the PDF successfully. I visually inspected the PNG: labels, curves, and stated asymptotic trend agree with the data.

@@ -1,10 +1,13 @@
 """Independent exact adversarial checks of envelope and upper semantics."""
+from pathlib import Path as _CleanupPath
+_NOTES_ROOT = _CleanupPath(__file__).resolve().parent.joinpath('../../../../..').resolve()
+
 from pathlib import Path
 import importlib.util
 import sys
 import sympy as s
 
-spec = importlib.util.spec_from_file_location('reviewed_scalar_solver', '/home/sgusev/repo/minlp-notes/paper-structured-bilevel/verification/stage06-review04/code/compressed_solver.py')
+spec = importlib.util.spec_from_file_location('reviewed_scalar_solver', (str(_NOTES_ROOT) + '/paper-structured-bilevel/verification/stage06-review04/code/compressed_solver.py'))
 solver = importlib.util.module_from_spec(spec)
 sys.modules[spec.name] = solver
 spec.loader.exec_module(solver)

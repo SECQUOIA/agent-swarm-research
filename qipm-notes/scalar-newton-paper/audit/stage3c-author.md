@@ -103,7 +103,7 @@ left to the manuscript synthesis stage, using these explicit comparators.
 
 ## Verification
 
-`/home/sgusev/miniconda3/envs/qipm/bin/python checks/check_structured_identities.py`
+`/workspace/local-home/miniconda3/envs/qipm/bin/python checks/check_structured_identities.py`
 passes 152 numerical identities, including indefinite and singular cores,
 near-null transformed columns, raw rectangular trial probabilities,
 independently finite-differenced power Hessians, clipping endpoints and
